@@ -29,6 +29,7 @@ import getpass
 
 import sys
 from pathlib import Path
+import AIActions
 
 # Add the parent directory to sys.path
 parent_dir = Path(__file__).resolve().parent.parent
@@ -37,7 +38,7 @@ sys.path.append(str(parent_dir))
 from Voice import *
 from EDJournal import *
 
-aiModel = "undi95/toppy-m-7b:free"
+aiModel = "openai/gpt-4o"
 
 backstory = """You will be addressed as 'Computer'. \
 You possess extensive knowledge and can provide detailed and accurate information on a wide range of topics, \
@@ -50,6 +51,20 @@ I am a broke bounty hunter who can barely pay the fuel."""
 
 conversationLength = 25
 conversation = []
+
+aiActions = AIActions.AIActions()
+
+def fire_primary_weapon(args):
+    print("pew pew", args)
+    return "successfully fired primary weapon"
+
+aiActions.registerAction('fire', "fire primary weapon", {
+    "type": "object",
+    "properties": {
+        "target": {"type": "string"}
+    },
+    "required": ["target"],
+}, fire_primary_weapon)
 
 # Function to prompt user for API key and Openrouter status
 def prompt_for_config():
@@ -102,6 +117,17 @@ def get_system_info(system_name):
 
 jn = EDJournal()
 def handle_conversation(client, commander_name, user_input):
+    print(f"\033[1;33mCMDR\033[0m: {user_input}")
+    chat_prompt = prepare_chat_prompt(commander_name)
+    
+    # Append user input to the conversation
+    userChatMessage = {"role": "user", "content": user_input}
+    conversation.append(userChatMessage)
+    conversation.pop(0) if len(conversation) > conversationLength else None
+
+    run_chat_model(client, commander_name, chat_prompt+[userChatMessage])
+
+def prepare_chat_prompt(commander_name):
     rawState =jn.ship_state()
     keysToFilterOut = {
         "time",
@@ -114,43 +140,50 @@ def handle_conversation(client, commander_name, user_input):
     }
     filteredState = {key: value for key, value in rawState.items() if key not in keysToFilterOut}
 
-    systemPrompt = {"role": "system", "content": f"Let's roleplay in the universe of Elite: Dangerous. " +
+    systemPrompt = {"role": "system", "content": "Let's roleplay in the universe of Elite: Dangerous. " +
     "I will provide game events in parentheses; do not create new ones. " +
-    "I am Commander {commander_name}. You are the onboard AI of my starship. " + backstory}
+    f"I am Commander {commander_name}. You are the onboard AI of my starship. " + backstory}
     status = {"role": "user", "content": "(Ship status: " + json.dumps(filteredState) + ")"}
     system = {"role": "user", "content": "(Location: " + get_system_info(filteredState['location']) + ")"}
-    userInput = {"role": "user", "content": user_input}
+    
 
     # Context for AI, consists of conversation history, ships status, information about current system and the user input
-    context = [systemPrompt]+conversation+[status, system]+[userInput]
+    return [systemPrompt]+conversation+[status, system]
 
-    print(f"\033[1;33mCMDR\033[0m: {user_input}")
 
+def run_chat_model(client, commander_name, chat_prompt):
     # Make a request to OpenAI with the updated conversation
+    #print("messages:", chat_prompt)
     completion = client.chat.completions.create(
         extra_headers={
             "HTTP-Referer": "https://github.com/SumZer0-git/EDAPGui",
             "X-Title": "ED Autopilot AI Integration",
         },
+        tools=aiActions.getToolsList(),
         model=aiModel,
-        messages=context,
+        messages=chat_prompt,
     )
+
+
+    #print("completion:", completion)
+    # Add the model's response to the conversation
+    conversation.append(completion.choices[0].message)
+    conversation.pop(0) if len(conversation) > conversationLength else None
 
     # Get and print the model's response
     response_text = completion.choices[0].message.content
+    if (response_text):
+        print(f"\033[1;34mAI\033[0m: {response_text}")
+        v.say(response_text)
 
-    print(f"\033[1;34mAI\033[0m: {response_text}")
-    v.say(response_text)
-
-    # Append user input to the conversation
-    conversation.append(userInput)
-    conversation.pop(0) if len(conversation) > conversationLength else None
-
-    # Add the model's response to the conversation
-    conversation.append({"role": "assistant", "content": response_text})
-    conversation.pop(0) if len(conversation) > conversationLength else None
-
-    return response_text
+    response_actions = completion.choices[0].message.tool_calls
+    if (response_actions):
+        for action in response_actions:
+            print(f"\033[1;33mACTION\033[0m: {action.function.name}")
+            action_result = aiActions.runAction(action)
+            conversation.append(action_result)
+            conversation.pop(0) if len(conversation) > conversationLength else None
+        run_chat_model(client, commander_name, prepare_chat_prompt(commander_name))
 
 def getCurrentState():
     keysToFilterOut = [
@@ -404,7 +437,7 @@ def main():
                 if phrase_complete:
                     transcription.append(text)
 
-                    completion = handle_conversation(client, commanderName, text)
+                    handle_conversation(client, commanderName, text)
 
                 else:
                     transcription[-1] = text
@@ -424,7 +457,7 @@ def main():
 
     print("\n\nConversation:")
     for line in conversation:
-        print(json.dumps(line, indent=2))
+        print(line)
 
     # Teardown TTS
     v.quit()

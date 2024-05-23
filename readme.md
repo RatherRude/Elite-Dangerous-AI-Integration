@@ -27,6 +27,8 @@ The AI integration comprises three main components:
 3. **Text-to-Speech (TTS)**
 4. **Web Lookups for Detailed Information (EDSM)**
 5. **Event-Driven Interaction**
+6. **Function Calling(ToDo)**
+7. **Vision Capabilities(ToDo)**
 
 ### 1. Whisper Speech-to-Text (STT)
 
@@ -93,6 +95,28 @@ The autopilot system is designed to respond dynamically to certain game events d
 * Interdiction Escape: Successful escape from an interdiction attempt is communicated to Commander.
 * Mission Updates: Acceptance, completion, failure, or abandonment of missions are tracked and reported to Commander, ensuring complete mission awareness.
 * These event-driven interactions are designed to enhance safety, decision-making, and overall user engagement throughout the journey in Elite Dangerous.
+
+![Event-driven](screen/event_driven.png?raw=true "Screen")
+
+
+### 6. Function Calling
+
+We can allow the AI to call functions when using OpenAI models. (This can be generalized using the REACT pattern, currently the solution is OpenAI/Openrouter specific.) 
+
+![Function Calling](screen/function_calling.png?raw=true "Screen")
+
+### ToDo (Function Calling)
+* The user's key bindings are read from player profile
+* simulate (correct) key press
+
+
+## 7. Vision Capabilities
+
+### ToDo (Vision Capabilities)
+
+* Take screenshot of the game and send it to the LLM as context (only applicable if model has image-to-text cabilities) 
+* Take live video feed of the game and send it to the LLM as context (only applicable if model has video-to-text cabilities) 
+
 
 ## Troubleshooting
 
