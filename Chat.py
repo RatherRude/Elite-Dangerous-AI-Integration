@@ -143,9 +143,9 @@ def ship_spot_light_toggle(args):
     keys.send('ShipSpotLightToggle')
     return f"Ship spotlight toggled"
 
-#def eject_all_cargo(args):
-#    keys.send('EjectAllCargo')
-#    return f"All cargo ejected"
+def eject_all_cargo(args):
+    keys.send('EjectAllCargo')
+    return f"All cargo ejected"
 
 def landing_gear_toggle(args):
     keys.send('LandingGearToggle')
