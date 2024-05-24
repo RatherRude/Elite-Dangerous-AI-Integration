@@ -29,6 +29,7 @@ import getpass
 
 import sys
 from pathlib import Path
+
 import AIActions
 
 # Add the parent directory to sys.path
@@ -36,7 +37,10 @@ parent_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(parent_dir))
 
 from Voice import *
+from EDKeys import *
 from EDJournal import *
+
+import win32gui
 
 aiModel = "openai/gpt-4o"
 
@@ -54,17 +58,235 @@ conversation = []
 
 aiActions = AIActions.AIActions()
 
-def fire_primary_weapon(args):
-    print("pew pew", args)
-    return "successfully fired primary weapon"
+#   def fire_primary_weapon(args):
+#       print("pew pew", args)
+#       return "successfully fired primary weapon"
+#   
+#   aiActions.registerAction('fire', "fire primary weapon", {
+#       "type": "object",
+#       "properties": {
+#           "target": {"type": "string"}
+#       },
+#       "required": ["target"],
+#   }, fire_primary_weapon)
 
-aiActions.registerAction('fire', "fire primary weapon", {
+# Define functions for each action
+def fire_primary_weapon(args):
+    keys.send('PrimaryFire', state=1)
+    return f"successfully opened fire with primary weapons."
+
+def hold_fire_primary_weapon(args):
+    keys.send('PrimaryFire', state=0)
+    return f"successfully stopped firing with primary weapons."
+
+def fire_secondary_weapon(args):
+    keys.send('SecondaryFire', state=1)
+    return f"successfully opened fire with secondary weapons."
+
+def hold_fire_secondary_weapon(args):
+    keys.send('SecondaryFire', state=0)
+    return f"successfully stopped firing with secondary weapons."
+
+def hyper_super_combination(args):
+    keys.send('HyperSuperCombination')
+    return f"Frame Shift Drive is charging for a jump"
+
+def set_speed_zero(args):
+    keys.send('SetSpeedZero')
+    return f"Speed set to 0%"
+
+def set_speed_50(args):
+    keys.send('SetSpeed50')
+    return f"Speed set to 50%"
+
+def set_speed_100(args):
+    keys.send('SetSpeed100')
+    return f"Speed set to 100%"
+
+def deploy_heat_sink(args):
+    keys.send('DeployHeatSink')
+    return f"Heat sink deployed"
+
+def deploy_hardpoint_toggle(args):
+    keys.send('DeployHardpointToggle')
+    return f"Hardpoints deployed/retracted"
+
+def increase_engines_power(args):
+    keys.send('IncreaseEnginesPower')
+    return f"Engine power increased"
+
+def increase_weapons_power(args):
+    keys.send('IncreaseWeaponsPower')
+    return f"Weapon power increased"
+
+def increase_systems_power(args):
+    keys.send('IncreaseSystemsPower')
+    return f"Systems power increased"
+
+def galaxy_map_open(args):
+    keys.send('GalaxyMapOpen')
+    return f"Galaxy map opened/closed"
+
+def system_map_open(args):
+    keys.send('SystemMapOpen')
+    return f"System map opened/closed"
+
+def cycle_next_target(args):
+    keys.send('CycleNextTarget')
+    return f"Next target cycled"
+
+def cycle_fire_group_next(args):
+    keys.send('CycleFireGroupNext')
+    return f"Fire group cycled"
+
+def ship_spot_light_toggle(args):
+    keys.send('ShipSpotLightToggle')
+    return f"Ship spotlight toggled"
+
+#def eject_all_cargo(args):
+#    keys.send('EjectAllCargo')
+#    return f"All cargo ejected"
+
+def landing_gear_toggle(args):
+    keys.send('LandingGearToggle')
+    return f"Landing gear toggled"
+
+def use_shield_cell(args):
+    keys.send('UseShieldCell')
+    return f"Shield cell used"
+
+def fire_chaff_launcher(args):
+    keys.send('FireChaffLauncher')
+    return f"Chaff launcher fired"
+
+def night_vision_toggle(args):
+    keys.send('NightVisionToggle')
+    return f"Night vision toggled"
+
+def recall_dismiss_ship(args):
+    keys.send('RecallDismissShip')
+    return f"Ship has either been recalled or dismissed"
+
+# Register actions
+aiActions.registerAction('fire', "start firing primary weapons", {
     "type": "object",
-    "properties": {
-        "target": {"type": "string"}
-    },
-    "required": ["target"],
-}, fire_primary_weapon)
+    "properties": {}
+    }, fire_primary_weapon)
+
+aiActions.registerAction('holdFire', "stop firing primary weapons", {
+    "type": "object",
+    "properties": {}
+    }, hold_fire_primary_weapon)
+
+aiActions.registerAction('fireSecondary', "start secondary primary weapons", {
+    "type": "object",
+    "properties": {}
+    }, fire_secondary_weapon)
+
+aiActions.registerAction('holdFireSecondary', "stop secondary primary weapons", {
+    "type": "object",
+    "properties": {}
+    }, hold_fire_secondary_weapon)
+
+aiActions.registerAction('hyperSuperCombination', "initiate FSD Jump, required to jump to the next system or to enter supercruise", {
+    "type": "object",
+    "properties": {}
+    }, hyper_super_combination)
+
+aiActions.registerAction('setSpeedZero', "Set speed to 0%", {
+    "type": "object",
+    "properties": {}
+}, set_speed_zero)
+
+aiActions.registerAction('setSpeed50', "Set speed to 50%", {
+    "type": "object",
+    "properties": {}
+}, set_speed_50)
+
+aiActions.registerAction('setSpeed100', "Set speed to 100%", {
+    "type": "object",
+    "properties": {}
+}, set_speed_100)
+
+aiActions.registerAction('deployHeatSink', "Deploy heat sink", {
+    "type": "object",
+    "properties": {}
+}, deploy_heat_sink)
+
+aiActions.registerAction('deployHardpointToggle', "Deploy or retract hardpoints", {
+    "type": "object",
+    "properties": {}
+}, deploy_hardpoint_toggle)
+
+aiActions.registerAction('increaseEnginesPower', "Increase engine power", {
+    "type": "object",
+    "properties": {}
+}, increase_engines_power)
+
+aiActions.registerAction('increaseWeaponsPower', "Increase weapon power", {
+    "type": "object",
+    "properties": {}
+}, increase_weapons_power)
+
+aiActions.registerAction('increaseSystemsPower', "Increase systems power", {
+    "type": "object",
+    "properties": {}
+}, increase_systems_power)
+
+aiActions.registerAction('galaxyMapOpen', "Open or close galaxy map", {
+    "type": "object",
+    "properties": {}
+}, galaxy_map_open)
+
+aiActions.registerAction('systemMapOpen', "Open or close system map", {
+    "type": "object",
+    "properties": {}
+}, system_map_open)
+
+aiActions.registerAction('cycleNextTarget', "Cycle to next target", {
+    "type": "object",
+    "properties": {}
+}, cycle_next_target)
+
+aiActions.registerAction('cycleFireGroupNext', "Cycle to next fire group", {
+    "type": "object",
+    "properties": {}
+}, cycle_fire_group_next)
+
+aiActions.registerAction('shipSpotLightToggle', "Toggle ship spotlight", {
+    "type": "object",
+    "properties": {}
+}, ship_spot_light_toggle)
+
+aiActions.registerAction('ejectAllCargo', "Eject all cargo", {
+    "type": "object",
+    "properties": {}
+}, eject_all_cargo)
+
+aiActions.registerAction('landingGearToggle', "Toggle landing gear", {
+    "type": "object",
+    "properties": {}
+}, landing_gear_toggle)
+
+aiActions.registerAction('useShieldCell', "Use shield cell", {
+    "type": "object",
+    "properties": {}
+}, use_shield_cell)
+
+aiActions.registerAction('fireChaffLauncher', "Fire chaff launcher", {
+    "type": "object",
+    "properties": {}
+}, fire_chaff_launcher)
+
+aiActions.registerAction('nightVisionToggle', "Toggle night vision", {
+    "type": "object",
+    "properties": {}
+}, night_vision_toggle)
+
+aiActions.registerAction('recallDismissShip', "Recall or dismiss ship, available on foot and inside SRV", {
+    "type": "object",
+    "properties": {}
+}, recall_dismiss_ship)
 
 # Function to prompt user for API key and Openrouter status
 def prompt_for_config():
@@ -305,10 +527,18 @@ def checkForJournalUpdates(client, commanderName):
     previous_status = current_status
 
 v = Voice()
+keys = EDKeys()
 def main():
-    global v
+    handle = win32gui.FindWindow(0, "Elite - Dangerous (CLIENT)")
+    if handle != None:
+        win32gui.SetForegroundWindow(handle)  # give focus to ED
+
+    global v, keys
     # Load or prompt for configuration
     apiKey, useOpenrouter, commanderName = load_or_prompt_config()
+
+    print('loading keys')
+    
 
     # Now you can use api_key and use_openrouter in your script
     # gets API Key from config.json
