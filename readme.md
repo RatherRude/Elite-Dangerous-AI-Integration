@@ -103,12 +103,33 @@ The autopilot system is designed to respond dynamically to certain game events d
 
 We can allow the AI to call functions when using OpenAI models. (This can be generalized using the REACT pattern, currently the solution is OpenAI/Openrouter specific.) 
 
+These functions are callable:
+- fire: Start firing primary weapons.
+- holdFire: Stop firing primary weapons.
+- fireSecondary: Start firing secondary weapons.
+- holdFireSecondary: Stop firing secondary weapons.
+- hyperSuperCombination: Initiate FSD Jump, required to jump to the next system or enter supercruise.
+- setSpeedZero: Set speed to 0%.
+- setSpeed50: Set speed to 50%.
+- setSpeed100: Set speed to 100%.
+- deployHeatSink: Deploy heat sink.
+- deployHardpointToggle: Deploy or retract hardpoints.
+- increaseEnginesPower: Increase engine power.
+- increaseWeaponsPower: Increase weapon power.
+- increaseSystemsPower: Increase systems power.
+- galaxyMapOpen: Open or close the galaxy map.
+- systemMapOpen: Open or close the system map.
+- cycleNextTarget: Cycle to the next target.
+- cycleFireGroupNext: Cycle to the next fire group.
+- shipSpotLightToggle: Toggle ship spotlight.
+- ejectAllCargo: Eject all cargo.
+- landingGearToggle: Toggle landing gear.
+- useShieldCell: Use a shield cell.
+- fireChaffLauncher: Fire chaff launcher.
+- nightVisionToggle: Toggle night vision.
+- recallDismissShip: Recall or dismiss ship, available on foot and inside SRV.
+
 ![Function Calling](screen/function_calling.png?raw=true "Screen")
-
-### ToDo (Function Calling)
-* The user's key bindings are read from player profile
-* simulate (correct) key press
-
 
 ## 7. Vision Capabilities
 
