@@ -44,7 +44,7 @@ import win32gui
 
 aiModel = "openai/gpt-4o"
 
-backstory = """You will be addressed as 'Computer'. \
+backstory = """You will be addressed as 'Computer'. Acknowledge given orders. \
 You possess extensive knowledge and can provide detailed and accurate information on a wide range of topics, \
 including galactic navigation, ship status, the current system, and more. \
 Do not inform about my ship status and my location unless it's relevant or requested by me. \
@@ -112,15 +112,15 @@ def deploy_hardpoint_toggle(args):
     return f"Hardpoints deployed/retracted"
 
 def increase_engines_power(args):
-    keys.send('IncreaseEnginesPower')
+    keys.send('IncreaseEnginesPower', None, args['pips'])
     return f"Engine power increased"
 
 def increase_weapons_power(args):
-    keys.send('IncreaseWeaponsPower')
+    keys.send('IncreaseWeaponsPower', None, args['pips'])
     return f"Weapon power increased"
 
 def increase_systems_power(args):
-    keys.send('IncreaseSystemsPower')
+    keys.send('IncreaseSystemsPower', None, args['pips'])
     return f"Systems power increased"
 
 def galaxy_map_open(args):
@@ -218,19 +218,37 @@ aiActions.registerAction('deployHardpointToggle', "Deploy or retract hardpoints"
     "properties": {}
 }, deploy_hardpoint_toggle)
 
-aiActions.registerAction('increaseEnginesPower', "Increase engine power", {
+aiActions.registerAction('increaseEnginesPower', "Increase engine power, can be done multiple times", {
     "type": "object",
-    "properties": {}
+    "properties": {
+        "pips": {
+            "type": "integer",
+            "description": "Amount of pips to increase engine power, default: 1, maximum: 4",
+        },
+    },
+    "required": ["pips"]
 }, increase_engines_power)
 
-aiActions.registerAction('increaseWeaponsPower', "Increase weapon power", {
+aiActions.registerAction('increaseWeaponsPower', "Increase weapon power, can be done multiple times", {
     "type": "object",
-    "properties": {}
+    "properties": {
+        "pips": {
+            "type": "integer",
+            "description": "Amount of pips to increase weapon power, default: 1, maximum: 4",
+        },
+    },
+    "required": ["pips"]
 }, increase_weapons_power)
 
-aiActions.registerAction('increaseSystemsPower', "Increase systems power", {
+aiActions.registerAction('increaseSystemsPower', "Increase systems power, can be done multiple times", {
     "type": "object",
-    "properties": {}
+    "properties": {
+        "pips": {
+            "type": "integer",
+            "description": "Amount of pips to increase systems power, default: 1, maximum: 4",
+        },
+    },
+    "required": ["pips"]
 }, increase_systems_power)
 
 aiActions.registerAction('galaxyMapOpen', "Open or close galaxy map", {
