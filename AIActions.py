@@ -26,7 +26,7 @@ class AIActions:
         }
 
     # register function
-    def registerAction(self, name, description, parameters, method):
+    def registerAction(self, name, description, parameters, method, image=False):
         self.actions[name] = {
             "method": method,
             "tool": {

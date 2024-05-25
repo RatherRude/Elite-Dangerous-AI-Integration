@@ -1,3 +1,4 @@
+import base64
 from threading import Thread
 import kthread
 import queue
@@ -23,7 +24,10 @@ from openai import OpenAI
 
 import json
 
+import pyautogui
+import win32gui
 import requests
+from io import BytesIO
 
 import getpass
 
@@ -40,10 +44,9 @@ from Voice import *
 from EDKeys import *
 from EDJournal import *
 
-import win32gui
+client = None
 
 aiModel = "openai/gpt-4o"
-
 backstory = """You will be addressed as 'Computer'. Acknowledge given orders. \
 You possess extensive knowledge and can provide detailed and accurate information on a wide range of topics, \
 including galactic navigation, ship status, the current system, and more. \
@@ -57,18 +60,6 @@ conversationLength = 25
 conversation = []
 
 aiActions = AIActions.AIActions()
-
-#   def fire_primary_weapon(args):
-#       print("pew pew", args)
-#       return "successfully fired primary weapon"
-#   
-#   aiActions.registerAction('fire', "fire primary weapon", {
-#       "type": "object",
-#       "properties": {
-#           "target": {"type": "string"}
-#       },
-#       "required": ["target"],
-#   }, fire_primary_weapon)
 
 # Define functions for each action
 def fire_primary_weapon(args):
@@ -338,6 +329,75 @@ def load_or_prompt_config():
 
     return api_key, openrouter, commander_name
 
+handle = win32gui.FindWindow(0, "Elite - Dangerous (CLIENT)")
+def screenshot():
+    global handle
+    if handle:
+        win32gui.SetForegroundWindow(handle)
+        x, y, x1, y1 = win32gui.GetClientRect(handle)
+        x, y = win32gui.ClientToScreen(handle, (x, y))
+        x1, y1 = win32gui.ClientToScreen(handle, (x1, y1))
+        width = x1 - x
+        height = y1 - y
+        im = pyautogui.screenshot(region=(x, y, width, height))
+        return im
+    else:
+        print('Window not found!')
+        return None
+
+def format_image(image, query=""):
+    buffered = BytesIO()
+    image.save(buffered, format="JPEG")
+    image_data = buffered.getvalue()
+    base64_image = base64.b64encode(image_data).decode('utf-8')
+
+    return [
+        {
+        "role": "user",
+        "content": [
+            {
+            "type": "text",
+            "text": "This is a screenshot of the game Elite:Dangerous Odyssey. Do not describe ship cockpit or game HUD. " +
+            "Briefly describe celestial bodies, ships, humans and other surroundings. " + query
+            },
+            {
+                "type": "image_url",
+                "image_url": {
+                    "url": f"data:image/jpeg;base64,{base64_image}"
+                }
+            }
+        ]
+        }
+    ]
+
+def get_visuals(obj):
+    image = screenshot()
+    if not image: return "Unable to take screenshot."
+    
+    completion = client.chat.completions.create(
+        extra_headers={
+            "HTTP-Referer": "https://github.com/SumZer0-git/EDAPGui",
+            "X-Title": "ED Autopilot AI Integration",
+        },
+        model=aiModel,
+        messages=format_image(image, obj.get("query")),
+    ) 
+    #print("get_visuals:", completion)
+
+    return completion.choices[0].message.content
+
+aiActions.registerAction('getVisuals', "Get a description of what's currently visible to the Commander", {
+    "type": "object",
+    "properties": {
+        "query": {
+            "type": "string",
+            "description": "Describe what you are curious about in the description. Example: 'Count the number of pirates'"
+        }
+    },
+    "required": ["query"]
+}, get_visuals)
+
+# fetch system info from EDSM
 def get_system_info(system_name):
         url = "https://www.edsm.net/api-v1/system"
         params = {
@@ -388,10 +448,11 @@ def prepare_chat_prompt(commander_name):
     
 
     # Context for AI, consists of conversation history, ships status, information about current system and the user input
-    return [systemPrompt]+conversation+[status, system]
+    return [systemPrompt]+[status, system]+conversation
 
 
 def run_chat_model(client, commander_name, chat_prompt):
+    global conversation
     # Make a request to OpenAI with the updated conversation
     #print("messages:", chat_prompt)
     completion = client.chat.completions.create(
@@ -405,7 +466,10 @@ def run_chat_model(client, commander_name, chat_prompt):
     )
 
 
-    #print("completion:", completion)
+    if hasattr(completion, 'error'):
+        print("completion with error:", completion)
+        return
+
     # Add the model's response to the conversation
     conversation.append(completion.choices[0].message)
     conversation.pop(0) if len(conversation) > conversationLength else None
@@ -419,10 +483,11 @@ def run_chat_model(client, commander_name, chat_prompt):
     response_actions = completion.choices[0].message.tool_calls
     if (response_actions):
         for action in response_actions:
-            print(f"\033[1;33mACTION\033[0m: {action.function.name}")
+            print(f"\033[1;33mACTION\033[0m: {action.function.name} {action.function.arguments}")
             action_result = aiActions.runAction(action)
             conversation.append(action_result)
-            conversation.pop(0) if len(conversation) > conversationLength else None
+            while(len(conversation) > conversationLength):
+                conversation.pop(0)
         run_chat_model(client, commander_name, prepare_chat_prompt(commander_name))
 
 def getCurrentState():
@@ -441,6 +506,7 @@ def getCurrentState():
 second_call = False
 previous_status = getCurrentState()
 def checkForJournalUpdates(client, commanderName):
+    #print('checkForJournalUpdates is checking')
     global previous_status, second_call
     def check_status_changes(prev_status, current_status, keys):
         changes = []
@@ -459,7 +525,7 @@ def checkForJournalUpdates(client, commanderName):
         'interdicted'
     ]
     current_status = getCurrentState()
-
+    #print('check_status_changes')
     changes = check_status_changes(previous_status, current_status, relevant_status)
     for change in changes:
         key, old_value, new_value = change
@@ -543,11 +609,12 @@ def checkForJournalUpdates(client, commanderName):
 
     # Update previous status
     previous_status = current_status
+    #print('checkForJournalUpdates end')
 
 v = Voice()
 keys = EDKeys()
 def main():
-    handle = win32gui.FindWindow(0, "Elite - Dangerous (CLIENT)")
+    global client
     if handle != None:
         win32gui.SetForegroundWindow(handle)  # give focus to ED
 
@@ -596,7 +663,7 @@ def main():
     args = parser.parse_args()
 
     # The last time a recording was retrieved from the queue.
-    phrase_time = None
+    phrase_time = datetime.utcnow()
     # Thread safe Queue for passing data from the threaded recording callback.
     data_queue = Queue()
     # We use SpeechRecognizer to record our audio because it has a nice feature where it can detect when speech ends.
@@ -641,6 +708,7 @@ def main():
         Threaded callback function to receive audio data when recordings finish.
         audio: An AudioData containing the recorded bytes.
         """
+        #print('record callback')
         # Grab the raw bytes and push it into the thread safe queue.
         data = audio.get_raw_data()
         data_queue.put(data)
@@ -656,9 +724,11 @@ def main():
 
     while True:
         try:
+            #print('while whisper')
             now = datetime.utcnow()
             # Pull raw recorded audio from the queue.
             if not data_queue.empty():
+                #print('while whisper if')
                 phrase_complete = False
                 # If enough time has passed between recordings, consider the phrase complete.
                 # Clear the current working audio buffer to start over with the new data.
@@ -694,6 +764,7 @@ def main():
                 print('', end='', flush=True)
 
             else:
+                #print('while whisper else')
                 counter += 1
                 if counter % 5 == 0:
                     checkForJournalUpdates(client, commanderName)
