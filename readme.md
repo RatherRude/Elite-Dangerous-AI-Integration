@@ -27,8 +27,8 @@ The AI integration comprises three main components:
 3. **Text-to-Speech (TTS)**
 4. **Web Lookups for Detailed Information (EDSM)**
 5. **Event-Driven Interaction**
-6. **Function Calling(ToDo)**
-7. **Vision Capabilities(ToDo)**
+6. **Function Calling*
+7. **Vision Capabilities*
 
 ### 1. Whisper Speech-to-Text (STT)
 
@@ -133,11 +133,7 @@ These functions are callable:
 
 ## 7. Vision Capabilities
 
-### ToDo (Vision Capabilities)
-
-* Take screenshot of the game and send it to the LLM as context (only applicable if model has image-to-text cabilities) 
-* Take live video feed of the game and send it to the LLM as context (only applicable if model has video-to-text cabilities) 
-
+The AI can take a screenshot and analyze its content if it requires visual confirmation on something the commander asked about.
 
 ## Troubleshooting
 
