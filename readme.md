@@ -27,17 +27,18 @@ The AI integration comprises three main components:
 3. **Text-to-Speech (TTS)**
 4. **Web Lookups for Detailed Information (EDSM)**
 5. **Event-Driven Interaction**
-6. **Function Calling*
-7. **Vision Capabilities*
+6. **Function Calling**
+7. **Vision Capabilities**
 
 ### 1. Whisper Speech-to-Text (STT)
 
-Whisper, developed by OpenAI, is a state-of-the-art speech recognition model that converts spoken language into text with high accuracy. By incorporating Whisper STT, commanders can issue voice commands to the autopilot, enhancing the hands-free functionality and overall user experience.
+Whisper by OpenAI converts spoken language into text, allowing commanders to issue voice commands to the autopilot with high accuracy.
+
 We are currently using CPU for speed recognition, this can be changed by swapping the dependencies
 
 ### 2. OpenAI/OpenRouter Language Models (LLMs)
 
-The LLMs from OpenAI or OpenRouter can process natural language commands and provide intelligent responses or actions based on user input. This integration will allow the autopilot to understand complex instructions and provide contextual feedback.
+LLMs from OpenAI or OpenRouter process natural language commands, providing intelligent responses and actions, enabling the autopilot to understand complex instructions.
 
 The program will ask if you use Openrouter and for your API Key. It is saved locally in `config.json` and reused on next program start.
 
@@ -50,15 +51,18 @@ The program will ask if you use Openrouter and for your API Key. It is saved loc
 
 ### 3. Text-to-Speech (TTS)
 
-The existing TTS functionality is used to provide auditory feedback to the user based on the autopilot's actions and responses from the LLM.
+The TTS functionality delivers auditory feedback based on the actions and responses from the LLM.
 
 ### 4. Web Lookups for Detailed Information (EDSM)
 
-To enrich the user experience, the autopilot system includes capabilities for web lookups using EDSM (Elite Dangerous Star Map). This feature allows the autopilot to fetch detailed information about the current system and the next jump destination, enhancing situational awareness and decision-making during space travel.
+The system performs web lookups using EDSM's API to fetch detailed information about the current and next star systems, enhancing situational awareness.
 
 ### 5. Event-Driven Interaction
 
-The autopilot system is designed to respond dynamically to certain game events during space operations:
+The system dynamically responds to game events such as ship type changes, new jump destinations, shield status updates, attacks, and more, keeping the commander informed of critical events and statuses.
+
+Here is a list of the currently supported event types:
+
 * Ship Type Change: When the ship's type changes, the system notifies Commander about the vessel swap, providing updates on the new vessel type.
 * New Jump Destination: Upon locking in a new jump destination, detailed information about the destination system is retrieved from EDSM and presented to Commander.
 * Shields Status: Changes in shields status, whether lost or regained, prompt the system to alert Commander accordingly, expressing concern or relief as appropriate.
@@ -101,9 +105,12 @@ The autopilot system is designed to respond dynamically to certain game events d
 
 ### 6. Function Calling
 
-We can allow the AI to call functions when using OpenAI models. (This can be generalized using the REACT pattern, currently the solution is OpenAI/Openrouter specific.) 
+The AI can call specific functions (e.g., firing weapons, adjusting speed, deploying heat sinks) using OpenAI models, enabling direct control over various ship operations.
 
-These functions are callable:
+(This can be generalized using the REACT pattern, currently the solution is OpenAI/Openrouter specific.) 
+
+These functions are currently callable:
+
 - fire: Start firing primary weapons.
 - holdFire: Stop firing primary weapons.
 - fireSecondary: Start firing secondary weapons.
@@ -133,7 +140,7 @@ These functions are callable:
 
 ## 7. Vision Capabilities
 
-The AI can take a screenshot and analyze its content if it requires visual confirmation on something the commander asked about.
+The AI can take screenshots and analyze their content to provide visual confirmations and insights based on the commander's queries.
 
 ## Troubleshooting
 
@@ -187,5 +194,5 @@ Add these flags to the cli call to configure Whisper:
 tremendouslyrude@yandex.com
 
 # ToDo
-* Faster whisper implementation
-* Capture and send image to LLM if compatible (GPT-4, GPT-4-Turbo, GPT-4-O, llava, phi-3, [..])
+* Faster whisper implementation for Speech-to-Text
+* more quality models for Text-to-Speech
