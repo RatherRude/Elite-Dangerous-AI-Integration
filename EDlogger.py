@@ -2,7 +2,7 @@ import logging
 import colorlog
  
 # what level for root logger
-logging.basicConfig(filename='autopilot.log', level=logging.ERROR)  
+logging.basicConfig(filename='EDAI.log', level=logging.ERROR)
 
 logger = colorlog.getLogger('ed_log')
 
