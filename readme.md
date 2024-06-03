@@ -13,7 +13,7 @@ We are integrating advanced AI features including Whisper for Speech-to-Text (ST
     ```sh
     > python .\Chat.py
     ```
-   You will be asked if you use openrouter, for your api key and your commander name. After the selected whisper model downloaded and initiliazed you will be ready to start talking.
+   You will be asked if you use openrouter, for your api key and your commander name. After the selected whisper model downloaded and initialized you will be ready to start talking.
 
    ![CLI Startup](screen/cli_startup.png?raw=true "Screen")
 
