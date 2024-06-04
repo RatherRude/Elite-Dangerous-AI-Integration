@@ -2,24 +2,7 @@
 
 We are integrating advanced AI features including Whisper for Speech-to-Text (STT), OpenAI or OpenRouter Language Models (LLMs) for natural language processing, and existing Text-to-Speech (TTS) functionality. This integration aims to provide a more intuitive and hands-free experience for commanders, making interactions with the game more seamless and efficient.
 
-## Setup and Configuration
-
-1. Install requirements
-    ```sh
-    > cd EDAPGui
-    > pip install -r requirements.txt
-    ```
-2. Run program
-    ```sh
-    > python .\Chat.py
-    ```
-   You will be asked if you use openrouter, for your api key and your commander name. After the selected whisper model downloaded and initialized you will be ready to start talking.
-
-   ![CLI Startup](screen/cli_startup.png?raw=true "Screen")
-
-   You can change the used model and backstory in `Chat.py`. (Starting of file, but below imports section)
-
-## AI Integration Overview
+## Overview
 
 The AI integration comprises three main components:
 1. **How to install**
@@ -63,6 +46,10 @@ You will need to install Python. Due to compatibility of the used libraries only
   ```sh
    >   python .\Chat.py
    ```
+
+  ![CLI Startup](screen/cli_startup.png?raw=true "Screen")
+
+    *You will be asked if you use openrouter, for your api key and your commander name. After the selected whisper model downloaded and initialized you will be ready to start talking.*
 
 ### 3. Whisper Speech-to-Text (STT)
 
