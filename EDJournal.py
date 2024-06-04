@@ -44,7 +44,7 @@ class EDJournal:
         self.open_journal(self.current_log)
 
         self.ship = {
-            'odyssey': True,
+            'disembark': False,
             'shieldsup': True,
             'under_attack': None,
             'fighter_destroyed': False,
@@ -114,6 +114,25 @@ class EDJournal:
         # open the latest journal
         self.log_file = open(log_name, encoding="utf-8")
 
+    def fill_disembark_object(self, data):
+        disembark_data = {
+            'StarSystem': data.get('StarSystem'),
+            'Body': data.get('Body'),
+            'OnStation': data.get('OnStation'),
+            'OnPlanet': data.get('OnPlanet'),
+            'StationName': data.get('StationName'),
+            'StationType': data.get('StationType')
+        }
+
+        if data.get('SRV'):
+            disembark_data['SRV'] = data.get('SRV')
+        if data.get('Taxi'):
+            disembark_data['Taxi'] = data.get('Taxi')
+        if data.get('Multicrew'):
+            disembark_data['Multicrew'] = data.get('Multicrew')
+
+        return disembark_data
+
     def parse_line(self, log):
         # parse data
         try:
@@ -131,6 +150,17 @@ class EDJournal:
 
             if log_event == 'UnderAttack':
                 self.ship['under_attack'] = True
+
+            if log_event == 'Embark':
+                self.ship['disembark'] = False
+                print('embark')
+                print(self.ship['Disembark'])
+
+            if log_event == 'Disembark':
+                self.ship['disembark'] = self.fill_disembark_object(log)
+                print('disembark')
+                print(log)
+                print(self.ship['disembark'])
 
             if log_event == 'FighterDestroyed':
                 self.ship['fighter_destroyed'] = True

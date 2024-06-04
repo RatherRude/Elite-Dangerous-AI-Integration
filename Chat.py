@@ -370,19 +370,100 @@ def format_image(image, query=""):
         }
     ]
 
+# fetch system info from EDSM
+def get_system_info(system_name):
+    url = "https://www.edsm.net/api-v1/system"
+    params = {
+        "systemName": system_name,
+        "showInformation": 1,
+        "showPrimaryStar": 1,
+    }
+
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
+
+        return response.text
+
+    except:
+        return "Currently no information on system available"
+
+# fetch station info from EDSM and summarizes it
+def get_station_info(obj):
+    url = "https://www.edsm.net/api-system-v1/stations"
+    params = {
+        "systemName": obj.get('systemName'),
+    }
+
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
+
+        print("get_station_info:", response.text)
+
+        completion = client.chat.completions.create(
+            extra_headers={
+                "HTTP-Referer": "https://github.com/RatherRude/Elite-Dangerous-AI-Integration",
+                "X-Title": "Elite Dangerous AI Integration",
+            },
+            model=aiModel,
+            messages=[{
+                    "role": "user",
+                    "content": f"Analyze the following data: {response.text}\nInquiry: {obj.get('query')}"
+                }],
+        )
+        print("get_station_info completion:", completion)
+
+        return completion.choices[0].message.content
+
+    except:
+        return "Currently no information on system available"
+
+# fetch faction info from EDSM and summarizes it
+def get_faction_info(obj):
+    url = "https://www.edsm.net/api-system-v1/factions"
+    params = {
+        "systemName": obj.get('systemName'),
+        "showHistory": 0,
+    }
+
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
+
+        print("get_faction_info:", response.text)
+
+        completion = client.chat.completions.create(
+            extra_headers={
+                "HTTP-Referer": "https://github.com/RatherRude/Elite-Dangerous-AI-Integration",
+                "X-Title": "Elite Dangerous AI Integration",
+            },
+            model=aiModel,
+            messages=[{
+                    "role": "user",
+                    "content": f"Analyze the following data: {response.text}\nInquiry: {obj.get('query')}"
+                }],
+        )
+        print("get_faction_info completion:", completion)
+
+        return completion.choices[0].message.content
+
+    except:
+        return "Currently no information on factions inside this system available"
+
 def get_visuals(obj):
     image = screenshot()
     if not image: return "Unable to take screenshot."
     
     completion = client.chat.completions.create(
         extra_headers={
-            "HTTP-Referer": "https://github.com/SumZer0-git/EDAPGui",
-            "X-Title": "ED Autopilot AI Integration",
+            "HTTP-Referer": "https://github.com/RatherRude/Elite-Dangerous-AI-Integration",
+            "X-Title": "Elite Dangerous AI Integration",
         },
         model=aiModel,
         messages=format_image(image, obj.get("query")),
     ) 
-    #print("get_visuals:", completion)
+    print("get_visuals completion:", completion)
 
     return completion.choices[0].message.content
 
@@ -397,23 +478,35 @@ aiActions.registerAction('getVisuals', "Get a description of what's currently vi
     "required": ["query"]
 }, get_visuals)
 
-# fetch system info from EDSM
-def get_system_info(system_name):
-        url = "https://www.edsm.net/api-v1/system"
-        params = {
-            "systemName": system_name,
-            "showInformation": 1,
-            "showPrimaryStar": 1,
-        }
+aiActions.registerAction('getFactions', "Retrieve information about factions for a system", {
+    "type": "object",
+    "properties": {
+        "query": {
+            "type": "string",
+            "description": "Answer inquiry if given, otherise give general overview. Example: 'What factions are at war?'"
+        },
+        "systemName": {
+            "type": "string",
+            "description": "Name of relevant system. Example: 'Sol'"
+        },
+    },
+    "required": ["query", "systemName"]
+}, get_faction_info)
 
-        try:
-            response = requests.get(url, params=params)
-            response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
-
-            return response.text
-
-        except:
-            return "Currently no information on system available"
+aiActions.registerAction('getStations', "Retrieve information about stations in this system", {
+    "type": "object",
+    "properties": {
+        "query": {
+            "type": "string",
+            "description": "Answer inquiry if given, otherise give general overview. Example: 'What stations require immediate repair?'"
+        },
+         "systemName": {
+             "type": "string",
+             "description": "Name of relevant system. Example: 'Sol'"
+         },
+     },
+     "required": ["query", "systemName"]
+}, get_station_info)
 
 jn = EDJournal()
 def handle_conversation(client, commander_name, user_input):
@@ -444,7 +537,19 @@ def prepare_chat_prompt(commander_name):
     "I will provide game events in parentheses; do not create new ones. " +
     f"I am Commander {commander_name}. You are the onboard AI of my starship. " + backstory}
     status = {"role": "user", "content": "(Ship status: " + json.dumps(filteredState) + ")"}
-    system = {"role": "user", "content": "(Location: " + get_system_info(filteredState['location']) + ")"}
+    system = {
+        "role": "user",
+        "content": (
+            f"(Location: {get_system_info(filteredState['location'])})"
+        )
+    }
+
+    # print('location')
+    # print(get_system_info(filteredState['location']))
+    # print('faction')
+    # print(get_faction_info(filteredState['location']))
+    # print('stations')
+    # print(get_station_info(filteredState['location']))
     
 
     # Context for AI, consists of conversation history, ships status, information about current system and the user input
@@ -457,8 +562,8 @@ def run_chat_model(client, commander_name, chat_prompt):
     #print("messages:", chat_prompt)
     completion = client.chat.completions.create(
         extra_headers={
-            "HTTP-Referer": "https://github.com/SumZer0-git/EDAPGui",
-            "X-Title": "ED Autopilot AI Integration",
+            "HTTP-Referer": "https://github.com/RatherRude/Elite-Dangerous-AI-Integration",
+            "X-Title": "Elite Dangerous AI Integration",
         },
         tools=aiActions.getToolsList(),
         model=aiModel,
@@ -522,7 +627,8 @@ def checkForJournalUpdates(client, commanderName):
         'under_attack',
         'type',
         'fuel_percent',
-        'interdicted'
+        'interdicted',
+        'disembark'
     ]
     current_status = getCurrentState()
     #print('check_status_changes')
@@ -606,6 +712,12 @@ def checkForJournalUpdates(client, commanderName):
         if key == 'mission_abandoned':
             handle_conversation(client, commanderName, f"(Commander {commanderName} has abandoned a mission: {new_value}.)")
             jn.reset_items()
+        if key == 'disembark':
+            if new_value != False:
+                handle_conversation(client, commanderName, f"(Commander {commanderName} has disembarked: {new_value}.)")
+            else:
+                handle_conversation(client, commanderName, f"(Commander {commanderName} has embarked and is back on board.)")
+
 
     # Update previous status
     previous_status = current_status

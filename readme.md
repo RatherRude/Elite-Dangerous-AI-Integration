@@ -6,6 +6,7 @@ We are integrating advanced AI features including Whisper for Speech-to-Text (ST
 
 The AI integration comprises three main components:
 1. **How to install**
+   1. Prerequisites
 2. **How to run**
 3. **Whisper Speech-to-Text (STT)**
 4. **OpenAI/OpenRouter Language Models (LLMs)**
@@ -66,13 +67,16 @@ The program will ask if you use Openrouter and for your API Key. It is saved loc
 The program is designed to be used with default model and only switch between OpenAI and Openrouter.
 
 #### 4.1. Pricing Information
+
 * **OpenAI**: Generally, access to OpenAI models requires a payment. For more information on pricing, please visit: https://openai.com/api/pricing/
 * **OpenRouter**: OpenRouter offers a variety of models, some of which are **free** to use. Detailed pricing information for each model can be found here: https://openrouter.ai/docs/models
 
 #### 4.2. Changing Language Models (Online API)
+
 *You can use models from either Openrouter or OpenAI, the model is currently changed by [swapping out the line in `Chat.py`](./Chat.py#L45)*
 
 #### 4.3. Local LLMs
+
 Local language models are **free** to use, although there are associated costs for hardware and electricity. 
 *Note that running larger models might require significant hardware resources, such as multi-GPU setups or dedicated machines.*
 In order to use local LLMs you need to [change the API endpoint that is currently used to connect to your OpenAI compatible but local hosted LLM](./Chat.py#L671). There will be limited support for local LLMs.
@@ -126,6 +130,7 @@ Here is a list of the currently supported event types:
 * Cargo Ejection: Ejection of cargo is tracked and reported to Commander.
 * Interdiction Escape: Successful escape from an interdiction attempt is communicated to Commander.
 * Mission Updates: Acceptance, completion, failure, or abandonment of missions are tracked and reported to Commander, ensuring complete mission awareness.
+* Embark/Disembark: Lets the AI acknowledge embarking/disembarking and informs the Commanders about relevant system or faction status.
 * These event-driven interactions are designed to enhance safety, decision-making, and overall user engagement throughout the journey in Elite Dangerous.
 
 ![Event-driven](screen/event_driven.png?raw=true "Screen")
