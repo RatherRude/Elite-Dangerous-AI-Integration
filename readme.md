@@ -27,6 +27,8 @@ The AI integration comprises three main components:
 3. **Whisper Speech-to-Text (STT)**
 4. **OpenAI/OpenRouter Language Models (LLMs)**
    1. **Pricing Information**
+   2. **Changing Language Models (Online API)**
+   3. **Local LLMs**
 5. **Text-to-Speech (TTS)**
 6. **Web Lookups for Detailed Information (EDSM)**
 7. **Event-Driven Interaction**
@@ -74,16 +76,19 @@ LLMs from OpenAI or OpenRouter process natural language commands, providing inte
 
 The program will ask if you use Openrouter and for your API Key. It is saved locally in `config.json` and reused on next program start.
 
-*You can use models from either Openrouter or OpenAI, the model is currently changed by swapping out the line in Chat.py (Starting of file, but below imports section):*:
-* https://openai.com/api/pricing/
-* https://openrouter.ai/docs#models
-
-*You can also alter the backstory in `Chat.py`*.
+The program is designed to be used with default model and only switch between OpenAI and Openrouter.
 
 #### 4.1. Pricing Information
-* OpenAI: Generally, access to OpenAI models requires a payment. For more information on pricing, please visit: https://openai.com/api/pricing/
-* OpenRouter: OpenRouter offers a variety of models, some of which are **free** to use. Detailed pricing information for each model can be found here: https://openrouter.ai/docs/models
-* Local LLMs: Local language models are **free** to use, although there are associated costs for hardware and electricity. Note that running larger models might require significant hardware resources, such as multi-GPU setups or dedicated machines. Smaller models might perform worse in reasoning and creativity, function calling, and in-built vision capabilities. Refer to https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard to find goot candidates. The current version was built with usage of GPT-4O in mind, but it is easily extended to connect to local Frameworks, e.g. KoboldAI.
+* **OpenAI**: Generally, access to OpenAI models requires a payment. For more information on pricing, please visit: https://openai.com/api/pricing/
+* **OpenRouter**: OpenRouter offers a variety of models, some of which are **free** to use. Detailed pricing information for each model can be found here: https://openrouter.ai/docs/models
+
+#### 4.2. Changing Language Models (Online API)
+*You can use models from either Openrouter or OpenAI, the model is currently changed by [swapping out the line in `Chat.py`](./Chat.py#L45)*
+
+#### 4.3. Local LLMs
+Local language models are **free** to use, although there are associated costs for hardware and electricity. 
+*Note that running larger models might require significant hardware resources, such as multi-GPU setups or dedicated machines.*
+In order to use local LLMs you need to [change the API endpoint that is currently used to connect to your OpenAI compatible but local hosted LLM](./Chat.py#L671). There will be limited support for local LLMs.
 
 ### 5. Text-to-Speech (TTS)
 
