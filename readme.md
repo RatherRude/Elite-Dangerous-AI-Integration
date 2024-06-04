@@ -26,6 +26,7 @@ The AI integration comprises three main components:
 2. **How to run**
 3. **Whisper Speech-to-Text (STT)**
 4. **OpenAI/OpenRouter Language Models (LLMs)**
+   1. **Pricing Information**
 5. **Text-to-Speech (TTS)**
 6. **Web Lookups for Detailed Information (EDSM)**
 7. **Event-Driven Interaction**
@@ -73,12 +74,16 @@ LLMs from OpenAI or OpenRouter process natural language commands, providing inte
 
 The program will ask if you use Openrouter and for your API Key. It is saved locally in `config.json` and reused on next program start.
 
-*You can use models from either Openrouter or OpenAI, the model is currently changed by swapping out the line in `Chat.py` (Starting of file, but below imports section)*:
+*You can use models from either Openrouter or OpenAI, the model is currently changed by swapping out the line in Chat.py (Starting of file, but below imports section):*:
 * https://openai.com/api/pricing/
 * https://openrouter.ai/docs#models
 
-*You can also alter the backstory in `Chat.py`*:
+*You can also alter the backstory in `Chat.py`*.
 
+#### 4.1. Pricing Information
+* OpenAI: Generally, access to OpenAI models requires a payment. For more information on pricing, please visit: https://openai.com/api/pricing/
+* OpenRouter: OpenRouter offers a variety of models, some of which are **free** to use. Detailed pricing information for each model can be found here: https://openrouter.ai/docs/models
+* Local LLMs: Local language models are **free** to use, although there are associated costs for hardware and electricity. Note that running larger models might require significant hardware resources, such as multi-GPU setups or dedicated machines. Smaller models might perform worse in reasoning and creativity, function calling, and in-built vision capabilities. Refer to https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard to find goot candidates. The current version was built with usage of GPT-4O in mind, but it is easily extended to connect to local Frameworks, e.g. KoboldAI.
 
 ### 5. Text-to-Speech (TTS)
 
