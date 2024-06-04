@@ -46,7 +46,7 @@ from EDJournal import *
 
 client = None
 
-aiModel = "openai/gpt-4o"
+aiModel = "gpt-4o"
 backstory = """You will be addressed as 'Computer'. Acknowledge given orders. \
 You possess extensive knowledge and can provide detailed and accurate information on a wide range of topics, \
 including galactic navigation, ship status, the current system, and more. \
@@ -614,11 +614,10 @@ def checkForJournalUpdates(client, commanderName):
 v = Voice()
 keys = EDKeys()
 def main():
-    global client
+    global client, v, keys, aiModel
     if handle != None:
         win32gui.SetForegroundWindow(handle)  # give focus to ED
 
-    global v, keys
     # Load or prompt for configuration
     apiKey, useOpenrouter, commanderName = load_or_prompt_config()
 
@@ -631,6 +630,9 @@ def main():
       base_url = "https://openrouter.ai/api/v1" if useOpenrouter else "https://api.openai.com/v1",
       api_key=apiKey,
     )
+    # openrotuer model naming convention
+    if useOpenrouter:
+        aiModel = f"openai/{aiModel}"
 
     print(f"Initializing CMDR {commanderName}'s personal AI...\n")
     print("API Key: Loaded")
