@@ -225,8 +225,8 @@ Add these flags to the cli call to configure Whisper:
 - **Note**: Run with `'list'` to view available Microphones.
 
 # Contact
-* Join Discord Server: https://discord.gg/9c58jxVuAT *
-* Rarely, I also check mails: tremendouslyrude@yandex.com *
+* Join Discord Server: https://discord.gg/9c58jxVuAT
+* Rarely, I also check mails: tremendouslyrude@yandex.com
 
 # ToDo
 * Faster whisper implementation for Speech-to-Text
