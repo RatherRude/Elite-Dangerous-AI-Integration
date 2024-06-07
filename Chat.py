@@ -1094,7 +1094,7 @@ def main():
                     transcription[-1] = text
 
                 # Flush stdout.
-                printFlush('', end='', flush=True)
+                printFlush('')
 
             else:
                 #printFlush('while whisper else')

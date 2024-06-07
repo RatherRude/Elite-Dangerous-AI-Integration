@@ -208,12 +208,14 @@ class App:
             stdout_line = self.process.stdout.readline()
             if stdout_line:
                 if stdout_line.startswith("CMDR"):
-                    self.debug_text.insert(tk.END, stdout_line[:6], "human")
-                    self.debug_text.insert(tk.END, stdout_line[6:], "normal")
+                    self.debug_text.insert(tk.END, stdout_line[:4], "human")
+                    self.debug_text.insert(tk.END, stdout_line[4:], "normal")
                 elif stdout_line.startswith("AI"):
-                    self.debug_text.insert(tk.END, stdout_line, "ai")
+                    self.debug_text.insert(tk.END, stdout_line[:2], "ai")
+                    self.debug_text.insert(tk.END, stdout_line[2:], "normal")
                 elif stdout_line.startswith("ACTION"):
-                    self.debug_text.insert(tk.END, stdout_line, "action")
+                    self.debug_text.insert(tk.END, stdout_line[:6], "action")
+                    self.debug_text.insert(tk.END, stdout_line[6:], "normal")
                 else:
                     self.debug_text.insert(tk.END, stdout_line, "normal")
 
