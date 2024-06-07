@@ -95,182 +95,211 @@ The system dynamically responds to game events such as ship type changes, new ju
 
 Here is a list of the currently supported event types:
 
-```ssh
-# Exploration Events:
-'CodexEntry'
-'DiscoveryScan'
-'Scan'
+#### Startup Events:
+- Cargo
+- Materials
+- Missions
+- Progress
+- Rank
+- Reputation
+- Statistics
 
-# Trade Events:
-'Trade'
-'AsteroidCracked'
-'BuyTradeData'
-'CollectCargo'
-'EjectCargo'
-'MarketBuy'
-'MarketSell'
-'MiningRefined'
+#### Powerplay Events:
+- PowerplayCollect
+- PowerplayDefect
+- PowerplayDeliver
+- PowerplayFastTrack
+- PowerplayJoin
+- PowerplayLeave
+- PowerplaySalary
+- PowerplayVote
+- PowerplayVoucher
 
-# Station Services Events:
-'StationServices'
-'BuyAmmo'
-'BuyDrones'
-'CargoDepot'
-'CommunityGoal'
-'CommunityGoalDiscard'
-'CommunityGoalJoin'
-'CommunityGoalReward'
-'CrewAssign'
-'CrewFire'
-'CrewHire'
-'EngineerContribution'
-'EngineerCraft'
-'EngineerLegacyConvert'
-'EngineerProgress'
-'FetchRemoteModule'
-'Market'
-'MassModuleStore'
-'MaterialTrade'
-'MissionAbandoned'
-'MissionAccepted'
-'MissionCompleted'
-'MissionFailed'
-'MissionRedirected'
-'ModuleBuy'
-'ModuleRetrieve'
-'ModuleSell'
-'ModuleSellRemote'
-'ModuleStore'
-'ModuleSwap'
-'Outfitting'
-'PayBounties'
-'PayFines'
-'PayLegacyFines'
-'RedeemVoucher'
-'RefuelAll'
-'RefuelPartial'
-'Repair'
-'RepairAll'
-'RestockVehicle'
-'ScientificResearch'
-'Shipyard'
-'ShipyardBuy'
-'ShipyardNew'
-'ShipyardSell'
-'ShipyardTransfer'
-'ShipyardSwap'
-'StoredModules'
-'StoredShips'
-'TechnologyBroker'
-'ClearImpound'
+#### Squadron Events:
+- AppliedToSquadron
+- DisbandedSquadron
+- InvitedToSquadron
+- JoinedSquadron
+- KickedFromSquadron
+- LeftSquadron
+- SharedBookmarkToSquadron
+- SquadronCreated
+- SquadronDemotion
+- SquadronPromotion
+- SquadronStartup
+- WonATrophyForSquadron
 
-# Fleet Carrier Events:
-'CarrierJump'
-'CarrierBuy'
-'CarrierStats'
-'CarrierJumpRequest'
-'CarrierDecommission'
-'CarrierCancelDecommission'
-'CarrierBankTransfer'
-'CarrierDepositFuel'
-'CarrierCrewServices'
-'CarrierFinance'
-'CarrierShipPack'
-'CarrierModulePack'
-'CarrierTradeOrder'
-'CarrierDockingPermission'
-'CarrierNameChanged'
-'CarrierJumpCancelled'
+#### Exploration Events:
+- CodexEntry
+- DiscoveryScan
+- Scan
 
-# Odyssey Events:
-'Backpack'
-'BackpackChange'
-'BookDropship'
-'BookTaxi'
-'BuyMicroResources'
-'BuySuit'
-'BuyWeapon'
-'CancelDropship'
-'CancelTaxi'
-'CollectItems'
-'CreateSuitLoadout'
-'DeleteSuitLoadout'
-'Disembark'
-'DropItems'
-'DropShipDeploy'
-'Embark'
-'FCMaterials'
-'LoadoutEquipModule'
-'LoadoutRemoveModule'
-'RenameSuitLoadout'
-'ScanOrganic'
-'SellMicroResources'
-'SellOrganicData'
-'SellWeapon'
-#'ShipLocker'              #Triggers too often
-'SwitchSuitLoadout'
-'TransferMicroResources'
-'TradeMicroResources'
-'UpgradeSuit'
-'UpgradeWeapon'
-'UseConsumable'
+#### Trade Events:
+- Trade
+- AsteroidCracked
+- BuyTradeData
+- CollectCargo
+- EjectCargo
+- MarketBuy
+- MarketSell
+- MiningRefined
 
-# Other Events:
-'AfmuRepairs'
-'ApproachSettlement'
-'ChangeCrewRole'
-'CockpitBreached'
-'CommitCrime'
-'Continued'
-'CrewLaunchFighter'
-'CrewMemberJoins'
-'CrewMemberQuits'
-'CrewMemberRoleChange'
-'CrimeVictim'
-'DatalinkScan'
-'DatalinkVoucher'
-'DataScanned'
-'DockFighter'
-'DockSRV'
-'EndCrewSession'
-'FighterRebuilt'
-'FuelScoop'
-'Friends'
-'JetConeBoost'
-'JetConeDamage'
-'JoinACrew'
-'KickCrewMember'
-'LaunchDrone'
-'LaunchFighter'
-'LaunchSRV'
-'ModuleInfo'
-#'Music'                   #Triggers too often
-'NpcCrewPaidWage'
-'NpcCrewRank'
-'Promotion'
-'ProspectedAsteroid'
-'QuitACrew'
-'RebootRepair'
-'ReceiveText'
-'RepairDrone'
-'ReservoirReplenished'
-'Resurrect'
-'Scanned'
-'SelfDestruct'
-'SendText'
-'Shutdown'
-'Synthesis'
-'SystemsShutdown'
-'USSDrop'
-'VehicleSwitch'
-'WingAdd'
-'WingInvite'
-'WingJoin'
-'WingLeave'
-'CargoTransfer'
-'SupercruiseDestinationDrop'
-````
+#### Station Services Events:
+- StationServices
+- BuyAmmo
+- BuyDrones
+- CargoDepot
+- CommunityGoal
+- CommunityGoalDiscard
+- CommunityGoalJoin
+- CommunityGoalReward
+- CrewAssign
+- CrewFire
+- CrewHire
+- EngineerContribution
+- EngineerCraft
+- EngineerLegacyConvert
+- EngineerProgress
+- FetchRemoteModule
+- Market
+- MassModuleStore
+- MaterialTrade
+- MissionAbandoned
+- MissionAccepted
+- MissionCompleted
+- MissionFailed
+- MissionRedirected
+- ModuleBuy
+- ModuleRetrieve
+- ModuleSell
+- ModuleSellRemote
+- ModuleStore
+- ModuleSwap
+- Outfitting
+- PayBounties
+- PayFines
+- PayLegacyFines
+- RedeemVoucher
+- RefuelAll
+- RefuelPartial
+- Repair
+- RepairAll
+- RestockVehicle
+- ScientificResearch
+- Shipyard
+- ShipyardBuy
+- ShipyardNew
+- ShipyardSell
+- ShipyardTransfer
+- ShipyardSwap
+- StoredModules
+- StoredShips
+- TechnologyBroker
+- ClearImpound
 
+#### Fleet Carrier Events:
+- CarrierJump
+- CarrierBuy
+- CarrierStats
+- CarrierJumpRequest
+- CarrierDecommission
+- CarrierCancelDecommission
+- CarrierBankTransfer
+- CarrierDepositFuel
+- CarrierCrewServices
+- CarrierFinance
+- CarrierShipPack
+- CarrierModulePack
+- CarrierTradeOrder
+- CarrierDockingPermission
+- CarrierNameChanged
+- CarrierJumpCancelled
+
+#### Odyssey Events:
+- Backpack
+- BackpackChange
+- BookDropship
+- BookTaxi
+- BuyMicroResources
+- BuySuit
+- BuyWeapon
+- CancelDropship
+- CancelTaxi
+- CollectItems
+- CreateSuitLoadout
+- DeleteSuitLoadout
+- Disembark
+- DropItems
+- DropShipDeploy
+- Embark
+- FCMaterials
+- LoadoutEquipModule
+- LoadoutRemoveModule
+- RenameSuitLoadout
+- ScanOrganic
+- SellMicroResources
+- SellOrganicData
+- SellWeapon
+- SwitchSuitLoadout
+- TransferMicroResources
+- TradeMicroResources
+- UpgradeSuit
+- UpgradeWeapon
+- UseConsumable
+
+#### Other Events:
+- AfmuRepairs
+- ApproachSettlement
+- ChangeCrewRole
+- CockpitBreached
+- CommitCrime
+- Continued
+- CrewLaunchFighter
+- CrewMemberJoins
+- CrewMemberQuits
+- CrewMemberRoleChange
+- CrimeVictim
+- DatalinkScan
+- DatalinkVoucher
+- DataScanned
+- DockFighter
+- DockSRV
+- EndCrewSession
+- FighterRebuilt
+- FuelScoop
+- Friends
+- JetConeBoost
+- JetConeDamage
+- JoinACrew
+- KickCrewMember
+- LaunchDrone
+- LaunchFighter
+- LaunchSRV
+- ModuleInfo
+- NpcCrewPaidWage
+- NpcCrewRank
+- Promotion
+- ProspectedAsteroid
+- QuitACrew
+- RebootRepair
+- ReceiveText
+- RepairDrone
+- ReservoirReplenished
+- Resurrect
+- Scanned
+- SelfDestruct
+- SendText
+- Shutdown
+- Synthesis
+- SystemsShutdown
+- USSDrop
+- VehicleSwitch
+- WingAdd
+- WingInvite
+- WingJoin
+- WingLeave
+- CargoTransfer
+- SupercruiseDestinationDrop
 
 These event-driven interactions are designed to enhance safety, decision-making, and overall user engagement throughout the journey in Elite Dangerous.
 
