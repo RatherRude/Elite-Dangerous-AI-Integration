@@ -288,6 +288,12 @@ allGameEvents = {
     **odysseyEvents,
     **otherEvents
 }
+
+# Print that flushes, subprocess can return info to GUI
+def printFlush(message):
+    print(message)
+    sys.stdout.flush()
+
 # Define functions for each action
 def fire_primary_weapon(args):
     keys.send('PrimaryFire', state=1)
@@ -531,12 +537,12 @@ def prompt_for_config():
 
     # Validate Openrouter input
     while openrouter not in ['yes', 'no']:
-        print("Invalid input. Please enter 'yes' or 'no'.")
+        printFlush("Invalid input. Please enter 'yes' or 'no'.")
         openrouter = input("Do you use Openrouter (yes/no): ").strip().lower()
 
     api_key = getpass.getpass("Enter your API key: ").strip()
 
-    print("\nYour settings have been saved. Erase config.json to reenter information.\n")
+    printFlush("\nYour settings have been saved. Erase config.json to reenter information.\n")
 
     return api_key, openrouter == 'yes', commander_name
 
@@ -549,12 +555,24 @@ def load_or_prompt_config():
             api_key = config.get('api_key')
             openrouter = config.get('openrouter', False)
             commander_name = config.get('commander_name')
+            model_name = config.get('model_name')
+            character = config.get('character')
     else:
         api_key, openrouter, commander_name = prompt_for_config()
         with open(config_file, 'w') as f:
-            json.dump({'api_key': api_key, 'openrouter': openrouter, 'commander_name': commander_name}, f)
+            json.dump({
+                'commander_name': commander_name,
+                'character': backstory,
+                'openrouter': openrouter,
+                'api_key': api_key,
+                'model_name': aiModel,
+                'alternative_endpoint': '',
+                'local_model': False,
+                'local_stt': False,
+                'local_tts': False
+            }, f)
 
-    return api_key, openrouter, commander_name
+    return api_key, openrouter, commander_name, model_name, character
 
 handle = win32gui.FindWindow(0, "Elite - Dangerous (CLIENT)")
 def screenshot():
@@ -569,7 +587,7 @@ def screenshot():
         im = pyautogui.screenshot(region=(x, y, width, height))
         return im
     else:
-        print('Window not found!')
+        printFlush('Window not found!')
         return None
 
 def format_image(image, query=""):
@@ -626,8 +644,6 @@ def get_station_info(obj):
         response = requests.get(url, params=params)
         response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
 
-        print("get_station_info:", response.text)
-
         completion = client.chat.completions.create(
             extra_headers={
                 "HTTP-Referer": "https://github.com/RatherRude/Elite-Dangerous-AI-Integration",
@@ -639,7 +655,6 @@ def get_station_info(obj):
                     "content": f"Analyze the following data: {response.text}\nInquiry: {obj.get('query')}"
                 }],
         )
-        print("get_station_info completion:", completion)
 
         return completion.choices[0].message.content
 
@@ -658,8 +673,6 @@ def get_faction_info(obj):
         response = requests.get(url, params=params)
         response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
 
-        print("get_faction_info:", response.text)
-
         completion = client.chat.completions.create(
             extra_headers={
                 "HTTP-Referer": "https://github.com/RatherRude/Elite-Dangerous-AI-Integration",
@@ -671,7 +684,6 @@ def get_faction_info(obj):
                     "content": f"Analyze the following data: {response.text}\nInquiry: {obj.get('query')}"
                 }],
         )
-        print("get_faction_info completion:", completion)
 
         return completion.choices[0].message.content
 
@@ -690,7 +702,7 @@ def get_visuals(obj):
         model=aiModel,
         messages=format_image(image, obj.get("query")),
     ) 
-    print("get_visuals completion:", completion)
+    printFlush("get_visuals completion:", completion)
 
     return completion.choices[0].message.content
 
@@ -737,7 +749,7 @@ aiActions.registerAction('getStations', "Retrieve information about stations in 
 
 jn = EDJournal()
 def handle_conversation(client, commander_name, user_input):
-    print(f"\033[1;33mCMDR\033[0m: {user_input}")
+    printFlush(f"CMDR: {user_input}")
     chat_prompt = prepare_chat_prompt(commander_name)
     
     # Append user input to the conversation
@@ -771,12 +783,12 @@ def prepare_chat_prompt(commander_name):
         )
     }
 
-    # print('location')
-    # print(get_system_info(filteredState['location']))
-    # print('faction')
-    # print(get_faction_info(filteredState['location']))
-    # print('stations')
-    # print(get_station_info(filteredState['location']))
+    # printFlush('location')
+    # printFlush(get_system_info(filteredState['location']))
+    # printFlush('faction')
+    # printFlush(get_faction_info(filteredState['location']))
+    # printFlush('stations')
+    # printFlush(get_station_info(filteredState['location']))
     
 
     # Context for AI, consists of conversation history, ships status, information about current system and the user input
@@ -786,7 +798,7 @@ def prepare_chat_prompt(commander_name):
 def run_chat_model(client, commander_name, chat_prompt):
     global conversation
     # Make a request to OpenAI with the updated conversation
-    #print("messages:", chat_prompt)
+    #printFlush("messages:", chat_prompt)
     completion = client.chat.completions.create(
         extra_headers={
             "HTTP-Referer": "https://github.com/RatherRude/Elite-Dangerous-AI-Integration",
@@ -799,7 +811,7 @@ def run_chat_model(client, commander_name, chat_prompt):
 
 
     if hasattr(completion, 'error'):
-        print("completion with error:", completion)
+        printFlush("completion with error:", completion)
         return
 
     # Add the model's response to the conversation
@@ -809,13 +821,13 @@ def run_chat_model(client, commander_name, chat_prompt):
     # Get and print the model's response
     response_text = completion.choices[0].message.content
     if (response_text):
-        print(f"\033[1;34mAI\033[0m: {response_text}")
+        printFlush(f"AI: {response_text}")
         v.say(response_text)
 
     response_actions = completion.choices[0].message.tool_calls
     if (response_actions):
         for action in response_actions:
-            print(f"\033[1;33mACTION\033[0m: {action.function.name} {action.function.arguments}")
+            printFlush(f"ACTION: {action.function.name} {action.function.arguments}")
             action_result = aiActions.runAction(action)
             conversation.append(action_result)
             while(len(conversation) > conversationLength):
@@ -833,7 +845,7 @@ def getCurrentState():
 #second_call = False
 previous_status = getCurrentState()
 def checkForJournalUpdates(client, commanderName, boot):
-    #print('checkForJournalUpdates is checking')
+    #printFlush('checkForJournalUpdates is checking')
 
     #global previous_status, second_call
     global previous_status
@@ -858,20 +870,20 @@ def checkForJournalUpdates(client, commanderName, boot):
         'interdicted'
     ]
     current_status = getCurrentState()
-    #print('check_status_changes')
+    #printFlush('check_status_changes')
     changes = check_status_changes(previous_status, current_status, relevant_status)
 
     for change in changes:
         key, old_value, new_value = change
-        print(f"{key} changed from {old_value} to {new_value}")
+        printFlush(f"{key} changed from {old_value} to {new_value}")
 
         # Events
 
         if key == 'type':
-            # type event is written twice to EDJournal, we only want one interaction
-            second_call = not second_call and True
-            if second_call:
-                handle_conversation(client, commanderName, f"(Commander {commanderName} just swapped Vessels, from {old_value} to {new_value})")
+            ## type event is written twice to EDJournal, we only want one interaction
+            #second_call = not second_call and True
+            #if second_call:
+            handle_conversation(client, commanderName, f"(Commander {commanderName} just swapped Vessels, from {old_value} to {new_value})")
 
         if key == 'target':
             if new_value != None:
@@ -914,14 +926,16 @@ def checkForJournalUpdates(client, commanderName, boot):
         while current_status['extra_events']:
             item = current_status['extra_events'][0]  # Get the first item
 
-            #print(f"({allGameEvents[item['event_type']].format(commanderName=commanderName)} Details: {json.dumps(item['event_content'])})")
+            #printFlush(f"({allGameEvents[item['event_type']].format(commanderName=commanderName)} Details: {json.dumps(item['event_content'])})")
             handle_conversation(client, commanderName, f"({allGameEvents[item['event_type']].format(commanderName=commanderName)} Details: {json.dumps(item['event_content'])})")
 
             current_status['extra_events'].pop(0)
 
     # Update previous status
     previous_status = current_status
-    #print('checkForJournalUpdates end')
+    #printFlush('checkForJournalUpdates end')
+
+
 
 v = Voice()
 keys = EDKeys()
@@ -931,10 +945,9 @@ def main():
         win32gui.SetForegroundWindow(handle)  # give focus to ED
 
     # Load or prompt for configuration
-    apiKey, useOpenrouter, commanderName = load_or_prompt_config()
+    apiKey, useOpenrouter, commanderName, model_name, character = load_or_prompt_config()
 
-    print('loading keys')
-    
+    printFlush('loading keys')
 
     # Now you can use api_key and use_openrouter in your script
     # gets API Key from config.json
@@ -942,17 +955,23 @@ def main():
       base_url = "https://openrouter.ai/api/v1" if useOpenrouter else "https://api.openai.com/v1",
       api_key=apiKey,
     )
+    # alternative models
+    if model_name != '':
+        aiModel = model_name
     # openrotuer model naming convention
     if useOpenrouter:
         aiModel = f"openai/{aiModel}"
+    # alternative character
+    if character != '':
+        backstory = character
 
-    print(f"Initializing CMDR {commanderName}'s personal AI...\n")
-    print("API Key: Loaded")
-    print(f"Using Openrouter: {useOpenrouter}")
-    print(f"Current model: {aiModel}")
-    print(f"Current backstory: {backstory}")
-    print("\nBasic configuration complete.\n")
-    print("Loading voice interface...")
+    printFlush(f"Initializing CMDR {commanderName}'s personal AI...\n")
+    printFlush("API Key: Loaded")
+    printFlush(f"Using Openrouter: {useOpenrouter}")
+    printFlush(f"Current model: {aiModel}")
+    printFlush(f"Current backstory: {backstory}")
+    printFlush("\nBasic configuration complete.\n")
+    printFlush("Loading voice interface...")
 
     # TTS Setup
     v.set_on()
@@ -991,9 +1010,9 @@ def main():
     if 'linux' in platform:
         mic_name = args.default_microphone
         if not mic_name or mic_name == 'list':
-            print("Available microphone devices are: ")
+            printFlush("Available microphone devices are: ")
             for index, name in enumerate(sr.Microphone.list_microphone_names()):
-                print(f"Microphone with name \"{name}\" found")
+                printFlush(f"Microphone with name \"{name}\" found")
             return
         else:
             for index, name in enumerate(sr.Microphone.list_microphone_names()):
@@ -1022,7 +1041,7 @@ def main():
         Threaded callback function to receive audio data when recordings finish.
         audio: An AudioData containing the recorded bytes.
         """
-        #print('record callback')
+        #printFlush('record callback')
         # Grab the raw bytes and push it into the thread safe queue.
         data = audio.get_raw_data()
         data_queue.put(data)
@@ -1032,17 +1051,17 @@ def main():
     recorder.listen_in_background(source, record_callback, phrase_time_limit=record_timeout)
 
     # Cue the user that we're ready to go.
-    print("Voice interface ready.\n")
+    printFlush("Voice interface ready.\n")
 
     counter = 0
 
     while True:
         try:
-            #print('while whisper')
+            #printFlush('while whisper')
             now = datetime.utcnow()
             # Pull raw recorded audio from the queue.
             if not data_queue.empty():
-                #print('while whisper if')
+                #printFlush('while whisper if')
                 phrase_complete = False
                 # If enough time has passed between recordings, consider the phrase complete.
                 # Clear the current working audio buffer to start over with the new data.
@@ -1075,10 +1094,10 @@ def main():
                     transcription[-1] = text
 
                 # Flush stdout.
-                print('', end='', flush=True)
+                printFlush('', end='', flush=True)
 
             else:
-                #print('while whisper else')
+                #printFlush('while whisper else')
                 counter += 1
                 if counter % 5 == 0:
                     checkForJournalUpdates(client, commanderName, counter<=5)
@@ -1088,9 +1107,9 @@ def main():
         except KeyboardInterrupt:
             break
 
-    print("\n\nConversation:")
+    printFlush("\n\nConversation:")
     for line in conversation:
-        print(line)
+        printFlush(line)
 
     # Teardown TTS
     v.quit()

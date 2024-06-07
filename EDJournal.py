@@ -147,7 +147,7 @@ class EDJournal:
             #    self.ship['odyssey'] = True   # hardset to true for ED 4.0 since menus now same for Horizon
             #    return   # No need to do further processing on this record, should use elif: all the way down
 
-            elif log_event == 'ShieldState':
+            if log_event == 'ShieldState':
                 self.ship['shieldsup'] = log['ShieldsUp']
                 return   # No need to do further processing on this record
 
@@ -359,8 +359,8 @@ class EDJournal:
            # elif log_event == 'UnderAttack':
            #     self.ship['under_attack'] = True
 
-            elif log_event == 'StartJump':
-                self.ship['jumps_remains'] = log['JumpsRemaining']
+           # elif log_event == 'StartJump':
+           #     self.ship['jumps_remains'] = log['JumpsRemaining']
 
             #elif log_event == 'CargoTransfer':
             #    self.ship['cargo_transfer'] = log['Direction']
@@ -405,17 +405,18 @@ class EDJournal:
             #      self.ship['message'] = log['Message']
 
             if log_event in (
-                #Startup Events:
-                'Cargo',
-                #'ClearSavedGame',
-                #'LoadGame',
-                #'NewCommander',
-                'Materials',
-                'Missions',
-                'Progress',
-                'Rank',
-                'Reputation',
-                'Statistics',
+                ##To Be Tested
+                ##Startup Events:
+                #'Cargo',
+                ##'ClearSavedGame', # bad idea
+                ##'LoadGame',
+                ##'NewCommander',   # bad idea?
+                #'Materials',
+                #'Missions',
+                #'Progress',
+                #'Rank',
+                #'Reputation',
+                #'Statistics',
 
                 #Powerplay Events:
                 'PowerplayCollect',
@@ -623,8 +624,7 @@ class EDJournal:
 
         # exceptions
         except Exception as e:
-            #logger.exception("Exception occurred")
-            print(e)
+            print(f'Exception on EDJournal Read: {e}')
 
 
     def ship_state(self):
