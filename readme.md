@@ -95,43 +95,184 @@ The system dynamically responds to game events such as ship type changes, new ju
 
 Here is a list of the currently supported event types:
 
-* Ship Type Change: When the ship's type changes, the system notifies Commander about the vessel swap, providing updates on the new vessel type.
-* New Jump Destination: Upon locking in a new jump destination, detailed information about the destination system is retrieved from EDSM and presented to Commander.
-* Shields Status: Changes in shields status, whether lost or regained, prompt the system to alert Commander accordingly, expressing concern or relief as appropriate.
-* Under Attack: Detection of the ship being under attack triggers an immediate warning to Commander, emphasizing the imminent danger.
-* Low Fuel Reserves: When the ship's fuel reserves drop below 25%, the system issues a warning to Commander, highlighting the critical fuel situation.
-* Fighter Destroyed: If a fighter is destroyed, the system informs Commander about the loss, underscoring the severity of the situation.
-* Mission Completed: Successful completion of a mission is acknowledged by the system, informing Commander of the accomplishment.
-* Mission Redirected: The system updates Commander when a mission is redirected, ensuring awareness of the new objective.
-* Jump Start: Initiation of a jump, whether hyperspace or supercruise, is communicated to Commander, indicating the jump type and any relevant details.
-* Supercruise Entry: Entry into supercruise is confirmed to Commander, indicating the ship's current status.
-* Docking Granted: When docking permission is granted, the system updates Commander on the successful docking request.
-* Docking Denied: In case docking permission is denied, the system notifies Commander of the denial and provides the reason.
-* Supercruise Exit: Exiting supercruise prompts the system to inform Commander of the current location and status.
-* Docking Cancelled: Cancellation of docking is communicated to Commander, ensuring awareness of the aborted procedure.
-* Undocking Started: Beginning of the undocking process is indicated to Commander, confirming the ship's transition.
-* Docking Requested: When a docking request is made, the system informs Commander of the request status.
-* Docking or Undocking Process: The system tracks the docking or undocking process and informs Commander when these actions are in progress.
-* Station Docking: Successful docking at a station is confirmed to Commander, indicating the ship's secured position.
-* In-Station Status: The system updates Commander on the ship's status when docked at a station.
-* Interdiction: Detection of an interdiction attempt triggers an immediate warning to Commander, advising on possible actions.
-* Fuel Scooping: Ongoing fuel scooping is tracked and reported to Commander, ensuring awareness of the process.
-* Location Update: Changes in the ship's location, such as entering a new star system, are communicated to Commander with relevant details.
-* Target Update: Changes in the ship's target destination are communicated to Commander, providing updates on the new destination.
-* Fuel Status: The system continuously monitors and reports on the ship's fuel level, ensuring Commander is aware of fuel capacity and percentages.
-* Bounty Earned: When a bounty is earned, the system informs Commander of the reward amount.
-* Cockpit Breach: Detection of a cockpit breach triggers an alert to Commander, emphasizing the critical nature of the situation.
-* Crime Committed: When a crime is committed, the system notifies Commander of the crime type.
-* Fighter Operations: Launching or docking of fighters is tracked and reported to Commander, ensuring awareness of fighter status.
-* SRV Operations: Launching or docking of SRVs is tracked and reported to Commander, ensuring awareness of SRV status.
-* Landing and Liftoff: The system updates Commander on landing or liftoff status, confirming the ship's current state.
-* Datalink Scan: Successful completion of a datalink scan is communicated to Commander.
-* Self-Destruct: Initiation of self-destruct sequence is reported to Commander, emphasizing the gravity of the action.
-* Cargo Ejection: Ejection of cargo is tracked and reported to Commander.
-* Interdiction Escape: Successful escape from an interdiction attempt is communicated to Commander.
-* Mission Updates: Acceptance, completion, failure, or abandonment of missions are tracked and reported to Commander, ensuring complete mission awareness.
-* Embark/Disembark: Lets the AI acknowledge embarking/disembarking and informs the Commanders about relevant system or faction status.
-* These event-driven interactions are designed to enhance safety, decision-making, and overall user engagement throughout the journey in Elite Dangerous.
+```ssh
+# Exploration Events:
+'CodexEntry'
+'DiscoveryScan'
+'Scan'
+
+# Trade Events:
+'Trade'
+'AsteroidCracked'
+'BuyTradeData'
+'CollectCargo'
+'EjectCargo'
+'MarketBuy'
+'MarketSell'
+'MiningRefined'
+
+# Station Services Events:
+'StationServices'
+'BuyAmmo'
+'BuyDrones'
+'CargoDepot'
+'CommunityGoal'
+'CommunityGoalDiscard'
+'CommunityGoalJoin'
+'CommunityGoalReward'
+'CrewAssign'
+'CrewFire'
+'CrewHire'
+'EngineerContribution'
+'EngineerCraft'
+'EngineerLegacyConvert'
+'EngineerProgress'
+'FetchRemoteModule'
+'Market'
+'MassModuleStore'
+'MaterialTrade'
+'MissionAbandoned'
+'MissionAccepted'
+'MissionCompleted'
+'MissionFailed'
+'MissionRedirected'
+'ModuleBuy'
+'ModuleRetrieve'
+'ModuleSell'
+'ModuleSellRemote'
+'ModuleStore'
+'ModuleSwap'
+'Outfitting'
+'PayBounties'
+'PayFines'
+'PayLegacyFines'
+'RedeemVoucher'
+'RefuelAll'
+'RefuelPartial'
+'Repair'
+'RepairAll'
+'RestockVehicle'
+'ScientificResearch'
+'Shipyard'
+'ShipyardBuy'
+'ShipyardNew'
+'ShipyardSell'
+'ShipyardTransfer'
+'ShipyardSwap'
+'StoredModules'
+'StoredShips'
+'TechnologyBroker'
+'ClearImpound'
+
+# Fleet Carrier Events:
+'CarrierJump'
+'CarrierBuy'
+'CarrierStats'
+'CarrierJumpRequest'
+'CarrierDecommission'
+'CarrierCancelDecommission'
+'CarrierBankTransfer'
+'CarrierDepositFuel'
+'CarrierCrewServices'
+'CarrierFinance'
+'CarrierShipPack'
+'CarrierModulePack'
+'CarrierTradeOrder'
+'CarrierDockingPermission'
+'CarrierNameChanged'
+'CarrierJumpCancelled'
+
+# Odyssey Events:
+'Backpack'
+'BackpackChange'
+'BookDropship'
+'BookTaxi'
+'BuyMicroResources'
+'BuySuit'
+'BuyWeapon'
+'CancelDropship'
+'CancelTaxi'
+'CollectItems'
+'CreateSuitLoadout'
+'DeleteSuitLoadout'
+'Disembark'
+'DropItems'
+'DropShipDeploy'
+'Embark'
+'FCMaterials'
+'LoadoutEquipModule'
+'LoadoutRemoveModule'
+'RenameSuitLoadout'
+'ScanOrganic'
+'SellMicroResources'
+'SellOrganicData'
+'SellWeapon'
+#'ShipLocker'              #Triggers too often
+'SwitchSuitLoadout'
+'TransferMicroResources'
+'TradeMicroResources'
+'UpgradeSuit'
+'UpgradeWeapon'
+'UseConsumable'
+
+# Other Events:
+'AfmuRepairs'
+'ApproachSettlement'
+'ChangeCrewRole'
+'CockpitBreached'
+'CommitCrime'
+'Continued'
+'CrewLaunchFighter'
+'CrewMemberJoins'
+'CrewMemberQuits'
+'CrewMemberRoleChange'
+'CrimeVictim'
+'DatalinkScan'
+'DatalinkVoucher'
+'DataScanned'
+'DockFighter'
+'DockSRV'
+'EndCrewSession'
+'FighterRebuilt'
+'FuelScoop'
+'Friends'
+'JetConeBoost'
+'JetConeDamage'
+'JoinACrew'
+'KickCrewMember'
+'LaunchDrone'
+'LaunchFighter'
+'LaunchSRV'
+'ModuleInfo'
+#'Music'                   #Triggers too often
+'NpcCrewPaidWage'
+'NpcCrewRank'
+'Promotion'
+'ProspectedAsteroid'
+'QuitACrew'
+'RebootRepair'
+'ReceiveText'
+'RepairDrone'
+'ReservoirReplenished'
+'Resurrect'
+'Scanned'
+'SelfDestruct'
+'SendText'
+'Shutdown'
+'Synthesis'
+'SystemsShutdown'
+'USSDrop'
+'VehicleSwitch'
+'WingAdd'
+'WingInvite'
+'WingJoin'
+'WingLeave'
+'CargoTransfer'
+'SupercruiseDestinationDrop'
+````
+
+
+These event-driven interactions are designed to enhance safety, decision-making, and overall user engagement throughout the journey in Elite Dangerous.
 
 ![Event-driven](screen/event_driven.png?raw=true "Screen")
 
