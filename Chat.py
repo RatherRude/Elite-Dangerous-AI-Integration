@@ -162,8 +162,8 @@ stationServiceEvents = {
     "Shipyard": "Commander {commanderName} has visited a shipyard.",
     "ShipyardNew": "Commander {commanderName} has acquired a new ship.",
     "ShipyardSell": "Commander {commanderName} has sold a ship.",
-    "StoredShips": "Commander {commanderName} has stored ships.",
-    "StoredModules": "Commander {commanderName} has stored modules.",
+    #"StoredShips": "Commander {commanderName} has stored ships.",
+    #"StoredModules": "Commander {commanderName} has stored modules.",
     "TechnologyBroker": "Commander {commanderName} has accessed a technology broker.",
     "Touchdown": "Commander {commanderName} has touched down on a planet surface.",
     "Undocked": "Commander {commanderName} has undocked from a station.",
@@ -530,49 +530,60 @@ aiActions.registerAction('recallDismissShip', "Recall or dismiss ship, available
     "properties": {}
 }, recall_dismiss_ship)
 
-# Function to prompt user for API key and Openrouter status
 def prompt_for_config():
-    commander_name = input("Enter your Commander name (without the CMDR): ").strip()
-    openrouter = input("You use Openrouter instead of OpenAI (yes/no): ").strip().lower()
+    # This function should implement the logic to prompt the user for configuration
+    # Since the prompt logic is not provided, this is a placeholder function
+    commander_name = input("Enter Commander Name: ")
+    character = input("Enter AI Character: ")
+    api_key = input("Enter API Key: ")
+    ai_model = input("Enter AI Model Name: ")
+    llm_api_key = input("Enter LLM API Key: ")
+    llm_endpoint = input("Enter LLM Endpoint: ")
+    vision_model_api_key = input("Enter Vision Model API Key: ")
+    vision_model_endpoint = input("Enter Vision Model Endpoint: ")
+    stt_api_key = input("Enter STT API Key: ")
+    stt_endpoint = input("Enter STT Endpoint: ")
+    tts_api_key = input("Enter TTS API Key: ")
+    tts_endpoint = input("Enter TTS Endpoint: ")
 
-    # Validate Openrouter input
-    while openrouter not in ['yes', 'no']:
-        printFlush("Invalid input. Please enter 'yes' or 'no'.")
-        openrouter = input("Do you use Openrouter (yes/no): ").strip().lower()
+    return api_key, llm_api_key, llm_endpoint, commander_name, character, ai_model, vision_model_api_key, vision_model_endpoint, stt_api_key, stt_endpoint, tts_api_key, tts_endpoint
 
-    api_key = getpass.getpass("Enter your API key: ").strip()
-
-    printFlush("\nYour settings have been saved. Erase config.json to reenter information.\n")
-
-    return api_key, openrouter == 'yes', commander_name
-
-# Function to load configuration from file if exists, otherwise prompt user
 def load_or_prompt_config():
     config_file = Path("config.json")
     if config_file.exists():
         with open(config_file, 'r') as f:
             config = json.load(f)
-            api_key = config.get('api_key')
-            openrouter = config.get('openrouter', False)
-            commander_name = config.get('commander_name')
-            model_name = config.get('model_name')
-            character = config.get('character')
+            api_key = config.get('api_key', '')
+            llm_api_key = config.get('llm_api_key', '')
+            llm_endpoint = config.get('llm_endpoint', '')
+            commander_name = config.get('commander_name', '')
+            character = config.get('character', '')
+            model_name = config.get('model_name', '')
+            vision_model_api_key = config.get('vision_model_api_key', '')
+            vision_model_endpoint = config.get('vision_model_endpoint', '')
+            stt_api_key = config.get('stt_api_key', '')
+            stt_endpoint = config.get('stt_endpoint', '')
+            tts_api_key = config.get('tts_api_key', '')
+            tts_endpoint = config.get('tts_endpoint', '')
     else:
-        api_key, openrouter, commander_name = prompt_for_config()
+        api_key, llm_api_key, llm_endpoint, commander_name, character, ai_model, vision_model_api_key, vision_model_endpoint, stt_api_key, stt_endpoint, tts_api_key, tts_endpoint = prompt_for_config()
         with open(config_file, 'w') as f:
             json.dump({
-                'commander_name': commander_name,
-                'character': backstory,
-                'openrouter': openrouter,
                 'api_key': api_key,
-                'model_name': aiModel,
-                'alternative_endpoint': '',
-                'local_model': False,
-                'local_stt': False,
-                'local_tts': False
+                'llm_api_key': llm_api_key,
+                'llm_endpoint': llm_endpoint,
+                'commander_name': commander_name,
+                'character': character,
+                'model_name': ai_model,
+                'vision_model_api_key': vision_model_api_key,
+                'vision_model_endpoint': vision_model_endpoint,
+                'stt_api_key': stt_api_key,
+                'stt_endpoint': stt_endpoint,
+                'tts_api_key': tts_api_key,
+                'tts_endpoint': tts_endpoint
             }, f)
 
-    return api_key, openrouter, commander_name, model_name, character
+    return api_key, llm_api_key, llm_endpoint, commander_name, character, model_name, vision_model_api_key, vision_model_endpoint, stt_api_key, stt_endpoint, tts_api_key, tts_endpoint
 
 handle = win32gui.FindWindow(0, "Elite - Dangerous (CLIENT)")
 def screenshot():
@@ -794,21 +805,15 @@ def prepare_chat_prompt(commander_name):
     # Context for AI, consists of conversation history, ships status, information about current system and the user input
     return [systemPrompt]+[status, system]+conversation
 
-
 def run_chat_model(client, commander_name, chat_prompt):
     global conversation
     # Make a request to OpenAI with the updated conversation
     #printFlush("messages:", chat_prompt)
     completion = client.chat.completions.create(
-        extra_headers={
-            "HTTP-Referer": "https://github.com/RatherRude/Elite-Dangerous-AI-Integration",
-            "X-Title": "Elite Dangerous AI Integration",
-        },
         tools=aiActions.getToolsList(),
         model=aiModel,
         messages=chat_prompt,
     )
-
 
     if hasattr(completion, 'error'):
         printFlush("completion with error:", completion)
@@ -945,29 +950,24 @@ def main():
         win32gui.SetForegroundWindow(handle)  # give focus to ED
 
     # Load or prompt for configuration
-    apiKey, useOpenrouter, commanderName, model_name, character = load_or_prompt_config()
+    apiKey, llm_api_key, llm_endpoint, commanderName, character, model_name, vision_model_api_key, vision_model_endpoint, stt_api_key, stt_endpoint, tts_api_key, tts_endpoint  = load_or_prompt_config()
 
     printFlush('loading keys')
 
     # Now you can use api_key and use_openrouter in your script
     # gets API Key from config.json
     client = OpenAI(
-      base_url = "https://openrouter.ai/api/v1" if useOpenrouter else "https://api.openai.com/v1",
-      api_key=apiKey,
+      base_url = "https://api.openai.com/v1" if llm_endpoint == '' else llm_endpoint,
+      api_key=apiKey if llm_api_key == '' else llm_api_key,
     )
     # alternative models
     if model_name != '':
         aiModel = model_name
-    # openrotuer model naming convention
-    if useOpenrouter:
-        aiModel = f"openai/{aiModel}"
     # alternative character
     if character != '':
         backstory = character
-
     printFlush(f"Initializing CMDR {commanderName}'s personal AI...\n")
     printFlush("API Key: Loaded")
-    printFlush(f"Using Openrouter: {useOpenrouter}")
     printFlush(f"Current model: {aiModel}")
     printFlush(f"Current backstory: {backstory}")
     printFlush("\nBasic configuration complete.\n")

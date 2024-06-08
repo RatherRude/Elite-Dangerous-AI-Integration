@@ -590,7 +590,7 @@ class EDJournal:
                 'LaunchDrone',
                 'LaunchFighter',
                 'LaunchSRV',
-                'ModuleInfo',
+                #'ModuleInfo',
                 #'Music',  # Triggers too often
                 'NpcCrewPaidWage',
                 'NpcCrewRank',
