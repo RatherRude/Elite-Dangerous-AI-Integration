@@ -1,3 +1,3 @@
 @echo off
-python .\AIGUI.py
+start "" pythonw.exe .\AIGUI.py
 exit
