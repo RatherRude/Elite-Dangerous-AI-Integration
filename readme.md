@@ -27,67 +27,49 @@ You will need to install Python. Due to compatibility of the used libraries only
 
 #### Installation
 
-* Download latest version
-* Open Powershell and change directory to where you downloaded the latest version (Example for folder location S:\Elite-Dangerous-AI-Integration\)
-  ```sh
-   >   cd S:\Elite-Dangerous-AI-Integration\
-   ```
-* install dependencies using pip 
-  ```sh
-   >   pip install -r requirements.txt
-   ```
+* Run EDAIIInstaller.bat (right click, "Run as administrator")
+
+*This will run a pip install with our requirements.txt*
 
 ### 2. How to run
 
-* Open Powershell and change directory to where you downloaded the latest version (Example for folder location S:\Elite-Dangerous-AI-Integration\)
-  ```sh
-   >   cd S:\Elite-Dangerous-AI-Integration\
-   ```
-* Start the integration
-  ```sh
-   >   python .\Chat.py
-   ```
+* Run EDAII.bat
 
-  ![CLI Startup](screen/cli_startup.png?raw=true "Screen")
+![GUI-start](screen/GUI_start.png?raw=true)
+Enter OpenAI API key and your commander name. Edit AI character according to your desired roleplay. *AI Geek section is not required for regular use.*
 
-    *You will be asked if you use openrouter, for your api key and your commander name. After the selected whisper model downloaded and initialized you will be ready to start talking.*
+Click "Start AI" when ready:
+![GUI-ai](screen/GUI_AI.png?raw=true)
 
 ### 3. Whisper Speech-to-Text (STT)
 
 Whisper by OpenAI converts spoken language into text, allowing commanders to issue voice commands to the autopilot with high accuracy.
 
-We are currently using CPU for speed recognition, this can be changed by swapping the dependencies
+We are currently using CPU for recognition, this can be changed by swapping the dependencies
 
-### 4. OpenAI/OpenRouter Language Models (LLMs)
+### 4. OpenAI/OpenRouter/Local Language Models (LLMs)
 
 LLMs from OpenAI or OpenRouter process natural language commands, providing intelligent responses and actions, enabling the autopilot to understand complex instructions.
 
-The program will ask if you use Openrouter and for your API Key. It is saved locally in `config.json` and reused on next program start.
+The program will ask for your API Key. It is saved locally in `config.json` and reused on next program start.
 
-The program is designed to be used with default model and only switch between OpenAI and Openrouter.
+The program is designed to be used with default model and OpenAI services. It's possible to connect to any OpenAI-compatible API.
 
 #### 4.1. Pricing Information
 
 * **OpenAI**: Generally, access to OpenAI models requires a payment. For more information on pricing, please visit: https://openai.com/api/pricing/
 * **OpenRouter**: OpenRouter offers a variety of models, some of which are **free** to use. Detailed pricing information for each model can be found here: https://openrouter.ai/docs/models
+* **Local**: **Free** to use, although there are associated costs for hardware and electricity. Note that running larger models might require significant hardware resources, such as multi-GPU setups or dedicated machines.
 
-#### 4.2. Changing Language Models (Online API)
-
-*You can use models from either Openrouter or OpenAI, the model is currently changed by [swapping out the line in `Chat.py`](./Chat.py#L45)*
-
-#### 4.3. Local LLMs
-
-Local language models are **free** to use, although there are associated costs for hardware and electricity. 
-*Note that running larger models might require significant hardware resources, such as multi-GPU setups or dedicated machines.*
-In order to use local LLMs you need to [change the API endpoint that is currently used to connect to your OpenAI compatible but local hosted LLM](./Chat.py#L671). There will be limited support for local LLMs.
 
 ### 5. Text-to-Speech (TTS)
 
-The TTS functionality delivers auditory feedback based on the actions and responses from the LLM.
+The TTS functionality delivers auditory feedback based on the actions and responses from the LLM. We currently use the default voices from the operating system.
 
 ### 6. Web Lookups for Detailed Information (EDSM)
 
 The system performs web lookups using EDSM's API to fetch detailed information about the current and next star systems, enhancing situational awareness.
+The AI is able to fetch station and faction data via function calling aswell, you simply have to ask about it.
 
 ### 7. Event-Driven Interaction
 
