@@ -880,7 +880,7 @@ def checkForJournalUpdates(client, commanderName, boot):
 
     for change in changes:
         key, old_value, new_value = change
-        printFlush(f"{key} changed from {old_value} to {new_value}")
+        #printFlush(f"{key} changed from {old_value} to {new_value}")
 
         # Events
 
