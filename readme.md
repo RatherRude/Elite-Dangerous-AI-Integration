@@ -11,8 +11,6 @@ The AI integration comprises three main components:
 3. **Whisper Speech-to-Text (STT)**
 4. **OpenAI/OpenRouter Language Models (LLMs)**
    1. **Pricing Information**
-   2. **Changing Language Models (Online API)**
-   3. **Local LLMs**
 5. **Text-to-Speech (TTS)**
 6. **Web Lookups for Detailed Information (EDSM)**
 7. **Event-Driven Interaction**
