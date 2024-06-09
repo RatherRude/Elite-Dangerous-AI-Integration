@@ -1,2 +1,5 @@
 config.json
 EDAI.log
+/build
+/dist
+*.patch

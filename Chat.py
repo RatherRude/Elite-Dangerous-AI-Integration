@@ -32,9 +32,12 @@ from io import BytesIO
 import getpass
 
 import sys
+import io
 from pathlib import Path
 
 import AIActions
+import STT
+import TTS
 
 # Add the parent directory to sys.path
 parent_dir = Path(__file__).resolve().parent.parent
@@ -289,9 +292,11 @@ allGameEvents = {
     **otherEvents
 }
 
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+
 # Print that flushes, subprocess can return info to GUI
-def printFlush(message):
-    print(message)
+def printFlush(message, arg=''):
+    print(message, arg)
     sys.stdout.flush()
 
 # Define functions for each action
@@ -539,14 +544,17 @@ def prompt_for_config():
     ai_model = input("Enter AI Model Name: ")
     llm_api_key = input("Enter LLM API Key: ")
     llm_endpoint = input("Enter LLM Endpoint: ")
-    vision_model_api_key = input("Enter Vision Model API Key: ")
-    vision_model_endpoint = input("Enter Vision Model Endpoint: ")
-    stt_api_key = input("Enter STT API Key: ")
-    stt_endpoint = input("Enter STT Endpoint: ")
-    tts_api_key = input("Enter TTS API Key: ")
-    tts_endpoint = input("Enter TTS Endpoint: ")
+    #vision_model_api_key = input("Enter Vision Model API Key: ")
+    #vision_model_endpoint = input("Enter Vision Model Endpoint: ")
+    #stt_api_key = input("Enter STT API Key: ")
+    #stt_endpoint = input("Enter STT Endpoint: ")
+    #tts_api_key = input("Enter TTS API Key: ")
+    #tts_endpoint = input("Enter TTS Endpoint: ")
+    alternative_stt_var = input("Local STT? ")
+    alternative_tts_var = input("Local TTS? ")
 
-    return api_key, llm_api_key, llm_endpoint, commander_name, character, ai_model, vision_model_api_key, vision_model_endpoint, stt_api_key, stt_endpoint, tts_api_key, tts_endpoint
+    #return api_key, llm_api_key, llm_endpoint, commander_name, character, ai_model, vision_model_api_key, vision_model_endpoint, stt_api_key, stt_endpoint, tts_api_key, tts_endpoint, alternative_stt_var, alternative_tts_var
+    return api_key, llm_api_key, llm_endpoint, commander_name, character, ai_model, alternative_stt_var, alternative_tts_var
 
 def load_or_prompt_config():
     config_file = Path("config.json")
@@ -565,8 +573,11 @@ def load_or_prompt_config():
             stt_endpoint = config.get('stt_endpoint', '')
             tts_api_key = config.get('tts_api_key', '')
             tts_endpoint = config.get('tts_endpoint', '')
+            alternative_stt_var = config.get('alternative_stt_var', '')
+            alternative_tts_var = config.get('alternative_tts_var', '')
     else:
-        api_key, llm_api_key, llm_endpoint, commander_name, character, ai_model, vision_model_api_key, vision_model_endpoint, stt_api_key, stt_endpoint, tts_api_key, tts_endpoint = prompt_for_config()
+        #api_key, llm_api_key, llm_endpoint, commander_name, character, ai_model, vision_model_api_key, vision_model_endpoint, stt_api_key, stt_endpoint, tts_api_key, tts_endpoint, alternative_stt_var, alternative_tts_var = prompt_for_config()
+        api_key, llm_api_key, llm_endpoint, commander_name, character, ai_model, alternative_stt_var, alternative_tts_var = prompt_for_config()
         with open(config_file, 'w') as f:
             json.dump({
                 'api_key': api_key,
@@ -575,15 +586,18 @@ def load_or_prompt_config():
                 'commander_name': commander_name,
                 'character': character,
                 'model_name': ai_model,
-                'vision_model_api_key': vision_model_api_key,
-                'vision_model_endpoint': vision_model_endpoint,
-                'stt_api_key': stt_api_key,
-                'stt_endpoint': stt_endpoint,
-                'tts_api_key': tts_api_key,
-                'tts_endpoint': tts_endpoint
+                #'vision_model_api_key': vision_model_api_key,
+                #'vision_model_endpoint': vision_model_endpoint,
+                #'stt_api_key': stt_api_key,
+                #'stt_endpoint': stt_endpoint,
+                #'tts_api_key': tts_api_key,
+                #'tts_endpoint': tts_endpoint,
+                'alternative_stt_var': alternative_stt_var,
+                'alternative_tts_var': alternative_tts_var
             }, f)
 
-    return api_key, llm_api_key, llm_endpoint, commander_name, character, model_name, vision_model_api_key, vision_model_endpoint, stt_api_key, stt_endpoint, tts_api_key, tts_endpoint
+    #return api_key, llm_api_key, llm_endpoint, commander_name, character, model_name, vision_model_api_key, vision_model_endpoint, stt_api_key, stt_endpoint, tts_api_key, tts_endpoint, alternative_stt_var, alternative_tts_var
+    return api_key, llm_api_key, llm_endpoint, commander_name, character, model_name, alternative_stt_var, alternative_tts_var
 
 handle = win32gui.FindWindow(0, "Elite - Dangerous (CLIENT)")
 def screenshot():
@@ -827,7 +841,7 @@ def run_chat_model(client, commander_name, chat_prompt):
     response_text = completion.choices[0].message.content
     if (response_text):
         printFlush(f"AI: {response_text}")
-        v.say(response_text)
+        tts.say(response_text)
 
     response_actions = completion.choices[0].message.tool_calls
     if (response_actions):
@@ -942,15 +956,16 @@ def checkForJournalUpdates(client, commanderName, boot):
 
 
 
-v = Voice()
 keys = EDKeys()
+tts = None
 def main():
-    global client, v, keys, aiModel, handle
+    global client, v, tts, keys, aiModel, handle
     if handle:
         win32gui.SetForegroundWindow(handle)  # give focus to ED
 
     # Load or prompt for configuration
-    apiKey, llm_api_key, llm_endpoint, commanderName, character, model_name, vision_model_api_key, vision_model_endpoint, stt_api_key, stt_endpoint, tts_api_key, tts_endpoint  = load_or_prompt_config()
+    #apiKey, llm_api_key, llm_endpoint, commanderName, character, model_name, vision_model_api_key, vision_model_endpoint, stt_api_key, stt_endpoint, tts_api_key, tts_endpoint, alternative_stt_var, alternative_tts_var  = load_or_prompt_config()
+    apiKey, llm_api_key, llm_endpoint, commanderName, character, model_name, alternative_stt_var, alternative_tts_var  = load_or_prompt_config()
 
     printFlush('loading keys')
 
@@ -974,7 +989,13 @@ def main():
     printFlush("Loading voice interface...")
 
     # TTS Setup
-    v.set_on()
+    if alternative_tts_var:
+        printFlush('Local TTS')
+        tts = Voice()
+        tts.set_on()
+    else:
+        printFlush('remote TTS')
+        tts = TTS.TTS(openai_client=client)
 
     # STT Setup
     parser = argparse.ArgumentParser()
@@ -994,125 +1015,157 @@ def main():
                             help="Default microphone name for SpeechRecognition. "
                                  "Run this with 'list' to view available Microphones.", type=str)
     args = parser.parse_args()
+    if alternative_stt_var:
+        printFlush('local STT')
+        # The last time a recording was retrieved from the queue.
+        phrase_time = datetime.utcnow()
+        # Thread safe Queue for passing data from the threaded recording callback.
+        data_queue = Queue()
+        # We use SpeechRecognizer to record our audio because it has a nice feature where it can detect when speech ends.
+        recorder = sr.Recognizer()
+        recorder.energy_threshold = args.energy_threshold
+        # Definitely do this, dynamic energy compensation lowers the energy threshold dramatically to a point where the SpeechRecognizer never stops recording.
+        recorder.dynamic_energy_threshold = False
 
-    # The last time a recording was retrieved from the queue.
-    phrase_time = datetime.utcnow()
-    # Thread safe Queue for passing data from the threaded recording callback.
-    data_queue = Queue()
-    # We use SpeechRecognizer to record our audio because it has a nice feature where it can detect when speech ends.
-    recorder = sr.Recognizer()
-    recorder.energy_threshold = args.energy_threshold
-    # Definitely do this, dynamic energy compensation lowers the energy threshold dramatically to a point where the SpeechRecognizer never stops recording.
-    recorder.dynamic_energy_threshold = False
-
-    # Important for linux users.
-    # Prevents permanent application hang and crash by using the wrong Microphone
-    if 'linux' in platform:
-        mic_name = args.default_microphone
-        if not mic_name or mic_name == 'list':
-            printFlush("Available microphone devices are: ")
-            for index, name in enumerate(sr.Microphone.list_microphone_names()):
-                printFlush(f"Microphone with name \"{name}\" found")
-            return
+        # Important for linux users.
+        # Prevents permanent application hang and crash by using the wrong Microphone
+        if 'linux' in platform:
+            mic_name = args.default_microphone
+            if not mic_name or mic_name == 'list':
+                printFlush("Available microphone devices are: ")
+                for index, name in enumerate(sr.Microphone.list_microphone_names()):
+                    printFlush(f"Microphone with name \"{name}\" found")
+                return
+            else:
+                for index, name in enumerate(sr.Microphone.list_microphone_names()):
+                    if mic_name in name:
+                        source = sr.Microphone(sample_rate=16000, device_index=index)
+                        break
         else:
-            for index, name in enumerate(sr.Microphone.list_microphone_names()):
-                if mic_name in name:
-                    source = sr.Microphone(sample_rate=16000, device_index=index)
-                    break
-    else:
-        source = sr.Microphone(sample_rate=16000)
+            source = sr.Microphone(sample_rate=16000)
 
-    # Load / Download model
-    model = args.model
-    if not args.non_english:
-        model = model + ".en"
-    audio_model = whisper.load_model(model)
+        # Load / Download model
+        model = args.model
+        if not args.non_english:
+            model = model + ".en"
+        audio_model = whisper.load_model(model)
 
-    record_timeout = args.record_timeout
-    phrase_timeout = args.phrase_timeout
+        record_timeout = args.record_timeout
+        phrase_timeout = args.phrase_timeout
 
-    transcription = ['']
+        transcription = ['']
 
-    with source:
-        recorder.adjust_for_ambient_noise(source)
+        with source:
+            recorder.adjust_for_ambient_noise(source)
 
-    def record_callback(_, audio:sr.AudioData) -> None:
-        """
-        Threaded callback function to receive audio data when recordings finish.
-        audio: An AudioData containing the recorded bytes.
-        """
-        #printFlush('record callback')
-        # Grab the raw bytes and push it into the thread safe queue.
-        data = audio.get_raw_data()
-        data_queue.put(data)
+        def record_callback(_, audio:sr.AudioData) -> None:
+            """
+            Threaded callback function to receive audio data when recordings finish.
+            audio: An AudioData containing the recorded bytes.
+            """
+            #printFlush('record callback')
+            # Grab the raw bytes and push it into the thread safe queue.
+            data = audio.get_raw_data()
+            data_queue.put(data)
 
-    # Create a background thread that will pass us raw audio bytes.
-    # We could do this manually but SpeechRecognizer provides a nice helper.
-    recorder.listen_in_background(source, record_callback, phrase_time_limit=record_timeout)
+        # Create a background thread that will pass us raw audio bytes.
+        # We could do this manually but SpeechRecognizer provides a nice helper.
+        recorder.listen_in_background(source, record_callback, phrase_time_limit=record_timeout)
 
-    # Cue the user that we're ready to go.
-    printFlush("Voice interface ready.\n")
+        # Cue the user that we're ready to go.
+        printFlush("Voice interface ready.\n")
 
-    counter = 0
+        counter = 0
 
-    while True:
-        try:
-            #printFlush('while whisper')
-            now = datetime.utcnow()
-            # Pull raw recorded audio from the queue.
-            if not data_queue.empty():
-                #printFlush('while whisper if')
-                phrase_complete = False
-                # If enough time has passed between recordings, consider the phrase complete.
-                # Clear the current working audio buffer to start over with the new data.
-                if phrase_time and now - phrase_time > timedelta(seconds=phrase_timeout):
-                    phrase_complete = True
-                # This is the last time we received new audio data from the queue.
-                phrase_time = now
+        while True:
+            try:
+                #printFlush('while whisper')
+                now = datetime.utcnow()
+                # Pull raw recorded audio from the queue.
+                if not data_queue.empty():
+                    #printFlush('while whisper if')
+                    phrase_complete = False
+                    # If enough time has passed between recordings, consider the phrase complete.
+                    # Clear the current working audio buffer to start over with the new data.
+                    if phrase_time and now - phrase_time > timedelta(seconds=phrase_timeout):
+                        phrase_complete = True
+                    # This is the last time we received new audio data from the queue.
+                    phrase_time = now
 
-                # Combine audio data from queue
-                audio_data = b''.join(data_queue.queue)
-                data_queue.queue.clear()
+                    # Combine audio data from queue
+                    audio_data = b''.join(data_queue.queue)
+                    data_queue.queue.clear()
 
-                # Convert in-ram buffer to something the model can use directly without needing a temp file.
-                # Convert data from 16 bit wide integers to floating point with a width of 32 bits.
-                # Clamp the audio stream frequency to a PCM wavelength compatible default of 32768hz max.
-                audio_np = np.frombuffer(audio_data, dtype=np.int16).astype(np.float32) / 32768.0
+                    # Convert in-ram buffer to something the model can use directly without needing a temp file.
+                    # Convert data from 16 bit wide integers to floating point with a width of 32 bits.
+                    # Clamp the audio stream frequency to a PCM wavelength compatible default of 32768hz max.
+                    audio_np = np.frombuffer(audio_data, dtype=np.int16).astype(np.float32) / 32768.0
 
-                # Read the transcription.
-                result = audio_model.transcribe(audio_np, fp16=torch.cuda.is_available())
-                text = result['text'].strip()
+                    # Read the transcription.
+                    result = audio_model.transcribe(audio_np, fp16=torch.cuda.is_available())
+                    text = result['text'].strip()
 
-                # If we detected a pause between recordings, add a new item to our transcription.
-                # Otherwise edit the existing one.
-                if phrase_complete:
-                    transcription.append(text)
+                    # If we detected a pause between recordings, add a new item to our transcription.
+                    # Otherwise edit the existing one.
+                    if phrase_complete:
+                        transcription.append(text)
 
-                    handle_conversation(client, commanderName, text)
+                        handle_conversation(client, commanderName, text)
+
+                    else:
+                        transcription[-1] = text
+
+                    # Flush stdout.
+                    printFlush('')
 
                 else:
-                    transcription[-1] = text
+                    #printFlush('while whisper else')
+                    counter += 1
+                    if counter % 5 == 0:
+                        checkForJournalUpdates(client, commanderName, counter<=5)
 
-                # Flush stdout.
-                printFlush('')
+                    # Infinite loops are bad for processors, must sleep.
+                    sleep(0.25)
+            except KeyboardInterrupt:
+                break
+    else:
+        printFlush('remote STT')
+        # new whisper start
+        stt = STT.STT(openai_client=client)
+        stt.listen()
 
-            else:
-                #printFlush('while whisper else')
-                counter += 1
-                if counter % 5 == 0:
-                    checkForJournalUpdates(client, commanderName, counter<=5)
+        # Cue the user that we're ready to go.
+        printFlush("Voice interface ready.\n")
 
-                # Infinite loops are bad for processors, must sleep.
-                sleep(0.25)
-        except KeyboardInterrupt:
-            break
+        counter = 0
+
+        while True:
+            try:
+                # check STT result queue
+                if not stt.resultQueue.empty():
+                    tts.abort()
+                    text = stt.resultQueue.get().text
+                    handle_conversation(client, commanderName, text)
+                else:
+                    counter += 1
+                    if counter % 5 == 0:
+                        checkForJournalUpdates(client, commanderName, counter<=5)
+
+                    # Infinite loops are bad for processors, must sleep.
+                    sleep(0.25)
+            except KeyboardInterrupt:
+                break
+
+        # new whisper end
+
+
 
     printFlush("\n\nConversation:")
     for line in conversation:
         printFlush(line)
 
     # Teardown TTS
-    v.quit()
+    tts.quit()
 
 
 if __name__ == "__main__":

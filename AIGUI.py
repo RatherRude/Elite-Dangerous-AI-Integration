@@ -46,14 +46,6 @@ class App:
         self.api_key = tk.Entry(self.main_frame, show='*', width=50)  # Show '*' to indicate a secure entry
         self.api_key.grid(row=2, column=1, padx=10, pady=5)
 
-        # Initialize missing attributes
-        self.openrouter_var = tk.BooleanVar()
-        self.model_name = tk.Entry(self.main_frame, width=50)
-        self.alternative_endpoint = tk.Entry(self.main_frame, width=50)
-        self.local_model_var = tk.BooleanVar()
-        self.local_stt_var = tk.BooleanVar()
-        self.local_tts_var = tk.BooleanVar()
-
         # AI Geeks Section (Initially hidden)
         self.ai_geeks_frame = tk.Frame(self.main_frame, bg='lightgrey', bd=1)
         self.ai_geeks_frame.grid(row=4, column=0, columnspan=2, padx=10, pady=10, sticky=tk.W)
@@ -67,11 +59,11 @@ class App:
         self.llm_model_name = tk.Entry(self.ai_geeks_frame, width=50)
         self.llm_model_name.grid(row=1, column=1, padx=10, pady=5)
 
-        # Alternative LLM (Checkbox)
-        self.alternative_llm_var = tk.BooleanVar()
-        self.alternative_llm_var.set(False)  # Default value
-        self.alternative_llm_checkbox = tk.Checkbutton(self.ai_geeks_frame, text="Alternative LLM", variable=self.alternative_llm_var)
-        self.alternative_llm_checkbox.grid(row=2, column=0, sticky=tk.W, padx=10, pady=5)
+        ## Alternative LLM (Checkbox)
+        #self.alternative_llm_var = tk.BooleanVar()
+        #self.alternative_llm_var.set(False)  # Default value
+        #self.alternative_llm_checkbox = tk.Checkbutton(self.ai_geeks_frame, text="Alternative LLM", variable=self.alternative_llm_var)
+        #self.alternative_llm_checkbox.grid(row=2, column=0, sticky=tk.W, padx=10, pady=5)
 
         # LLM Endpoint
         tk.Label(self.ai_geeks_frame, text="LLM Endpoint:").grid(row=3, column=0, sticky=tk.W)
@@ -83,53 +75,53 @@ class App:
         self.llm_api_key = tk.Entry(self.ai_geeks_frame, show='*', width=50)
         self.llm_api_key.grid(row=4, column=1, padx=10, pady=5)
 
-        # Alternative Vision Model (Checkbox)
-        self.alternative_vision_var = tk.BooleanVar()
-        self.alternative_vision_var.set(False)  # Default value
-        self.alternative_vision_checkbox = tk.Checkbutton(self.ai_geeks_frame, text="Alternative Vision Model (Coming soon™)", variable=self.alternative_vision_var)
-        self.alternative_vision_checkbox.grid(row=5, column=0, sticky=tk.W, padx=10, pady=5)
-
-        # Vision Model Endpoint
-        tk.Label(self.ai_geeks_frame, text="Vision Model Endpoint:").grid(row=6, column=0, sticky=tk.W)
-        self.vision_model_endpoint = tk.Entry(self.ai_geeks_frame, width=50)
-        self.vision_model_endpoint.grid(row=6, column=1, padx=10, pady=5)
-
-        # Vision Model API Key
-        tk.Label(self.ai_geeks_frame, text="Vision Model API Key:").grid(row=7, column=0, sticky=tk.W)
-        self.vision_model_api_key = tk.Entry(self.ai_geeks_frame, show='*', width=50)
-        self.vision_model_api_key.grid(row=7, column=1, padx=10, pady=5)
-
         # Alternative STT (Checkbox)
         self.alternative_stt_var = tk.BooleanVar()
         self.alternative_stt_var.set(False)  # Default value
-        self.alternative_stt_checkbox = tk.Checkbutton(self.ai_geeks_frame, text="Alternative STT (Coming soon™)", variable=self.alternative_stt_var)
-        self.alternative_stt_checkbox.grid(row=8, column=0, sticky=tk.W, padx=10, pady=5)
+        self.alternative_stt_checkbox = tk.Checkbutton(self.ai_geeks_frame, text="Local STT(whisper-medium)", variable=self.alternative_stt_var)
+        self.alternative_stt_checkbox.grid(row=5, column=0, sticky=tk.W, padx=10, pady=5)
 
-        # STT Endpoint
-        tk.Label(self.ai_geeks_frame, text="STT Endpoint:").grid(row=9, column=0, sticky=tk.W)
-        self.stt_endpoint = tk.Entry(self.ai_geeks_frame, width=50)
-        self.stt_endpoint.grid(row=9, column=1, padx=10, pady=5)
+        ## STT Endpoint
+        #tk.Label(self.ai_geeks_frame, text="STT Endpoint:").grid(row=9, column=0, sticky=tk.W)
+        #self.stt_endpoint = tk.Entry(self.ai_geeks_frame, width=50)
+        #self.stt_endpoint.grid(row=6, column=1, padx=10, pady=5)
 
-        # STT API Key
-        tk.Label(self.ai_geeks_frame, text="STT API Key:").grid(row=10, column=0, sticky=tk.W)
-        self.stt_api_key = tk.Entry(self.ai_geeks_frame, show='*', width=50)
-        self.stt_api_key.grid(row=10, column=1, padx=10, pady=5)
+        ## STT API Key
+        #tk.Label(self.ai_geeks_frame, text="STT API Key:").grid(row=10, column=0, sticky=tk.W)
+        #self.stt_api_key = tk.Entry(self.ai_geeks_frame, show='*', width=50)
+        #self.stt_api_key.grid(row=7, column=1, padx=10, pady=5)
 
         # Alternative TTS (Checkbox)
         self.alternative_tts_var = tk.BooleanVar()
         self.alternative_tts_var.set(False)  # Default value
-        self.alternative_tts_checkbox = tk.Checkbutton(self.ai_geeks_frame, text="Alternative TTS (Coming soon™)", variable=self.alternative_tts_var)
-        self.alternative_tts_checkbox.grid(row=11, column=0, sticky=tk.W, padx=10, pady=5)
+        self.alternative_tts_checkbox = tk.Checkbutton(self.ai_geeks_frame, text="Local TTS (OS Voices)", variable=self.alternative_tts_var)
+        self.alternative_tts_checkbox.grid(row=8, column=0, sticky=tk.W, padx=10, pady=5)
 
-        # TTS Endpoint
-        tk.Label(self.ai_geeks_frame, text="TTS Endpoint:").grid(row=12, column=0, sticky=tk.W)
-        self.tts_endpoint = tk.Entry(self.ai_geeks_frame, width=50)
-        self.tts_endpoint.grid(row=12, column=1, padx=10, pady=5)
+        ## TTS Endpoint
+        #tk.Label(self.ai_geeks_frame, text="TTS Endpoint:").grid(row=12, column=0, sticky=tk.W)
+        #self.tts_endpoint = tk.Entry(self.ai_geeks_frame, width=50)
+        #self.tts_endpoint.grid(row=9, column=1, padx=10, pady=5)
 
-        # TTS API Key
-        tk.Label(self.ai_geeks_frame, text="TTS API Key:").grid(row=13, column=0, sticky=tk.W)
-        self.tts_api_key = tk.Entry(self.ai_geeks_frame, show='*', width=50)
-        self.tts_api_key.grid(row=13, column=1, padx=10, pady=5)
+        ## TTS API Key
+        #tk.Label(self.ai_geeks_frame, text="TTS API Key:").grid(row=13, column=0, sticky=tk.W)
+        #self.tts_api_key = tk.Entry(self.ai_geeks_frame, show='*', width=50)
+        #self.tts_api_key.grid(row=10, column=1, padx=10, pady=5)
+
+        ## Alternative Vision Model (Checkbox)
+        #self.alternative_vision_var = tk.BooleanVar()
+        #self.alternative_vision_var.set(False)  # Default value
+        #self.alternative_vision_checkbox = tk.Checkbutton(self.ai_geeks_frame, text="Alternative Vision Model (Coming soon™)", variable=self.alternative_vision_var)
+        #self.alternative_vision_checkbox.grid(row=11, column=0, sticky=tk.W, padx=10, pady=5)
+#
+        ## Vision Model Endpoint
+        #tk.Label(self.ai_geeks_frame, text="Vision Model Endpoint:").grid(row=6, column=0, sticky=tk.W)
+        #self.vision_model_endpoint = tk.Entry(self.ai_geeks_frame, width=50)
+        #self.vision_model_endpoint.grid(row=12, column=1, padx=10, pady=5)
+#
+        ## Vision Model API Key
+        #tk.Label(self.ai_geeks_frame, text="Vision Model API Key:").grid(row=7, column=0, sticky=tk.W)
+        #self.vision_model_api_key = tk.Entry(self.ai_geeks_frame, show='*', width=50)
+        #self.vision_model_api_key.grid(row=13, column=1, padx=10, pady=5)
 
         # Save Button - Placed below the first button
         self.save_button = tk.Button(self.main_frame, text="Save Settings", command=self.save_settings)
@@ -199,44 +191,36 @@ class App:
                  "Provide clear mission briefings, sarcastic comments, and humorous observations. Answer within 3 sentences. \n" +
                  "Advance the narrative involving bounty hunting. \n" +
                  "I am a broke bounty hunter who can barely pay the fuel.",
-                'openrouter': False,
                 'api_key': "",
-                'model_name': "gpt-4o",
-                'alternative_endpoint': "",
-                'local_model': False,
-                'local_stt': False,
-                'local_tts': False,
-                'llm_model_name': "",
+                'alternative_stt_var': False,
+                'alternative_tts_var': False,
+                'llm_model_name': "gpt-4o",
                 'llm_endpoint': "",
-                'llm_api_key': "",
-                'vision_model_endpoint': "",
-                'vision_model_api_key': "",
-                'stt_endpoint': "",
-                'stt_api_key': "",
-                'tts_endpoint': "",
-                'tts_api_key': ""
+                'llm_api_key': ""
+                #'vision_model_endpoint': "",
+                #'vision_model_api_key': "",
+                #'stt_endpoint': "",
+                #'stt_api_key': "",
+                #'tts_endpoint': "",
+                #'tts_api_key': ""
             }
         return data
 
     def save_settings(self):
         self.data['commander_name'] = self.commander_name.get()
         self.data['character'] = self.character.get("1.0", tk.END).strip()
-        self.data['openrouter'] = self.openrouter_var.get()
         self.data['api_key'] = self.api_key.get()
-        self.data['model_name'] = self.model_name.get()
-        self.data['alternative_endpoint'] = self.alternative_endpoint.get()
-        self.data['local_model'] = self.local_model_var.get()
-        self.data['local_stt'] = self.local_stt_var.get()
-        self.data['local_tts'] = self.local_tts_var.get()
         self.data['llm_model_name'] = self.llm_model_name.get()
         self.data['llm_endpoint'] = self.llm_endpoint.get()
         self.data['llm_api_key'] = self.llm_api_key.get()
-        self.data['vision_model_endpoint'] = self.vision_model_endpoint.get()
-        self.data['vision_model_api_key'] = self.vision_model_api_key.get()
-        self.data['stt_endpoint'] = self.stt_endpoint.get()
-        self.data['stt_api_key'] = self.stt_api_key.get()
-        self.data['tts_endpoint'] = self.tts_endpoint.get()
-        self.data['tts_api_key'] = self.tts_api_key.get()
+        #self.data['vision_model_endpoint'] = self.vision_model_endpoint.get()
+        #self.data['vision_model_api_key'] = self.vision_model_api_key.get()
+        #self.data['stt_endpoint'] = self.stt_endpoint.get()
+        #self.data['stt_api_key'] = self.stt_api_key.get()
+        #self.data['tts_endpoint'] = self.tts_endpoint.get()
+        #self.data['tts_api_key'] = self.tts_api_key.get()
+        self.data['alternative_stt_var'] = self.alternative_stt_var.get()
+        self.data['alternative_tts_var'] = self.alternative_tts_var.get()
 
         with open('config.json', 'w') as file:
             json.dump(self.data, file, indent=4)
@@ -247,21 +231,17 @@ class App:
         self.commander_name.insert(0, self.data['commander_name'])
         self.character.insert(tk.END, self.data['character'])
         self.api_key.insert(0, self.data['api_key'])
-        self.openrouter_var.set(self.data['openrouter'])
-        self.model_name.insert(0, self.data['model_name'])
-        self.alternative_endpoint.insert(0, self.data['alternative_endpoint'])
-        self.local_model_var.set(self.data['local_model'])
-        self.local_stt_var.set(self.data['local_stt'])
-        self.local_tts_var.set(self.data['local_tts'])
         self.llm_model_name.insert(0, self.data['llm_model_name'])
         self.llm_endpoint.insert(0, self.data['llm_endpoint'])
         self.llm_api_key.insert(0, self.data['llm_api_key'])
-        self.vision_model_endpoint.insert(0, self.data['vision_model_endpoint'])
-        self.vision_model_api_key.insert(0, self.data['vision_model_api_key'])
-        self.stt_endpoint.insert(0, self.data['stt_endpoint'])
-        self.stt_api_key.insert(0, self.data['stt_api_key'])
-        self.tts_endpoint.insert(0, self.data['tts_endpoint'])
-        self.tts_api_key.insert(0, self.data['tts_api_key'])
+        #self.vision_model_endpoint.insert(0, self.data['vision_model_endpoint'])
+        #self.vision_model_api_key.insert(0, self.data['vision_model_api_key'])
+        #self.stt_endpoint.insert(0, self.data['stt_endpoint'])
+        #self.stt_api_key.insert(0, self.data['stt_api_key'])
+        #self.tts_endpoint.insert(0, self.data['tts_endpoint'])
+        #self.tts_api_key.insert(0, self.data['tts_api_key'])
+        self.alternative_stt_var.set(self.data['alternative_stt_var'])
+        self.alternative_tts_var.set(self.data['alternative_tts_var'])
 
     def toggle_ai_geeks_section(self):
         if self.ai_geeks_frame.winfo_viewable():
@@ -273,12 +253,12 @@ class App:
 
     def start_external_script(self):
         self.debug_text.delete('1.0', tk.END)
-        self.debug_text.insert(tk.END, "Starting Elite Dangerous AI Integration...\n")
+        self.debug_text.insert(tk.END, "Starting Elite Dangerous AI Integration...\n", "normal")
         #self.debug_text.update_idletasks()
 
         try:
             # Example script execution
-            self.process = subprocess.Popen(['python', 'Chat.py'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1, universal_newlines=True)
+            self.process = subprocess.Popen(['python', 'Chat.py'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, universal_newlines=True)
             self.debug_frame.pack()
             if self.main_frame.winfo_ismapped():
                 self.main_frame.pack_forget()
