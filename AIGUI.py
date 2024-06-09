@@ -11,6 +11,8 @@ class App:
         self.root = root
         self.root.title("Elite Dangerous AI Integration")
 
+        self.key_binding = None
+
         self.process = None
         self.output_queue = Queue()
         self.read_thread = None
@@ -34,7 +36,7 @@ class App:
         # Commander Name (Small Input)
         tk.Label(self.main_frame, text="Commander Name:").grid(row=0, column=0, sticky=tk.W)
         self.commander_name = tk.Entry(self.main_frame, width=50)
-        self.commander_name.grid(row=0, column=1, padx=10, pady=5)
+        self.commander_name.grid(row=0, column=1, padx=10, pady=5, sticky=tk.W)
 
         # Character (Multi-line Input)
         tk.Label(self.main_frame, text="AI Character:").grid(row=1, column=0, sticky=tk.W)
@@ -44,11 +46,27 @@ class App:
         # API Key (Secure Entry) - Placed above the first button
         tk.Label(self.main_frame, text="OpenAI API Key:").grid(row=2, column=0, sticky=tk.W)
         self.api_key = tk.Entry(self.main_frame, show='*', width=50)  # Show '*' to indicate a secure entry
-        self.api_key.grid(row=2, column=1, padx=10, pady=5)
+        self.api_key.grid(row=2, column=1, padx=10, pady=5, sticky=tk.W)
+
+        # Push-to-talk
+        tk.Label(self.main_frame, text="Push-to-talk:", font=('Arial', 10)).grid(row=3, column=0, sticky=tk.W)
+        # Alternative TTS (Checkbox)
+        self.ptt_var = tk.BooleanVar()
+        self.ptt_var.set(False)  # Default value
+        self.ptt_checkbox = tk.Checkbutton(self.main_frame, text="Enabled", variable=self.ptt_var)
+        self.ptt_checkbox.grid(row=3, column=1, sticky=tk.W, padx=5, pady=5)
+        tk.Label(self.main_frame, text="Uses automatic voice detection if not enabled", font="Arial 10 italic").grid(row=3, column=1, sticky=tk.W, padx=80, pady=5)
+
+        self.pptButton = tk.Button(self.main_frame, text="Key Binding: Press any key", font=('Arial', 10))
+        self.pptButton.grid(row=3, column=1, sticky=tk.W, padx=(360, 10), pady=5)
+        self.pptButton.bind("<Button-1>", self.on_label_click)
+
+        #self.api_key = tk.Entry(self.main_frame, show='*', width=50)  # Show '*' to indicate a secure entry
+        #self.api_key.grid(row=2, column=1, padx=10, pady=5)
 
         # AI Geeks Section (Initially hidden)
         self.ai_geeks_frame = tk.Frame(self.main_frame, bg='lightgrey', bd=1)
-        self.ai_geeks_frame.grid(row=4, column=0, columnspan=2, padx=10, pady=10, sticky=tk.W)
+        self.ai_geeks_frame.grid(row=5, column=0, columnspan=2, padx=10, pady=10, sticky=tk.W)
         self.ai_geeks_frame.grid_remove()  # Initially hide
 
         # Disclaimer
@@ -95,7 +113,7 @@ class App:
         self.alternative_tts_var = tk.BooleanVar()
         self.alternative_tts_var.set(False)  # Default value
         self.alternative_tts_checkbox = tk.Checkbutton(self.ai_geeks_frame, text="Local TTS (OS Voices)", variable=self.alternative_tts_var)
-        self.alternative_tts_checkbox.grid(row=8, column=0, sticky=tk.W, padx=10, pady=5)
+        self.alternative_tts_checkbox.grid(row=8, column=0, padx=10, pady=5)
 
         ## TTS Endpoint
         #tk.Label(self.ai_geeks_frame, text="TTS Endpoint:").grid(row=12, column=0, sticky=tk.W)
@@ -125,11 +143,11 @@ class App:
 
         # Save Button - Placed below the first button
         self.save_button = tk.Button(self.main_frame, text="Save Settings", command=self.save_settings)
-        self.save_button.grid(row=5, column=0, columnspan=2, pady=10)
+        self.save_button.grid(row=6, column=0, columnspan=2, pady=10)
 
         # Toggle Section Button
         self.toggle_section_button = tk.Button(self.main_frame, text="Toggle AI Geeks Section", command=self.toggle_ai_geeks_section)
-        self.toggle_section_button.grid(row=3, column=0, columnspan=2, pady=10)
+        self.toggle_section_button.grid(row=4, column=0, columnspan=2, pady=10)
 
         # Debug Frame and Text Widget
         self.debug_frame = tk.Frame(root, bg='white', bd=1)  # White background for visibility
@@ -167,6 +185,22 @@ class App:
         # Process handle for subprocess
         self.process = None
 
+    def on_label_click(self, event):
+        self.pptButton.config(text="Press a key...")
+        self.root.bind("<KeyPress>", self.on_key_press)
+
+    def on_key_press(self, event):
+        self.key_binding = event.keysym
+        #self.save_key_binding()
+        self.update_label_text()
+        self.root.unbind("<KeyPress>")
+
+    def update_label_text(self):
+        if self.key_binding:
+            self.pptButton.config(text=f"Key Binding: {self.key_binding}")
+        else:
+            self.pptButton.config(text="Key Binding: Press any key")
+
     def toggle_settings(self):
         if self.main_frame.winfo_ismapped():
             self.main_frame.pack_forget()
@@ -194,9 +228,11 @@ class App:
                 'api_key': "",
                 'alternative_stt_var': False,
                 'alternative_tts_var': False,
+                'ptt_var': False,
                 'llm_model_name': "gpt-4o",
                 'llm_endpoint': "",
-                'llm_api_key': ""
+                'llm_api_key': "",
+                'key_binding': None
                 #'vision_model_endpoint': "",
                 #'vision_model_api_key': "",
                 #'stt_endpoint': "",
@@ -221,6 +257,8 @@ class App:
         #self.data['tts_api_key'] = self.tts_api_key.get()
         self.data['alternative_stt_var'] = self.alternative_stt_var.get()
         self.data['alternative_tts_var'] = self.alternative_tts_var.get()
+        self.data['ptt_var'] = self.ptt_var.get()
+        self.data['key_binding'] = self.key_binding
 
         with open('config.json', 'w') as file:
             json.dump(self.data, file, indent=4)
@@ -242,6 +280,10 @@ class App:
         #self.tts_api_key.insert(0, self.data['tts_api_key'])
         self.alternative_stt_var.set(self.data['alternative_stt_var'])
         self.alternative_tts_var.set(self.data['alternative_tts_var'])
+        self.ptt_var.set(self.data['ptt_var'])
+        self.key_binding = self.data['key_binding']
+
+        self.update_label_text()
 
     def toggle_ai_geeks_section(self):
         if self.ai_geeks_frame.winfo_viewable():
@@ -258,7 +300,7 @@ class App:
 
         try:
             # Example script execution
-            self.process = subprocess.Popen(['python', 'Chat.py'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, universal_newlines=True)
+            self.process = subprocess.Popen(['pythonw', 'Chat.py'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, universal_newlines=True)
             self.debug_frame.pack()
             if self.main_frame.winfo_ismapped():
                 self.main_frame.pack_forget()

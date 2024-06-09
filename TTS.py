@@ -10,7 +10,7 @@ class TTS:
     read_queue = queue.Queue()
     is_aborted = False
 
-    def __init__(self, openai_client:openai.OpenAI, model='tts-1', voice="alloy"):
+    def __init__(self, openai_client:openai.OpenAI, model='tts-1', voice="nova"):
         self.openai_client = openai_client
         self.model = model
         self.voice = voice
