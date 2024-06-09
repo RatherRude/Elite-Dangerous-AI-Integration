@@ -76,6 +76,8 @@ class Voice:
             except:
                 pass
 
+    def abort():
+        pass
 
 def main():
     v = Voice()

@@ -27,7 +27,7 @@ You will need to install Python. Due to compatibility of the used libraries only
 
 * Run EDAIIInstaller.bat (right click, "Run as administrator")
 
-*This will run a pip install with our requirements.txt*
+*This will run a pip install with everything we will need. This will take a while, the window closes when complete.*
 
 ### 2. How to run
 
