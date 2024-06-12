@@ -103,7 +103,7 @@ class STT:
 
             #print ("Available microphones:")
             for index, name in enumerate(sr.Microphone.list_microphone_names()):
-                #print(f" {index}) {name}")
+                print(f" {index}) {name}")
             raise Exception('Microphone not found')
         else:
             return sr.Microphone(sample_rate=16000)
