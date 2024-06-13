@@ -154,13 +154,13 @@ class EDJournal:
             elif log_event == 'UnderAttack':
                 self.ship['under_attack'] = True
 
-            #elif log_event == 'Embark':
-            #    self.ship['disembark'] = False
+            elif log_event == 'Embark':
+                self.ship['disembark'] = False
                 #print('embark')
                 #print(self.ship['Disembark'])
 
-            #elif log_event == 'Disembark':
-            #    self.ship['disembark'] = self.fill_disembark_object(log)
+            elif log_event == 'Disembark':
+                self.ship['disembark'] = self.fill_disembark_object(log)
                 #print('disembark')
                 #print(log)
                 #print(self.ship['disembark'])
