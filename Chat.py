@@ -957,6 +957,14 @@ def checkForJournalUpdates(client, commanderName, boot):
     if current_status['extra_events'] and len(current_status['extra_events']) > 0:
         while current_status['extra_events']:
             item = current_status['extra_events'][0]  # Get the first item
+            if 'event_content' in item:
+                if item['event_content'].get('ScanType') == "AutoScan":
+                    current_status['extra_events'].pop(0)
+                    continue
+
+                elif 'Message_Localised' in item['event_content'] and item['event_content']['Message_Localised'].startswith("Entered Channel:"):
+                    current_status['extra_events'].pop(0)
+                    continue
 
             #printFlush(f"({allGameEvents[item['event_type']].format(commanderName=commanderName)} Details: {json.dumps(item['event_content'])})")
             handle_conversation(client, commanderName, f"({allGameEvents[item['event_type']].format(commanderName=commanderName)} Details: {json.dumps(item['event_content'])})")
