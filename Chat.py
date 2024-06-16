@@ -576,7 +576,7 @@ def load_or_prompt_config():
             llm_endpoint = config.get('llm_endpoint', '')
             commander_name = config.get('commander_name', '')
             character = config.get('character', '')
-            model_name = config.get('model_name', '')
+            model_name = config.get('llm_model_name', '')
             vision_model_api_key = config.get('vision_model_api_key', '')
             vision_model_endpoint = config.get('vision_model_endpoint', '')
             stt_api_key = config.get('stt_api_key', '')
@@ -919,7 +919,7 @@ def checkForJournalUpdates(client, commanderName, boot):
 
         if key == 'target':
             if new_value != None:
-                handle_conversation(client, commanderName, f"(Commander {commanderName} has locked in a new jump destination: {new_value}. Detailed information: {get_system_info(new_value)})")
+                handle_conversation(client, commanderName, f"(Commander {commanderName} has locked in a new jump destination: {new_value}. Inform about relevant system details: {get_system_info(new_value)})")
         if key == 'shieldsup':
             if new_value != True:
                 handle_conversation(client, commanderName, f"(Commander {commanderName}'s ship has lost its shields! Warn about immediate danger!)")
@@ -1002,10 +1002,12 @@ def main():
     if character != '':
         backstory = character
 
+    # To Be Implemented
     ttsClient = OpenAI(
       base_url = "https://api.openai.com/v1" if True else 'http://localhost:5000',
       api_key=apiKey if True else '-',
     )
+    # To Be Implemented
     sttClient = OpenAI(
       base_url = "https://api.openai.com/v1" if True else 'http://localhost:5000',
       api_key=apiKey if True else '-',
