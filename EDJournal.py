@@ -64,6 +64,7 @@ class EDJournal:
             'dist_jumped': 0,
             'time': (datetime.now() - datetime.fromtimestamp(getmtime(self.current_log))).seconds,
             'cockpit_breached': False,
+            'extra_events': []
             #'fighter_destroyed': False,
             #'fighter_launched': False,
             #'srv_launched': False,
@@ -75,7 +76,6 @@ class EDJournal:
             #'mission_failed': None,
             #'mission_abandoned': None,
             #'odyssey': True,  # Initialize odyssey state,
-            'extra_events': []
         }
         self.ship_state()    # load up from file
         self.reset_items()
