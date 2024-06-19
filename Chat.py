@@ -56,7 +56,8 @@ aiActions = AIActions.AIActions()
 
 # You can change some settings here
 aiModel = "gpt-4o"
-backstory = """You will be addressed as 'Computer'. Acknowledge given orders. \
+backstory = """I am Commander {commander_name}. You are the onboard AI of my starship. \
+You will be addressed as 'Computer'. Acknowledge given orders. \
 You possess extensive knowledge and can provide detailed and accurate information on a wide range of topics, \
 including galactic navigation, ship status, the current system, and more. \
 Do not inform about my ship status and my location unless it's relevant or requested by me. \
@@ -698,6 +699,31 @@ def get_station_info(obj):
     except:
         return "Currently no information on system available"
 
+# fetch galnet news summarize it
+#def get_galnet_news(obj):
+#    url = "https://cms.zaonce.net/en-GB/jsonapi/node/galnet_article?&sort=-published_at&page[offset]=0&page[limit]=5"
+#
+#    try:
+#        response = requests.get(url, params=params)
+#        response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
+#
+#        completion = client.chat.completions.create(
+#            extra_headers={
+#                "HTTP-Referer": "https://github.com/RatherRude/Elite-Dangerous-AI-Integration",
+#                "X-Title": "Elite Dangerous AI Integration",
+#            },
+#            model=aiModel,
+#            messages=[{
+#                    "role": "user",
+#                    "content": f"Analyze the following list of news articles: {response.text}\nInquiry: {obj.get('query')}"
+#                }],
+#        )
+#
+#        return completion.choices[0].message.content
+#
+#    except:
+#        return "News feed currently unavailable"
+
 # fetch faction info from EDSM and summarizes it
 def get_faction_info(obj):
     url = "https://www.edsm.net/api-system-v1/factions"
@@ -784,6 +810,17 @@ aiActions.registerAction('getStations', "Retrieve information about stations in 
      "required": ["query", "systemName"]
 }, get_station_info)
 
+#aiActions.registerAction('getGalnetNews', "Retrieve current news from galnet", {
+#    "type": "object",
+#    "properties": {
+#        "query": {
+#            "type": "string",
+#            "description": "Answer inquiry if given, otherise give general overview. Example: 'Any recent thargoid attacks on the news?'"
+#        },
+#    },
+#     "required": ["query"]
+#}, get_galnet_news)
+
 jn = EDJournal()
 def handle_conversation(client, commander_name, user_input):
     printFlush(f"CMDR: {user_input}")
@@ -811,7 +848,7 @@ def prepare_chat_prompt(commander_name):
 
     systemPrompt = {"role": "system", "content": "Let's roleplay in the universe of Elite: Dangerous. " +
     "I will provide game events in parentheses; do not create new ones. " +
-    f"I am Commander {commander_name}. You are the onboard AI of my starship. " + backstory}
+    backstory.replace("{commander_name}", commander_name)}
     status = {"role": "user", "content": "(Ship status: " + json.dumps(filteredState) + ")"}
     system = {
         "role": "user",
@@ -867,9 +904,7 @@ def run_chat_model(client, commander_name, chat_prompt):
         run_chat_model(client, commander_name, prepare_chat_prompt(commander_name))
 
 def getCurrentState():
-    keysToFilterOut = [
-        "time"
-    ]
+    keysToFilterOut = ["time"]
     rawState = jn.ship_state()
 
     return {key: value for key, value in rawState.items() if key not in keysToFilterOut}
@@ -895,6 +930,7 @@ def checkForJournalUpdates(client, commanderName, boot):
     relevant_status = [
         'type',
         'target',
+        'location',
         'shieldsup',
         'under_attack',
         'type',
@@ -917,6 +953,9 @@ def checkForJournalUpdates(client, commanderName, boot):
             #if second_call:
             handle_conversation(client, commanderName, f"(Commander {commanderName} just swapped Vessels, from {old_value} to {new_value})")
 
+        if key == 'location':
+            if new_value != None:
+                handle_conversation(client, commanderName, f"(Commander {commanderName} has reached a new location: {new_value}. System details: {get_system_info(new_value)}).")
         if key == 'target':
             if new_value != None:
                 handle_conversation(client, commanderName, f"(Commander {commanderName} has locked in a new jump destination: {new_value}. Inform about relevant system details: {get_system_info(new_value)})")
@@ -980,7 +1019,7 @@ def checkForJournalUpdates(client, commanderName, boot):
 keys = EDKeys()
 tts = None
 def main():
-    global client, sttClient, ttsClient, v, tts, keys, aiModel, handle
+    global client, sttClient, ttsClient, v, tts, keys, aiModel, handle, backstory
     if handle:
         win32gui.SetForegroundWindow(handle)  # give focus to ED
 
@@ -1015,7 +1054,7 @@ def main():
     printFlush(f"Initializing CMDR {commanderName}'s personal AI...\n")
     printFlush("API Key: Loaded")
     printFlush(f"Current model: {aiModel}")
-    printFlush(f"Current backstory: {backstory}")
+    printFlush("Current backstory: " + backstory.replace("{commander_name}", commanderName))
     printFlush("\nBasic configuration complete.\n")
     printFlush("Loading voice interface...")
 

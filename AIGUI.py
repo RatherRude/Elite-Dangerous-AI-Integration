@@ -23,7 +23,7 @@ class App:
         # Background Image
         try:
             background_image = tk.PhotoImage(file="screen/EDAI_logo.png")
-            self.background_label = tk.Label(root, image=background_image)
+            self.background_label = tk.Label(root, bg="black", image=background_image)
             self.background_label.place(x=0, y=0, relwidth=1, relheight=1)
             self.background_label.image = background_image
         except tk.TclError as e:
@@ -40,7 +40,7 @@ class App:
 
         # Character (Multi-line Input)
         tk.Label(self.main_frame, text="AI Character:").grid(row=1, column=0, sticky=tk.W)
-        self.character = tk.Text(self.main_frame, width=80, height=10)
+        self.character = tk.Text(self.main_frame, width=80, height=15)
         self.character.grid(row=1, column=1, padx=10, pady=5)
 
         # API Key (Secure Entry) - Placed above the first button
@@ -150,21 +150,21 @@ class App:
         self.toggle_section_button.grid(row=4, column=0, columnspan=2, pady=10)
 
         # Debug Frame and Text Widget
-        self.debug_frame = tk.Frame(root, bg='white', bd=1)  # White background for visibility
+        self.debug_frame = tk.Frame(root, bg='black', bd=1)  # White background for visibility
         self.debug_frame.pack(side=tk.TOP, padx=20, pady=20)
 
         tk.Label(self.debug_frame, text="Debug Output:").pack(anchor=tk.W)
-        self.debug_text = tk.Text(self.debug_frame, width=100, height=25)
-        self.debug_text.tag_configure("normal", foreground="black")
-        self.debug_text.tag_configure("human", foreground="red")
-        self.debug_text.tag_configure("ai", foreground="blue")
-        self.debug_text.tag_configure("action", foreground="yellow")
+        self.debug_text = tk.Text(self.debug_frame, width=100, height=25, bg='black')
+        self.debug_text.tag_configure("normal", foreground="white", font="Helvetica 12")
+        self.debug_text.tag_configure("human", foreground="red", font="Helvetica 12 bold")
+        self.debug_text.tag_configure("ai", foreground="blue", font="Helvetica 12 bold")
+        self.debug_text.tag_configure("action", foreground="yellow", font="Helvetica 12 bold")
         self.debug_text.pack(side=tk.LEFT, padx=10, pady=10)
 
         self.debug_frame.pack_forget()
 
         # Button Frame
-        self.button_frame = tk.Frame(root)
+        self.button_frame = tk.Frame(root, bg='black')
         self.button_frame.pack(side=tk.BOTTOM, pady=10)
 
         # Hide Settings Button
@@ -217,14 +217,15 @@ class App:
             data = {
                 'commander_name': "",
                 'character':
+                "I am Commander {commander_name}. You are the onboard AI of my starship. \n" +
                 "You will be addressed as 'Computer'. Acknowledge given orders. \n" +
-                 "You possess extensive knowledge and can provide detailed and accurate information on a wide range of topics, " +
-                 "including galactic navigation, ship status, the current system, and more. \n" +
-                 "Do not inform about my ship status and my location unless it's relevant or requested by me. \n" +
-                 "Guide and support me with witty and intelligent commentary. \n" +
-                 "Provide clear mission briefings, sarcastic comments, and humorous observations. Answer within 3 sentences. \n" +
-                 "Advance the narrative involving bounty hunting. \n" +
-                 "I am a broke bounty hunter who can barely pay the fuel.",
+                "You possess extensive knowledge and can provide detailed and accurate information on a wide range of topics, " +
+                "including galactic navigation, ship status, the current system, and more. \n" +
+                "Do not inform about my ship status and my location unless it's relevant or requested by me. \n" +
+                "Guide and support me with witty and intelligent commentary. \n" +
+                "Provide clear mission briefings, sarcastic comments, and humorous observations. Answer within 3 sentences. \n" +
+                "Advance the narrative involving bounty hunting. \n" +
+                "I am a broke bounty hunter who can barely pay the fuel.",
                 'api_key': "",
                 'alternative_stt_var': False,
                 'alternative_tts_var': False,
