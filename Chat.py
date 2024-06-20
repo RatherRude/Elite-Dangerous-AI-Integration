@@ -580,10 +580,12 @@ def prompt_for_config():
     llm_endpoint = input("Enter LLM Endpoint: ")
     #vision_model_api_key = input("Enter Vision Model API Key: ")
     #vision_model_endpoint = input("Enter Vision Model Endpoint: ")
-    #stt_api_key = input("Enter STT API Key: ")
-    #stt_endpoint = input("Enter STT Endpoint: ")
-    #tts_api_key = input("Enter TTS API Key: ")
-    #tts_endpoint = input("Enter TTS Endpoint: ")
+    stt_model_name = input("Enter STT Model Name: ")
+    stt_api_key = input("Enter STT API Key: ")
+    stt_endpoint = input("Enter STT Endpoint: ")
+    tts_model_name = input("Enter TTS Model Name: ")
+    tts_api_key = input("Enter TTS API Key: ")
+    tts_endpoint = input("Enter TTS Endpoint: ")
     alternative_stt_var = input("Local STT? ")
     alternative_tts_var = input("Local TTS? ")
     tools_var = input("AI Tools? ")
@@ -592,7 +594,7 @@ def prompt_for_config():
     tts_voice = input("Enter TTS Voice: ")
     key_binding = input("Push-to-talk button: ")
 
-    return api_key, llm_api_key, llm_endpoint, commander_name, character, ai_model, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding
+    return api_key, llm_api_key, llm_endpoint, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, ai_model, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding
 
 def load_or_prompt_config():
     config_file = Path("config.json")
@@ -607,8 +609,10 @@ def load_or_prompt_config():
             model_name = config.get('llm_model_name', '')
             vision_model_api_key = config.get('vision_model_api_key', '')
             vision_model_endpoint = config.get('vision_model_endpoint', '')
+            stt_model_name = config.get('stt_model_name', '')
             stt_api_key = config.get('stt_api_key', '')
             stt_endpoint = config.get('stt_endpoint', '')
+            tts_model_name = config.get('tts_model_name', '')
             tts_api_key = config.get('tts_api_key', '')
             tts_endpoint = config.get('tts_endpoint', '')
             alternative_stt_var = config.get('alternative_stt_var', '')
@@ -619,7 +623,7 @@ def load_or_prompt_config():
             tts_voice = config.get('tts_voice', '')
             key_binding = config.get('key_binding', '')
     else:
-        api_key, llm_api_key, llm_endpoint, commander_name, character, ai_model, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding = prompt_for_config()
+        api_key, llm_api_key, llm_endpoint, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, ai_model, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding = prompt_for_config()
         with open(config_file, 'w') as f:
             json.dump({
                 'api_key': api_key,
@@ -630,10 +634,12 @@ def load_or_prompt_config():
                 'model_name': ai_model,
                 #'vision_model_api_key': vision_model_api_key,
                 #'vision_model_endpoint': vision_model_endpoint,
-                #'stt_api_key': stt_api_key,
-                #'stt_endpoint': stt_endpoint,
-                #'tts_api_key': tts_api_key,
-                #'tts_endpoint': tts_endpoint,
+                'stt_model_name': stt_model_name,
+                'stt_api_key': stt_api_key,
+                'stt_endpoint': stt_endpoint,
+                'tts_model_name': tts_model_name,
+                'tts_api_key': tts_api_key,
+                'tts_endpoint': tts_endpoint,
                 'alternative_stt_var': alternative_stt_var,
                 'alternative_tts_var': alternative_tts_var,
                 'tools_var': tools_var,
@@ -643,7 +649,7 @@ def load_or_prompt_config():
                 'key_binding': key_binding
             }, f)
 
-    return api_key, llm_api_key, llm_endpoint, commander_name, character, model_name, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding
+    return api_key, llm_api_key, llm_endpoint, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, model_name, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding
 
 handle = win32gui.FindWindow(0, "Elite - Dangerous (CLIENT)")
 def setGameWindowActive():
@@ -1043,7 +1049,7 @@ def main():
     setGameWindowActive()
 
     # Load or prompt for configuration
-    apiKey, llm_api_key, llm_endpoint, commanderName, character, model_name, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding  = load_or_prompt_config()
+    apiKey, llm_api_key, llm_endpoint, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commanderName, character, model_name, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding  = load_or_prompt_config()
 
     printFlush('loading keys')
 
@@ -1091,16 +1097,15 @@ def main():
             "required": ["query"]
         }, get_visuals)
 
-    # To Be Implemented
-    ttsClient = OpenAI(
-      base_url = "https://api.openai.com/v1" if True else 'http://localhost:5000',
-      api_key=apiKey if True else '-',
-    )
-    # To Be Implemented
     sttClient = OpenAI(
-      base_url = "https://api.openai.com/v1" if True else 'http://localhost:5000',
-      api_key=apiKey if True else '-',
+        base_url = "https://api.openai.com/v1" if stt_endpoint == '' else stt_endpoint,
+        api_key=apiKey if stt_api_key == '' else stt_api_key,
     )
+    ttsClient = OpenAI(
+        base_url = "https://api.openai.com/v1" if tts_endpoint == '' else tts_endpoint,
+        api_key=apiKey if tts_api_key == '' else tts_api_key,
+    )
+
     printFlush(f"Initializing CMDR {commanderName}'s personal AI...\n")
     printFlush("API Key: Loaded")
     printFlush(f"Using Push-to-Talk: {ptt_var}")
@@ -1118,7 +1123,7 @@ def main():
         tts.set_on()
     else:
         printFlush('remote TTS')
-        tts = TTS.TTS(openai_client=ttsClient, voice=tts_voice)
+        tts = TTS.TTS(openai_client=ttsClient, model=tts_model_name, voice=tts_voice)
 
     # STT Setup
     parser = argparse.ArgumentParser()
@@ -1254,7 +1259,7 @@ def main():
     else:
         printFlush('remote STT')
         # new whisper start
-        stt = STT.STT(openai_client=sttClient)
+        stt = STT.STT(openai_client=sttClient, model=stt_model_name)
 
         if ptt_var and key_binding:
             push_to_talk_key = key_binding  # Change this to your desired key

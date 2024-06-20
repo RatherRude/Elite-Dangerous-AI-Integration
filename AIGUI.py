@@ -66,28 +66,16 @@ class App:
 
         # AI Geeks Section (Initially hidden)
         self.ai_geeks_frame = tk.Frame(self.main_frame, bg='lightgrey', bd=1)
-        self.ai_geeks_frame.grid(row=5, column=0, columnspan=2, padx=10, pady=10, sticky=tk.W)
+        self.ai_geeks_frame.grid(row=5, column=0, columnspan=2, padx=10, pady=10, sticky="")
         self.ai_geeks_frame.grid_remove()  # Initially hide
 
         # Disclaimer
-        tk.Label(self.ai_geeks_frame, text="None of the AI Geek options are required.").grid(row=0, column=0, columnspan=2, sticky=tk.W)
-
-        # Function Calling (Checkbox)
-        self.tools_var = tk.BooleanVar()
-        self.tools_var.set(True)  # Default value
-        self.tools_checkbox = tk.Checkbutton(self.ai_geeks_frame, text="Function Calling (default: on)", variable=self.tools_var)
-        self.tools_checkbox.grid(row=1, column=0, padx=10, pady=10)
-
-        # Vision Capabilities (Checkbox)
-        self.vision_var = tk.BooleanVar()
-        self.vision_var.set(True)  # Default value
-        self.vision_checkbox = tk.Checkbutton(self.ai_geeks_frame, text="Vision Capabilities (default: on)", variable=self.vision_var)
-        self.vision_checkbox.grid(row=1, column=1, padx=10, pady=10)
+        tk.Label(self.ai_geeks_frame, text="None of the AI Geek options are required.", font="Helvetica 12 bold").grid(row=0, column=0, columnspan=2, sticky="")
 
         # LLM Model Name
-        tk.Label(self.ai_geeks_frame, text="LLM Model Name:").grid(row=2, column=0, sticky=tk.W)
+        tk.Label(self.ai_geeks_frame, text="LLM Model Name:").grid(row=1, column=0, sticky=tk.W)
         self.llm_model_name = tk.Entry(self.ai_geeks_frame, width=50)
-        self.llm_model_name.grid(row=2, column=1, padx=10, pady=5)
+        self.llm_model_name.grid(row=1, column=1, padx=10, pady=5)
 
         ## Alternative LLM (Checkbox)
         #self.alternative_llm_var = tk.BooleanVar()
@@ -96,51 +84,73 @@ class App:
         #self.alternative_llm_checkbox.grid(row=2, column=0, sticky=tk.W, padx=10, pady=5)
 
         # LLM Endpoint
-        tk.Label(self.ai_geeks_frame, text="LLM Endpoint:").grid(row=3, column=0, sticky=tk.W)
+        tk.Label(self.ai_geeks_frame, text="LLM Endpoint:").grid(row=2, column=0, sticky=tk.W)
         self.llm_endpoint = tk.Entry(self.ai_geeks_frame, width=50)
-        self.llm_endpoint.grid(row=3, column=1, padx=10, pady=5)
+        self.llm_endpoint.grid(row=2, column=1, padx=10, pady=5)
 
         # LLM API Key
-        tk.Label(self.ai_geeks_frame, text="LLM API Key:").grid(row=4, column=0, sticky=tk.W)
+        tk.Label(self.ai_geeks_frame, text="LLM API Key:").grid(row=3, column=0, sticky=tk.W)
         self.llm_api_key = tk.Entry(self.ai_geeks_frame, show='*', width=50)
-        self.llm_api_key.grid(row=4, column=1, padx=10, pady=5)
+        self.llm_api_key.grid(row=3, column=1, padx=10, pady=5)
+
+        # Function Calling (Checkbox)
+        self.tools_var = tk.BooleanVar()
+        self.tools_var.set(True)  # Default value
+        self.tools_checkbox = tk.Checkbutton(self.ai_geeks_frame, text="Function Calling (default: on)", variable=self.tools_var)
+        self.tools_checkbox.grid(row=4, column=0, padx=10, pady=10)
+
+        # Vision Capabilities (Checkbox)
+        self.vision_var = tk.BooleanVar()
+        self.vision_var.set(True)  # Default value
+        self.vision_checkbox = tk.Checkbutton(self.ai_geeks_frame, text="Vision Capabilities (default: on)", variable=self.vision_var)
+        self.vision_checkbox.grid(row=4, column=1, padx=10, pady=10)
+
+        ## STT Model
+        tk.Label(self.ai_geeks_frame, text="STT Model Name:").grid(row=5, column=0, sticky=tk.W)
+        self.stt_model_name = tk.Entry(self.ai_geeks_frame, width=50)
+        self.stt_model_name.grid(row=5, column=1, padx=10, pady=5)
+
+        ## STT Endpoint
+        tk.Label(self.ai_geeks_frame, text="STT Endpoint:").grid(row=6, column=0, sticky=tk.W)
+        self.stt_endpoint = tk.Entry(self.ai_geeks_frame, width=50)
+        self.stt_endpoint.grid(row=6, column=1, padx=10, pady=5)
+
+        ## STT API Key
+        tk.Label(self.ai_geeks_frame, text="STT API Key:").grid(row=7, column=0, sticky=tk.W)
+        self.stt_api_key = tk.Entry(self.ai_geeks_frame, show='*', width=50)
+        self.stt_api_key.grid(row=7, column=1, padx=10, pady=5)
 
         # Alternative STT (Checkbox)
         self.alternative_stt_var = tk.BooleanVar()
         self.alternative_stt_var.set(False)  # Default value
-        self.alternative_stt_checkbox = tk.Checkbutton(self.ai_geeks_frame, text="Local STT(whisper-medium)", variable=self.alternative_stt_var)
-        self.alternative_stt_checkbox.grid(row=6, column=0, padx=10, pady=10)
+        self.alternative_stt_checkbox = tk.Checkbutton(self.ai_geeks_frame, text="Local STT (pre-installed whisper-medium)", variable=self.alternative_stt_var)
+        self.alternative_stt_checkbox.grid(row=8, column=0, padx=10, pady=10)
 
-        ## STT Endpoint
-        #tk.Label(self.ai_geeks_frame, text="STT Endpoint:").grid(row=9, column=0, sticky=tk.W)
-        #self.stt_endpoint = tk.Entry(self.ai_geeks_frame, width=50)
-        #self.stt_endpoint.grid(row=6, column=1, padx=10, pady=5)
+        ## TTS Model
+        tk.Label(self.ai_geeks_frame, text="TTS Model Name:").grid(row=9, column=0, sticky=tk.W)
+        self.tts_model_name = tk.Entry(self.ai_geeks_frame, width=50)
+        self.tts_model_name.grid(row=9, column=1, padx=10, pady=5)
 
-        ## STT API Key
-        #tk.Label(self.ai_geeks_frame, text="STT API Key:").grid(row=10, column=0, sticky=tk.W)
-        #self.stt_api_key = tk.Entry(self.ai_geeks_frame, show='*', width=50)
-        #self.stt_api_key.grid(row=7, column=1, padx=10, pady=5)
+        ## TTS Endpoint
+        tk.Label(self.ai_geeks_frame, text="TTS Endpoint:").grid(row=10, column=0, sticky=tk.W)
+        self.tts_endpoint = tk.Entry(self.ai_geeks_frame, width=50)
+        self.tts_endpoint.grid(row=10, column=1, padx=10, pady=5)
+
+        ## TTS API Key
+        tk.Label(self.ai_geeks_frame, text="TTS API Key:").grid(row=11, column=0, sticky=tk.W)
+        self.tts_api_key = tk.Entry(self.ai_geeks_frame, show='*', width=50)
+        self.tts_api_key.grid(row=11, column=1, padx=10, pady=5)
+
+        # TTS Voice
+        tk.Label(self.ai_geeks_frame, text="TTS Voice:").grid(row=12, column=0, sticky=tk.W)
+        self.tts_voice = tk.Entry(self.ai_geeks_frame, width=50)
+        self.tts_voice.grid(row=12, column=1, padx=10, pady=5)
 
         # Alternative TTS (Checkbox)
         self.alternative_tts_var = tk.BooleanVar()
         self.alternative_tts_var.set(False)  # Default value
-        self.alternative_tts_checkbox = tk.Checkbutton(self.ai_geeks_frame, text="Local TTS (OS Voices)", variable=self.alternative_tts_var)
-        self.alternative_tts_checkbox.grid(row=6, column=1, padx=10, pady=10)
-
-        # TTS Voice
-        tk.Label(self.ai_geeks_frame, text="TTS Voice:").grid(row=7, column=0, sticky=tk.W)
-        self.tts_voice = tk.Entry(self.ai_geeks_frame, width=50)
-        self.tts_voice.grid(row=7, column=1, padx=10, pady=5)
-
-        ## TTS Endpoint
-        #tk.Label(self.ai_geeks_frame, text="TTS Endpoint:").grid(row=12, column=0, sticky=tk.W)
-        #self.tts_endpoint = tk.Entry(self.ai_geeks_frame, width=50)
-        #self.tts_endpoint.grid(row=9, column=1, padx=10, pady=5)
-
-        ## TTS API Key
-        #tk.Label(self.ai_geeks_frame, text="TTS API Key:").grid(row=13, column=0, sticky=tk.W)
-        #self.tts_api_key = tk.Entry(self.ai_geeks_frame, show='*', width=50)
-        #self.tts_api_key.grid(row=10, column=1, padx=10, pady=5)
+        self.alternative_tts_checkbox = tk.Checkbutton(self.ai_geeks_frame, text="Local TTS (pre-installed OS Voices)", variable=self.alternative_tts_var)
+        self.alternative_tts_checkbox.grid(row=13, column=0, padx=10, pady=10)
 
         ## Alternative Vision Model (Checkbox)
         #self.alternative_vision_var = tk.BooleanVar()
@@ -250,16 +260,18 @@ class App:
                 'vision_var': True,
                 'ptt_var': False,
                 'llm_model_name': "gpt-4o",
-                'llm_endpoint': "",
+                'llm_endpoint': "https://api.openai.com/v1",
                 'llm_api_key': "",
                 'tts_voice': "nova",
-                'key_binding': None
+                'key_binding': None,
                 #'vision_model_endpoint': "",
                 #'vision_model_api_key': "",
-                #'stt_endpoint': "",
-                #'stt_api_key': "",
-                #'tts_endpoint': "",
-                #'tts_api_key': ""
+                'stt_model_name': "whisper-1",
+                'stt_endpoint': "https://api.openai.com/v1",
+                'stt_api_key': "",
+                'tts_model_name': "tts-1",
+                'tts_endpoint': "https://api.openai.com/v1",
+                'tts_api_key': ""
             }
         return data
 
@@ -272,10 +284,12 @@ class App:
         self.data['llm_api_key'] = self.llm_api_key.get()
         #self.data['vision_model_endpoint'] = self.vision_model_endpoint.get()
         #self.data['vision_model_api_key'] = self.vision_model_api_key.get()
-        #self.data['stt_endpoint'] = self.stt_endpoint.get()
-        #self.data['stt_api_key'] = self.stt_api_key.get()
-        #self.data['tts_endpoint'] = self.tts_endpoint.get()
-        #self.data['tts_api_key'] = self.tts_api_key.get()
+        self.data['stt_model_name'] = self.stt_model_name.get()
+        self.data['stt_endpoint'] = self.stt_endpoint.get()
+        self.data['stt_api_key'] = self.stt_api_key.get()
+        self.data['tts_model_name'] = self.tts_model_name.get()
+        self.data['tts_endpoint'] = self.tts_endpoint.get()
+        self.data['tts_api_key'] = self.tts_api_key.get()
         self.data['alternative_stt_var'] = self.alternative_stt_var.get()
         self.data['alternative_tts_var'] = self.alternative_tts_var.get()
         self.data['tools_var'] = self.tools_var.get()
@@ -298,10 +312,12 @@ class App:
         self.llm_api_key.insert(0, self.data['llm_api_key'])
         #self.vision_model_endpoint.insert(0, self.data['vision_model_endpoint'])
         #self.vision_model_api_key.insert(0, self.data['vision_model_api_key'])
-        #self.stt_endpoint.insert(0, self.data['stt_endpoint'])
-        #self.stt_api_key.insert(0, self.data['stt_api_key'])
-        #self.tts_endpoint.insert(0, self.data['tts_endpoint'])
-        #self.tts_api_key.insert(0, self.data['tts_api_key'])
+        self.stt_model_name.insert(0, self.data['stt_model_name'])
+        self.stt_endpoint.insert(0, self.data['stt_endpoint'])
+        self.stt_api_key.insert(0, self.data['stt_api_key'])
+        self.tts_model_name.insert(0, self.data['tts_model_name'])
+        self.tts_endpoint.insert(0, self.data['tts_endpoint'])
+        self.tts_api_key.insert(0, self.data['tts_api_key'])
         self.alternative_stt_var.set(self.data['alternative_stt_var'])
         self.alternative_tts_var.set(self.data['alternative_tts_var'])
         self.tools_var.set(self.data['tools_var'])
