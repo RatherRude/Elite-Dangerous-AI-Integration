@@ -311,98 +311,122 @@ def printFlush(message, arg=''):
 
 # Define functions for each action
 def fire_primary_weapon(args):
+    setGameWindowActive()
     keys.send('PrimaryFire', state=1)
     return f"successfully opened fire with primary weapons."
 
 def hold_fire_primary_weapon(args):
+    setGameWindowActive()
     keys.send('PrimaryFire', state=0)
     return f"successfully stopped firing with primary weapons."
 
 def fire_secondary_weapon(args):
+    setGameWindowActive()
     keys.send('SecondaryFire', state=1)
     return f"successfully opened fire with secondary weapons."
 
 def hold_fire_secondary_weapon(args):
+    setGameWindowActive()
     keys.send('SecondaryFire', state=0)
     return f"successfully stopped firing with secondary weapons."
 
 def hyper_super_combination(args):
+    setGameWindowActive()
     keys.send('HyperSuperCombination')
     return f"Frame Shift Drive is charging for a jump"
 
 def set_speed_zero(args):
+    setGameWindowActive()
     keys.send('SetSpeedZero')
     return f"Speed set to 0%"
 
 def set_speed_50(args):
+    setGameWindowActive()
     keys.send('SetSpeed50')
     return f"Speed set to 50%"
 
 def set_speed_100(args):
+    setGameWindowActive()
     keys.send('SetSpeed100')
     return f"Speed set to 100%"
 
 def deploy_heat_sink(args):
+    setGameWindowActive()
     keys.send('DeployHeatSink')
     return f"Heat sink deployed"
 
 def deploy_hardpoint_toggle(args):
+    setGameWindowActive()
     keys.send('DeployHardpointToggle')
     return f"Hardpoints deployed/retracted"
 
 def increase_engines_power(args):
+    setGameWindowActive()
     keys.send('IncreaseEnginesPower', None, args['pips'])
     return f"Engine power increased"
 
 def increase_weapons_power(args):
+    setGameWindowActive()
     keys.send('IncreaseWeaponsPower', None, args['pips'])
     return f"Weapon power increased"
 
 def increase_systems_power(args):
+    setGameWindowActive()
     keys.send('IncreaseSystemsPower', None, args['pips'])
     return f"Systems power increased"
 
 def galaxy_map_open(args):
+    setGameWindowActive()
     keys.send('GalaxyMapOpen')
     return f"Galaxy map opened/closed"
 
 def system_map_open(args):
+    setGameWindowActive()
     keys.send('SystemMapOpen')
     return f"System map opened/closed"
 
 def cycle_next_target(args):
+    setGameWindowActive()
     keys.send('CycleNextTarget')
     return f"Next target cycled"
 
 def cycle_fire_group_next(args):
+    setGameWindowActive()
     keys.send('CycleFireGroupNext')
     return f"Fire group cycled"
 
 def ship_spot_light_toggle(args):
+    setGameWindowActive()
     keys.send('ShipSpotLightToggle')
     return f"Ship spotlight toggled"
 
 def eject_all_cargo(args):
+    setGameWindowActive()
     keys.send('EjectAllCargo')
     return f"All cargo ejected"
 
 def landing_gear_toggle(args):
+    setGameWindowActive()
     keys.send('LandingGearToggle')
     return f"Landing gear toggled"
 
 def use_shield_cell(args):
+    setGameWindowActive()
     keys.send('UseShieldCell')
     return f"Shield cell used"
 
 def fire_chaff_launcher(args):
+    setGameWindowActive()
     keys.send('FireChaffLauncher')
     return f"Chaff launcher fired"
 
 def night_vision_toggle(args):
+    setGameWindowActive()
     keys.send('NightVisionToggle')
     return f"Night vision toggled"
 
 def recall_dismiss_ship(args):
+    setGameWindowActive()
     keys.send('RecallDismissShip')
     return f"Ship has either been recalled or dismissed"
 
@@ -613,6 +637,15 @@ def load_or_prompt_config():
     return api_key, llm_api_key, llm_endpoint, commander_name, character, model_name, alternative_stt_var, alternative_tts_var, ptt_var, key_binding
 
 handle = win32gui.FindWindow(0, "Elite - Dangerous (CLIENT)")
+def setGameWindowActive():
+    global handle
+
+    if handle:
+        try:
+            win32gui.SetForegroundWindow(handle)  # give focus to ED
+        except pywintypes.error as e:
+            printFlush(f"Failed to set game window as active: {e}")
+
 def screenshot():
     global handle
     if handle:
@@ -953,7 +986,7 @@ def checkForJournalUpdates(client, commanderName, boot):
         #        handle_conversation(client, commanderName, f"(Commander {commanderName} just swapped Vessels, from {old_value} to {new_value})")
 
         if key == 'location':
-            if new_value != None:
+            if new_value != None and old_value != None:
                 handle_conversation(client, commanderName, f"(Commander {commanderName} has reached a new location: {new_value}. System details: {get_system_info(new_value)}).")
         if key == 'target':
             if new_value != None:
@@ -1004,10 +1037,10 @@ def checkForJournalUpdates(client, commanderName, boot):
                     current_status['extra_events'].pop(0)
                     continue
             if 'event_type' in item:
-                if item.get('event_type') == 'Progress' or item.get('event_type') == 'Reputation' or item.get('event_type') == 'Rank' or item.get('event_type') == 'Backpack' or item.get('event_type') == 'Statistics' or item.get('event_type') == 'Missions' or item.get('event_type') == 'LoadGame':
+                if item.get('event_type') == 'Progress' or item.get('event_type') == 'Reputation' or item.get('event_type') == 'Rank' or item.get('event_type') == 'Backpack' or item.get('event_type') == 'Statistics' or item.get('event_type') == 'Missions' or item.get('event_type') == 'SquadronStartup':
                     #printFlush(item.get('event_type') + '!')
                     #printFlush(item.get('event_content'))
-                    # @ToDo: collect for loadgame event
+                    # @ToDo: collect for loadgame event: if item.get('event_type') == 'LoadGame'
                     current_status['extra_events'].pop(0)
                     continue
             #printFlush(f"({allGameEvents[item['event_type']].format(commanderName=commanderName)} Details: {json.dumps(item['event_content'])})")
@@ -1019,17 +1052,11 @@ def checkForJournalUpdates(client, commanderName, boot):
     previous_status = current_status
     #printFlush('checkForJournalUpdates end')
 
-
-
 keys = EDKeys()
 tts = None
 def main():
-    global client, sttClient, ttsClient, v, tts, keys, aiModel, handle, backstory
-    if handle:
-        try:
-            win32gui.SetForegroundWindow(handle)  # give focus to ED
-        except pywintypes.error as e:
-            printFlush(f"Failed to set game window as active: {e}")
+    global client, sttClient, ttsClient, v, tts, keys, aiModel, backstory
+    setGameWindowActive()
 
     # Load or prompt for configuration
     apiKey, llm_api_key, llm_endpoint, commanderName, character, model_name, alternative_stt_var, alternative_tts_var, ptt_var, key_binding  = load_or_prompt_config()

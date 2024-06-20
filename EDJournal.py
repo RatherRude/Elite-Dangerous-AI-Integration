@@ -440,7 +440,7 @@ class EDJournal:
                 'SquadronCreated',
                 'SquadronDemotion',
                 'SquadronPromotion',
-                #'SquadronStartup',  # spams on startup, maybe collect for loadgame event?
+                'SquadronStartup',
                 'WonATrophyForSquadron',
 
                 # Exploration Events:
