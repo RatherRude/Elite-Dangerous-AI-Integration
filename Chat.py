@@ -586,10 +586,11 @@ def prompt_for_config():
     #tts_endpoint = input("Enter TTS Endpoint: ")
     alternative_stt_var = input("Local STT? ")
     alternative_tts_var = input("Local TTS? ")
+    tools_var = input("AI Tools? ")
     ptt_var = input("Use Push-to-talk? ")
     key_binding = input("Push-to-talk button: ")
 
-    return api_key, llm_api_key, llm_endpoint, commander_name, character, ai_model, alternative_stt_var, alternative_tts_var, ptt_var, key_binding
+    return api_key, llm_api_key, llm_endpoint, commander_name, character, ai_model, alternative_stt_var, alternative_tts_var, tools_var, ptt_var, key_binding
 
 def load_or_prompt_config():
     config_file = Path("config.json")
@@ -610,10 +611,11 @@ def load_or_prompt_config():
             tts_endpoint = config.get('tts_endpoint', '')
             alternative_stt_var = config.get('alternative_stt_var', '')
             alternative_tts_var = config.get('alternative_tts_var', '')
+            tools_var = config.get('tools_var', '')
             ptt_var = config.get('ptt_var', '')
             key_binding = config.get('key_binding', '')
     else:
-        api_key, llm_api_key, llm_endpoint, commander_name, character, ai_model, alternative_stt_var, alternative_tts_var, ptt_var, key_binding = prompt_for_config()
+        api_key, llm_api_key, llm_endpoint, commander_name, character, ai_model, alternative_stt_var, alternative_tts_var, tools_var, ptt_var, key_binding = prompt_for_config()
         with open(config_file, 'w') as f:
             json.dump({
                 'api_key': api_key,
@@ -630,11 +632,12 @@ def load_or_prompt_config():
                 #'tts_endpoint': tts_endpoint,
                 'alternative_stt_var': alternative_stt_var,
                 'alternative_tts_var': alternative_tts_var,
+                'tools_var': tools_var,
                 'ptt_var': ptt_var,
                 'key_binding': key_binding
             }, f)
 
-    return api_key, llm_api_key, llm_endpoint, commander_name, character, model_name, alternative_stt_var, alternative_tts_var, ptt_var, key_binding
+    return api_key, llm_api_key, llm_endpoint, commander_name, character, model_name, alternative_stt_var, alternative_tts_var, tools_var, ptt_var, key_binding
 
 handle = win32gui.FindWindow(0, "Elite - Dangerous (CLIENT)")
 def setGameWindowActive():
@@ -901,6 +904,8 @@ def prepare_chat_prompt(commander_name):
     # Context for AI, consists of conversation history, ships status, information about current system and the user input
     return [systemPrompt]+[status, system]+conversation
 
+useTools = False
+
 def run_chat_model(client, commander_name, chat_prompt):
     global conversation
     # Make a request to OpenAI with the updated conversation
@@ -909,7 +914,7 @@ def run_chat_model(client, commander_name, chat_prompt):
          "model": aiModel,
          "messages": chat_prompt,
      }
-    if True:
+    if useTools:
         args["tools"] = aiActions.getToolsList()
     completion = client.chat.completions.create(**args)
 
@@ -1055,11 +1060,11 @@ def checkForJournalUpdates(client, commanderName, boot):
 keys = EDKeys()
 tts = None
 def main():
-    global client, sttClient, ttsClient, v, tts, keys, aiModel, backstory
+    global client, sttClient, ttsClient, v, tts, keys, aiModel, backstory, useTools
     setGameWindowActive()
 
     # Load or prompt for configuration
-    apiKey, llm_api_key, llm_endpoint, commanderName, character, model_name, alternative_stt_var, alternative_tts_var, ptt_var, key_binding  = load_or_prompt_config()
+    apiKey, llm_api_key, llm_endpoint, commanderName, character, model_name, alternative_stt_var, alternative_tts_var, tools_var, ptt_var, key_binding  = load_or_prompt_config()
 
     printFlush('loading keys')
 
@@ -1069,6 +1074,8 @@ def main():
       base_url = "https://api.openai.com/v1" if llm_endpoint == '' else llm_endpoint,
       api_key=apiKey if llm_api_key == '' else llm_api_key,
     )
+    if tools_var:
+        useTools = True
     # alternative models
     if model_name != '':
         aiModel = model_name
@@ -1088,6 +1095,8 @@ def main():
     )
     printFlush(f"Initializing CMDR {commanderName}'s personal AI...\n")
     printFlush("API Key: Loaded")
+    printFlush(f"Using Push-to-Talk: {ptt_var}")
+    printFlush(f"Using Function Calling: {useTools}")
     printFlush(f"Current model: {aiModel}")
     printFlush("Current backstory: " + backstory.replace("{commander_name}", commanderName))
     printFlush("\nBasic configuration complete.\n")

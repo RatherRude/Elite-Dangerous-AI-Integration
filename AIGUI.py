@@ -72,10 +72,16 @@ class App:
         # Disclaimer
         tk.Label(self.ai_geeks_frame, text="None of the AI Geek options are required.").grid(row=0, column=0, columnspan=2, sticky=tk.W)
 
+        # Function Calling (Checkbox)
+        self.tools_var = tk.BooleanVar()
+        self.tools_var.set(True)  # Default value
+        self.tools_checkbox = tk.Checkbutton(self.ai_geeks_frame, text="Function Calling (default: on)", variable=self.tools_var)
+        self.tools_checkbox.grid(row=1, column=0, padx=10, pady=10)
+
         # LLM Model Name
-        tk.Label(self.ai_geeks_frame, text="LLM Model Name:").grid(row=1, column=0, sticky=tk.W)
+        tk.Label(self.ai_geeks_frame, text="LLM Model Name:").grid(row=2, column=0, sticky=tk.W)
         self.llm_model_name = tk.Entry(self.ai_geeks_frame, width=50)
-        self.llm_model_name.grid(row=1, column=1, padx=10, pady=5)
+        self.llm_model_name.grid(row=2, column=1, padx=10, pady=5)
 
         ## Alternative LLM (Checkbox)
         #self.alternative_llm_var = tk.BooleanVar()
@@ -97,7 +103,7 @@ class App:
         self.alternative_stt_var = tk.BooleanVar()
         self.alternative_stt_var.set(False)  # Default value
         self.alternative_stt_checkbox = tk.Checkbutton(self.ai_geeks_frame, text="Local STT(whisper-medium)", variable=self.alternative_stt_var)
-        self.alternative_stt_checkbox.grid(row=5, column=0, sticky=tk.W, padx=10, pady=5)
+        self.alternative_stt_checkbox.grid(row=6, column=0)
 
         ## STT Endpoint
         #tk.Label(self.ai_geeks_frame, text="STT Endpoint:").grid(row=9, column=0, sticky=tk.W)
@@ -113,7 +119,7 @@ class App:
         self.alternative_tts_var = tk.BooleanVar()
         self.alternative_tts_var.set(False)  # Default value
         self.alternative_tts_checkbox = tk.Checkbutton(self.ai_geeks_frame, text="Local TTS (OS Voices)", variable=self.alternative_tts_var)
-        self.alternative_tts_checkbox.grid(row=8, column=0, padx=10, pady=5)
+        self.alternative_tts_checkbox.grid(row=6, column=1)
 
         ## TTS Endpoint
         #tk.Label(self.ai_geeks_frame, text="TTS Endpoint:").grid(row=12, column=0, sticky=tk.W)
@@ -229,6 +235,7 @@ class App:
                 'api_key': "",
                 'alternative_stt_var': False,
                 'alternative_tts_var': False,
+                'tools_var': True,
                 'ptt_var': False,
                 'llm_model_name': "gpt-4o",
                 'llm_endpoint': "",
@@ -258,6 +265,7 @@ class App:
         #self.data['tts_api_key'] = self.tts_api_key.get()
         self.data['alternative_stt_var'] = self.alternative_stt_var.get()
         self.data['alternative_tts_var'] = self.alternative_tts_var.get()
+        self.data['tools_var'] = self.tools_var.get()
         self.data['ptt_var'] = self.ptt_var.get()
         self.data['key_binding'] = self.key_binding
 
@@ -281,6 +289,7 @@ class App:
         #self.tts_api_key.insert(0, self.data['tts_api_key'])
         self.alternative_stt_var.set(self.data['alternative_stt_var'])
         self.alternative_tts_var.set(self.data['alternative_tts_var'])
+        self.tools_var.set(self.data['tools_var'])
         self.ptt_var.set(self.data['ptt_var'])
         self.key_binding = self.data['key_binding']
 
