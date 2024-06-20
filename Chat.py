@@ -295,7 +295,7 @@ allGameEvents = {
     **stationServiceEvents,
     **carrierEvents,
     **odysseyEvents,
-    #**startupEvents,
+    **startupEvents,
     **powerplayEvents,
     **squadronEvents,
     **otherEvents
@@ -872,11 +872,13 @@ def run_chat_model(client, commander_name, chat_prompt):
     global conversation
     # Make a request to OpenAI with the updated conversation
     #printFlush("messages:", chat_prompt)
-    completion = client.chat.completions.create(
-        tools=aiActions.getToolsList(),
-        model=aiModel,
-        messages=chat_prompt,
-    )
+    args = {
+         "model": aiModel,
+         "messages": chat_prompt,
+     }
+    if True:
+        args["tools"] = aiActions.getToolsList()
+    completion = client.chat.completions.create(**args)
 
     if hasattr(completion, 'error'):
         printFlush("completion with error:", completion)
@@ -909,12 +911,9 @@ def getCurrentState():
 
     return {key: value for key, value in rawState.items() if key not in keysToFilterOut}
 
-#second_call = False
 previous_status = getCurrentState()
 def checkForJournalUpdates(client, commanderName, boot):
     #printFlush('checkForJournalUpdates is checking')
-
-    #global previous_status, second_call
     global previous_status
     if boot:
         previous_status['extra_events'].clear()
@@ -947,11 +946,11 @@ def checkForJournalUpdates(client, commanderName, boot):
 
         # Events
 
-        if key == 'type':
-            ## type event is written twice to EDJournal, we only want one interaction
-            #second_call = not second_call and True
-            #if second_call:
-            handle_conversation(client, commanderName, f"(Commander {commanderName} just swapped Vessels, from {old_value} to {new_value})")
+        #if key == 'type':
+        #    ## type event is written twice to EDJournal, we only want one interaction
+        #    second_call = not second_call and True
+        #    if second_call and old_value != None and new_value != None:
+        #        handle_conversation(client, commanderName, f"(Commander {commanderName} just swapped Vessels, from {old_value} to {new_value})")
 
         if key == 'location':
             if new_value != None:
@@ -969,7 +968,7 @@ def checkForJournalUpdates(client, commanderName, boot):
                 handle_conversation(client, commanderName, f"(Commander {commanderName}'s ship is under attack! Warn about immediate danger!)")
                 jn.reset_items()
         if key == 'fuel_percent':
-            if new_value <= 25:
+            if new_value <= 24 and current_status['type'] != None and old_value != 0 and new_value != 0:
                 handle_conversation(client, commanderName, f"(Commander {commanderName}'s ship has less than 25% fuel reserves! Warn about immediate danger!)")
         if key == 'interdicted':
             handle_conversation(client, commanderName, f"(Commander {commanderName}'s ship is being interdicted! Warn about immediate danger, advise to run or to prepare for a fight!)")
@@ -1004,7 +1003,13 @@ def checkForJournalUpdates(client, commanderName, boot):
                 elif 'Message_Localised' in item['event_content'] and item['event_content']['Message_Localised'].startswith("Entered Channel:"):
                     current_status['extra_events'].pop(0)
                     continue
-
+            if 'event_type' in item:
+                if item.get('event_type') == 'Progress' or item.get('event_type') == 'Reputation' or item.get('event_type') == 'Rank' or item.get('event_type') == 'Backpack' or item.get('event_type') == 'Statistics' or item.get('event_type') == 'Missions' or item.get('event_type') == 'LoadGame':
+                    #printFlush(item.get('event_type') + '!')
+                    #printFlush(item.get('event_content'))
+                    # @ToDo: collect for loadgame event
+                    current_status['extra_events'].pop(0)
+                    continue
             #printFlush(f"({allGameEvents[item['event_type']].format(commanderName=commanderName)} Details: {json.dumps(item['event_content'])})")
             handle_conversation(client, commanderName, f"({allGameEvents[item['event_type']].format(commanderName=commanderName)} Details: {json.dumps(item['event_content'])})")
 
@@ -1021,7 +1026,10 @@ tts = None
 def main():
     global client, sttClient, ttsClient, v, tts, keys, aiModel, handle, backstory
     if handle:
-        win32gui.SetForegroundWindow(handle)  # give focus to ED
+        try:
+            win32gui.SetForegroundWindow(handle)  # give focus to ED
+        except pywintypes.error as e:
+            printFlush(f"Failed to set game window as active: {e}")
 
     # Load or prompt for configuration
     apiKey, llm_api_key, llm_endpoint, commanderName, character, model_name, alternative_stt_var, alternative_tts_var, ptt_var, key_binding  = load_or_prompt_config()

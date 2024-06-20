@@ -242,7 +242,7 @@ class EDJournal:
             if self.ship['fuel_level'] and self.ship['fuel_capacity']:
                 self.ship['fuel_percent'] = round((self.ship['fuel_level'] / self.ship['fuel_capacity']) * 100)
             else:
-                self.ship['fuel_percent'] = 10
+                self.ship['fuel_percent'] = 100
 
             # parse scoop
             if log_event == 'FuelScoop' and self.ship['time'] < 10 and self.ship['fuel_percent'] < 100:
@@ -409,14 +409,14 @@ class EDJournal:
                 ##Startup Events:
                 #'Cargo',
                 ##'ClearSavedGame', # bad idea
-                ##'LoadGame',
+                'LoadGame',
                 ##'NewCommander',   # bad idea?
                 #'Materials',
-                #'Missions',
-                #'Progress',
-                #'Rank',
-                #'Reputation',
-                #'Statistics',
+                'Missions',
+                'Progress',
+                'Rank',
+                'Reputation',
+                'Statistics',
 
                 #Powerplay Events:
                 'PowerplayCollect',
@@ -440,7 +440,7 @@ class EDJournal:
                 'SquadronCreated',
                 'SquadronDemotion',
                 'SquadronPromotion',
-                'SquadronStartup',
+                #'SquadronStartup',  # spams on startup, maybe collect for loadgame event?
                 'WonATrophyForSquadron',
 
                 # Exploration Events:
@@ -592,7 +592,7 @@ class EDJournal:
                 'LaunchSRV',
                 #'ModuleInfo',
                 #'Music',  # Triggers too often
-                'NpcCrewPaidWage',
+                #'NpcCrewPaidWage', # spams on startup
                 'NpcCrewRank',
                 'Promotion',
                 'ProspectedAsteroid',
