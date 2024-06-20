@@ -78,6 +78,12 @@ class App:
         self.tools_checkbox = tk.Checkbutton(self.ai_geeks_frame, text="Function Calling (default: on)", variable=self.tools_var)
         self.tools_checkbox.grid(row=1, column=0, padx=10, pady=10)
 
+        # Vision Capabilities (Checkbox)
+        self.vision_var = tk.BooleanVar()
+        self.vision_var.set(True)  # Default value
+        self.vision_checkbox = tk.Checkbutton(self.ai_geeks_frame, text="Vision Capabilities (default: on)", variable=self.vision_var)
+        self.vision_checkbox.grid(row=1, column=1, padx=10, pady=10)
+
         # LLM Model Name
         tk.Label(self.ai_geeks_frame, text="LLM Model Name:").grid(row=2, column=0, sticky=tk.W)
         self.llm_model_name = tk.Entry(self.ai_geeks_frame, width=50)
@@ -103,7 +109,7 @@ class App:
         self.alternative_stt_var = tk.BooleanVar()
         self.alternative_stt_var.set(False)  # Default value
         self.alternative_stt_checkbox = tk.Checkbutton(self.ai_geeks_frame, text="Local STT(whisper-medium)", variable=self.alternative_stt_var)
-        self.alternative_stt_checkbox.grid(row=6, column=0)
+        self.alternative_stt_checkbox.grid(row=6, column=0, padx=10, pady=10)
 
         ## STT Endpoint
         #tk.Label(self.ai_geeks_frame, text="STT Endpoint:").grid(row=9, column=0, sticky=tk.W)
@@ -119,7 +125,12 @@ class App:
         self.alternative_tts_var = tk.BooleanVar()
         self.alternative_tts_var.set(False)  # Default value
         self.alternative_tts_checkbox = tk.Checkbutton(self.ai_geeks_frame, text="Local TTS (OS Voices)", variable=self.alternative_tts_var)
-        self.alternative_tts_checkbox.grid(row=6, column=1)
+        self.alternative_tts_checkbox.grid(row=6, column=1, padx=10, pady=10)
+
+        # TTS Voice
+        tk.Label(self.ai_geeks_frame, text="TTS Voice:").grid(row=7, column=0, sticky=tk.W)
+        self.tts_voice = tk.Entry(self.ai_geeks_frame, width=50)
+        self.tts_voice.grid(row=7, column=1, padx=10, pady=5)
 
         ## TTS Endpoint
         #tk.Label(self.ai_geeks_frame, text="TTS Endpoint:").grid(row=12, column=0, sticky=tk.W)
@@ -236,10 +247,12 @@ class App:
                 'alternative_stt_var': False,
                 'alternative_tts_var': False,
                 'tools_var': True,
+                'vision_var': True,
                 'ptt_var': False,
                 'llm_model_name': "gpt-4o",
                 'llm_endpoint': "",
                 'llm_api_key': "",
+                'tts_voice': "nova",
                 'key_binding': None
                 #'vision_model_endpoint': "",
                 #'vision_model_api_key': "",
@@ -266,7 +279,9 @@ class App:
         self.data['alternative_stt_var'] = self.alternative_stt_var.get()
         self.data['alternative_tts_var'] = self.alternative_tts_var.get()
         self.data['tools_var'] = self.tools_var.get()
+        self.data['vision_var'] = self.vision_var.get()
         self.data['ptt_var'] = self.ptt_var.get()
+        self.data['tts_voice'] = self.tts_voice.get()
         self.data['key_binding'] = self.key_binding
 
         with open('config.json', 'w') as file:
@@ -290,7 +305,9 @@ class App:
         self.alternative_stt_var.set(self.data['alternative_stt_var'])
         self.alternative_tts_var.set(self.data['alternative_tts_var'])
         self.tools_var.set(self.data['tools_var'])
+        self.vision_var.set(self.data['vision_var'])
         self.ptt_var.set(self.data['ptt_var'])
+        self.tts_voice.insert(0, self.data['tts_voice'])
         self.key_binding = self.data['key_binding']
 
         self.update_label_text()

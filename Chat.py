@@ -587,10 +587,12 @@ def prompt_for_config():
     alternative_stt_var = input("Local STT? ")
     alternative_tts_var = input("Local TTS? ")
     tools_var = input("AI Tools? ")
+    vision_var = input("Vision Capabilities? ")
     ptt_var = input("Use Push-to-talk? ")
+    tts_voice = input("Enter TTS Voice: ")
     key_binding = input("Push-to-talk button: ")
 
-    return api_key, llm_api_key, llm_endpoint, commander_name, character, ai_model, alternative_stt_var, alternative_tts_var, tools_var, ptt_var, key_binding
+    return api_key, llm_api_key, llm_endpoint, commander_name, character, ai_model, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding
 
 def load_or_prompt_config():
     config_file = Path("config.json")
@@ -612,10 +614,12 @@ def load_or_prompt_config():
             alternative_stt_var = config.get('alternative_stt_var', '')
             alternative_tts_var = config.get('alternative_tts_var', '')
             tools_var = config.get('tools_var', '')
+            vision_var = config.get('vision_var', '')
             ptt_var = config.get('ptt_var', '')
+            tts_voice = config.get('tts_voice', '')
             key_binding = config.get('key_binding', '')
     else:
-        api_key, llm_api_key, llm_endpoint, commander_name, character, ai_model, alternative_stt_var, alternative_tts_var, tools_var, ptt_var, key_binding = prompt_for_config()
+        api_key, llm_api_key, llm_endpoint, commander_name, character, ai_model, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding = prompt_for_config()
         with open(config_file, 'w') as f:
             json.dump({
                 'api_key': api_key,
@@ -633,11 +637,13 @@ def load_or_prompt_config():
                 'alternative_stt_var': alternative_stt_var,
                 'alternative_tts_var': alternative_tts_var,
                 'tools_var': tools_var,
+                'vision_var': vision_var,
                 'ptt_var': ptt_var,
+                'tts_voice': tts_voice,
                 'key_binding': key_binding
             }, f)
 
-    return api_key, llm_api_key, llm_endpoint, commander_name, character, model_name, alternative_stt_var, alternative_tts_var, tools_var, ptt_var, key_binding
+    return api_key, llm_api_key, llm_endpoint, commander_name, character, model_name, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding
 
 handle = win32gui.FindWindow(0, "Elite - Dangerous (CLIENT)")
 def setGameWindowActive():
@@ -788,33 +794,6 @@ def get_faction_info(obj):
 
     except:
         return "Currently no information on factions inside this system available"
-
-def get_visuals(obj):
-    image = screenshot()
-    if not image: return "Unable to take screenshot."
-    
-    completion = client.chat.completions.create(
-        extra_headers={
-            "HTTP-Referer": "https://github.com/RatherRude/Elite-Dangerous-AI-Integration",
-            "X-Title": "Elite Dangerous AI Integration",
-        },
-        model=aiModel,
-        messages=format_image(image, obj.get("query")),
-    ) 
-    printFlush("get_visuals completion:", completion)
-
-    return completion.choices[0].message.content
-
-aiActions.registerAction('getVisuals', "Get a description of what's currently visible to the Commander", {
-    "type": "object",
-    "properties": {
-        "query": {
-            "type": "string",
-            "description": "Describe what you are curious about in the description. Example: 'Count the number of pirates'"
-        }
-    },
-    "required": ["query"]
-}, get_visuals)
 
 aiActions.registerAction('getFactions', "Retrieve information about factions for a system", {
     "type": "object",
@@ -1064,7 +1043,7 @@ def main():
     setGameWindowActive()
 
     # Load or prompt for configuration
-    apiKey, llm_api_key, llm_endpoint, commanderName, character, model_name, alternative_stt_var, alternative_tts_var, tools_var, ptt_var, key_binding  = load_or_prompt_config()
+    apiKey, llm_api_key, llm_endpoint, commanderName, character, model_name, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding  = load_or_prompt_config()
 
     printFlush('loading keys')
 
@@ -1074,6 +1053,7 @@ def main():
       base_url = "https://api.openai.com/v1" if llm_endpoint == '' else llm_endpoint,
       api_key=apiKey if llm_api_key == '' else llm_api_key,
     )
+    # tool usage
     if tools_var:
         useTools = True
     # alternative models
@@ -1082,6 +1062,34 @@ def main():
     # alternative character
     if character != '':
         backstory = character
+    # vision
+    if vision_var:
+        def get_visuals(obj):
+            image = screenshot()
+            if not image: return "Unable to take screenshot."
+
+            completion = client.chat.completions.create(
+                extra_headers={
+                    "HTTP-Referer": "https://github.com/RatherRude/Elite-Dangerous-AI-Integration",
+                    "X-Title": "Elite Dangerous AI Integration",
+                },
+                model=aiModel,
+                messages=format_image(image, obj.get("query")),
+            )
+            printFlush("get_visuals completion:", completion)
+
+            return completion.choices[0].message.content
+
+        aiActions.registerAction('getVisuals', "Get a description of what's currently visible to the Commander", {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Describe what you are curious about in the description. Example: 'Count the number of pirates'"
+                }
+            },
+            "required": ["query"]
+        }, get_visuals)
 
     # To Be Implemented
     ttsClient = OpenAI(
@@ -1098,6 +1106,7 @@ def main():
     printFlush(f"Using Push-to-Talk: {ptt_var}")
     printFlush(f"Using Function Calling: {useTools}")
     printFlush(f"Current model: {aiModel}")
+    printFlush(f"Current TTS voice: {tts_voice}")
     printFlush("Current backstory: " + backstory.replace("{commander_name}", commanderName))
     printFlush("\nBasic configuration complete.\n")
     printFlush("Loading voice interface...")
@@ -1109,7 +1118,7 @@ def main():
         tts.set_on()
     else:
         printFlush('remote TTS')
-        tts = TTS.TTS(openai_client=ttsClient)
+        tts = TTS.TTS(openai_client=ttsClient, voice=tts_voice)
 
     # STT Setup
     parser = argparse.ArgumentParser()
