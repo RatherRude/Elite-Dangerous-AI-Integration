@@ -668,7 +668,7 @@ def setGameWindowActive():
 def screenshot():
     global handle
     if handle:
-        win32gui.SetForegroundWindow(handle)
+        setGameWindowActive()
         x, y, x1, y1 = win32gui.GetClientRect(handle)
         x, y = win32gui.ClientToScreen(handle, (x, y))
         x1, y1 = win32gui.ClientToScreen(handle, (x1, y1))
