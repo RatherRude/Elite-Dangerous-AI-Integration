@@ -510,6 +510,10 @@ class EDJournal:
                 #'StoredShips',
                 'TechnologyBroker',
                 'ClearImpound',
+                'Touchdown',
+                'Undocked',
+                'Docked',
+                'DockingComplete',
 
                 # Fleet Carrier Events:
                 'CarrierJump',

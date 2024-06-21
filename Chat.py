@@ -129,6 +129,7 @@ stationServiceEvents = {
     "BuyAmmo": "Commander {commanderName} has bought ammunition.",
     "BuyDrones": "Commander {commanderName} has bought drones.",
     "CargoDepot": "Commander {commanderName} has completed a cargo depot operation.",
+    "ClearImpound": "Commander {commanderName} has cleared an impound.",
     "CommunityGoal": "Commander {commanderName} has engaged in a community goal.",
     "CommunityGoalDiscard": "Commander {commanderName} has discarded a community goal.",
     "CommunityGoalJoin": "Commander {commanderName} has joined a community goal.",
@@ -177,12 +178,8 @@ stationServiceEvents = {
     "TechnologyBroker": "Commander {commanderName} has accessed a technology broker.",
     "Touchdown": "Commander {commanderName} has touched down on a planet surface.",
     "Undocked": "Commander {commanderName} has undocked from a station.",
-    "USSDrop": "Commander {commanderName} has dropped into an unidentified signal source.",
-    "VehicleSwitch": "Commander {commanderName} has switched to a new SRV.",
-    "WingAdd": "Commander {commanderName} has added a new wing member.",
-    "WingInvite": "Commander {commanderName} has been invited to a wing.",
-    "WingJoin": "Commander {commanderName} has joined a wing.",
-    "WingLeave": "Commander {commanderName} has left a wing."
+    "Docked": "Commander {commanderName} has docked with a station.",
+    "DockingComplete": "Commander {commanderName} has completed docking with a station.",
 }
 carrierEvents = {
     "CarrierJump": "Commander {commanderName} has performed a carrier jump.",
