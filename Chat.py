@@ -578,8 +578,9 @@ def prompt_for_config():
     ai_model = input("Enter AI Model Name: ")
     llm_api_key = input("Enter LLM API Key: ")
     llm_endpoint = input("Enter LLM Endpoint: ")
-    #vision_model_api_key = input("Enter Vision Model API Key: ")
-    #vision_model_endpoint = input("Enter Vision Model Endpoint: ")
+    vision_model_name = input("Enter Vision Model Name: ")
+    vision_endpoint = input("Enter Vision Model Endpoint: ")
+    vision_api_key = input("Enter Vision Model API Key: ")
     stt_model_name = input("Enter STT Model Name: ")
     stt_api_key = input("Enter STT API Key: ")
     stt_endpoint = input("Enter STT Endpoint: ")
@@ -594,7 +595,7 @@ def prompt_for_config():
     tts_voice = input("Enter TTS Voice: ")
     key_binding = input("Push-to-talk button: ")
 
-    return api_key, llm_api_key, llm_endpoint, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, ai_model, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding
+    return api_key, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, ai_model, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding
 
 def load_or_prompt_config():
     config_file = Path("config.json")
@@ -607,8 +608,9 @@ def load_or_prompt_config():
             commander_name = config.get('commander_name', '')
             character = config.get('character', '')
             model_name = config.get('llm_model_name', '')
-            vision_model_api_key = config.get('vision_model_api_key', '')
-            vision_model_endpoint = config.get('vision_model_endpoint', '')
+            vision_model_name = config.get('vision_model_name', '')
+            vision_endpoint = config.get('vision_endpoint', '')
+            vision_api_key = config.get('vision_api_key', '')
             stt_model_name = config.get('stt_model_name', '')
             stt_api_key = config.get('stt_api_key', '')
             stt_endpoint = config.get('stt_endpoint', '')
@@ -623,7 +625,7 @@ def load_or_prompt_config():
             tts_voice = config.get('tts_voice', '')
             key_binding = config.get('key_binding', '')
     else:
-        api_key, llm_api_key, llm_endpoint, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, ai_model, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding = prompt_for_config()
+        api_key, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, ai_model, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding = prompt_for_config()
         with open(config_file, 'w') as f:
             json.dump({
                 'api_key': api_key,
@@ -632,8 +634,9 @@ def load_or_prompt_config():
                 'commander_name': commander_name,
                 'character': character,
                 'model_name': ai_model,
-                #'vision_model_api_key': vision_model_api_key,
-                #'vision_model_endpoint': vision_model_endpoint,
+                'vision_model_name': vision_model_name,
+                'vision_endpoint': vision_endpoint,
+                'vision_api_key': vision_api_key,
                 'stt_model_name': stt_model_name,
                 'stt_api_key': stt_api_key,
                 'stt_endpoint': stt_endpoint,
@@ -649,7 +652,7 @@ def load_or_prompt_config():
                 'key_binding': key_binding
             }, f)
 
-    return api_key, llm_api_key, llm_endpoint, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, model_name, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding
+    return api_key, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, model_name, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding
 
 handle = win32gui.FindWindow(0, "Elite - Dangerous (CLIENT)")
 def setGameWindowActive():
@@ -747,30 +750,43 @@ def get_station_info(obj):
     except:
         return "Currently no information on system available"
 
-# fetch galnet news summarize it
-#def get_galnet_news(obj):
-#    url = "https://cms.zaonce.net/en-GB/jsonapi/node/galnet_article?&sort=-published_at&page[offset]=0&page[limit]=5"
-#
-#    try:
-#        response = requests.get(url, params=params)
-#        response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
-#
-#        completion = client.chat.completions.create(
-#            extra_headers={
-#                "HTTP-Referer": "https://github.com/RatherRude/Elite-Dangerous-AI-Integration",
-#                "X-Title": "Elite Dangerous AI Integration",
-#            },
-#            model=aiModel,
-#            messages=[{
-#                    "role": "user",
-#                    "content": f"Analyze the following list of news articles: {response.text}\nInquiry: {obj.get('query')}"
-#                }],
-#        )
-#
-#        return completion.choices[0].message.content
-#
-#    except:
-#        return "News feed currently unavailable"
+# returns summary of galnet news
+def get_galnet_news(obj):
+    url = "https://cms.zaonce.net/en-GB/jsonapi/node/galnet_article?&sort=-published_at&page[offset]=0&page[limit]=10"
+
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
+        results = json.loads(response.content.decode())["data"]
+        articles = []
+
+        if results:
+            for result in results:
+                article = {
+                   "date": result["attributes"]["field_galnet_date"],
+                   "title": result["attributes"]["title"],
+                   "content": result["attributes"]["body"]["value"],
+                }
+                articles.append(article)
+
+            completion = client.chat.completions.create(
+                extra_headers={
+                    "HTTP-Referer": "https://github.com/RatherRude/Elite-Dangerous-AI-Integration",
+                    "X-Title": "Elite Dangerous AI Integration",
+                },
+                model=aiModel,
+                messages=[{
+                        "role": "user",
+                        "content": f"Analyze the following list of news articles, either answer the given inquiry or create a short summary that includes all named entities: {articles}\nInquiry: {obj.get('query')}"
+                    }],
+            )
+
+            return completion.choices[0].message.content
+
+        return "News feed currently unavailable"
+
+    except:
+        return "News feed currently unavailable"
 
 # fetch faction info from EDSM and summarizes it
 def get_faction_info(obj):
@@ -831,16 +847,16 @@ aiActions.registerAction('getStations', "Retrieve information about stations in 
      "required": ["query", "systemName"]
 }, get_station_info)
 
-#aiActions.registerAction('getGalnetNews', "Retrieve current news from galnet", {
-#    "type": "object",
-#    "properties": {
-#        "query": {
-#            "type": "string",
-#            "description": "Answer inquiry if given, otherise give general overview. Example: 'Any recent thargoid attacks on the news?'"
-#        },
-#    },
-#     "required": ["query"]
-#}, get_galnet_news)
+aiActions.registerAction('getGalnetNews', "Retrieve current interstellar news from Galnet", {
+    "type": "object",
+    "properties": {
+        "query": {
+            "type": "string",
+            "description": "Inquiry you are trying to answer. Example: 'What happened to the thargoids recently?'"
+        },
+    },
+     "required": ["query"]
+}, get_galnet_news)
 
 jn = EDJournal()
 def handle_conversation(client, commander_name, user_input):
@@ -1049,16 +1065,16 @@ def main():
     setGameWindowActive()
 
     # Load or prompt for configuration
-    apiKey, llm_api_key, llm_endpoint, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commanderName, character, model_name, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding  = load_or_prompt_config()
+    apiKey, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commanderName, character, model_name, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding  = load_or_prompt_config()
 
     printFlush('loading keys')
 
-    # Now you can use api_key and use_openrouter in your script
     # gets API Key from config.json
     client = OpenAI(
       base_url = "https://api.openai.com/v1" if llm_endpoint == '' else llm_endpoint,
-      api_key=apiKey if llm_api_key == '' else llm_api_key,
+      api_key = apiKey if llm_api_key == '' else llm_api_key,
     )
+
     # tool usage
     if tools_var:
         useTools = True
@@ -1070,17 +1086,21 @@ def main():
         backstory = character
     # vision
     if vision_var:
+        visionClient = OpenAI(
+          base_url = "https://api.openai.com/v1" if vision_endpoint == '' else vision_endpoint,
+          api_key = apiKey if vision_api_key == '' else vision_api_key,
+        )
         def get_visuals(obj):
             image = screenshot()
             if not image: return "Unable to take screenshot."
 
-            completion = client.chat.completions.create(
-                extra_headers={
+            completion = visionClient.chat.completions.create(
+                extra_headers = {
                     "HTTP-Referer": "https://github.com/RatherRude/Elite-Dangerous-AI-Integration",
                     "X-Title": "Elite Dangerous AI Integration",
                 },
-                model=aiModel,
-                messages=format_image(image, obj.get("query")),
+                model = aiModel if vision_model_name == '' else vision_model_name,
+                messages = format_image(image, obj.get("query")),
             )
             printFlush("get_visuals completion:", completion)
 
@@ -1099,11 +1119,11 @@ def main():
 
     sttClient = OpenAI(
         base_url = "https://api.openai.com/v1" if stt_endpoint == '' else stt_endpoint,
-        api_key=apiKey if stt_api_key == '' else stt_api_key,
+        api_key = apiKey if stt_api_key == '' else stt_api_key,
     )
     ttsClient = OpenAI(
         base_url = "https://api.openai.com/v1" if tts_endpoint == '' else tts_endpoint,
-        api_key=apiKey if tts_api_key == '' else tts_api_key,
+        api_key = apiKey if tts_api_key == '' else tts_api_key,
     )
 
     printFlush(f"Initializing CMDR {commanderName}'s personal AI...\n")
