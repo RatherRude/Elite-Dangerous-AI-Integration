@@ -368,21 +368,21 @@ class EDJournal:
             elif log_event == 'DockingTimeout':
                 self.ship['status'] = 'docking_timeout'
 
-            #elif log_event == 'DockingRequested':
-            #    self.ship['status'] = 'docking_requested'
+            elif log_event == 'DockingRequested':
+                self.ship['status'] = 'docking_requested'
 
-            # elif log_event == 'DockingDenied':
-            #     self.ship['status'] = 'docking_denied'
-            #     self.ship['no_dock_reason'] = log['Reason']
+            elif log_event == 'DockingDenied':
+                self.ship['status'] = 'docking_denied'
+                #self.ship['no_dock_reason'] = log['Reason']
 
-            # elif log_event == 'DockingGranted':
-            #     self.ship['status'] = 'docking_granted'
+            elif log_event == 'DockingGranted':
+                self.ship['status'] = 'docking_granted'
 
             elif log_event == 'DockingComplete':
                 self.ship['status'] = 'docking_complete'
 
-            # elif log_event == 'DockingCancelled':
-            #     self.ship['status'] = 'docking_cancelled'
+            elif log_event == 'DockingCancelled':
+                self.ship['status'] = 'docking_cancelled'
 
             # elif log_event == 'MiningRefined':
             #     self.ship['mining_refined'] = log['Type']
@@ -513,7 +513,11 @@ class EDJournal:
                 'Touchdown',
                 'Undocked',
                 'Docked',
+                'DockingRequested',
+                'DockingGranted',
+                'DockingDenied',
                 'DockingComplete',
+                'DockingTimeout',
 
                 # Fleet Carrier Events:
                 'CarrierJump',

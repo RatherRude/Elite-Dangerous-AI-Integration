@@ -180,6 +180,11 @@ stationServiceEvents = {
     "Undocked": "Commander {commanderName} has undocked from a station.",
     "Docked": "Commander {commanderName} has docked with a station.",
     "DockingComplete": "Commander {commanderName} has completed docking with a station.",
+    "DockingRequested": "Commander {commander_name} has sent a request to dock with a station.",
+    "DockingGranted": "Commander {commander_name}'s request to dock with a station has been granted.",
+    "DockingDenied": "Commander {commander_name}'s request to dock with a station has been denied.",
+    "DockingComplete": "Commander {commander_name} has docked with a station",
+    "DockingTimeout": "Commander {commander_name}'s request to dock with a station has timed out.",
 }
 carrierEvents = {
     "CarrierJump": "Commander {commanderName} has performed a carrier jump.",
