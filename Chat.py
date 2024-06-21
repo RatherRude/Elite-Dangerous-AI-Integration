@@ -170,6 +170,7 @@ stationServiceEvents = {
     "ShipyardNew": "Commander {commanderName} has acquired a new ship.",
     "ShipyardSell": "Commander {commanderName} has sold a ship.",
     "ShipyardSwap": "Commander {commanderName} has swapped ships.",
+    "ShipyardTransfer": "Commander {commanderName} has transfersd a ship.",
     "ShipyardBuy": "Commander {commanderName} has bought a ship.",
     "StoredShips": "Commander {commanderName} has stored ships.",
     "StoredModules": "Commander {commanderName} has stored modules.",
