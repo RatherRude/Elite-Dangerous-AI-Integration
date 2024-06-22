@@ -3,6 +3,7 @@ from os.path import join, isfile, getmtime, abspath
 from json import loads
 from time import sleep, time
 from datetime import datetime
+from typing import Dict, List
 
 from EDlogger import logger
 from WindowsKnownPaths import *
@@ -32,16 +33,20 @@ Design:
 
 """
 
-"""                             
-TODO: thinking self.ship()[name]  uses the same names as in the journal, so can lookup same construct     
-"""
-
 
 class EDJournal:
-    def __init__(self):
+    def __init__(self, game_events: Dict[str, Dict[str, bool]]):
         self.log_file = None
         self.current_log = self.get_latest_log()
         self.open_journal(self.current_log)
+
+        # game events that can be written into self.ship.extra_events
+        self.enabled_game_events:List[str]=[]
+        if game_events:
+            for category, events in game_events.items():
+                for event, state in events.items():
+                    if state:
+                        self.enabled_game_events.append(event)
 
         self.ship = {
             'disembark': False,
@@ -404,227 +409,7 @@ class EDJournal:
             #      self.ship['received_text'] = log['From']
             #      self.ship['message'] = log['Message']
 
-            if log_event in (
-                ##To Be Tested
-                ##Startup Events:
-                #'Cargo',
-                ##'ClearSavedGame', # bad idea
-                'LoadGame',
-                ##'NewCommander',   # bad idea?
-                #'Materials',
-                'Missions',
-                'Progress',
-                'Rank',
-                'Reputation',
-                'Statistics',
-
-                #Powerplay Events:
-                'PowerplayCollect',
-                'PowerplayDefect',
-                'PowerplayDeliver',
-                'PowerplayFastTrack',
-                'PowerplayJoin',
-                'PowerplayLeave',
-                'PowerplaySalary',
-                'PowerplayVote',
-                'PowerplayVoucher',
-
-                #Squadron Events:
-                'AppliedToSquadron',
-                'DisbandedSquadron',
-                'InvitedToSquadron',
-                'JoinedSquadron',
-                'KickedFromSquadron',
-                'LeftSquadron',
-                'SharedBookmarkToSquadron',
-                'SquadronCreated',
-                'SquadronDemotion',
-                'SquadronPromotion',
-                'SquadronStartup',
-                'WonATrophyForSquadron',
-
-                # Exploration Events:
-                'CodexEntry',
-                'DiscoveryScan',
-                'Scan',
-
-                # Trade Events:
-                'Trade',
-                'AsteroidCracked',
-                'BuyTradeData',
-                'CollectCargo',
-                'EjectCargo',
-                'MarketBuy',
-                'MarketSell',
-                'MiningRefined',
-
-                # Station Services Events:
-                'StationServices',
-                'BuyAmmo',
-                'BuyDrones',
-                'CargoDepot',
-                'CommunityGoal',
-                'CommunityGoalDiscard',
-                'CommunityGoalJoin',
-                'CommunityGoalReward',
-                'CrewAssign',
-                'CrewFire',
-                'CrewHire',
-                'EngineerContribution',
-                'EngineerCraft',
-                'EngineerLegacyConvert',
-                #'EngineerProgress',
-                'FetchRemoteModule',
-                'Market',
-                'MassModuleStore',
-                'MaterialTrade',
-                'MissionAbandoned',
-                'MissionAccepted',
-                'MissionCompleted',
-                'MissionFailed',
-                'MissionRedirected',
-                'ModuleBuy',
-                'ModuleRetrieve',
-                'ModuleSell',
-                'ModuleSellRemote',
-                'ModuleStore',
-                'ModuleSwap',
-                'Outfitting',
-                'PayBounties',
-                'PayFines',
-                'PayLegacyFines',
-                'RedeemVoucher',
-                'RefuelAll',
-                'RefuelPartial',
-                'Repair',
-                'RepairAll',
-                'RestockVehicle',
-                'ScientificResearch',
-                'Shipyard',
-                'ShipyardBuy',
-                #'ShipyardNew',
-                'ShipyardSell',
-                'ShipyardTransfer',
-                'ShipyardSwap',
-                #'StoredModules',
-                #'StoredShips',
-                'TechnologyBroker',
-                'ClearImpound',
-                'Touchdown',
-                'Undocked',
-                'Docked',
-                'DockingRequested',
-                'DockingGranted',
-                'DockingDenied',
-                'DockingComplete',
-                'DockingTimeout',
-
-                # Fleet Carrier Events:
-                'CarrierJump',
-                'CarrierBuy',
-                'CarrierStats',
-                'CarrierJumpRequest',
-                'CarrierDecommission',
-                'CarrierCancelDecommission',
-                'CarrierBankTransfer',
-                'CarrierDepositFuel',
-                'CarrierCrewServices',
-                'CarrierFinance',
-                'CarrierShipPack',
-                'CarrierModulePack',
-                'CarrierTradeOrder',
-                'CarrierDockingPermission',
-                'CarrierNameChanged',
-                'CarrierJumpCancelled',
-
-                # Odyssey Events:
-                'Backpack',  # Triggers too often???
-                'BackpackChange',
-                'BookDropship',
-                'BookTaxi',
-                'BuyMicroResources',
-                'BuySuit',
-                'BuyWeapon',
-                'CancelDropship',
-                'CancelTaxi',
-                #'CollectItems',
-                'CreateSuitLoadout',
-                'DeleteSuitLoadout',
-                'Disembark',
-                'DropItems',
-                'DropShipDeploy',
-                'Embark',
-                'FCMaterials',
-                'LoadoutEquipModule',
-                'LoadoutRemoveModule',
-                'RenameSuitLoadout',
-                'ScanOrganic',
-                'SellMicroResources',
-                'SellOrganicData',
-                'SellWeapon',
-                #'ShipLocker',  # Triggers too often
-                'SwitchSuitLoadout',
-                'TransferMicroResources',
-                'TradeMicroResources',
-                'UpgradeSuit',
-                'UpgradeWeapon',
-                'UseConsumable',
-
-                # Other Events:
-                'AfmuRepairs',
-                'ApproachSettlement',
-                'ChangeCrewRole',
-                'CockpitBreached',
-                'CommitCrime',
-                'Continued',
-                'CrewLaunchFighter',
-                'CrewMemberJoins',
-                'CrewMemberQuits',
-                'CrewMemberRoleChange',
-                'CrimeVictim',
-                'DatalinkScan',
-                'DatalinkVoucher',
-                'DataScanned',
-                'DockFighter',
-                'DockSRV',
-                'EndCrewSession',
-                'FighterRebuilt',
-                'FuelScoop',
-                'Friends',
-                'JetConeBoost',
-                'JetConeDamage',
-                'JoinACrew',
-                'KickCrewMember',
-                'LaunchDrone',
-                'LaunchFighter',
-                'LaunchSRV',
-                #'ModuleInfo',
-                #'Music',  # Triggers too often
-                #'NpcCrewPaidWage', # spams on startup
-                'NpcCrewRank',
-                'Promotion',
-                'ProspectedAsteroid',
-                'QuitACrew',
-                'RebootRepair',
-                'ReceiveText',
-                'RepairDrone',
-                #'ReservoirReplenished',
-                'Resurrect',
-                'Scanned',
-                'SelfDestruct',
-                'SendText',
-                'Shutdown',
-                'Synthesis',
-                'SystemsShutdown',
-                'USSDrop',
-                'VehicleSwitch',
-                'WingAdd',
-                'WingInvite',
-                'WingJoin',
-                'WingLeave',
-                'CargoTransfer',
-                'SupercruiseDestinationDrop'
-            ):
+            if log_event in self.enabled_game_events:
                 self.ship['extra_events'].append({
                     "event_type": log_event,
                     "event_content": log

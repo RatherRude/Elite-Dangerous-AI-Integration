@@ -594,8 +594,9 @@ def prompt_for_config():
     ptt_var = input("Use Push-to-talk? ")
     tts_voice = input("Enter TTS Voice: ")
     key_binding = input("Push-to-talk button: ")
+    game_events = input("Please enter game events in the format of Dict[str, Dict[str, bool]] ☺")
 
-    return api_key, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, ai_model, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding
+    return api_key, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, ai_model, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding, game_events
 
 def load_or_prompt_config():
     config_file = Path("config.json")
@@ -624,8 +625,9 @@ def load_or_prompt_config():
             ptt_var = config.get('ptt_var', '')
             tts_voice = config.get('tts_voice', '')
             key_binding = config.get('key_binding', '')
+            game_events = config.get('game_events', '[]')
     else:
-        api_key, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, ai_model, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding = prompt_for_config()
+        api_key, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, ai_model, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding, game_events = prompt_for_config()
         with open(config_file, 'w') as f:
             json.dump({
                 'api_key': api_key,
@@ -649,10 +651,11 @@ def load_or_prompt_config():
                 'vision_var': vision_var,
                 'ptt_var': ptt_var,
                 'tts_voice': tts_voice,
-                'key_binding': key_binding
+                'key_binding': key_binding,
+                'game_events': game_events,
             }, f)
 
-    return api_key, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, model_name, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding
+    return api_key, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, model_name, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding, game_events
 
 handle = win32gui.FindWindow(0, "Elite - Dangerous (CLIENT)")
 def setGameWindowActive():
@@ -858,7 +861,6 @@ aiActions.registerAction('getGalnetNews', "Retrieve current interstellar news fr
      "required": ["query"]
 }, get_galnet_news)
 
-jn = EDJournal()
 def handle_conversation(client, commander_name, user_input):
     printFlush(f"CMDR: {user_input}")
     chat_prompt = prepare_chat_prompt(commander_name)
@@ -950,7 +952,7 @@ def getCurrentState():
 
     return {key: value for key, value in rawState.items() if key not in keysToFilterOut}
 
-previous_status = getCurrentState()
+previous_status = None
 def checkForJournalUpdates(client, commanderName, boot):
     #printFlush('checkForJournalUpdates is checking')
     global previous_status
@@ -1058,14 +1060,18 @@ def checkForJournalUpdates(client, commanderName, boot):
     previous_status = current_status
     #printFlush('checkForJournalUpdates end')
 
+jn = None
 keys = EDKeys()
 tts = None
 def main():
-    global client, sttClient, ttsClient, v, tts, keys, aiModel, backstory, useTools
+    global client, sttClient, ttsClient, v, tts, keys, aiModel, backstory, useTools, jn, previous_status
     setGameWindowActive()
 
     # Load or prompt for configuration
-    apiKey, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commanderName, character, model_name, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding  = load_or_prompt_config()
+    apiKey, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commanderName, character, model_name, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding, game_events  = load_or_prompt_config()
+
+    jn = EDJournal(game_events)
+    previous_status = getCurrentState()
 
     printFlush('loading keys')
 
