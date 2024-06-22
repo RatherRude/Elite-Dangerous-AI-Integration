@@ -117,9 +117,7 @@ tradeEvents = {
     "AsteroidCracked": "Commander {commanderName} has cracked an asteroid.",
     "BuyTradeData": "Commander {commanderName} has bought trade data.",
     "CollectCargo": "Commander {commanderName} has collected cargo.",
-    "CollectCargoStolen": "Commander {commanderName} has collected stolen cargo.",
     "EjectCargo": "Commander {commanderName} has ejected cargo.",
-    "EjectCargoAbandoned": "Commander {commanderName} has ejected abandoned cargo.",
     "MarketBuy": "Commander {commanderName} has bought market goods.",
     "MarketSell": "Commander {commanderName} has sold market goods.",
     "MiningRefined": "Commander {commanderName} has refined a resource."
@@ -179,7 +177,6 @@ stationServiceEvents = {
     "Touchdown": "Commander {commanderName} has touched down on a planet surface.",
     "Undocked": "Commander {commanderName} has undocked from a station.",
     "Docked": "Commander {commanderName} has docked with a station.",
-    "DockingComplete": "Commander {commanderName} has completed docking with a station.",
     "DockingRequested": "Commander {commander_name} has sent a request to dock with a station.",
     "DockingGranted": "Commander {commander_name}'s request to dock with a station has been granted.",
     "DockingDenied": "Commander {commander_name}'s request to dock with a station has been denied.",
