@@ -60,7 +60,7 @@ class STT:
         audio_data = sr.AudioData(audio_raw, source.SAMPLE_RATE, source.SAMPLE_WIDTH)
         audio_wav = audio_data.get_wav_data()
         text = self._transcribe(audio_wav)
-        if not text:
+        if not text or text.strip() == '' or text == 'Call Wakata Station in HIP 23716 for help and enter supercruise immediately!':
             return
         self.resultQueue.put(STTResult(text, audio_wav, timestamp))
 
