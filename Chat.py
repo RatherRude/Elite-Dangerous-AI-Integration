@@ -664,8 +664,8 @@ def setGameWindowActive():
     if handle:
         try:
             win32gui.SetForegroundWindow(handle)  # give focus to ED
-        except pywintypes.error as e:
-            printFlush(f"Failed to set game window as active: {e}")
+        except:
+            printFlush("Failed to set game window as active")
 
 def screenshot():
     global handle
