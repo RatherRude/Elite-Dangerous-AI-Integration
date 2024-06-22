@@ -28,7 +28,7 @@ networkx==3.1
 numba==0.58.1
 numpy==1.24.4
 openai==1.31.1
-openai-whisper==20231117
+faster-whisper==1.0.2
 Pillow==10.3.0
 pip==24.0
 playsound==1.2.2
@@ -47,6 +47,7 @@ PyScreeze==0.1.30
 pyttsx3
 pytweening==1.2.0
 pywin32==306
+pysilero_vad==1.0.0
 regex==2024.5.15
 requests==2.32.3
 setuptools==41.2.0
