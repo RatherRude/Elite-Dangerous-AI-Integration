@@ -13,38 +13,55 @@ class VerticalScrolledFrame(tk.Frame):
     * Construct and pack/place/grid normally.
     * This frame only allows vertical scrolling.
     """
-    def __init__(self, outer_frame, *args, **kw):
-        # base class initialization
-        tk.Frame.__init__(self, outer_frame)
+    def __init__(self, outer_frame, width, *args, **kw):
+        scrollbar_width = 16
+        inner_width = width-scrollbar_width
 
-        scrollbar = tk.Scrollbar(self, width=16)
+        # base class initialization
+        tk.Frame.__init__(self, outer_frame, width=width)
+
+        scrollbar = tk.Scrollbar(self, width=scrollbar_width)
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y, expand=False)
 
-        self.canvas = tk.Canvas(self, yscrollcommand=scrollbar.set, *args, **kw)
+        self.canvas = tk.Canvas(self, yscrollcommand=scrollbar.set, width=inner_width)
         self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-        self.inner_frame = tk.Frame(self)
-        self.inner_frame.pack()
+        self.inner_frame = tk.Frame(self.canvas, width=inner_width, *args, **kw)
+        #self.inner_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         scrollbar.config(command=self.canvas.yview)
 
         self.canvas.bind('<Configure>', self.__fill_canvas)
 
         # assign this obj (the inner frame) to the windows item of the canvas
-        self.windows_item = self.canvas.create_window(0,0, window=self.inner_frame, anchor=tk.NW)
+        self.windows_item = self.canvas.create_window(0,0, window=self.inner_frame, width=inner_width, anchor=tk.NW)
+        self.canvas.configure(background='black')
 
 
     def __fill_canvas(self, event):
         "Enlarge the windows item to the canvas width"
 
-        canvas_width = event.width
-        self.canvas.itemconfig(self.windows_item, width = canvas_width)
+        self.update_idletasks()
+        self.canvas.itemconfig("inner_frame", width = self.canvas.winfo_width())
 
     def update(self):
         "Update the canvas and the scrollregion"
 
         self.update_idletasks()
-        self.canvas.config(scrollregion=self.canvas.bbox(self.windows_item))
+        self.canvas.config(scrollregion=self.canvas.bbox("all"))
+        self.canvas.itemconfig("inner_frame", width = self.canvas.winfo_width())
+
+        self.canvas.bind('<Enter>', self.__on_enter)
+        self.canvas.bind('<Leave>', self.__on_leave)
+
+    def __on_enter(self, event):
+        self.canvas.bind_all("<MouseWheel>", self.__onmousewheel)
+
+    def __on_leave(self, event):
+        self.canvas.unbind_all("<MouseWheel>")
+
+    def __onmousewheel(self, event):
+        self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
 
 
 # List of game events categorized
@@ -176,15 +193,15 @@ class App:
         self.continue_conversation_checkbox.grid(row=4, column=1, sticky=tk.W, padx=5, pady=5)
         tk.Label(self.main_frame, text="Resumes previous conversation if enabled", font="Arial 10 italic").grid(row=4, column=1, sticky=tk.W, padx=80, pady=5)
 
-        self.game_events_frame = VerticalScrolledFrame(self.main_frame, bg='lightgrey', bd=1, width=600)
-        self.game_events_frame.grid(row=5, column=0, columnspan=2, sticky="")
+        self.game_events_frame = VerticalScrolledFrame(self.main_frame, width=600)
+        self.game_events_frame.grid(row=6, column=0, columnspan=2, sticky="")
         self.game_events_save_cb = self.populate_game_events_frame(self.game_events_frame.inner_frame, self.data['game_events'])
         self.game_events_frame.update() # update scrollable area
         self.game_events_frame.grid_remove()  # Initially hide
 
         # AI Geeks Section (Initially hidden)
-        self.ai_geeks_frame = VerticalScrolledFrame(self.main_frame, bg='lightgrey', bd=1, width=600)
-        self.ai_geeks_frame.grid(row=5, column=0, columnspan=2)
+        self.ai_geeks_frame = VerticalScrolledFrame(self.main_frame, width=600)
+        self.ai_geeks_frame.grid(row=6, column=0, columnspan=2)
         self.ai_geeks_frame.grid_remove()  # Initially hide
 
         # Disclaimer
