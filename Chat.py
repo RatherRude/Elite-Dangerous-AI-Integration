@@ -161,11 +161,11 @@ stationServiceEvents = {
     "Touchdown": "Commander {commanderName} has touched down on a planet surface.",
     "Undocked": "Commander {commanderName} has undocked from a station.",
     "Docked": "Commander {commanderName} has docked with a station.",
-    "DockingRequested": "Commander {commander_name} has sent a request to dock with a station.",
-    "DockingGranted": "Commander {commander_name}'s request to dock with a station has been granted.",
-    "DockingDenied": "Commander {commander_name}'s request to dock with a station has been denied.",
-    "DockingComplete": "Commander {commander_name} has docked with a station",
-    "DockingTimeout": "Commander {commander_name}'s request to dock with a station has timed out.",
+    "DockingRequested": "Commander {commanderName} has sent a request to dock with a station.",
+    "DockingGranted": "Commander {commanderName}'s request to dock with a station has been granted.",
+    "DockingDenied": "Commander {commanderName}'s request to dock with a station has been denied.",
+    "DockingComplete": "Commander {commanderName} has docked with a station",
+    "DockingTimeout": "Commander {commanderName}'s request to dock with a station has timed out.",
 }
 carrierEvents = {
     "CarrierJump": "Commander {commanderName} has performed a carrier jump.",
@@ -868,7 +868,8 @@ def handle_conversation(client, commander_name, user_input):
     # Append user input to the conversation
     userChatMessage = {"role": "user", "content": user_input}
     conversation.append(userChatMessage)
-    conversation.pop(0) if len(conversation) > conversationLength else None
+    while len(conversation) > conversationLength or conversation[0]["role"] not in ['user', 'assistant', 'system']:
+        conversation.pop(0)
 
     save_conversation(conversation)
 
@@ -929,7 +930,8 @@ def run_chat_model(client, commander_name, chat_prompt):
 
     # Add the model's response to the conversation
     conversation.append(completion.choices[0].message.to_dict())
-    conversation.pop(0) if len(conversation) > conversationLength else None
+    while len(conversation) > conversationLength or conversation[0]["role"] not in ['user', 'assistant', 'system']:
+        conversation.pop(0)
 
     save_conversation(conversation)
 
@@ -945,9 +947,11 @@ def run_chat_model(client, commander_name, chat_prompt):
         for action in response_actions:
             printFlush(f"ACTION: {action.function.name} {action.function.arguments}")
             action_result = aiActions.runAction(action)
+
             conversation.append(action_result)
-            while(len(conversation) > conversationLength):
+            while len(conversation) > conversationLength or conversation[0]["role"] not in ['user', 'assistant', 'system']:
                 conversation.pop(0)
+
             save_conversation(conversation)
         run_chat_model(client, commander_name, prepare_chat_prompt(commander_name))
 
