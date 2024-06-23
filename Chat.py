@@ -17,8 +17,7 @@ import win32gui
 import requests
 from io import BytesIO
 
-import sys
-import io
+import sys, io
 from pathlib import Path
 
 import AIActions
@@ -290,8 +289,8 @@ allGameEvents = {
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 # Print that flushes, subprocess can return info to GUI
-def printFlush(message, arg=''):
-    print(message, arg)
+def printFlush(message, *arg):
+    print(message, *arg)
     sys.stdout.flush()
 
 # Define functions for each action
@@ -577,11 +576,12 @@ def prompt_for_config():
     tools_var = input("AI Tools? ")
     vision_var = input("Vision Capabilities? ")
     ptt_var = input("Use Push-to-talk? ")
+    continue_conversation_var = input("Continue Conversation? ")
     tts_voice = input("Enter TTS Voice: ")
     key_binding = input("Push-to-talk button: ")
     game_events = input("Please enter game events in the format of Dict[str, Dict[str, bool]] ☺")
 
-    return api_key, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, ai_model, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding, game_events
+    return api_key, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, ai_model, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, continue_conversation_var, tts_voice, key_binding, game_events
 
 def load_or_prompt_config():
     config_file = Path("config.json")
@@ -608,11 +608,12 @@ def load_or_prompt_config():
             tools_var = config.get('tools_var', '')
             vision_var = config.get('vision_var', '')
             ptt_var = config.get('ptt_var', '')
+            continue_conversation_var = config.get('continue_conversation_var', '')
             tts_voice = config.get('tts_voice', '')
             key_binding = config.get('key_binding', '')
             game_events = config.get('game_events', '[]')
     else:
-        api_key, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, ai_model, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding, game_events = prompt_for_config()
+        api_key, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, ai_model, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, continue_conversation_var, tts_voice, key_binding, game_events = prompt_for_config()
         with open(config_file, 'w') as f:
             json.dump({
                 'api_key': api_key,
@@ -635,12 +636,26 @@ def load_or_prompt_config():
                 'tools_var': tools_var,
                 'vision_var': vision_var,
                 'ptt_var': ptt_var,
+                'continue_conversation_var': continue_conversation_var,
                 'tts_voice': tts_voice,
                 'key_binding': key_binding,
                 'game_events': game_events,
             }, f)
 
-    return api_key, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, model_name, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding, game_events
+    return api_key, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, model_name, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, continue_conversation_var, tts_voice, key_binding, game_events
+
+# Function to save conversation to JSON file
+def save_conversation(data):
+    with open('conversation.json', 'w') as json_file:
+        json.dump(data, json_file, indent=4)
+
+# Function to load conversation from JSON file
+def load_conversation():
+    try:
+        with open('conversation.json', 'r') as json_file:
+            return json.load(json_file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
 
 handle = win32gui.FindWindow(0, "Elite - Dangerous (CLIENT)")
 def setGameWindowActive():
@@ -855,6 +870,8 @@ def handle_conversation(client, commander_name, user_input):
     conversation.append(userChatMessage)
     conversation.pop(0) if len(conversation) > conversationLength else None
 
+    save_conversation(conversation)
+
     run_chat_model(client, commander_name, chat_prompt+[userChatMessage])
 
 def prepare_chat_prompt(commander_name):
@@ -911,8 +928,10 @@ def run_chat_model(client, commander_name, chat_prompt):
         return
 
     # Add the model's response to the conversation
-    conversation.append(completion.choices[0].message)
+    conversation.append(completion.choices[0].message.to_dict())
     conversation.pop(0) if len(conversation) > conversationLength else None
+
+    save_conversation(conversation)
 
     # Get and print the model's response
     response_text = completion.choices[0].message.content
@@ -929,6 +948,7 @@ def run_chat_model(client, commander_name, chat_prompt):
             conversation.append(action_result)
             while(len(conversation) > conversationLength):
                 conversation.pop(0)
+            save_conversation(conversation)
         run_chat_model(client, commander_name, prepare_chat_prompt(commander_name))
 
 def getCurrentState():
@@ -1049,11 +1069,13 @@ jn = None
 keys = EDKeys()
 tts = None
 def main():
-    global client, sttClient, ttsClient, v, tts, keys, aiModel, backstory, useTools, jn, previous_status
+    global client, sttClient, ttsClient, v, tts, keys, aiModel, backstory, useTools, jn, previous_status, conversation
     setGameWindowActive()
 
     # Load or prompt for configuration
-    apiKey, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commanderName, character, model_name, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, tts_voice, key_binding, game_events  = load_or_prompt_config()
+    apiKey, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commanderName, character, model_name, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, continue_conversation_var, tts_voice, key_binding, game_events  = load_or_prompt_config()
+    if continue_conversation_var:
+        conversation = load_conversation()
 
     jn = EDJournal(game_events)
     previous_status = getCurrentState()
@@ -1124,6 +1146,10 @@ def main():
     printFlush(f"Current model: {aiModel}")
     printFlush(f"Current TTS voice: {tts_voice}")
     printFlush("Current backstory: " + backstory.replace("{commander_name}", commanderName))
+    if conversation:
+        printFlush('Previous conversation:\n', '\n'.join([json.dumps(msg) for msg in conversation]))
+    else:
+        printFlush('Starting a new conversation.')
     printFlush("\nBasic configuration complete.\n")
     printFlush("Loading voice interface...")
 
@@ -1196,6 +1222,9 @@ def main():
     printFlush("\n\nConversation:")
     for line in conversation:
         printFlush(line)
+
+    # save conversation
+    save_conversation(conversation)
 
     # Teardown TTS
     tts.quit()

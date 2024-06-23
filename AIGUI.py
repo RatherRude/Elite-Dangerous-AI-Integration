@@ -1,7 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox
-import json
-import subprocess
+import json, subprocess, os, signal
 import keyboard
 from pathlib import Path
 from threading import Thread
@@ -157,7 +156,7 @@ class App:
 
         # Push-to-talk
         tk.Label(self.main_frame, text="Push-to-talk:", font=('Arial', 10)).grid(row=3, column=0, sticky=tk.W)
-        # Alternative TTS (Checkbox)
+        # PTT (Checkbox)
         self.ptt_var = tk.BooleanVar()
         self.ptt_var.set(False)  # Default value
         self.ptt_checkbox = tk.Checkbutton(self.main_frame, text="Enabled", variable=self.ptt_var)
@@ -168,8 +167,14 @@ class App:
         self.pptButton.grid(row=3, column=1, sticky=tk.W, padx=(360, 10), pady=5)
         self.pptButton.bind("<Button-1>", self.on_label_click)
 
-        #self.api_key = tk.Entry(self.main_frame, show='*', width=50)  # Show '*' to indicate a secure entry
-        #self.api_key.grid(row=2, column=1, padx=10, pady=5)
+        # Continue Conversation
+        tk.Label(self.main_frame, text="Resume Chat:", font=('Arial', 10)).grid(row=4, column=0, sticky=tk.W)
+        # Conversation (Checkbox)
+        self.continue_conversation_var = tk.BooleanVar()
+        self.continue_conversation_var.set(True)  # Default value
+        self.continue_conversation_checkbox = tk.Checkbutton(self.main_frame, text="Enabled", variable=self.continue_conversation_var)
+        self.continue_conversation_checkbox.grid(row=4, column=1, sticky=tk.W, padx=5, pady=5)
+        tk.Label(self.main_frame, text="Resumes previous conversation if enabled", font="Arial 10 italic").grid(row=4, column=1, sticky=tk.W, padx=80, pady=5)
 
         self.game_events_frame = VerticalScrolledFrame(self.main_frame, bg='lightgrey', bd=1, width=600)
         self.game_events_frame.grid(row=5, column=0, columnspan=2, sticky="")
@@ -292,11 +297,11 @@ class App:
 
         # Toggle Section Button
         self.toggle_ai_geeks_section_button = tk.Button(self.main_frame, text="Show AI Geeks Section", command=self.toggle_ai_geeks_section)
-        self.toggle_ai_geeks_section_button.grid(row=4, column=0, columnspan=2, pady=10, padx=(150, 0), sticky="")
+        self.toggle_ai_geeks_section_button.grid(row=5, column=0, columnspan=2, pady=10, padx=(150, 0), sticky="")
 
         # Toggle Section Button
         self.toggle_game_events_section_button = tk.Button(self.main_frame, text="Show Game Events Section", command=self.toggle_game_events_section)
-        self.toggle_game_events_section_button.grid(row=4, column=0, columnspan=2, pady=10, padx=(0, 150), sticky="")
+        self.toggle_game_events_section_button.grid(row=5, column=0, columnspan=2, pady=10, padx=(0, 150), sticky="")
 
         # Debug Frame and Text Widget
         self.debug_frame = tk.Frame(root, bg='black', bd=1)  # White background for visibility
@@ -405,6 +410,7 @@ class App:
                 'tools_var': True,
                 'vision_var': True,
                 'ptt_var': False,
+                'continue_conversation_var': True,
                 'llm_model_name': "gpt-4o",
                 'llm_endpoint': "https://api.openai.com/v1",
                 'llm_api_key': "",
@@ -444,6 +450,7 @@ class App:
         self.data['tools_var'] = self.tools_var.get()
         self.data['vision_var'] = self.vision_var.get()
         self.data['ptt_var'] = self.ptt_var.get()
+        self.data['continue_conversation_var'] = self.continue_conversation_var.get()
         self.data['tts_voice'] = self.tts_voice.get()
         self.data['key_binding'] = self.key_binding
         self.data['game_events'] = self.game_events_save_cb()
@@ -474,6 +481,7 @@ class App:
         self.tools_var.set(self.data['tools_var'])
         self.vision_var.set(self.data['vision_var'])
         self.ptt_var.set(self.data['ptt_var'])
+        self.continue_conversation_var.set(self.data['continue_conversation_var'])
         self.tts_voice.insert(0, self.data['tts_voice'])
         self.key_binding = self.data['key_binding']
 
@@ -548,6 +556,8 @@ class App:
 
     def stop_external_script(self):
         if self.process:
+            #self.send_signal(signal.SIGINT)  # Terminate the subprocess
+            #self.process.wait()  # Terminate the subprocess
             self.process.terminate()  # Terminate the subprocess
             self.process = None
         if self.thread:
