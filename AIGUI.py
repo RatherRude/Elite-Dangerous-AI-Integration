@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import messagebox
 import json
 import subprocess
+import keyboard
 from pathlib import Path
 from threading import Thread
 from queue import Queue
@@ -369,7 +370,7 @@ class App:
         self.root.bind("<KeyPress>", self.on_key_press)
 
     def on_key_press(self, event):
-        self.key_binding = event.keysym
+        self.key_binding = keyboard.read_key()
         #self.save_key_binding()
         self.update_label_text()
         self.root.unbind("<KeyPress>")

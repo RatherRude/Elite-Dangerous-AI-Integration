@@ -67,7 +67,8 @@ class STT:
         audio_raw = b''.join(frames)
         audio_data = sr.AudioData(audio_raw, source.SAMPLE_RATE, source.SAMPLE_WIDTH)
         text = self._transcribe(audio_data)
-        if not text or text.strip() == '' or text == 'Call Wakata Station in HIP 23716 for help and enter supercruise immediately!':
+        filter = ['', 'Call Wakata Station in HIP 23716 for help and enter supercruise immediately!', 'Call HIP 23716 for help and enter supercruise immediately!']
+        if not text or text.strip() in filter:
             return
         self.resultQueue.put(STTResult(text, audio_data, timestamp))
 
