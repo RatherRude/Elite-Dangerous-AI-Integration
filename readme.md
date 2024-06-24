@@ -1,6 +1,10 @@
 # AI Integration
 
-We are integrating advanced AI features including Whisper for Speech-to-Text (STT), OpenAI or OpenRouter Language Models (LLMs) for natural language processing, and existing Text-to-Speech (TTS) functionality. This integration aims to provide a more intuitive and hands-free experience for commanders, making interactions with the game more seamless and efficient.
+This integration aims to provide a more intuitive and hands-free experience for commanders, making interactions with the game more seamless and efficient by allowing you to connect Elite:Dangerous with various services for STT,TTS and LLMs. This creates a continuous conversation between you and the starship's computer via spoken word, as it should be in the 34th century.
+
+The AI will react to game events, it will react to given commands not just in text but by emulating key presses or game actions. It can decide to take a screenshot or fetch information from Galnet or EDSM about topics, systems and their respective factions and stations.
+
+The integration is designed for every Elite:Dangerous player: it's amazing at roleplaying, it can replace third-party websites, it can press buttons on command or if necessary, provide tutorials, will assist commanders no matter their role or level of experience. 
 
 ## Overview
 
@@ -21,16 +25,45 @@ The AI integration comprises three main components:
 
 #### Prerequisites
 
-You will need to install Python. Due to compatibility of the used libraries only Python version 3.7-3.11 are currently supported. I currently run 3.8.10 without issues.
+* Install Python: Due to compatibility of the used libraries only Python version 3.7-3.11 are currently supported. I currently run [Python 3.8.10](https://www.python.org/ftp/python/3.8.10/python-3.8.10-amd64.exe) without issues.
+* Install Elite:Dangerous 
+* Run Elite:Dangerous atleast once so a journal file exists
+* Change any keybinding in the main menu and save so a file for key bindings exists
+* Make sure all required game actions are mapped to a keyboard button, by either:
+   * Using my bindings by copying the contents of `EDAII-Bindings.zip` to `C:\Users\{username}\AppData\Local\Frontier Developments\Elite Dangerous\Options\Bindings` or
+   * Assigning them in the game's menu:
+      - fire: Start firing primary weapons.
+      - fireSecondary: Start firing secondary weapons.
+      - hyperSuperCombination: Initiate FSD Jump, required to jump to the next system or enter supercruise.
+      - setSpeedZero: Set speed to 0%.
+      - setSpeed50: Set speed to 50%.
+      - setSpeed100: Set speed to 100%.
+      - deployHeatSink: Deploy heat sink.
+      - deployHardpointToggle: Deploy or retract hardpoints.
+      - increaseEnginesPower: Increase engine power.
+      - increaseWeaponsPower: Increase weapon power.
+      - increaseSystemsPower: Increase systems power.
+      - galaxyMapOpen: Open or close the galaxy map.
+      - systemMapOpen: Open or close the system map.
+      - cycleNextTarget: Cycle to the next target.
+      - cycleFireGroupNext: Cycle to the next fire group.
+      - shipSpotLightToggle: Toggle ship spotlight.
+      - ejectAllCargo: Eject all cargo.
+      - landingGearToggle: Toggle landing gear.
+      - useShieldCell: Use a shield cell.
+      - fireChaffLauncher: Fire chaff launcher.
+      - nightVisionToggle: Toggle night vision.
+      - recallDismissShip: Recall or dismiss ship, available on foot and inside SRV.
 
 #### Installation
 
 * Run EDAIIInstaller.bat (right click, "Run as administrator")
 
-*This will run a pip install with everything we will need. This will take a while, the window closes when complete.*
+This will install all dependencies and might a while, **the window closes itself when complete.**
+
 
 ### 2. How to run
-
+    
 * Run EDAII.bat
 
 ![GUI-start](screen/GUI_start.png?raw=true)
@@ -39,41 +72,87 @@ Enter OpenAI API key and your commander name. Edit AI character according to you
 Click "Start AI" when ready:
 ![GUI-ai](screen/GUI_AI.png?raw=true)
 
-### 3. Whisper Speech-to-Text (STT)
+### 3. OpenAI/OpenRouter/Local Language Models (LLMs)
 
-Whisper by OpenAI converts spoken language into text, allowing commanders to issue voice commands to the autopilot with high accuracy.
+LLMs hosted by e.g. OpenAI or OpenRouter process natural language commands, providing intelligent responses and actions, enabling the autopilot to understand complex instructions.
 
-We are currently using CPU for recognition, this can be changed by swapping the dependencies
+The program is designed to be used with its default model and OpenAI services. It's possible to use different OpenAI models or to connect to any OpenAI-compatible API which includes local setups.
+You can change the LLM's name, endpoint and if required API key in the "AI Geeks Section" of the settings.
 
-### 4. OpenAI/OpenRouter/Local Language Models (LLMs)
-
-LLMs from OpenAI or OpenRouter process natural language commands, providing intelligent responses and actions, enabling the autopilot to understand complex instructions.
-
-The program will ask for your API Key. It is saved locally in `config.json` and reused on next program start.
-
-The program is designed to be used with default model and OpenAI services. It's possible to connect to any OpenAI-compatible API.
-
-#### 4.1. Pricing Information
+#### 3.1. Pricing Information
 
 * **OpenAI**: Generally, access to OpenAI models requires a payment. For more information on pricing, please visit: https://openai.com/api/pricing/
 * **OpenRouter**: OpenRouter offers a variety of models, some of which are **free** to use. Detailed pricing information for each model can be found here: https://openrouter.ai/docs/models
 * **Local**: **Free** to use, although there are associated costs for hardware and electricity. Note that running larger models might require significant hardware resources, such as multi-GPU setups or dedicated machines.
 
+### 4. Whisper Speech-to-Text (STT)
+
+The STT functionality converts spoken language into text, allowing commanders to issue voice commands to the autopilot or engage in a conversation with high accuracy.
+
+You can change the TTS model's name, endpoint and if required API key in the "AI Geeks Section" of the settings.
+On default, the program will use OpenAI's services to transcribe your spoken words, or a local quantized, english whisper-medium if the local option was chosen.
 
 ### 5. Text-to-Speech (TTS)
 
-The TTS functionality delivers auditory feedback based on the actions and responses from the LLM. We currently use the default voices from the operating system.
+The TTS functionality delivers auditory feedback based on the actions and responses from the LLM.
 
-### 6. Web Lookups for Detailed Information (EDSM)
+You can change the STT model's name, endpoint and if required API key in the "AI Geeks Section" of the settings.
+On default, the program will use OpenAI's services to generate the AI's voice, or from the operating system if the local option was chosen.
+
+### 6. Vision Capabilities
+
+The AI can take screenshots and analyze their content to provide visual confirmations and insights based on the commander's queries. **This feature relies on enabled Function Calling.**
+
+You can change the Vision model's name, endpoint and if required API key in the "AI Geeks Section" of the settings.  
+
+### 7. Function Calling
+
+The AI can call specific functions (e.g., firing weapons, adjusting speed, deploying heat sinks) using OpenAI models, enabling direct control over various ship operations.
+
+**This should be turned off when using non-OpenAI LLMs.** Not only are smaller models usually not able to use this feature, it also slows down their response time by a lot.
+
+**If this feature is turned off the AI will no longer try to: emulate button presses, use internet tools, take screenshots**. It will still be able to chat normally and react to game events.
+
+These functions are currently callable:
+
+- fire: Start firing primary weapons.
+- holdFire: Stop firing primary weapons.
+- fireSecondary: Start firing secondary weapons.
+- holdFireSecondary: Stop firing secondary weapons.
+- hyperSuperCombination: Initiate FSD Jump, required to jump to the next system or enter supercruise.
+- setSpeedZero: Set speed to 0%.
+- setSpeed50: Set speed to 50%.
+- setSpeed100: Set speed to 100%.
+- deployHeatSink: Deploy heat sink.
+- deployHardpointToggle: Deploy or retract hardpoints.
+- increaseEnginesPower: Increase engine power.
+- increaseWeaponsPower: Increase weapon power.
+- increaseSystemsPower: Increase systems power.
+- galaxyMapOpen: Open or close the galaxy map.
+- systemMapOpen: Open or close the system map.
+- cycleNextTarget: Cycle to the next target.
+- cycleFireGroupNext: Cycle to the next fire group.
+- shipSpotLightToggle: Toggle ship spotlight.
+- ejectAllCargo: Eject all cargo.
+- landingGearToggle: Toggle landing gear.
+- useShieldCell: Use a shield cell.
+- fireChaffLauncher: Fire chaff launcher.
+- nightVisionToggle: Toggle night vision.
+- recallDismissShip: Recall or dismiss ship, available on foot and inside SRV.
+
+![Function Calling](screen/function_calling.png?raw=true "Screen")
+
+### 8. Web Lookups for Detailed Information (EDSM & Galnet)
 
 The system performs web lookups using EDSM's API to fetch detailed information about the current and next star systems, enhancing situational awareness.
 The AI is able to fetch station and faction data via function calling aswell, you simply have to ask about it.
+Galnet news can be fetched to answer questions or inform about relevant news in the galaxy.
 
-### 7. Event-Driven Interaction
+### 9. Event-Driven Interaction
 
 The system dynamically responds to game events such as ship type changes, new jump destinations, shield status updates, attacks, and more, keeping the commander informed of critical events and statuses.
 
-Here is a list of the currently supported event types:
+We support **every event** in the game that is written to the journal file. You can toggle which game events should be reacted to. Here is a list of the currently supported event types:
 
 #### Startup Events:
 - Cargo
@@ -285,99 +364,14 @@ These event-driven interactions are designed to enhance safety, decision-making,
 
 ![Event-driven](screen/event_driven.png?raw=true "Screen")
 
-
-### 8. Function Calling
-
-The AI can call specific functions (e.g., firing weapons, adjusting speed, deploying heat sinks) using OpenAI models, enabling direct control over various ship operations.
-
-(This can be generalized using the REACT pattern, currently the solution is OpenAI/Openrouter specific.) 
-
-These functions are currently callable:
-
-- fire: Start firing primary weapons.
-- holdFire: Stop firing primary weapons.
-- fireSecondary: Start firing secondary weapons.
-- holdFireSecondary: Stop firing secondary weapons.
-- hyperSuperCombination: Initiate FSD Jump, required to jump to the next system or enter supercruise.
-- setSpeedZero: Set speed to 0%.
-- setSpeed50: Set speed to 50%.
-- setSpeed100: Set speed to 100%.
-- deployHeatSink: Deploy heat sink.
-- deployHardpointToggle: Deploy or retract hardpoints.
-- increaseEnginesPower: Increase engine power.
-- increaseWeaponsPower: Increase weapon power.
-- increaseSystemsPower: Increase systems power.
-- galaxyMapOpen: Open or close the galaxy map.
-- systemMapOpen: Open or close the system map.
-- cycleNextTarget: Cycle to the next target.
-- cycleFireGroupNext: Cycle to the next fire group.
-- shipSpotLightToggle: Toggle ship spotlight.
-- ejectAllCargo: Eject all cargo.
-- landingGearToggle: Toggle landing gear.
-- useShieldCell: Use a shield cell.
-- fireChaffLauncher: Fire chaff launcher.
-- nightVisionToggle: Toggle night vision.
-- recallDismissShip: Recall or dismiss ship, available on foot and inside SRV.
-
-![Function Calling](screen/function_calling.png?raw=true "Screen")
-
-## 9. Vision Capabilities
-
-The AI can take screenshots and analyze their content to provide visual confirmations and insights based on the commander's queries.
-
 ## Troubleshooting
 
-1.  You can remove `config.json` to be prompted again for name, API key and openrouter usage
+1.  You can remove `config.json` to reset the GUI to its default values.
 2.  You need to set certain key bindings so the AI is able to trigger the corresponding action. In case you forgot a key a log file will be created which tells you which keys are missing. (EDAI.log)
-3. **If you encounter any issues with dependencies** try to install them by hand
-   ```sh
-      > pip install torch==2.2.2 torchvision==0.17.2 torchaudio==2.2.2 --index-url https://download.pytorch.org/whl/cpu OpenAI
-    ```
-
-## CLI Arguments
-
-Add these flags to the cli call to configure Whisper:
-
-### `--model`
-
-- **Description**: Model to use.
-- **Default**: `"small"`
-- **Choices**: `["tiny", "base", "small", "medium", "large"]`
-
-### `--non_english`
-
-- **Description**: Don't use the English model.
-- **Action**: Store `True` if present.
-
-### `--energy_threshold`
-
-- **Description**: Energy level for microphone to detect.
-- **Default**: `1000`
-- **Type**: Integer
-
-### `--record_timeout`
-
-- **Description**: How real time the recording is in seconds.
-- **Default**: `15`
-- **Type**: Float
-
-### `--phrase_timeout`
-
-- **Description**: How much empty space between recordings before we consider it a new line in the transcription.
-- **Default**: `5`
-- **Type**: Float
-
-### `--default_microphone`
-
-- **Description**: Default microphone name for SpeechRecognition.
-- **Default (Linux)**: `'pulse'`
-- **Type**: String
-- **Note**: Run with `'list'` to view available Microphones.
 
 # Contact
 * Join Discord Server: https://discord.gg/9c58jxVuAT
 * Rarely, I also check mails: tremendouslyrude@yandex.com
 
 # ToDo
-* Faster whisper implementation for Speech-to-Text
-* more quality models for Text-to-Speech
+* 
