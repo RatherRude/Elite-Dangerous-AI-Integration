@@ -11,19 +11,20 @@ The integration is designed for every Elite:Dangerous player: it's amazing at ro
 The AI integration comprises three main components:
 1. **How to install**
    1. Prerequisites
+   2. Installation
 2. **How to run**
-3. **Whisper Speech-to-Text (STT)**
-4. **OpenAI/OpenRouter Language Models (LLMs)**
+3. **OpenAI/OpenRouter Language Models (LLMs)**
    1. **Pricing Information**
+4. **Whisper Speech-to-Text (STT)**
 5. **Text-to-Speech (TTS)**
-6. **Web Lookups for Detailed Information (EDSM)**
-7. **Event-Driven Interaction**
-8. **Function Calling**
-9. **Vision Capabilities**
+6. **Vision Capabilities**
+7. **Function Calling**
+8. **Web Lookups for Detailed Information (EDSM)**
+9. **Event-Driven Interaction**
 
 ### 1. How to install
 
-#### Prerequisites
+#### 1.1. Prerequisites
 
 * Install Python: Due to compatibility of the used libraries only Python version 3.7-3.11 are currently supported. I currently run [Python 3.8.10](https://www.python.org/ftp/python/3.8.10/python-3.8.10-amd64.exe) without issues.
 * Install Elite:Dangerous 
@@ -55,7 +56,7 @@ The AI integration comprises three main components:
       - nightVisionToggle: Toggle night vision.
       - recallDismissShip: Recall or dismiss ship, available on foot and inside SRV.
 
-#### Installation
+#### 1.2. Installation
 
 * Run EDAIIInstaller.bat (right click, "Run as administrator")
 
