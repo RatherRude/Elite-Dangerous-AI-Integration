@@ -7,7 +7,6 @@ The AI will react to game events, it will react to given commands not just in te
 The integration is designed for every Elite:Dangerous player: it's amazing at roleplaying, it can replace third-party websites, it can press buttons on command or if necessary, provide tutorials, will assist commanders no matter their role or level of experience.
 
 [![A Day in the Life of a Bounty Hunter](http://img.youtube.com/vi/nvuCwwixvxw/0.jpg)](https://www.youtube.com/watch?v=nvuCwwixvxw)
-
 *Click the image above to watch the video on YouTube.*
 
 ## Overview
