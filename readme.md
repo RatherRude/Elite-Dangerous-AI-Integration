@@ -8,6 +8,8 @@ The integration is designed for every Elite:Dangerous player: it's amazing at ro
 
 [![A Day in the Life of a Bounty Hunter](http://img.youtube.com/vi/nvuCwwixvxw/0.jpg)](https://www.youtube.com/watch?v=nvuCwwixvxw)
 
+*Click the image above to watch the video on YouTube.*
+
 ## Overview
 
 The AI integration comprises three main components:
