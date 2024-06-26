@@ -31,9 +31,8 @@ The AI integration comprises three main components:
 #### 1.1. Prerequisites
 
 * Install Python: Due to compatibility of the used libraries only Python version 3.7-3.11 are currently supported. I currently run [Python 3.8.10](https://www.python.org/ftp/python/3.8.10/python-3.8.10-amd64.exe) without issues.
-* Install Elite:Dangerous 
-* Run Elite:Dangerous atleast once so a journal file exists
-* Change any keybinding in the main menu and save so a file for key bindings exists
+* Run Elite:Dangerous atleast once (so a journal file exists)
+* Change any keybinding in the main menu and save (so a file for key bindings exists)
 * Make sure all required game actions are mapped to a keyboard button, by either:
    * Using my bindings by copying the contents of `EDAII-Bindings.zip` to `C:\Users\{username}\AppData\Local\Frontier Developments\Elite Dangerous\Options\Bindings` or
    * Assigning them in the game's menu:
@@ -59,6 +58,7 @@ The AI integration comprises three main components:
       - fireChaffLauncher: Fire chaff launcher.
       - nightVisionToggle: Toggle night vision.
       - recallDismissShip: Recall or dismiss ship, available on foot and inside SRV.
+* Download [latest version of the AI Integration](https://github.com/RatherRude/Elite-Dangerous-AI-Integration/archive/refs/heads/main.zip), unzip it at a location of your liking
 
 #### 1.2. Installation
 
