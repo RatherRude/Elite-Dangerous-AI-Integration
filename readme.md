@@ -94,7 +94,9 @@ You can change the LLM's name, endpoint and if required API key in the "AI Geeks
 
 The STT functionality converts spoken language into text, allowing commanders to issue voice commands to the autopilot or engage in a conversation with high accuracy.
 
-You can change the TTS model's name, endpoint and if required API key in the "AI Geeks Section" of the settings.
+There also is a configurable push-to-talk button.
+
+We use a small voice segmentation model to recognize chunks of audio that are then sent to either OpenAI API or a local model. You can change the STT model's name, endpoint and if required API key in the "AI Geeks Section" of the settings.
 On default, the program will use OpenAI's services to transcribe your spoken words, or a local quantized, english whisper-medium if the local option was chosen.
 
 ### 5. Text-to-Speech (TTS)
@@ -114,9 +116,11 @@ You can change the Vision model's name, endpoint and if required API key in the 
 
 The AI can call specific functions (e.g., firing weapons, adjusting speed, deploying heat sinks) using OpenAI models, enabling direct control over various ship operations.
 
+The same technique is used to take screenshots or fetch internet data if the AI deems it relevant for the conversation, by either your inquiry or game events happening.
+
 **This should be turned off when using non-OpenAI LLMs.** Not only are smaller models usually not able to use this feature, it also slows down their response time by a lot.
 
-**If this feature is turned off the AI will no longer try to: emulate button presses, use internet tools, take screenshots**. It will still be able to chat normally and react to game events.
+**If this feature is turned off the AI will no longer try to: emulate button presses, use internet tools, take screenshots**. It will still be able to chat normally and react to game events, so deactivating it might also be a valid option for commanders that prefer to have an AI that only talks.
 
 These functions are currently callable:
 
