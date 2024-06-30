@@ -8,7 +8,7 @@ This integration aims to provide a more intuitive and hands-free experience for 
 
 The AI will react to game events, it will react to given commands not just in text but by emulating key presses or game actions. It can decide to take a screenshot or fetch information from Galnet or EDSM about topics, systems and their respective factions and stations.
 
-The integration is designed for every Elite:Dangerous player: it's amazing at roleplaying, it can replace third-party websites, it can press buttons on command or if necessary, provide tutorials, will assist commanders no matter their role or level of experience.
+The integration is designed for every commander: it's amazing at roleplaying, it can replace third-party websites, it can press buttons on command or if necessary, provide tutorials, will assist commanders no matter their role or level of experience.
 
 [Join Discord Server](https://discord.gg/9c58jxVuAT)
 
