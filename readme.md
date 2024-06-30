@@ -31,19 +31,15 @@ The AI integration comprises three main components:
 
 #### 1.1. Prerequisites
 
-* Install Python: Due to compatibility of the used libraries only Python version 3.7-3.11 are currently supported. I currently run [Python 3.8.10](https://www.python.org/ftp/python/3.8.10/python-3.8.10-amd64.exe) without issues.
 * [Register an account with OpenAI](https://platform.openai.com/docs/introduction) to get access to an API key. (You can skip this step if you want to use an alternative to OpenAI API.)
-* Download [latest version of the AI Integration](https://github.com/RatherRude/Elite-Dangerous-AI-Integration/archive/refs/heads/main.zip), unzip it at a location of your liking.
 
 #### 1.2. Installation
 
-* Run EDAIIInstaller.bat (right click, "Run as administrator")
-
-This will install all dependencies and might take a while, **the window closes itself when complete.**
+* Download [latest version of the AI Integration](https://github.com/RatherRude/Elite-Dangerous-AI-Integration/releases/download/v0.9/COVAS_NEXT_v0_9.zip), unzip it at a location of your liking.
 
 ### 2. How to run
     
-* Run EDAII.bat
+* Run `start.bat`.
 
 ![GUI-start](screen/GUI_start.png?raw=true)
 
