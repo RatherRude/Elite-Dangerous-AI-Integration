@@ -1,4 +1,8 @@
-# AI Integration
+# COVAS NEXT: AI Integration
+
+[![A Day in the Life of a Bounty Hunter](http://img.youtube.com/vi/nvuCwwixvxw/0.jpg)](https://www.youtube.com/watch?v=nvuCwwixvxw)
+
+*Click the image above to watch the video on YouTube.*
 
 This integration aims to provide a more intuitive and hands-free experience for commanders, making interactions with the game more seamless and efficient by allowing you to connect Elite:Dangerous with various services for STT,TTS and LLMs. This creates a continuous conversation between you and the starship's computer via spoken word, as it should be in the 34th century.
 
@@ -6,9 +10,7 @@ The AI will react to game events, it will react to given commands not just in te
 
 The integration is designed for every Elite:Dangerous player: it's amazing at roleplaying, it can replace third-party websites, it can press buttons on command or if necessary, provide tutorials, will assist commanders no matter their role or level of experience.
 
-[![A Day in the Life of a Bounty Hunter](http://img.youtube.com/vi/nvuCwwixvxw/0.jpg)](https://www.youtube.com/watch?v=nvuCwwixvxw)
-
-*Click the image above to watch the video on YouTube.*
+[Join Discord Server](https://discord.gg/9c58jxVuAT)
 
 ## Overview
 
@@ -380,5 +382,10 @@ These event-driven interactions are designed to enhance safety, decision-making,
 * Join Discord Server: https://discord.gg/9c58jxVuAT
 * Rarely, I also check mails: tremendouslyrude@yandex.com
 
-# ToDo
-* 
+# Credits
+* [SumZer0](https://github.com/SumZer0-git) *For teaching me about python programming, and giving me the idea to build a game event-driven RAG system!*
+
+# @ToDos
+* Installation video guide
+* Add an auto-updater
+* Add more APIs (atleast road-to-riches, neutron plotter and trader planner)
