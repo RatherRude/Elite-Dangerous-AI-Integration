@@ -1,8 +1,7 @@
 # COVAS NEXT: AI Integration
 
 [![A Day in the Life of a Bounty Hunter](http://img.youtube.com/vi/nvuCwwixvxw/0.jpg)](https://www.youtube.com/watch?v=nvuCwwixvxw)
-
-*Click the image above to watch the video on YouTube.*
+<- *Click the image to watch the video on YouTube.*
 
 This integration aims to provide a more intuitive and hands-free experience for commanders, making interactions with the game more seamless and efficient by allowing you to connect Elite:Dangerous with various services for STT,TTS and LLMs. This creates a continuous conversation between you and the starship's computer via spoken word, as it should be in the 34th century.
 
@@ -11,6 +10,8 @@ The AI will react to game events, it will react to given commands not just in te
 The integration is designed for every commander: it's amazing at roleplaying, it can replace third-party websites, it can press buttons on command or if necessary, provide tutorials, will assist commanders no matter their role or level of experience.
 
 [Join Discord Server](https://discord.gg/9c58jxVuAT)
+|
+[Download latest version](https://github.com/RatherRude/Elite-Dangerous-AI-Integration/releases/download/v0.9/COVAS_NEXT_v0_9.zip)
 
 ## Overview
 
@@ -37,7 +38,7 @@ The AI integration comprises three main components:
 
 #### 1.2. Installation
 
-* Download [latest version of the AI Integration](https://github.com/RatherRude/Elite-Dangerous-AI-Integration/releases/download/v0.9/COVAS_NEXT_v0_9.zip), unzip it at a location of your liking.
+* [Download latest version of the AI Integration](https://github.com/RatherRude/Elite-Dangerous-AI-Integration/releases/download/v0.9/COVAS_NEXT_v0_9.zip), unzip it at a location of your liking.
 
 ### 2. How to run
     
@@ -379,11 +380,10 @@ These event-driven interactions are designed to enhance safety, decision-making,
 2.  You need to set certain key bindings so the AI is able to trigger the corresponding action. In case you forgot a key the integration the AI will tell you to register the missing keybinding. The integration will also list a warning at the top of the output window for each missing key.
 
 # Contact
-* Join Discord Server: https://discord.gg/9c58jxVuAT
-* Rarely, I also check mails: tremendouslyrude@yandex.com
+* Discord Server: https://discord.gg/9c58jxVuAT
 
 # Credits
-* [SumZer0](https://github.com/SumZer0-git) *For teaching me about python programming, and giving me the idea to build a game event-driven RAG system!*
+* [SumZer0](https://github.com/SumZer0-git) *For teaching me a thing or two about python programming, and giving me the idea to build a game event-driven RAG system!*
 
 # @ToDos
 * Installation video guide
