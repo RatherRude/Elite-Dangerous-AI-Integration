@@ -1015,9 +1015,9 @@ def checkForJournalUpdates(client, commanderName, boot):
             if new_value == True:
                 handle_conversation(client, commanderName, f"(Commander {commanderName}'s ship is under attack! Warn about immediate danger!)")
                 jn.reset_items()
-        if key == 'fuel_percent':
-            if new_value <= 24 and current_status['type'] != None and old_value != 0 and new_value != 0:
-                handle_conversation(client, commanderName, f"(Commander {commanderName}'s ship has less than 25% fuel reserves! Warn about immediate danger!)")
+        #if key == 'fuel_percent':
+            #if new_value <= 24 and current_status['type'] != None and old_value != 0 and new_value != 0:
+                #handle_conversation(client, commanderName, f"(Commander {commanderName}'s ship has less than 25% fuel reserves! Warn about immediate danger!)")
         if key == 'interdicted':
             handle_conversation(client, commanderName, f"(Commander {commanderName}'s ship is being interdicted! Warn about immediate danger, advise to run or to prepare for a fight!)")
         if key == 'cockpit_breached':
