@@ -16,7 +16,12 @@ class AIActions:
         function_name = tool_call.function.name
         function_to_call = self.actions.get(function_name).get("method")
         function_args = json.loads(tool_call.function.arguments)
-        function_result = function_to_call(function_args)
+
+        function_result = None
+        try:
+            function_result = function_to_call(function_args)
+        except Exception as e:
+            function_result = "ERROR: "+repr(e)
 
         return {
             "tool_call_id": tool_call.id,

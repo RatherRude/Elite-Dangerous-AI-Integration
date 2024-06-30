@@ -17,6 +17,7 @@ The AI integration comprises three main components:
    1. Prerequisites
    2. Installation
 2. **How to run**
+   1. Post-Installation
 3. **OpenAI/OpenRouter Language Models (LLMs)**
    1. **Pricing Information**
 4. **Whisper Speech-to-Text (STT)**
@@ -31,51 +32,52 @@ The AI integration comprises three main components:
 #### 1.1. Prerequisites
 
 * Install Python: Due to compatibility of the used libraries only Python version 3.7-3.11 are currently supported. I currently run [Python 3.8.10](https://www.python.org/ftp/python/3.8.10/python-3.8.10-amd64.exe) without issues.
-* Run Elite:Dangerous atleast once (so a journal file exists)
-* Change any keybinding in the main menu and save (so a file for key bindings exists)
-* Make sure all required game actions are mapped to a keyboard button, by either:
-   * Using my bindings by copying the contents of `EDAII-Bindings.zip` to `C:\Users\{username}\AppData\Local\Frontier Developments\Elite Dangerous\Options\Bindings` or
-   * Assigning them in the game's menu:
-      - fire: Start firing primary weapons.
-      - fireSecondary: Start firing secondary weapons.
-      - hyperSuperCombination: Initiate FSD Jump, required to jump to the next system or enter supercruise.
-      - setSpeedZero: Set speed to 0%.
-      - setSpeed50: Set speed to 50%.
-      - setSpeed100: Set speed to 100%.
-      - deployHeatSink: Deploy heat sink.
-      - deployHardpointToggle: Deploy or retract hardpoints.
-      - increaseEnginesPower: Increase engine power.
-      - increaseWeaponsPower: Increase weapon power.
-      - increaseSystemsPower: Increase systems power.
-      - galaxyMapOpen: Open or close the galaxy map.
-      - systemMapOpen: Open or close the system map.
-      - cycleNextTarget: Cycle to the next target.
-      - cycleFireGroupNext: Cycle to the next fire group.
-      - shipSpotLightToggle: Toggle ship spotlight.
-      - ejectAllCargo: Eject all cargo.
-      - landingGearToggle: Toggle landing gear.
-      - useShieldCell: Use a shield cell.
-      - fireChaffLauncher: Fire chaff launcher.
-      - nightVisionToggle: Toggle night vision.
-      - recallDismissShip: Recall or dismiss ship, available on foot and inside SRV.
-* Download [latest version of the AI Integration](https://github.com/RatherRude/Elite-Dangerous-AI-Integration/archive/refs/heads/main.zip), unzip it at a location of your liking
+* [Register an account with OpenAI](https://platform.openai.com/docs/introduction) to get access to an API key. (You can skip this step if you want to use an alternative to OpenAI API.)
+* Download [latest version of the AI Integration](https://github.com/RatherRude/Elite-Dangerous-AI-Integration/archive/refs/heads/main.zip), unzip it at a location of your liking.
 
 #### 1.2. Installation
 
 * Run EDAIIInstaller.bat (right click, "Run as administrator")
 
-This will install all dependencies and might a while, **the window closes itself when complete.**
-
+This will install all dependencies and might take a while, **the window closes itself when complete.**
 
 ### 2. How to run
     
 * Run EDAII.bat
 
 ![GUI-start](screen/GUI_start.png?raw=true)
+
 Enter OpenAI API key and your commander name. Edit AI character according to your desired roleplay. *AI Geek section is not required for regular use.*
 
 Click "Start AI" when ready:
+
 ![GUI-ai](screen/GUI_AI.png?raw=true)
+
+#### 2.1. Post-Installation
+
+* In order for the AI to perform actions within the game a list of assigned keyboard buttons is recommended:
+   - fire: Start firing primary weapons.
+   - fireSecondary: Start firing secondary weapons.
+   - hyperSuperCombination: Initiate FSD Jump, required to jump to the next system or enter supercruise.
+   - setSpeedZero: Set speed to 0%.
+   - setSpeed50: Set speed to 50%.
+   - setSpeed100: Set speed to 100%.
+   - deployHeatSink: Deploy heat sink.
+   - deployHardpointToggle: Deploy or retract hardpoints.
+   - increaseEnginesPower: Increase engine power.
+   - increaseWeaponsPower: Increase weapon power.
+   - increaseSystemsPower: Increase systems power.
+   - galaxyMapOpen: Open or close the galaxy map.
+   - systemMapOpen: Open or close the system map.
+   - cycleNextTarget: Cycle to the next target.
+   - cycleFireGroupNext: Cycle to the next fire group.
+   - shipSpotLightToggle: Toggle ship spotlight.
+   - ejectAllCargo: Eject all cargo.
+   - landingGearToggle: Toggle landing gear.
+   - useShieldCell: Use a shield cell.
+   - fireChaffLauncher: Fire chaff launcher.
+   - nightVisionToggle: Toggle night vision.
+   - recallDismissShip: Recall or dismiss ship, available on foot and inside SRV.
 
 ### 3. OpenAI/OpenRouter/Local Language Models (LLMs)
 
@@ -376,7 +378,7 @@ These event-driven interactions are designed to enhance safety, decision-making,
 ## Troubleshooting
 
 1.  You can remove `config.json` to reset the GUI to its default values.
-2.  You need to set certain key bindings so the AI is able to trigger the corresponding action. In case you forgot a key a log file will be created which tells you which keys are missing. (EDAI.log)
+2.  You need to set certain key bindings so the AI is able to trigger the corresponding action. In case you forgot a key the integration the AI will tell you to register the missing keybinding. The integration will also list a warning at the top of the output window for each missing key.
 
 # Contact
 * Join Discord Server: https://discord.gg/9c58jxVuAT

@@ -91,7 +91,7 @@ game_events = {
         'CommunityGoalDiscard': True, 'CommunityGoalJoin': True, 'CommunityGoalReward': True, 'CrewAssign': True, 
         'CrewFire': True, 'CrewHire': True, 'EngineerContribution': True, 'EngineerCraft': True, 'EngineerLegacyConvert': True, 
         'EngineerProgress': False, 'FetchRemoteModule': True, 'Market': True, 'MassModuleStore': True, 'MaterialTrade': True, 
-        'MissionAbandoned': True, 'MissionAccepted': True, 'MissionCompleted': True, 'MissionFailed': True, 
+    'MissionAbandoned': True, 'MissionAccepted': True, 'MissionCompleted': True, 'MissionFailed': True,
         'MissionRedirected': True, 'ModuleBuy': True, 'ModuleRetrieve': True, 'ModuleSell': True, 'ModuleSellRemote': True, 
         'ModuleStore': True, 'ModuleSwap': True, 'Outfitting': True, 'PayBounties': True, 'PayFines': True, 'PayLegacyFines': True, 
         'RedeemVoucher': True, 'RefuelAll': True, 'RefuelPartial': True, 'Repair': True, 'RepairAll': True, 'RestockVehicle': True, 
@@ -560,6 +560,9 @@ class App:
                 elif stdout_line.startswith("AI"):
                     self.debug_text.insert(tk.END, stdout_line[:2], "ai")
                     self.debug_text.insert(tk.END, stdout_line[2:], "normal")
+                elif stdout_line.startswith("ACTION RESULT"):
+                    self.debug_text.insert(tk.END, stdout_line[:13], "action")
+                    self.debug_text.insert(tk.END, stdout_line[13:], "normal")
                 elif stdout_line.startswith("ACTION"):
                     self.debug_text.insert(tk.END, stdout_line[:6], "action")
                     self.debug_text.insert(tk.END, stdout_line[6:], "normal")

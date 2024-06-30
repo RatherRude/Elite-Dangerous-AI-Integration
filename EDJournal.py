@@ -38,7 +38,8 @@ class EDJournal:
     def __init__(self, game_events: Dict[str, Dict[str, bool]]):
         self.log_file = None
         self.current_log = self.get_latest_log()
-        self.open_journal(self.current_log)
+        if self.current_log:
+            self.open_journal(self.current_log)
 
         # game events that can be written into self.ship.extra_events
         self.enabled_game_events:List[str]=[]
@@ -67,7 +68,7 @@ class EDJournal:
             'target': None,
             'jumps_remains': 0,
             'dist_jumped': 0,
-            'time': (datetime.now() - datetime.fromtimestamp(getmtime(self.current_log))).seconds,
+            'time': (datetime.now() - datetime.fromtimestamp(getmtime(self.current_log))).seconds if self.current_log else 0,
             'cockpit_breached': False,
             'extra_events': []
             #'fighter_destroyed': False,
@@ -106,7 +107,10 @@ class EDJournal:
         """Returns the full path of the latest (most recent) elite log file (journal) from specified path"""
         if not path_logs:
             path_logs = get_path(FOLDERID.SavedGames, UserHandle.current) + "\Frontier Developments\Elite Dangerous"
-        list_of_logs = [join(path_logs, f) for f in listdir(path_logs) if isfile(join(path_logs, f)) and f.startswith('Journal.')]
+        try:
+            list_of_logs = [join(path_logs, f) for f in listdir(path_logs) if isfile(join(path_logs, f)) and f.startswith('Journal.')]
+        except:
+            return None
         if not list_of_logs:
             return None
         latest_log = max(list_of_logs, key=getmtime)
@@ -421,11 +425,14 @@ class EDJournal:
 
 
     def ship_state(self):
-
         latest_log = self.get_latest_log()
 
+        if not latest_log:
+            return self.ship
+
         # open journal file if not open yet or there is a more recent journal
-        if self.current_log == None or self.current_log != latest_log:
+        if self.current_log != latest_log:
+            self.current_log = latest_log
             self.open_journal(latest_log)
 
         cnt = 0

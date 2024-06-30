@@ -72,6 +72,8 @@ class EDKeys:
         }
 
         latest_bindings = self.get_latest_keybinds()
+        if not latest_bindings:
+            return {}
         bindings_tree = parse(latest_bindings)
         bindings_root = bindings_tree.getroot()
 
@@ -128,7 +130,10 @@ class EDKeys:
         if not path_bindings:
             path_bindings = environ['LOCALAPPDATA']+"\Frontier Developments\Elite Dangerous\Options\Bindings"
 
-        list_of_bindings = [join(path_bindings, f) for f in listdir(path_bindings) if isfile(join(path_bindings, f)) and f.endswith('.binds')]
+        try:
+            list_of_bindings = [join(path_bindings, f) for f in listdir(path_bindings) if isfile(join(path_bindings, f)) and f.endswith('.binds')]
+        except FileNotFoundError as e:
+            return None
 
         if not list_of_bindings:
             return None
@@ -142,10 +147,10 @@ class EDKeys:
             PressKey(key)
 
     def send(self, key_name, hold=None, repeat=1, repeat_delay=None, state=None):
-        key = self.keys[key_name]
+        key = self.keys.get(key_name)
         if key is None:
-            logger.warning('SEND=NONE !!!!!!!!')
-            return
+            #logger.warning('SEND=NONE !!!!!!!!')
+            raise Exception(f"Unable to retrieve keybinding for {key_name}. Advise user to check game settings for keyboard bindings.")
 
         logger.debug('send=key:'+str(key)+',hold:'+str(hold)+',repeat:'+str(repeat)+',repeat_delay:'+str(repeat_delay)+',state:'+str(state))
         for i in range(repeat):

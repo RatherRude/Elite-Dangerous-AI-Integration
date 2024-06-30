@@ -945,6 +945,7 @@ def run_chat_model(client, commander_name, chat_prompt):
         for action in response_actions:
             printFlush(f"ACTION: {action.function.name} {action.function.arguments}")
             action_result = aiActions.runAction(action)
+            printFlush(f"ACTION RESULT: {action_result.get('content')}")
 
             conversation.append(action_result)
             while len(conversation) > conversationLength or conversation[0]["role"] not in ['user', 'assistant', 'system']:
