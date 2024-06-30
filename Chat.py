@@ -1164,25 +1164,6 @@ def main():
     else:
         printFlush('remote TTS')
         tts = TTS.TTS(openai_client=ttsClient, model=tts_model_name, voice=tts_voice)
-
-    # STT Setup
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--model", default="small", help="Model to use",
-                        choices=["tiny", "base", "small", "medium", "large"])
-    parser.add_argument("--non_english", action='store_true',
-                        help="Don't use the english model.")
-    parser.add_argument("--energy_threshold", default=1000,
-                        help="Energy level for mic to detect.", type=int)
-    parser.add_argument("--record_timeout", default=15,
-                        help="How real time the recording is in seconds.", type=float)
-    parser.add_argument("--phrase_timeout", default=5,
-                        help="How much empty space between recordings before we "
-                             "consider it a new line in the transcription.", type=float)
-    if 'linux' in platform:
-        parser.add_argument("--default_microphone", default='pulse',
-                            help="Default microphone name for SpeechRecognition. "
-                                 "Run this with 'list' to view available Microphones.", type=str)
-    args = parser.parse_args()
     
     if alternative_stt_var:
         printFlush('local STT')

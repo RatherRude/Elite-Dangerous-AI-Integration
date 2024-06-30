@@ -3,3 +3,7 @@ EDAI.log
 /build
 /dist
 *.patch
+__pycache__
+config*.json
+conversation.json
+*.log

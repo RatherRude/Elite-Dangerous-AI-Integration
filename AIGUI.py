@@ -1,3 +1,4 @@
+import argparse
 import tkinter as tk
 from tkinter import messagebox
 import json, subprocess, os, signal
@@ -133,6 +134,11 @@ class App:
         self.root.title("Elite Dangerous AI Integration")
         root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--chat", default="pythonw ./Chat.py", help="command to run the chat app")
+        args = parser.parse_args()
+        self.chat_command_arg:str = args.chat
+
         self.check_vars = {}
 
         self.key_binding = None
@@ -145,7 +151,8 @@ class App:
 
         # Background Image
         try:
-            background_image = tk.PhotoImage(file="screen/EDAI_logo.png")
+            background_image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'screen/EDAI_logo.png'))
+            background_image = tk.PhotoImage(file=background_image_path)
             self.background_label = tk.Label(root, bg="black", image=background_image)
             self.background_label.place(x=0, y=0, relwidth=1, relheight=1)
             self.background_label.image = background_image
@@ -533,7 +540,9 @@ class App:
 
         try:
             # Example script execution
-            self.process = subprocess.Popen(['pythonw', 'Chat.py'], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, universal_newlines=True)
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            self.process = subprocess.Popen(self.chat_command_arg.split(' '), startupinfo=startupinfo,  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, universal_newlines=True)
             self.debug_frame.pack()
             self.main_frame.pack_forget()
             self.stop_button.pack()
@@ -589,7 +598,12 @@ class App:
         self.main_frame.pack(padx=20, pady=20)
         self.start_button.pack()
 
+    def shutdown(self):
+        if self.process:
+            self.process.terminate()  # Terminate the subprocess
+
 if __name__ == "__main__":
     root = tk.Tk()
     app = App(root)
     root.mainloop()
+    app.shutdown()
