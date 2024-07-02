@@ -4,8 +4,8 @@
 a = Analysis(
     ['Chat.py'],
     pathex=[],
-    binaries=[],
-    datas=[('C:\\Users\\shame\\AppData\\Roaming\\Python\\Python38\\site-packages\\pysilero_vad\\models\\silero_vad.onnx', '.\\pysilero_vad\\models'), ('C:\\Users\\shame\\AppData\\Roaming\\Python\\Python38/site-packages/onnxruntime/capi/onnxruntime_providers_shared.dll', '.')],
+    binaries=[('C:\\Users\\shame\\AppData\\Roaming\\Python\\Python38/site-packages/onnxruntime/capi/onnxruntime_providers_shared.dll', '.')],
+    datas=[('C:\\Users\\shame\\AppData\\Roaming\\Python\\Python38\\site-packages\\pysilero_vad\\models\\silero_vad.onnx', '.\\pysilero_vad\\models')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
