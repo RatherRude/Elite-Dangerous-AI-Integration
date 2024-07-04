@@ -1,4 +1,4 @@
-# COVAS NEXT: AI Integration
+# COVAS: NEXT (E:D AI Integration)
 
 [![A Day in the Life of a Bounty Hunter](http://img.youtube.com/vi/nvuCwwixvxw/0.jpg)](https://www.youtube.com/watch?v=nvuCwwixvxw)
 <- *Click image to watch the video on YouTube.*
