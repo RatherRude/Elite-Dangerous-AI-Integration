@@ -92,7 +92,22 @@ squadronEvents = {
 explorationEvents = {
     "CodexEntry": "Commander {commanderName} has logged a Codex entry.",
     "DiscoveryScan": "Commander {commanderName} has performed a discovery scan.",
-    "Scan": "Commander {commanderName} has conducted a scan."
+    "Scan": "Commander {commanderName} has conducted a scan.",
+    "FSSAllBodiesFound": "Commander {commanderName} has identified all bodies in the system.",
+    "FSSBodySignals": "Commander {commanderName} has completed a full spectrum scan of {bodyName}, detecting signals.",
+    "FSSDiscoveryScan": "Commander {commanderName} has performed a full system scan.",
+    "FSSSignalDiscovered": "Commander {commanderName} has discovered a signal using the FSS scanner.",
+    "MaterialCollected": "Commander {commanderName} has collected materials.",
+    "MaterialDiscarded": "Commander {commanderName} has discarded materials.",
+    "MaterialDiscovered": "Commander {commanderName} has discovered a new material.",
+    "MultiSellExplorationData": "Commander {commanderName} has sold exploration data.",
+    "NavBeaconScan": "Commander {commanderName} has scanned a navigation beacon.",
+    "BuyExplorationData": "Commander {commanderName} has bought exploration data.",
+    "SAAScanComplete": "Commander {commanderName} has completed a surface area analysis scan.",
+    "SAASignalsFound": "Commander {commanderName} has found signals using the SAA scanner.",
+    "ScanBaryCentre": "Commander {commanderName} has scanned a BaryCentre.",
+    "SellExplorationData": "Commander {commanderName} has sold exploration data in Cartographics.",
+    "Screenshot": "Commander {commanderName} has taken a screenshot."
 }
 tradeEvents = {
     "Trade": "Commander {commanderName} has performed a trade.",
@@ -156,14 +171,6 @@ stationServiceEvents = {
     "StoredShips": "Commander {commanderName} has stored ships.",
     "StoredModules": "Commander {commanderName} has stored modules.",
     "TechnologyBroker": "Commander {commanderName} has accessed a technology broker.",
-    "Touchdown": "Commander {commanderName} has touched down on a planet surface.",
-    "Undocked": "Commander {commanderName} has undocked from a station.",
-    "Docked": "Commander {commanderName} has docked with a station.",
-    "DockingRequested": "Commander {commanderName} has sent a request to dock with a station.",
-    "DockingGranted": "Commander {commanderName}'s request to dock with a station has been granted.",
-    "DockingDenied": "Commander {commanderName}'s request to dock with a station has been denied.",
-    "DockingComplete": "Commander {commanderName} has docked with a station",
-    "DockingTimeout": "Commander {commanderName}'s request to dock with a station has timed out.",
 }
 carrierEvents = {
     "CarrierJump": "Commander {commanderName} has performed a carrier jump.",
@@ -216,6 +223,46 @@ odysseyEvents = {
     'UpgradeWeapon': "Commander {commanderName} has upgraded a weapon.",
     'UseConsumable': "Commander {commanderName} has used a consumable."
 }
+combatEvents = {
+    'Bounty': "Commander {commanderName} is awarded a bounty for a kill.",
+    'Died': "Commander {commanderName} has lost consciousness.",
+    'CapShipBond': "Commander {commanderName} has been rewarded for a capital ship combat.",
+    'Interdiction': "Commander {commanderName} has attempted an interdiction.",
+    'Interdicted': "Commander {commanderName} is being interdicted.",
+    'EscapeInterdiction': "Commander {commanderName} has escaped the interdiction.",
+    'FactionKillBond': "Commander {commanderName} was rewarded for taking part in a combat zone.",
+    'FighterDestroyed': "A ship-launched fighter was destroyed.",
+    'HeatDamage': "Commander {commanderName} is taking heat damage.",
+    'HeatWarning': "Commander {commanderName}'s ship's heat has exceeded 100%.",
+    'HullDamage': "Commander {commanderName} is taking hull damage.",
+    'PVPKill': "Commander {commanderName} has eliminated another commander.",
+    'ShieldState': "Commander {commanderName}'s shield state has changed.",
+    'ShipTargetted': "Commander {commanderName} is targeting a ship.",
+    'SRVDestroyed': "Commander {commanderName}'s SRV was destroyed.",
+    'UnderAttack': "Commander {commanderName} is under attack."
+}
+travelEvents = {
+    "ApproachBody": "Commander {commanderName} is entering an orbit.",
+    "Docked": "Commander {commanderName} has docked with a station.",
+    "DockingCanceled": "Commander {commanderName} has canceled the docking request.",
+    #"DockingComplete": "Commander {commanderName} has docked with a station",
+    "DockingDenied": "Commander {commanderName}'s request to dock with a station has been denied.",
+    "DockingGranted": "Commander {commanderName}'s request to dock with a station has been granted.",
+    "DockingRequested": "Commander {commanderName} has sent a request to dock with a station.",
+    "DockingTimeout": "Commander {commanderName}'s request to dock with a station has timed out.",
+    "FSDJump": "Commander {commanderName} has initiated a hyperjump to another system.",
+    "FSDTarget": "Commander {commanderName} has selected a star system to jump to.",
+    "LeaveBody": "Commander {commanderName} is exiting an orbit.",
+    "Liftoff": "Commander {commanderName} has lifted off.",
+    "Location": "Commander {commanderName} has changed location.",
+    "StartJump": "Commander {commanderName} starts the hyperjump. say: '3, 2, 1 , engage'.",
+    "SupercruiseEntry": "Commander {commanderName} has entered supercruise from normal space.",
+    "SupercruiseExit": "Commander {commanderName} has exited supercruise and returned to normal space.",
+    "Touchdown": "Commander {commanderName} has touched down on a planet surface.",
+    "Undocked": "Commander {commanderName} has undocked from a station.",
+    "NavRoute": "Commander {commanderName} has planned a new nav route.",
+    "NavRouteClear": "Commander {commanderName} has cleared the nav route.",
+}
 otherEvents = {
     "AfmuRepairs": "Commander {commanderName} has conducted repairs.",
     "ApproachSettlement": "Commander {commanderName} is approaching settlement.",
@@ -236,7 +283,7 @@ otherEvents = {
     "EndCrewSession": "Commander {commanderName} has ended a crew session.",
     "FighterRebuilt": "Commander {commanderName} has rebuilt a fighter.",
     "FuelScoop": "Commander {commanderName} has scooped fuel.",
-    "Friends": "Commander {commanderName} has a friend request.",
+    "Friends": "The status of a friend of Commander {commanderName} has changed.",
     "Music": "Commander {commanderName} has triggered music playback.",
     "JetConeBoost": "Commander {commanderName} has executed a jet cone boost.",
     "JetConeDamage": "Commander {commanderName} has received damage from a jet cone.",
@@ -272,14 +319,16 @@ otherEvents = {
     "SupercruiseDestinationDrop": "Commander {commanderName} has dropped out at a supercruise destination."
 }
 allGameEvents = {
+    **startupEvents,
+    **travelEvents,
+    **combatEvents,
     **explorationEvents,
     **tradeEvents,
     **stationServiceEvents,
-    **carrierEvents,
-    **odysseyEvents,
-    **startupEvents,
     **powerplayEvents,
     **squadronEvents,
+    **carrierEvents,
+    **odysseyEvents,
     **otherEvents
 }
 
@@ -968,79 +1017,8 @@ def checkForJournalUpdates(client, commanderName, boot):
         previous_status['extra_events'].clear()
         return
 
-    def check_status_changes(prev_status, current_status, keys):
-        changes = []
-        for key in keys:
-            if prev_status[key] != current_status[key]:
-                changes.append((key, prev_status[key], current_status[key]))
-        return changes
-
-    relevant_status = [
-        'type',
-        'target',
-        'location',
-        'shieldsup',
-        'under_attack',
-        'type',
-        'fuel_percent',
-        'interdicted'
-    ]
     current_status = getCurrentState()
-    #printFlush('check_status_changes')
-    changes = check_status_changes(previous_status, current_status, relevant_status)
 
-    for change in changes:
-        key, old_value, new_value = change
-        #printFlush(f"{key} changed from {old_value} to {new_value}")
-
-        # Events
-
-        #if key == 'type':
-        #    ## type event is written twice to EDJournal, we only want one interaction
-        #    second_call = not second_call and True
-        #    if second_call and old_value != None and new_value != None:
-        #        handle_conversation(client, commanderName, f"(Commander {commanderName} just swapped Vessels, from {old_value} to {new_value})")
-
-        if key == 'location':
-            if new_value != None and old_value != None:
-                handle_conversation(client, commanderName, f"(Commander {commanderName} has reached a new location: {new_value}. System details: {get_system_info(new_value)}).")
-        if key == 'target':
-            if new_value != None:
-                handle_conversation(client, commanderName, f"(Commander {commanderName} has locked in a new jump destination: {new_value}. Inform about relevant system details: {get_system_info(new_value)})")
-        if key == 'shieldsup':
-            if new_value != True:
-                handle_conversation(client, commanderName, f"(Commander {commanderName}'s ship has lost its shields! Warn about immediate danger!)")
-            else:
-                handle_conversation(client, commanderName, f"(Commander {commanderName}'s ship has regained its shields! Express your relief!)")
-        if key == 'under_attack':
-            if new_value == True:
-                handle_conversation(client, commanderName, f"(Commander {commanderName}'s ship is under attack! Warn about immediate danger!)")
-                jn.reset_items()
-        #if key == 'fuel_percent':
-            #if new_value <= 24 and current_status['type'] != None and old_value != 0 and new_value != 0:
-                #handle_conversation(client, commanderName, f"(Commander {commanderName}'s ship has less than 25% fuel reserves! Warn about immediate danger!)")
-        if key == 'interdicted':
-            handle_conversation(client, commanderName, f"(Commander {commanderName}'s ship is being interdicted! Warn about immediate danger, advise to run or to prepare for a fight!)")
-        if key == 'cockpit_breached':
-            if new_value == True:
-                handle_conversation(client, commanderName, f"(Commander {commanderName}'s ship cockpit has been breached! Warn about immediate danger!)")
-                jn.reset_items()
-        """
-        if key == 'status':
-            if new_value == 'landed':
-                #handle_conversation(client, commanderName, f"(Commander {commanderName} has landed the ship.)")
-            elif new_value == 'liftoff':
-                #handle_conversation(client, commanderName, f"(Commander {commanderName}'s ship has lifted off from the surface.)")
-            elif new_value == 'destroyed':
-                #handle_conversation(client, commanderName, f"(Commander {commanderName}'s ship has been destroyed. Express sympathy.)")
-            elif new_value == 'resurrected':
-                #handle_conversation(client, commanderName, f"(Commander {commanderName} has been released from hospital.)")
-            elif new_value == 'approaching_settlement':
-                #handle_conversation(client, commanderName, f"(Commander {commanderName} is approaching a settlement.)")
-            elif new_value == 'self_destruct':
-                #handle_conversation(client, commanderName, f"(Commander {commanderName}'s ship is self-destructing! Make sure it's not a mistake.)")
-
-        """
     if current_status['extra_events'] and len(current_status['extra_events']) > 0:
         while current_status['extra_events']:
             item = current_status['extra_events'][0]  # Get the first item
@@ -1052,13 +1030,13 @@ def checkForJournalUpdates(client, commanderName, boot):
                 elif 'Message_Localised' in item['event_content'] and item['event_content']['Message_Localised'].startswith("Entered Channel:"):
                     current_status['extra_events'].pop(0)
                     continue
-            if 'event_type' in item:
-                if item.get('event_type') == 'Progress' or item.get('event_type') == 'Reputation' or item.get('event_type') == 'Rank' or item.get('event_type') == 'Backpack' or item.get('event_type') == 'Statistics' or item.get('event_type') == 'Missions' or item.get('event_type') == 'SquadronStartup':
-                    #printFlush(item.get('event_type') + '!')
-                    #printFlush(item.get('event_content'))
-                    # @ToDo: collect for loadgame event: if item.get('event_type') == 'LoadGame'
-                    current_status['extra_events'].pop(0)
-                    continue
+            #if 'event_type' in item:
+            #    if item.get('event_type') == 'Progress' or item.get('event_type') == 'Reputation' or item.get('event_type') == 'Rank' or item.get('event_type') == 'Backpack' or item.get('event_type') == 'Statistics' or item.get('event_type') == 'Missions' or item.get('event_type') == 'SquadronStartup':
+            #        #printFlush(item.get('event_type') + '!')
+            #        #printFlush(item.get('event_content'))
+            #        # @ToDo: collect for loadgame event: if item.get('event_type') == 'LoadGame'
+            #        current_status['extra_events'].pop(0)
+            #        continue
             #printFlush(f"({allGameEvents[item['event_type']].format(commanderName=commanderName)} Details: {json.dumps(item['event_content'])})")
             handle_conversation(client, commanderName, f"({allGameEvents[item['event_type']].format(commanderName=commanderName)} Details: {json.dumps(item['event_content'])})")
 
