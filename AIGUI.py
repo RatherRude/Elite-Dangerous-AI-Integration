@@ -7,6 +7,7 @@ from pathlib import Path
 from threading import Thread
 from queue import Queue
 from typing import Dict
+from openai import APIError, OpenAI
 
 class VerticalScrolledFrame(tk.Frame):
     """A pure Tkinter scrollable frame that actually works!
@@ -326,7 +327,7 @@ class App:
         self.alternative_stt_var = tk.BooleanVar()
         self.alternative_stt_var.set(False)  # Default value
         self.alternative_stt_checkbox = tk.Checkbutton(self.ai_geeks_right_frame, text="Local STT (pre-installed whisper-medium)", variable=self.alternative_stt_var, command=self.toggle_local_stt)
-        self.alternative_stt_checkbox.grid(row=8, column=0, padx=10, pady=10, sticky=tk.W)
+        self.alternative_stt_checkbox.grid(row=8, column=0, padx=10, pady=10, sticky=tk.W, columnspan=2)
 
         ## TTS Model
         self.tts_model_name_label = tk.Label(self.ai_geeks_right_frame, text="TTS Model Name:")
@@ -517,6 +518,74 @@ class App:
             }
         return data
 
+    def check_model_list(self, client, model_name):
+        try:
+            models = client.models.list()
+            print('models', models)
+            if not any(model.id == model_name for model in models):
+                messagebox.showerror("Invalid model name", f"Your model provider doesn't serve '{model_name}' to you. Please check your model name.")
+                return False
+
+            return True
+        except APIError as e:
+            if e.code == "invalid_api_key":
+                messagebox.showerror("Invalid API key", f"The API key you have provided for '{model_name}' isn't valid. Please check your API key.")
+                return False
+            else:
+                print('APIError', e)
+        except Exception as e:
+            print(e)
+
+        return True
+
+    def check_settings(self):
+
+        llmClient = OpenAI(
+            base_url = "https://api.openai.com/v1" if self.llm_endpoint.get() == '' else self.llm_endpoint.get(),
+            api_key = self.api_key.get() if self.llm_api_key.get() == '' else self.llm_api_key.get(),
+        )
+        if not self.check_model_list(llmClient, self.llm_model_name.get()):
+            if self.llm_model_name.get() == 'gpt-4o' and self.check_model_list(llmClient, 'gpt-3.5-turbo'):
+                self.llm_model_name.delete(0, tk.END)
+                self.llm_model_name.insert(0, 'gpt-3.5-turbo')
+                messagebox.showinfo("Fallback to GPT-3.5-Turbo", "Your OpenAI account hasn't reached the required tier to use GPT-4o yet. GPT-3.5-Turbo will be used as a fallback.")
+            else:
+                return False
+
+
+
+        if self.vision_var.get():
+            visionClient = OpenAI(
+                base_url = "https://api.openai.com/v1" if self.vision_endpoint.get() == '' else self.vision_endpoint.get(),
+                api_key = self.api_key.get() if self.vision_api_key.get() == '' else self.vision_api_key.get(),
+            )
+            
+            if not self.check_model_list(visionClient, self.vision_model_name.get()):
+                return False
+
+        print('self.alternative_stt_var', self.alternative_stt_var.get())
+
+        print('self.alternative_tts_var', self.alternative_tts_var.get())
+
+
+        if not self.alternative_stt_var.get():
+            sttClient = OpenAI(
+                base_url = "https://api.openai.com/v1" if self.stt_endpoint.get() == '' else self.stt_endpoint.get(),
+                api_key = self.api_key.get() if self.stt_api_key.get() == '' else self.stt_api_key.get(),
+            )
+            if not self.check_model_list(sttClient, self.stt_model_name.get()):
+                return False
+
+        if not self.alternative_tts_var.get():
+            ttsClient = OpenAI(
+                base_url = "https://api.openai.com/v1" if self.tts_endpoint.get() == '' else self.tts_endpoint.get(),
+                api_key = self.api_key.get() if self.tts_api_key.get() == '' else self.tts_api_key.get(),
+            )
+            if not self.check_model_list(ttsClient, self.tts_model_name.get()):
+                return False
+
+        return True
+
     def save_settings(self):
         self.data['commander_name'] = self.commander_name.get()
         self.data['character'] = self.character.get("1.0", tk.END).strip()
@@ -660,6 +729,9 @@ class App:
             self.vision_api_key_label.grid_remove()
 
     def start_external_script(self):
+        if not self.check_settings():
+            return
+
         self.save_settings()
         self.debug_text.delete('1.0', tk.END)
         self.debug_text.insert(tk.END, "Starting Elite Dangerous AI Integration...\n", "normal")
