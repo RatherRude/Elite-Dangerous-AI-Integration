@@ -521,7 +521,7 @@ class App:
     def check_model_list(self, client, model_name):
         try:
             models = client.models.list()
-            print('models', models)
+            #print('models', models)
             if not any(model.id == model_name for model in models):
                 messagebox.showerror("Invalid model name", f"Your model provider doesn't serve '{model_name}' to you. Please check your model name.")
                 return False
@@ -562,10 +562,6 @@ class App:
             
             if not self.check_model_list(visionClient, self.vision_model_name.get()):
                 return False
-
-        print('self.alternative_stt_var', self.alternative_stt_var.get())
-
-        print('self.alternative_tts_var', self.alternative_tts_var.get())
 
 
         if not self.alternative_stt_var.get():
