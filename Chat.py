@@ -1,28 +1,21 @@
 import base64
-from time import sleep
-import keyboard
-
-import argparse
-
-from time import sleep
-from sys import platform
-
-from pathlib import Path
-from openai import OpenAI
-
+import io
 import json
-
-import pyautogui
-import win32gui
-import requests
+import sys
 from io import BytesIO
-
-import sys, io
 from pathlib import Path
+
+import keyboard
+import pyautogui
+import requests
+import win32gui
+from openai import OpenAI
 
 import AIActions
 import STT
 import TTS
+
+# from MousePt import MousePoint
 
 # Add the parent directory to sys.path
 parent_dir = Path(__file__).resolve().parent.parent
@@ -88,7 +81,6 @@ squadronEvents = {
     "SquadronStartup": "Commander {commanderName} is a member of a squadron (startup).",
     "WonATrophyForSquadron": "Commander {commanderName} won a trophy for a squadron."
 }
-
 explorationEvents = {
     "CodexEntry": "Commander {commanderName} has logged a Codex entry.",
     "DiscoveryScan": "Commander {commanderName} has performed a discovery scan.",
@@ -908,7 +900,8 @@ aiActions.registerAction('getGalnetNews', "Retrieve current interstellar news fr
      "required": ["query"]
 }, get_galnet_news)
 
-def handle_conversation(client, commander_name, user_input):
+
+def handle_conversation(client, commander_name, user_input, is_player: True, skippable: False):
     printFlush(f"CMDR: {user_input}")
     chat_prompt = prepare_chat_prompt(commander_name)
     
@@ -920,7 +913,8 @@ def handle_conversation(client, commander_name, user_input):
 
     save_conversation(conversation)
 
-    run_chat_model(client, commander_name, chat_prompt+[userChatMessage])
+    if not skippable:
+        run_chat_model(client, commander_name, chat_prompt+[userChatMessage], is_player)
 
 def prepare_chat_prompt(commander_name):
     rawState =jn.ship_state()
@@ -957,9 +951,11 @@ def prepare_chat_prompt(commander_name):
     # Context for AI, consists of conversation history, ships status, information about current system and the user input
     return [systemPrompt]+[status, system]+conversation
 
+
 useTools = False
 
-def run_chat_model(client, commander_name, chat_prompt):
+
+def run_chat_model(client, commander_name, chat_prompt, is_player: True):
     global conversation
     # Make a request to OpenAI with the updated conversation
     #printFlush("messages:", chat_prompt)
@@ -967,7 +963,7 @@ def run_chat_model(client, commander_name, chat_prompt):
          "model": aiModel,
          "messages": chat_prompt,
      }
-    if useTools:
+    if useTools and is_player:
         args["tools"] = aiActions.getToolsList()
     completion = client.chat.completions.create(**args)
 
@@ -1009,6 +1005,38 @@ def getCurrentState():
 
     return {key: value for key, value in rawState.items() if key not in keysToFilterOut}
 
+
+class EventDebouncer:
+    def __init__(self, debounce_events, debounce_time=60):
+        # List of events to debounce
+        self.debounce_events = set(debounce_events)
+        # Debounce time in seconds
+        self.debounce_time = debounce_time
+        # Dictionary to store timestamps of the last occurrence of each event
+        self.event_timestamps = {}
+
+    def handle_event(self, event_name):
+        current_time = time.time()
+
+        if event_name in self.debounce_events:
+            last_time = self.event_timestamps.get(event_name, 0)
+            if current_time - last_time < self.debounce_time:
+                # Ignore the event if it occurred too recently
+                print(f"Event '{event_name}' ignored (debounced).")
+                return
+
+        # Update the timestamp and process the event
+        self.event_timestamps[event_name] = current_time
+        self.process_event(event_name)
+
+    def process_event(self, event_name):
+        # Method to process the event (e.g., print the event)
+        print(f"Event '{event_name}' processed.")
+
+
+debounce_events = ['event1', 'event2', 'event3', 'event4', 'event5']
+debouncer = EventDebouncer(debounce_events)
+
 previous_status = None
 def checkForJournalUpdates(client, commanderName, boot):
     #printFlush('checkForJournalUpdates is checking')
@@ -1027,18 +1055,18 @@ def checkForJournalUpdates(client, commanderName, boot):
                     current_status['extra_events'].pop(0)
                     continue
 
-                elif 'Message_Localised' in item['event_content'] and item['event_content']['Message_Localised'].startswith("Entered Channel:"):
+                elif 'Message_Localised' in item['event_content'] and item['event_content']['Message'].startswith("$COMMS_entered"):
                     current_status['extra_events'].pop(0)
                     continue
-            #if 'event_type' in item:
-            #    if item.get('event_type') == 'Progress' or item.get('event_type') == 'Reputation' or item.get('event_type') == 'Rank' or item.get('event_type') == 'Backpack' or item.get('event_type') == 'Statistics' or item.get('event_type') == 'Missions' or item.get('event_type') == 'SquadronStartup':
-            #        #printFlush(item.get('event_type') + '!')
-            #        #printFlush(item.get('event_content'))
-            #        # @ToDo: collect for loadgame event: if item.get('event_type') == 'LoadGame'
-            #        current_status['extra_events'].pop(0)
-            #        continue
-            #printFlush(f"({allGameEvents[item['event_type']].format(commanderName=commanderName)} Details: {json.dumps(item['event_content'])})")
-            handle_conversation(client, commanderName, f"({allGameEvents[item['event_type']].format(commanderName=commanderName)} Details: {json.dumps(item['event_content'])})")
+
+            immediate_response_types = [
+                'ReceiveText',
+                'Scanned',
+            ]
+            skippable = not item['event_type'] in immediate_response_types
+            if item['event_type'] == 'ReceiveText' and item['event_content']['Message'].startswith('$DockingChatter'):
+                skippable = True
+            handle_conversation(client, commanderName, f"({allGameEvents[item['event_type']].format(commanderName=commanderName)} Details: {json.dumps(item['event_content'])})", False, skippable)
 
             current_status['extra_events'].pop(0)
 
@@ -1168,7 +1196,7 @@ def main():
             if not stt.resultQueue.empty():
                 tts.abort()
                 text = stt.resultQueue.get().text
-                handle_conversation(client, commanderName, text)
+                handle_conversation(client, commanderName, text, True, False)
             else:
                 counter += 1
                 if counter % 5 == 0:

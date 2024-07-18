@@ -1,13 +1,16 @@
 import argparse
+import json
+import os
+import subprocess
 import tkinter as tk
-from tkinter import messagebox
-import json, subprocess, os, signal
-import keyboard
-from pathlib import Path
-from threading import Thread
 from queue import Queue
+from threading import Thread
+from tkinter import messagebox
 from typing import Dict
+
+import keyboard
 from openai import APIError, OpenAI
+
 
 class VerticalScrolledFrame(tk.Frame):
     """A pure Tkinter scrollable frame that actually works!
@@ -15,9 +18,10 @@ class VerticalScrolledFrame(tk.Frame):
     * Construct and pack/place/grid normally.
     * This frame only allows vertical scrolling.
     """
+
     def __init__(self, outer_frame, width, *args, **kw):
         scrollbar_width = 16
-        inner_width = width-scrollbar_width
+        inner_width = width - scrollbar_width
 
         # base class initialization
         tk.Frame.__init__(self, outer_frame, width=width)
@@ -36,22 +40,21 @@ class VerticalScrolledFrame(tk.Frame):
         self.canvas.bind('<Configure>', self.__fill_canvas)
 
         # assign this obj (the inner frame) to the windows item of the canvas
-        self.windows_item = self.canvas.create_window(0,0, window=self.inner_frame, width=inner_width, anchor=tk.NW)
+        self.windows_item = self.canvas.create_window(0, 0, window=self.inner_frame, width=inner_width, anchor=tk.NW)
         self.canvas.configure(background='black')
-
 
     def __fill_canvas(self, event):
         "Enlarge the windows item to the canvas width"
 
         self.update_idletasks()
-        self.canvas.itemconfig("inner_frame", width = self.canvas.winfo_width())
+        self.canvas.itemconfig("inner_frame", width=self.canvas.winfo_width())
 
     def update(self):
         "Update the canvas and the scrollregion"
 
         self.update_idletasks()
         self.canvas.config(scrollregion=self.canvas.bbox("all"))
-        self.canvas.itemconfig("inner_frame", width = self.canvas.winfo_width())
+        self.canvas.itemconfig("inner_frame", width=self.canvas.winfo_width())
 
         self.canvas.bind('<Enter>', self.__on_enter)
         self.canvas.bind('<Leave>', self.__on_leave)
@@ -63,7 +66,7 @@ class VerticalScrolledFrame(tk.Frame):
         self.canvas.unbind_all("<MouseWheel>")
 
     def __onmousewheel(self, event):
-        self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
 
 # List of game events categorized
@@ -193,7 +196,7 @@ class App:
         parser = argparse.ArgumentParser()
         parser.add_argument("--chat", default="pythonw ./Chat.py", help="command to run the chat app")
         args = parser.parse_args()
-        self.chat_command_arg:str = args.chat
+        self.chat_command_arg: str = args.chat
 
         self.check_vars = {}
 
@@ -239,9 +242,11 @@ class App:
         # PTT (Checkbox)
         self.ptt_var = tk.BooleanVar()
         self.ptt_var.set(False)  # Default value
-        self.ptt_checkbox = tk.Checkbutton(self.main_frame, text="Enabled", variable=self.ptt_var, command=self.toggle_ptt)
+        self.ptt_checkbox = tk.Checkbutton(self.main_frame, text="Enabled", variable=self.ptt_var,
+                                           command=self.toggle_ptt)
         self.ptt_checkbox.grid(row=3, column=1, sticky=tk.W, padx=5, pady=5)
-        tk.Label(self.main_frame, text="Uses automatic voice detection if not enabled", font="Arial 10 italic").grid(row=3, column=1, sticky=tk.W, padx=80, pady=5)
+        tk.Label(self.main_frame, text="Uses automatic voice detection if not enabled", font="Arial 10 italic").grid(
+            row=3, column=1, sticky=tk.W, padx=80, pady=5)
 
         self.pptButton = tk.Button(self.main_frame, text="Key Binding: Press any key", font=('Arial', 10))
         self.pptButton.grid(row=3, column=1, sticky=tk.W, padx=(360, 10), pady=5)
@@ -252,14 +257,20 @@ class App:
         # Conversation (Checkbox)
         self.continue_conversation_var = tk.BooleanVar()
         self.continue_conversation_var.set(True)  # Default value
-        self.continue_conversation_checkbox = tk.Checkbutton(self.main_frame, text="Enabled", variable=self.continue_conversation_var)
+        self.continue_conversation_checkbox = tk.Checkbutton(self.main_frame, text="Enabled",
+                                                             variable=self.continue_conversation_var)
         self.continue_conversation_checkbox.grid(row=4, column=1, sticky=tk.W, padx=5, pady=5)
-        tk.Label(self.main_frame, text="Resumes previous conversation if enabled", font="Arial 10 italic").grid(row=4, column=1, sticky=tk.W, padx=80, pady=5)
+        tk.Label(self.main_frame, text="Resumes previous conversation if enabled", font="Arial 10 italic").grid(row=4,
+                                                                                                                column=1,
+                                                                                                                sticky=tk.W,
+                                                                                                                padx=80,
+                                                                                                                pady=5)
 
         self.game_events_frame = VerticalScrolledFrame(self.main_frame, width=600)
         self.game_events_frame.grid(row=6, column=0, columnspan=2, sticky="")
-        self.game_events_save_cb = self.populate_game_events_frame(self.game_events_frame.inner_frame, self.data['game_events'])
-        self.game_events_frame.update() # update scrollable area
+        self.game_events_save_cb = self.populate_game_events_frame(self.game_events_frame.inner_frame,
+                                                                   self.data['game_events'])
+        self.game_events_frame.update()  # update scrollable area
         self.game_events_frame.grid_remove()  # Initially hide
 
         # AI Geeks Section (Initially hidden)
@@ -268,7 +279,8 @@ class App:
         self.ai_geeks_frame.grid_remove()  # Initially hide
 
         # Disclaimer
-        tk.Label(self.ai_geeks_frame.inner_frame, text="None of the AI Geek options are required.", font="Helvetica 12 bold").grid(row=0, column=0, columnspan=2, sticky="")
+        tk.Label(self.ai_geeks_frame.inner_frame, text="None of the AI Geek options are required.",
+                 font="Helvetica 12 bold").grid(row=0, column=0, columnspan=2, sticky="")
 
         # AI Geeks Section (Left Side)
         self.ai_geeks_left_frame = tk.Frame(self.ai_geeks_frame.inner_frame)
@@ -302,7 +314,8 @@ class App:
         # Function Calling (Checkbox)
         self.tools_var = tk.BooleanVar()
         self.tools_var.set(True)  # Default value
-        self.tools_checkbox = tk.Checkbutton(self.ai_geeks_left_frame, text="Function Calling (default: on)", variable=self.tools_var)
+        self.tools_checkbox = tk.Checkbutton(self.ai_geeks_left_frame, text="Function Calling (default: on)",
+                                             variable=self.tools_var)
         self.tools_checkbox.grid(row=4, column=0, padx=10, pady=10, sticky=tk.W)
 
         ## STT Model
@@ -326,7 +339,9 @@ class App:
         # Alternative STT (Checkbox)
         self.alternative_stt_var = tk.BooleanVar()
         self.alternative_stt_var.set(False)  # Default value
-        self.alternative_stt_checkbox = tk.Checkbutton(self.ai_geeks_right_frame, text="Local STT (pre-installed whisper-medium)", variable=self.alternative_stt_var, command=self.toggle_local_stt)
+        self.alternative_stt_checkbox = tk.Checkbutton(self.ai_geeks_right_frame,
+                                                       text="Local STT (pre-installed whisper-medium)",
+                                                       variable=self.alternative_stt_var, command=self.toggle_local_stt)
         self.alternative_stt_checkbox.grid(row=8, column=0, padx=10, pady=10, sticky=tk.W, columnspan=2)
 
         ## TTS Model
@@ -356,7 +371,9 @@ class App:
         # Alternative TTS (Checkbox)
         self.alternative_tts_var = tk.BooleanVar()
         self.alternative_tts_var.set(False)  # Default value
-        self.alternative_tts_checkbox = tk.Checkbutton(self.ai_geeks_right_frame, text="Local TTS (pre-installed OS Voices)", variable=self.alternative_tts_var, command=self.toggle_local_tts)
+        self.alternative_tts_checkbox = tk.Checkbutton(self.ai_geeks_right_frame,
+                                                       text="Local TTS (pre-installed OS Voices)",
+                                                       variable=self.alternative_tts_var, command=self.toggle_local_tts)
         self.alternative_tts_checkbox.grid(row=13, column=0, padx=10, pady=10, sticky=tk.W)
 
         ## Vision Model
@@ -364,13 +381,13 @@ class App:
         self.vision_model_name_label.grid(row=14, column=0, sticky=tk.W)
         self.vision_model_name = tk.Entry(self.ai_geeks_left_frame, width=50)
         self.vision_model_name.grid(row=14, column=1, padx=10, pady=5)
-#
+        #
         ## Vision Model Endpoint
         self.vision_endpoint_label = tk.Label(self.ai_geeks_left_frame, text="Vision Model Endpoint:")
         self.vision_endpoint_label.grid(row=15, column=0, sticky=tk.W)
         self.vision_endpoint = tk.Entry(self.ai_geeks_left_frame, width=50)
         self.vision_endpoint.grid(row=15, column=1, padx=10, pady=5)
-#
+        #
         ## Vision Model API Key
         self.vision_api_key_label = tk.Label(self.ai_geeks_left_frame, text="Vision Model API Key:")
         self.vision_api_key_label.grid(row=16, column=0, sticky=tk.W)
@@ -380,17 +397,20 @@ class App:
         # Vision Capabilities (Checkbox)
         self.vision_var = tk.BooleanVar()
         self.vision_var.set(True)  # Default value
-        self.vision_checkbox = tk.Checkbutton(self.ai_geeks_left_frame, text="Vision Capabilities (default: on)", variable=self.vision_var, command=self.toggle_vision)
+        self.vision_checkbox = tk.Checkbutton(self.ai_geeks_left_frame, text="Vision Capabilities (default: on)",
+                                              variable=self.vision_var, command=self.toggle_vision)
         self.vision_checkbox.grid(row=17, column=0, padx=10, pady=10, sticky=tk.W)
 
         self.ai_geeks_frame.update()
 
         # Toggle Section Button
-        self.toggle_ai_geeks_section_button = tk.Button(self.main_frame, text="Show AI Geeks Section", command=self.toggle_ai_geeks_section)
+        self.toggle_ai_geeks_section_button = tk.Button(self.main_frame, text="Show AI Geeks Section",
+                                                        command=self.toggle_ai_geeks_section)
         self.toggle_ai_geeks_section_button.grid(row=5, column=0, columnspan=2, pady=10, padx=(150, 0), sticky="")
 
         # Toggle Section Button
-        self.toggle_game_events_section_button = tk.Button(self.main_frame, text="Show Game Events Section", command=self.toggle_game_events_section)
+        self.toggle_game_events_section_button = tk.Button(self.main_frame, text="Show Game Events Section",
+                                                           command=self.toggle_game_events_section)
         self.toggle_game_events_section_button.grid(row=5, column=0, columnspan=2, pady=10, padx=(0, 150), sticky="")
 
         # Debug Frame and Text Widget
@@ -485,13 +505,13 @@ class App:
             data = {
                 'commander_name': "",
                 'character':
-                "I am Commander {commander_name}. I am a broke bounty hunter who can barely pay the fuel. \n\n" +
-                "You will be addressed as 'Computer', you are the onboard AI of my starship. \n" +
-                "You possess extensive knowledge and can provide detailed and accurate information on a wide range of topics, " +
-                "including galactic navigation, ship status, the current system, and more. \n\n" +
-                "Do not inform about my ship status and my location unless it's relevant or requested by me. Answer within 3 sentences. Acknowledge given orders. \n\n" +
-                "Guide and support me with witty and intelligent commentary. Provide clear mission briefings, sarcastic comments, and humorous observations. \n\n" +
-                "Advance the narrative involving bounty hunting.",
+                    "I am Commander {commander_name}. I am a broke bounty hunter who can barely pay the fuel. \n\n" +
+                    "You will be addressed as 'Computer', you are the onboard AI of my starship. \n" +
+                    "You possess extensive knowledge and can provide detailed and accurate information on a wide range of topics, " +
+                    "including galactic navigation, ship status, the current system, and more. \n\n" +
+                    "Do not inform about my ship status and my location unless it's relevant or requested by me. Answer within 3 sentences. Acknowledge given orders. \n\n" +
+                    "Guide and support me with witty and intelligent commentary. Provide clear mission briefings, sarcastic comments, and humorous observations. \n\n" +
+                    "Advance the narrative involving bounty hunting.",
 
                 'api_key': "",
                 'alternative_stt_var': False,
@@ -523,13 +543,15 @@ class App:
             models = client.models.list()
             #print('models', models)
             if not any(model.id == model_name for model in models):
-                messagebox.showerror("Invalid model name", f"Your model provider doesn't serve '{model_name}' to you. Please check your model name.")
+                messagebox.showerror("Invalid model name",
+                                     f"Your model provider doesn't serve '{model_name}' to you. Please check your model name.")
                 return False
 
             return True
         except APIError as e:
             if e.code == "invalid_api_key":
-                messagebox.showerror("Invalid API key", f"The API key you have provided for '{model_name}' isn't valid. Please check your API key.")
+                messagebox.showerror("Invalid API key",
+                                     f"The API key you have provided for '{model_name}' isn't valid. Please check your API key.")
                 return False
             else:
                 print('APIError', e)
@@ -541,41 +563,39 @@ class App:
     def check_settings(self):
 
         llmClient = OpenAI(
-            base_url = "https://api.openai.com/v1" if self.llm_endpoint.get() == '' else self.llm_endpoint.get(),
-            api_key = self.api_key.get() if self.llm_api_key.get() == '' else self.llm_api_key.get(),
+            base_url="https://api.openai.com/v1" if self.llm_endpoint.get() == '' else self.llm_endpoint.get(),
+            api_key=self.api_key.get() if self.llm_api_key.get() == '' else self.llm_api_key.get(),
         )
         if not self.check_model_list(llmClient, self.llm_model_name.get()):
             if self.llm_model_name.get() == 'gpt-4o' and self.check_model_list(llmClient, 'gpt-3.5-turbo'):
                 self.llm_model_name.delete(0, tk.END)
                 self.llm_model_name.insert(0, 'gpt-3.5-turbo')
-                messagebox.showinfo("Fallback to GPT-3.5-Turbo", "Your OpenAI account hasn't reached the required tier to use GPT-4o yet. GPT-3.5-Turbo will be used as a fallback.")
+                messagebox.showinfo("Fallback to GPT-3.5-Turbo",
+                                    "Your OpenAI account hasn't reached the required tier to use GPT-4o yet. GPT-3.5-Turbo will be used as a fallback.")
             else:
                 return False
 
-
-
         if self.vision_var.get():
             visionClient = OpenAI(
-                base_url = "https://api.openai.com/v1" if self.vision_endpoint.get() == '' else self.vision_endpoint.get(),
-                api_key = self.api_key.get() if self.vision_api_key.get() == '' else self.vision_api_key.get(),
+                base_url="https://api.openai.com/v1" if self.vision_endpoint.get() == '' else self.vision_endpoint.get(),
+                api_key=self.api_key.get() if self.vision_api_key.get() == '' else self.vision_api_key.get(),
             )
-            
+
             if not self.check_model_list(visionClient, self.vision_model_name.get()):
                 return False
 
-
         if not self.alternative_stt_var.get():
             sttClient = OpenAI(
-                base_url = "https://api.openai.com/v1" if self.stt_endpoint.get() == '' else self.stt_endpoint.get(),
-                api_key = self.api_key.get() if self.stt_api_key.get() == '' else self.stt_api_key.get(),
+                base_url="https://api.openai.com/v1" if self.stt_endpoint.get() == '' else self.stt_endpoint.get(),
+                api_key=self.api_key.get() if self.stt_api_key.get() == '' else self.stt_api_key.get(),
             )
             if not self.check_model_list(sttClient, self.stt_model_name.get()):
                 return False
 
         if not self.alternative_tts_var.get():
             ttsClient = OpenAI(
-                base_url = "https://api.openai.com/v1" if self.tts_endpoint.get() == '' else self.tts_endpoint.get(),
-                api_key = self.api_key.get() if self.tts_api_key.get() == '' else self.tts_api_key.get(),
+                base_url="https://api.openai.com/v1" if self.tts_endpoint.get() == '' else self.tts_endpoint.get(),
+                api_key=self.api_key.get() if self.tts_api_key.get() == '' else self.tts_api_key.get(),
             )
             if not self.check_model_list(ttsClient, self.tts_model_name.get()):
                 return False
@@ -737,7 +757,9 @@ class App:
             # Example script execution
             startupinfo = subprocess.STARTUPINFO()
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            self.process = subprocess.Popen(self.chat_command_arg.split(' '), startupinfo=startupinfo,  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1, universal_newlines=True)
+            self.process = subprocess.Popen(self.chat_command_arg.split(' '), startupinfo=startupinfo,
+                                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1,
+                                            universal_newlines=True)
             self.debug_frame.pack()
             self.main_frame.pack_forget()
             self.stop_button.pack()
@@ -796,6 +818,7 @@ class App:
     def shutdown(self):
         if self.process:
             self.process.terminate()  # Terminate the subprocess
+
 
 if __name__ == "__main__":
     root = tk.Tk()
