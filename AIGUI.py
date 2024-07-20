@@ -73,7 +73,7 @@ class VerticalScrolledFrame(tk.Frame):
 game_events = {
     'Startup Events': {
         'Cargo': False, 'ClearSavedGame': False, 'LoadGame': True, 'NewCommander': False, 'Materials': False, 
-        'Missions': False, 'Progress': False, 'Rank': False, 'Reputation': False, 'Statistics': False
+        'Missions': False, 'Progress': False, 'Rank': False, 'Reputation': False, 'Statistics': False, 'SquadronStartup': False
     },
     'Combat Events': {
         'Died': True,
@@ -158,7 +158,7 @@ game_events = {
     'Squadron Events': {
         'AppliedToSquadron': True, 'DisbandedSquadron': True, 'InvitedToSquadron': True, 'JoinedSquadron': True, 
         'KickedFromSquadron': True, 'LeftSquadron': True, 'SharedBookmarkToSquadron': True, 'SquadronCreated': True, 
-        'SquadronDemotion': True, 'SquadronPromotion': True, 'SquadronStartup': True, 'WonATrophyForSquadron': True
+        'SquadronDemotion': True, 'SquadronPromotion': True, 'WonATrophyForSquadron': True
     },
     'Fleet Carrier Events': {
         'CarrierJump': True, 'CarrierBuy': True, 'CarrierStats': True, 'CarrierJumpRequest': True, 'CarrierDecommission': True, 
@@ -520,7 +520,7 @@ class App:
                 'vision_var': True,
                 'ptt_var': False,
                 'continue_conversation_var': True,
-                'llm_model_name': "gpt-3.5-turbo",
+                'llm_model_name': "gpt-4o",
                 'llm_endpoint': "https://api.openai.com/v1",
                 'llm_api_key': "",
                 'tts_voice': "nova",
