@@ -9,6 +9,7 @@ class TTS:
     p = pyaudio.PyAudio()
     read_queue = queue.Queue()
     is_aborted = False
+    is_playing = False
 
     def __init__(self, openai_client:openai.OpenAI, model='tts-1', voice="nova"):
         self.openai_client = openai_client
@@ -30,18 +31,21 @@ class TTS:
             stream.start_stream()
             while not self.is_aborted:
                 if not self.read_queue.empty():
+                    self.is_playing = True
                     with self.openai_client.audio.speech.with_streaming_response.create(
                         model=self.model,
                         voice=self.voice,
                         input=self.read_queue.get(),
-                        response_format="pcm" # raw samples in 24kHz (16-bit signed, low-endian), without the header.
+                        response_format="pcm", # raw samples in 24kHz (16-bit signed, low-endian), without the header.
+                        speed=1.2
                     ) as response:
                         for chunk in response.iter_bytes(1024):
                             if self.is_aborted:
                                 break
-                            stream.write(chunk)    
-
+                            stream.write(chunk)
+                self.is_playing = stream.is_active()
                 sleep(0.1)
+            self.is_playing = False
             stream.stop_stream()
 
 

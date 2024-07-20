@@ -25,11 +25,14 @@ from Voice import *
 from EDKeys import *
 from EDJournal import *
 
+import EventManager
+
 client = None
 sttClient = None
 ttsClient = None
 
 aiActions = AIActions.AIActions()
+eventManager = EventManager.EventManager()
 
 # You can change some settings here
 aiModel = "gpt-4o"
@@ -54,7 +57,8 @@ startupEvents = {
     "Progress": "Commander {commanderName} has made progress in various activities.",
     "Rank": "Commander {commanderName} has updated their ranks.",
     "Reputation": "Commander {commanderName} has updated their reputation.",
-    "Statistics": "Commander {commanderName} has updated their statistics."
+    "Statistics": "Commander {commanderName} has updated their statistics.",
+    "SquadronStartup": "Commander {commanderName} is a member of a squadron (startup)."
 }
 powerplayEvents = {
     "PowerplayCollect": "Commander {commanderName} collected powerplay commodities.",
@@ -78,7 +82,6 @@ squadronEvents = {
     "SquadronCreated": "A squadron was created by commander {commanderName}.",
     "SquadronDemotion": "Commander {commanderName} was demoted in a squadron.",
     "SquadronPromotion": "Commander {commanderName} was promoted in a squadron.",
-    "SquadronStartup": "Commander {commanderName} is a member of a squadron (startup).",
     "WonATrophyForSquadron": "Commander {commanderName} won a trophy for a squadron."
 }
 explorationEvents = {
@@ -977,6 +980,7 @@ def run_chat_model(client, commander_name, chat_prompt, is_player: True):
         conversation.pop(0)
 
     save_conversation(conversation)
+    eventManager.add_conversation_event('assistant', completion.choices[0].message.content)
 
     # Get and print the model's response
     response_text = completion.choices[0].message.content
@@ -997,7 +1001,7 @@ def run_chat_model(client, commander_name, chat_prompt, is_player: True):
                 conversation.pop(0)
 
             save_conversation(conversation)
-        run_chat_model(client, commander_name, prepare_chat_prompt(commander_name))
+        run_chat_model(client, commander_name, prepare_chat_prompt(commander_name), is_player)
 
 def getCurrentState():
     keysToFilterOut = ["time"]
@@ -1005,37 +1009,37 @@ def getCurrentState():
 
     return {key: value for key, value in rawState.items() if key not in keysToFilterOut}
 
+#
+# class EventDebouncer:
+#     def __init__(self, debounce_events, debounce_time=60):
+#         # List of events to debounce
+#         self.debounce_events = set(debounce_events)
+#         # Debounce time in seconds
+#         self.debounce_time = debounce_time
+#         # Dictionary to store timestamps of the last occurrence of each event
+#         self.event_timestamps = {}
+#
+#     def handle_event(self, event_name):
+#         current_time = time.time()
+#
+#         if event_name in self.debounce_events:
+#             last_time = self.event_timestamps.get(event_name, 0)
+#             if current_time - last_time < self.debounce_time:
+#                 # Ignore the event if it occurred too recently
+#                 print(f"Event '{event_name}' ignored (debounced).")
+#                 return
+#
+#         # Update the timestamp and process the event
+#         self.event_timestamps[event_name] = current_time
+#         self.process_event(event_name)
+#
+#     def process_event(self, event_name):
+#         # Method to process the event (e.g., print the event)
+#         print(f"Event '{event_name}' processed.")
 
-class EventDebouncer:
-    def __init__(self, debounce_events, debounce_time=60):
-        # List of events to debounce
-        self.debounce_events = set(debounce_events)
-        # Debounce time in seconds
-        self.debounce_time = debounce_time
-        # Dictionary to store timestamps of the last occurrence of each event
-        self.event_timestamps = {}
 
-    def handle_event(self, event_name):
-        current_time = time.time()
-
-        if event_name in self.debounce_events:
-            last_time = self.event_timestamps.get(event_name, 0)
-            if current_time - last_time < self.debounce_time:
-                # Ignore the event if it occurred too recently
-                print(f"Event '{event_name}' ignored (debounced).")
-                return
-
-        # Update the timestamp and process the event
-        self.event_timestamps[event_name] = current_time
-        self.process_event(event_name)
-
-    def process_event(self, event_name):
-        # Method to process the event (e.g., print the event)
-        print(f"Event '{event_name}' processed.")
-
-
-debounce_events = ['event1', 'event2', 'event3', 'event4', 'event5']
-debouncer = EventDebouncer(debounce_events)
+#debounce_events = ['event1', 'event2', 'event3', 'event4', 'event5']
+#debouncer = EventDebouncer(debounce_events)
 
 previous_status = None
 def checkForJournalUpdates(client, commanderName, boot):
@@ -1067,7 +1071,7 @@ def checkForJournalUpdates(client, commanderName, boot):
             if item['event_type'] == 'ReceiveText' and item['event_content']['Message'].startswith('$DockingChatter'):
                 skippable = True
             handle_conversation(client, commanderName, f"({allGameEvents[item['event_type']].format(commanderName=commanderName)} Details: {json.dumps(item['event_content'])})", False, skippable)
-
+            eventManager.add_game_event(item['event_content'])
             current_status['extra_events'].pop(0)
 
     # Update previous status
@@ -1197,8 +1201,13 @@ def main():
                 tts.abort()
                 text = stt.resultQueue.get().text
                 handle_conversation(client, commanderName, text, True, False)
+                eventManager.add_conversation_event('user', text)
             else:
                 counter += 1
+
+                if not tts.is_playing and eventManager.is_replying:
+                    eventManager.reset_is_replying()
+
                 if counter % 5 == 0:
                     checkForJournalUpdates(client, commanderName, counter<=5)
 
