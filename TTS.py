@@ -2,18 +2,24 @@
 import queue
 import threading
 from time import sleep
+
 import openai
 import pyaudio
+
+from Logger import log
+
 
 class TTS:
     p = pyaudio.PyAudio()
     read_queue = queue.Queue()
     is_aborted = False
+    is_playing = False
 
-    def __init__(self, openai_client:openai.OpenAI, model='tts-1', voice="nova"):
+    def __init__(self, openai_client: openai.OpenAI, model='tts-1', voice="nova"):
         self.openai_client = openai_client
         self.model = model
         self.voice = voice
+
         thread = threading.Thread(target=self.playback)
         thread.daemon = True
         thread.start()
@@ -30,20 +36,28 @@ class TTS:
             stream.start_stream()
             while not self.is_aborted:
                 if not self.read_queue.empty():
-                    with self.openai_client.audio.speech.with_streaming_response.create(
-                        model=self.model,
-                        voice=self.voice,
-                        input=self.read_queue.get(),
-                        response_format="pcm" # raw samples in 24kHz (16-bit signed, low-endian), without the header.
-                    ) as response:
-                        for chunk in response.iter_bytes(1024):
-                            if self.is_aborted:
-                                break
-                            stream.write(chunk)    
+                    self.is_playing = True
+                    try:
+                        text = self.read_queue.get()
+                        with self.openai_client.audio.speech.with_streaming_response.create(
+                            model=self.model,
+                            voice=self.voice,
+                            input=text,
+                            response_format="pcm",  # raw samples in 24kHz (16-bit signed, low-endian), without the header.
+                            speed=1.2
+                        ) as response:
+                            for chunk in response.iter_bytes(1024):
+                                if self.is_aborted:
+                                    break
+                                stream.write(chunk)
+                    except Exception as e:
+                        log('error', 'An error occured during speech synthesis', e)
+                if not stream.get_read_available() > 0:
+                    self.is_playing = False
 
                 sleep(0.1)
+            self.is_playing = False
             stream.stop_stream()
-
 
     def say(self, text:str):
         self.read_queue.put(text)

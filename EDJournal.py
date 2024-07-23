@@ -46,8 +46,7 @@ class EDJournal:
         if game_events:
             for category, events in game_events.items():
                 for event, state in events.items():
-                    if state:
-                        self.enabled_game_events.append(event)
+                    self.enabled_game_events.append(event)
 
         self.ship = {
             'disembark': False,
@@ -158,7 +157,6 @@ class EDJournal:
 
             if log_event == 'ShieldState':
                 self.ship['shieldsup'] = log['ShieldsUp']
-                return   # No need to do further processing on this record
 
             elif log_event == 'UnderAttack':
                 self.ship['under_attack'] = True
