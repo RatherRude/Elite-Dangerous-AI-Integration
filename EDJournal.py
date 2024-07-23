@@ -46,8 +46,7 @@ class EDJournal:
         if game_events:
             for category, events in game_events.items():
                 for event, state in events.items():
-                    if state:
-                        self.enabled_game_events.append(event)
+                    self.enabled_game_events.append(event)
 
         self.ship = {
             'disembark': False,

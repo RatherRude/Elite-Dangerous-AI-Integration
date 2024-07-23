@@ -423,6 +423,8 @@ class App:
         self.debug_text.tag_configure("human", foreground="red", font="Helvetica 12 bold")
         self.debug_text.tag_configure("ai", foreground="blue", font="Helvetica 12 bold")
         self.debug_text.tag_configure("action", foreground="yellow", font="Helvetica 12 bold")
+        self.debug_text.tag_configure("event", foreground="orange", font="Helvetica 12 bold")
+        self.debug_text.tag_configure("debug", foreground="gray", font="Helvetica 12 bold")
         self.debug_text.pack(side=tk.LEFT, padx=10, pady=10)
 
         self.debug_frame.pack_forget()
@@ -783,15 +785,18 @@ class App:
                 if stdout_line.startswith("CMDR"):
                     self.debug_text.insert(tk.END, stdout_line[:4], "human")
                     self.debug_text.insert(tk.END, stdout_line[4:], "normal")
-                elif stdout_line.startswith("AI"):
-                    self.debug_text.insert(tk.END, stdout_line[:2], "ai")
-                    self.debug_text.insert(tk.END, stdout_line[2:], "normal")
-                elif stdout_line.startswith("ACTION RESULT"):
-                    self.debug_text.insert(tk.END, stdout_line[:13], "action")
-                    self.debug_text.insert(tk.END, stdout_line[13:], "normal")
-                elif stdout_line.startswith("ACTION"):
+                elif stdout_line.startswith("COVAS"):
+                    self.debug_text.insert(tk.END, stdout_line[:5], "ai")
+                    self.debug_text.insert(tk.END, stdout_line[5:], "normal")
+                elif stdout_line.startswith("Event"):
+                    self.debug_text.insert(tk.END, stdout_line[:5], "event")
+                    self.debug_text.insert(tk.END, stdout_line[5:], "normal")
+                elif stdout_line.startswith("Action"):
                     self.debug_text.insert(tk.END, stdout_line[:6], "action")
                     self.debug_text.insert(tk.END, stdout_line[6:], "normal")
+                elif stdout_line.startswith("Debug"):
+                    self.debug_text.insert(tk.END, stdout_line[:5], "debug")
+                    self.debug_text.insert(tk.END, stdout_line[5:], "normal")
                 else:
                     self.debug_text.insert(tk.END, stdout_line, "normal")
 
