@@ -157,7 +157,6 @@ class EDJournal:
 
             if log_event == 'ShieldState':
                 self.ship['shieldsup'] = log['ShieldsUp']
-                return   # No need to do further processing on this record
 
             elif log_event == 'UnderAttack':
                 self.ship['under_attack'] = True

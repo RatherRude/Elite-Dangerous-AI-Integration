@@ -397,32 +397,3 @@ class PromptGenerator:
         # log('Debug', 'conversation', conversational_pieces)
 
         return conversational_pieces
-
-
-#   @ToDo adapt system prompt
-# def prepare_chat_prompt(commander_name):
-#     rawState = jn.ship_state()
-#     keysToFilterOut = {
-#         "time",
-#         "odyssey",
-#         "fighter_destroyed",
-#         "interdicted",
-#         "no_dock_reason",
-#         "mission_completed",
-#         "mission_redirected"
-#     }
-#     filteredState = {key: value for key, value in rawState.items() if key not in keysToFilterOut}
-#
-#     systemPrompt = {"role": "system", "content": "Let's roleplay in the universe of Elite: Dangerous. " +
-#                                                  "I will provide game events in parentheses; do not create new ones. " +
-#                                                  backstory.replace("{commander_name}", commander_name)}
-#     status = {"role": "user", "content": "(Ship status: " + json.dumps(filteredState) + ")"}
-#     system = {
-#         "role": "user",
-#         "content": (
-#             f"(Location: {get_system_info(filteredState['location'])})"
-#         )
-#     }
-#
-#     # Context for AI, consists of conversation history, ships status, information about current system and the user input
-#     return [systemPrompt] + [status, system] + conversation

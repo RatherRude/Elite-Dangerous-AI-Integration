@@ -33,7 +33,7 @@ class VerticalScrolledFrame(tk.Frame):
         self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         self.inner_frame = tk.Frame(self.canvas, width=inner_width, *args, **kw)
-        #self.inner_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        # self.inner_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         scrollbar.config(command=self.canvas.yview)
 
@@ -72,17 +72,26 @@ class VerticalScrolledFrame(tk.Frame):
 # List of game events categorized
 game_events = {
     'Startup Events': {
-        'Cargo': False, 'ClearSavedGame': False, 'LoadGame': True, 'NewCommander': False, 'Materials': False, 
-        'Missions': False, 'Progress': False, 'Rank': False, 'Reputation': False, 'Statistics': False, 'SquadronStartup': False
+        'Cargo': False,
+        'ClearSavedGame': False,
+        'LoadGame': True,
+        'NewCommander': False,
+        'Materials': False,
+        'Missions': False,
+        'Progress': False,
+        'Rank': False,
+        'Reputation': False,
+        'Statistics': False,
+        'SquadronStartup': False
     },
     'Combat Events': {
         'Died': True,
-        'Bounty': True,
-        'CapShipBond': True,
+        'Bounty': False,
+        'CapShipBond': False,
         'Interdiction': True,
         'Interdicted': True,
         'EscapeInterdiction': True,
-        'FactionKillBond': True,
+        'FactionKillBond': False,
         'FighterDestroyed': True,
         'HeatDamage': True,
         'HeatWarning': True,
@@ -94,98 +103,241 @@ game_events = {
         'UnderAttack': True
     },
     'Travel Events': {
-        'CodexEntry': True,
+        'CodexEntry': False,
         'ApproachBody': True,
         'Docked': True,
-        'DockingCanceled': True,
-        'DockingDenied': True,
-        'DockingGranted': True,
-        'DockingRequested': True,
-        'DockingTimeout': True,
-        'FSDJump': True,
-        'FSDTarget': True,
+        'DockingCanceled': False,
+        'DockingDenied': False,
+        'DockingGranted': False,
+        'DockingRequested': False,
+        'DockingTimeout': False,
+        'FSDJump': False,
+        'FSDTarget': False,
         'LeaveBody': True,
         'Liftoff': True,
-        'StartJump': True,
-        'SupercruiseEntry': True,
-        'SupercruiseExit': True,
+        'StartJump': False,
+        'SupercruiseEntry': False,
+        'SupercruiseExit': False,
         'Touchdown': True,
         'Undocked': True,
-        'NavRoute': True,
-        'NavRouteClear': True,
+        'NavRoute': False,
+        'NavRouteClear': False
     },
     'Exploration Events': {
-        'CodexEntry': True,
+        'CodexEntry': False,
         'DiscoveryScan': True,
         'Scan': True,
         'FSSAllBodiesFound': True,
-        'FSSBodySignals': True,
-        'FSSDiscoveryScan': True,
-        'FSSSignalDiscovered': True,
+        'FSSBodySignals': False,
+        'FSSDiscoveryScan': False,
+        'FSSSignalDiscovered': False,
         'MaterialCollected': False,
-        'MaterialDiscarded': True,
-        'MaterialDiscovered': True,
-        'MultiSellExplorationData': True,
+        'MaterialDiscarded': False,
+        'MaterialDiscovered': False,
+        'MultiSellExplorationData': False,
         'NavBeaconScan': True,
-        'BuyExplorationData': True,
-        'SAAScanComplete': True,
-        'SAASignalsFound': True,
-        'ScanBaryCentre': True,
-        'SellExplorationData': True,
-        'Screenshot': True
+        'BuyExplorationData': False,
+        'SAAScanComplete': False,
+        'SAASignalsFound': False,
+        'ScanBaryCentre': False,
+        'SellExplorationData': False,
+        'Screenshot': False
     },
     'Trade Events': {
-        'Trade': True, 'AsteroidCracked': True, 'BuyTradeData': True, 'CollectCargo': True, 'EjectCargo': True,
-        'MarketBuy': True, 'MarketSell': True, 'MiningRefined': False
+        'Trade': False,
+        'AsteroidCracked': False,
+        'BuyTradeData': False,
+        'CollectCargo': False,
+        'EjectCargo': True,
+        'MarketBuy': False,
+        'MarketSell': False,
+        'MiningRefined': False
     },
     'Station Services Events': {
-        'StationServices': True, 'BuyAmmo': True, 'BuyDrones': True, 'CargoDepot': True, 'CommunityGoal': True,
-        'CommunityGoalDiscard': True, 'CommunityGoalJoin': True, 'CommunityGoalReward': True, 'CrewAssign': True,
-        'CrewFire': True, 'CrewHire': True, 'EngineerContribution': True, 'EngineerCraft': True, 'EngineerLegacyConvert': True,
-        'EngineerProgress': False, 'FetchRemoteModule': True, 'Market': True, 'MassModuleStore': True, 'MaterialTrade': True,
-    'MissionAbandoned': True, 'MissionAccepted': True, 'MissionCompleted': True, 'MissionFailed': True,
-        'MissionRedirected': True, 'ModuleBuy': True, 'ModuleRetrieve': True, 'ModuleSell': True, 'ModuleSellRemote': True,
-        'ModuleStore': True, 'ModuleSwap': True, 'Outfitting': True, 'PayBounties': True, 'PayFines': True, 'PayLegacyFines': True,
-        'RedeemVoucher': True, 'RefuelAll': True, 'RefuelPartial': True, 'Repair': True, 'RepairAll': True, 'RestockVehicle': True,
-        'ScientificResearch': True, 'Shipyard': True, 'ShipyardBuy': True, 'ShipyardNew': False, 'ShipyardSell': True,
-        'ShipyardTransfer': True, 'ShipyardSwap': True, 'StoredModules': False, 'StoredShips': False, 'TechnologyBroker': True,
-        'ClearImpound': True
+        'StationServices': False,
+        'BuyAmmo': False,
+        'BuyDrones': False,
+        'CargoDepot': False,
+        'CommunityGoal': False,
+        'CommunityGoalDiscard': False,
+        'CommunityGoalJoin': False,
+        'CommunityGoalReward': False,
+        'CrewAssign': True,
+        'CrewFire': True,
+        'CrewHire': True,
+        'EngineerContribution': False,
+        'EngineerCraft': False,
+        'EngineerLegacyConvert': False,
+        'EngineerProgress': False,
+        'FetchRemoteModule': False,
+        'Market': False,
+        'MassModuleStore': False,
+        'MaterialTrade': False,
+        'MissionAbandoned': True,
+        'MissionAccepted': True,
+        'MissionCompleted': True,
+        'MissionFailed': True,
+        'MissionRedirected': True,
+        'ModuleBuy': False,
+        'ModuleRetrieve': False,
+        'ModuleSell': False,
+        'ModuleSellRemote': False,
+        'ModuleStore': False,
+        'ModuleSwap': False,
+        'Outfitting': False,
+        'PayBounties': False,
+        'PayFines': False,
+        'PayLegacyFines': False,
+        'RedeemVoucher': False,
+        'RefuelAll': False,
+        'RefuelPartial': False,
+        'Repair': False,
+        'RepairAll': False,
+        'RestockVehicle': False,
+        'ScientificResearch': False,
+        'Shipyard': False,
+        'ShipyardBuy': True,
+        'ShipyardNew': False,
+        'ShipyardSell': False,
+        'ShipyardTransfer': False,
+        'ShipyardSwap': False,
+        'StoredModules': False,
+        'StoredShips': False,
+        'TechnologyBroker': False,
+        'ClearImpound': False
     },
     'Powerplay Events': {
-        'PowerplayCollect': True, 'PowerplayDefect': True, 'PowerplayDeliver': True, 'PowerplayFastTrack': True, 
-        'PowerplayJoin': True, 'PowerplayLeave': True, 'PowerplaySalary': True, 'PowerplayVote': True, 'PowerplayVoucher': True
+        'PowerplayCollect': False,
+        'PowerplayDefect': True,
+        'PowerplayDeliver': False,
+        'PowerplayFastTrack': False,
+        'PowerplayJoin': True,
+        'PowerplayLeave': True,
+        'PowerplaySalary': False,
+        'PowerplayVote': False,
+        'PowerplayVoucher': False
     },
     'Squadron Events': {
-        'AppliedToSquadron': True, 'DisbandedSquadron': True, 'InvitedToSquadron': True, 'JoinedSquadron': True, 
-        'KickedFromSquadron': True, 'LeftSquadron': True, 'SharedBookmarkToSquadron': True, 'SquadronCreated': True, 
-        'SquadronDemotion': True, 'SquadronPromotion': True, 'WonATrophyForSquadron': True
+        'AppliedToSquadron': True,
+        'DisbandedSquadron': True,
+        'InvitedToSquadron': True,
+        'JoinedSquadron': True,
+        'KickedFromSquadron': True,
+        'LeftSquadron': True,
+        'SharedBookmarkToSquadron': False,
+        'SquadronCreated': True,
+        'SquadronDemotion': True,
+        'SquadronPromotion': True,
+        'WonATrophyForSquadron': False
     },
     'Fleet Carrier Events': {
-        'CarrierJump': True, 'CarrierBuy': True, 'CarrierStats': True, 'CarrierJumpRequest': True, 'CarrierDecommission': True, 
-        'CarrierCancelDecommission': True, 'CarrierBankTransfer': True, 'CarrierDepositFuel': True, 'CarrierCrewServices': True, 
-        'CarrierFinance': True, 'CarrierShipPack': True, 'CarrierModulePack': True, 'CarrierTradeOrder': True, 
-        'CarrierDockingPermission': True, 'CarrierNameChanged': True, 'CarrierJumpCancelled': True
+        'CarrierJump': False,
+        'CarrierBuy': False,
+        'CarrierStats': False,
+        'CarrierJumpRequest': False,
+        'CarrierDecommission': False,
+        'CarrierCancelDecommission': False,
+        'CarrierBankTransfer': False,
+        'CarrierDepositFuel': False,
+        'CarrierCrewServices': False,
+        'CarrierFinance': False,
+        'CarrierShipPack': False,
+        'CarrierModulePack': False,
+        'CarrierTradeOrder': False,
+        'CarrierDockingPermission': False,
+        'CarrierNameChanged': False,
+        'CarrierJumpCancelled': False
     },
     'Odyssey Events': {
-        'Backpack': False, 'BackpackChange': True, 'BookDropship': True, 'BookTaxi': True, 'BuyMicroResources': True, 
-        'BuySuit': True, 'BuyWeapon': True, 'CancelDropship': True, 'CancelTaxi': True, 'CollectItems': False, 'CreateSuitLoadout': True, 
-        'DeleteSuitLoadout': True, 'Disembark': True, 'DropItems': True, 'DropShipDeploy': True, 'Embark': True, 'FCMaterials': True, 
-        'LoadoutEquipModule': True, 'LoadoutRemoveModule': True, 'RenameSuitLoadout': True, 'ScanOrganic': True, 
-        'SellMicroResources': True, 'SellOrganicData': True, 'SellWeapon': True, 'ShipLocker': False, 'SwitchSuitLoadout': True, 
-        'TransferMicroResources': True, 'TradeMicroResources': True, 'UpgradeSuit': True, 'UpgradeWeapon': True, 'UseConsumable': True
+        'Backpack': False,
+        'BackpackChange': False,
+        'BookDropship': False,
+        'BookTaxi': False,
+        'BuyMicroResources': False,
+        'BuySuit': True,
+        'BuyWeapon': True,
+        'CancelDropship': False,
+        'CancelTaxi': False,
+        'CollectItems': False,
+        'CreateSuitLoadout': False,
+        'DeleteSuitLoadout': False,
+        'Disembark': True,
+        'DropItems': False,
+        'DropShipDeploy': False,
+        'Embark': True,
+        'FCMaterials': False,
+        'LoadoutEquipModule': False,
+        'LoadoutRemoveModule': False,
+        'RenameSuitLoadout': False,
+        'ScanOrganic': False,
+        'SellMicroResources': False,
+        'SellOrganicData': False,
+        'SellWeapon': False,
+        'ShipLocker': False,
+        'SwitchSuitLoadout': True,
+        'TransferMicroResources': False,
+        'TradeMicroResources': False,
+        'UpgradeSuit': False,
+        'UpgradeWeapon': False,
+        'UseConsumable': False
     },
     'Other Events': {
-        'AfmuRepairs': True, 'ApproachSettlement': True, 'ChangeCrewRole': True, 'CockpitBreached': True, 'CommitCrime': True, 
-        'Continued': True, 'CrewLaunchFighter': True, 'CrewMemberJoins': True, 'CrewMemberQuits': True, 'CrewMemberRoleChange': True, 
-        'CrimeVictim': True, 'DatalinkScan': True, 'DatalinkVoucher': True, 'DataScanned': True, 'DockFighter': True, 'DockSRV': True, 
-        'EndCrewSession': True, 'FighterRebuilt': True, 'FuelScoop': True, 'Friends': True, 'JetConeBoost': True, 'JetConeDamage': True, 
-        'JoinACrew': True, 'KickCrewMember': True, 'LaunchDrone': True, 'LaunchFighter': True, 'LaunchSRV': True, 'ModuleInfo': False, 
-        'Music': False, 'NpcCrewPaidWage': False, 'NpcCrewRank': True, 'Promotion': True, 'ProspectedAsteroid': True, 'QuitACrew': True, 
-        'RebootRepair': True, 'ReceiveText': True, 'RepairDrone': True, 'ReservoirReplenished': False, 'Resurrect': True, 'Scanned': True, 
-        'SelfDestruct': True, 'SendText': True, 'Shutdown': True, 'Synthesis': True, 'SystemsShutdown': True, 'USSDrop': True, 'VehicleSwitch': True, 
-        'WingAdd': True, 'WingInvite': True, 'WingJoin': True, 'WingLeave': True, 'CargoTransfer': True, 'SupercruiseDestinationDrop': True
+        'AfmuRepairs': False,
+        'ApproachSettlement': True,
+        'ChangeCrewRole': False,
+        'CockpitBreached': True,
+        'CommitCrime': True,
+        'Continued': False,
+        'CrewLaunchFighter': True,
+        'CrewMemberJoins': True,
+        'CrewMemberQuits': True,
+        'CrewMemberRoleChange': True,
+        'CrimeVictim': True,
+        'DatalinkScan': True,
+        'DatalinkVoucher': False,
+        'DataScanned': True,
+        'DockFighter': True,
+        'DockSRV': True,
+        'EndCrewSession': True,
+        'FighterRebuilt': True,
+        'FuelScoop': False,
+        'Friends': True,
+        'JetConeBoost': False,
+        'JetConeDamage': False,
+        'JoinACrew': True,
+        'KickCrewMember': True,
+        'LaunchDrone': False,
+        'LaunchFighter': True,
+        'LaunchSRV': True,
+        'ModuleInfo': False,
+        'Music': False,
+        'NpcCrewPaidWage': False,
+        'NpcCrewRank': False,
+        'Promotion': True,
+        'ProspectedAsteroid': False,
+        'QuitACrew': True,
+        'RebootRepair': True,
+        'ReceiveText': True,
+        'RepairDrone': False,
+        'ReservoirReplenished': False,
+        'Resurrect': True,
+        'Scanned': True,
+        'SelfDestruct': True,
+        'SendText': True,
+        'Shutdown': True,
+        'Synthesis': False,
+        'SystemsShutdown': False,
+        'USSDrop': False,
+        'VehicleSwitch': False,
+        'WingAdd': True,
+        'WingInvite': True,
+        'WingJoin': True,
+        'WingLeave': True,
+        'CargoTransfer': False,
+        'SupercruiseDestinationDrop': False
     }
 }
+
 
 class App:
     def __init__(self, root):
@@ -296,10 +448,10 @@ class App:
         self.llm_model_name.grid(row=1, column=1, padx=10, pady=5)
 
         ## Alternative LLM (Checkbox)
-        #self.alternative_llm_var = tk.BooleanVar()
-        #self.alternative_llm_var.set(False)  # Default value
-        #self.alternative_llm_checkbox = tk.Checkbutton(self.ai_geeks_left_frame, text="Alternative LLM", variable=self.alternative_llm_var)
-        #self.alternative_llm_checkbox.grid(row=2, column=0, sticky=tk.W, padx=10, pady=5)
+        # self.alternative_llm_var = tk.BooleanVar()
+        # self.alternative_llm_var.set(False)  # Default value
+        # self.alternative_llm_checkbox = tk.Checkbutton(self.ai_geeks_left_frame, text="Alternative LLM", variable=self.alternative_llm_var)
+        # self.alternative_llm_checkbox.grid(row=2, column=0, sticky=tk.W, padx=10, pady=5)
 
         # LLM Endpoint
         tk.Label(self.ai_geeks_left_frame, text="LLM Endpoint:").grid(row=2, column=0, sticky=tk.W)
@@ -441,11 +593,11 @@ class App:
         self.stop_button.pack(side=tk.LEFT, padx=5)
         self.stop_button.pack_forget()
 
-        #category_label = tk.Label(self.ai_geeks_frame, text="category", font=('Arial', 14, 'bold'))
+        # category_label = tk.Label(self.ai_geeks_frame, text="category", font=('Arial', 14, 'bold'))
         #        var = tk.BooleanVar(value=self.check_vars.get(event, event not in default_off_events))
         #        chk = tk.Checkbutton(self.ai_geeks_frame, text=event, variable=var)
 
-        #for category, events in game_events.items():
+        # for category, events in game_events.items():
         #    category_label = tk.Label(self.ai_geeks_frame, text=category, font=('Arial', 14, 'bold'))
         #    for event in events:
         #        var = tk.BooleanVar(value=self.check_vars.get(event, event not in default_off_events))
@@ -473,7 +625,6 @@ class App:
                 chk.grid(row=rowCounter, column=1, sticky=tk.W)
                 category_values[category][event] = var
 
-
         return lambda: {category: {
             event: state.get() for event, state in events.items()
         } for category, events in category_values.items()}
@@ -488,7 +639,7 @@ class App:
 
     def on_key_press(self, event):
         self.key_binding = keyboard.read_key()
-        #self.save_key_binding()
+        # self.save_key_binding()
         self.update_label_text()
         self.root.unbind("<KeyPress>")
 
@@ -543,7 +694,7 @@ class App:
     def check_model_list(self, client, model_name):
         try:
             models = client.models.list()
-            #print('models', models)
+            # print('models', models)
             if not any(model.id == model_name for model in models):
                 messagebox.showerror("Invalid model name",
                                      f"Your model provider doesn't serve '{model_name}' to you. Please check your model name.")
@@ -633,7 +784,7 @@ class App:
         with open('config.json', 'w') as file:
             json.dump(self.data, file, indent=4)
 
-        #messagebox.showinfo("Settings Saved", "Settings have been saved successfully.")
+        # messagebox.showinfo("Settings Saved", "Settings have been saved successfully.")
 
     def update_fields(self):
         self.commander_name.insert(0, self.data['commander_name'])
@@ -753,7 +904,7 @@ class App:
         self.save_settings()
         self.debug_text.delete('1.0', tk.END)
         self.debug_text.insert(tk.END, "Starting Elite Dangerous AI Integration...\n", "normal")
-        #self.debug_text.update_idletasks()
+        # self.debug_text.update_idletasks()
 
         try:
             # Example script execution
@@ -806,8 +957,8 @@ class App:
 
     def stop_external_script(self):
         if self.process:
-            #self.send_signal(signal.SIGINT)  # Terminate the subprocess
-            #self.process.wait()  # Terminate the subprocess
+            # self.send_signal(signal.SIGINT)  # Terminate the subprocess
+            # self.process.wait()  # Terminate the subprocess
             self.process.terminate()  # Terminate the subprocess
             self.process = None
         if self.thread:
