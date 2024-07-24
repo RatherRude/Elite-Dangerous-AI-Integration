@@ -9,6 +9,7 @@ import keyboard
 import pyautogui
 import requests
 import win32gui
+from PIL import Image
 from openai import OpenAI
 
 import AIActions
@@ -36,7 +37,7 @@ ttsClient = None
 
 aiActions = AIActions.AIActions()
 
-# You can change some settings here
+# fallback settings
 aiModel = "gpt-4o"
 backstory = """I am Commander {commander_name}. I am a broke bounty hunter who can barely pay the fuel. \
 You will be addressed as 'Computer', you are the onboard AI of my starship. \
@@ -45,9 +46,6 @@ including galactic navigation, ship status, the current system, and more. \
 Do not inform about my ship status and my location unless it's relevant or requested by me. Answer within 3 sentences. Acknowledge given orders. \
 Guide and support me with witty and intelligent commentary. Provide clear mission briefings, sarcastic comments, and humorous observations. \
 Advance the narrative involving bounty hunting."""
-
-conversationLength = 25
-conversation = []
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
@@ -452,6 +450,25 @@ def screenshot():
         width = x1 - x
         height = y1 - y
         im = pyautogui.screenshot(region=(x, y, width, height))
+
+        # Convert the screenshot to a PIL image
+        im = im.convert("RGB")
+
+        # Resize to height 720 while maintaining aspect ratio
+        aspect_ratio = width / height
+        new_height = 720
+        new_width = int(new_height * aspect_ratio)
+        im = im.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+        # Crop the center to a 16:9 aspect ratio
+        target_aspect_ratio = 16 / 9
+        target_width = int(new_height * target_aspect_ratio)
+        left = (new_width - target_width) / 2
+        top = 0
+        right = left + target_width
+        bottom = new_height
+        im = im.crop((left, top, right, bottom))
+
         return im
     else:
         log("error",'Window not found!')
@@ -470,8 +487,10 @@ def format_image(image, query=""):
             "content": [
                 {
                     "type": "text",
-                    "text": "This is a screenshot of the game Elite:Dangerous Odyssey. Do not describe ship cockpit or game HUD. " +
-                            "Briefly describe celestial bodies, ships, humans and other surroundings. " + query
+                    "text": "This is a screenshot of the game Elite:Dangerous Odyssey. " +
+                            "Briefly describe everything visible(e.g. celestial bodies, ships, humans and other surroundings). " +
+                            "Try to summarize all visible text while only keeping the relevant details. Do not describe any other game HUD or the ship cockpit." +
+                            "Try to answer the following query: " + query
                 },
                 {
                     "type": "image_url",
@@ -769,11 +788,10 @@ def main():
                 model=aiModel if vision_model_name == '' else vision_model_name,
                 messages=format_image(image, obj.get("query")),
             )
-            # log("debug", "get_visuals completion:", completion)
 
             return completion.choices[0].message.content
 
-        aiActions.registerAction('getVisuals', "Get a description of what's currently visible to the Commander", {
+        aiActions.registerAction('getVisuals', "Describes what's currently visible to the Commander.", {
             "type": "object",
             "properties": {
                 "query": {
