@@ -710,16 +710,6 @@ def checkForJournalUpdates(client, eventManager, commanderName, boot):
                     current_status['extra_events'].pop(0)
                     continue
 
-            #immediate_response_types = [
-            #    'ReceiveText',
-            #    'Scanned',
-            #]
-            #skippable = not item['event_type'] in immediate_response_types
-            #if item['event_type'] == 'ReceiveText' and item['event_content']['Message'].startswith('$DockingChatter'):
-            #    skippable = True
-            #handle_conversation(client, commanderName,
-            #                    f"({allGameEvents[item['event_type']].format(commanderName=commanderName)} Details: {json.dumps(item['event_content'])})",
-            #                    False, skippable)
             eventManager.add_game_event(item['event_content'])
             current_status['extra_events'].pop(0)
 
@@ -859,7 +849,6 @@ def main():
             # check STT result queue
             if not stt.resultQueue.empty():
                 text = stt.resultQueue.get().text
-                #handle_conversation(client, commanderName, text, True, False)
                 tts.abort()
                 event_manager.add_conversation_event('user', text)
             else:
