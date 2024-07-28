@@ -85,6 +85,8 @@ class EventManager:
                 def default(self, o):
                     if dataclasses.is_dataclass(o):
                         return dataclasses.asdict(o)
+                    if isinstance(o, datetime):
+                        return o.isoformat()
                     return super().default(o)
 
         with open('history.json', 'w') as json_file:
