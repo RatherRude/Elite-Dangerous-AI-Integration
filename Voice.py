@@ -1,5 +1,5 @@
 # pip install pyttsx3
-
+import sys
 from threading import Thread
 import kthread
 import queue
@@ -28,7 +28,7 @@ Author: sumzer0@yahoo.com
 
 class Voice:
 
-    def __init__(self): 
+    def __init__(self, rate_multiplier: float = 1):
         self.q = queue.Queue(5)
         self.v_enabled = False
         self.v_quit = False
@@ -36,6 +36,7 @@ class Voice:
         self.t.start()
         self.v_id = 1
         self.is_playing = False
+        self.rate = rate_multiplier
 
     def say(self, vSay):
         if self.v_enabled:
@@ -58,7 +59,8 @@ class Voice:
         voices = engine.getProperty('voices')
         v_id_current = 0   # David
         engine.setProperty('voice', voices[v_id_current].id)   
-        engine.setProperty('rate', 160)
+        engine.setProperty('rate', 160*self.rate)
+        sys.stdout.flush()
         while not self.v_quit:
             # check if the voice ID changed
             if self.v_id != v_id_current:
@@ -83,7 +85,7 @@ class Voice:
         pass
 
 def main():
-    v = Voice()
+    v = Voice(rate_multiplier=1.2)
     v.set_on()
     sleep(2)
     v.say("Hey dude")

@@ -15,10 +15,11 @@ class TTS:
     is_aborted = False
     is_playing = False
 
-    def __init__(self, openai_client: openai.OpenAI, model='tts-1', voice="nova"):
+    def __init__(self, openai_client: openai.OpenAI, model='tts-1', voice="nova", speed=1.2):
         self.openai_client = openai_client
         self.model = model
         self.voice = voice
+        self.speed = speed
 
         thread = threading.Thread(target=self.playback)
         thread.daemon = True
@@ -44,7 +45,7 @@ class TTS:
                             voice=self.voice,
                             input=text,
                             response_format="pcm",  # raw samples in 24kHz (16-bit signed, low-endian), without the header.
-                            speed=1.2
+                            speed=self.speed
                         ) as response:
                             for chunk in response.iter_bytes(1024):
                                 if self.is_aborted:
