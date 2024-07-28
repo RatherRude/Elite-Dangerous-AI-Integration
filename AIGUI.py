@@ -434,124 +434,140 @@ class App:
         tk.Label(self.ai_geeks_frame.inner_frame, text="None of the AI Geek options are required.",
                  font="Helvetica 12 bold").grid(row=0, column=0, columnspan=2, sticky="")
 
-        # AI Geeks Section (Left Side)
-        self.ai_geeks_left_frame = tk.Frame(self.ai_geeks_frame.inner_frame)
-        self.ai_geeks_left_frame.grid(row=1, column=0, padx=10, sticky=tk.W)
+        self.incr = 0
 
-        # AI Geeks Section (Right Side)
-        self.ai_geeks_right_frame = tk.Frame(self.ai_geeks_frame.inner_frame)
-        self.ai_geeks_right_frame.grid(row=2, column=0, padx=10, sticky=tk.E)
+        def get_next():
+            self.incr += 1
+            return self.incr
+        def get_same():
+            return self.incr
+
+        # LLM
+        tk.Label(self.ai_geeks_frame.inner_frame, text="Text LLM options",
+                 font="Helvetica 10 bold").grid(row=get_next(), column=0, columnspan=2, sticky="")
 
         # LLM Model Name
-        tk.Label(self.ai_geeks_left_frame, text="LLM Model Name:").grid(row=1, column=0, sticky=tk.W)
-        self.llm_model_name = tk.Entry(self.ai_geeks_left_frame, width=50)
-        self.llm_model_name.grid(row=1, column=1, padx=10, pady=5)
-
-        ## Alternative LLM (Checkbox)
-        # self.alternative_llm_var = tk.BooleanVar()
-        # self.alternative_llm_var.set(False)  # Default value
-        # self.alternative_llm_checkbox = tk.Checkbutton(self.ai_geeks_left_frame, text="Alternative LLM", variable=self.alternative_llm_var)
-        # self.alternative_llm_checkbox.grid(row=2, column=0, sticky=tk.W, padx=10, pady=5)
+        tk.Label(self.ai_geeks_frame.inner_frame, text="LLM Model Name:").grid(row=get_next(), column=0, sticky=tk.W)
+        self.llm_model_name = tk.Entry(self.ai_geeks_frame.inner_frame, width=50)
+        self.llm_model_name.grid(row=get_same(), column=1, padx=10, pady=5)
 
         # LLM Endpoint
-        tk.Label(self.ai_geeks_left_frame, text="LLM Endpoint:").grid(row=2, column=0, sticky=tk.W)
-        self.llm_endpoint = tk.Entry(self.ai_geeks_left_frame, width=50)
-        self.llm_endpoint.grid(row=2, column=1, padx=10, pady=5)
+        tk.Label(self.ai_geeks_frame.inner_frame, text="LLM Endpoint:").grid(row=get_next(), column=0, sticky=tk.W)
+        self.llm_endpoint = tk.Entry(self.ai_geeks_frame.inner_frame, width=50)
+        self.llm_endpoint.grid(row=get_same(), column=1, padx=10, pady=5)
 
         # LLM API Key
-        tk.Label(self.ai_geeks_left_frame, text="LLM API Key:").grid(row=3, column=0, sticky=tk.W)
-        self.llm_api_key = tk.Entry(self.ai_geeks_left_frame, show='*', width=50)
-        self.llm_api_key.grid(row=3, column=1, padx=10, pady=5)
+        tk.Label(self.ai_geeks_frame.inner_frame, text="LLM API Key:").grid(row=get_next(), column=0, sticky=tk.W)
+        self.llm_api_key = tk.Entry(self.ai_geeks_frame.inner_frame, show='*', width=50)
+        self.llm_api_key.grid(row=get_same(), column=1, padx=10, pady=5)
 
         # Function Calling (Checkbox)
         self.tools_var = tk.BooleanVar()
         self.tools_var.set(True)  # Default value
-        self.tools_checkbox = tk.Checkbutton(self.ai_geeks_left_frame, text="Function Calling (default: on)",
+        self.tools_checkbox = tk.Checkbutton(self.ai_geeks_frame.inner_frame, text="Function Calling (default: on)",
                                              variable=self.tools_var)
-        self.tools_checkbox.grid(row=4, column=0, padx=10, pady=10, sticky=tk.W)
+        self.tools_checkbox.grid(row=get_next(), column=0, padx=10, pady=10, sticky=tk.W)
+
+        # STT
+        tk.Label(self.ai_geeks_frame.inner_frame, text="STT options",
+                 font="Helvetica 10 bold").grid(row=get_next(), column=0, columnspan=2, sticky="")
 
         ## STT Model
-        self.stt_model_name_label = tk.Label(self.ai_geeks_right_frame, text="STT Model Name:")
-        self.stt_model_name_label.grid(row=5, column=0, sticky=tk.W)
-        self.stt_model_name = tk.Entry(self.ai_geeks_right_frame, width=50)
-        self.stt_model_name.grid(row=5, column=1, padx=10, pady=5)
+        self.stt_model_name_label = tk.Label(self.ai_geeks_frame.inner_frame, text="STT Model Name:")
+        self.stt_model_name_label.grid(row=get_next(), column=0, sticky=tk.W)
+        self.stt_model_name = tk.Entry(self.ai_geeks_frame.inner_frame, width=50)
+        self.stt_model_name.grid(row=get_same(), column=1, padx=10, pady=5)
 
         ## STT Endpoint
-        self.stt_endpoint_label = tk.Label(self.ai_geeks_right_frame, text="STT Endpoint:")
-        self.stt_endpoint_label.grid(row=6, column=0, sticky=tk.W)
-        self.stt_endpoint = tk.Entry(self.ai_geeks_right_frame, width=50)
-        self.stt_endpoint.grid(row=6, column=1, padx=10, pady=5)
+        self.stt_endpoint_label = tk.Label(self.ai_geeks_frame.inner_frame, text="STT Endpoint:")
+        self.stt_endpoint_label.grid(row=get_next(), column=0, sticky=tk.W)
+        self.stt_endpoint = tk.Entry(self.ai_geeks_frame.inner_frame, width=50)
+        self.stt_endpoint.grid(row=get_same(), column=1, padx=10, pady=5)
 
         ## STT API Key
-        self.stt_api_key_label = tk.Label(self.ai_geeks_right_frame, text="STT API Key:")
-        self.stt_api_key_label.grid(row=7, column=0, sticky=tk.W)
-        self.stt_api_key = tk.Entry(self.ai_geeks_right_frame, show='*', width=50)
-        self.stt_api_key.grid(row=7, column=1, padx=10, pady=5)
+        self.stt_api_key_label = tk.Label(self.ai_geeks_frame.inner_frame, text="STT API Key:")
+        self.stt_api_key_label.grid(row=get_next(), column=0, sticky=tk.W)
+        self.stt_api_key = tk.Entry(self.ai_geeks_frame.inner_frame, show='*', width=50)
+        self.stt_api_key.grid(row=get_same(), column=1, padx=10, pady=5)
 
         # Alternative STT (Checkbox)
         self.alternative_stt_var = tk.BooleanVar()
         self.alternative_stt_var.set(False)  # Default value
-        self.alternative_stt_checkbox = tk.Checkbutton(self.ai_geeks_right_frame,
+        self.alternative_stt_checkbox = tk.Checkbutton(self.ai_geeks_frame.inner_frame,
                                                        text="Local STT (pre-installed whisper-medium)",
                                                        variable=self.alternative_stt_var, command=self.toggle_local_stt)
-        self.alternative_stt_checkbox.grid(row=8, column=0, padx=10, pady=10, sticky=tk.W, columnspan=2)
+        self.alternative_stt_checkbox.grid(row=get_next(), column=0, padx=10, pady=10, sticky=tk.W, columnspan=2)
+
+        # TTS
+        tk.Label(self.ai_geeks_frame.inner_frame, text="TTS options",
+                 font="Helvetica 10 bold").grid(row=get_next(), column=0, columnspan=2, sticky="")
 
         ## TTS Model
-        self.tts_model_name_label = tk.Label(self.ai_geeks_right_frame, text="TTS Model Name:")
-        self.tts_model_name_label.grid(row=9, column=0, sticky=tk.W)
-        self.tts_model_name = tk.Entry(self.ai_geeks_right_frame, width=50)
-        self.tts_model_name.grid(row=9, column=1, padx=10, pady=5)
+        self.tts_model_name_label = tk.Label(self.ai_geeks_frame.inner_frame, text="TTS Model Name:")
+        self.tts_model_name_label.grid(row=get_next(), column=0, sticky=tk.W)
+        self.tts_model_name = tk.Entry(self.ai_geeks_frame.inner_frame, width=50)
+        self.tts_model_name.grid(row=get_same(), column=1, padx=10, pady=5)
 
         ## TTS Endpoint
-        self.tts_endpoint_label = tk.Label(self.ai_geeks_right_frame, text="TTS Endpoint:")
-        self.tts_endpoint_label.grid(row=10, column=0, sticky=tk.W)
-        self.tts_endpoint = tk.Entry(self.ai_geeks_right_frame, width=50)
-        self.tts_endpoint.grid(row=10, column=1, padx=10, pady=5)
+        self.tts_endpoint_label = tk.Label(self.ai_geeks_frame.inner_frame, text="TTS Endpoint:")
+        self.tts_endpoint_label.grid(row=get_next(), column=0, sticky=tk.W)
+        self.tts_endpoint = tk.Entry(self.ai_geeks_frame.inner_frame, width=50)
+        self.tts_endpoint.grid(row=get_same(), column=1, padx=10, pady=5)
 
         ## TTS API Key
-        self.tts_api_key_label = tk.Label(self.ai_geeks_right_frame, text="TTS API Key:")
-        self.tts_api_key_label.grid(row=11, column=0, sticky=tk.W)
-        self.tts_api_key = tk.Entry(self.ai_geeks_right_frame, show='*', width=50)
-        self.tts_api_key.grid(row=11, column=1, padx=10, pady=5)
+        self.tts_api_key_label = tk.Label(self.ai_geeks_frame.inner_frame, text="TTS API Key:")
+        self.tts_api_key_label.grid(row=get_next(), column=0, sticky=tk.W)
+        self.tts_api_key = tk.Entry(self.ai_geeks_frame.inner_frame, show='*', width=50)
+        self.tts_api_key.grid(row=get_same(), column=1, padx=10, pady=5)
 
         # TTS Voice
-        self.tts_voice_label = tk.Label(self.ai_geeks_right_frame, text="TTS Voice:")
-        self.tts_voice_label.grid(row=12, column=0, sticky=tk.W)
-        self.tts_voice = tk.Entry(self.ai_geeks_right_frame, width=50)
-        self.tts_voice.grid(row=12, column=1, padx=10, pady=5)
+        self.tts_voice_label = tk.Label(self.ai_geeks_frame.inner_frame, text="TTS Voice:")
+        self.tts_voice_label.grid(row=get_next(), column=0, sticky=tk.W)
+        self.tts_voice = tk.Entry(self.ai_geeks_frame.inner_frame, width=50)
+        self.tts_voice.grid(row=get_same(), column=1, padx=10, pady=5)
+
+        # TTS Speed
+        self.tts_speed_label = tk.Label(self.ai_geeks_frame.inner_frame, text="TTS Speed:")
+        self.tts_speed_label.grid(row=get_next(), column=0, sticky=tk.W)
+        self.tts_speed = tk.Entry(self.ai_geeks_frame.inner_frame, width=50)
+        self.tts_speed.grid(row=get_same(), column=1, padx=10, pady=5)
 
         # Alternative TTS (Checkbox)
         self.alternative_tts_var = tk.BooleanVar()
         self.alternative_tts_var.set(False)  # Default value
-        self.alternative_tts_checkbox = tk.Checkbutton(self.ai_geeks_right_frame,
+        self.alternative_tts_checkbox = tk.Checkbutton(self.ai_geeks_frame.inner_frame,
                                                        text="Local TTS (pre-installed OS Voices)",
                                                        variable=self.alternative_tts_var, command=self.toggle_local_tts)
-        self.alternative_tts_checkbox.grid(row=13, column=0, padx=10, pady=10, sticky=tk.W)
+        self.alternative_tts_checkbox.grid(row=get_next(), column=0, padx=10, pady=10, sticky=tk.W)
+
+        # Vision
+        tk.Label(self.ai_geeks_frame.inner_frame, text="Vision LLM options",
+                 font="Helvetica 10 bold").grid(row=get_next(), column=0, columnspan=2, sticky="")
 
         ## Vision Model
-        self.vision_model_name_label = tk.Label(self.ai_geeks_left_frame, text="Vision Model Name:")
-        self.vision_model_name_label.grid(row=14, column=0, sticky=tk.W)
-        self.vision_model_name = tk.Entry(self.ai_geeks_left_frame, width=50)
-        self.vision_model_name.grid(row=14, column=1, padx=10, pady=5)
+        self.vision_model_name_label = tk.Label(self.ai_geeks_frame.inner_frame, text="Vision Model Name:")
+        self.vision_model_name_label.grid(row=get_next(), column=0, sticky=tk.W)
+        self.vision_model_name = tk.Entry(self.ai_geeks_frame.inner_frame, width=50)
+        self.vision_model_name.grid(row=get_same(), column=1, padx=10, pady=5)
         #
         ## Vision Model Endpoint
-        self.vision_endpoint_label = tk.Label(self.ai_geeks_left_frame, text="Vision Model Endpoint:")
-        self.vision_endpoint_label.grid(row=15, column=0, sticky=tk.W)
-        self.vision_endpoint = tk.Entry(self.ai_geeks_left_frame, width=50)
-        self.vision_endpoint.grid(row=15, column=1, padx=10, pady=5)
+        self.vision_endpoint_label = tk.Label(self.ai_geeks_frame.inner_frame, text="Vision Model Endpoint:")
+        self.vision_endpoint_label.grid(row=get_next(), column=0, sticky=tk.W)
+        self.vision_endpoint = tk.Entry(self.ai_geeks_frame.inner_frame, width=50)
+        self.vision_endpoint.grid(row=get_same(), column=1, padx=10, pady=5)
         #
         ## Vision Model API Key
-        self.vision_api_key_label = tk.Label(self.ai_geeks_left_frame, text="Vision Model API Key:")
-        self.vision_api_key_label.grid(row=16, column=0, sticky=tk.W)
-        self.vision_api_key = tk.Entry(self.ai_geeks_left_frame, show='*', width=50)
-        self.vision_api_key.grid(row=16, column=1, padx=10, pady=5)
+        self.vision_api_key_label = tk.Label(self.ai_geeks_frame.inner_frame, text="Vision Model API Key:")
+        self.vision_api_key_label.grid(row=get_next(), column=0, sticky=tk.W)
+        self.vision_api_key = tk.Entry(self.ai_geeks_frame.inner_frame, show='*', width=50)
+        self.vision_api_key.grid(row=get_same(), column=1, padx=10, pady=5)
 
         # Vision Capabilities (Checkbox)
         self.vision_var = tk.BooleanVar()
         self.vision_var.set(True)  # Default value
-        self.vision_checkbox = tk.Checkbutton(self.ai_geeks_left_frame, text="Vision Capabilities (default: on)",
+        self.vision_checkbox = tk.Checkbutton(self.ai_geeks_frame.inner_frame, text="Vision Capabilities (default: on)",
                                               variable=self.vision_var, command=self.toggle_vision)
-        self.vision_checkbox.grid(row=17, column=0, padx=10, pady=10, sticky=tk.W)
+        self.vision_checkbox.grid(row=get_next(), column=0, padx=10, pady=10, sticky=tk.W)
 
         self.ai_geeks_frame.update()
 
@@ -677,6 +693,7 @@ class App:
                 'llm_endpoint': "https://api.openai.com/v1",
                 'llm_api_key': "",
                 'tts_voice': "nova",
+                'tts_speed': "1.2",
                 'key_binding': None,
                 'vision_model_name': "gpt-4o",
                 'vision_endpoint': "https://api.openai.com/v1",
@@ -778,6 +795,7 @@ class App:
         self.data['ptt_var'] = self.ptt_var.get()
         self.data['continue_conversation_var'] = self.continue_conversation_var.get()
         self.data['tts_voice'] = self.tts_voice.get()
+        self.data['tts_speed'] = self.tts_speed.get()
         self.data['key_binding'] = self.key_binding
         self.data['game_events'] = self.game_events_save_cb()
 
@@ -809,6 +827,7 @@ class App:
         self.ptt_var.set(self.data['ptt_var'])
         self.continue_conversation_var.set(self.data['continue_conversation_var'])
         self.tts_voice.insert(0, self.data['tts_voice'])
+        self.tts_speed.insert(0, self.data['tts_speed'])
         self.key_binding = self.data['key_binding']
 
         self.update_label_text()

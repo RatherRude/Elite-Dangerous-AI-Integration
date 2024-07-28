@@ -9,18 +9,18 @@ class Event:
 @dataclass
 class GameEvent(Event):
     content: Dict
-    kind = 'game'
-    timestamp = datetime.now()
+    kind: Literal['game'] = field(default='game')
+    timestamp: datetime = field(default_factory=lambda: datetime.now())
 
 @dataclass
 class ConversationEvent(Event):
     content: str
     kind: Literal['user', 'assistant', 'assistant_completed']
-    timestamp = datetime.now()
+    timestamp: datetime = field(default_factory=lambda: datetime.now())
 
 @dataclass
 class ToolEvent(Event):
     request: Dict
     results: List[Dict]
-    kind: Literal['tool'] = 'tool'
-    timestamp = datetime.now()
+    kind: Literal['tool'] = field(default='tool')
+    timestamp: datetime = field(default_factory=lambda: datetime.now())
