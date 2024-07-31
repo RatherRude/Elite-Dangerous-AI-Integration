@@ -78,6 +78,9 @@ class EventManager:
             if isinstance(event, GameEvent) and event.content.get("event") in self.game_events:
                 return True
 
+            # if isinstance(event, GameEvent) and event.content.get("event") == 'ProspectedAsteroid' and any([material['Name'] == 'LowTemperatureDiamond' for material in event.content.get("Materials")]) and event.content.get("Remaining") != 0:
+            #     return True
+
         return False
 
     def save_history(self):

@@ -885,6 +885,9 @@ def main():
                 sleep(0.25)
         except KeyboardInterrupt:
             break
+        except Exception as e:
+            logger("error", str(e), e)
+            break
 
 
     # save_conversation(conversation)
