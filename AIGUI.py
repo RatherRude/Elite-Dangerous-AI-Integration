@@ -666,47 +666,64 @@ class App:
             self.pptButton.config(text="Key Binding: Press any key")
 
     def load_data(self):
+        defaults = {
+            'commander_name': "",
+            'character':
+                "I am Commander {commander_name}. I am a broke bounty hunter who can barely pay the fuel. \n\n" +
+                "You will be addressed as 'Computer', you are the onboard AI of my starship. \n" +
+                "You possess extensive knowledge and can provide detailed and accurate information on a wide range of topics, " +
+                "including galactic navigation, ship status, the current system, and more. \n\n" +
+                "Do not inform about my ship status and my location unless it's relevant or requested by me. Answer within 3 sentences. Acknowledge given orders. \n\n" +
+                "Guide and support me with witty and intelligent commentary. Provide clear mission briefings, sarcastic comments, and humorous observations. \n\n" +
+                "Advance the narrative involving bounty hunting.",
+
+            'api_key': "",
+            'alternative_stt_var': False,
+            'alternative_tts_var': False,
+            'tools_var': True,
+            'vision_var': True,
+            'ptt_var': False,
+            'continue_conversation_var': True,
+            'llm_model_name': "gpt-4o",
+            'llm_endpoint': "https://api.openai.com/v1",
+            'llm_api_key': "",
+            'tts_voice': "nova",
+            'tts_speed': "1.2",
+            'key_binding': '',
+            'vision_model_name': "gpt-4o",
+            'vision_endpoint': "https://api.openai.com/v1",
+            'vision_api_key': "",
+            'stt_model_name': "whisper-1",
+            'stt_endpoint': "https://api.openai.com/v1",
+            'stt_api_key': "",
+            'tts_model_name': "tts-1",
+            'tts_endpoint': "https://api.openai.com/v1",
+            'tts_api_key': "",
+            'game_events': game_events
+        }
         try:
             with open('config.json', 'r') as file:
-                # @ToDo load default values for keys that are missing in json file
                 data = json.load(file)
-        except FileNotFoundError:
-            data = {
-                'commander_name': "",
-                'character':
-                    "I am Commander {commander_name}. I am a broke bounty hunter who can barely pay the fuel. \n\n" +
-                    "You will be addressed as 'Computer', you are the onboard AI of my starship. \n" +
-                    "You possess extensive knowledge and can provide detailed and accurate information on a wide range of topics, " +
-                    "including galactic navigation, ship status, the current system, and more. \n\n" +
-                    "Do not inform about my ship status and my location unless it's relevant or requested by me. Answer within 3 sentences. Acknowledge given orders. \n\n" +
-                    "Guide and support me with witty and intelligent commentary. Provide clear mission briefings, sarcastic comments, and humorous observations. \n\n" +
-                    "Advance the narrative involving bounty hunting.",
+                return self.merge_config_data(defaults, data)
+        except Exception:
+            print('Error loading config.json. Restoring default.')
+            return defaults
 
-                'api_key': "",
-                'alternative_stt_var': False,
-                'alternative_tts_var': False,
-                'tools_var': True,
-                'vision_var': True,
-                'ptt_var': False,
-                'continue_conversation_var': True,
-                'llm_model_name': "gpt-4o",
-                'llm_endpoint': "https://api.openai.com/v1",
-                'llm_api_key': "",
-                'tts_voice': "nova",
-                'tts_speed': "1.2",
-                'key_binding': None,
-                'vision_model_name': "gpt-4o",
-                'vision_endpoint': "https://api.openai.com/v1",
-                'vision_api_key': "",
-                'stt_model_name': "whisper-1",
-                'stt_endpoint': "https://api.openai.com/v1",
-                'stt_api_key': "",
-                'tts_model_name': "tts-1",
-                'tts_endpoint': "https://api.openai.com/v1",
-                'tts_api_key': "",
-                'game_events': game_events
-            }
-        return data
+    def merge_config_data(self, defaults: dict, user: dict):
+        merge = {}
+        for key in defaults:
+            if not isinstance(user.get(key), type(defaults.get(key))):
+                # print("defaulting", key, "because", str(type(defaults.get(key))), "does not equal", str(type(user.get(key))))
+                merge[key] = defaults.get(key)
+            elif isinstance(defaults.get(key), dict):
+                # print("recursively merging", key)
+                merge[key] = self.merge_config_data(defaults.get(key), user.get(key))
+            elif isinstance(defaults.get(key), list):
+                raise Exception("Lists not supported during config merge")
+            else:
+                # print("keeping key", key)
+                merge[key] = user.get(key)
+        return merge
 
     def check_model_list(self, client, model_name):
         try:
