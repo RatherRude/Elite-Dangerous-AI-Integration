@@ -3,12 +3,14 @@ import json
 import os
 import subprocess
 import tkinter as tk
+import zipfile
 from queue import Queue
 from threading import Thread
 from tkinter import messagebox
 from typing import Dict
 
 import keyboard
+import requests
 from openai import APIError, OpenAI
 
 
@@ -338,6 +340,44 @@ game_events = {
     }
 }
 
+def check_for_updates (current_commit):
+    url = f'https://api.github.com/repos/RatherRude/Elite-Dangerous-AI-Integration/releases'
+    response = requests.get(url)
+
+    if response.status_code == 200:
+        release_data = response.json()
+        tag_name = release_data[0]['tag_name']
+        download_url = release_data[0]['assets'][0]['browser_download_url']
+
+        # Get the commit id for the release tag
+        tag_url = f'https://api.github.com/repos/RatherRude/Elite-Dangerous-AI-Integration/git/ref/tags/{tag_name}'
+        tag_response = requests.get(tag_url)
+
+        if tag_response.status_code == 200:
+            tag_data = tag_response.json()
+            if tag_data['object']['sha'] != current_commit:
+                print('update!')
+                # have to update
+                download_and_unzip(download_url)
+            else:
+                print('no update!')
+def download_and_unzip(download_url):
+    local_filename = 'latest_release.zip'
+
+    # Download the file
+    with requests.get(download_url, stream=True) as r:
+        r.raise_for_status()
+        with open(local_filename, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=8192):
+                f.write(chunk)
+
+    # Unzip the file
+    with zipfile.ZipFile(local_filename, 'r') as zip_ref:
+        zip_ref.extractall('latest_release')
+
+    # Clean up the zip file
+    # os.remove(local_filename)
+    print(f"Downloaded and unzipped to 'latest_release/'")
 
 class App:
     def __init__(self, root):
@@ -347,8 +387,14 @@ class App:
 
         parser = argparse.ArgumentParser()
         parser.add_argument("--chat", default="pythonw ./Chat.py", help="command to run the chat app")
+        parser.add_argument("--release", default="", help="current release")
         args = parser.parse_args()
         self.chat_command_arg: str = args.chat
+        self.release_version_arg: str = args.release
+
+        if self.release_version_arg:
+            check_for_updates(self.release_version_arg)
+
 
         self.check_vars = {}
 
