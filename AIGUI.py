@@ -373,10 +373,10 @@ def download_and_unzip(download_url):
 
     # Unzip the file
     with zipfile.ZipFile(local_filename, 'r') as zip_ref:
-        zip_ref.extractall('latest_release')
+        zip_ref.extractall()
 
     # Clean up the zip file
-    # os.remove(local_filename)
+    os.remove(local_filename)
     print(f"Downloaded and unzipped to 'latest_release/'")
 
 class App:
