@@ -3,7 +3,7 @@ import json
 import os
 import subprocess
 import tkinter as tk
-import zipfile
+import webbrowser
 from queue import Queue
 from threading import Thread
 from tkinter import messagebox
@@ -340,6 +340,14 @@ game_events = {
     }
 }
 
+def ask_for_update(release_name='A new release', release_url='https://github.com/RatherRude/Elite-Dangerous-AI-Integration/releases/'):
+    # Ask the user if they want to download the new version
+    result = messagebox.askyesno(f"Update available",
+    f"Would you like to download {release_name}?")
+
+    if result:
+        webbrowser.open(release_url)
+
 def check_for_updates (current_commit):
     url = f'https://api.github.com/repos/RatherRude/Elite-Dangerous-AI-Integration/releases'
     response = requests.get(url)
@@ -347,7 +355,8 @@ def check_for_updates (current_commit):
     if response.status_code == 200:
         release_data = response.json()
         tag_name = release_data[0]['tag_name']
-        download_url = release_data[0]['assets'][0]['browser_download_url']
+        release_url = release_data[0]['html_url']
+        release_name = release_data[0]['name']
 
         # Get the commit id for the release tag
         tag_url = f'https://api.github.com/repos/RatherRude/Elite-Dangerous-AI-Integration/git/ref/tags/{tag_name}'
@@ -356,28 +365,7 @@ def check_for_updates (current_commit):
         if tag_response.status_code == 200:
             tag_data = tag_response.json()
             if tag_data['object']['sha'] != current_commit:
-                print('update!')
-                # have to update
-                download_and_unzip(download_url)
-            else:
-                print('no update!')
-def download_and_unzip(download_url):
-    local_filename = 'latest_release.zip'
-
-    # Download the file
-    with requests.get(download_url, stream=True) as r:
-        r.raise_for_status()
-        with open(local_filename, 'wb') as f:
-            for chunk in r.iter_content(chunk_size=8192):
-                f.write(chunk)
-
-    # Unzip the file
-    with zipfile.ZipFile(local_filename, 'r') as zip_ref:
-        zip_ref.extractall()
-
-    # Clean up the zip file
-    os.remove(local_filename)
-    print(f"Downloaded and unzipped to 'latest_release/'")
+                ask_for_update(release_name, release_url)
 
 class App:
     def __init__(self, root):
