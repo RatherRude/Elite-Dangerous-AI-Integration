@@ -35,8 +35,11 @@ class Voice:
         self.t = kthread.KThread(target=self.voice_exec, name="Voice", daemon=True)
         self.t.start()
         self.v_id = 1
-        self.is_playing = False
+        self._is_playing = False
         self.rate = rate_multiplier
+
+    def get_is_playing(self):
+        return self._is_playing or not self.q.empty()
 
     def say(self, vSay):
         if self.v_enabled:
@@ -74,10 +77,10 @@ class Voice:
                 words = self.q.get(timeout=1)
                 self.q.task_done()
                 if words is not None:
-                    self.is_playing = True
+                    self._is_playing = True
                     engine.say(words)
                     engine.runAndWait()
-                    self.is_playing = False
+                    self._is_playing = False
             except:
                 pass
 
