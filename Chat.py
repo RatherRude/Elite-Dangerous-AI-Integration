@@ -664,8 +664,11 @@ aiActions.registerAction('getGalnetNews', "Retrieve current interstellar news fr
     "required": ["query"]
 }, get_galnet_news)
 
+is_thinking = False
 
 def reply(client, events: List[Event], new_events: List[Event], prompt_generator: PromptGenerator, event_manager: EventManager, tts: TTS.TTS):
+    global is_thinking
+    is_thinking = True
     prompt = prompt_generator.generate_prompt(events)
 
     use_tools = useTools and any([event.kind == 'user' for event in new_events])
@@ -678,14 +681,14 @@ def reply(client, events: List[Event], new_events: List[Event], prompt_generator
 
     if hasattr(completion, 'error'):
         log("error", "completion with error:", completion)
+        is_thinking = False
         return
 
     response_text = completion.choices[0].message.content
     if response_text:
         tts.say(response_text)
         event_manager.add_conversation_event('assistant', completion.choices[0].message.content)
-    else:
-        event_manager.add_assistant_complete_event()
+    is_thinking = False
 
     response_actions = completion.choices[0].message.tool_calls
     if response_actions:
@@ -830,7 +833,6 @@ def main():
     else:
         # log('Debug', 'remote TTS')
         tts = TTS.TTS(openai_client=ttsClient, model=tts_model_name, voice=tts_voice, speed=tts_speed)
-    previous_tts_playing_state = False
 
     if alternative_stt_var:
         # log('Debug', 'local STT')
@@ -874,9 +876,8 @@ def main():
             else:
                 counter += 1
 
-                if previous_tts_playing_state and not tts.is_playing and event_manager.is_replying:
+                if not is_thinking and not tts.get_is_playing() and event_manager.is_replying:
                     event_manager.add_assistant_complete_event()
-                previous_tts_playing_state = tts.is_playing
 
                 if counter % 5 == 0:
                     checkForJournalUpdates(client, event_manager, commanderName, counter <= 5)

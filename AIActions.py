@@ -13,15 +13,20 @@ class AIActions:
 
     def runAction(self, tool_call):
         """get function response and fetch matching python function, then call function using arguments provided"""
-        function_name = tool_call.function.name
-        function_to_call = self.actions.get(function_name).get("method")
-        function_args = json.loads(tool_call.function.arguments)
-
         function_result = None
-        try:
-            function_result = function_to_call(function_args)
-        except Exception as e:
-            function_result = "ERROR: "+repr(e)
+
+        function_name = tool_call.function.name
+        function_descriptor = self.actions.get(function_name)
+        if function_descriptor:
+            function_to_call = function_descriptor.get("method")
+            function_args = json.loads(tool_call.function.arguments if tool_call.function.arguments else "null")
+
+            try:
+                function_result = function_to_call(function_args)
+            except Exception as e:
+                function_result = "ERROR: "+repr(e)
+        else:
+            function_result = f"ERROR: Function {function_name} does not exist!"
 
         return {
             "tool_call_id": tool_call.id,

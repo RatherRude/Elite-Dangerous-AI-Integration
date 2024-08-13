@@ -13,7 +13,7 @@ class TTS:
     p = pyaudio.PyAudio()
     read_queue = queue.Queue()
     is_aborted = False
-    is_playing = False
+    _is_playing = False
 
     def __init__(self, openai_client: openai.OpenAI, model='tts-1', voice="nova", speed=1.2):
         self.openai_client = openai_client
@@ -37,7 +37,7 @@ class TTS:
             stream.start_stream()
             while not self.is_aborted:
                 if not self.read_queue.empty():
-                    self.is_playing = True
+                    self._is_playing = True
                     try:
                         text = self.read_queue.get()
                         with self.openai_client.audio.speech.with_streaming_response.create(
@@ -54,10 +54,10 @@ class TTS:
                     except Exception as e:
                         log('error', 'An error occured during speech synthesis', e)
                 if not stream.get_read_available() > 0:
-                    self.is_playing = False
+                    self._is_playing = False
 
                 sleep(0.1)
-            self.is_playing = False
+            self._is_playing = False
             stream.stop_stream()
 
     def say(self, text:str):
@@ -68,6 +68,9 @@ class TTS:
             self.read_queue.get()
         
         self.is_aborted = True
+
+    def get_is_playing(self):
+        return self._is_playing or not self.read_queue.empty()
 
     def quit(self):
         pass
