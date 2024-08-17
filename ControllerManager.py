@@ -18,10 +18,11 @@ class ControllerManager:
 
         pygame.init()
         pygame.joystick.init()
-        self.joystick = None
-        if pygame.joystick.get_count() > 0:
-            self.joystick = pygame.joystick.Joystick(0)
-            self.joystick.init()
+        self.joysticks = []
+        for i in range(0,pygame.joystick.get_count()):
+            joystick = pygame.joystick.Joystick(i)
+            joystick.init()
+            self.joysticks.append(joystick)
 
         self.capture_event_thread = None
         self.capture_event_thread_running = False
@@ -70,20 +71,6 @@ class ControllerManager:
 
         return key
 
-    # TBD
-    def emulate_hotkey(self, key: str) -> None:
-        try:
-            # Try to interpret key as a Key object
-            key_obj = eval(key)
-            self.keyboard_controller.press(key_obj)
-            self.keyboard_controller.release(key_obj)
-        except (NameError, SyntaxError):
-            # If not a keyboard key, check for mouse button
-            if key.startswith("Button."):
-                button = eval(key)
-                self.mouse_controller.click(button)
-            else:
-                print(f"Unknown key type: {key}")
 
     def _start_listeners(self, on_press, on_release):
         self._stop_listeners()
@@ -117,9 +104,9 @@ class ControllerManager:
                 events = pygame.event.get()
                 for event in events:
                     if event.type == pygame.JOYBUTTONDOWN:
-                        on_press(str(event.button))
+                        on_press(str(event.instance_id)+':'+str(event.button))
                     if event.type == pygame.JOYBUTTONUP:
-                        on_release(str(event.button))
+                        on_release(str(event.instance_id)+':'+str(event.button))
                 time.sleep(0.01)  # Small sleep to prevent high CPU usage
 
         # Start a thread for capturing game controller events
@@ -141,6 +128,20 @@ class ControllerManager:
 
         self.joystick_listener_running = False
 
+    # TBD
+    def emulate_hotkey(self, key: str) -> None:
+        try:
+            # Try to interpret key as a Key object
+            key_obj = eval(key)
+            self.keyboard_controller.press(key_obj)
+            self.keyboard_controller.release(key_obj)
+        except (NameError, SyntaxError):
+            # If not a keyboard key, check for mouse button
+            if key.startswith("Button."):
+                button = eval(key)
+                self.mouse_controller.click(button)
+            else:
+                print(f"Unknown key type: {key}")
 
 # Example Usage:
 if __name__ == "__main__":
