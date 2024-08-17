@@ -1,10 +1,10 @@
-import tkinter as tk
-from pynput.keyboard import Key, Controller as KeyboardController, Listener as KeyboardListener
-from pynput.mouse import Controller as MouseController, Button, Listener as MouseListener
-import pygame
 import threading
 import time
 from typing import Callable, Any
+
+import pygame
+from pynput.keyboard import Controller as KeyboardController, Listener as KeyboardListener
+from pynput.mouse import Controller as MouseController, Listener as MouseListener
 
 
 class ControllerManager:
