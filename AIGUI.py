@@ -9,10 +9,11 @@ from threading import Thread
 from tkinter import messagebox
 from typing import Dict
 
-import keyboard
 import requests
 from openai import APIError, OpenAI
+
 from ControllerManager import ControllerManager
+
 
 class VerticalScrolledFrame(tk.Frame):
     """A pure Tkinter scrollable frame that actually works!
@@ -386,7 +387,7 @@ class App:
 
         self.check_vars = {}
 
-        self.key_binding = None
+        self.ptt_key = None
 
         self.controller_manager = ControllerManager()
 
@@ -687,15 +688,17 @@ class App:
 
     def on_label_click(self, event):
         self.pptButton.config(text="Press a key...")
-        self.key_binding = self.controller_manager.listen_hotkey()
+        self.controller_manager.listen_hotkey(self.on_hotkey_detected)
 
+    def on_hotkey_detected(self, key: str):
+        self.ptt_key = key
         self.update_label_text()
 
     def update_label_text(self):
-        if self.key_binding:
-            self.pptButton.config(text=f"Key Binding: {self.key_binding}")
+        if self.ptt_key:
+            self.pptButton.config(text=f"Key Binding: {self.ptt_key}")
         else:
-            self.pptButton.config(text="Key Binding: Press any key")
+            self.pptButton.config(text="Set Key Binding")
 
     def load_data(self):
         defaults = {
@@ -721,7 +724,7 @@ class App:
             'llm_api_key': "",
             'tts_voice': "nova",
             'tts_speed': "1.2",
-            'key_binding': '',
+            'ptt_key': '',
             'vision_model_name': "gpt-4o",
             'vision_endpoint': "https://api.openai.com/v1",
             'vision_api_key': "",
@@ -845,7 +848,7 @@ class App:
         self.data['continue_conversation_var'] = self.continue_conversation_var.get()
         self.data['tts_voice'] = self.tts_voice.get()
         self.data['tts_speed'] = self.tts_speed.get()
-        self.data['key_binding'] = self.key_binding
+        self.data['ptt_key'] = self.ptt_key
         self.data['game_events'] = self.game_events_save_cb()
 
         with open('config.json', 'w') as file:
@@ -877,7 +880,7 @@ class App:
         self.continue_conversation_var.set(self.data['continue_conversation_var'])
         self.tts_voice.insert(0, self.data['tts_voice'])
         self.tts_speed.insert(0, self.data['tts_speed'])
-        self.key_binding = self.data['key_binding']
+        self.ptt_key = self.data['ptt_key']
 
         self.update_label_text()
         self.toggle_ptt()

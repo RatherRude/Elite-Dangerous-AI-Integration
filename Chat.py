@@ -363,10 +363,10 @@ def prompt_for_config():
     continue_conversation_var = input("Continue Conversation? ")
     tts_voice = input("Enter TTS Voice: ")
     tts_speed = input("Enter TTS Speed: ")
-    key_binding = input("Push-to-talk button: ")
+    ptt_key = input("Push-to-talk button: ")
     game_events = input("Please enter game events in the format of Dict[str, Dict[str, bool]] ☺")
 
-    return api_key, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, ai_model, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, continue_conversation_var, tts_voice, tts_speed, key_binding, game_events
+    return api_key, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, ai_model, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, continue_conversation_var, tts_voice, tts_speed, ptt_key, game_events
 
 
 def load_or_prompt_config():
@@ -397,10 +397,10 @@ def load_or_prompt_config():
             continue_conversation_var = config.get('continue_conversation_var', '')
             tts_voice = config.get('tts_voice', '')
             tts_speed = config.get('tts_speed', '')
-            key_binding = config.get('key_binding', '')
+            ptt_key = config.get('ptt_key', '')
             game_events = config.get('game_events', '[]')
     else:
-        api_key, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, ai_model, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, continue_conversation_var, tts_voice, tts_speed, key_binding, game_events = prompt_for_config()
+        api_key, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, ai_model, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, continue_conversation_var, tts_voice, tts_speed, ptt_key, game_events = prompt_for_config()
         with open(config_file, 'w') as f:
             json.dump({
                 'api_key': api_key,
@@ -426,11 +426,11 @@ def load_or_prompt_config():
                 'continue_conversation_var': continue_conversation_var,
                 'tts_voice': tts_voice,
                 'tts_speed': tts_speed,
-                'key_binding': key_binding,
+                'ptt_key': ptt_key,
                 'game_events': game_events,
             }, f)
 
-    return api_key, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, model_name, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, continue_conversation_var, tts_voice, tts_speed, key_binding, game_events
+    return api_key, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, model_name, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, continue_conversation_var, tts_voice, tts_speed, ptt_key, game_events
 
 handle = win32gui.FindWindow(0, "Elite - Dangerous (CLIENT)")
 
@@ -754,7 +754,7 @@ def main():
     setGameWindowActive()
 
     # Load or prompt for configuration
-    apiKey, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commanderName, character, model_name, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, continue_conversation_var, tts_voice, tts_speed, key_binding, game_events = load_or_prompt_config()
+    apiKey, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commanderName, character, model_name, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, continue_conversation_var, tts_voice, tts_speed, ptt_key, game_events = load_or_prompt_config()
 
     jn = EDJournal(game_events)
     previous_status = getCurrentState()
@@ -844,8 +844,8 @@ def main():
         # log('Debug', 'remote STT')
         stt = STT.STT(openai_client=sttClient, model=stt_model_name)
 
-    if ptt_var and key_binding:
-        push_to_talk_key = key_binding  # Change this to your desired key
+    if ptt_var and ptt_key:
+        push_to_talk_key = ptt_key  # Change this to your desired key
         controller_manager.register_hotkey(push_to_talk_key, lambda _: stt.listen_once_start(), lambda _: stt.listen_once_end())
     else:
         stt.listen_continuous()

@@ -46,7 +46,7 @@ class ControllerManager:
 
 
     # PTT: Captures mouse, keyboard, and controller inputs to save them as PTT key
-    def listen_hotkey(self) -> str:
+    def listen_hotkey(self, callback: Callable[[str], any]):
         self.last_press = None
         self.last_release = None
         def on_press(key):
@@ -55,21 +55,16 @@ class ControllerManager:
 
         def on_release(key):
             self.last_release = str(key)
+            if self.last_press and self.last_release == self.last_press:
+                self._stop_listeners()
+
+                key = self.last_press
+                self.last_press = None
+                self.last_release = None
+                callback(key)
             return False
 
         self._start_listeners(on_press, on_release)
-
-        # Wait for the event to be captured
-        while not self.last_press or self.last_release != self.last_press:
-            time.sleep(0.1)
-
-        self._stop_listeners()
-
-        key = self.last_press
-        self.last_press = None
-        self.last_release = None
-
-        return key
 
 
     def _start_listeners(self, on_press, on_release):
