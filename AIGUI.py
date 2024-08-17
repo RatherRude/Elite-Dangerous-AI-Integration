@@ -12,7 +12,7 @@ from typing import Dict
 import keyboard
 import requests
 from openai import APIError, OpenAI
-
+from ControllerManager import ControllerManager
 
 class VerticalScrolledFrame(tk.Frame):
     """A pure Tkinter scrollable frame that actually works!
@@ -388,6 +388,8 @@ class App:
 
         self.key_binding = None
 
+        self.controller_manager = ControllerManager()
+
         self.process = None
         self.output_queue = Queue()
         self.read_thread = None
@@ -685,13 +687,9 @@ class App:
 
     def on_label_click(self, event):
         self.pptButton.config(text="Press a key...")
-        self.root.bind("<KeyPress>", self.on_key_press)
+        self.key_binding = self.controller_manager.listen_hotkey()
 
-    def on_key_press(self, event):
-        self.key_binding = keyboard.read_key()
-        # self.save_key_binding()
         self.update_label_text()
-        self.root.unbind("<KeyPress>")
 
     def update_label_text(self):
         if self.key_binding:

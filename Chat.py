@@ -15,6 +15,7 @@ from openai import OpenAI
 import AIActions
 import STT
 import TTS
+from ControllerManager import ControllerManager
 from Event import Event
 from Logger import log
 from PromptGenerator import PromptGenerator
@@ -746,6 +747,8 @@ tts = None
 prompt_generator: PromptGenerator = None
 event_manager: EventManager = None
 
+controller_manager = ControllerManager()
+
 def main():
     global client, sttClient, ttsClient, v, tts, keys, aiModel, backstory, useTools, jn, previous_status, conversation, event_manager, prompt_generator
     setGameWindowActive()
@@ -843,8 +846,7 @@ def main():
 
     if ptt_var and key_binding:
         push_to_talk_key = key_binding  # Change this to your desired key
-        keyboard.on_press_key(push_to_talk_key, lambda _: stt.listen_once_start())
-        keyboard.on_release_key(push_to_talk_key, lambda _: stt.listen_once_end())
+        controller_manager.register_hotkey(push_to_talk_key, lambda _: stt.listen_once_start(), lambda _: stt.listen_once_end())
     else:
         stt.listen_continuous()
 
@@ -887,7 +889,7 @@ def main():
         except KeyboardInterrupt:
             break
         except Exception as e:
-            logger("error", str(e), e)
+            log("error", str(e), e)
             break
 
 
