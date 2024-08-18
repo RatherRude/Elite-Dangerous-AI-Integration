@@ -34,7 +34,7 @@ The AI integration comprises three main components:
 
 #### 1.1. Prerequisites
 
-Choose your LLm Provider:
+Choose your LLM Provider:
 ![User Decsion Tree](screen/decision_tree.png?raw=true "Screen")
 * [OpenAI: register to get an API key](https://platform.openai.com/docs/introduction) *The fastest and highest accuracy text models, fast STT, high-quality TTS. Usage costs money*
 * [Openrouter: register to get an API key](https://openrouter.ai/docs/models) *Huge selection of text models. Some are free and others cost money. Slower STT and lower-quality TTS.*
