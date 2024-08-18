@@ -11,7 +11,7 @@ The integration is designed for every commander: it's amazing at roleplaying, it
 
 [Join Discord Server](https://discord.gg/9c58jxVuAT)
 |
-[Download latest version](https://github.com/RatherRude/Elite-Dangerous-AI-Integration/releases/download/v0.9/COVAS_NEXT_v0_9.zip)
+[Download latest version](https://github.com/RatherRude/Elite-Dangerous-AI-Integration/releases/download/v0.9.9/COVAS_NEXT_v0_9_9.zip)
 
 ## Overview
 
@@ -34,7 +34,11 @@ The AI integration comprises three main components:
 
 #### 1.1. Prerequisites
 
-* [Register an account with OpenAI](https://platform.openai.com/docs/introduction) to get access to an API key. (You can skip this step if you want to use an alternative to OpenAI API.)
+Choose your LLm Provider:
+![User Decsion Tree](screen/decision_tree.png?raw=true "Screen")
+* [OpenAI: register to get an API key](https://platform.openai.com/docs/introduction) *The fastest and highest accuracy text models, fast STT, high-quality TTS. Usage costs money*
+* [Openrouter: register to get an API key](https://openrouter.ai/docs/models) *Huge selection of text models. Some are free and others cost money. Slower STT and lower-quality TTS.*
+* [Setup Ollama](https://github.com/ollama/ollama?tab=readme-ov-file#quickstart) *Runs on your own hardware. Slower, lower accuracy. Slower STT and lower-quality TTS.*
 
 #### 1.2. Installation
 
