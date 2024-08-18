@@ -37,7 +37,7 @@ The AI integration comprises three main components:
 Choose your LLM Provider:
 <div style="display: flex; width: 100%; align-items: center;">
     <div style="width: 50%;">
-      <img src="screen/decision_tree.png" align="left"/>
+      <img src="screen/decision_tree.png" />
     </div>
     <div style="width: 50%; padding-left: 10px;">
         <p>[OpenAI: register to get an API key](https://platform.openai.com/docs/introduction) *The fastest and highest accuracy text models, fast STT, high-quality TTS. Usage costs money*
