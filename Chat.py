@@ -507,25 +507,6 @@ def format_image(image, query=""):
     ]
 
 
-# fetch system info from EDSM
-def get_system_info(system_name):
-    url = "https://www.edsm.net/api-v1/system"
-    params = {
-        "systemName": system_name,
-        "showInformation": 1,
-        "showPrimaryStar": 1,
-    }
-
-    try:
-        response = requests.get(url, params=params)
-        response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
-
-        return response.text
-
-    except:
-        return "Currently no information on system available"
-
-
 # fetch station info from EDSM and summarizes it
 def get_station_info(obj):
     url = "https://www.edsm.net/api-system-v1/stations"

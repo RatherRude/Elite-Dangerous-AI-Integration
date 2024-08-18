@@ -2,6 +2,8 @@ import json
 from typing import List, Dict
 
 import requests
+from functools import lru_cache
+from time import time
 
 from EDJournal import *
 from Event import GameEvent, Event, ConversationEvent, ToolEvent
@@ -326,6 +328,7 @@ class PromptGenerator:
         return
 
     # fetch system info from EDSM
+    @lru_cache(maxsize=1, typed=False)
     def get_system_info(self, system_name: str):
         url = "https://www.edsm.net/api-v1/system"
         params = {
@@ -340,7 +343,30 @@ class PromptGenerator:
 
             return response.text
 
-        except:
+        except Exception as e:
+            log('error', f"Error: {e}")
+            return "Currently no information on system available"
+
+    # fetch station info from EDSM
+    @lru_cache(maxsize=1, typed=False)
+    def get_station_info(self, system_name: str, fleet_carrier = False):
+        url = "https://www.edsm.net/api-system-v1/stations"
+        params = {
+            "systemName": system_name,
+        }
+
+        try:
+            response = requests.get(url, params=params)
+            response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
+
+            data = response.json()
+
+            data["stations"] = [station for station in data["stations"] if station["type"] != "Fleet Carrier"]
+
+            return json.dumps(data)
+
+        except Exception as e:
+            log('error', f"Error: {e}")
             return "Currently no information on system available"
 
     def generate_prompt(self, events: List[Event]):
@@ -380,6 +406,10 @@ class PromptGenerator:
 
         conversational_pieces.append({
            "role": "user",
+           "content": f"(Current system's stations: {self.get_station_info(filtered_state['location'])})"
+        })
+        conversational_pieces.append({
+           "role": "user",
            "content": f"(Current system: {self.get_system_info(filtered_state['location'])})"
         })
         conversational_pieces.append({
@@ -390,6 +420,7 @@ class PromptGenerator:
             "role": "system",
             "content": "Let's roleplay in the universe of Elite: Dangerous. " +
                 "I will provide game events in parentheses; do not create new ones. " +
+                "Do no hallucinate any information that is not given to you. " +
                 self.character_prompt.format(commander_name=self.commander_name)
         })
 
