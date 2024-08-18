@@ -38,12 +38,13 @@ Choose your LLM Provider:
 
 <img src="screen/decision_tree.png" align="left"/>
 
+<p align="right">
 [OpenAI: register to get an API key](https://platform.openai.com/docs/introduction) *The fastest and highest accuracy text models, fast STT, high-quality TTS. Usage costs money*
 
 [Openrouter: register to get an API key](https://openrouter.ai/docs/models) *Huge selection of text models. Some are free and others cost money. Slower STT and lower-quality TTS.*
 
 [Ollama: install and run](https://github.com/ollama/ollama?tab=readme-ov-file#quickstart) *Runs on your own hardware. Slower, lower accuracy. Slower STT and lower-quality TTS.*
-
+</p>
 #### 1.2. Installation
 
 * [Download latest version of the AI Integration](https://github.com/RatherRude/Elite-Dangerous-AI-Integration/releases/download/v0.9/COVAS_NEXT_v0_9.zip), unzip it at a location of your liking.
