@@ -106,7 +106,7 @@ class ControllerManager:
 
         # Start a thread for capturing game controller events
         self.joystick_listener_running = True
-        self.joystick_listener = threading.Thread(target=capture_event)
+        self.joystick_listener = threading.Thread(target=capture_event, daemon=True)
         self.joystick_listener.start()
 
     def _stop_listeners(self):
