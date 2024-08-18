@@ -37,9 +37,12 @@ The AI integration comprises three main components:
 Choose your LLM Provider:
 
 <img src="screen/decision_tree.png" align="left"/>
-* [OpenAI: register to get an API key](https://platform.openai.com/docs/introduction) *The fastest and highest accuracy text models, fast STT, high-quality TTS. Usage costs money*
-* [Openrouter: register to get an API key](https://openrouter.ai/docs/models) *Huge selection of text models. Some are free and others cost money. Slower STT and lower-quality TTS.*
-* [Ollama: install and run](https://github.com/ollama/ollama?tab=readme-ov-file#quickstart) *Runs on your own hardware. Slower, lower accuracy. Slower STT and lower-quality TTS.*
+
+[OpenAI: register to get an API key](https://platform.openai.com/docs/introduction) *The fastest and highest accuracy text models, fast STT, high-quality TTS. Usage costs money*
+
+[Openrouter: register to get an API key](https://openrouter.ai/docs/models) *Huge selection of text models. Some are free and others cost money. Slower STT and lower-quality TTS.*
+
+[Ollama: install and run](https://github.com/ollama/ollama?tab=readme-ov-file#quickstart) *Runs on your own hardware. Slower, lower accuracy. Slower STT and lower-quality TTS.*
 
 #### 1.2. Installation
 
