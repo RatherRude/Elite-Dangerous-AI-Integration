@@ -35,18 +35,11 @@ The AI integration comprises three main components:
 #### 1.1. Prerequisites
 
 Choose your LLM Provider:
-<div style="display: flex; width: 100%; align-items: center;">
-    <div style="width: 50%;">
-      <img src="screen/decision_tree.png" />
-    </div>
-    <div style="width: 50%; padding-left: 10px;">
-        <p>[OpenAI: register to get an API key](https://platform.openai.com/docs/introduction) *The fastest and highest accuracy text models, fast STT, high-quality TTS. Usage costs money*
 
-[Openrouter: register to get an API key](https://openrouter.ai/docs/models) *Huge selection of text models. Some are free and others cost money. Slower STT and lower-quality TTS.*
 
-[Ollama: install and run](https://github.com/ollama/ollama?tab=readme-ov-file#quickstart) *Runs on your own hardware. Slower, lower accuracy. Slower STT and lower-quality TTS.*</p>
-    </div>
-</div>
+
+| <img src="screen/decision_tree.svg" width="50px"> | **OpenAI**: [register to get an API key](https://platform.openai.com/docs/introduction) *The fastest and highest accuracy text models, fast STT, high-quality TTS. Usage costs money*<br />Openrouter: [register to get an API key](https://openrouter.ai/docs/models) *Huge selection of text models. Some are free and others cost money. Slower STT and lower-quality TTS.*<br />**Ollama**: [install and run](https://github.com/ollama/ollama?tab=readme-ov-file#quickstart) *Runs on your own hardware. Slower, lower accuracy. Slower STT and lower-quality TTS.* |
+|---------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 
 #### 1.2. Installation
 
