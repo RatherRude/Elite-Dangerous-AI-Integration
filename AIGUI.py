@@ -940,8 +940,6 @@ class App:
             self.tts_endpoint_label.grid_remove()
             self.tts_api_key.grid_remove()
             self.tts_api_key_label.grid_remove()
-            self.tts_voice.grid_remove()
-            self.tts_voice_label.grid_remove()
         else:
             self.tts_model_name.grid()
             self.tts_model_name_label.grid()
@@ -949,8 +947,6 @@ class App:
             self.tts_endpoint_label.grid()
             self.tts_api_key.grid()
             self.tts_api_key_label.grid()
-            self.tts_voice.grid()
-            self.tts_voice_label.grid()
 
     def toggle_vision(self):
         if self.vision_var.get():

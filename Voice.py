@@ -6,37 +6,20 @@ import queue
 import pyttsx3
 from time import sleep
 
-#rate = voiceEngine.getProperty('rate')
-#volume = voiceEngine.getProperty('volume')
-#voice = voiceEngine.getProperty('voice')
-#voiceEngine.setProperty('rate', newVoiceRate)
-#voiceEngine.setProperty('voice', voice.id)   id = 0, 1, ...
-
-"""
-File:Voice.py    
-
-Description:
-  Class to enapsulate the Text to Speech package in python
-
-To Use:
-  See main() at bottom as example
-  
-Author: sumzer0@yahoo.com
-
-"""
-
+from Logger import log
 
 class Voice:
 
-    def __init__(self, rate_multiplier: float = 1):
+    def __init__(self, rate_multiplier: float = 1, voice: str = 'zira'):
         self.q = queue.Queue(5)
         self.v_enabled = False
         self.v_quit = False
         self.t = kthread.KThread(target=self.voice_exec, name="Voice", daemon=True)
         self.t.start()
-        self.v_id = 1
+        self.v_id = 0
         self._is_playing = False
         self.rate = rate_multiplier
+        self.voice = voice
 
     def get_is_playing(self):
         return self._is_playing or not self.q.empty()
@@ -50,29 +33,25 @@ class Voice:
 
     def set_on(self):
         self.v_enabled = True
-        
-    def set_voice_id(self, id):
-        self.v_id = id
 
     def quit(self):
         self.v_quit = True
         
     def voice_exec(self):
+        default_voice = True
         engine = pyttsx3.init()
-        voices = engine.getProperty('voices')
-        v_id_current = 0   # David
-        engine.setProperty('voice', voices[v_id_current].id)   
         engine.setProperty('rate', 160*self.rate)
-        sys.stdout.flush()
+        voices = engine.getProperty('voices')
+        engine.setProperty('voice', voices[0].id)
+        for voice in voices:
+            if self.voice in voice.id.lower():
+                default_voice = False
+                engine.setProperty('voice', voice.id)  # changes the voice
+
+        if default_voice:
+            log('Debug ', 'TTS Voice ' + self.voice + ' has not been found. Using fallback TTS Voice.')
+
         while not self.v_quit:
-            # check if the voice ID changed
-            if self.v_id != v_id_current:
-                v_id_current = self.v_id
-                try:
-                    engine.setProperty('voice', voices[v_id_current].id) 
-                except:
-                    print("Voice ID out of range")
-                           
             try:
                 words = self.q.get(timeout=1)
                 self.q.task_done()

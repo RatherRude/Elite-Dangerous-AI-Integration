@@ -812,7 +812,7 @@ def main():
     # TTS Setup
     if alternative_tts_var:
         # log('Debug', 'Local TTS')
-        tts = Voice(rate_multiplier=float(tts_speed))
+        tts = Voice(rate_multiplier=float(tts_speed), voice=tts_voice)
         tts.set_on()
     else:
         # log('Debug', 'remote TTS')
