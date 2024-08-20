@@ -381,10 +381,6 @@ class App:
         self.chat_command_arg: str = args.chat
         self.release_version_arg: str = args.release
 
-        if self.release_version_arg:
-            check_for_updates(self.release_version_arg)
-
-
         self.check_vars = {}
 
         self.ptt_key = None
@@ -662,6 +658,9 @@ class App:
 
         # Process handle for subprocess
         self.process = None
+
+        if self.release_version_arg:
+            check_for_updates(self.release_version_arg)
 
     def populate_game_events_frame(self, frame: tk.Frame, game_events: Dict[str, Dict[str, bool]]):
         category_values: Dict[str, Dict[str, tk.BooleanVar]] = {}
