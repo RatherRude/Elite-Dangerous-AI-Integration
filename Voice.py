@@ -44,12 +44,13 @@ class Voice:
         voices = engine.getProperty('voices')
         engine.setProperty('voice', voices[0].id)
         for voice in voices:
-            if self.voice in voice.id.lower():
+            if self.voice.lower() in voice.name.lower():
                 default_voice = False
                 engine.setProperty('voice', voice.id)  # changes the voice
 
         if default_voice:
             log('Debug ', 'TTS Voice ' + self.voice + ' has not been found. Using fallback TTS Voice.')
+            log('Debug ', 'List of available models: ' + ', '.join([voice.name for voice in voices]))
 
         while not self.v_quit:
             try:
