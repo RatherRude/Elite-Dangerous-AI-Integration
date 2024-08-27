@@ -97,7 +97,7 @@ game_events = {
         'FactionKillBond': False,
         'FighterDestroyed': True,
         'HeatDamage': True,
-        'HeatWarning': True,
+        'HeatWarning': False,
         'HullDamage': True,
         'PVPKill': True,
         'ShieldState': True,
@@ -320,7 +320,7 @@ game_events = {
         'ProspectedAsteroid': False,
         'QuitACrew': True,
         'RebootRepair': True,
-        'ReceiveText': True,
+        'ReceiveText': False,
         'RepairDrone': False,
         'ReservoirReplenished': False,
         'Resurrect': True,
@@ -703,13 +703,13 @@ class App:
         defaults = {
             'commander_name': "",
             'character':
-                "I am Commander {commander_name}. I am a broke bounty hunter who can barely pay the fuel. \n\n" +
+                "I am Commander {commander_name}, an independent pilot and secret member of the Dark Wheel. \n" +
+                "My main goal is to find Raxxla. \n" +
                 "You will be addressed as 'Computer', you are the onboard AI of my starship. \n" +
                 "You possess extensive knowledge and can provide detailed and accurate information on a wide range of topics, " +
                 "including galactic navigation, ship status, the current system, and more. \n\n" +
                 "Do not inform about my ship status and my location unless it's relevant or requested by me. Answer within 3 sentences. Acknowledge given orders. \n\n" +
-                "Guide and support me with witty and intelligent commentary. Provide clear mission briefings, sarcastic comments, and humorous observations. \n\n" +
-                "Advance the narrative involving bounty hunting.",
+                "Guide and support me with witty, intelligent and sarcastic commentary. Provide clear mission briefings and humorous observations.",
 
             'api_key': "",
             'alternative_stt_var': False,
