@@ -276,6 +276,13 @@ otherEvents = {
     "CargoTransfer": "Commander {commanderName} has transferred cargo.",
     "SupercruiseDestinationDrop": "Commander {commanderName} has dropped out at a supercruise destination."
 }
+externalEvents = {
+    "SpanshTradePlanner": "The Spansh API has suggested a Trade Planner route for Commander {commanderName}.",
+    "SpanshTradePlannerFailed": "The Spansh API has failed to retrieve a Trade Planner route for Commander {commanderName}.",
+    # "SpanshNeutronPlotter": "The Spansh API has suggested a Neutron Plotter router for Commander {commanderName}.",
+    # "SpanshRoadToRiches": "The Spansh API has suggested a Road-to-Riches route for Commander {commanderName}.",
+}
+
 allGameEvents = {
     **startupEvents,
     **travelEvents,
@@ -287,7 +294,8 @@ allGameEvents = {
     **squadronEvents,
     **carrierEvents,
     **odysseyEvents,
-    **otherEvents
+    **otherEvents,
+    **externalEvents
 }
 
 class PromptGenerator:

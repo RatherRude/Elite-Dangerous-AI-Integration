@@ -9,11 +9,6 @@ from EDlogger import logger
 from WindowsKnownPaths import *
 
 """
-File EDJournal.py  (leveraged the EDAutopilot on github, turned into a 
-                   class and enhanced, see https://github.com/skai2/EDAutopilot
-                   then leveraged again and enhanced to handle more event types
-                   and create the state machine for the Elite Dangerous AI Integration
-
 Description: This file perform journal file processing.  It opens the latest updated Journal* 
 file in the Saved directory, loads in the entries.  Specific entries are stored in a dictionary.
 Every time the dictionary is access the file will be read and if new lines exist those will be loaded

@@ -2,6 +2,7 @@ import base64
 import io
 import json
 import sys
+import threading
 from io import BytesIO
 from pathlib import Path
 
@@ -432,7 +433,9 @@ def load_or_prompt_config():
 
     return api_key, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, model_name, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, continue_conversation_var, tts_voice, tts_speed, ptt_key, game_events
 
+
 handle = win32gui.FindWindow(0, "Elite - Dangerous (CLIENT)")
+
 
 def setGameWindowActive():
     global handle
@@ -475,7 +478,7 @@ def screenshot():
 
         return im
     else:
-        log("error",'Window not found!')
+        log("error", 'Window not found!')
         return None
 
 
@@ -648,7 +651,9 @@ aiActions.registerAction('getGalnetNews', "Retrieve current interstellar news fr
 
 is_thinking = False
 
-def reply(client, events: List[Event], new_events: List[Event], prompt_generator: PromptGenerator, event_manager: EventManager, tts: TTS.TTS):
+
+def reply(client, events: List[Event], new_events: List[Event], prompt_generator: PromptGenerator,
+          event_manager: EventManager, tts: TTS.TTS):
     global is_thinking
     is_thinking = True
     prompt = prompt_generator.generate_prompt(events)
@@ -684,6 +689,7 @@ def reply(client, events: List[Event], new_events: List[Event], prompt_generator
 
 useTools = False
 
+
 def getCurrentState():
     keysToFilterOut = ["time"]
     rawState = jn.ship_state()
@@ -693,8 +699,8 @@ def getCurrentState():
 
 previous_status = None
 
+
 def checkForJournalUpdates(client, eventManager, commanderName, boot):
-    #printFlush('checkForJournalUpdates is checking')
     global previous_status
     if boot:
         previous_status['extra_events'].clear()
@@ -730,6 +736,7 @@ event_manager: EventManager = None
 
 controller_manager = ControllerManager()
 
+
 def main():
     global client, sttClient, ttsClient, v, tts, keys, aiModel, backstory, useTools, jn, previous_status, conversation, event_manager, prompt_generator
     setGameWindowActive()
@@ -739,8 +746,6 @@ def main():
 
     jn = EDJournal(game_events)
     previous_status = getCurrentState()
-
-    # log('Debug', 'loading keys')
 
     # gets API Key from config.json
     client = OpenAI(
@@ -827,7 +832,8 @@ def main():
 
     if ptt_var and ptt_key:
         push_to_talk_key = ptt_key  # Change this to your desired key
-        controller_manager.register_hotkey(push_to_talk_key, lambda _: stt.listen_once_start(), lambda _: stt.listen_once_end())
+        controller_manager.register_hotkey(push_to_talk_key, lambda _: stt.listen_once_start(),
+                                           lambda _: stt.listen_once_end())
     else:
         stt.listen_continuous()
 
@@ -842,10 +848,133 @@ def main():
 
     prompt_generator = PromptGenerator(commanderName, character, journal=jn)
     event_manager = EventManager.EventManager(
-        on_reply_request=lambda events, new_events: reply(client, events, new_events, prompt_generator, event_manager, tts),
+        on_reply_request=lambda events, new_events: reply(client, events, new_events, prompt_generator, event_manager,
+                                                          tts),
         game_events=enabled_game_events,
         continue_conversation=continue_conversation_var
     )
+
+    # Region: Trade Planner Start
+    def check_trade_planner_job(job_id):
+        url = "https://spansh.co.uk/api/results/" + job_id
+        retries = 60
+
+        for i in range(retries):
+            try:
+                response = requests.get(url)
+                response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
+
+                data = response.json()
+
+                if data['status'] == 'queued':
+                    # wait 5 seconds and then continue fetching
+                    sleep(5)
+                if data['status'] == 'ok':
+                    # Filtering the list
+                    filtered_data = [
+                        {
+                            **item,
+                            "destination": {k: item["destination"][k] for k in
+                                            ["system", "station", "distance_to_arrival"]},
+                            "source": {k: item["source"][k] for k in ["system", "station", "distance_to_arrival"]}
+                        }
+                        for item in data['result']
+                    ]
+                    # add conversational piece - here is your trade route!
+                    event_manager.add_game_event({'event': 'SpanshTradePlanner', 'result': filtered_data})
+
+                    # persist route as optional piece
+                    return
+            except Exception as e:
+                log('error', f"Error: {e}")
+                # add conversational piece - error request
+                event_manager.add_game_event({'event': 'SpanshTradePlannerFailed',
+                                              'reason': 'The Spansh API has encountered an error! Please try at a later point in time!',
+                                              'error': f'{e}'})
+
+        event_manager.add_game_event({'event': 'SpanshTradePlannerFailed',
+                                      'reason': 'The Spansh API took longer than 5 minutes to find a trade route. That should not happen, try again at a later point in time!'})
+
+    def trade_planner_create_thread(obj):
+        dict = {'max_system_distance': 10000000,
+                'allow_prohibited': False,
+                'allow_planetary': False,
+                'allow_player_owned': False,
+                'unique': False,
+                'permit': False}
+
+        dict.update(obj)
+
+        log('Requesting data now!', dict)
+        # send request with obj, will return a queue id
+        url = "https://spansh.co.uk/api/trade/route"
+
+        try:
+            response = requests.post(url, data=dict)
+            response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
+
+            data = response.json()
+
+            job_id = data['job']
+
+            # start checking job status
+            check_trade_planner_job(job_id)
+
+        except Exception as e:
+            log('error', f"Error: {e}")
+
+    def trade_planner(obj):
+        # start thread with first request
+        threading.Thread(target=trade_planner_create_thread, args=(obj,), daemon=True).start()
+
+        return 'The information has been requested from the Spansh API. An answer will be provided once available. Please be patient.'
+
+    aiActions.registerAction('trade_plotter',
+                             "Retrieve a trade route from the trade plotter. Ask for unknown values and make sure they are known.",
+                             {
+                                 "type": "object",
+                                 "properties": {
+                                     "system": {
+                                         "type": "string",
+                                         "description": "Name of the current system. Example: 'Sol'"
+                                     },
+                                     "station": {
+                                         "type": "string",
+                                         "description": "Name of the current station. Example: 'Wakata Station'"
+                                     },
+                                     "max_hops": {
+                                         "type": "integer",
+                                         "description": "Maximum number of hops (jumps) allowed for the route."
+                                     },
+                                     "max_hop_distance": {
+                                         "type": "number",
+                                         "description": "Maximum distance in light-years for a single hop."
+                                     },
+                                     "starting_capital": {
+                                         "type": "number",
+                                         "description": "Available starting capital in credits."
+                                     },
+                                     "max_cargo": {
+                                         "type": "integer",
+                                         "description": "Maximum cargo capacity in tons."
+                                     },
+                                     "requires_large_pad": {
+                                         "type": "boolean",
+                                         "description": "Whether the station must have a large landing pad."
+                                     },
+                                 },
+                                 "required": [
+                                     "system",
+                                     "station",
+                                     "max_hops",
+                                     "max_hop_distance",
+                                     "starting_capital",
+                                     "max_cargo",
+                                     "requires_large_pad",
+                                 ]
+                             }, trade_planner)
+
+    # Region: Trade Planner End
 
     counter = 0
 
@@ -872,7 +1001,6 @@ def main():
         except Exception as e:
             log("error", str(e), e)
             break
-
 
     # save_conversation(conversation)
     event_manager.save_history()
