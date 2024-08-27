@@ -6,7 +6,7 @@ from functools import lru_cache
 from time import time
 
 from EDJournal import *
-from Event import GameEvent, Event, ConversationEvent, ToolEvent
+from Event import GameEvent, Event, ConversationEvent, ToolEvent, ExternalEvent
 from Logger import log
 
 startupEvents = {
@@ -276,12 +276,6 @@ otherEvents = {
     "CargoTransfer": "Commander {commanderName} has transferred cargo.",
     "SupercruiseDestinationDrop": "Commander {commanderName} has dropped out at a supercruise destination."
 }
-externalEvents = {
-    "SpanshTradePlanner": "The Spansh API has suggested a Trade Planner route for Commander {commanderName}.",
-    "SpanshTradePlannerFailed": "The Spansh API has failed to retrieve a Trade Planner route for Commander {commanderName}.",
-    # "SpanshNeutronPlotter": "The Spansh API has suggested a Neutron Plotter router for Commander {commanderName}.",
-    # "SpanshRoadToRiches": "The Spansh API has suggested a Road-to-Riches route for Commander {commanderName}.",
-}
 
 allGameEvents = {
     **startupEvents,
@@ -294,8 +288,14 @@ allGameEvents = {
     **squadronEvents,
     **carrierEvents,
     **odysseyEvents,
-    **otherEvents,
-    **externalEvents
+    **otherEvents
+}
+
+externalEvents = {
+    "SpanshTradePlanner": "The Spansh API has suggested a Trade Planner route for Commander {commanderName}.",
+    "SpanshTradePlannerFailed": "The Spansh API has failed to retrieve a Trade Planner route for Commander {commanderName}.",
+    # "SpanshNeutronPlotter": "The Spansh API has suggested a Neutron Plotter router for Commander {commanderName}.",
+    # "SpanshRoadToRiches": "The Spansh API has suggested a Road-to-Riches route for Commander {commanderName}.",
 }
 
 class PromptGenerator:
@@ -331,6 +331,12 @@ class PromptGenerator:
             "tool_calls": event.request
         })
         return responses
+
+    def external_event_message(self, event: ExternalEvent):
+        return {
+            "role": "user",
+            "content": f"({externalEvents[event.content.get('event')].format(commanderName=self.commander_name)} Details: {json.dumps(event.content)})"
+        }
 
     def tool_response_message(self, event: ToolEvent):
         return
@@ -399,6 +405,9 @@ class PromptGenerator:
 
             if event.kind == 'tool':
                 conversational_pieces += self.tool_messages(event)
+
+            if event.kind == 'external':
+                conversational_pieces.append(self.external_event_message(event))
 
         rawState = self.journal.ship_state()
         keysToFilterOut = {

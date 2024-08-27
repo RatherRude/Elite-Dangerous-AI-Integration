@@ -881,18 +881,19 @@ def main():
                         for item in data['result']
                     ]
                     # add conversational piece - here is your trade route!
-                    event_manager.add_game_event({'event': 'SpanshTradePlanner', 'result': filtered_data})
+                    event_manager.add_external_event({'event': 'SpanshTradePlanner', 'result': filtered_data})
 
                     # persist route as optional piece
                     return
             except Exception as e:
                 log('error', f"Error: {e}")
                 # add conversational piece - error request
-                event_manager.add_game_event({'event': 'SpanshTradePlannerFailed',
+                event_manager.add_external_event({'event': 'SpanshTradePlannerFailed',
                                               'reason': 'The Spansh API has encountered an error! Please try at a later point in time!',
                                               'error': f'{e}'})
+                return
 
-        event_manager.add_game_event({'event': 'SpanshTradePlannerFailed',
+        event_manager.add_external_event({'event': 'SpanshTradePlannerFailed',
                                       'reason': 'The Spansh API took longer than 5 minutes to find a trade route. That should not happen, try again at a later point in time!'})
 
     def trade_planner_create_thread(obj):
@@ -905,7 +906,7 @@ def main():
 
         dict.update(obj)
 
-        log('Requesting data now!', dict)
+        log('Debug, Request data', dict)
         # send request with obj, will return a queue id
         url = "https://spansh.co.uk/api/trade/route"
 
@@ -919,6 +920,7 @@ def main():
 
             # start checking job status
             check_trade_planner_job(job_id)
+
 
         except Exception as e:
             log('error', f"Error: {e}")

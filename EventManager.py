@@ -4,7 +4,7 @@ import json
 from typing import Dict, List, Literal, Callable
 
 from EDJournal import *
-from Event import GameEvent, Event, ConversationEvent, ToolEvent
+from Event import GameEvent, Event, ConversationEvent, ToolEvent, ExternalEvent
 from Logger import log
 
 
@@ -23,6 +23,12 @@ class EventManager:
 
     def add_game_event(self, content: Dict):
         event = GameEvent(content=content)
+        self.pending.append(event)
+        log('Event', event)
+        return self._handle_new_event()
+
+    def add_external_event(self, content: Dict):
+        event = ExternalEvent(content=content)
         self.pending.append(event)
         log('Event', event)
         return self._handle_new_event()
@@ -76,6 +82,9 @@ class EventManager:
                 return True
 
             if isinstance(event, GameEvent) and event.content.get("event") in self.game_events:
+                return True
+
+            if isinstance(event, ExternalEvent):
                 return True
 
             # if isinstance(event, GameEvent) and event.content.get("event") == 'ProspectedAsteroid' and any([material['Name'] == 'LowTemperatureDiamond' for material in event.content.get("Materials")]) and event.content.get("Remaining") != 0:

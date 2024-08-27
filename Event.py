@@ -13,6 +13,12 @@ class GameEvent(Event):
     timestamp: datetime = field(default_factory=lambda: datetime.now())
 
 @dataclass
+class ExternalEvent(Event):
+    content: Dict
+    kind: Literal['external'] = field(default='external')
+    timestamp: datetime = field(default_factory=lambda: datetime.now())
+
+@dataclass
 class ConversationEvent(Event):
     content: str
     kind: Literal['user', 'assistant', 'assistant_completed']

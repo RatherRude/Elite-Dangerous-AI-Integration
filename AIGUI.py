@@ -978,7 +978,7 @@ class App:
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
             self.process = subprocess.Popen(self.chat_command_arg.split(' '), startupinfo=startupinfo,
                                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1,
-                                            universal_newlines=True)
+                                            universal_newlines=True, encoding='utf-8')
             self.debug_frame.pack()
             self.main_frame.pack_forget()
             self.stop_button.pack()
