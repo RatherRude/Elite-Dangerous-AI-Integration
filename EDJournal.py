@@ -254,10 +254,40 @@ class EDJournal:
                 self.ship['is_scooping'] = False
 
             # parse location
-            if (log_event == 'Location' or log_event == 'FSDJump') and 'StarSystem' in log:
-                self.ship['location'] = log['StarSystem']
-        #TODO                if 'StarClass' in log:
-        #TODO                    self.ship['star_class'] = log['StarClass']
+            if log_event == 'Location':
+                # List of properties to check in the log entry
+                properties = [
+                    'DistFromStarLS', 'Docked', 'StationName', 'StationType',
+                    'StationGovernment_Localised', 'StationEconomy_Localised', 'Taxi',
+                    'StarSystem', 'SystemAllegiance', 'SystemEconomy_Localised',
+                    'SystemSecondEconomy_Localised', 'SystemGovernment_Localised',
+                    'SystemSecurity_Localised', 'Population', 'SystemFaction'
+                    # , 'Conflicts'
+                ]
+
+                self.ship['location'] = {}
+
+                for prop in properties:
+                    if prop in log:
+                        self.ship['location'][prop.replace('_Localised', '') if prop.endswith('_Localised') else prop] = log[prop]
+
+                # Filter Factions list
+                if 'Factions' in log:
+                    filtered_factions = []
+
+                    for faction in log['Factions']:
+                        filtered_faction = {}
+
+                        for key in ['Name', 'FactionState', 'MyReputation']:
+                            if key in faction:
+                                filtered_faction[key] = faction[key]
+
+                        filtered_factions.append(filtered_faction)
+
+                    self.ship['location']['Factions'] = filtered_factions
+
+            if log_event == 'FSDJump' and 'StarSystem' in log:
+                self.ship['location'] = {'StarSystem': log['StarSystem']}
 
             # parse target
             if log_event == 'FSDTarget':
@@ -265,7 +295,7 @@ class EDJournal:
                     self.ship['target'] = None
                     self.ship['jumps_remains'] = 0
                 else:
-                    self.ship['target'] = log['Name']
+                    self.ship['target'] = {'StarSystem': log['Name']}
                     try:
                         self.ship['jumps_remains'] = log['RemainingJumpsInRoute']
                     except:
@@ -283,8 +313,8 @@ class EDJournal:
             elif log_event == 'ApproachSettlement':
                 self.ship['status'] = 'approaching_settlement'
 
-            elif log_event == 'Bounty':
-                self.ship['bounty'] = log['Reward']
+            # elif log_event == 'Bounty':
+            #     self.ship['bounty'] = log['Reward']
 
             elif log_event == 'CockpitBreached':
                 self.ship['cockpit_breached'] = True
@@ -328,8 +358,8 @@ class EDJournal:
             elif log_event == 'Location':
                 if log['Docked']:
                     self.ship['status'] = 'in_station'
-                else:
-                    self.ship['location'] = log['StarSystem']
+                # else:
+                    # self.ship['location'] = log['StarSystem']
 
             elif log_event == 'MissionAccepted':
                 self.ship['mission_accepted'] = log['MissionID']

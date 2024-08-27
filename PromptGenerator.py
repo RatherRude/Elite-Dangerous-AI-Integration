@@ -423,11 +423,11 @@ class PromptGenerator:
 
         conversational_pieces.append({
            "role": "user",
-           "content": f"(Current system's stations: {self.get_station_info(filtered_state['location'])})"
+           "content": f"(Current location: {self.get_station_info(filtered_state['location']['StarSystem'])})"
         })
         conversational_pieces.append({
            "role": "user",
-           "content": f"(Current system: {self.get_system_info(filtered_state['location'])})"
+           "content": f"(Current system: {self.get_system_info(filtered_state['location']['StarSystem'])})"
         })
         conversational_pieces.append({
            "role": "user",
