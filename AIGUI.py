@@ -703,8 +703,7 @@ class App:
         defaults = {
             'commander_name': "",
             'character':
-                "I am Commander {commander_name}, an independent pilot and secret member of the Dark Wheel. \n" +
-                "My main goal is to find Raxxla. \n" +
+                "I am Commander {commander_name}, an independent pilot and secret member of the Dark Wheel. \n\n" +
                 "You will be addressed as 'Computer', you are the onboard AI of my starship. \n" +
                 "You possess extensive knowledge and can provide detailed and accurate information on a wide range of topics, " +
                 "including galactic navigation, ship status, the current system, and more. \n\n" +
@@ -718,7 +717,7 @@ class App:
             'vision_var': True,
             'ptt_var': False,
             'continue_conversation_var': True,
-            'llm_model_name': "gpt-4o",
+            'llm_model_name': "gpt-4o-mini",
             'llm_endpoint': "https://api.openai.com/v1",
             'llm_api_key': "",
             'tts_voice': "nova",
@@ -788,7 +787,7 @@ class App:
             api_key=self.api_key.get() if self.llm_api_key.get() == '' else self.llm_api_key.get(),
         )
         if not self.check_model_list(llmClient, self.llm_model_name.get()):
-            if self.llm_model_name.get() == 'gpt-4o' and self.check_model_list(llmClient, 'gpt-3.5-turbo'):
+            if self.llm_model_name.get() == 'gpt-4o-mini' and self.check_model_list(llmClient, 'gpt-3.5-turbo'):
                 self.llm_model_name.delete(0, tk.END)
                 self.llm_model_name.insert(0, 'gpt-3.5-turbo')
                 messagebox.showinfo("Fallback to GPT-3.5-Turbo",
