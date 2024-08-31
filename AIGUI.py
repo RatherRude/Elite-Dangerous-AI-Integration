@@ -723,7 +723,7 @@ class App:
             'tts_voice': "nova",
             'tts_speed': "1.2",
             'ptt_key': '',
-            'vision_model_name': "gpt-4o",
+            'vision_model_name': "gpt-4o-mini",
             'vision_endpoint': "https://api.openai.com/v1",
             'vision_api_key': "",
             'stt_model_name': "whisper-1",
