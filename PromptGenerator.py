@@ -412,22 +412,18 @@ class PromptGenerator:
         rawState = self.journal.ship_state()
         keysToFilterOut = {
             "time",
-            "odyssey",
-            "fighter_destroyed",
-            "interdicted",
-            "no_dock_reason",
             "mission_completed",
             "mission_redirected"
         }
         filtered_state = {key: value for key, value in rawState.items() if key not in keysToFilterOut}
 
         conversational_pieces.append({
-           "role": "user",
-           "content": f"(Current location: {self.get_station_info(filtered_state['location']['StarSystem'])})"
+            "role": "user",
+            "content": f"(Current system: {self.get_system_info(filtered_state['location']['StarSystem'])})"
         })
         conversational_pieces.append({
-           "role": "user",
-           "content": f"(Current system: {self.get_system_info(filtered_state['location']['StarSystem'])})"
+            "role": "user",
+            "content": f"(Stations in current system: {self.get_station_info(filtered_state['location']['StarSystem'])})"
         })
         conversational_pieces.append({
            "role": "user",

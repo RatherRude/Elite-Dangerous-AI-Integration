@@ -7,11 +7,6 @@ from directinput import *
 from EDlogger import logger
 
 """
-File: EDKeys.py
-(most was taken from EDAutopilot on github, turned into a class and enhanced
-https://github.com/skai2/EDAutopilot
-then leveraged again to create the state machine for the Elite Dangerous AI Integration)
-
 Description:  Pulls the keybindings for specific controls from the ED Key Bindings file, this class also
   has method for sending a key to the display that has focus (so must have ED with focus)
 

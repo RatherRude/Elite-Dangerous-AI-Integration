@@ -923,6 +923,9 @@ def main():
 
         except Exception as e:
             log('error', f"Error: {e}")
+            event_manager.add_external_event({'event': 'SpanshTradePlannerFailed',
+                                              'reason': 'The request to the Spansh API wasn\'t successful! Please try at a later point in time!',
+                                              'error': f'{e}'})
 
     def trade_planner(obj):
         # start thread with first request
@@ -981,22 +984,24 @@ def main():
 
     while True:
         try:
+            counter += 1
+
             # check STT result queue
             if not stt.resultQueue.empty():
                 text = stt.resultQueue.get().text
                 tts.abort()
                 event_manager.add_conversation_event('user', text)
-            else:
-                counter += 1
 
-                if not is_thinking and not tts.get_is_playing() and event_manager.is_replying:
-                    event_manager.add_assistant_complete_event()
+            if not is_thinking and not tts.get_is_playing() and event_manager.is_replying:
+                event_manager.add_assistant_complete_event()
 
-                if counter % 5 == 0:
-                    checkForJournalUpdates(client, event_manager, commanderName, counter <= 5)
+            if counter % 5 == 0:
+                checkForJournalUpdates(client, event_manager, commanderName, counter <= 5)
 
-                # Infinite loops are bad for processors, must sleep.
-                sleep(0.25)
+            event_manager.reply()
+
+            # Infinite loops are bad for processors, must sleep.
+            sleep(0.25)
         except KeyboardInterrupt:
             break
         except Exception as e:

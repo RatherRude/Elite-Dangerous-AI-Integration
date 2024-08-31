@@ -53,7 +53,6 @@ class EDJournal:
             'status': 'in_space',
             'star_class': None,
             'body': None,
-            'interdicted': False,
             'type': None,
             'fuel_level': None,
             'fuel_capacity': None,
@@ -66,17 +65,6 @@ class EDJournal:
             'time': (datetime.now() - datetime.fromtimestamp(getmtime(self.current_log))).seconds if self.current_log else 0,
             'cockpit_breached': False,
             'extra_events': []
-            #'fighter_destroyed': False,
-            #'fighter_launched': False,
-            #'srv_launched': False,
-            #'no_dock_reason': None,
-            #'committed_crime': None,
-            #'datalink_scan': None,
-            #'cargo_ejected': False,
-            #'mission_accepted': None,
-            #'mission_failed': None,
-            #'mission_abandoned': None,
-            #'odyssey': True,  # Initialize odyssey state,
         }
         self.ship_state()    # load up from file
         self.reset_items()
@@ -87,14 +75,7 @@ class EDJournal:
         defaultValues = {
             'under_attack' : False,
             'fighter_destroyed' : False,
-            'cockpit_breached' : False,
-            'interdicted' : False,
-            #'committed_crime' : None,
-            #'datalink_scan' : None,
-            #'cargo_ejected' : False,
-            #'mission_accepted' : None,
-            #'mission_failed' : None,
-            #'mission_abandoned' : None
+            'cockpit_breached' : False
         }
         self.ship = {**self.ship, **defaultValues}
 
@@ -223,10 +204,6 @@ class EDJournal:
 
             elif log_event == 'Location' and log['Docked']:
                 self.ship['status'] = 'in_station'
-
-            elif log_event == 'Interdicted':
-                self.ship['interdicted'] = True
-                self.reset_items()
 
             # parse ship type
             elif log_event == 'Loadout':

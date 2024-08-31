@@ -55,8 +55,7 @@ class EventManager:
         log('Action', [result['name']+': ' + result['content'] for result in results])
         return self._handle_new_event()
 
-    def _handle_new_event(self):
-        self.save_history()
+    def reply(self):
         if not self.is_replying and self.should_reply():
             self.is_replying = True
             new_events = self.pending
@@ -68,6 +67,9 @@ class EventManager:
             return True
 
         return False
+
+    def _handle_new_event(self):
+        self.save_history()
 
     def should_reply(self):
         if len(self.pending) == 0:
