@@ -1,9 +1,7 @@
 import json
-from typing import List, Dict
+from functools import lru_cache
 
 import requests
-from functools import lru_cache
-from time import time
 
 from EDJournal import *
 from Event import GameEvent, Event, ConversationEvent, ToolEvent, ExternalEvent
@@ -202,7 +200,7 @@ travelEvents = {
     "ApproachBody": "Commander {commanderName} is entering an orbit.",
     "Docked": "Commander {commanderName} has docked with a station.",
     "DockingCanceled": "Commander {commanderName} has canceled the docking request.",
-    #"DockingComplete": "Commander {commanderName} has docked with a station",
+    # "DockingComplete": "Commander {commanderName} has docked with a station",
     "DockingDenied": "Commander {commanderName}'s request to dock with a station has been denied.",
     "DockingGranted": "Commander {commanderName}'s request to dock with a station has been granted.",
     "DockingRequested": "Commander {commanderName} has sent a request to dock with a station.",
@@ -298,11 +296,13 @@ externalEvents = {
     # "SpanshRoadToRiches": "The Spansh API has suggested a Road-to-Riches route for Commander {commanderName}.",
 }
 
+
 class PromptGenerator:
     def __init__(self, commander_name: str, character_prompt: str, journal: EDJournal):
         self.commander_name = commander_name
         self.character_prompt = character_prompt
         self.journal = journal
+
     def full_event_message(self, event: GameEvent):
         return {
             "role": "user",
@@ -363,7 +363,7 @@ class PromptGenerator:
 
     # fetch station info from EDSM
     @lru_cache(maxsize=1, typed=False)
-    def get_station_info(self, system_name: str, fleet_carrier = False):
+    def get_station_info(self, system_name: str, fleet_carrier=False):
         url = "https://www.edsm.net/api-system-v1/stations"
         params = {
             "systemName": system_name,
@@ -426,15 +426,15 @@ class PromptGenerator:
             "content": f"(Stations in current system: {self.get_station_info(filtered_state['location']['StarSystem'])})"
         })
         conversational_pieces.append({
-           "role": "user",
-           "content": "(Ship status: " + json.dumps(filtered_state) + ")"
+            "role": "user",
+            "content": "(Ship status: " + json.dumps(filtered_state) + ")"
         })
         conversational_pieces.append({
             "role": "system",
             "content": "Let's roleplay in the universe of Elite: Dangerous. " +
-                "I will provide game events in parentheses; do not create new ones. " +
-                "Do no hallucinate any information that is not given to you. " +
-                self.character_prompt.format(commander_name=self.commander_name)
+                       "I will provide game events in parentheses; do not create new ones. " +
+                       "Do no hallucinate any information that is not given to you. " +
+                       self.character_prompt.format(commander_name=self.commander_name)
         })
 
         conversational_pieces.reverse()  # Restore the original order

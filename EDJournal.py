@@ -1,8 +1,8 @@
-from os import environ, listdir
-from os.path import join, isfile, getmtime, abspath
-from json import loads
-from time import sleep, time
 from datetime import datetime
+from json import loads
+from os import listdir
+from os.path import join, isfile, getmtime
+from time import sleep
 from typing import Dict, List
 
 from EDlogger import logger
@@ -37,7 +37,7 @@ class EDJournal:
             self.open_journal(self.current_log)
 
         # game events that can be written into self.ship.extra_events
-        self.enabled_game_events:List[str]=[]
+        self.enabled_game_events: List[str] = []
         if game_events:
             for category, events in game_events.items():
                 for event, state in events.items():
@@ -62,20 +62,21 @@ class EDJournal:
             'target': None,
             'jumps_remains': 0,
             'dist_jumped': 0,
-            'time': (datetime.now() - datetime.fromtimestamp(getmtime(self.current_log))).seconds if self.current_log else 0,
+            'time': (datetime.now() - datetime.fromtimestamp(
+                getmtime(self.current_log))).seconds if self.current_log else 0,
             'cockpit_breached': False,
             'extra_events': []
         }
-        self.ship_state()    # load up from file
+        self.ship_state()  # load up from file
         self.reset_items()
 
     # these items do not have respective log entries to clear them.  After initial reading of log file, clear these items
     # also the App will need to reset these to False after detecting they were True
     def reset_items(self):
         defaultValues = {
-            'under_attack' : False,
-            'fighter_destroyed' : False,
-            'cockpit_breached' : False
+            'under_attack': False,
+            'fighter_destroyed': False,
+            'cockpit_breached': False
         }
         self.ship = {**self.ship, **defaultValues}
 
@@ -84,7 +85,8 @@ class EDJournal:
         if not path_logs:
             path_logs = get_path(FOLDERID.SavedGames, UserHandle.current) + "\Frontier Developments\Elite Dangerous"
         try:
-            list_of_logs = [join(path_logs, f) for f in listdir(path_logs) if isfile(join(path_logs, f)) and f.startswith('Journal.')]
+            list_of_logs = [join(path_logs, f) for f in listdir(path_logs) if
+                            isfile(join(path_logs, f)) and f.startswith('Journal.')]
         except:
             return None
         if not list_of_logs:
@@ -97,7 +99,7 @@ class EDJournal:
         if self.log_file is not None:
             self.log_file.close()
 
-        logger.info("Opening new Journal: "+log_name)
+        logger.info("Opening new Journal: " + log_name)
 
         # open the latest journal
         self.log_file = open(log_name, encoding="utf-8")
@@ -128,7 +130,7 @@ class EDJournal:
             log_event = log['event']
 
             # Event processing
-            #if log_event == 'Fileheader':
+            # if log_event == 'Fileheader':
             #    self.ship['odyssey'] = True   # hardset to true for ED 4.0 since menus now same for Horizon
             #    return   # No need to do further processing on this record, should use elif: all the way down
 
@@ -140,14 +142,14 @@ class EDJournal:
 
             elif log_event == 'Embark':
                 self.ship['disembark'] = False
-                #print('embark')
-                #print(self.ship['Disembark'])
+                # print('embark')
+                # print(self.ship['Disembark'])
 
             elif log_event == 'Disembark':
                 self.ship['disembark'] = self.fill_disembark_object(log)
-                #print('disembark')
-                #print(log)
-                #print(self.ship['disembark'])
+                # print('disembark')
+                # print(log)
+                # print(self.ship['disembark'])
 
             elif log_event == 'FighterDestroyed':
                 self.ship['fighter_destroyed'] = True
@@ -156,7 +158,7 @@ class EDJournal:
             elif log_event == 'MissionCompleted':
                 self.ship['mission_completed'] += 1
 
-            #elif log_event == 'MissionRedirected':
+            # elif log_event == 'MissionRedirected':
             #    self.ship['mission_redirected'] += 1
 
             elif log_event == 'StartJump':
@@ -172,7 +174,7 @@ class EDJournal:
 
             elif log_event == "DockingDenied":
                 self.ship['status'] = 'dockingdenied'
-                #self.ship['no_dock_reason'] = log['Reason']
+                # self.ship['no_dock_reason'] = log['Reason']
 
             elif log_event == 'SupercruiseExit':
                 self.ship['status'] = 'in_space'
@@ -246,7 +248,8 @@ class EDJournal:
 
                 for prop in properties:
                     if prop in log:
-                        self.ship['location'][prop.replace('_Localised', '') if prop.endswith('_Localised') else prop] = log[prop]
+                        self.ship['location'][prop.replace('_Localised', '') if prop.endswith('_Localised') else prop] = \
+                        log[prop]
 
                 # Filter Factions list
                 if 'Factions' in log:
@@ -336,7 +339,7 @@ class EDJournal:
                 if log['Docked']:
                     self.ship['status'] = 'in_station'
                 # else:
-                    # self.ship['location'] = log['StarSystem']
+                # self.ship['location'] = log['StarSystem']
 
             elif log_event == 'MissionAccepted':
                 self.ship['mission_accepted'] = log['MissionID']
@@ -363,16 +366,16 @@ class EDJournal:
             elif log_event == 'HeatDamage':
                 self.ship['status'] = 'heat_damage'
 
-            #elif log_event == 'ShieldHealth':
+            # elif log_event == 'ShieldHealth':
             #    self.ship['shield_health'] = log['Health']
 
-           # elif log_event == 'UnderAttack':
-           #     self.ship['under_attack'] = True
+            # elif log_event == 'UnderAttack':
+            #     self.ship['under_attack'] = True
 
-           # elif log_event == 'StartJump':
-           #     self.ship['jumps_remains'] = log['JumpsRemaining']
+            # elif log_event == 'StartJump':
+            #     self.ship['jumps_remains'] = log['JumpsRemaining']
 
-            #elif log_event == 'CargoTransfer':
+            # elif log_event == 'CargoTransfer':
             #    self.ship['cargo_transfer'] = log['Direction']
 
             elif log_event == 'DockingTimeout':
@@ -383,7 +386,7 @@ class EDJournal:
 
             elif log_event == 'DockingDenied':
                 self.ship['status'] = 'docking_denied'
-                #self.ship['no_dock_reason'] = log['Reason']
+                # self.ship['no_dock_reason'] = log['Reason']
 
             elif log_event == 'DockingGranted':
                 self.ship['status'] = 'docking_granted'
@@ -424,7 +427,6 @@ class EDJournal:
         except Exception as e:
             print(f'Exception on EDJournal Read: {e}')
 
-
     def ship_state(self):
         latest_log = self.get_latest_log()
 
@@ -448,7 +450,7 @@ class EDJournal:
                 cnt = cnt + 1
                 self.parse_line(log)
 
-        logger.debug('read:  '+str(cnt)+' ship: '+str(self.ship))
+        logger.debug('read:  ' + str(cnt) + ' ship: ' + str(self.ship))
         return self.ship
 
 
@@ -461,6 +463,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-

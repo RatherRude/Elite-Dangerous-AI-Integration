@@ -1,7 +1,6 @@
 import dataclasses
-import sys
 import json
-from typing import Dict, List, Literal, Callable
+from typing import Literal, Callable
 
 from EDJournal import *
 from Event import GameEvent, Event, ConversationEvent, ToolEvent, ExternalEvent
@@ -9,7 +8,8 @@ from Logger import log
 
 
 class EventManager:
-    def __init__(self, on_reply_request: Callable[[List[Event], List[Event]], any], game_events: List[str], continue_conversation: bool = False):
+    def __init__(self, on_reply_request: Callable[[List[Event], List[Event]], any], game_events: List[str],
+                 continue_conversation: bool = False):
         self.pending: List[Event] = []
         self.processed: List[Event] = []
         self.is_replying = False
@@ -52,7 +52,7 @@ class EventManager:
     def add_tool_call(self, request: Dict, results: List[Dict]):
         event = ToolEvent(request=request, results=results)
         self.pending.append(event)
-        log('Action', [result['name']+': ' + result['content'] for result in results])
+        log('Action', [result['name'] + ': ' + result['content'] for result in results])
         return self._handle_new_event()
 
     def reply(self):
@@ -96,12 +96,12 @@ class EventManager:
 
     def save_history(self):
         class EnhancedJSONEncoder(json.JSONEncoder):
-                def default(self, o):
-                    if dataclasses.is_dataclass(o):
-                        return dataclasses.asdict(o)
-                    if isinstance(o, datetime):
-                        return o.isoformat()
-                    return super().default(o)
+            def default(self, o):
+                if dataclasses.is_dataclass(o):
+                    return dataclasses.asdict(o)
+                if isinstance(o, datetime):
+                    return o.isoformat()
+                return super().default(o)
 
         with open('history.json', 'w') as json_file:
             json.dump(self.processed[-1000:] + self.pending, json_file, cls=EnhancedJSONEncoder)

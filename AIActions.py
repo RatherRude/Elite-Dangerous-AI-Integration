@@ -5,7 +5,7 @@ class AIActions:
     actions = {}
 
     def __init__(self):
-         pass
+        pass
 
     def getToolsList(self):
         """return list of functions as passed to gpt"""
@@ -24,7 +24,7 @@ class AIActions:
             try:
                 function_result = function_to_call(function_args)
             except Exception as e:
-                function_result = "ERROR: "+repr(e)
+                function_result = "ERROR: " + repr(e)
         else:
             function_result = f"ERROR: Function {function_name} does not exist!"
 
@@ -48,4 +48,3 @@ class AIActions:
                 },
             }
         }
-

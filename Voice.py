@@ -1,12 +1,11 @@
-# pip install pyttsx3
-import sys
-from threading import Thread
-import kthread
 import queue
-import pyttsx3
 from time import sleep
 
+import kthread
+import pyttsx3
+
 from Logger import log
+
 
 class Voice:
 
@@ -36,11 +35,11 @@ class Voice:
 
     def quit(self):
         self.v_quit = True
-        
+
     def voice_exec(self):
         default_voice = True
         engine = pyttsx3.init()
-        engine.setProperty('rate', 160*self.rate)
+        engine.setProperty('rate', 160 * self.rate)
         voices = engine.getProperty('voices')
         engine.setProperty('voice', voices[0].id)
         for voice in voices:
@@ -66,6 +65,7 @@ class Voice:
 
     def abort(self):
         pass
+
 
 def main():
     v = Voice(rate_multiplier=1.2)

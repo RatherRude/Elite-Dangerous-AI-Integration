@@ -6,7 +6,6 @@ import threading
 from io import BytesIO
 from pathlib import Path
 
-import keyboard
 import pyautogui
 import requests
 import win32gui
@@ -18,7 +17,6 @@ import STT
 import TTS
 from ControllerManager import ControllerManager
 from Event import Event
-from Logger import log
 from PromptGenerator import PromptGenerator
 
 # from MousePt import MousePoint
@@ -888,12 +886,12 @@ def main():
                 log('error', f"Error: {e}")
                 # add conversational piece - error request
                 event_manager.add_external_event({'event': 'SpanshTradePlannerFailed',
-                                              'reason': 'The Spansh API has encountered an error! Please try at a later point in time!',
-                                              'error': f'{e}'})
+                                                  'reason': 'The Spansh API has encountered an error! Please try at a later point in time!',
+                                                  'error': f'{e}'})
                 return
 
         event_manager.add_external_event({'event': 'SpanshTradePlannerFailed',
-                                      'reason': 'The Spansh API took longer than 5 minutes to find a trade route. That should not happen, try again at a later point in time!'})
+                                          'reason': 'The Spansh API took longer than 5 minutes to find a trade route. That should not happen, try again at a later point in time!'})
 
     def trade_planner_create_thread(obj):
         dict = {'max_system_distance': 10000000,

@@ -341,15 +341,18 @@ game_events = {
     }
 }
 
-def ask_for_update(release_name='A new release', release_url='https://github.com/RatherRude/Elite-Dangerous-AI-Integration/releases/'):
+
+def ask_for_update(release_name='A new release',
+                   release_url='https://github.com/RatherRude/Elite-Dangerous-AI-Integration/releases/'):
     # Ask the user if they want to download the new version
     result = messagebox.askyesno(f"Update available",
-    f"Would you like to download {release_name}?")
+                                 f"Would you like to download {release_name}?")
 
     if result:
         webbrowser.open(release_url)
 
-def check_for_updates (current_commit):
+
+def check_for_updates(current_commit):
     url = f'https://api.github.com/repos/RatherRude/Elite-Dangerous-AI-Integration/releases'
     response = requests.get(url)
 
@@ -367,6 +370,7 @@ def check_for_updates (current_commit):
             tag_data = tag_response.json()
             if tag_data['object']['sha'] != current_commit:
                 ask_for_update(release_name, release_url)
+
 
 class App:
     def __init__(self, root):
@@ -472,6 +476,7 @@ class App:
         def get_next():
             self.incr += 1
             return self.incr
+
         def get_same():
             return self.incr
 
@@ -709,7 +714,6 @@ class App:
                 "including galactic navigation, ship status, the current system, and more. \n\n" +
                 "Do not inform about my ship status and my location unless it's relevant or requested by me. Answer within 3 sentences. Acknowledge given orders. \n\n" +
                 "Guide and support me with witty, intelligent and sarcastic commentary. Provide clear mission briefings and humorous observations.",
-
             'api_key': "",
             'alternative_stt_var': False,
             'alternative_tts_var': False,

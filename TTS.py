@@ -1,4 +1,3 @@
-
 import queue
 import threading
 from time import sleep
@@ -41,11 +40,12 @@ class TTS:
                     try:
                         text = self.read_queue.get()
                         with self.openai_client.audio.speech.with_streaming_response.create(
-                            model=self.model,
-                            voice=self.voice,
-                            input=text,
-                            response_format="pcm",  # raw samples in 24kHz (16-bit signed, low-endian), without the header.
-                            speed=self.speed
+                                model=self.model,
+                                voice=self.voice,
+                                input=text,
+                                response_format="pcm",
+                                # raw samples in 24kHz (16-bit signed, low-endian), without the header.
+                                speed=self.speed
                         ) as response:
                             for chunk in response.iter_bytes(1024):
                                 if self.is_aborted:
@@ -60,13 +60,13 @@ class TTS:
             self._is_playing = False
             stream.stop_stream()
 
-    def say(self, text:str):
+    def say(self, text: str):
         self.read_queue.put(text)
 
     def abort(self):
         while not self.read_queue.empty():
             self.read_queue.get()
-        
+
         self.is_aborted = True
 
     def get_is_playing(self):
@@ -74,6 +74,7 @@ class TTS:
 
     def quit(self):
         pass
+
 
 if __name__ == "__main__":
     openai_audio = openai.OpenAI()
