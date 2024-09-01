@@ -721,13 +721,13 @@ class App:
             'vision_var': True,
             'ptt_var': False,
             'continue_conversation_var': True,
-            'llm_model_name': "gpt-4o-mini",
+            'llm_model_name': "gpt-4o",
             'llm_endpoint': "https://api.openai.com/v1",
             'llm_api_key': "",
             'tts_voice': "nova",
             'tts_speed': "1.2",
             'ptt_key': '',
-            'vision_model_name': "gpt-4o-mini",
+            'vision_model_name': "gpt-4o",
             'vision_endpoint': "https://api.openai.com/v1",
             'vision_api_key': "",
             'stt_model_name': "whisper-1",
@@ -791,7 +791,7 @@ class App:
             api_key=self.api_key.get() if self.llm_api_key.get() == '' else self.llm_api_key.get(),
         )
         if not self.check_model_list(llmClient, self.llm_model_name.get()):
-            if self.llm_model_name.get() == 'gpt-4o-mini' and self.check_model_list(llmClient, 'gpt-3.5-turbo'):
+            if self.llm_model_name.get() == 'gpt-4o' and self.check_model_list(llmClient, 'gpt-3.5-turbo'):
                 self.llm_model_name.delete(0, tk.END)
                 self.llm_model_name.insert(0, 'gpt-3.5-turbo')
                 messagebox.showinfo("Fallback to GPT-3.5-Turbo",
