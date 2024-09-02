@@ -11,7 +11,7 @@ The integration is designed for every commander: it's amazing at roleplaying, it
 
 [Join Discord Server](https://discord.gg/9c58jxVuAT)
 |
-[Download latest version](https://github.com/RatherRude/Elite-Dangerous-AI-Integration/releases/download/v0.9.9/COVAS_NEXT_v0_9_9.zip)
+[Download latest version](https://github.com/RatherRude/Elite-Dangerous-AI-Integration/releases)
 
 ## Overview
 
