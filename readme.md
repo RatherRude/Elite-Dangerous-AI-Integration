@@ -43,7 +43,7 @@ Choose your LLM Provider:
 
 #### 1.2. Installation
 
-* [Download latest version of the AI Integration](https://github.com/RatherRude/Elite-Dangerous-AI-Integration/releases/download/v0.9/COVAS_NEXT_v0_9.zip), unzip it at a location of your liking.
+* [Download latest version of the AI Integration](https://github.com/RatherRude/Elite-Dangerous-AI-Integration/releases), unzip it at a location of your liking.
 
 ### 2. How to run
     
