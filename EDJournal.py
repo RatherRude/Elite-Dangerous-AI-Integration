@@ -45,40 +45,17 @@ class EDJournal:
                         self.enabled_game_events.append(event)
 
         self.ship = {
-            'disembark': False,
-            'shieldsup': True,
-            'under_attack': None,
-            'mission_completed': 0,
-            'mission_redirected': 0,
-            'status': 'in_space',
             'star_class': None,
             'body': None,
-            'type': None,
-            'fuel_level': None,
-            'fuel_capacity': None,
-            'fuel_percent': None,
-            'is_scooping': False,
+            'ship_type': None,
             'location': None,
             'target': None,
             'jumps_remains': 0,
             'dist_jumped': 0,
-            'time': (datetime.now() - datetime.fromtimestamp(
-                getmtime(self.current_log))).seconds if self.current_log else 0,
-            'cockpit_breached': False,
+            'cargo_capacity': 0,
             'extra_events': []
         }
         self.ship_state()  # load up from file
-        self.reset_items()
-
-    # these items do not have respective log entries to clear them.  After initial reading of log file, clear these items
-    # also the App will need to reset these to False after detecting they were True
-    def reset_items(self):
-        defaultValues = {
-            'under_attack': False,
-            'fighter_destroyed': False,
-            'cockpit_breached': False
-        }
-        self.ship = {**self.ship, **defaultValues}
 
     def get_latest_log(self, path_logs=None):
         """Returns the full path of the latest (most recent) elite log file (journal) from specified path"""
@@ -130,107 +107,17 @@ class EDJournal:
             log_event = log['event']
 
             # Event processing
-            # if log_event == 'Fileheader':
-            #    self.ship['odyssey'] = True   # hardset to true for ED 4.0 since menus now same for Horizon
-            #    return   # No need to do further processing on this record, should use elif: all the way down
-
-            if log_event == 'ShieldState':
-                self.ship['shieldsup'] = log['ShieldsUp']
-
-            elif log_event == 'UnderAttack':
-                self.ship['under_attack'] = True
-
-            elif log_event == 'Embark':
-                self.ship['disembark'] = False
-                # print('embark')
-                # print(self.ship['Disembark'])
-
-            elif log_event == 'Disembark':
-                self.ship['disembark'] = self.fill_disembark_object(log)
-                # print('disembark')
-                # print(log)
-                # print(self.ship['disembark'])
-
-            elif log_event == 'FighterDestroyed':
-                self.ship['fighter_destroyed'] = True
-                self.ship['fighter_launched'] = False
-
-            elif log_event == 'MissionCompleted':
-                self.ship['mission_completed'] += 1
-
-            # elif log_event == 'MissionRedirected':
-            #    self.ship['mission_redirected'] += 1
-
-            elif log_event == 'StartJump':
-                self.ship['status'] = str('starting_' + log['JumpType']).lower()
+            if log_event == 'StartJump':
                 if log['JumpType'] == 'Hyperspace':
                     self.ship['star_class'] = log['StarClass']
 
-            elif log_event == 'SupercruiseEntry' or log_event == 'FSDJump':
-                self.ship['status'] = 'in_supercruise'
-
-            elif log_event == "DockingGranted":
-                self.ship['status'] = 'dockinggranted'
-
-            elif log_event == "DockingDenied":
-                self.ship['status'] = 'dockingdenied'
-                # self.ship['no_dock_reason'] = log['Reason']
-
             elif log_event == 'SupercruiseExit':
-                self.ship['status'] = 'in_space'
                 self.ship['body'] = log['Body']
-
-            elif log_event == 'DockingCancelled':
-                self.ship['status'] = 'in_space'
-
-            elif log_event == 'Undocked':
-                self.ship['status'] = 'starting_undocking'
-
-            elif log_event == 'DockingRequested':
-                self.ship['status'] = 'starting_docking'
-
-            elif log_event == "Music" and log['MusicTrack'] == "DockingComputer":
-                if self.ship['status'] == 'starting_undocking':
-                    self.ship['status'] = 'in_undocking'
-                elif self.ship['status'] == 'starting_docking':
-                    self.ship['status'] = 'in_docking'
-
-            elif log_event == "Music" and log['MusicTrack'] == "NoTrack" and self.ship['status'] == 'in_undocking':
-                self.ship['status'] = 'in_space'
-
-            elif log_event == "Music" and log['MusicTrack'] == "Exploration" and self.ship['status'] == 'in_undocking':
-                self.ship['status'] = 'in_space'
-
-            elif log_event == 'Docked':
-                self.ship['status'] = 'in_station'
-
-            elif log_event == 'Location' and log['Docked']:
-                self.ship['status'] = 'in_station'
 
             # parse ship type
             elif log_event == 'Loadout':
-                self.ship['type'] = log['Ship']
-
-            # parse fuel
-            if 'FuelLevel' in log and self.ship['type'] != 'TestBuggy':
-                self.ship['fuel_level'] = log['FuelLevel']
-            if 'FuelCapacity' in log and self.ship['type'] != 'TestBuggy':
-                try:
-                    self.ship['fuel_capacity'] = log['FuelCapacity']['Main']
-                except:
-                    self.ship['fuel_capacity'] = log['FuelCapacity']
-            if log_event == 'FuelScoop' and 'Total' in log:
-                self.ship['fuel_level'] = log['Total']
-            if self.ship['fuel_level'] and self.ship['fuel_capacity']:
-                self.ship['fuel_percent'] = round((self.ship['fuel_level'] / self.ship['fuel_capacity']) * 100)
-            else:
-                self.ship['fuel_percent'] = 100
-
-            # parse scoop
-            if log_event == 'FuelScoop' and self.ship['time'] < 10 and self.ship['fuel_percent'] < 100:
-                self.ship['is_scooping'] = True
-            else:
-                self.ship['is_scooping'] = False
+                self.ship['ship_type'] = log['Ship']
+                self.ship['cargo_capacity'] = log['CargoCapacity']
 
             # parse location
             if log_event == 'Location':
@@ -289,133 +176,10 @@ class EDJournal:
                     self.ship['target'] = None
                 self.ship['dist_jumped'] = log["JumpDist"]
 
-            # New event types
-            elif log_event == 'ApproachSettlement':
-                self.ship['status'] = 'approaching_settlement'
-
-            # elif log_event == 'Bounty':
-            #     self.ship['bounty'] = log['Reward']
-
-            elif log_event == 'CockpitBreached':
-                self.ship['cockpit_breached'] = True
-
-            elif log_event == 'CommitCrime':
-                self.ship['committed_crime'] = log['CrimeType']
-
-            elif log_event == 'CrewLaunchFighter' or log_event == 'LaunchFighter':
-                self.ship['fighter_launched'] = True
-
-            elif log_event == 'DockFighter':
-                self.ship['fighter_launched'] = False
-
-            elif log_event == 'LaunchSRV':
-                self.ship['srv_launched'] = True
-
-            elif log_event == 'DockSRV':
-                self.ship['srv_launched'] = False
-
-            elif log_event == 'Touchdown':
-                self.ship['status'] = 'landed'
-
-            elif log_event == 'Liftoff':
-                self.ship['status'] = 'liftoff'
-
-            elif log_event == 'DatalinkScan':
-                self.ship['datalink_scan'] = True
-
-            elif log_event == 'SelfDestruct':
-                self.ship['status'] = 'self_destruct'
-
-            elif log_event == 'Died':
-                self.ship['status'] = 'destroyed'
-
-            elif log_event == 'Resurrect':
-                self.ship['status'] = 'resurrected'
-
-            elif log_event == 'EjectCargo':
-                self.ship['cargo_ejected'] = True
-
-            elif log_event == 'Location':
-                if log['Docked']:
-                    self.ship['status'] = 'in_station'
-                # else:
-                # self.ship['location'] = log['StarSystem']
-
-            elif log_event == 'MissionAccepted':
-                self.ship['mission_accepted'] = log['MissionID']
 
             elif log_event == 'MissionCompleted':
                 self.ship['mission_completed'] += 1
 
-            elif log_event == 'MissionFailed':
-                self.ship['mission_failed'] = log['MissionID']
-
-            elif log_event == 'MissionAbandoned':
-                self.ship['mission_abandoned'] = log['MissionID']
-
-            # Travel Events:
-            elif log_event == 'ApproachBody':
-                self.ship['status'] = 'approaching_body'
-
-            elif log_event == 'ApproachStar':
-                self.ship['status'] = 'approaching_star'
-
-            elif log_event == 'HeatWarning':
-                self.ship['status'] = 'heat_warning'
-
-            elif log_event == 'HeatDamage':
-                self.ship['status'] = 'heat_damage'
-
-            # elif log_event == 'ShieldHealth':
-            #    self.ship['shield_health'] = log['Health']
-
-            # elif log_event == 'UnderAttack':
-            #     self.ship['under_attack'] = True
-
-            # elif log_event == 'StartJump':
-            #     self.ship['jumps_remains'] = log['JumpsRemaining']
-
-            # elif log_event == 'CargoTransfer':
-            #    self.ship['cargo_transfer'] = log['Direction']
-
-            elif log_event == 'DockingTimeout':
-                self.ship['status'] = 'docking_timeout'
-
-            elif log_event == 'DockingRequested':
-                self.ship['status'] = 'docking_requested'
-
-            elif log_event == 'DockingDenied':
-                self.ship['status'] = 'docking_denied'
-                # self.ship['no_dock_reason'] = log['Reason']
-
-            elif log_event == 'DockingGranted':
-                self.ship['status'] = 'docking_granted'
-
-            elif log_event == 'DockingComplete':
-                self.ship['status'] = 'docking_complete'
-
-            elif log_event == 'DockingCancelled':
-                self.ship['status'] = 'docking_cancelled'
-
-            # elif log_event == 'MiningRefined':
-            #     self.ship['mining_refined'] = log['Type']
-
-            # elif log_event == 'USSDrop':
-            #     self.ship['uss_type'] = log['USSType']
-            #     self.ship['uss_scan_stage'] = log['USSType_Localised']
-
-            #  elif log_event == 'AsteroidCracked':
-            #      self.ship['asteroid_cracked'] = log['Body']
-
-            #   elif log_event == 'ProspectedAsteroid':
-            #       self.ship['asteroid_prospected'] = log['Materials']
-
-            #  elif log_event == 'Scan':
-            #      self.ship['scan_complete'] = log['ScanType']
-
-            #  elif log_event == 'ReceiveText':
-            #      self.ship['received_text'] = log['From']
-            #      self.ship['message'] = log['Message']
 
             if log_event in self.enabled_game_events:
                 self.ship['extra_events'].append({
@@ -450,7 +214,7 @@ class EDJournal:
                 cnt = cnt + 1
                 self.parse_line(log)
 
-        logger.debug('read:  ' + str(cnt) + ' ship: ' + str(self.ship))
+        # print('read:  ' + str(cnt) + ' ship: ' + str(self.ship))
         return self.ship
 
 

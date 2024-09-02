@@ -6,6 +6,7 @@ import requests
 from EDJournal import *
 from Event import GameEvent, Event, ConversationEvent, ToolEvent, ExternalEvent
 from Logger import log
+from StatusParser import StatusParser
 
 startupEvents = {
     "Cargo": "Commander {commanderName} has updated their cargo inventory.",
@@ -302,6 +303,7 @@ class PromptGenerator:
         self.commander_name = commander_name
         self.character_prompt = character_prompt
         self.journal = journal
+        self.status_parser = StatusParser()
 
     def full_event_message(self, event: GameEvent):
         return {
@@ -386,7 +388,6 @@ class PromptGenerator:
     def generate_prompt(self, events: List[Event]):
         # Collect the last 50 conversational pieces
         conversational_pieces: List[any] = list()
-        # conversational_pieces.append(self.get_system_info())
 
         for event in events[::-1]:
             if len(conversational_pieces) >= 50:
@@ -411,11 +412,12 @@ class PromptGenerator:
 
         rawState = self.journal.ship_state()
         keysToFilterOut = {
-            "time",
             "mission_completed",
             "mission_redirected"
         }
+        cleaned_data = self.status_parser.get_cleaned_data()
         filtered_state = {key: value for key, value in rawState.items() if key not in keysToFilterOut}
+        combined_state = {**filtered_state, **cleaned_data}
 
         conversational_pieces.append({
             "role": "user",
@@ -427,7 +429,7 @@ class PromptGenerator:
         })
         conversational_pieces.append({
             "role": "user",
-            "content": "(Ship status: " + json.dumps(filtered_state) + ")"
+            "content": f"(Ship status: {json.dumps(combined_state)})"
         })
         conversational_pieces.append({
             "role": "system",
