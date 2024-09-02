@@ -47,6 +47,35 @@ class StatusParser:
         true_flags = {key: value for key, value in all_flags.items() if value}
         return true_flags
 
+    def translate_flags2(self, flags2_value):
+        """Translates Flags2 integer to a dictionary of only True flags."""
+        all_flags2 = {
+            "OnFoot": bool(flags2_value & 1),
+            "InTaxi": bool(flags2_value & 2),
+            "InMulticrew": bool(flags2_value & 4),
+            "OnFootInStation": bool(flags2_value & 8),
+            "OnFootOnPlanet": bool(flags2_value & 16),
+            "AimDownSight": bool(flags2_value & 32),
+            "LowOxygen": bool(flags2_value & 64),
+            "LowHealth": bool(flags2_value & 128),
+            "Cold": bool(flags2_value & 256),
+            "Hot": bool(flags2_value & 512),
+            "VeryCold": bool(flags2_value & 1024),
+            "VeryHot": bool(flags2_value & 2048),
+            "Glide Mode": bool(flags2_value & 4096),
+            "OnFootInHangar": bool(flags2_value & 8192),
+            "OnFootSocialSpace": bool(flags2_value & 16384),
+            "OnFootExterior": bool(flags2_value & 32768),
+            "BreathableAtmosphere": bool(flags2_value & 65536),
+            "Telepresence Multicrew": bool(flags2_value & 131072),
+            "Physical Multicrew": bool(flags2_value & 262144),
+            "Fsd hyperdrive charging": bool(flags2_value & 524288),
+        }
+
+        # Return only flags that are True
+        true_flags2 = {key: value for key, value in all_flags2.items() if value}
+        return true_flags2
+
     def transform_pips(self, pips_list):
         """Transforms the pips list to a dictionary and halves each value."""
         return {
@@ -71,14 +100,22 @@ class StatusParser:
         with open(self.file_path, 'r') as file:
             data = json.load(file)
 
+        # Combine flags from Flags and Flags2 into a single dictionary
+        combined_flags = {**self.translate_flags(data['Flags']), **self.translate_flags2(data['Flags2'])}
+
+        # Initialize cleaned_data with common fields
         cleaned_data = {
-            'status': self.translate_flags(data['Flags']),
-            'pips': self.transform_pips(data['Pips']),
-            'cargo': data['Cargo'],
+            'status': combined_flags,
             'legalState': data['LegalState'],
             'balance': data['Balance'],
             'time': self.adjust_year(data['timestamp'])
         }
+
+        # Add optional status flags
+        if 'Pips' in data:
+            cleaned_data['pips'] = self.transform_pips(data['Pips'])
+        if 'Cargo' in data:
+            cleaned_data['cargo'] = data['Cargo']
 
         return cleaned_data
 
