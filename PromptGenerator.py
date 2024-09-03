@@ -19,7 +19,7 @@ startupEvents = {
     "Rank": "Commander {commanderName} has updated their ranks.",
     "Reputation": "Commander {commanderName} has updated their reputation.",
     "Statistics": "Commander {commanderName} has updated their statistics.",
-    "SquadronStartup": "Commander {commanderName} is a member of a squadron (startup)."
+    "SquadronStartup": "Commander {commanderName} is a member of a squadron."
 }
 powerplayEvents = {
     "PowerplayCollect": "Commander {commanderName} collected powerplay commodities.",
@@ -50,7 +50,7 @@ explorationEvents = {
     "DiscoveryScan": "Commander {commanderName} has performed a discovery scan.",
     "Scan": "Commander {commanderName} has conducted a scan.",
     "FSSAllBodiesFound": "Commander {commanderName} has identified all bodies in the system.",
-    "FSSBodySignals": "Commander {commanderName} has completed a full spectrum scan of {bodyName}, detecting signals.",
+    "FSSBodySignals": "Commander {commanderName} has completed a full spectrum scan of the systems, detecting signals.",
     "FSSDiscoveryScan": "Commander {commanderName} has performed a full system scan.",
     "FSSSignalDiscovered": "Commander {commanderName} has discovered a signal using the FSS scanner.",
     "MaterialCollected": "Commander {commanderName} has collected materials.",
