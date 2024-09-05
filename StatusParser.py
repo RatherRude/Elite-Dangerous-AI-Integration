@@ -101,7 +101,10 @@ class StatusParser:
             data = json.load(file)
 
         # Combine flags from Flags and Flags2 into a single dictionary
-        combined_flags = {**self.translate_flags(data['Flags']), **self.translate_flags2(data['Flags2'])}
+        combined_flags = {**self.translate_flags(data['Flags'])}
+
+        if 'Flags2' in data:
+            combined_flags = {**combined_flags, **self.translate_flags2(data['Flags2'])}
 
         # Initialize cleaned_data with common fields
         cleaned_data = {
