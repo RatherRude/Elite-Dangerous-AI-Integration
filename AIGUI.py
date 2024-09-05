@@ -624,7 +624,7 @@ class App:
         self.debug_frame.pack(side=tk.TOP, padx=20, pady=20)
 
         tk.Label(self.debug_frame, text="Debug Output:").pack(anchor=tk.W)
-        self.debug_text = tk.Text(self.debug_frame, width=100, height=25, bg='black')
+        self.debug_text = tk.Text(self.debug_frame, width=100, height=43, bg='black')
         self.debug_text.tag_configure("normal", foreground="white", font="Helvetica 12")
         self.debug_text.tag_configure("human", foreground="red", font="Helvetica 12 bold")
         self.debug_text.tag_configure("ai", foreground="blue", font="Helvetica 12 bold")
