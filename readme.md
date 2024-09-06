@@ -3,9 +3,9 @@
 [![A Day in the Life of a Bounty Hunter](http://img.youtube.com/vi/nvuCwwixvxw/0.jpg)](https://www.youtube.com/watch?v=nvuCwwixvxw)
 <- *Click image to watch the video on YouTube.*
 
-This integration aims to provide a more intuitive and hands-free experience for commanders, making interactions with the game more seamless and efficient by allowing you to connect Elite:Dangerous with various services for STT,TTS and LLMs. This creates a continuous conversation between you and the starship's computer via spoken word, as it should be in the 34th century.
+This integration aims to provide a more intuitive and hands-free experience for commanders, making interactions with the game more seamless and efficient by allowing you to connect Elite:Dangerous with various services for Speech-to-Text, Text-to-Speech and Large Language Models. This creates a continuous conversation between you and the starship's computer via spoken word, as it should be in the 34th century.
 
-The AI will react to game events, it will react to given commands not just in text but by emulating key presses or game actions. It can decide to take a screenshot or fetch information from Galnet or EDSM about topics, systems and their respective factions and stations.
+The AI will react to game events, it will react to given commands not just in text but by emulating key presses or game actions. It can decide to take a screenshot or fetch information from Galnet or various APIs about topics, systems and their respective factions and stations.
 
 The integration is designed for every commander: it's amazing at roleplaying, it can replace third-party websites, it can press buttons on command or if necessary, provide tutorials, will assist commanders no matter their role or level of experience.
 
@@ -25,10 +25,7 @@ The integration is designed for every commander: it's amazing at roleplaying, it
 ### 1. How to install
 
 #### 1.1. Prerequisites
-
-Choose your LLM Provider:
-
-
+The integration relies on third-party APIs for providing various functionalities. We highly recommend using OpenAI as it is the easiest to setup and provides the best experience within the game. However there is also an option to use alternative providers:
 
 | <img src="screen/decision_tree.svg" width="420px"> | **OpenAI**: [register to get an API key](https://platform.openai.com/docs/introduction) *The fastest and highest accuracy text models, fast STT, high-quality TTS. Usage costs money*<br /><br />Openrouter: [register to get an API key](https://openrouter.ai/docs/models) *Huge selection of text models. Some are free and others cost money. Slower STT and lower-quality TTS.*<br /><br />**Ollama**: [install and run](https://github.com/ollama/ollama?tab=readme-ov-file#quickstart) *Runs on your own hardware. Slower, lower accuracy. Slower STT and lower-quality TTS.* |
 |----------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -41,7 +38,7 @@ Choose your LLM Provider:
     
 * Run `start.bat`.
 
-![GUI-start](screen/GUI_start.png?raw=true)
+![GUI-start](screen/GUI_start.png)
 
 Here you will enter a few details:
 - Your Commander name: How you want to be addressed
@@ -54,7 +51,7 @@ Here you will enter a few details:
 
 Click "Start AI" when ready:
 
-![GUI-ai](screen/GUI_AI.png?raw=true)
+![GUI-ai](screen/GUI_AI.png)
 
 #### 2.1. Post-Installation
 
