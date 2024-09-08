@@ -419,14 +419,17 @@ class PromptGenerator:
         filtered_state = {key: value for key, value in rawState.items() if key not in keysToFilterOut}
         combined_state = {**filtered_state, **cleaned_data}
 
-        conversational_pieces.append({
-            "role": "user",
-            "content": f"(Current system: {self.get_system_info(filtered_state['location']['StarSystem'])})"
-        })
-        conversational_pieces.append({
-            "role": "user",
-            "content": f"(Stations in current system: {self.get_station_info(filtered_state['location']['StarSystem'])})"
-        })
+        if 'location' in filtered_state and filtered_state['location'] and 'StarSystem' in filtered_state['location']:
+            conversational_pieces.append({
+                "role": "user",
+                "content": f"(Current system: {self.get_system_info(filtered_state['location']['StarSystem'])})"
+            })
+
+            conversational_pieces.append({
+                "role": "user",
+                "content": f"(Stations in current system: {self.get_station_info(filtered_state['location']['StarSystem'])})"
+            })
+
         conversational_pieces.append({
             "role": "user",
             "content": f"(Ship status: {json.dumps(combined_state)})"
