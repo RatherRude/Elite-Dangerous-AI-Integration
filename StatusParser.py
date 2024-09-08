@@ -109,12 +109,14 @@ class StatusParser:
         # Initialize cleaned_data with common fields
         cleaned_data = {
             'status': combined_flags,
-            'legalState': data['LegalState'],
-            'balance': data['Balance'],
             'time': self.adjust_year(data['timestamp'])
         }
 
         # Add optional status flags
+        if 'LegalState' in data:
+            cleaned_data['legalState'] = data['LegalState']
+        if 'Balance' in data:
+            cleaned_data['balance'] = data['Balance']
         if 'Pips' in data:
             cleaned_data['pips'] = self.transform_pips(data['Pips'])
         if 'Cargo' in data:

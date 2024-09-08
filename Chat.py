@@ -1166,20 +1166,19 @@ def prepare_request(obj):
     ]
     log('Debug obj', obj)
     filters = {
-        "has_large_pad": {
-            "value": obj.get("has_large_pad", True)
-        },
         "distance": {
             "min": "0",
             "max": "50"
         }
     }
     # Add optional filters if they exist
-    if "material_trader" in obj:
+    if obj.get("has_large_pad", True):
+        filters["has_large_pad"] = {"value": True}
+    if "material_trader" in obj and obj["material_trader"]:
         filters["material_trader"] = {"value": obj["material_trader"]}
-    if "technology_broker" in obj:
+    if "technology_broker" in obj and obj["technology_broker"]:
         filters["technology_broker"] = {"value": obj["technology_broker"]}
-    if "market" in obj:
+    if "market" in obj and obj["market"]:
         market_filters = []
         valid_market_filters = []
         for market_item in obj["market"]:
@@ -1321,6 +1320,7 @@ aiActions.registerAction('station_finder',
                                              "Raw"
                                          ]
                                      },
+                                     "minItems": 1,
                                      "example": ["Encoded", "Manufactured"]
                                  },
                                  "technology_broker": {
@@ -1333,6 +1333,7 @@ aiActions.registerAction('station_finder',
                                              "Human"
                                          ]
                                      },
+                                     "minItems": 1,
                                      "example": ["Guardian"]
                                  },
                                  "modules": {
@@ -1370,7 +1371,8 @@ aiActions.registerAction('station_finder',
                                              }
                                          },
                                          "required": ["name", "class", "rating"]
-                                     }
+                                     },
+                                     "minItems": 1,
                                  },
                                  "market": {
                                      "type": "array",
@@ -1396,7 +1398,8 @@ aiActions.registerAction('station_finder',
                                              }
                                          },
                                          "required": ["name", "amount", "transaction"]
-                                     }
+                                     },
+                                     "minItems": 1,
                                  }
                              },
                              "required": [
@@ -1765,6 +1768,7 @@ def main():
         except KeyboardInterrupt:
             break
         except Exception as e:
+            raise e
             log("error", str(e), e)
             break
 
