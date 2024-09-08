@@ -413,7 +413,8 @@ class PromptGenerator:
         rawState = self.journal.ship_state()
         keysToFilterOut = {
             "mission_completed",
-            "mission_redirected"
+            "mission_redirected",
+            "extra_events"
         }
         cleaned_data = self.status_parser.get_cleaned_data()
         filtered_state = {key: value for key, value in rawState.items() if key not in keysToFilterOut}
