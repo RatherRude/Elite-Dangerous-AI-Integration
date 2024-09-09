@@ -647,6 +647,28 @@ aiActions.registerAction('getGalnetNews', "Retrieve current interstellar news fr
 }, get_galnet_news)
 
 
+def educated_guesses_message(search_query, valid_list):
+    split_string = search_query.split()
+
+    caught_items = []
+
+    # Iterate over each word in the split string
+    for word in split_string:
+        # Check if the word is part of any value in the array
+        for element in valid_list:
+            if word in element:
+                caught_items.append(element)
+
+    message = ""
+    if caught_items:
+        guesses_str = ', '.join(caught_items)
+        message = (
+            f"Here is a list of similar and valid items: {guesses_str}?"
+        )
+
+    return message
+
+
 # Prepare a request for the spansh station finder
 def prepare_request(obj):
     known_modules = [
@@ -1164,6 +1186,77 @@ def prepare_request(obj):
         "Yaso Kondi Leaf",
         "Zeessze Ant Grub Glue"
     ]
+    known_ships = [
+        "Adder",
+        "Alliance Challenger",
+        "Alliance Chieftain",
+        "Alliance Crusader",
+        "Anaconda",
+        "Asp Explorer",
+        "Asp Scout",
+        "Beluga Liner",
+        "Cobra MkIII",
+        "Cobra MkIV",
+        "Diamondback Explorer",
+        "Diamondback Scout",
+        "Dolphin",
+        "Eagle",
+        "Federal Assault Ship",
+        "Federal Corvette",
+        "Federal Dropship",
+        "Federal Gunship",
+        "Fer-de-Lance",
+        "Hauler",
+        "Imperial Clipper",
+        "Imperial Courier",
+        "Imperial Cutter",
+        "Imperial Eagle",
+        "Keelback",
+        "Krait MkII",
+        "Krait Phantom",
+        "Mamba",
+        "Orca",
+        "Python",
+        "Python MkII",
+        "Sidewinder",
+        "Type-10 Defender",
+        "Type-6 Transporter",
+        "Type-7 Transporter",
+        "Type-8 Transporter",
+        "Type-9 Heavy",
+        "Viper MkIII",
+        "Viper MkIV",
+        "Vulture"
+    ]
+    known_services = [
+        "Apex Interstellar",
+        "Bartender",
+        "Black Market",
+        "Crew Lounge",
+        "Fleet Carrier Administration",
+        "Fleet Carrier Fuel",
+        "Fleet Carrier Management",
+        "Fleet Carrier Vendor",
+        "Frontline Solutions",
+        "Interstellar Factors Contact",
+        "Market",
+        "Material Trader",
+        "Missions",
+        "Outfitting",
+        "Pioneer Supplies",
+        "Powerplay",
+        "Redemption Office",
+        "Refuel",
+        "Repair",
+        "Restock",
+        "Search and Rescue",
+        "Shipyard",
+        "Shop",
+        "Social Space",
+        "Technology Broker",
+        "Universal Cartographics",
+        "Vista Genomics"
+      ]
     log('Debug obj', obj)
     filters = {
         "distance": {
@@ -1183,7 +1276,8 @@ def prepare_request(obj):
         valid_market_filters = []
         for market_item in obj["market"]:
             if not market_item["name"] in known_commodities:
-                raise Exception("Unknown market")
+                raise Exception(
+                    f"Invalid commodity name: {market_item['name']}. {educated_guesses_message(market_item['name'], known_commodities)}")
             market_filter = {
                 "name": market_item["name"]
             }
@@ -1208,8 +1302,21 @@ def prepare_request(obj):
     if "modules" in obj:
         for module in obj["modules"]:
             if module["name"] not in known_modules:
-                raise Exception('Invalid module name: ' + module["name"])
+                raise Exception(
+                    f"Invalid module name: {module['name']}. {educated_guesses_message(module['name'], known_modules)}")
         filters["modules"] = {"value": obj["modules"]}
+    if "ships" in obj:
+        for ship in obj["ships"]:
+            if ship["name"] not in known_ships:
+                raise Exception(
+                    f"Invalid ship name: {ship['name']}. {educated_guesses_message(ship['name'], known_ships)}")
+        filters["ships"] = {"value": obj["ships"]}
+    if "services" in obj:
+        for service in obj["services"]:
+            if service["name"] not in known_services:
+                raise Exception(
+                    f"Invalid service name: {service['name']}. {educated_guesses_message(service['name'], known_services)}")
+        filters["services"] = {"value": obj["services"]}
     # Build the request body
     request_body = {
         "filters": filters,
@@ -1232,6 +1339,8 @@ def filter_response(response, request):
     # Extract requested commodities and modules
     commodities_requested = {item["name"] for item in request["filters"].get("market", {}).get("value", [])}
     modules_requested = {item["name"] for item in request["filters"].get("modules", {}).get("value", [])}
+    ships_requested = {item["name"] for item in request["filters"].get("ships", {}).get("value", [])}
+    services_requested = {item["name"] for item in request["filters"].get("services", {}).get("value", [])}
 
     for module_filter in request["filters"].get("modules", []):
         if isinstance(module_filter, dict) and "name" in module_filter:
@@ -1243,7 +1352,7 @@ def filter_response(response, request):
         filtered_result = {
             "name": result["name"],
             "distance": result["distance"],
-            "distance_to_arrival": result["distance_to_arrival"],
+            "orbit": result["distance_to_arrival"],
             "has_large_pad": result["has_large_pad"],
             "is_planetary": result["is_planetary"]
         }
@@ -1265,6 +1374,24 @@ def filter_response(response, request):
                              "price": module["price"]})
 
             filtered_result["modules"] = filtered_modules
+
+        if "ships" in result:
+            filtered_ships = []
+            for ship in result["ships"]:
+                for requested_ship in ships_requested:
+                    if requested_ship.lower() in ship["name"].lower():
+                        filtered_ships.append(ship)
+
+            filtered_result["ships"] = filtered_ships
+
+        if "services" in result:
+            filtered_services = []
+            for service in result["services"]:
+                for requested_service in services_requested:
+                    if requested_service.lower() in service["name"].lower():
+                        filtered_services.append(service)
+
+            filtered_result["services"] = filtered_services
 
         filtered_results.append(filtered_result)
 
@@ -1311,7 +1438,7 @@ aiActions.registerAction('station_finder',
                                  },
                                  "material_trader": {
                                      "type": "array",
-                                     "description": "Types of requested material traders.",
+                                     "description": "Material traders to find",
                                      "items": {
                                          "type": "string",
                                          "enum": [
@@ -1325,7 +1452,7 @@ aiActions.registerAction('station_finder',
                                  },
                                  "technology_broker": {
                                      "type": "array",
-                                     "description": "Types of technology brokers.",
+                                     "description": "Technology brokers to find",
                                      "items": {
                                          "type": "string",
                                          "enum": [
@@ -1338,7 +1465,7 @@ aiActions.registerAction('station_finder',
                                  },
                                  "modules": {
                                      "type": "array",
-                                     "description": "List of outfitting modules available for purchase.",
+                                     "description": "Outfitting modules to buy",
                                      "items": {
                                          "type": "object",
                                          "properties": {
@@ -1376,7 +1503,7 @@ aiActions.registerAction('station_finder',
                                  },
                                  "market": {
                                      "type": "array",
-                                     "description": "Market commodities with supply and demand data.",
+                                     "description": "Market commodities to buy and sell",
                                      "items": {
                                          "type": "object",
                                          "properties": {
@@ -1398,6 +1525,42 @@ aiActions.registerAction('station_finder',
                                              }
                                          },
                                          "required": ["name", "amount", "transaction"]
+                                     },
+                                     "minItems": 1,
+                                 },
+                                 "ships": {
+                                     "type": "array",
+                                     "description": "Ships to buy",
+                                     "items": {
+                                         "type": "object",
+                                         "properties": {
+                                             "name": {
+                                                 "type": "string",
+                                                 "description": "Name of ship",
+                                                 "example": "Sidewinder"
+                                             }
+                                         },
+                                         "required": ["name"]
+                                     },
+                                     "minItems": 1,
+                                 },
+                                 "services": {
+                                     "type": "array",
+                                     "description": "Services to use",
+                                     "items": {
+                                         "type": "object",
+                                         "properties": {
+                                             "name": {
+                                                 "type": "string",
+                                                 "description": "Name services",
+                                                 "example": "Sidewinder",
+                                                 "enum": [
+                                                     "Black Market",
+                                                     "Interstellar Factors Contact"
+                                                 ]
+                                             }
+                                         },
+                                         "required": ["name"]
                                      },
                                      "minItems": 1,
                                  }
@@ -1636,9 +1799,14 @@ def main():
                     filtered_data = [
                         {
                             **item,
-                            "destination": {k: item["destination"][k] for k in
-                                            ["system", "station", "distance_to_arrival"]},
-                            "source": {k: item["source"][k] for k in ["system", "station", "distance_to_arrival"]}
+                            "destination": {
+                                k if k != "distance_to_arrival" else "orbit": item["destination"][k]
+                                for k in ["system", "station", "distance_to_arrival"]
+                            },
+                            "source": {
+                                k if k != "distance_to_arrival" else "orbit": item["source"][k]
+                                for k in ["system", "station", "distance_to_arrival"]
+                            }
                         }
                         for item in data['result']
                     ]
