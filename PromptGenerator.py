@@ -377,9 +377,27 @@ class PromptGenerator:
 
             data = response.json()
 
-            data["stations"] = [station for station in data["stations"] if station["type"] != "Fleet Carrier"]
-
-            return json.dumps(data)
+            return [
+                {
+                    "name": station.get("name", "Unknown"),
+                    "type": station.get("type", "Unknown"),
+                    "orbit": station.get("distanceToArrival", "Unknown"),
+                    "allegiance": station.get("allegiance", "None"),
+                    "government": station.get("government", "None"),
+                    "economy": station.get("economy", "None"),
+                    "secondEconomy": station.get("secondEconomy", "None"),
+                    "controllingFaction": station.get("controllingFaction", {}).get("name", "Unknown"),
+                    "services": [
+                        service for service, has_service in {
+                            "market": station.get("haveMarket", False),
+                            "shipyard": station.get("haveShipyard", False),
+                            "outfitting": station.get("haveOutfitting", False)
+                        }.items() if has_service
+                    ],
+                    **({"body": station["body"]["name"]} if "body" in station and "name" in station["body"] else {})
+                }
+                for station in data["stations"] if station["type"] != "Fleet Carrier"
+            ]
 
         except Exception as e:
             log('error', f"Error: {e}")
