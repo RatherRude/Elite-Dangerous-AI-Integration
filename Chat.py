@@ -38,7 +38,7 @@ ttsClient = None
 aiActions = AIActions.AIActions()
 
 # fallback settings
-aiModel = "gpt-4o"
+aiModel = "gpt-4o-mini"
 backstory = """I am Commander {commander_name}, an independent pilot and secret member of the Dark Wheel. \
 you are COVAS:NEXT, the onboard AI of my starship. You will be addressed as 'Computer'. \
 You possess extensive knowledge and can provide detailed and accurate information on a wide range of topics, \
