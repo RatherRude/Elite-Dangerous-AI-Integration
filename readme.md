@@ -1,7 +1,7 @@
 # COVAS: NEXT (E:D AI Integration)
 
 [![A Day in the Life of a Bounty Hunter](http://img.youtube.com/vi/nvuCwwixvxw/0.jpg)](https://www.youtube.com/watch?v=nvuCwwixvxw)
-<- *Click image to watch showcase video on YouTube.*
+<- *Click image to watch on YouTube.*
 
 This integration aims to provide a more intuitive and hands-free experience for commanders, making interactions with the game more seamless and efficient by allowing you to connect Elite:Dangerous with various services for Speech-to-Text, Text-to-Speech and Large Language Models. This creates a continuous conversation between you and the starship's computer via spoken word, as it should be in the 34th century.
 
