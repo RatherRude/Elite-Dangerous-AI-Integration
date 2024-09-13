@@ -1,7 +1,7 @@
 # COVAS: NEXT (E:D AI Integration)
 
 [![A Day in the Life of a Bounty Hunter](http://img.youtube.com/vi/nvuCwwixvxw/0.jpg)](https://www.youtube.com/watch?v=nvuCwwixvxw)
-<- *Click image to watch the video on YouTube.*
+<- *Click image to watch showcase video on YouTube.*
 
 This integration aims to provide a more intuitive and hands-free experience for commanders, making interactions with the game more seamless and efficient by allowing you to connect Elite:Dangerous with various services for Speech-to-Text, Text-to-Speech and Large Language Models. This creates a continuous conversation between you and the starship's computer via spoken word, as it should be in the 34th century.
 
@@ -20,9 +20,12 @@ The integration is designed for every commander: it's amazing at roleplaying, it
    2. Installation
 2. **How to run**
    1. Post-Installation
+3. **Extended Documentation** 
 
 
 ### 1. How to install
+
+We also have an installation guide in video: [Installation Guide on Youtube](https://www.youtube.com/watch?v=EzHqcE7Ur60)
 
 #### 1.1. Prerequisites
 The integration relies on third-party APIs for providing various functionalities. We highly recommend using OpenAI as it is the easiest to setup and provides the best experience within the game. However there is also an option to use alternative providers:
@@ -86,3 +89,7 @@ In order for the AI to perform actions within the game a list of assigned keyboa
 The mod will use your default windows recording and playback device.
 You can change it in the windows setting.
 Or by right-clicking the speaker icon in your windows bar and selecting "Sounds" where you can set a device as default in its respective category(playback/recording).
+
+### 3. Extended Documentation
+
+[Here](./docs/description.md) you can find an extended documentation about this integration's components 
