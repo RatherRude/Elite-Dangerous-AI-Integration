@@ -10,6 +10,7 @@ from threading import Thread
 from tkinter import messagebox
 from typing import Dict
 
+import pyaudio
 import requests
 from openai import APIError, OpenAI
 
@@ -456,8 +457,12 @@ class App:
                                                                                                                 padx=80,
                                                                                                                 pady=5)
 
+        tk.Label(self.main_frame, text="Input Device:", font=('Arial', 10)).grid(row=5, column=0, sticky=tk.W)
+        self.input_device_name = tk.Label(self.main_frame, text=self.get_default_microphone_name(), font=('Arial', 10)).grid(row=5, column=1, sticky=tk.W)
+
+
         self.game_events_frame = VerticalScrolledFrame(self.main_frame, width=600)
-        self.game_events_frame.grid(row=6, column=0, columnspan=2, sticky="")
+        self.game_events_frame.grid(row=7, column=0, columnspan=2, sticky="")
         self.game_events_save_cb = self.populate_game_events_frame(self.game_events_frame.inner_frame,
                                                                    self.data['game_events'])
         self.game_events_frame.update()  # update scrollable area
@@ -465,7 +470,7 @@ class App:
 
         # AI Geeks Section (Initially hidden)
         self.ai_geeks_frame = VerticalScrolledFrame(self.main_frame, width=600)
-        self.ai_geeks_frame.grid(row=6, column=0, columnspan=2)
+        self.ai_geeks_frame.grid(row=7, column=0, columnspan=2)
         self.ai_geeks_frame.grid_remove()  # Initially hide
 
         # Disclaimer
@@ -613,12 +618,12 @@ class App:
         # Toggle Section Button
         self.toggle_ai_geeks_section_button = tk.Button(self.main_frame, text="Show AI Geeks Section",
                                                         command=self.toggle_ai_geeks_section)
-        self.toggle_ai_geeks_section_button.grid(row=5, column=0, columnspan=2, pady=10, padx=(150, 0), sticky="")
+        self.toggle_ai_geeks_section_button.grid(row=6, column=0, columnspan=2, pady=10, padx=(150, 0), sticky="")
 
         # Toggle Section Button
         self.toggle_game_events_section_button = tk.Button(self.main_frame, text="Show Game Events Section",
                                                            command=self.toggle_game_events_section)
-        self.toggle_game_events_section_button.grid(row=5, column=0, columnspan=2, pady=10, padx=(0, 150), sticky="")
+        self.toggle_game_events_section_button.grid(row=6, column=0, columnspan=2, pady=10, padx=(0, 150), sticky="")
 
         # Debug Frame and Text Widget
         self.debug_frame = tk.Frame(root, bg='black', bd=1)  # White background for visibility
@@ -1069,6 +1074,11 @@ class App:
         self.debug_frame.pack_forget()
         self.main_frame.pack(padx=20, pady=20)
         self.start_button.pack()
+
+    def get_default_microphone_name(self) -> str:
+        p = pyaudio.PyAudio()
+        name = p.get_default_input_device_info()['name']
+        return (name + '...') if len(name) == 31 else name
 
     def shutdown(self):
         if self.process:
