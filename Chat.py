@@ -440,8 +440,11 @@ def setGameWindowActive():
     if handle:
         try:
             win32gui.SetForegroundWindow(handle)  # give focus to ED
+            log("debug", "Set game window as active")
         except:
             log("error", "Failed to set game window as active")
+    else:
+        log("debug", "Unable to find Elite game window")
 
 
 def screenshot():
@@ -1595,6 +1598,7 @@ def reply(client, events: List[Event], new_events: List[Event], prompt_generator
         log("error", "completion with error:", completion)
         is_thinking = False
         return
+    log("Debug", f'Prompt: {completion.usage.prompt_tokens}, Completion: {completion.usage.completion_tokens}')
 
     response_text = completion.choices[0].message.content
     if response_text:
