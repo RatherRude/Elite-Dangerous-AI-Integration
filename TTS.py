@@ -80,16 +80,23 @@ if __name__ == "__main__":
     openai_audio = openai.OpenAI()
 
     tts = TTS(openai_client=openai_audio)
-    print('say1')
-    result = tts.say("Hi, how are you doing?")
-    print('say2')
-    result2 = tts.say("Hi, how are you doing now?")
-    print('done')
 
-    sleep(3)
+    text = """
+    Thank you for choosing COVAS-NEXT. For more details or support, join our community on Discord or visit our GitHub page for the latest updates.
+
+    """
+
+    for line in text.split("\n"):
+        if not line or line.isspace():
+            sleep(2)
+            continue
+        print(line)
+        tts.say(line.strip())
+        while tts.get_is_playing():
+            sleep(0.1)
+
     tts.abort()
-    result2 = tts.say("Is this actually working?")
-    print('done2')
+    # result2 = tts.say("Is this actually working?")
 
     while True:
         sleep(0.25)

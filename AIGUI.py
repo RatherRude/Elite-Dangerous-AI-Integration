@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import re
 import subprocess
 import tkinter as tk
 import webbrowser
@@ -631,6 +632,7 @@ class App:
         self.debug_text.tag_configure("action", foreground="yellow", font="Helvetica 12 bold")
         self.debug_text.tag_configure("event", foreground="orange", font="Helvetica 12 bold")
         self.debug_text.tag_configure("debug", foreground="gray", font="Helvetica 12 bold")
+        self.debug_text.tag_configure("error", foreground="red", font="Helvetica 12 bold")
         self.debug_text.pack(side=tk.LEFT, padx=10, pady=10)
 
         self.debug_frame.pack_forget()
@@ -986,7 +988,7 @@ class App:
             startupinfo = subprocess.STARTUPINFO()
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
             self.process = subprocess.Popen(self.chat_command_arg.split(' '), startupinfo=startupinfo,
-                                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1,
+                                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1,
                                             universal_newlines=True, encoding='utf-8')
             self.debug_frame.pack()
             self.main_frame.pack_forget()
@@ -994,8 +996,10 @@ class App:
             self.start_button.pack_forget()  # Hide the start button
 
             # Read output in a separate thread
-            self.thread = Thread(target=self.read_process_output)
-            self.thread.start()
+            self.thread_process_stdout = Thread(target=self.read_process_output)
+            self.thread_process_stdout.start()
+            self.thread_process_stderr = Thread(target=self.read_process_error)
+            self.thread_process_stderr.start()
 
         except FileNotFoundError:
             self.debug_text.insert(tk.END, "Failed to start Elite Dangerous AI Integration: File not found.\n")
@@ -1004,29 +1008,46 @@ class App:
             self.debug_text.insert(tk.END, f"Failed to start Elite Dangerous AI Integration: {str(e)}\n")
             self.debug_text.see(tk.END)
 
+    def strip_ansi_codes(self, s: str):
+        return re.sub(r'\x1b\[([0-9,A-Z]{1,2}(;[0-9]{1,2})?(;[0-9]{3})?)?[m|K]?', '', s)
+
     def read_process_output(self):
         while True:
             stdout_line = self.process.stdout.readline()
+            stdout_line = self.strip_ansi_codes(stdout_line)
             if stdout_line:
-                if stdout_line.startswith("CMDR"):
-                    self.debug_text.insert(tk.END, stdout_line[:4], "human")
+                if stdout_line.startswith("cmdr"):
+                    self.debug_text.insert(tk.END, "CMDR", "human")
                     self.debug_text.insert(tk.END, stdout_line[4:], "normal")
-                elif stdout_line.startswith("COVAS"):
-                    self.debug_text.insert(tk.END, stdout_line[:5], "ai")
+                elif stdout_line.startswith("covas"):
+                    self.debug_text.insert(tk.END, "COVAS", "ai")
                     self.debug_text.insert(tk.END, stdout_line[5:], "normal")
-                elif stdout_line.startswith("Event"):
-                    self.debug_text.insert(tk.END, stdout_line[:5], "event")
+                elif stdout_line.startswith("event"):
+                    self.debug_text.insert(tk.END, "Event", "event")
                     self.debug_text.insert(tk.END, stdout_line[5:], "normal")
-                elif stdout_line.startswith("Action"):
-                    self.debug_text.insert(tk.END, stdout_line[:6], "action")
+                elif stdout_line.startswith("action"):
+                    self.debug_text.insert(tk.END, "Action", "action")
                     self.debug_text.insert(tk.END, stdout_line[6:], "normal")
-                elif stdout_line.startswith("Debug"):
-                    self.debug_text.insert(tk.END, stdout_line[:5], "debug")
+                elif stdout_line.startswith("debug"):
+                    self.debug_text.insert(tk.END, "Debug", "debug")
+                    self.debug_text.insert(tk.END, stdout_line[5:], "normal")
+                elif stdout_line.startswith("error"):
+                    self.debug_text.insert(tk.END, "Error", "error")
                     self.debug_text.insert(tk.END, stdout_line[5:], "normal")
                 else:
                     self.debug_text.insert(tk.END, stdout_line, "normal")
 
                 self.debug_text.see(tk.END)  # Scroll to the end of the text widget
+            else:
+                break  # No more output from subprocess
+    def read_process_error(self):
+        while True:
+            stderr_line = self.process.stderr.readline()
+            stderr_line = self.strip_ansi_codes(stderr_line)
+            if stderr_line:
+                self.debug_text.insert(tk.END, "Error: ", "error")
+                self.debug_text.insert(tk.END, stderr_line, "normal")
+                self.debug_text.see(tk.END)
             else:
                 break  # No more output from subprocess
 
@@ -1036,9 +1057,12 @@ class App:
             # self.process.wait()  # Terminate the subprocess
             self.process.terminate()  # Terminate the subprocess
             self.process = None
-        if self.thread:
-            self.thread.join()  # Wait for the thread to complete
-            self.thread = None
+        if self.thread_process_stdout:
+            self.thread_process_stdout.join()  # Wait for the thread to complete
+            self.thread_process_stdout = None
+        if self.thread_process_stderr:
+            self.thread_process_stderr.join()  # Wait for the thread to complete
+            self.thread_process_stderr = None
         self.debug_text.insert(tk.END, "Elite Dangerous AI Integration stopped.\n")
         self.debug_text.see(tk.END)
         self.stop_button.pack_forget()
