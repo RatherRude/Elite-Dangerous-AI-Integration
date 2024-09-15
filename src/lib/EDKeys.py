@@ -57,7 +57,7 @@ class EDKeys:
         """Returns a dict struct with the direct input equivalent of the necessary elite keybindings"""
         if platform != "win32":
             return {}
-        import directinput as di
+        from . import directinput as di
         direct_input_keys = {}
         convert_to_direct_keys = {
             'Key_LeftShift': 'LShift',
@@ -141,14 +141,14 @@ class EDKeys:
         return latest_bindings
 
     def send_key(self, type, key):
-        import directinput as di
+        from . import directinput as di
         if type == 'Up':
             di.ReleaseKey(key)
         else:
             di.PressKey(key)
 
     def send(self, key_name, hold=None, repeat=1, repeat_delay=None, state=None):
-        import directinput as di
+        from . import directinput as di
         key = self.keys.get(key_name)
         if key is None:
             # logger.warning('SEND=NONE !!!!!!!!')
