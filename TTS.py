@@ -59,6 +59,7 @@ class TTS:
                     if not stream.get_read_available() > 0:
                         self._is_playing = False
                 else:
+                    # Ubuntu was throwing a segfault on stream.get_read_available, but stream.write was blocking the thread, so this should be fine
                     self._is_playing = False
 
                 sleep(0.1)
