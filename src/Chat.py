@@ -6,12 +6,12 @@ from pathlib import Path
 from openai import OpenAI
 
 from lib.ActionManager import ActionManager
-from lib.STT import STT
-from lib.TTS import TTS
+from lib.Actions import register_actions
 from lib.ControllerManager import ControllerManager
 from lib.Event import Event
 from lib.PromptGenerator import PromptGenerator
-from lib.Actions import register_actions
+from lib.STT import STT
+from lib.TTS import TTS
 
 # from MousePt import MousePoint
 
@@ -20,15 +20,14 @@ parent_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(parent_dir))
 
 from lib.Voice import *
-from lib.EDKeys import *
 from lib.EDJournal import *
-
 from lib.EventManager import EventManager
 
+llm_model_name = None
 llmClient = None
 sttClient = None
 ttsClient = None
-llm_model_name = None
+visionClient = None
 
 action_manager = ActionManager()
 
