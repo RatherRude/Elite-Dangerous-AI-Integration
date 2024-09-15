@@ -2,11 +2,11 @@ from datetime import datetime
 from json import loads
 from os import listdir
 from os.path import join, isfile, getmtime
+from sys import platform
 from time import sleep
 from typing import Dict, List
 
 from EDlogger import logger
-from WindowsKnownPaths import *
 
 """
 Description: This file perform journal file processing.  It opens the latest updated Journal* 
@@ -59,8 +59,12 @@ class EDJournal:
 
     def get_latest_log(self, path_logs=None):
         """Returns the full path of the latest (most recent) elite log file (journal) from specified path"""
+        if platform != "win32":
+            return None
+        
+        import WindowsKnownPaths as winpaths
         if not path_logs:
-            path_logs = get_path(FOLDERID.SavedGames, UserHandle.current) + "\Frontier Developments\Elite Dangerous"
+            path_logs = winpaths.get_path(winpaths.FOLDERID.SavedGames, winpaths.UserHandle.current) + "\Frontier Developments\Elite Dangerous"
         try:
             list_of_logs = [join(path_logs, f) for f in listdir(path_logs) if
                             isfile(join(path_logs, f)) and f.startswith('Journal.')]

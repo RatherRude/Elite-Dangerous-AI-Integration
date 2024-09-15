@@ -154,9 +154,7 @@ class STT:
 
 
 if __name__ == "__main__":
-    openai_audio = openai.OpenAI(
-        base_url="http://localhost:5000",
-    )
+    openai_audio = openai.OpenAI()
 
     stt = STT(openai_client=openai_audio)
 
@@ -164,7 +162,7 @@ if __name__ == "__main__":
     sleep(5)
     stt.listen_once_end()
 
-    # stt.listen_continuous()
+    stt.listen_continuous()
 
     while True:
         sleep(0.25)

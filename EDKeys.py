@@ -1,10 +1,10 @@
 from os import environ, listdir
 from os.path import getmtime, isfile, join
+from sys import platform
 from time import sleep
 from xml.etree.ElementTree import parse
 
 from EDlogger import logger
-from directinput import *
 
 """
 Description:  Pulls the keybindings for specific controls from the ED Key Bindings file, this class also
@@ -55,6 +55,9 @@ class EDKeys:
 
     def get_bindings(self, keys_to_obtain):
         """Returns a dict struct with the direct input equivalent of the necessary elite keybindings"""
+        if platform != "win32":
+            return {}
+        import directinput as di
         direct_input_keys = {}
         convert_to_direct_keys = {
             'Key_LeftShift': 'LShift',
@@ -104,10 +107,10 @@ class EDKeys:
                     if key is not None:
                         binding = {}
                         binding['pre_key'] = 'DIK_' + key.upper()
-                        binding['key'] = SCANCODE[binding['pre_key']]
+                        binding['key'] = di.SCANCODE[binding['pre_key']]
                         if mod is not None:
                             binding['pre_mod'] = 'DIK_' + mod.upper()
-                            binding['mod'] = SCANCODE[binding['pre_mod']]
+                            binding['mod'] = di.SCANCODE[binding['pre_mod']]
                 except KeyError:
                     print("Unrecognised key '" + binding['pre_key'] + "' for bind '" + item.tag + "'")
                     exit(1)
@@ -138,12 +141,14 @@ class EDKeys:
         return latest_bindings
 
     def send_key(self, type, key):
+        import directinput as di
         if type == 'Up':
-            ReleaseKey(key)
+            di.ReleaseKey(key)
         else:
-            PressKey(key)
+            di.PressKey(key)
 
     def send(self, key_name, hold=None, repeat=1, repeat_delay=None, state=None):
+        import directinput as di
         key = self.keys.get(key_name)
         if key is None:
             # logger.warning('SEND=NONE !!!!!!!!')
@@ -156,10 +161,10 @@ class EDKeys:
 
             if state is None or state == 1:
                 if 'mod' in key:
-                    PressKey(key['mod'])
+                    di.PressKey(key['mod'])
                     sleep(self.key_mod_delay)
 
-                PressKey(key['key'])
+                di.PressKey(key['key'])
 
             if state is None:
                 if hold:
@@ -168,11 +173,11 @@ class EDKeys:
                     sleep(self.key_default_delay)
 
             if state is None or state == 0:
-                ReleaseKey(key['key'])
+                di.ReleaseKey(key['key'])
 
                 if 'mod' in key:
                     sleep(self.key_mod_delay)
-                    ReleaseKey(key['mod'])
+                    di.ReleaseKey(key['mod'])
 
             if repeat_delay:
                 sleep(repeat_delay)
