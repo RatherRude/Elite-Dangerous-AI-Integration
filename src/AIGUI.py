@@ -3,6 +3,7 @@ import json
 import os
 import re
 import subprocess
+import sys
 from sys import platform
 import tkinter as tk
 import webbrowser
@@ -403,6 +404,8 @@ class App:
         # Background Image
         try:
             background_image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../screen/EDAI_logo.png'))
+            if hasattr(sys, 'frozen'):
+                background_image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), './screen/EDAI_logo.png'))
             background_image = tk.PhotoImage(file=background_image_path)
             self.background_label = tk.Label(root, bg="black", image=background_image)
             self.background_label.place(x=0, y=0, relwidth=1, relheight=1)
@@ -1005,7 +1008,7 @@ class App:
             self.thread_process_stderr = Thread(target=self.read_process_error)
             self.thread_process_stderr.start()
 
-        except FileNotFoundError:
+        except FileNotFoundError as e:
             print(e)
             self.debug_text.insert(tk.END, "Failed to start Elite Dangerous AI Integration: File not found.\n")
             self.debug_text.see(tk.END)
