@@ -62,7 +62,7 @@ class EDJournal:
         if platform != "win32":
             return None
         
-        import WindowsKnownPaths as winpaths
+        from . import WindowsKnownPaths as winpaths
         if not path_logs:
             path_logs = winpaths.get_path(winpaths.FOLDERID.SavedGames, winpaths.UserHandle.current) + "\Frontier Developments\Elite Dangerous"
         try:

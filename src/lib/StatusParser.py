@@ -7,7 +7,7 @@ class StatusParser:
         if platform != "win32":
             self.file_path = file_path if file_path else "./linux_ed/Status.json"
         else:
-            import WindowsKnownPaths as winpaths
+            from . import WindowsKnownPaths as winpaths
             self.file_path = file_path if file_path else (winpaths.get_path(winpaths.FOLDERID.SavedGames, winpaths.UserHandle.current) + "\Frontier Developments\Elite Dangerous\Status.json")
 
     def translate_flags(self, flags_value):
