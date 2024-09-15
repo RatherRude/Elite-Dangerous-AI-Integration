@@ -62,7 +62,6 @@ class EventManager:
             self.processed += self.pending
             self.pending = []
             # log('Debug', 'eventmanager requesting reply')
-            sys.stdout.flush()
             self.on_reply_request(self.processed, new_events)
             return True
 

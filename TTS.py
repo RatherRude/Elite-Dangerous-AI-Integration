@@ -1,4 +1,5 @@
 import queue
+from sys import platform
 import threading
 from time import sleep
 
@@ -26,7 +27,7 @@ class TTS:
 
     def playback(self):
         stream = self.p.open(
-            format=8,
+            format=pyaudio.paInt16,
             channels=1,
             rate=24_000,
             output=True
@@ -53,7 +54,12 @@ class TTS:
                                 stream.write(chunk)
                     except Exception as e:
                         log('error', 'An error occured during speech synthesis', e)
-                if not stream.get_read_available() > 0:
+                
+                if platform == "win32":
+                    if not stream.get_read_available() > 0:
+                        self._is_playing = False
+                else:
+                    # Ubuntu was throwing a segfault on stream.get_read_available, but stream.write was blocking the thread, so this should be fine
                     self._is_playing = False
 
                 sleep(0.1)

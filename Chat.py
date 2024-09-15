@@ -8,7 +8,6 @@ from pathlib import Path
 
 import pyautogui
 import requests
-import win32gui
 from PIL import Image
 from openai import OpenAI
 
@@ -431,11 +430,23 @@ def load_or_prompt_config():
     return api_key, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, model_name, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, continue_conversation_var, tts_voice, tts_speed, ptt_key, game_events
 
 
-handle = win32gui.FindWindow(0, "Elite - Dangerous (CLIENT)")
+handle = None
+def get_game_window_handle():
+    global handle
+    if platform != "win32":
+        return None
+    import win32gui
+
+    if not handle:
+        handle = win32gui.FindWindow(0, "Elite - Dangerous (CLIENT)")
+    return handle
 
 
 def setGameWindowActive():
-    global handle
+    if platform != "win32":
+        return None
+    handle = get_game_window_handle()
+    import win32gui
 
     if handle:
         try:
@@ -448,7 +459,7 @@ def setGameWindowActive():
 
 
 def screenshot():
-    global handle
+    handle = get_game_window_handle()
     if handle:
         setGameWindowActive()
         x, y, x1, y1 = win32gui.GetClientRect(handle)
@@ -739,7 +750,7 @@ controller_manager = ControllerManager()
 
 
 def main():
-    global client, sttClient, ttsClient, v, tts, keys, aiModel, backstory, useTools, jn, previous_status, conversation, event_manager, prompt_generator
+    global client, sttClient, ttsClient, tts, keys, aiModel, backstory, useTools, jn, previous_status, event_manager, prompt_generator
     setGameWindowActive()
 
     # Load or prompt for configuration
@@ -813,9 +824,10 @@ def main():
     log('Debug', f"Current TTS voice: {tts_voice}")
     log('Debug', f"Current TTS Speed: {tts_speed}")
     log('Debug', "Current backstory: " + backstory.replace("{commander_name}", commanderName))
-    log('Debug', "Basic configuration complete.\nLoading voice interface...")
 
     # TTS Setup
+    log('Debug', "Basic configuration complete.")
+    log('Debug', "Loading voice output...")
     if alternative_tts_var:
         # log('Debug', 'Local TTS')
         tts = Voice(rate_multiplier=float(tts_speed), voice=tts_voice)
@@ -824,6 +836,7 @@ def main():
         # log('Debug', 'remote TTS')
         tts = TTS.TTS(openai_client=ttsClient, model=tts_model_name, voice=tts_voice, speed=tts_speed)
 
+    log('Debug', "Loading voice input...")
     if alternative_stt_var:
         # log('Debug', 'local STT')
         stt = STT.STT(openai_client=None, model="distil-medium.en")
@@ -832,20 +845,19 @@ def main():
         stt = STT.STT(openai_client=sttClient, model=stt_model_name)
 
     if ptt_var and ptt_key:
-        push_to_talk_key = ptt_key  # Change this to your desired key
-        controller_manager.register_hotkey(push_to_talk_key, lambda _: stt.listen_once_start(),
+        log('Debug', f"Setting push-to-talk hotkey {ptt_key}...")
+        controller_manager.register_hotkey(ptt_key, lambda _: stt.listen_once_start(),
                                            lambda _: stt.listen_once_end())
     else:
         stt.listen_continuous()
+    log('Debug', "Voice interface ready.\n")
+
 
     enabled_game_events = []
     for category in game_events.values():
         for event, state in category.items():
             if state:
                 enabled_game_events.append(event)
-
-    # Cue the user that we're ready to go.
-    log('Debug', "Voice interface ready.\n")
 
     prompt_generator = PromptGenerator(commanderName, character, journal=jn)
     event_manager = EventManager.EventManager(
@@ -983,6 +995,9 @@ def main():
     # Region: Trade Planner End
 
     counter = 0
+
+    # Cue the user that we're ready to go.
+    log('Debug', "Ready.")
 
     while True:
         try:
