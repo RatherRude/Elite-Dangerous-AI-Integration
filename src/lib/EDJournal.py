@@ -6,7 +6,7 @@ from sys import platform
 from time import sleep
 from typing import Dict, List
 
-from EDlogger import logger
+from .EDlogger import logger
 
 """
 Description: This file perform journal file processing.  It opens the latest updated Journal* 
@@ -62,7 +62,7 @@ class EDJournal:
         if platform != "win32":
             return None
         
-        import WindowsKnownPaths as winpaths
+        from . import WindowsKnownPaths as winpaths
         if not path_logs:
             path_logs = winpaths.get_path(winpaths.FOLDERID.SavedGames, winpaths.UserHandle.current) + "\Frontier Developments\Elite Dangerous"
         try:

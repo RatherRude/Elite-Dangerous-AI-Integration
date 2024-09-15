@@ -6,7 +6,7 @@ from time import sleep
 import openai
 import pyaudio
 
-from Logger import log
+from .Logger import log
 
 
 class TTS:

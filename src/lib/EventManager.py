@@ -2,9 +2,9 @@ import dataclasses
 import json
 from typing import Literal, Callable
 
-from EDJournal import *
-from Event import GameEvent, Event, ConversationEvent, ToolEvent, ExternalEvent
-from Logger import log
+from .EDJournal import *
+from .Event import GameEvent, Event, ConversationEvent, ToolEvent, ExternalEvent
+from .Logger import log
 
 
 class EventManager:

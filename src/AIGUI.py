@@ -3,6 +3,7 @@ import json
 import os
 import re
 import subprocess
+from sys import platform
 import tkinter as tk
 import webbrowser
 from queue import Queue
@@ -13,7 +14,7 @@ from typing import Dict
 import requests
 from openai import APIError, OpenAI
 
-from ControllerManager import ControllerManager
+from lib.ControllerManager import ControllerManager
 
 
 class VerticalScrolledFrame(tk.Frame):
@@ -380,7 +381,8 @@ class App:
         root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         parser = argparse.ArgumentParser()
-        parser.add_argument("--chat", default="pythonw ./Chat.py", help="command to run the chat app")
+        python_executable = "pythonw" if platform == 'win32' else "python3"
+        parser.add_argument("--chat", default=python_executable+" ./src/Chat.py", help="command to run the chat app")
         parser.add_argument("--release", default="", help="current release")
         args = parser.parse_args()
         self.chat_command_arg: str = args.chat
@@ -400,7 +402,7 @@ class App:
 
         # Background Image
         try:
-            background_image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'screen/EDAI_logo.png'))
+            background_image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../screen/EDAI_logo.png'))
             background_image = tk.PhotoImage(file=background_image_path)
             self.background_label = tk.Label(root, bg="black", image=background_image)
             self.background_label.place(x=0, y=0, relwidth=1, relheight=1)
@@ -984,9 +986,11 @@ class App:
         # self.debug_text.update_idletasks()
 
         try:
-            # Example script execution
-            startupinfo = subprocess.STARTUPINFO()
-            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            # Script execution
+            startupinfo = None
+            if platform == "win32":
+                startupinfo = subprocess.STARTUPINFO()
+                startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
             self.process = subprocess.Popen(self.chat_command_arg.split(' '), startupinfo=startupinfo,
                                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1,
                                             universal_newlines=True, encoding='utf-8')
@@ -1002,9 +1006,11 @@ class App:
             self.thread_process_stderr.start()
 
         except FileNotFoundError:
+            print(e)
             self.debug_text.insert(tk.END, "Failed to start Elite Dangerous AI Integration: File not found.\n")
             self.debug_text.see(tk.END)
         except Exception as e:
+            print(e)
             self.debug_text.insert(tk.END, f"Failed to start Elite Dangerous AI Integration: {str(e)}\n")
             self.debug_text.see(tk.END)
 
@@ -1055,7 +1061,7 @@ class App:
         if self.process:
             # self.send_signal(signal.SIGINT)  # Terminate the subprocess
             # self.process.wait()  # Terminate the subprocess
-            self.process.terminate()  # Terminate the subprocess
+            self.process.kill()  # Terminate the subprocess (TODO check why terminate doesn't work on linux, windows does the same for both anyway)
             self.process = None
         if self.thread_process_stdout:
             self.thread_process_stdout.join()  # Wait for the thread to complete
