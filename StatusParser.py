@@ -1,4 +1,5 @@
 import json
+import time
 from datetime import datetime
 
 from WindowsKnownPaths import *
@@ -97,8 +98,11 @@ class StatusParser:
 
     def get_cleaned_data(self):
         """Loads data from the JSON file and returns cleaned data with only the necessary fields."""
-        with open(self.file_path, 'r') as file:
-            data = json.load(file)
+        try:
+            with open(self.file_path, 'r') as file:
+                data = json.load(file)
+        except Exception as e:
+            print(f"error reading file: {e}")
 
         # Combine flags from Flags and Flags2 into a single dictionary
         combined_flags = {**self.translate_flags(data['Flags'])}
@@ -124,8 +128,18 @@ class StatusParser:
 
         return cleaned_data
 
+
+def clear_console():
+    print("\n" * 10)
+
 # Usage Example
 if __name__ == "__main__":
     parser = StatusParser()
-    cleaned_data = parser.get_cleaned_data()
-    print(json.dumps(cleaned_data, indent=4))
+
+    while True:
+        clear_console()
+
+        cleaned_data = parser.get_cleaned_data()
+        print(json.dumps(cleaned_data, indent=4))
+
+        time.sleep(1)

@@ -1259,7 +1259,7 @@ def prepare_request(obj):
         "Technology Broker",
         "Universal Cartographics",
         "Vista Genomics"
-      ]
+    ]
     log('Debug obj', obj)
     filters = {
         "distance": {
@@ -1576,6 +1576,309 @@ aiActions.registerAction('station_finder',
                          station_finder
                          )
 
+
+# Helper function to build the request body for system finder
+def prepare_system_request(obj):
+    known_allegiances = [
+        "Alliance", "Empire", "Federation", "Guardian",
+        "Independent", "Pilots Federation", "Player Pilots", "Thargoid"
+    ]
+    known_governments = [
+        "Anarchy", "Communism", "Confederacy", "Cooperative", "Corporate",
+        "Democracy", "Dictatorship", "Feudal", "None", "Patronage",
+        "Prison", "Prison Colony", "Theocracy"
+    ]
+    known_states = [
+        "Blight", "Boom", "Bust", "Civil Liberty", "Civil Unrest", "Civil War",
+        "Drought", "Election", "Expansion", "Famine", "Infrastructure Failure",
+        "Investment", "Lockdown", "Natural Disaster", "None", "Outbreak",
+        "Pirate Attack", "Public Holiday", "Retreat", "Terrorist Attack", "War"
+    ]
+    known_powers = [
+        "A. Lavigny-Duval", "Aisling Duval", "Archon Delaine", "Denton Patreus",
+        "Edmund Mahon", "Felicia Winters", "Li Yong-Rui", "Pranav Antal",
+        "Yuri Grom", "Zachary Hudson", "Zemina Torval"
+    ]
+    known_economies = [
+        "Agriculture", "Colony", "Extraction", "High Tech", "Industrial",
+        "Military", "None", "Refinery", "Service", "Terraforming", "Tourism"
+    ]
+    known_security_levels = ["Anarchy", "High", "Low", "Medium"]
+
+    filters = {}
+
+    # Add optional filters if they exist
+    if "allegiance" in obj and obj["allegiance"]:
+        for allegiance in obj["allegiance"]:
+            if allegiance not in known_allegiances:
+                raise Exception(
+                    f"Invalid allegiance: {allegiance}. {educated_guesses_message(allegiance, known_allegiances)}")
+        filters["allegiance"] = {"value": obj["allegiance"]}
+
+    if "state" in obj and obj["state"]:
+        for state in obj["state"]:
+            if state not in known_states:
+                raise Exception(
+                    f"Invalid state: {state}. {educated_guesses_message(state, known_states)}")
+        filters["state"] = {"value": obj["state"]}
+
+    if "government" in obj and obj["government"]:
+        for government in obj["government"]:
+            if government not in known_governments:
+                raise Exception(
+                    f"Invalid government: {government}. {educated_guesses_message(government, known_governments)}")
+        filters["government"] = {"value": obj["government"]}
+
+    if "power" in obj and obj["power"]:
+        for power in obj["power"]:
+            if power not in known_powers:
+                raise Exception(
+                    f"Invalid power: {power}. {educated_guesses_message(power, known_powers)}")
+        filters["power"] = {"value": obj["power"]}
+
+    if "primary_economy" in obj and obj["primary_economy"]:
+        for economy in obj["primary_economy"]:
+            if economy not in known_economies:
+                raise Exception(
+                    f"Invalid primary economy: {economy}. {educated_guesses_message(economy, known_economies)}")
+        filters["primary_economy"] = {"value": obj["primary_economy"]}
+
+    if "population" in obj and obj["population"]:
+        filters["population"] = {
+            "comparison": obj["population"].get("comparison", "<=>"),
+            "value": obj["population"].get("value", [0, 100000000000])
+        }
+
+    if "needs_permit" in obj:
+        filters["needs_permit"] = {"value": obj["needs_permit"]}
+
+    # Build the request body
+    request_body = {
+        "filters": filters,
+        "sort": [
+            {
+                "distance": {
+                    "direction": "asc"
+                }
+            }
+        ],
+        "size": obj.get("size", 10),
+        "page": obj.get("page", 0),
+        "reference_system": obj.get("reference_system", "Sol")
+    }
+
+    return request_body
+
+
+# Function to filter and format the system response
+def filter_system_response(request, response):
+    filtered_results = []
+
+    # Check which filters are in the request and adjust the response accordingly
+    request_filters = request.get("filters", {})
+
+    for system in response.get("results", []):
+        filtered_system = {}
+
+        # Filter allegiance if requested
+        if "allegiance" in request_filters:
+            filtered_system["allegiance"] = system.get("allegiance")
+
+        # Filter state if requested
+        if "state" in request_filters:
+            filtered_system["state"] = system.get("controlling_minor_faction_state")
+
+        # Filter government if requested
+        if "government" in request_filters:
+            filtered_system["government"] = system.get("government")
+
+        # Filter power if requested
+        if "power" in request_filters:
+            filtered_system["power"] = system.get("power")
+
+        # Filter primary_economy if requested
+        if "primary_economy" in request_filters:
+            filtered_system["primary_economy"] = system.get("primary_economy")
+
+        # Filter population if requested
+        if "population" in request_filters:
+            filtered_system["population"] = system.get("population")
+
+        # Filter needs_permit if requested
+        if "needs_permit" in request_filters:
+            filtered_system["needs_permit"] = system.get("needs_permit")
+
+        # Always include basic system info such as name, id, and coordinates
+        filtered_system["name"] = system.get("name")
+        # filtered_system["id"] = system.get("id")
+        # filtered_system["id64"] = system.get("id64")
+        # filtered_system["x"] = system.get("x")
+        # filtered_system["y"] = system.get("y")
+        # filtered_system["z"] = system.get("z")
+        filtered_system["distance"] = system.get("distance")
+
+        # Add filtered system to the list
+        filtered_results.append(filtered_system)
+
+    # Construct and return the filtered response
+    filtered_response = {
+        "count": response.get("count", 0),
+        "from": response.get("from", 0),
+        "reference": response.get("reference", {}),
+        "results": filtered_results,
+        "search": response.get("search", {}),
+        "search_reference": response.get("search_reference", ""),
+        "size": response.get("size", 10)
+    }
+
+    return filtered_response
+
+
+# System finder function that sends the request to the Spansh API
+def system_finder(obj):
+    # Build the request body
+    request_body = prepare_system_request(obj)
+
+    url = "https://spansh.co.uk/api/systems/search"
+
+    try:
+        response = requests.post(url, json=request_body)
+        response.raise_for_status()
+
+        data = response.json()
+
+        # Filter the response
+        filtered_data = filter_system_response(data, request_body)
+
+        # Generate educated guesses if necessary (assuming educated_guesses_message is already implemented)
+        guesses_message = educated_guesses_message(filtered_data)
+
+        return f'Here are the relevant systems: {json.dumps(filtered_data)}, {guesses_message}'
+
+    except Exception as e:
+        log('error', f"Error: {e}")
+        return 'An error occurred. The system finder seems to be currently unavailable.'
+
+
+# Register AI action for system finder
+aiActions.registerAction(
+    'system_finder',
+    "Find a star system based on allegiance, government, state, power, primary economy, and more. Ask for unknown values and ensure they are filled out.",
+    {
+        "type": "object",
+        "properties": {
+            "reference_system": {
+                "type": "string",
+                "description": "Name of the current reference system. Example: 'Sol'"
+            },
+            "filters": {
+                "type": "object",
+                "properties": {
+                    "allegiance": {
+                        "type": "array",
+                        "description": "System allegiance to filter by",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "Alliance",
+                                "Empire",
+                                "Federation",
+                                "Guardian",
+                                "Independent",
+                                "Pilots Federation",
+                                "Player Pilots",
+                                "Thargoid"
+                            ]
+                        }
+                    },
+                    "state": {
+                        "type": "array",
+                        "description": "System state to filter by",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "Blight", "Boom", "Bust", "Civil Liberty", "Civil Unrest", "Civil War",
+                                "Drought", "Election", "Expansion", "Famine", "Infrastructure Failure",
+                                "Investment", "Lockdown", "Natural Disaster", "None", "Outbreak", "Pirate Attack",
+                                "Public Holiday", "Retreat", "Terrorist Attack", "War"
+                            ]
+                        }
+                    },
+                    "government": {
+                        "type": "array",
+                        "description": "System government type to filter by",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "Anarchy", "Communism", "Confederacy", "Cooperative", "Corporate", "Democracy",
+                                "Dictatorship", "Feudal", "None", "Patronage", "Prison", "Prison Colony", "Theocracy"
+                            ]
+                        }
+                    },
+                    "power": {
+                        "type": "array",
+                        "description": "Powers controlling or exploiting the system",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "A. Lavigny-Duval", "Aisling Duval", "Archon Delaine", "Denton Patreus",
+                                "Edmund Mahon", "Felicia Winters", "Li Yong-Rui", "Pranav Antal", "Yuri Grom",
+                                "Zachary Hudson", "Zemina Torval"
+                            ]
+                        }
+                    },
+                    "primary_economy": {
+                        "type": "array",
+                        "description": "Primary economy type of the system",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "Agriculture", "Colony", "Extraction", "High Tech", "Industrial", "Military",
+                                "None", "Refinery", "Service", "Terraforming", "Tourism"
+                            ]
+                        }
+                    },
+                    "population": {
+                        "type": "object",
+                        "description": "Population comparison and value",
+                        "properties": {
+                            "comparison": {
+                                "type": "string",
+                                "description": "Comparison type ('<', '>', '<=', '>=', '=')",
+                                "enum": ["<", ">", "<=", ">=", "="]
+                            },
+                            "value": {
+                                "type": "array",
+                                "description": "Population range",
+                                "items": {
+                                    "type": "integer"
+                                },
+                                "example": [0, 100000000000]
+                            }
+                        }
+                    },
+                    "needs_permit": {
+                        "type": "boolean",
+                        "description": "If the system requires a permit",
+                        "example": False
+                    }
+                }
+            },
+            "size": {
+                "type": "integer",
+                "description": "Number of systems to display",
+                "example": 1
+            },
+            "page": {
+                "type": "integer",
+                "description": "Pagination for the results",
+                "example": 0
+            }
+        },
+        "required": ["reference_system"]
+    },
+    system_finder
+)
 # END REGION AI ACTIONS
 is_thinking = False
 
