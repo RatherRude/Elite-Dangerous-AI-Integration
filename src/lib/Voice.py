@@ -4,7 +4,7 @@ from time import sleep
 import kthread
 import pyttsx3
 
-from Logger import log
+from .Logger import log
 
 
 class Voice:

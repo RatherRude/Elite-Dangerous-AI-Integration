@@ -3,10 +3,10 @@ from functools import lru_cache
 
 import requests
 
-from EDJournal import *
-from Event import GameEvent, Event, ConversationEvent, ToolEvent, ExternalEvent
-from Logger import log
-from StatusParser import StatusParser
+from .EDJournal import *
+from .Event import GameEvent, Event, ConversationEvent, ToolEvent, ExternalEvent
+from .Logger import log
+from .StatusParser import StatusParser
 
 startupEvents = {
     "Cargo": "Commander {commanderName} has updated their cargo inventory.",

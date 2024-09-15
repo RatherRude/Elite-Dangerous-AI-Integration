@@ -1,7 +1,7 @@
 import json
 
 
-class AIActions:
+class ActionManager:
     actions = {}
 
     def __init__(self):

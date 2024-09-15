@@ -6,7 +6,7 @@ from sys import platform
 from time import sleep
 from typing import Dict, List
 
-from EDlogger import logger
+from .EDlogger import logger
 
 """
 Description: This file perform journal file processing.  It opens the latest updated Journal* 

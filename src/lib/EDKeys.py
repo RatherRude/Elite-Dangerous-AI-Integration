@@ -4,7 +4,7 @@ from sys import platform
 from time import sleep
 from xml.etree.ElementTree import parse
 
-from EDlogger import logger
+from .EDlogger import logger
 
 """
 Description:  Pulls the keybindings for specific controls from the ED Key Bindings file, this class also
