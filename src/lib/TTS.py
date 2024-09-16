@@ -21,11 +21,22 @@ class TTS:
         self.voice = voice
         self.speed = speed
 
-        thread = threading.Thread(target=self.playback)
+        thread = threading.Thread(target=self._playback_thread)
         thread.daemon = True
         thread.start()
 
-    def playback(self):
+    def _playback_thread(self):
+        backoff = 1
+        while True:
+            try: 
+                self._playback_loop()
+            except Exception as e:
+                log('error', 'An error occurred during speech synthesis', e)
+                sleep(backoff)
+                log('debug', 'Attempting to restart audio playback after failure')
+                backoff *= 2
+    
+    def _playback_loop(self):
         stream = self.p.open(
             format=pyaudio.paInt16,
             channels=1,
@@ -38,8 +49,8 @@ class TTS:
             while not self.is_aborted:
                 if not self.read_queue.empty():
                     self._is_playing = True
+                    text = self.read_queue.get()
                     try:
-                        text = self.read_queue.get()
                         with self.openai_client.audio.speech.with_streaming_response.create(
                                 model=self.model,
                                 voice=self.voice,
@@ -51,12 +62,13 @@ class TTS:
                             for chunk in response.iter_bytes(1024):
                                 if self.is_aborted:
                                     break
-                                stream.write(chunk)
+                                stream.write(chunk) # this may throw for various system reasons
                     except Exception as e:
-                        log('error', 'An error occured during speech synthesis', e)
+                        self.read_queue.put(text)
+                        raise e
                 
                 if platform == "win32":
-                    if not stream.get_read_available() > 0:
+                    if stream.is_active() and not stream.get_read_available() > 0:
                         self._is_playing = False
                 else:
                     # Ubuntu was throwing a segfault on stream.get_read_available, but stream.write was blocking the thread, so this should be fine
@@ -65,6 +77,7 @@ class TTS:
                 sleep(0.1)
             self._is_playing = False
             stream.stop_stream()
+
 
     def say(self, text: str):
         self.read_queue.put(text)
