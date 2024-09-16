@@ -489,7 +489,7 @@ def educated_guesses_message(search_query, valid_list):
 
 
 # Prepare a request for the spansh station finder
-def prepare_request(obj):
+def prepare_station_request(obj):
     known_modules = [
         "AX Missile Rack",
         "AX Multi-Cannon",
@@ -1076,7 +1076,7 @@ def prepare_request(obj):
         "Universal Cartographics",
         "Vista Genomics"
     ]
-    log('Debug obj', obj)
+    log('Debug Station Finder Request', obj)
     filters = {
         "distance": {
             "min": "0",
@@ -1146,15 +1146,15 @@ def prepare_request(obj):
                 }
             }
         ],
-        "size": 10,
+        "size": 3,
         "page": 0,
-        "reference_system": obj.get("reference_system", "Alioth")
+        "reference_system": obj.get("reference_system", "Sol")
     }
     return request_body
 
 
 # filter a spansh station result set for only relevant information
-def filter_response(response, request):
+def filter_station_response(response, request):
     # Extract requested commodities and modules
     commodities_requested = {item["name"] for item in request["filters"].get("market", {}).get("value", [])}
     modules_requested = {item["name"] for item in request["filters"].get("modules", {}).get("value", [])}
@@ -1224,7 +1224,7 @@ def filter_response(response, request):
 # find a station within 50ly with certaion material_trader, technology_broker, market, and modules info
 def station_finder(obj):
     # Initialize the filters
-    request_body = prepare_request(obj)
+    request_body = prepare_station_request(obj)
 
     url = "https://spansh.co.uk/api/stations/search"
     try:
@@ -1233,7 +1233,7 @@ def station_finder(obj):
 
         data = response.json()
 
-        filtered_data = filter_response(data, request_body)
+        filtered_data = filter_station_response(data, request_body)
 
         return f'Here is a list of stations: {json.dumps(filtered_data)}'
     except Exception as e:
