@@ -12,6 +12,7 @@ from lib.Event import Event
 from lib.PromptGenerator import PromptGenerator
 from lib.STT import STT
 from lib.TTS import TTS
+from lib.StatusParser import StatusParser
 
 # from MousePt import MousePoint
 
@@ -68,11 +69,11 @@ def load_or_prompt_config():
 
 is_thinking = False
 
-def reply(client, events: List[Event], new_events: List[Event], prompt_generator: PromptGenerator,
+def reply(client, events: List[Event], new_events: List[Event], prompt_generator: PromptGenerator, status_parser: StatusParser,
           event_manager: EventManager, tts: TTS):
     global is_thinking
     is_thinking = True
-    prompt = prompt_generator.generate_prompt(events)
+    prompt = prompt_generator.generate_prompt(events=events, status=status_parser.current_status)
 
     use_tools = useTools and any([event.kind == 'user' for event in new_events])
 
@@ -148,6 +149,7 @@ def checkForJournalUpdates(client, eventManager, commanderName, boot):
 jn = None
 tts = None
 prompt_generator: PromptGenerator = None
+status_parser: StatusParser = None
 event_manager: EventManager = None
 
 controller_manager = ControllerManager()
@@ -237,9 +239,10 @@ def main():
             if state:
                 enabled_game_events.append(event)
 
+    status_parser = StatusParser()
     prompt_generator = PromptGenerator(commanderName, character, journal=jn)
     event_manager = EventManager(
-        on_reply_request=lambda events, new_events: reply(llmClient, events, new_events, prompt_generator, event_manager,
+        on_reply_request=lambda events, new_events: reply(llmClient, events, new_events, prompt_generator, status_parser, event_manager,
                                                           tts),
         game_events=enabled_game_events,
         continue_conversation=continue_conversation_var

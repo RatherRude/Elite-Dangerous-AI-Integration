@@ -1,6 +1,10 @@
 import json
 from datetime import datetime
+import queue
 from sys import platform
+import threading
+from time import sleep
+from .Logger import log
 
 class StatusParser:
     def __init__(self, file_path=None):
@@ -9,6 +13,31 @@ class StatusParser:
         else:
             from . import WindowsKnownPaths as winpaths
             self.file_path = file_path if file_path else (winpaths.get_path(winpaths.FOLDERID.SavedGames, winpaths.UserHandle.current) + "\Frontier Developments\Elite Dangerous\Status.json")
+
+        self.current_status = self.get_cleaned_data()
+        self.watch_thread = threading.Thread(target=self._watch_file_thread, daemon=True)
+        self.watch_thread.start()
+        self.status_queue = queue.Queue()
+        
+    def _watch_file_thread(self):
+        backoff = 1
+        while True:
+            try: 
+                self._watch_file()
+            except Exception as e:
+                log('error', 'An error occurred when reading status file', e)
+                sleep(backoff)
+                log('debug', 'Attempting to restart status file reader after failure')
+                backoff *= 2
+
+    def _watch_file(self):
+        """Detects changes in the Status.json file."""
+        while True:
+            status = self.get_cleaned_data()
+            if status != self.current_status:
+                self.status_queue.put(status)
+                self.current_status = status
+            sleep(1)
 
     def translate_flags(self, flags_value):
         """Translates flags integer to a dictionary of only True flags."""

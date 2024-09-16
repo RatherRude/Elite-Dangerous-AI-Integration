@@ -4,7 +4,7 @@ from typing import Dict, List, Literal
 
 
 class Event:
-    kind: Literal['game', 'user', 'assistant', 'assistant_completed', 'tool']
+    kind: Literal['game', 'user', 'assistant', 'assistant_completed', 'tool', 'status']
     timestamp: datetime
 
 
@@ -12,6 +12,12 @@ class Event:
 class GameEvent(Event):
     content: Dict
     kind: Literal['game'] = field(default='game')
+    timestamp: datetime = field(default_factory=lambda: datetime.now())
+
+@dataclass
+class StatusEvent(Event):
+    status: Dict
+    kind: Literal['status'] = field(default='status')
     timestamp: datetime = field(default_factory=lambda: datetime.now())
 
 

@@ -303,7 +303,6 @@ class PromptGenerator:
         self.commander_name = commander_name
         self.character_prompt = character_prompt
         self.journal = journal
-        self.status_parser = StatusParser()
 
     def full_event_message(self, event: GameEvent):
         return {
@@ -403,7 +402,7 @@ class PromptGenerator:
             log('error', f"Error: {e}")
             return "Currently no information on system available"
 
-    def generate_prompt(self, events: List[Event]):
+    def generate_prompt(self, events: List[Event], status: Dict[str, any]):
         # Collect the last 50 conversational pieces
         conversational_pieces: List[any] = list()
 
@@ -434,9 +433,8 @@ class PromptGenerator:
             "mission_redirected",
             "extra_events"
         }
-        cleaned_data = self.status_parser.get_cleaned_data()
         filtered_state = {key: value for key, value in rawState.items() if key not in keysToFilterOut}
-        combined_state = {**filtered_state, **cleaned_data}
+        combined_state = {**filtered_state, **status}
 
         if 'location' in filtered_state and filtered_state['location'] and 'StarSystem' in filtered_state['location']:
             conversational_pieces.append({
