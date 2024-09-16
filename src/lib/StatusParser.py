@@ -142,7 +142,6 @@ class StatusParser:
         # Initialize cleaned_data with common fields
         cleaned_data = {
             'status': combined_flags,
-            'time': self.adjust_year(data['timestamp'])
         }
 
         # Add optional status flags

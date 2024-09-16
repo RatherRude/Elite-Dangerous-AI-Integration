@@ -260,6 +260,11 @@ def main():
         try:
             counter += 1
 
+            # check status file for updates
+            while not status_parser.status_queue.empty():
+                status = status_parser.status_queue.get()
+                event_manager.add_status_event(status)
+
             # check STT result queue
             if not stt.resultQueue.empty():
                 text = stt.resultQueue.get().text
