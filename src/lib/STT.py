@@ -48,21 +48,10 @@ class STT:
         if self.listening:
             return
         self.listening = True
-        threading.Thread(target=self._recording_thread, daemon=True).start()
+        threading.Thread(target=self._listen_once_thread, daemon=True).start()
 
     def listen_once_end(self):
         self.listening = False
-
-    def _recording_thread(self):
-        backoff = 1
-        while True:
-            try: 
-                self._listen_once_thread()
-            except Exception as e:
-                log('error', 'An error occurred during speech recording', e)
-                sleep(backoff)
-                log('debug', 'Attempting to restart audio recording after failure')
-                backoff *= 2
 
     def _listen_once_thread(self):
         """
