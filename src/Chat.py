@@ -73,7 +73,7 @@ def reply(client, events: List[Event], new_events: List[Event], prompt_generator
           event_manager: EventManager, tts: TTS):
     global is_thinking
     is_thinking = True
-    prompt = prompt_generator.generate_prompt(events=events, status=status_parser.current_status)
+    prompt = prompt_generator.generate_prompt(events=events, status=status_parser.get_cleaned_data())
 
     use_tools = useTools and any([event.kind == 'user' for event in new_events])
 
@@ -87,7 +87,7 @@ def reply(client, events: List[Event], new_events: List[Event], prompt_generator
         log("error", "completion with error:", completion)
         is_thinking = False
         return
-    log("Debug", f'Prompt: {completion.usage.prompt_tokens}, Completion: {completion.usage.completion_tokens}')
+    # log("Debug", f'Prompt: {completion.usage.prompt_tokens}, Completion: {completion.usage.completion_tokens}')
 
     response_text = completion.choices[0].message.content
     if response_text:
@@ -249,7 +249,7 @@ def main():
     )
 
     log('Debug', "Loading actions...")
-    register_actions(action_manager, event_manager, llmClient, llm_model_name, visionClient, vision_model_name)
+    register_actions(action_manager, event_manager, llmClient, llm_model_name, visionClient, vision_model_name, status_parser)
     log('Debug', "Actions ready.")
 
     # Cue the user that we're ready to go.
@@ -261,9 +261,9 @@ def main():
             counter += 1
 
             # check status file for updates
-            while not status_parser.status_queue.empty():
-                status = status_parser.status_queue.get()
-                event_manager.add_status_event(status)
+            # while not status_parser.status_queue.empty():
+            #     status = status_parser.status_queue.get()
+            #     event_manager.add_status_event(status)
 
             # check STT result queue
             if not stt.resultQueue.empty():
@@ -274,6 +274,7 @@ def main():
             if not is_thinking and not tts.get_is_playing() and event_manager.is_replying:
                 event_manager.add_assistant_complete_event()
 
+            # check EDJournal files for updates
             if counter % 5 == 0:
                 checkForJournalUpdates(llmClient, event_manager, commanderName, counter <= 5)
 

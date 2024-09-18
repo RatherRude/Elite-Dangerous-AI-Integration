@@ -6,6 +6,8 @@ from typing import Optional
 
 import openai
 import requests
+
+from .StatusParser import StatusParser
 from .Logger import log
 from .EDKeys import EDKeys
 from .EventManager import EventManager
@@ -17,6 +19,7 @@ llm_client: openai.OpenAI = None
 llm_model_name: str = None
 vision_model_name: str = None
 event_manager: EventManager = None
+status_parser: StatusParser = None
 
 
 # Define functions for each action
@@ -103,7 +106,13 @@ def galaxy_map_open(args):
 
     setGameWindowActive()
     sleep(.15)
-    log('debug galaxy map open', args)
+
+    # Galaxy map already open, so we close it
+    if status_parser.get_gui_focus() == 6:
+        keys.send('GalaxyMapOpen')
+        sleep(.15)
+
+    # Freshly open the galaxy map
     keys.send('GalaxyMapOpen')
     if 'system_name' in args:
         sleep(2)
@@ -112,7 +121,6 @@ def galaxy_map_open(args):
         keys.send('UI_Select')
         sleep(.05)
 
-        # print("Target:"+target_name)
         # type in the System name
         typewrite(args['system_name'], interval=0)
         sleep(0.05)
@@ -127,10 +135,16 @@ def galaxy_map_open(args):
         sleep(.05)
         keys.send('UI_Select')
 
-        log('debug galaxy map', 'early return')
         return f"The galaxy map has opened. It is now zoomed in on \"{args['system_name']}\". No route was plotted yet, only the commander can do that."
 
     return f"Galaxy map opened/closed"
+def galaxy_map_close(args):
+    setGameWindowActive()
+    sleep(.15)
+    if status_parser.get_gui_focus() == 6:
+        keys.send('GalaxyMapOpen')
+
+    return f"Galaxy map closed"
 
 
 def system_map_open(args):
@@ -216,7 +230,7 @@ def setGameWindowActive():
     if handle:
         try:
             win32gui.SetForegroundWindow(handle)  # give focus to ED
-            log("debug", "Set game window as active")
+            # log("debug", "Set game window as active")
         except:
             log("error", "Failed to set game window as active")
     else:
@@ -1272,13 +1286,14 @@ def station_finder(obj):
 
 
 def register_actions(actionManager: ActionManager, eventManager: EventManager, llmClient: openai.OpenAI,
-                     llmModelName: str, visionClient: Optional[openai.OpenAI], visionModelName: Optional[str]):
-    global event_manager, vision_client, llm_client, llm_model_name, vision_model_name
+                     llmModelName: str, visionClient: Optional[openai.OpenAI], visionModelName: Optional[str], statusParser: StatusParser):
+    global event_manager, vision_client, llm_client, llm_model_name, vision_model_name, status_parser
     event_manager = eventManager
     llm_client = llmClient
     llm_model_name = llmModelName
     vision_client = visionClient
     vision_model_name = visionModelName
+    status_parser = statusParser
 
     setGameWindowActive()
     # Register actions
@@ -1366,7 +1381,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "required": ["pips"]
     }, increase_systems_power)
 
-    actionManager.registerAction('galaxyMapOpen', "Open or close galaxy map. Zoom in on system in map or plot a route.", {
+    actionManager.registerAction('galaxyMapOpen', "Open galaxy map. Zoom in on system in map or plot a route.", {
         "type": "object",
         "properties": {
             "system_name": {
@@ -1375,6 +1390,11 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             },
         },
     }, galaxy_map_open)
+
+    actionManager.registerAction('galaxyMapClose', "Close galaxy map.", {
+        "type": "object",
+        "properties": {},
+    }, galaxy_map_close)
 
     actionManager.registerAction('systemMapOpen', "Open or close system map", {
         "type": "object",

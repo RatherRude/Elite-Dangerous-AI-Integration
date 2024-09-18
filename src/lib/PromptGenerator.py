@@ -304,6 +304,20 @@ class PromptGenerator:
         self.character_prompt = character_prompt
         self.journal = journal
 
+    # def time_since(self, timestamp):
+    #     # Current time
+    #     now = datetime.now()
+    #
+    #     # Time difference
+    #     time_diff = now - timestamp
+    #
+    #     # Get the days, hours, and minutes
+    #     days = time_diff.days
+    #     hours = time_diff.seconds // 3600
+    #     minutes = (time_diff.seconds % 3600) // 60
+    #
+    #     return days, hours, minutes
+
     def full_event_message(self, event: GameEvent):
         return {
             "role": "user",

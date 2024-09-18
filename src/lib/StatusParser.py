@@ -1,6 +1,6 @@
 import json
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 import queue
 from sys import platform
 import threading
@@ -16,9 +16,9 @@ class StatusParser:
             self.file_path = file_path if file_path else (get_path(FOLDERID.SavedGames, UserHandle.current) + "\Frontier Developments\Elite Dangerous\Status.json")
 
         self.current_status = self.get_cleaned_data()
-        self.watch_thread = threading.Thread(target=self._watch_file_thread, daemon=True)
-        self.watch_thread.start()
-        self.status_queue = queue.Queue()
+        # self.watch_thread = threading.Thread(target=self._watch_file_thread, daemon=True)
+        # self.watch_thread.start()
+        # self.status_queue = queue.Queue()
         
     def _watch_file_thread(self):
         backoff = 1
@@ -143,6 +143,7 @@ class StatusParser:
         # Initialize cleaned_data with common fields
         cleaned_data = {
             'status': combined_flags,
+            'time': (datetime.now() + timedelta(days=469711)).isoformat()
         }
 
         # Add optional status flags
@@ -156,6 +157,13 @@ class StatusParser:
             cleaned_data['cargo'] = data['Cargo']
 
         return cleaned_data
+
+    # Loads data from the JSON file and returns only GuiFocus field.
+    def get_gui_focus(self):
+        with open(self.file_path, 'r') as file:
+            data = json.load(file)
+
+        return data.get('GuiFocus', 0)
 
 # Usage Example
 if __name__ == "__main__":
