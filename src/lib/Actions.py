@@ -99,8 +99,37 @@ def increase_systems_power(args):
 
 
 def galaxy_map_open(args):
+    from pyautogui import typewrite
+
     setGameWindowActive()
+    sleep(.15)
+    log('debug galaxy map open', args)
     keys.send('GalaxyMapOpen')
+    if 'system_name' in args:
+        sleep(2)
+        keys.send('UI_Up')
+        sleep(.05)
+        keys.send('UI_Select')
+        sleep(.05)
+
+        # print("Target:"+target_name)
+        # type in the System name
+        typewrite(args['system_name'], interval=0)
+        sleep(0.05)
+
+        # send enter key
+        keys.send_key('Down', 28)
+        sleep(0.05)
+        keys.send_key('Up', 28)
+
+        sleep(.05)
+        keys.send('UI_Right')
+        sleep(.05)
+        keys.send('UI_Select')
+
+        log('debug galaxy map', 'early return')
+        return f"The galaxy map has opened. It is now zoomed in on \"{args['system_name']}\". No route was plotted yet, only the commander can do that."
+
     return f"Galaxy map opened/closed"
 
 
@@ -1080,7 +1109,7 @@ def prepare_station_request(obj):
     filters = {
         "distance": {
             "min": "0",
-            "max": "50"
+            "max": str(obj.get("distance", 50000))
         }
     }
     # Add optional filters if they exist
@@ -1170,6 +1199,7 @@ def filter_station_response(response, request):
     for result in response["results"]:
         filtered_result = {
             "name": result["name"],
+            "system": result["system_name"],
             "distance": result["distance"],
             "orbit": result["distance_to_arrival"],
             "has_large_pad": result["has_large_pad"],
@@ -1336,9 +1366,14 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "required": ["pips"]
     }, increase_systems_power)
 
-    actionManager.registerAction('galaxyMapOpen', "Open or close galaxy map", {
+    actionManager.registerAction('galaxyMapOpen', "Open or close galaxy map. Zoom in on system in map or plot a route.", {
         "type": "object",
-        "properties": {}
+        "properties": {
+            "system_name": {
+                "type": "string",
+                "description": "System to display in the galaxy map, for route plotting.",
+            },
+        },
     }, galaxy_map_open)
 
     actionManager.registerAction('systemMapOpen', "Open or close system map", {
@@ -1489,7 +1524,12 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                                          "has_large_pad": {
                                              "type": "boolean",
                                              "description": "If the ship requires a large landing pad",
-                                             "example": True
+                                             "example": False
+                                         },
+                                         "distance": {
+                                             "type": "number",
+                                             "description": "The maximum distance to search for stations",
+                                             "example": 50000.0
                                          },
                                          "material_trader": {
                                              "type": "array",

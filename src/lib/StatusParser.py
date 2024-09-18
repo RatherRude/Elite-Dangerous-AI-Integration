@@ -1,4 +1,5 @@
 import json
+import time
 from datetime import datetime
 from sys import platform
 
@@ -7,8 +8,8 @@ class StatusParser:
         if platform != "win32":
             self.file_path = file_path if file_path else "./linux_ed/Status.json"
         else:
-            from . import WindowsKnownPaths as winpaths
-            self.file_path = file_path if file_path else (winpaths.get_path(winpaths.FOLDERID.SavedGames, winpaths.UserHandle.current) + "\Frontier Developments\Elite Dangerous\Status.json")
+            from .WindowsKnownPaths import get_path, FOLDERID, UserHandle
+            self.file_path = file_path if file_path else (get_path(FOLDERID.SavedGames, UserHandle.current) + "\Frontier Developments\Elite Dangerous\Status.json")
 
     def translate_flags(self, flags_value):
         """Translates flags integer to a dictionary of only True flags."""
@@ -130,6 +131,9 @@ class StatusParser:
 
 # Usage Example
 if __name__ == "__main__":
-    parser = StatusParser()
-    cleaned_data = parser.get_cleaned_data()
-    print(json.dumps(cleaned_data, indent=4))
+    while True:
+        parser = StatusParser()
+        cleaned_data = parser.get_cleaned_data()
+        print(json.dumps(cleaned_data, indent=4))
+        time.sleep(1)
+        print("\n"*10)

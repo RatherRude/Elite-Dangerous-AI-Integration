@@ -4,14 +4,15 @@ import os
 import re
 import subprocess
 import sys
-from sys import platform
 import tkinter as tk
 import webbrowser
 from queue import Queue
+from sys import platform
 from threading import Thread
 from tkinter import messagebox
 from typing import Dict
 
+import pyaudio
 import requests
 from openai import APIError, OpenAI
 
@@ -383,7 +384,7 @@ class App:
 
         parser = argparse.ArgumentParser()
         python_executable = "pythonw" if platform == 'win32' else "python3"
-        parser.add_argument("--chat", default=python_executable+" ./src/Chat.py", help="command to run the chat app")
+        parser.add_argument("--chat", default=python_executable + " ./src/Chat.py", help="command to run the chat app")
         parser.add_argument("--release", default="", help="current release")
         args = parser.parse_args()
         self.chat_command_arg: str = args.chat
@@ -405,7 +406,8 @@ class App:
         try:
             background_image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../screen/EDAI_logo.png'))
             if hasattr(sys, 'frozen'):
-                background_image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), './screen/EDAI_logo.png'))
+                background_image_path = os.path.abspath(
+                    os.path.join(os.path.dirname(__file__), './screen/EDAI_logo.png'))
             background_image = tk.PhotoImage(file=background_image_path)
             self.background_label = tk.Label(root, bg="black", image=background_image)
             self.background_label.place(x=0, y=0, relwidth=1, relheight=1)
@@ -461,8 +463,12 @@ class App:
                                                                                                                 padx=80,
                                                                                                                 pady=5)
 
+        tk.Label(self.main_frame, text="Input Device:", font=('Arial', 10)).grid(row=5, column=0, sticky=tk.W)
+        self.input_device_name = tk.Label(self.main_frame, text=self.get_default_microphone_name(),
+                                          font=('Arial', 10)).grid(row=5, column=1, sticky=tk.W)
+
         self.game_events_frame = VerticalScrolledFrame(self.main_frame, width=600)
-        self.game_events_frame.grid(row=6, column=0, columnspan=2, sticky="")
+        self.game_events_frame.grid(row=7, column=0, columnspan=2, sticky="")
         self.game_events_save_cb = self.populate_game_events_frame(self.game_events_frame.inner_frame,
                                                                    self.data['game_events'])
         self.game_events_frame.update()  # update scrollable area
@@ -470,7 +476,7 @@ class App:
 
         # AI Geeks Section (Initially hidden)
         self.ai_geeks_frame = VerticalScrolledFrame(self.main_frame, width=600)
-        self.ai_geeks_frame.grid(row=6, column=0, columnspan=2)
+        self.ai_geeks_frame.grid(row=7, column=0, columnspan=2)
         self.ai_geeks_frame.grid_remove()  # Initially hide
 
         # Disclaimer
@@ -618,19 +624,19 @@ class App:
         # Toggle Section Button
         self.toggle_ai_geeks_section_button = tk.Button(self.main_frame, text="Show AI Geeks Section",
                                                         command=self.toggle_ai_geeks_section)
-        self.toggle_ai_geeks_section_button.grid(row=5, column=0, columnspan=2, pady=10, padx=(150, 0), sticky="")
+        self.toggle_ai_geeks_section_button.grid(row=6, column=0, columnspan=2, pady=10, padx=(150, 0), sticky="")
 
         # Toggle Section Button
         self.toggle_game_events_section_button = tk.Button(self.main_frame, text="Show Game Events Section",
                                                            command=self.toggle_game_events_section)
-        self.toggle_game_events_section_button.grid(row=5, column=0, columnspan=2, pady=10, padx=(0, 150), sticky="")
+        self.toggle_game_events_section_button.grid(row=6, column=0, columnspan=2, pady=10, padx=(0, 150), sticky="")
 
         # Debug Frame and Text Widget
         self.debug_frame = tk.Frame(root, bg='black', bd=1)  # White background for visibility
         self.debug_frame.pack(side=tk.TOP, padx=20, pady=20)
 
         tk.Label(self.debug_frame, text="Debug Output:").pack(anchor=tk.W)
-        self.debug_text = tk.Text(self.debug_frame, width=100, height=25, bg='black')
+        self.debug_text = tk.Text(self.debug_frame, width=100, height=43, bg='black')
         self.debug_text.tag_configure("normal", foreground="white", font="Helvetica 12")
         self.debug_text.tag_configure("human", foreground="red", font="Helvetica 12 bold")
         self.debug_text.tag_configure("ai", foreground="blue", font="Helvetica 12 bold")
@@ -1049,6 +1055,7 @@ class App:
                 self.debug_text.see(tk.END)  # Scroll to the end of the text widget
             else:
                 break  # No more output from subprocess
+
     def read_process_error(self):
         while True:
             stderr_line = self.process.stderr.readline()
@@ -1064,7 +1071,7 @@ class App:
         if self.process:
             # self.send_signal(signal.SIGINT)  # Terminate the subprocess
             # self.process.wait()  # Terminate the subprocess
-            self.process.kill()  # Terminate the subprocess (TODO check why terminate doesn't work on linux, windows does the same for both anyway)
+            self.process.kill()  # Terminate the subprocess (@TODO check why terminate doesn't work on linux, windows does the same for both anyway)
             self.process = None
         if self.thread_process_stdout:
             self.thread_process_stdout.join()  # Wait for the thread to complete
@@ -1078,6 +1085,11 @@ class App:
         self.debug_frame.pack_forget()
         self.main_frame.pack(padx=20, pady=20)
         self.start_button.pack()
+
+    def get_default_microphone_name(self) -> str:
+        p = pyaudio.PyAudio()
+        name = p.get_default_input_device_info()['name']
+        return (name + '...') if len(name) == 31 else name
 
     def shutdown(self):
         if self.process:

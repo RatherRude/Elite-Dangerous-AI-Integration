@@ -43,6 +43,11 @@ class EDKeys:
             'FireChaffLauncher',
             'NightVisionToggle',
             'RecallDismissShip',
+            #'CycleNextPanel',
+            'UI_Up',
+            'UI_Right',
+            'UI_Select',
+            'UI_Back',
         ]
         self.keys = self.get_bindings(self.keys_to_obtain)
 
