@@ -3,7 +3,7 @@ import json
 from typing import Literal, Callable
 
 from .EDJournal import *
-from .Event import GameEvent, Event, ConversationEvent, ToolEvent, ExternalEvent
+from .Event import GameEvent, Event, ConversationEvent, StatusEvent, ToolEvent, ExternalEvent
 from .Logger import log
 
 
@@ -29,6 +29,12 @@ class EventManager:
 
     def add_external_event(self, content: Dict):
         event = ExternalEvent(content=content)
+        self.pending.append(event)
+        log('Event', event)
+        return self._handle_new_event()
+
+    def add_status_event(self, status: Dict):
+        event = StatusEvent(status=status)
         self.pending.append(event)
         log('Event', event)
         return self._handle_new_event()
