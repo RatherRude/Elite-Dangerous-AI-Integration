@@ -248,12 +248,12 @@ def main():
         continue_conversation=continue_conversation_var
     )
 
-    log('Debug', "Loading actions...")
-    register_actions(action_manager, event_manager, llmClient, llm_model_name, visionClient, vision_model_name, status_parser)
-    log('Debug', "Actions ready.")
+    if useTools:
+        register_actions(action_manager, event_manager, llmClient, llm_model_name, visionClient, vision_model_name, status_parser)
+        log('Debug', "Actions ready.")
 
     # Cue the user that we're ready to go.
-    log('Debug', "\nSystem Ready.")
+    log('Debug', "System Ready.")
 
     counter = 0
     while True:

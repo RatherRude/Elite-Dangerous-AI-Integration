@@ -1009,9 +1009,9 @@ class App:
             self.start_button.pack_forget()  # Hide the start button
 
             # Read output in a separate thread
-            self.thread_process_stdout = Thread(target=self.read_process_output)
+            self.thread_process_stdout = Thread(target=self.read_process_output, daemon=True)
             self.thread_process_stdout.start()
-            self.thread_process_stderr = Thread(target=self.read_process_error)
+            self.thread_process_stderr = Thread(target=self.read_process_error, daemon=True)
             self.thread_process_stderr.start()
 
         except FileNotFoundError as e:
@@ -1074,10 +1074,12 @@ class App:
             self.process.kill()  # Terminate the subprocess (@TODO check why terminate doesn't work on linux, windows does the same for both anyway)
             self.process = None
         if self.thread_process_stdout:
-            self.thread_process_stdout.join()  # Wait for the thread to complete
+            if self.thread_process_stdout.is_alive():
+                self.thread_process_stdout.join()  # Wait for the thread to complete
             self.thread_process_stdout = None
         if self.thread_process_stderr:
-            self.thread_process_stderr.join()  # Wait for the thread to complete
+            if self.thread_process_stderr.is_alive():
+                self.thread_process_stderr.join()  # Wait for the thread to complete
             self.thread_process_stderr = None
         self.debug_text.insert(tk.END, "Elite Dangerous AI Integration stopped.\n")
         self.debug_text.see(tk.END)
