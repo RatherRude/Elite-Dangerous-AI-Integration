@@ -63,7 +63,7 @@ def createTranscription():
     return jsonify({'text': text}) # TODO more details, spec compliance
 
 if __name__ == '__main__':
-    app.run(port=8080, host='0.0.0.0')
+    app.run(port=8080, host='::', threaded=True)
 
 """
 sample curl request to create a speech:
