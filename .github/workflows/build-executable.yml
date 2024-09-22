@@ -28,7 +28,8 @@ jobs:
       - name: Determine paths for dependencies
         id: determine_paths
         run: |
-          python -c "import os, onnxruntime, pysilero_vad; print(f'ONNXRUNTIME_DLL={os.path.join(os.path.dirname(onnxruntime.__file__), \"capi\", \"onnxruntime_providers_shared.dll\")}\nVAD_MODEL={os.path.join(os.path.dirname(pysilero_vad.__file__), \"models\", \"silero_vad.onnx\")}\n')" >> $GITHUB_ENV
+          python -c "import os, onnxruntime; print(f'ONNXRUNTIME_DLL={os.path.join(os.path.dirname(onnxruntime.__file__), 'capi', 'onnxruntime_providers_shared.dll')}\n')" >> $GITHUB_ENV
+          python -c "import os, pysilero_vad; print(f'VAD_MODEL={os.path.join(os.path.dirname(pysilero_vad.__file__), 'models', 'silero_vad.onnx')}\n')" >> $GITHUB_ENV
 
       - name: Create Executable for AIGUI
         run: |
