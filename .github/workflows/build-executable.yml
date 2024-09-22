@@ -57,8 +57,8 @@ jobs:
       - name: Create start.bat script
         run: |
           $commitId = "${{ env.COMMIT_ID }}"
-          $start = "@echo off`r`nstart \"\" .\AIGUI\AIGUI.exe --chat=Chat\Chat.exe --release=$commitId`r`nexit"
-          $start | Out-File -Encoding ASCII .\dist\start.bat
+          $start = '@echo off`r`nstart "" .\\AIGUI\\AIGUI.exe --chat=Chat\\Chat.exe --release=' + $commitId + '`r`nexit'
+          $start | Out-File -Encoding ASCII .\\dist\\start.bat
 
       - name: Create zip file
         run: |
