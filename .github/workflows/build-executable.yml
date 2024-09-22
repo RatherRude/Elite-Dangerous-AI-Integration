@@ -30,7 +30,14 @@ jobs:
         run: |
           python -c 'import os, onnxruntime; print("ONNXRUNTIME_DLL="+ os.path.join(os.path.dirname(onnxruntime.__file__), "capi", "onnxruntime_providers_shared.dll")+"\n")' >> $GITHUB_ENV
           python -c 'import os, pysilero_vad; print("VAD_MODEL="+ os.path.join(os.path.dirname(pysilero_vad.__file__), "models", "silero_vad.onnx")+"\n")' >> $GITHUB_ENV
-
+          python -c 'import onnxruntime; print("onnxruntime path:", onnxruntime.__file__)'
+          python -c 'import pysilero_vad; print("pysilero_vad path:", pysilero_vad.__file__)'
+    
+      - name: Debug environment variables
+        run: |
+          echo "ONNXRUNTIME_DLL=${{ env.ONNXRUNTIME_DLL }}"
+          echo "VAD_MODEL=${{ env.VAD_MODEL }}"
+  
       - name: Create Executable for AIGUI
         run: |
           pyinstaller .\src\AIGUI.py -y --onedir --clean --noconsole --add-data .\screen\EDAI_logo.png:.\screen
