@@ -4,7 +4,7 @@ import numpy as np
 import sherpa_onnx
 import samplerate
 
-model_names = [
+tts_model_names = [
   'vits-cantonese-hf-xiaomaiiwn.tar.bz2',
   'vits-coqui-bg-cv.tar.bz2',
   'vits-coqui-bn-custom_female.tar.bz2',

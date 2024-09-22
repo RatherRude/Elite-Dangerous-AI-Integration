@@ -1,12 +1,19 @@
 import io
 import soundfile as sf
+from pick import pick
 
-from lib.localSTT import init_stt, stt
-from lib.localTTS import init_tts, tts
+from lib.localSTT import init_stt, stt, stt_models_names
+from lib.localTTS import init_tts, tts, tts_model_names
+
+tts_model, _ = pick(options=tts_model_names, title='Select a TTS model')
+stt_model, _ = pick(options=stt_models_names, title='Select a STT model')
+
+print(f'Selected TTS model: {tts_model}')
+print(f'Selected STT model: {stt_model}')
 
 models = {
-    'tts-1': init_tts(),
-    'whisper-1': init_stt()
+    'tts-1': init_tts(tts_model),
+    'whisper-1': init_stt(stt_model)
 }
 
 # create flask api endpoint

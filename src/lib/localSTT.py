@@ -4,7 +4,26 @@ from faster_whisper import WhisperModel
 import samplerate
 import soundfile as sf
 
-def init_stt():
+stt_models_names = [
+    'tiny', 
+    'tiny.en', 
+    'base', 
+    'base.en',
+    'small', 
+    'small.en', 
+    'distil-small.en', 
+    'medium', 
+    'medium.en', 
+    'distil-medium.en', 
+    'large-v1',
+    'large-v2', 
+    'large-v3', 
+    'large', 
+    'distil-large-v2',
+    'distil-large-v3',
+]
+
+def init_stt(model_name="distil-medium.en"):
     model = WhisperModel("distil-medium.en", device="cpu", compute_type="int8")
     return model
 
