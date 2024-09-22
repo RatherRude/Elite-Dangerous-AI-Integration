@@ -27,20 +27,20 @@ jobs:
 
       - name: Create Executable for AIGUI
         run: |
-          pyinstaller .\src\AIGUI.py -y --onedir --clean --noconsole --add-data .\screen\EDAI_logo.png;.\screen
+          pyinstaller .\src\AIGUI.py -y --onedir --clean --noconsole --add-data .\screen\EDAI_logo.png:.\screen
 
       - name: Create Executable for Chat
         run: |
-          pyinstaller .\src\Chat.py -y --onedir --clean --console --hidden-import=comtypes.stream --add-data $env:APPDATA\Python\Python38\site-packages\pysilero_vad\models\silero_vad.onnx;.\pysilero_vad\models --add-binary $env:APPDATA\Python\Python38\site-packages\onnxruntime\capi\onnxruntime_providers_shared.dll;.
+          pyinstaller .\src\Chat.py -y --onedir --clean --console --hidden-import=comtypes.stream --add-data $env:APPDATA\Python\Python38\site-packages\pysilero_vad\models\silero_vad.onnx:.\pysilero_vad\models --add-binary $env:APPDATA\Python\Python38\site-packages\onnxruntime\capi\onnxruntime_providers_shared.dll:.
 
       - name: Get current commit ID
         id: get_commit
-        run: echo "::set-output name=commit_id::$(git rev-parse HEAD)"
+        run: echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
 
       - name: Create start.bat script
         run: |
-          $commitId = '${{ steps.get_commit.outputs.commit_id }}'
-          $start = "@echo off`nstart \"\" .\AIGUI\AIGUI.exe --chat=Chat\Chat.exe --release=$commitId`nexit"
+          $commitId = "${{ env.COMMIT_ID }}"
+          $start = "@echo off`r`nstart \"\" .\AIGUI\AIGUI.exe --chat=Chat\Chat.exe --release=$commitId`r`nexit"
           $start | Out-File -Encoding ASCII .\dist\start.bat
 
       - name: Create zip file
