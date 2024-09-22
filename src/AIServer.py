@@ -1,8 +1,8 @@
 import io
 import soundfile as sf
 
-from .lib.localSTT import init_stt, stt
-from .lib.localTTS import init_tts, tts
+from lib.localSTT import init_stt, stt
+from lib.localTTS import init_tts, tts
 
 models = {
     'tts-1': init_tts(),
