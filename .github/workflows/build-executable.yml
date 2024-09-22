@@ -48,6 +48,10 @@ jobs:
         run: |
           pyinstaller .\src\Chat.py -y --onedir --clean --console --hidden-import=comtypes.stream --add-data ${{ env.VAD_MODEL }}:.\pysilero_vad\models --add-binary ${{ env.ONNXRUNTIME_DLL }}:.
 
+      - name: Create Executable for AIServer
+        run: |
+          pyinstaller .\src\AIServer.py -y --onedir --clean --console --hidden-import=comtypes.stream --add-binary ${{ env.ONNXRUNTIME_DLL }}:.
+  
       - name: Get current commit ID
         id: get_commit
         run: |
