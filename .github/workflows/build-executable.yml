@@ -48,7 +48,7 @@ jobs:
           Compress-Archive -Path .\dist\* -DestinationPath .\dist\build.zip
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: build-artifact
           path: ./dist/build.zip
