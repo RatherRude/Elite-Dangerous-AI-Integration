@@ -51,7 +51,7 @@ jobs:
       - name: Get current commit ID
         id: get_commit
         run: |
-          COMMIT_ID = git rev-parse HEAD
+          $COMMIT_ID = git rev-parse HEAD
           echo "COMMIT_ID=$COMMIT_ID" >> $env:GITHUB_ENV
 
       - name: Create start.bat script
