@@ -60,12 +60,8 @@ jobs:
           $start = "@echo off`r`nstart """" .\\AIGUI\\AIGUI.exe --chat=Chat\\Chat.exe --release=$commitId`r`nexit"
           $start | Out-File -Encoding ASCII .\\dist\\start.bat
 
-      - name: Create zip file
-        run: |
-          Compress-Archive -Path .\dist\* -DestinationPath .\dist\build.zip
-
       - name: Upload build artifact
         uses: actions/upload-artifact@v3
         with:
-          name: build-artifact
-          path: ./dist/build.zip
+          name: COVAS_NEXT_v${{ env.COMMIT_ID }}
+          path: ./dist
