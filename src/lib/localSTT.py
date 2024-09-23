@@ -5,16 +5,17 @@ import samplerate
 import soundfile as sf
 
 stt_models_names = [
+    'distil-medium.en', 
+    'distil-small.en', 
+
     'tiny', 
     'tiny.en', 
     'base', 
     'base.en',
     'small', 
     'small.en', 
-    'distil-small.en', 
     'medium', 
     'medium.en', 
-    'distil-medium.en', 
     'large-v1',
     'large-v2', 
     'large-v3', 
@@ -41,11 +42,12 @@ def stt(model: WhisperModel, wav: bytes, language="en-US"):
 
     start = time.time()
     gen, info = model.transcribe(audio, language=language)
-    end = time
-    print("Transcribe time:", end - start)
     
     segments = []
     for segment in gen:
         segments.append(segment)
+    
+    end = time.time()
+    print("Transcribe time:", end - start)
     
     return segments, info
