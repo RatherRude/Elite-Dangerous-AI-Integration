@@ -1,4 +1,5 @@
 import queue
+import re
 from sys import platform
 import threading
 from time import sleep
@@ -50,6 +51,8 @@ class TTS:
                 if not self.read_queue.empty():
                     self._is_playing = True
                     text = self.read_queue.get()
+                    # Remove commas from numbers to fix OpenAI TTS
+                    text = re.sub(r"[^\d,]\d{1,3}(,\d{3})+", lambda x: x.group().replace(",", ""), text)
                     try:
                         with self.openai_client.audio.speech.with_streaming_response.create(
                                 model=self.model,
