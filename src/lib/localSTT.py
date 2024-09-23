@@ -25,7 +25,7 @@ stt_models_names = [
 ]
 
 def init_stt(model_name="distil-medium.en"):
-    model = WhisperModel("distil-medium.en", device="cpu", compute_type="int8")
+    model = WhisperModel(model_name, device="cpu", compute_type="int8")
     return model
 
 def stt(model: WhisperModel, wav: bytes, language="en-US"):
@@ -41,7 +41,7 @@ def stt(model: WhisperModel, wav: bytes, language="en-US"):
     print("Resample time:", end - start)
 
     start = time.time()
-    gen, info = model.transcribe(audio, language=language)
+    gen, info = model.transcribe(audio, language=language, beam_size=4)
     
     segments = []
     for segment in gen:
