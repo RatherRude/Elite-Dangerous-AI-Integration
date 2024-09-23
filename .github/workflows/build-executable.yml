@@ -1,0 +1,67 @@
+name: Build Executable
+
+on: [push, pull_request]
+
+jobs:
+  pyinstaller-build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'
+
+      - name: Install pyinstaller
+        run: |
+          python -m pip install --upgrade pip
+          $Env:PYINSTALLER_COMPILE_BOOTLOADER = "true"
+          pip install --user --force-reinstall --ignore-installed --no-binary :all: pyinstaller
+      
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Determine paths for dependencies
+        id: determine_paths
+        run: |
+          $ONNXRUNTIME_DLL = python -c 'import os, onnxruntime; print(os.path.join(os.path.dirname(onnxruntime.__file__), "capi", "onnxruntime_providers_shared.dll"))'
+          $VAD_MODEL = python -c 'import os, pysilero_vad; print(os.path.join(os.path.dirname(pysilero_vad.__file__), "models", "silero_vad.onnx"))'
+          echo "ONNXRUNTIME_DLL=$ONNXRUNTIME_DLL" >> $env:GITHUB_ENV
+          echo "VAD_MODEL=$VAD_MODEL" >> $env:GITHUB_ENV
+          python -c 'import onnxruntime; print("onnxruntime path:", onnxruntime.__file__)'
+          python -c 'import pysilero_vad; print("pysilero_vad path:", pysilero_vad.__file__)'
+    
+      - name: Debug environment variables
+        run: |
+          echo "ONNXRUNTIME_DLL=${{ env.ONNXRUNTIME_DLL }}"
+          echo "VAD_MODEL=${{ env.VAD_MODEL }}"
+  
+      - name: Create Executable for AIGUI
+        run: |
+          pyinstaller .\src\AIGUI.py -y --onedir --clean --noconsole --add-data .\screen\EDAI_logo.png:.\screen
+
+      - name: Create Executable for Chat
+        run: |
+          pyinstaller .\src\Chat.py -y --onedir --clean --console --hidden-import=comtypes.stream --add-data ${{ env.VAD_MODEL }}:.\pysilero_vad\models --add-binary ${{ env.ONNXRUNTIME_DLL }}:.
+
+      - name: Get current commit ID
+        id: get_commit
+        run: |
+          $COMMIT_ID = git rev-parse HEAD
+          echo "COMMIT_ID=$COMMIT_ID" >> $env:GITHUB_ENV
+
+      - name: Create start.bat script
+        run: |
+          $commitId = "${{ env.COMMIT_ID }}"
+          $start = "@echo off`r`nstart """" .\\AIGUI\\AIGUI.exe --chat=Chat\\Chat.exe --release=$commitId`r`nexit"
+          $start | Out-File -Encoding ASCII .\\dist\\start.bat
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: COVAS_NEXT_v${{ env.COMMIT_ID }}
+          path: ./dist
