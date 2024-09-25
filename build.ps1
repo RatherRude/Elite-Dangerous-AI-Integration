@@ -11,7 +11,7 @@
 # To create both onedir solutions, you can use the following
 pyinstaller.exe .\src\AIGUI.py -y --onedir --clean --noconsole --add-data .\screen\EDAI_logo.png:.\screen
 pyinstaller.exe .\src\Chat.py -y --onedir --clean --console --hidden-import=comtypes.stream --add-data $env:APPDATA\Python\Python38\site-packages\pysilero_vad\models\silero_vad.onnx:.\pysilero_vad\models --add-binary $env:APPDATA\Python\Python38/site-packages/onnxruntime/capi/onnxruntime_providers_shared.dll:.
-
+pyinstaller.exe .\src\AIServer.py -y --onedir --clean --console --hidden-import=comtypes.stream --add-binary $env:APPDATA\Python\Python38/site-packages/onnxruntime/capi/onnxruntime_providers_shared.dll:.
 $commitId = git rev-parse HEAD
 Write-Output "Current HEAD's commit ID: $commitId"
 
