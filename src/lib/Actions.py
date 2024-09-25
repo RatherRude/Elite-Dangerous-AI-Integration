@@ -138,6 +138,8 @@ def galaxy_map_open(args):
         return f"The galaxy map has opened. It is now zoomed in on \"{args['system_name']}\". No route was plotted yet, only the commander can do that."
 
     return f"Galaxy map opened/closed"
+
+
 def galaxy_map_close(args):
     setGameWindowActive()
     sleep(.15)
@@ -525,7 +527,7 @@ def educated_guesses_message(search_query, valid_list):
     if caught_items:
         guesses_str = ', '.join(caught_items)
         message = (
-            f"Here is a list of similar and valid items: {guesses_str}?"
+            f"Restart search with valid inputs, here are suggestions: {guesses_str}"
         )
 
     return message
@@ -1197,7 +1199,7 @@ def prepare_station_request(obj):
 
 
 # filter a spansh station result set for only relevant information
-def filter_station_response(response, request):
+def filter_station_response(request, response):
     # Extract requested commodities and modules
     commodities_requested = {item["name"] for item in request["filters"].get("market", {}).get("value", [])}
     modules_requested = {item["name"] for item in request["filters"].get("modules", {}).get("value", [])}
@@ -1265,7 +1267,6 @@ def filter_station_response(response, request):
     }
 
 
-# find a station within 50ly with certaion material_trader, technology_broker, market, and modules info
 def station_finder(obj):
     # Initialize the filters
     request_body = prepare_station_request(obj)
@@ -1277,7 +1278,7 @@ def station_finder(obj):
 
         data = response.json()
 
-        filtered_data = filter_station_response(data, request_body)
+        filtered_data = filter_station_response(request_body, data)
 
         return f'Here is a list of stations: {json.dumps(filtered_data)}'
     except Exception as e:
@@ -1285,8 +1286,200 @@ def station_finder(obj):
         return 'An error has occurred. The station finder seems currently not available.'
 
 
+def prepare_system_request(obj):
+    known_allegiances = [
+        "Alliance", "Empire", "Federation", "Guardian",
+        "Independent", "Pilots Federation", "Player Pilots", "Thargoid"
+    ]
+    known_governments = [
+        "Anarchy", "Communism", "Confederacy", "Cooperative", "Corporate",
+        "Democracy", "Dictatorship", "Feudal", "None", "Patronage",
+        "Prison", "Prison Colony", "Theocracy"
+    ]
+    known_states = [
+        "Blight", "Boom", "Bust", "Civil Liberty", "Civil Unrest", "Civil War",
+        "Drought", "Election", "Expansion", "Famine", "Infrastructure Failure",
+        "Investment", "Lockdown", "Natural Disaster", "None", "Outbreak",
+        "Pirate Attack", "Public Holiday", "Retreat", "Terrorist Attack", "War"
+    ]
+    known_powers = [
+        "A. Lavigny-Duval", "Aisling Duval", "Archon Delaine", "Denton Patreus",
+        "Edmund Mahon", "Felicia Winters", "Li Yong-Rui", "Pranav Antal",
+        "Yuri Grom", "Zachary Hudson", "Zemina Torval"
+    ]
+    known_economies = [
+        "Agriculture", "Colony", "Extraction", "High Tech", "Industrial",
+        "Military", "None", "Refinery", "Service", "Terraforming", "Tourism"
+    ]
+    known_security_levels = ["Anarchy", "High", "Low", "Medium"]
+    known_thargoid_war_states = ["None", "Thargoid Controlled", "Thargoid Harvest", "Thargoid Probing",
+                                 "Thargoid Recovery", "Thargoid Stronghold"]
+    log('Debug System Finder Request', obj)
+    filters = {
+        "distance": {
+            "min": "0",
+            "max": str(obj.get("distance", 50000))
+        }
+    }
+
+    # Add optional filters if they exist
+    if "allegiance" in obj and obj["allegiance"]:
+        for allegiance in obj["allegiance"]:
+            if allegiance not in known_allegiances:
+                raise Exception(
+                    f"Invalid allegiance: {allegiance}. {educated_guesses_message(allegiance, known_allegiances)}")
+        filters["allegiance"] = {"value": obj["allegiance"]}
+
+    if "state" in obj and obj["state"]:
+        for state in obj["state"]:
+            if state not in known_states:
+                raise Exception(
+                    f"Invalid state: {state}. {educated_guesses_message(state, known_states)}")
+        filters["state"] = {"value": obj["state"]}
+
+    if "government" in obj and obj["government"]:
+        for government in obj["government"]:
+            if government not in known_governments:
+                raise Exception(
+                    f"Invalid government: {government}. {educated_guesses_message(government, known_governments)}")
+        filters["government"] = {"value": obj["government"]}
+
+    if "power" in obj and obj["power"]:
+        for power in obj["power"]:
+            if power not in known_powers:
+                raise Exception(
+                    f"Invalid power: {power}. {educated_guesses_message(power, known_powers)}")
+        filters["power"] = {"value": obj["power"]}
+
+    if "primary_economy" in obj and obj["primary_economy"]:
+        for economy in obj["primary_economy"]:
+            if economy not in known_economies:
+                raise Exception(
+                    f"Invalid primary economy: {economy}. {educated_guesses_message(economy, known_economies)}")
+        filters["primary_economy"] = {"value": obj["primary_economy"]}
+
+    if "security" in obj and obj["security"]:
+        for security_level in obj["security"]:
+            if security_level not in known_security_levels:
+                raise Exception(
+                    f"Invalid security level: {security_level}. {educated_guesses_message(security_level, known_security_levels)}")
+        filters["security"] = {"value": obj["security"]}
+
+    if "thargoid_war_state" in obj and obj["thargoid_war_state"]:
+        for thargoid_war_state in obj["thargoid_war_state"]:
+            if thargoid_war_state not in known_thargoid_war_states:
+                raise Exception(
+                    f"Invalid thargoid war state: {thargoid_war_state}. {educated_guesses_message(thargoid_war_state, known_thargoid_war_states)}")
+        filters["thargoid_war_state"] = {"value": obj["thargoid_war_state"]}
+
+    if "population" in obj and obj["population"]:
+        comparison = obj["population"].get("comparison", ">")
+        value = obj["population"].get("value", 0)
+
+        lower_bound = value if comparison == ">" else 0
+        upper_bound = value if comparison == "<" else 100000000000
+
+        filters["population"] = {
+            "comparison": "<=>",
+            "value": [lower_bound, upper_bound]
+        }
+
+    # Build the request body
+    request_body = {
+        "filters": filters,
+        "sort": [
+            {
+                "distance": {
+                    "direction": "asc"
+                }
+            }
+        ],
+        "size": 3,
+        "page": 0,
+        "reference_system": obj.get("reference_system", "Sol")
+    }
+
+    return request_body
+
+
+# Function to filter and format the system response
+def filter_system_response(request, response):
+    filtered_results = []
+
+    # Check which filters are in the request and adjust the response accordingly
+    request_filters = request.get("filters", {})
+
+    for system in response.get("results", []):
+        filtered_system = {}
+
+        # if "name" in system and system["name"]:
+        filtered_system["name"] = system.get("name")
+        filtered_system["allegiance"] = system.get("allegiance", "Independent")
+        if "controlling_minor_faction" in system and system["controlling_minor_faction"]:
+            filtered_system["minor_faction"] = system.get("controlling_minor_faction", )
+        if "controlling_minor_faction_state" in system and system["controlling_minor_faction_state"]:
+            filtered_system["minor_faction_state"] = system.get("controlling_minor_faction_state")
+        # Only add power if it was requested
+        if "power" in request_filters and "power" in system and system["power"]:
+            filtered_system["power"] = system.get("power")
+            filtered_system["power_state"] = system.get("power_state", "None")
+        filtered_system["distance"] = system.get("distance")
+        filtered_system["body_count"] = system.get("body_count", 0)
+        filtered_system["station_count"] = len(system.get("stations", []))
+        filtered_system["population"] = system.get("population", 0)
+        # Only add government if it was requested
+        if "government" in request_filters and "government" in system and system["government"]:
+            filtered_system["government"] = system.get("government")
+
+        filtered_system["primary_economy"] = system.get("primary_economy", "None")
+        filtered_system["security"] = system.get("security", "Anarchy")
+
+        # Only add thargoid war state if it was requested
+        if "thargoid_war_state" in request_filters and "thargoid_war_state" in system and system["thargoid_war_state"]:
+            filtered_system["thargoid_war_state"] = system.get("thargoid_war_state")
+
+        # Only add if needs_permit is true
+        if "needs_permit" in request_filters and "needs_permit" in system and system["needs_permit"]:
+            filtered_system["needs_permit"] = system.get("needs_permit")
+
+        # Add filtered system to the list
+        filtered_results.append(filtered_system)
+
+    # Construct and return the filtered response
+    return {
+        "amount_total": response["count"],
+        "amount_displayed": response["size"],
+        "results": filtered_results,
+    }
+
+
+# System finder function that sends the request to the Spansh API
+def system_finder(obj):
+    # Build the request body
+    request_body = prepare_system_request(obj)
+
+    url = "https://spansh.co.uk/api/systems/search"
+
+    try:
+        response = requests.post(url, json=request_body)
+        response.raise_for_status()
+
+        data = response.json()
+        # Filter the response
+        filtered_data = filter_system_response(request_body, data)
+
+        # Generate educated guesses if necessary (assuming educated_guesses_message is already implemented)
+
+        return f'Here is a list of systems: {json.dumps(filtered_data)}'
+
+    except Exception as e:
+        log('error', f"Error: {e}")
+        return 'An error occurred. The system finder seems to be currently unavailable.'
+
+
 def register_actions(actionManager: ActionManager, eventManager: EventManager, llmClient: openai.OpenAI,
-                     llmModelName: str, visionClient: Optional[openai.OpenAI], visionModelName: Optional[str], statusParser: StatusParser):
+                     llmModelName: str, visionClient: Optional[openai.OpenAI], visionModelName: Optional[str],
+                     statusParser: StatusParser):
     global event_manager, vision_client, llm_client, llm_model_name, vision_model_name, status_parser
     event_manager = eventManager
     llm_client = llmClient
@@ -1488,205 +1681,295 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     }, get_galnet_news)
 
     actionManager.registerAction('trade_plotter',
-                                 "Retrieve a trade route from the trade plotter. Ask for unknown values and make sure they are known.",
-                                 {
-                                     "type": "object",
-                                     "properties": {
-                                         "system": {
-                                             "type": "string",
-                                             "description": "Name of the current system. Example: 'Sol'"
-                                         },
-                                         "station": {
-                                             "type": "string",
-                                             "description": "Name of the current station. Example: 'Wakata Station'"
-                                         },
-                                         "max_hops": {
-                                             "type": "integer",
-                                             "description": "Maximum number of hops (jumps) allowed for the route."
-                                         },
-                                         "max_hop_distance": {
-                                             "type": "number",
-                                             "description": "Maximum distance in light-years for a single hop."
-                                         },
-                                         "starting_capital": {
-                                             "type": "number",
-                                             "description": "Available starting capital in credits."
-                                         },
-                                         "max_cargo": {
-                                             "type": "integer",
-                                             "description": "Maximum cargo capacity in tons."
-                                         },
-                                         "requires_large_pad": {
-                                             "type": "boolean",
-                                             "description": "Whether the station must have a large landing pad."
-                                         },
-                                     },
-                                     "required": [
-                                         "system",
-                                         "station",
-                                         "max_hops",
-                                         "max_hop_distance",
-                                         "starting_capital",
-                                         "max_cargo",
-                                         "requires_large_pad",
-                                     ]
-                                 }, trade_planner)
+     "Retrieve a trade route from the trade plotter. Ask for unknown values and make sure they are known.",
+     {
+         "type": "object",
+         "properties": {
+             "system": {
+                 "type": "string",
+                 "description": "Name of the current system. Example: 'Sol'"
+             },
+             "station": {
+                 "type": "string",
+                 "description": "Name of the current station. Example: 'Wakata Station'"
+             },
+             "max_hops": {
+                 "type": "integer",
+                 "description": "Maximum number of hops (jumps) allowed for the route."
+             },
+             "max_hop_distance": {
+                 "type": "number",
+                 "description": "Maximum distance in light-years for a single hop."
+             },
+             "starting_capital": {
+                 "type": "number",
+                 "description": "Available starting capital in credits."
+             },
+             "max_cargo": {
+                 "type": "integer",
+                 "description": "Maximum cargo capacity in tons."
+             },
+             "requires_large_pad": {
+                 "type": "boolean",
+                 "description": "Whether the station must have a large landing pad."
+             },
+         },
+         "required": [
+             "system",
+             "station",
+             "max_hops",
+             "max_hop_distance",
+             "starting_capital",
+             "max_cargo",
+             "requires_large_pad",
+         ]
+     }, trade_planner)
 
-    actionManager.registerAction('station_finder',
-                                 "Find a station to buy or sell a commodity, to buy an outfitting module, with a Material Trader or Technology Broker. Ask for unknown values and make sure they are known.",
-                                 {
-                                     "type": "object",
-                                     "properties": {
-                                         "reference_system": {
-                                             "type": "string",
-                                             "description": "Name of the current system. Example: 'Sol'"
-                                         },
-                                         "has_large_pad": {
-                                             "type": "boolean",
-                                             "description": "If the ship requires a large landing pad",
-                                             "example": False
-                                         },
-                                         "distance": {
-                                             "type": "number",
-                                             "description": "The maximum distance to search for stations",
-                                             "example": 50000.0
-                                         },
-                                         "material_trader": {
-                                             "type": "array",
-                                             "description": "Material traders to find",
-                                             "items": {
-                                                 "type": "string",
-                                                 "enum": [
-                                                     "Encoded",
-                                                     "Manufactured",
-                                                     "Raw"
-                                                 ]
-                                             },
-                                             "minItems": 1,
-                                             "example": ["Encoded", "Manufactured"]
-                                         },
-                                         "technology_broker": {
-                                             "type": "array",
-                                             "description": "Technology brokers to find",
-                                             "items": {
-                                                 "type": "string",
-                                                 "enum": [
-                                                     "Guardian",
-                                                     "Human"
-                                                 ]
-                                             },
-                                             "minItems": 1,
-                                             "example": ["Guardian"]
-                                         },
-                                         "modules": {
-                                             "type": "array",
-                                             "description": "Outfitting modules to buy",
-                                             "items": {
-                                                 "type": "object",
-                                                 "properties": {
-                                                     "name": {
-                                                         "type": "string",
-                                                         "description": "Name of the module.",
-                                                         "example": "Frame Shift Drive"
-                                                     },
-                                                     "class": {
-                                                         "type": "array",
-                                                         "description": "Classes of the modules.",
-                                                         "items": {
-                                                             "type": "string",
-                                                             "enum": [
-                                                                 "0", "1", "2", "3", "4", "5", "6", "7", "8"
-                                                             ]
-                                                         },
-                                                         "example": ["5"]
-                                                     },
-                                                     "rating": {
-                                                         "type": "array",
-                                                         "description": "Ratings of the modules.",
-                                                         "items": {
-                                                             "type": "string",
-                                                             "enum": [
-                                                                 "A", "B", "C", "D", "E", "F", "G", "H", "I"
-                                                             ]
-                                                         },
-                                                         "example": ["A", "B", "C", "D"]
-                                                     }
-                                                 },
-                                                 "required": ["name", "class", "rating"]
-                                             },
-                                             "minItems": 1,
-                                         },
-                                         "market": {
-                                             "type": "array",
-                                             "description": "Market commodities to buy and sell",
-                                             "items": {
-                                                 "type": "object",
-                                                 "properties": {
-                                                     "name": {
-                                                         "type": "string",
-                                                         "description": "Name of the commodity.",
-                                                         "example": "Tritium"
-                                                     },
-                                                     "amount": {
-                                                         "type": "integer",
-                                                         "description": "Tons of cargo to sell or buy. Use maximum cargo capacity."
-                                                     },
-                                                     "transaction": {
-                                                         "type": "string",
-                                                         "description": "Type of transaction.",
-                                                         "enum": [
-                                                             "Buy", "Sell"
-                                                         ],
-                                                     }
-                                                 },
-                                                 "required": ["name", "amount", "transaction"]
-                                             },
-                                             "minItems": 1,
-                                         },
-                                         "ships": {
-                                             "type": "array",
-                                             "description": "Ships to buy",
-                                             "items": {
-                                                 "type": "object",
-                                                 "properties": {
-                                                     "name": {
-                                                         "type": "string",
-                                                         "description": "Name of ship",
-                                                         "example": "Sidewinder"
-                                                     }
-                                                 },
-                                                 "required": ["name"]
-                                             },
-                                             "minItems": 1,
-                                         },
-                                         "services": {
-                                             "type": "array",
-                                             "description": "Services to use",
-                                             "items": {
-                                                 "type": "object",
-                                                 "properties": {
-                                                     "name": {
-                                                         "type": "string",
-                                                         "description": "Name services",
-                                                         "example": "Sidewinder",
-                                                         "enum": [
-                                                             "Black Market",
-                                                             "Interstellar Factors Contact"
-                                                         ]
-                                                     }
-                                                 },
-                                                 "required": ["name"]
-                                             },
-                                             "minItems": 1,
-                                         }
-                                     },
-                                     "required": [
-                                         "reference_system",
-                                         "has_large_pad"
-                                     ]
-                                 },
-                                 station_finder
-                                 )
+    # Register AI action for system finder
+    actionManager.registerAction(
+        'system_finder',
+        "Find a star system based on allegiance, government, state, power, primary economy, and more. Ask for unknown values and ensure they are filled out.",
+        {
+            "type": "object",
+            "properties": {
+                "reference_system": {
+                    "type": "string",
+                    "description": "Name of the current system. Example: 'Sol'"
+                },
+                "distance": {
+                    "type": "number",
+                    "description": "Maximum distance to search for systems, default: 50000"
+                },
+                "allegiance": {
+                    "type": "array",
+                    "description": "System allegiance to filter by",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "Alliance",
+                            "Empire",
+                            "Federation",
+                            "Guardian",
+                            "Independent",
+                            "Pilots Federation",
+                            "Player Pilots",
+                            "Thargoid"
+                        ]
+                    }
+                },
+                "state": {
+                    "type": "array",
+                    "description": "System state to filter by",
+                    "items": {
+                        "type": "string",
+                    }
+                },
+                "government": {
+                    "type": "array",
+                    "description": "System government type to filter by",
+                    "items": {
+                        "type": "string",
+                    }
+                },
+                "power": {
+                    "type": "array",
+                    "description": "Powers controlling or exploiting the system",
+                    "items": {
+                        "type": "string",
+                    }
+                },
+                "primary_economy": {
+                    "type": "array",
+                    "description": "Primary economy type of the system",
+                    "items": {
+                        "type": "string",
+                    }
+                },
+                "security": {
+                    "type": "array",
+                    "description": "Security level of the system",
+                    "items": {
+                        "type": "string",
+                    }
+                },
+                "thargoid_war_state": {
+                    "type": "array",
+                    "description": "System's state in the Thargoid War",
+                    "items": {
+                        "type": "string",
+                    }
+                },
+                "population": {
+                    "type": "object",
+                    "description": "Population comparison and value",
+                    "properties": {
+                        "comparison": {
+                            "type": "string",
+                            "description": "Comparison type",
+                            "enum": ["<", ">"]
+                        },
+                        "value": {
+                            "type": "number",
+                            "description": "Size to compare with",
+                        }
+                    }
+                }
+            },
+            "required": ["reference_system"]
+        },
+        system_finder
+    )
+    actionManager.registerAction(
+        'station_finder',
+        "Find a station to buy or sell a commodity, to buy an outfitting module, with a Material Trader or Technology Broker. Ask for unknown values and make sure they are known.",
+        {
+            "type": "object",
+            "properties": {
+                "reference_system": {
+                    "type": "string",
+                    "description": "Name of the current system. Example: 'Sol'"
+                },
+                "has_large_pad": {
+                    "type": "boolean",
+                    "description": "If the ship requires a large landing pad",
+                    "example": False
+                },
+                "distance": {
+                    "type": "number",
+                    "description": "The maximum distance to search for stations",
+                    "example": 50000.0
+                },
+                "material_trader": {
+                    "type": "array",
+                    "description": "Material traders to find",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "Encoded",
+                            "Manufactured",
+                            "Raw"
+                        ]
+                    },
+                    "minItems": 1,
+                },
+                "technology_broker": {
+                    "type": "array",
+                    "description": "Technology brokers to find",
+                    "items": {
+                        "type": "string",
+                        "enum": [
+                            "Guardian",
+                            "Human"
+                        ]
+                    },
+                    "minItems": 1,
+                },
+                "modules": {
+                    "type": "array",
+                    "description": "Outfitting modules to buy",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Name of the module.",
+                                "example": "Frame Shift Drive"
+                            },
+                            "class": {
+                                "type": "array",
+                                "description": "Classes of the modules.",
+                                "items": {
+                                    "type": "string",
+                                    "enum": [
+                                        "0", "1", "2", "3", "4", "5", "6", "7", "8"
+                                    ]
+                                },
+                            },
+                            "rating": {
+                                "type": "array",
+                                "description": "Ratings of the modules.",
+                                "items": {
+                                    "type": "string",
+                                    "enum": [
+                                        "A", "B", "C", "D", "E", "F", "G", "H", "I"
+                                    ]
+                                },
+                                "example": ["A", "B", "C", "D"]
+                            }
+                        },
+                        "required": ["name", "class", "rating"]
+                    },
+                    "minItems": 1,
+                },
+                "market": {
+                    "type": "array",
+                    "description": "Market commodities to buy and sell",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Name of the commodity.",
+                                "example": "Tritium"
+                            },
+                            "amount": {
+                                "type": "integer",
+                                "description": "Tons of cargo to sell or buy. Use maximum cargo capacity."
+                            },
+                            "transaction": {
+                                "type": "string",
+                                "description": "Type of transaction.",
+                                "enum": [
+                                    "Buy", "Sell"
+                                ],
+                            }
+                        },
+                        "required": ["name", "amount", "transaction"]
+                    },
+                    "minItems": 1,
+                },
+                "ships": {
+                    "type": "array",
+                    "description": "Ships to buy",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Name of ship",
+                            }
+                        },
+                        "required": ["name"]
+                    },
+                    "minItems": 1,
+                },
+                "services": {
+                    "type": "array",
+                    "description": "Services to use",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Name services",
+                                "enum": [
+                                    "Black Market",
+                                    "Interstellar Factors Contact"
+                                ]
+                            }
+                        },
+                        "required": ["name"]
+                    },
+                    "minItems": 1,
+                }
+            },
+            "required": [
+                "reference_system",
+                "has_large_pad"
+            ]
+        },
+        station_finder
+    )
 
     if vision_client:
         actionManager.registerAction('getVisuals', "Describes what's currently visible to the Commander.", {
