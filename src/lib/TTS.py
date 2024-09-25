@@ -4,6 +4,7 @@ from sys import platform
 import threading
 from time import sleep
 
+import inflect
 import openai
 import pyaudio
 
@@ -21,6 +22,7 @@ class TTS:
         self.model = model
         self.voice = voice
         self.speed = speed
+        self.inflect = inflect.engine()
 
         thread = threading.Thread(target=self._playback_thread)
         thread.daemon = True
@@ -52,7 +54,8 @@ class TTS:
                     self._is_playing = True
                     text = self.read_queue.get()
                     # Remove commas from numbers to fix OpenAI TTS
-                    text = re.sub(r"[^\d,]\d{1,3}(,\d{3})+", lambda x: x.group().replace(",", ""), text)
+                    text = re.sub(r"\d+(,\d{3})*(\.\d+)?", self._number_to_text, text)
+                    print('reading:', text)
                     try:
                         with self.openai_client.audio.speech.with_streaming_response.create(
                                 model=self.model,
@@ -81,6 +84,11 @@ class TTS:
             self._is_playing = False
             stream.stop_stream()
 
+    def _number_to_text(self, match: re.Match):
+        """Converts numbers like 100,203.12 to one hundred thousand two hundred three point one two"""
+        if len(match.group()) <= 2:
+            return match.group()
+        return self.inflect.number_to_words(match.group().replace(",", ""))
 
     def say(self, text: str):
         self.read_queue.put(text)
@@ -104,8 +112,10 @@ if __name__ == "__main__":
     tts = TTS(openai_client=openai_audio)
 
     text = """
-    Thank you for choosing COVAS-NEXT. For more details or support, join our community on Discord or visit our GitHub page for the latest updates.
-
+input: thats 94.010212!
+input: only 2. in the whole universe.
+input: this is 100,000.12
+input: no, it's 102010221120!
     """
 
     for line in text.split("\n"):
