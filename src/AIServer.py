@@ -4,9 +4,11 @@ from pick import pick
 
 from lib.localSTT import init_stt, stt, stt_models_names
 from lib.localTTS import init_tts, tts, tts_model_names
+from lib.localLLM import init_llm, llm, llm_model_names
 
-tts_model, _ = pick(options=tts_model_names, title='Select a TTS model')
-stt_model, _ = pick(options=stt_models_names, title='Select a STT model')
+tts_model_name, _ = pick(options=tts_model_names, title='Select a TTS model')
+stt_model_name, _ = pick(options=stt_models_names, title='Select a STT model')
+llm_model_name, _ = pick(options=llm_model_names, title='Select a LLM model')
 
 # Show an ip selection menu with
 host, _ = pick(options=[
@@ -19,18 +21,34 @@ port = int(input('Enter the port number or leave empty for default port [8080]: 
 if port < 1025 or port > 65535:
     raise ValueError('Port number must be between 1025 and 65535')
 
-print(f'Selected TTS model: {tts_model}')
-print(f'Selected STT model: {stt_model}')
+print(f'Selected TTS model: {tts_model_name}')
+print(f'Selected STT model: {stt_model_name}')
+print(f'Selected LLM model: {llm_model_name}')
 
+_llm_model = init_llm(llm_model_name)
 models = {
-    'tts-1': init_tts(tts_model),
-    'whisper-1': init_stt(stt_model)
+    'tts-1': init_tts(tts_model_name),
+    'whisper-1': init_stt(stt_model_name),
+    'gpt-4o-mini': _llm_model,
+    'gpt-4o': _llm_model,
 }
 
 # create flask api endpoint
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
+
+@app.route('/v1/chat/completions', methods=['POST'])
+def createChatCompletion():
+    chat = request.json
+    model = models[chat.get('model', 'gpt-4o-mini')]
+    if not model:
+        return jsonify({'error': 'model not found'}), 400
+    if 'messages' not in chat:
+        return jsonify({'error': 'messages is required'}), 400
+
+    completion = llm(model, chat)
+    return jsonify(completion)
 
 @app.route('/v1/audio/speech', methods=['POST'])
 def createSpeech():
