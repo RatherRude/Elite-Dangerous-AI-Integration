@@ -1510,8 +1510,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, hold_fire_secondary_weapon)
 
-    actionManager.registerAction('hyperSuperCombination',
-                                 "initiate FSD Jump, required to jump to the next system or to enter supercruise", {
+    actionManager.registerAction('hyperSuperCombination', "initiate FSD Jump, required to jump to the next system or to enter supercruise", {
                                      "type": "object",
                                      "properties": {}
                                  }, hyper_super_combination)
@@ -1654,7 +1653,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "required": ["query", "systemName"]
     }, get_faction_info)
 
-    actionManager.registerAction('getStations', "Retrieve information about stations in this system", {
+    actionManager.registerAction('getStations', "Retrieve information about stations for a system", {
         "type": "object",
         "properties": {
             "query": {
@@ -1680,6 +1679,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "required": ["query"]
     }, get_galnet_news)
 
+    # if ARC:
     actionManager.registerAction('trade_plotter',
      "Retrieve a trade route from the trade plotter. Ask for unknown values and make sure they are known.",
      {

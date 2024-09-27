@@ -1,6 +1,6 @@
 # To avoid false positives on anti-virus systems, you should compile pyinstaller from scratch
 #$Env:PYINSTALLER_COMPILE_BOOTLOADER = "true"
-#pip install --user --force-reinstall --ignore-installed --no-binary :all: pyinstaller
+#pip install --force-reinstall --ignore-installed --no-binary :all: pyinstaller
 
 # To run both executables from a single python (saves ~20mb) you can use the following
 #pyi-makespec.exe .\src\AIGUI.py --noconsole --add-data .\screen\EDAI_logo.png:.\screen

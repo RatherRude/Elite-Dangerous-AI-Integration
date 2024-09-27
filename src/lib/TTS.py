@@ -4,7 +4,7 @@ from sys import platform
 import threading
 from time import sleep
 
-import inflect
+from num2words import num2words
 import openai
 import pyaudio
 
@@ -22,7 +22,6 @@ class TTS:
         self.model = model
         self.voice = voice
         self.speed = speed
-        self.inflect = inflect.engine()
 
         thread = threading.Thread(target=self._playback_thread)
         thread.daemon = True
@@ -88,7 +87,7 @@ class TTS:
         """Converts numbers like 100,203.12 to one hundred thousand two hundred three point one two"""
         if len(match.group()) <= 2:
             return match.group()
-        return self.inflect.number_to_words(match.group().replace(",", ""))
+        return num2words(match.group().replace(",", ""))
 
     def say(self, text: str):
         self.read_queue.put(text)

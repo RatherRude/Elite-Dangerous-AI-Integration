@@ -4,7 +4,6 @@ import threading
 from sys import platform
 from time import sleep, time
 from typing import Optional
-from .Logger import log
 
 import openai
 import speech_recognition as sr

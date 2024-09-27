@@ -383,7 +383,7 @@ class App:
         root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         parser = argparse.ArgumentParser()
-        python_executable = "pythonw" if platform == 'win32' else "python3"
+        python_executable = sys.executable
         parser.add_argument("--chat", default=python_executable + " ./src/Chat.py", help="command to run the chat app")
         parser.add_argument("--release", default="", help="current release")
         args = parser.parse_args()
@@ -1002,7 +1002,8 @@ class App:
                 startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
             self.process = subprocess.Popen(self.chat_command_arg.split(' '), startupinfo=startupinfo,
                                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1,
-                                            universal_newlines=True, encoding='utf-8')
+                                            universal_newlines=True, encoding='utf-8', shell=False, close_fds=True)
+
             self.debug_frame.pack()
             self.main_frame.pack_forget()
             self.stop_button.pack()
@@ -1027,8 +1028,9 @@ class App:
         return re.sub(r'\x1b\[([0-9,A-Z]{1,2}(;[0-9]{1,2})?(;[0-9]{3})?)?[m|K]?', '', s)
 
     def read_process_output(self):
-        while True:
-            stdout_line = self.process.stdout.readline()
+        process = self.process
+        while process and process.poll() is None:
+            stdout_line = process.stdout.readline()
             stdout_line = self.strip_ansi_codes(stdout_line)
             if stdout_line:
                 if stdout_line.startswith("cmdr"):
@@ -1053,33 +1055,31 @@ class App:
                     self.debug_text.insert(tk.END, stdout_line, "normal")
 
                 self.debug_text.see(tk.END)  # Scroll to the end of the text widget
-            else:
-                break  # No more output from subprocess
 
     def read_process_error(self):
-        while True:
-            stderr_line = self.process.stderr.readline()
+        process = self.process
+        while process and process.poll() is None:
+            stderr_line = process.stderr.readline()
             stderr_line = self.strip_ansi_codes(stderr_line)
             if stderr_line:
                 self.debug_text.insert(tk.END, "Error: ", "error")
                 self.debug_text.insert(tk.END, stderr_line, "normal")
                 self.debug_text.see(tk.END)
-            else:
-                break  # No more output from subprocess
 
     def stop_external_script(self):
         if self.process:
             # self.send_signal(signal.SIGINT)  # Terminate the subprocess
             # self.process.wait()  # Terminate the subprocess
             self.process.kill()  # Terminate the subprocess (@TODO check why terminate doesn't work on linux, windows does the same for both anyway)
+            self.process.wait()
             self.process = None
         if self.thread_process_stdout:
             if self.thread_process_stdout.is_alive():
-                self.thread_process_stdout.join()  # Wait for the thread to complete
+                self.thread_process_stdout.join(timeout=1)  # Wait for the thread to complete
             self.thread_process_stdout = None
         if self.thread_process_stderr:
             if self.thread_process_stderr.is_alive():
-                self.thread_process_stderr.join()  # Wait for the thread to complete
+                self.thread_process_stderr.join(timeout=1)  # Wait for the thread to complete
             self.thread_process_stderr = None
         self.debug_text.insert(tk.END, "Elite Dangerous AI Integration stopped.\n")
         self.debug_text.see(tk.END)
