@@ -79,17 +79,17 @@ class VerticalScrolledFrame(tk.Frame):
 # List of game events categorized
 game_events = {
     'Startup Events': {
-        'Cargo': False,
-        'ClearSavedGame': False,
+        # 'Cargo': False,
+        # 'ClearSavedGame': False,
         'LoadGame': True,
-        'NewCommander': False,
-        'Materials': False,
-        'Missions': False,
-        'Progress': False,
-        'Rank': False,
-        'Reputation': False,
+        'NewCommander': True,
+        # 'Materials': False,
+        'Missions': True,
+        # 'Progress': False,
+        # 'Rank': False,
+        # 'Reputation': False,
         'Statistics': False,
-        'SquadronStartup': False
+        # 'SquadronStartup': False
     },
     'Combat Events': {
         'Died': True,
@@ -280,7 +280,7 @@ game_events = {
         'SellMicroResources': False,
         'SellOrganicData': False,
         'SellWeapon': False,
-        'ShipLocker': False,
+        # 'ShipLocker': False,
         'SwitchSuitLoadout': True,
         'TransferMicroResources': False,
         'TradeMicroResources': False,
@@ -317,7 +317,7 @@ game_events = {
         'LaunchFighter': True,
         'LaunchSRV': True,
         'ModuleInfo': False,
-        'Music': False,
+        # 'Music': False,
         'NpcCrewPaidWage': False,
         'NpcCrewRank': False,
         'Promotion': True,
@@ -689,11 +689,11 @@ class App:
             category_values[category] = {}
 
             for event, state in events.items():
-                rowCounter += 1
                 var = tk.BooleanVar(value=state)
                 chk = tk.Checkbutton(frame, text=event, variable=var)
                 chk.grid(row=rowCounter, column=1, sticky=tk.W)
                 category_values[category][event] = var
+                rowCounter += 1
 
         return lambda: {category: {
             event: state.get() for event, state in events.items()
