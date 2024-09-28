@@ -3,7 +3,7 @@
 #pip install --force-reinstall --ignore-installed --no-binary :all: pyinstaller
 
 # To run both executables from a single python (saves ~20mb) you can use the following
-#pyi-makespec.exe .\src\AIGUI.py --noconsole --add-data .\screen\EDAI_logo.png:.\screen
+#pyi-makespec.exe .\src\AIGUI.py --noconsole --add-data .\docs\screen\EDAI_logo.png:.\screen
 #pyi-makespec.exe .\src\Chat.py --add-data $env:APPDATA\Python\Python38\site-packages\pysilero_vad\models\silero_vad.onnx:.\pysilero_vad\models --add-data $env:APPDATA\Python\Python38/site-packages/onnxruntime/capi/onnxruntime_providers_shared.dll:.
 # next merge the two files accoring to https://pyinstaller.org/en/stable/spec-files.html?highlight=spec-files#multipackage-bundles and save as bundle.spec
 #pyinstaller.exe bundle.spec

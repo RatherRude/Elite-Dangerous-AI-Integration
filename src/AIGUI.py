@@ -404,10 +404,10 @@ class App:
 
         # Background Image
         try:
-            background_image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../screen/EDAI_logo.png'))
+            background_image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../docs/screen/EDAI_logo.png'))
             if hasattr(sys, 'frozen'):
                 background_image_path = os.path.abspath(
-                    os.path.join(os.path.dirname(__file__), './screen/EDAI_logo.png'))
+                    os.path.join(os.path.dirname(__file__), './docs/screen/EDAI_logo.png'))
             background_image = tk.PhotoImage(file=background_image_path)
             self.background_label = tk.Label(root, bg="black", image=background_image)
             self.background_label.place(x=0, y=0, relwidth=1, relheight=1)
