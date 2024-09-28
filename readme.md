@@ -30,8 +30,8 @@ We also have an installation guide in video: [Installation Guide on Youtube](htt
 #### 1.1. Prerequisites
 The integration relies on third-party APIs for providing various functionalities. We highly recommend using OpenAI as it is the easiest to setup and provides the best experience within the game. However there is also an option to use alternative providers:
 
-| <img src="screen/decision_tree.svg" width="420px"> | **OpenAI**: [register to get an API key](https://platform.openai.com/docs/introduction) *The fastest and highest accuracy text models, fast STT, high-quality TTS. Usage costs money*<br /><br />Openrouter: [register to get an API key](https://openrouter.ai/docs/models) *Huge selection of text models. Some are free and others cost money. Slower STT and lower-quality TTS.*<br /><br />**Ollama**: [install and run](https://github.com/ollama/ollama?tab=readme-ov-file#quickstart) *Runs on your own hardware. Slower, lower accuracy. Slower STT and lower-quality TTS.* |
-|----------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <img src="docs/screen/decision_tree.svg" width="420px"> | **OpenAI**: [register to get an API key](https://platform.openai.com/docs/introduction) *The fastest and highest accuracy text models, fast STT, high-quality TTS. Usage costs money*<br /><br />Openrouter: [register to get an API key](https://openrouter.ai/docs/models) *Huge selection of text models. Some are free and others cost money. Slower STT and lower-quality TTS.*<br /><br />**Ollama**: [install and run](https://github.com/ollama/ollama?tab=readme-ov-file#quickstart) *Runs on your own hardware. Slower, lower accuracy. Slower STT and lower-quality TTS.* |
+|---------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 
 #### 1.2. Installation
 
@@ -41,7 +41,7 @@ The integration relies on third-party APIs for providing various functionalities
     
 * Run `start.bat`.
 
-![GUI-start](screen/GUI_start.png)
+![GUI-start](docs/screen/GUI_start.png)
 
 Here you will enter a few details:
 - Your Commander name: How you want to be addressed
@@ -54,7 +54,7 @@ Here you will enter a few details:
 
 Click "Start AI" when ready:
 
-![GUI-ai](screen/GUI_AI.png)
+![GUI-ai](docs/screen/GUI_AI.png)
 
 #### 2.1. Post-Installation
 
