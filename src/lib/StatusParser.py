@@ -28,7 +28,7 @@ class StatusParser:
             except Exception as e:
                 log('error', 'An error occurred when reading status file', e)
                 sleep(backoff)
-                log('debug', 'Attempting to restart status file reader after failure')
+                log('info', 'Attempting to restart status file reader after failure')
                 backoff *= 2
 
     def _watch_file(self):

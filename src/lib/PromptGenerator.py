@@ -475,6 +475,6 @@ class PromptGenerator:
 
         conversational_pieces.reverse()  # Restore the original order
 
-        # log('Debug', 'conversation', conversational_pieces)
+        # log('debug', 'conversation', conversational_pieces)
 
         return conversational_pieces

@@ -35,7 +35,7 @@ class TTS:
             except Exception as e:
                 log('error', 'An error occurred during speech synthesis', e)
                 sleep(backoff)
-                log('debug', 'Attempting to restart audio playback after failure')
+                log('info', 'Attempting to restart audio playback after failure')
                 backoff *= 2
     
     def _playback_loop(self):
@@ -54,7 +54,7 @@ class TTS:
                     text = self.read_queue.get()
                     # Remove commas from numbers to fix OpenAI TTS
                     text = re.sub(r"\d+(,\d{3})*(\.\d+)?", self._number_to_text, text)
-                    print('reading:', text)
+                    # print('reading:', text)
                     try:
                         with self.openai_client.audio.speech.with_streaming_response.create(
                                 model=self.model,

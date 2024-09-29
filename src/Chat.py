@@ -87,7 +87,7 @@ def reply(client, events: List[Event], new_events: List[Event], prompt_generator
         log("error", "completion with error:", completion)
         is_thinking = False
         return
-    # log("Debug", f'Prompt: {completion.usage.prompt_tokens}, Completion: {completion.usage.completion_tokens}')
+    log("Debug", f'Prompt: {completion.usage.prompt_tokens}, Completion: {completion.usage.completion_tokens}')
 
     response_text = completion.choices[0].message.content
     if response_text:
@@ -196,41 +196,41 @@ def main():
         api_key=apiKey if tts_api_key == '' else tts_api_key,
     )
 
-    log('Debug', f"Initializing CMDR {commanderName}'s personal AI...\n")
-    log('Debug', "API Key: Loaded")
-    log('Debug', f"Using Push-to-Talk: {ptt_var}")
-    log('Debug', f"Using Function Calling: {useTools}")
-    log('Debug', f"Current model: {llm_model_name}")
-    log('Debug', f"Current TTS voice: {tts_voice}")
-    log('Debug', f"Current TTS Speed: {tts_speed}")
-    log('Debug', "Current backstory: " + backstory.replace("{commander_name}", commanderName))
+    log('info', f"Initializing CMDR {commanderName}'s personal AI...\n")
+    log('info', "API Key: Loaded")
+    log('info', f"Using Push-to-Talk: {ptt_var}")
+    log('info', f"Using Function Calling: {useTools}")
+    log('info', f"Current model: {llm_model_name}")
+    log('info', f"Current TTS voice: {tts_voice}")
+    log('info', f"Current TTS Speed: {tts_speed}")
+    log('info', "Current backstory: " + backstory.replace("{commander_name}", commanderName))
 
     # TTS Setup
-    log('Debug', "Basic configuration complete.")
-    log('Debug', "Loading voice output...")
+    log('info', "Basic configuration complete.")
+    log('info', "Loading voice output...")
     if alternative_tts_var:
-        # log('Debug', 'Local TTS')
+        log('debug', 'Local TTS')
         tts = Voice(rate_multiplier=float(tts_speed), voice=tts_voice)
         tts.set_on()
     else:
-        # log('Debug', 'remote TTS')
+        log('debug', 'remote TTS')
         tts = TTS(openai_client=ttsClient, model=tts_model_name, voice=tts_voice, speed=tts_speed)
 
-    log('Debug', "Loading voice input...")
+    log('debug', "Loading voice input...")
     if alternative_stt_var:
-        # log('Debug', 'local STT')
+        log('debug', 'local STT')
         stt = STT(openai_client=None, model="distil-medium.en")
     else:
-        # log('Debug', 'remote STT')
+        log('debug', 'remote STT')
         stt = STT(openai_client=sttClient, model=stt_model_name)
 
     if ptt_var and ptt_key:
-        log('Debug', f"Setting push-to-talk hotkey {ptt_key}...")
+        log('info', f"Setting push-to-talk hotkey {ptt_key}...")
         controller_manager.register_hotkey(ptt_key, lambda _: stt.listen_once_start(),
                                            lambda _: stt.listen_once_end())
     else:
         stt.listen_continuous()
-    log('Debug', "Voice interface ready.")
+    log('info', "Voice interface ready.")
 
 
     enabled_game_events = []
@@ -250,10 +250,10 @@ def main():
 
     if useTools:
         register_actions(action_manager, event_manager, llmClient, llm_model_name, visionClient, vision_model_name, status_parser)
-        log('Debug', "Actions ready.")
+        log('info', "Actions ready.")
 
     # Cue the user that we're ready to go.
-    log('Debug', "System Ready.")
+    log('info', "System Ready.")
 
     counter = 0
     while True:

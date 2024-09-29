@@ -232,11 +232,11 @@ def setGameWindowActive():
     if handle:
         try:
             win32gui.SetForegroundWindow(handle)  # give focus to ED
-            # log("debug", "Set game window as active")
+            log("debug", "Set game window as active")
         except:
             log("error", "Failed to set game window as active")
     else:
-        log("debug", "Unable to find Elite game window")
+        log("info", "Unable to find Elite game window")
 
 
 def screenshot():
@@ -461,7 +461,7 @@ def trade_planner_create_thread(obj):
 
     dict.update(obj)
 
-    log('Debug, Request data', dict)
+    log('debug', 'Request data', dict)
     # send request with obj, will return a queue id
     url = "https://spansh.co.uk/api/trade/route"
 
@@ -1121,7 +1121,7 @@ def prepare_station_request(obj):
         "Universal Cartographics",
         "Vista Genomics"
     ]
-    log('Debug Station Finder Request', obj)
+    log('debug', 'Station Finder Request', obj)
     filters = {
         "distance": {
             "min": "0",
@@ -1314,7 +1314,7 @@ def prepare_system_request(obj):
     known_security_levels = ["Anarchy", "High", "Low", "Medium"]
     known_thargoid_war_states = ["None", "Thargoid Controlled", "Thargoid Harvest", "Thargoid Probing",
                                  "Thargoid Recovery", "Thargoid Stronghold"]
-    log('Debug System Finder Request', obj)
+    log('debug', 'System Finder Request', obj)
     filters = {
         "distance": {
             "min": "0",

@@ -48,8 +48,8 @@ class Voice:
                 engine.setProperty('voice', voice.id)  # changes the voice
 
         if default_voice:
-            log('Debug ', 'TTS Voice ' + self.voice + ' has not been found. Using fallback TTS Voice.')
-            log('Debug ', 'List of available models: ' + ', '.join([voice.name for voice in voices]))
+            log('info', 'TTS Voice ' + self.voice + ' has not been found. Using fallback TTS Voice.')
+            log('info', 'List of available models: ' + ', '.join([voice.name for voice in voices]))
 
         while not self.v_quit:
             try:

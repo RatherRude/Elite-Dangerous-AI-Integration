@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import time
 import re
 import subprocess
 import sys
@@ -11,6 +12,7 @@ from sys import platform
 from threading import Thread
 from tkinter import messagebox
 from typing import Dict
+import typing
 
 import pyaudio
 import requests
@@ -995,6 +997,11 @@ class App:
         # self.debug_text.update_idletasks()
 
         try:
+            # create log file
+            outlog = f"./logs/{int(time.time())}.out.log"
+            os.makedirs(os.path.dirname(outlog), exist_ok=True)
+            self.outlog_file = open(outlog, "w")
+
             # Script execution
             startupinfo = None
             if platform == "win32":
@@ -1010,9 +1017,9 @@ class App:
             self.start_button.pack_forget()  # Hide the start button
 
             # Read output in a separate thread
-            self.thread_process_stdout = Thread(target=self.read_process_output, daemon=True)
+            self.thread_process_stdout = Thread(target=self.read_process_output, args=[self.process, self.outlog_file], daemon=True)
             self.thread_process_stdout.start()
-            self.thread_process_stderr = Thread(target=self.read_process_error, daemon=True)
+            self.thread_process_stderr = Thread(target=self.read_process_error, args=[self.process, self.outlog_file], daemon=True)
             self.thread_process_stderr.start()
 
         except FileNotFoundError as e:
@@ -1027,11 +1034,12 @@ class App:
     def strip_ansi_codes(self, s: str):
         return re.sub(r'\x1b\[([0-9,A-Z]{1,2}(;[0-9]{1,2})?(;[0-9]{3})?)?[m|K]?', '', s)
 
-    def read_process_output(self):
-        process = self.process
+    def read_process_output(self, process: subprocess.Popen, outlog_file: typing.TextIO):
         while process and process.poll() is None:
             stdout_line = process.stdout.readline()
             stdout_line = self.strip_ansi_codes(stdout_line)
+            outlog_file.write(stdout_line)
+            outlog_file.flush()
             if stdout_line:
                 if stdout_line.startswith("cmdr"):
                     self.debug_text.insert(tk.END, "CMDR", "human")
@@ -1045,6 +1053,9 @@ class App:
                 elif stdout_line.startswith("action"):
                     self.debug_text.insert(tk.END, "Action", "action")
                     self.debug_text.insert(tk.END, stdout_line[6:], "normal")
+                elif stdout_line.startswith("info"):
+                    self.debug_text.insert(tk.END, "Info", "debug")
+                    self.debug_text.insert(tk.END, stdout_line[4:], "normal")
                 elif stdout_line.startswith("debug"):
                     self.debug_text.insert(tk.END, "Debug", "debug")
                     self.debug_text.insert(tk.END, stdout_line[5:], "normal")
@@ -1056,11 +1067,12 @@ class App:
 
                 self.debug_text.see(tk.END)  # Scroll to the end of the text widget
 
-    def read_process_error(self):
-        process = self.process
+    def read_process_error(self, process: subprocess.Popen, outlog_file: typing.TextIO):
         while process and process.poll() is None:
             stderr_line = process.stderr.readline()
             stderr_line = self.strip_ansi_codes(stderr_line)
+            outlog_file.write("Error: "+stderr_line)
+            outlog_file.flush()
             if stderr_line:
                 self.debug_text.insert(tk.END, "Error: ", "error")
                 self.debug_text.insert(tk.END, stderr_line, "normal")

@@ -19,7 +19,7 @@ class EventManager:
         if continue_conversation:
             self.load_history()
         else:
-            log('Debug', 'Starting a new conversation.')
+            log('info', 'Starting a new conversation.')
 
     def add_game_event(self, content: Dict):
         event = GameEvent(content=content)
@@ -52,7 +52,7 @@ class EventManager:
         event = ConversationEvent(kind='assistant_completed', content='')
         self.pending.append(event)
         self.is_replying = False
-        # log('Debug', event)
+        # log('debug', event)
         return self._handle_new_event()
 
     def add_tool_call(self, request: Dict, results: List[Dict]):
@@ -67,7 +67,7 @@ class EventManager:
             new_events = self.pending
             self.processed += self.pending
             self.pending = []
-            # log('Debug', 'eventmanager requesting reply')
+            log('debug', 'eventmanager requesting reply')
             self.on_reply_request(self.processed, new_events)
             return True
 
@@ -115,7 +115,7 @@ class EventManager:
         try:
             with open('history.json', 'r') as json_file:
                 history = json.load(json_file)
-                log('Debug', f'Continuing conversation with {len(history)} elements.')
+                log('info', f'Continuing conversation with {len(history)} elements.')
         except json.JSONDecodeError:
             log('error', 'Error while loading history.json')
             history = []
