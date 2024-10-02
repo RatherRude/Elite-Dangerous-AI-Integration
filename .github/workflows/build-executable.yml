@@ -42,7 +42,7 @@ jobs:
   
       - name: Create Executable for AIGUI
         run: |
-          pyinstaller .\src\AIGUI.py -y --onedir --clean --noconsole --add-data .\screen\EDAI_logo.png:.\screen
+          pyinstaller .\src\AIGUI.py -y --onedir --clean --noconsole --add-data .\docs\screen\EDAI_logo.png:.\screen
 
       - name: Create Executable for Chat
         run: |
