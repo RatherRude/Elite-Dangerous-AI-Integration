@@ -5,7 +5,8 @@ import samplerate
 import soundfile as sf
 
 stt_models_names = [
-    'distil-medium.en', 
+    'deepdml/faster-whisper-large-v3-turbo-ct2',
+    'distil-medium.en',
     'distil-small.en', 
 
     'tiny', 

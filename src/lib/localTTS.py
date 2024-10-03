@@ -6,8 +6,11 @@ import samplerate
 
 tts_model_names = [
   'vits-piper-en_US-libritts-high.tar.bz2',
+  'vits-piper-en_US-ryan-high.tar.bz2',
+  'vits-piper-en_US-ljspeech-high.tar.bz2',
+  'vits-piper-en_US-lessac-high.tar.bz2',
+  'vits-piper-en_GB-cori-high.tar.bz2',
   'vits-piper-en_US-glados.tar.bz2',
-
   'vits-cantonese-hf-xiaomaiiwn.tar.bz2',
   'vits-coqui-bg-cv.tar.bz2',
   'vits-coqui-bn-custom_female.tar.bz2',
@@ -219,6 +222,7 @@ def init_tts(asset: str = "vits-piper-en_US-ljspeech-high.tar.bz2"):
                 data_dir=data.as_posix() if data else '',
                 dict_dir=dict.as_posix() if dict else '',
                 tokens=tokens.as_posix() if tokens else '',
+
             ),
             provider="cpu",
             debug=False,
