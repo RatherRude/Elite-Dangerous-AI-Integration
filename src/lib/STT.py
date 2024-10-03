@@ -28,7 +28,7 @@ class STT:
     listening = False
     resultQueue = queue.Queue()
 
-    prompt = "Computer, pirates are attacking our ship! Call Wakata Station in HIP 23716 for help and enter supercruise immediately!"
+    prompt = "COVAS, give me a status update... and throw in something inspiring, would you?"
 
     def __init__(self, openai_client: Optional[openai.OpenAI], phrase_time_limit=15, energy_threshold=1000,
                  linux_mic_name='pipewire', model='whisper-1', language=None):
@@ -69,8 +69,7 @@ class STT:
         audio_raw = b''.join(frames)
         audio_data = sr.AudioData(audio_raw, source.SAMPLE_RATE, source.SAMPLE_WIDTH)
         text = self._transcribe(audio_data)
-        filter = ['', 'Call Wakata Station in HIP 23716 for help and enter supercruise immediately!',
-                  'Call HIP 23716 for help and enter supercruise immediately!']
+        filter = ['', 'COVAS, give me a status update... and throw in something inspiring, would you?']
         if not text or text.strip() in filter:
             return
         self.resultQueue.put(STTResult(text, audio_data, timestamp))
