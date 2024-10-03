@@ -469,7 +469,7 @@ class PromptGenerator:
             "role": "system",
             "content": "Let's roleplay in the universe of Elite: Dangerous. " +
                        "I will provide game events in parentheses; do not create new ones. " +
-                       "Do no hallucinate any information that is not given to you. " +
+                       "Do not hallucinate any information that is not given to you. Do not use markdown in your responses. " +
                        self.character_prompt.format(commander_name=self.commander_name)
         })
 
