@@ -409,7 +409,7 @@ class App:
             background_image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../docs/screen/EDAI_logo.png'))
             if hasattr(sys, 'frozen'):
                 background_image_path = os.path.abspath(
-                    os.path.join(os.path.dirname(__file__), './docs/screen/EDAI_logo.png'))
+                    os.path.join(os.path.dirname(__file__), './screen/EDAI_logo.png'))
             background_image = tk.PhotoImage(file=background_image_path)
             self.background_label = tk.Label(root, bg="black", image=background_image)
             self.background_label.place(x=0, y=0, relwidth=1, relheight=1)
@@ -624,12 +624,12 @@ class App:
         self.ai_geeks_frame.update()
 
         # Toggle Section Button
-        self.toggle_ai_geeks_section_button = tk.Button(self.main_frame, text="Show AI Geeks Section",
+        self.toggle_ai_geeks_section_button = tk.Button(self.main_frame, text="Show AI Settings",
                                                         command=self.toggle_ai_geeks_section)
         self.toggle_ai_geeks_section_button.grid(row=6, column=0, columnspan=2, pady=10, padx=(150, 0), sticky="")
 
         # Toggle Section Button
-        self.toggle_game_events_section_button = tk.Button(self.main_frame, text="Show Game Events Section",
+        self.toggle_game_events_section_button = tk.Button(self.main_frame, text="Show Events Triggers",
                                                            command=self.toggle_game_events_section)
         self.toggle_game_events_section_button.grid(row=6, column=0, columnspan=2, pady=10, padx=(0, 150), sticky="")
 
@@ -917,21 +917,21 @@ class App:
             self.toggle_ai_geeks_section_button.config(text="Show AI Geeks Section")
         else:
             self.ai_geeks_frame.grid()
-            self.toggle_ai_geeks_section_button.config(text="Hide AI Geeks Section")
+            self.toggle_ai_geeks_section_button.config(text="Hide AI Settings")
 
             self.game_events_frame.grid_remove()
-            self.toggle_game_events_section_button.config(text="Show Game Event Section")
+            self.toggle_game_events_section_button.config(text="Show Event Triggers")
 
     def toggle_game_events_section(self):
         if self.game_events_frame.winfo_viewable():
             self.game_events_frame.grid_remove()
-            self.toggle_game_events_section_button.config(text="Show Game Event Section")
+            self.toggle_game_events_section_button.config(text="Show Event Triggers")
         else:
             self.game_events_frame.grid()
-            self.toggle_game_events_section_button.config(text="Hide Game Event Section")
+            self.toggle_game_events_section_button.config(text="Hide Event Triggers")
 
             self.ai_geeks_frame.grid_remove()
-            self.toggle_ai_geeks_section_button.config(text="Show AI Geeks Section")
+            self.toggle_ai_geeks_section_button.config(text="Show AI Settings")
 
     def toggle_ptt(self):
         if self.ptt_var.get():
@@ -963,6 +963,8 @@ class App:
             self.tts_endpoint_label.grid_remove()
             self.tts_api_key.grid_remove()
             self.tts_api_key_label.grid_remove()
+            self.tts_voice.grid_remove()
+            self.tts_voice_label.grid_remove()
         else:
             self.tts_model_name.grid()
             self.tts_model_name_label.grid()
@@ -970,6 +972,8 @@ class App:
             self.tts_endpoint_label.grid()
             self.tts_api_key.grid()
             self.tts_api_key_label.grid()
+            self.tts_voice.grid()
+            self.tts_voice_label.grid()
 
     def toggle_vision(self):
         if self.vision_var.get():
@@ -1057,8 +1061,10 @@ class App:
                     self.debug_text.insert(tk.END, "Info", "debug")
                     self.debug_text.insert(tk.END, stdout_line[4:], "normal")
                 elif stdout_line.startswith("debug"):
-                    self.debug_text.insert(tk.END, "Debug", "debug")
-                    self.debug_text.insert(tk.END, stdout_line[5:], "normal")
+                    # Debug is hidden in the UI, but can be found in the log file
+                    # self.debug_text.insert(tk.END, "Debug", "debug")
+                    # self.debug_text.insert(tk.END, stdout_line[5:], "normal")
+                    pass
                 elif stdout_line.startswith("error"):
                     self.debug_text.insert(tk.END, "Error", "error")
                     self.debug_text.insert(tk.END, stdout_line[5:], "normal")

@@ -188,11 +188,12 @@ def main():
 
 
     sttClient = OpenAI(
-        base_url="https://api.openai.com/v1" if stt_endpoint == '' else stt_endpoint,
+        base_url="http://localhost:8080/v1" if alternative_stt_var else stt_endpoint,
         api_key=apiKey if stt_api_key == '' else stt_api_key,
     )
+
     ttsClient = OpenAI(
-        base_url="https://api.openai.com/v1" if tts_endpoint == '' else tts_endpoint,
+        base_url="http://localhost:8080/v1" if alternative_tts_var else tts_endpoint,
         api_key=apiKey if tts_api_key == '' else tts_api_key,
     )
 
@@ -210,22 +211,17 @@ def main():
     log('info', "Loading voice output...")
     if alternative_tts_var:
         log('debug', 'Local TTS')
-        tts = Voice(rate_multiplier=float(tts_speed), voice=tts_voice)
-        tts.set_on()
-    else:
-        log('debug', 'remote TTS')
-        tts = TTS(openai_client=ttsClient, model=tts_model_name, voice=tts_voice, speed=tts_speed)
-
-    log('debug', "Loading voice input...")
+        tts_model_name = 'tts-1'
+        tts_voice = 'nova'
+    tts = TTS(openai_client=ttsClient, model=tts_model_name, voice=tts_voice, speed=tts_speed)
     if alternative_stt_var:
-        log('debug', 'local STT')
-        stt = STT(openai_client=None, model="distil-medium.en")
-    else:
-        log('debug', 'remote STT')
-        stt = STT(openai_client=sttClient, model=stt_model_name)
+        log('debug', 'Local STT')
+        stt_model_name = 'whisper-1'
+
+    stt = STT(openai_client=sttClient, model=stt_model_name)
 
     if ptt_var and ptt_key:
-        log('info', f"Setting push-to-talk hotkey {ptt_key}...")
+        log('info', f"Setting push-to-talk hotkey {ptt_key}.")
         controller_manager.register_hotkey(ptt_key, lambda _: stt.listen_once_start(),
                                            lambda _: stt.listen_once_end())
     else:
