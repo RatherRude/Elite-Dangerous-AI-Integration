@@ -78,6 +78,7 @@ class STT:
         # print('Running STT in continuous mode')
         recorder = sr.Recognizer()
         recorder.energy_threshold = self.energy_threshold
+        recorder.pause_threshold = 2.4
         # Definitely do this, dynamic energy compensation lowers the energy threshold dramatically to a point where the SpeechRecognizer never stops recording.
         recorder.dynamic_energy_threshold = False
 
