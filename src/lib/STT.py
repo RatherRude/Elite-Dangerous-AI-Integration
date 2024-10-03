@@ -7,7 +7,6 @@ from typing import Optional
 
 import openai
 import speech_recognition as sr
-from faster_whisper import WhisperModel
 from pysilero_vad import SileroVoiceActivityDetector
 
 
@@ -30,7 +29,7 @@ class STT:
 
     prompt = "COVAS, give me a status update... and throw in something inspiring, would you?"
 
-    def __init__(self, openai_client: Optional[openai.OpenAI], phrase_time_limit=15, energy_threshold=1000,
+    def __init__(self, openai_client: openai.OpenAI, phrase_time_limit=15, energy_threshold=1000,
                  linux_mic_name='pipewire', model='whisper-1', language=None):
         self.openai_client = openai_client
         self.vad = SileroVoiceActivityDetector()
@@ -39,9 +38,6 @@ class STT:
         self.linux_mic_name = linux_mic_name
         self.model = model
         self.language = language
-
-        if not self.openai_client:
-            self.whisper_model = WhisperModel(self.model, device="cpu", compute_type="int8")
 
     def listen_once_start(self):
         if self.listening:
@@ -134,24 +130,16 @@ class STT:
         audio_wav.name = "audio.wav"
 
         text = None
-        if self.openai_client:
-            transcription = self.openai_client.audio.transcriptions.create(
-                model=self.model,
-                file=audio_wav,
-                language=self.language,
-                prompt=self.prompt
-            )
-            text = transcription.text
-        else:
-            segments, info = self.whisper_model.transcribe(
-                audio_wav,
-                language=self.language,
-                # initial_prompt=self.prompt
-            )
-            text = '\n'.join([segment.text for segment in segments])
+        transcription = self.openai_client.audio.transcriptions.create(
+            model=self.model,
+            file=audio_wav,
+            language=self.language,
+            prompt=self.prompt
+        )
+        text = transcription.text
+
         # print("transcription received", text)
         return text
-
 
 if __name__ == "__main__":
     openai_audio = openai.OpenAI()
