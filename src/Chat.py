@@ -55,8 +55,6 @@ def load_or_prompt_config():
             tts_model_name = config.get('tts_model_name', '')
             tts_api_key = config.get('tts_api_key', '')
             tts_endpoint = config.get('tts_endpoint', '')
-            alternative_stt_var = config.get('alternative_stt_var', '')
-            alternative_tts_var = config.get('alternative_tts_var', '')
             tools_var = config.get('tools_var', '')
             vision_var = config.get('vision_var', '')
             ptt_var = config.get('ptt_var', '')
@@ -65,7 +63,7 @@ def load_or_prompt_config():
             tts_speed = config.get('tts_speed', '')
             ptt_key = config.get('ptt_key', '')
             game_events = config.get('game_events', '[]')
-    return api_key, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, llm_model_name, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, continue_conversation_var, tts_voice, tts_speed, ptt_key, game_events
+    return api_key, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, llm_model_name, tools_var, vision_var, ptt_var, continue_conversation_var, tts_voice, tts_speed, ptt_key, game_events
 
 is_thinking = False
 
@@ -159,7 +157,7 @@ def main():
     global llmClient, sttClient, ttsClient, tts, aiModel, backstory, useTools, jn, previous_status, event_manager, prompt_generator, llm_model_name
 
     # Load or prompt for configuration
-    apiKey, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commanderName, character, llm_model_name, alternative_stt_var, alternative_tts_var, tools_var, vision_var, ptt_var, continue_conversation_var, tts_voice, tts_speed, ptt_key, game_events = load_or_prompt_config()
+    apiKey, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commanderName, character, llm_model_name, tools_var, vision_var, ptt_var, continue_conversation_var, tts_voice, tts_speed, ptt_key, game_events = load_or_prompt_config()
 
     jn = EDJournal(game_events)
     previous_status = getCurrentState()
@@ -188,14 +186,15 @@ def main():
 
 
     sttClient = OpenAI(
-        base_url="http://localhost:8080/v1" if alternative_stt_var else stt_endpoint,
+        base_url=stt_endpoint,
         api_key=apiKey if stt_api_key == '' else stt_api_key,
     )
 
-    ttsClient = OpenAI(
-        base_url="http://localhost:8080/v1" if alternative_tts_var else tts_endpoint,
-        api_key=apiKey if tts_api_key == '' else tts_api_key,
-    )
+    if tts_model_name != 'edge-tts':
+        ttsClient = OpenAI(
+            base_url=tts_endpoint,
+            api_key=apiKey if tts_api_key == '' else tts_api_key,
+        )
 
     log('info', f"Initializing CMDR {commanderName}'s personal AI...\n")
     log('info', "API Key: Loaded")
@@ -209,15 +208,7 @@ def main():
     # TTS Setup
     log('info', "Basic configuration complete.")
     log('info', "Loading voice output...")
-    if alternative_tts_var:
-        log('debug', 'Local TTS')
-        tts_model_name = 'tts-1'
-        tts_voice = 'nova'
     tts = TTS(openai_client=ttsClient, model=tts_model_name, voice=tts_voice, speed=tts_speed)
-    if alternative_stt_var:
-        log('debug', 'Local STT')
-        stt_model_name = 'whisper-1'
-
     stt = STT(openai_client=sttClient, model=stt_model_name)
 
     if ptt_var and ptt_key:

@@ -1,12 +1,16 @@
+from io import BytesIO
 import queue
 import re
 from sys import platform
 import threading
 from time import sleep
+from typing import Optional
 
 from num2words import num2words
 import openai
+import edge_tts
 import pyaudio
+import miniaudio
 
 from .Logger import log
 
@@ -17,7 +21,7 @@ class TTS:
     is_aborted = False
     _is_playing = False
 
-    def __init__(self, openai_client: openai.OpenAI, model='tts-1', voice="nova", speed=1):
+    def __init__(self, openai_client: Optional[openai.OpenAI] = None, model='tts-1', voice="nova", speed=1):
         self.openai_client = openai_client
         self.model = model
         self.voice = voice
@@ -55,19 +59,11 @@ class TTS:
                     # Remove commas from numbers to fix OpenAI TTS
                     text = re.sub(r"\d+(,\d{3})*(\.\d+)?", self._number_to_text, text)
                     # print('reading:', text)
-                    try:
-                        with self.openai_client.audio.speech.with_streaming_response.create(
-                                model=self.model,
-                                voice=self.voice,
-                                input=text,
-                                response_format="pcm",
-                                # raw samples in 24kHz (16-bit signed, low-endian), without the header.
-                                speed=self.speed
-                        ) as response:
-                            for chunk in response.iter_bytes(1024):
-                                if self.is_aborted:
-                                    break
-                                stream.write(chunk) # this may throw for various system reasons
+                    try:                            
+                        for chunk in self._stream_audio(text):
+                            if self.is_aborted:
+                                break
+                            stream.write(chunk) # this may throw for various system reasons
                     except Exception as e:
                         self.read_queue.put(text)
                         raise e
@@ -82,6 +78,29 @@ class TTS:
                 sleep(0.1)
             self._is_playing = False
             stream.stop_stream()
+    
+    def _stream_audio(self, text):
+        if not self.openai_client and self.model == "edge-tts":
+            rate = f"+{int((float(self.speed) - 1) * 100)}%" if float(self.speed) > 1 else f"-{int((1 - float(self.speed)) * 100)}%"
+            response = edge_tts.Communicate(text, voice=self.voice, rate=rate)
+            chunks = []
+            for chunk in response.stream_sync():
+                if chunk["type"] == "audio":
+                    chunks.append(chunk["data"])
+            audio_mp3 = b"".join(chunks)
+            audio = miniaudio.decode(audio_mp3, output_format=miniaudio.SampleFormat.SIGNED16, nchannels=1, sample_rate=24000)
+            yield audio.samples.tobytes()
+        else:
+            with self.openai_client.audio.speech.with_streaming_response.create(
+                    model=self.model,
+                    voice=self.voice,
+                    input=text,
+                    response_format="pcm",
+                    # raw samples in 24kHz (16-bit signed, low-endian), without the header.
+                    speed=self.speed
+            ) as response:
+                for chunk in response.iter_bytes(1024):
+                    yield chunk
 
     def _number_to_text(self, match: re.Match):
         """Converts numbers like 100,203.12 to one hundred thousand two hundred three point one two"""

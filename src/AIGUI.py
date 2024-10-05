@@ -523,6 +523,14 @@ class App:
         # STT
         tk.Label(self.ai_geeks_frame.inner_frame, text="STT options",
                  font="Helvetica 10 bold").grid(row=get_next(), column=0, columnspan=2, sticky="")
+        
+        ## STT Provider
+        self.stt_provider_label = tk.Label(self.ai_geeks_frame.inner_frame, text="STT Provider:")
+        self.stt_provider_label.grid(row=get_next(), column=0, sticky=tk.W)
+        self.stt_provider_select_var = tk.StringVar()
+        self.stt_provider_select = tk.OptionMenu(self.ai_geeks_frame.inner_frame, self.stt_provider_select_var, "openai", "custom",
+                                                    command=self.toggle_stt_provider)
+        self.stt_provider_select.grid(row=get_same(), column=1, padx=10, pady=5, sticky=tk.W)
 
         ## STT Model
         self.stt_model_name_label = tk.Label(self.ai_geeks_frame.inner_frame, text="STT Model Name:")
@@ -542,17 +550,17 @@ class App:
         self.stt_api_key = tk.Entry(self.ai_geeks_frame.inner_frame, show='*', width=50)
         self.stt_api_key.grid(row=get_same(), column=1, padx=10, pady=5)
 
-        # Alternative STT (Checkbox)
-        self.alternative_stt_var = tk.BooleanVar()
-        self.alternative_stt_var.set(False)  # Default value
-        self.alternative_stt_checkbox = tk.Checkbutton(self.ai_geeks_frame.inner_frame,
-                                                       text="Local STT (pre-installed whisper-medium)",
-                                                       variable=self.alternative_stt_var, command=self.toggle_local_stt)
-        self.alternative_stt_checkbox.grid(row=get_next(), column=0, padx=10, pady=10, sticky=tk.W, columnspan=2)
-
         # TTS
         tk.Label(self.ai_geeks_frame.inner_frame, text="TTS options",
                  font="Helvetica 10 bold").grid(row=get_next(), column=0, columnspan=2, sticky="")
+        
+        ## TTS Provider
+        self.tts_provider_label = tk.Label(self.ai_geeks_frame.inner_frame, text="TTS Provider:")
+        self.tts_provider_label.grid(row=get_next(), column=0, sticky=tk.W)
+        self.tts_provider_select_var = tk.StringVar()
+        self.tts_provider_select = tk.OptionMenu(self.ai_geeks_frame.inner_frame, self.tts_provider_select_var, "openai", "edge-tts", "custom",
+                                                    command=self.toggle_tts_provider)
+        self.tts_provider_select.grid(row=get_same(), column=1, padx=10, pady=5, sticky=tk.W)
 
         ## TTS Model
         self.tts_model_name_label = tk.Label(self.ai_geeks_frame.inner_frame, text="TTS Model Name:")
@@ -583,14 +591,6 @@ class App:
         self.tts_speed_label.grid(row=get_next(), column=0, sticky=tk.W)
         self.tts_speed = tk.Entry(self.ai_geeks_frame.inner_frame, width=50)
         self.tts_speed.grid(row=get_same(), column=1, padx=10, pady=5)
-
-        # Alternative TTS (Checkbox)
-        self.alternative_tts_var = tk.BooleanVar()
-        self.alternative_tts_var.set(False)  # Default value
-        self.alternative_tts_checkbox = tk.Checkbutton(self.ai_geeks_frame.inner_frame,
-                                                       text="Local TTS (pre-installed OS Voices)",
-                                                       variable=self.alternative_tts_var, command=self.toggle_local_tts)
-        self.alternative_tts_checkbox.grid(row=get_next(), column=0, padx=10, pady=10, sticky=tk.W)
 
         # Vision
         tk.Label(self.ai_geeks_frame.inner_frame, text="Vision LLM options",
@@ -682,6 +682,112 @@ class App:
         if self.release_version_arg:
             check_for_updates(self.release_version_arg)
 
+    def toggle_tts_provider(self, provider):
+        """
+            Toggle the input options for each provider.
+            Hide the inputs that are not needed, show the ones that are and set the default values.
+            openai: model_name (default: tts-1), voice (default: nova), speed (default: 1.2)
+            edge-tts: voice (default: en-GB-SoniaNeural), speed (default: 1.2)
+            custom: model_endpoint (default: https://api.openai.com/v1), model_name (default: tts-1), api_key (default: ""), voice (default: nova), speed (default: 1.2)
+        """
+        if provider == 'openai':
+            self.tts_model_name_label.grid()
+            self.tts_model_name.grid()
+            self.tts_model_name.delete(0, tk.END)
+            self.tts_model_name.insert(0, "tts-1")
+            self.tts_endpoint_label.grid_remove()
+            self.tts_endpoint.grid_remove()
+            self.tts_endpoint.delete(0, tk.END)
+            self.tts_endpoint.insert(0, "https://api.openai.com/v1")
+            self.tts_api_key_label.grid()
+            self.tts_api_key.grid_remove()
+            self.tts_api_key.delete(0, tk.END)
+            self.tts_api_key.insert(0, "")
+            self.tts_voice_label.grid()
+            self.tts_voice.grid()
+            self.tts_voice.delete(0, tk.END)
+            self.tts_voice.insert(0, "nova")
+            self.tts_speed_label.grid()
+            self.tts_speed.grid()
+            self.tts_speed.delete(0, tk.END)
+            self.tts_speed.insert(0, "1.2")
+        elif provider == 'edge-tts':
+            self.tts_model_name_label.grid_remove()
+            self.tts_model_name.grid_remove()
+            self.tts_model_name.delete(0, tk.END)
+            self.tts_model_name.insert(0, "edge-tts")
+            self.tts_endpoint_label.grid_remove()
+            self.tts_endpoint.grid_remove()
+            self.tts_endpoint.delete(0, tk.END)
+            self.tts_endpoint.insert(0, "")
+            self.tts_api_key_label.grid_remove()
+            self.tts_api_key.grid_remove()
+            self.tts_api_key.delete(0, tk.END)
+            self.tts_api_key.insert(0, "")
+            self.tts_voice_label.grid()
+            self.tts_voice.grid()
+            self.tts_voice.delete(0, tk.END)
+            self.tts_voice.insert(0, "en-GB-SoniaNeural")
+            self.tts_speed_label.grid()
+            self.tts_speed.grid()
+            self.tts_speed.delete(0, tk.END)
+            self.tts_speed.insert(0, "1.2")
+        elif provider == 'custom':
+            self.tts_model_name_label.grid()
+            self.tts_model_name.grid()
+            self.tts_model_name.delete(0, tk.END)
+            self.tts_model_name.insert(0, "tts-1")
+            self.tts_endpoint_label.grid()
+            self.tts_endpoint.grid()
+            self.tts_endpoint.delete(0, tk.END)
+            self.tts_endpoint.insert(0, "https://api.openai.com/v1")
+            self.tts_api_key_label.grid()
+            self.tts_api_key.grid()
+            self.tts_api_key.delete(0, tk.END)
+            self.tts_api_key.insert(0, "")
+            self.tts_voice_label.grid()
+            self.tts_voice.grid()
+            self.tts_voice.delete(0, tk.END)
+            self.tts_voice.insert(0, "nova")
+            self.tts_speed_label.grid()
+            self.tts_speed.grid()
+            self.tts_speed.delete(0, tk.END)
+            self.tts_speed.insert(0, "1.2")
+
+    def toggle_stt_provider(self, provider):
+        """
+            Toggle the input options for each provider.
+            Hide the inputs that are not needed, show the ones that are and set the default values.
+            openai: model_name (default: whisper-1)
+            custom: model_endpoint (default: https://api.openai.com/v1), model_name (default: whisper-1), api_key (default: "")
+        """
+        if provider == 'openai':
+            self.stt_model_name_label.grid()
+            self.stt_model_name.grid()
+            self.stt_model_name.delete(0, tk.END)
+            self.stt_model_name.insert(0, "whisper-1")
+            self.stt_endpoint_label.grid_remove()
+            self.stt_endpoint.grid_remove()
+            self.stt_endpoint.delete(0, tk.END)
+            self.stt_endpoint.insert(0, "https://api.openai.com/v1")
+            self.stt_api_key_label.grid()
+            self.stt_api_key.grid_remove()
+            self.stt_api_key.delete(0, tk.END)
+            self.stt_api_key.insert(0, "")
+        elif provider == 'custom':
+            self.stt_model_name_label.grid()
+            self.stt_model_name.grid()
+            self.stt_model_name.delete(0, tk.END)
+            self.stt_model_name.insert(0, "whisper-1")
+            self.stt_endpoint_label.grid()
+            self.stt_endpoint.grid()
+            self.stt_endpoint.delete(0, tk.END)
+            self.stt_endpoint.insert(0, "https://api.openai.com/v1")
+            self.stt_api_key_label.grid()
+            self.stt_api_key.grid()
+            self.stt_api_key.delete(0, tk.END)
+            self.stt_api_key.insert(0, "")
+
     def populate_game_events_frame(self, frame: tk.Frame, game_events: Dict[str, Dict[str, bool]]):
         category_values: Dict[str, Dict[str, tk.BooleanVar]] = {}
         rowCounter = 0
@@ -730,8 +836,6 @@ class App:
                 "Do not inform about my ship status and my location unless it's relevant or requested by me. Answer within 3 sentences. Acknowledge given orders. \n\n" +
                 "Guide and support me with witty, intelligent and sarcastic commentary. Provide clear mission briefings and humorous observations.",
             'api_key': "",
-            'alternative_stt_var': False,
-            'alternative_tts_var': False,
             'tools_var': True,
             'vision_var': True,
             'ptt_var': False,
@@ -745,9 +849,11 @@ class App:
             'vision_model_name': "gpt-4o-mini",
             'vision_endpoint': "https://api.openai.com/v1",
             'vision_api_key': "",
+            'stt_provider': "openai",
             'stt_model_name': "whisper-1",
             'stt_endpoint': "https://api.openai.com/v1",
             'stt_api_key': "",
+            'tts_provider': "openai",
             'tts_model_name': "tts-1",
             'tts_endpoint': "https://api.openai.com/v1",
             'tts_api_key': "",
@@ -829,15 +935,7 @@ class App:
             if not self.check_model_list(visionClient, self.vision_model_name.get()):
                 return False
 
-        if not self.alternative_stt_var.get():
-            sttClient = OpenAI(
-                base_url="https://api.openai.com/v1" if self.stt_endpoint.get() == '' else self.stt_endpoint.get(),
-                api_key=self.api_key.get() if self.stt_api_key.get() == '' else self.stt_api_key.get(),
-            )
-            if not self.check_model_list(sttClient, self.stt_model_name.get()):
-                return False
-
-        if not self.alternative_tts_var.get():
+        if self.tts_provider_select_var.get() == 'openai':
             ttsClient = OpenAI(
                 base_url="https://api.openai.com/v1" if self.tts_endpoint.get() == '' else self.tts_endpoint.get(),
                 api_key=self.api_key.get() if self.tts_api_key.get() == '' else self.tts_api_key.get(),
@@ -857,14 +955,14 @@ class App:
         self.data['vision_model_name'] = self.vision_model_name.get()
         self.data['vision_endpoint'] = self.vision_endpoint.get()
         self.data['vision_api_key'] = self.vision_api_key.get()
+        self.data['stt_provider'] = self.stt_provider_select_var.get()
         self.data['stt_model_name'] = self.stt_model_name.get()
         self.data['stt_endpoint'] = self.stt_endpoint.get()
         self.data['stt_api_key'] = self.stt_api_key.get()
+        self.data['tts_provider'] = self.tts_provider_select_var.get()
         self.data['tts_model_name'] = self.tts_model_name.get()
         self.data['tts_endpoint'] = self.tts_endpoint.get()
         self.data['tts_api_key'] = self.tts_api_key.get()
-        self.data['alternative_stt_var'] = self.alternative_stt_var.get()
-        self.data['alternative_tts_var'] = self.alternative_tts_var.get()
         self.data['tools_var'] = self.tools_var.get()
         self.data['vision_var'] = self.vision_var.get()
         self.data['ptt_var'] = self.ptt_var.get()
@@ -889,14 +987,14 @@ class App:
         self.vision_model_name.insert(0, self.data['vision_model_name'])
         self.vision_endpoint.insert(0, self.data['vision_endpoint'])
         self.vision_api_key.insert(0, self.data['vision_api_key'])
+        self.stt_provider_select_var.set(self.data['stt_provider'])
         self.stt_model_name.insert(0, self.data['stt_model_name'])
         self.stt_endpoint.insert(0, self.data['stt_endpoint'])
         self.stt_api_key.insert(0, self.data['stt_api_key'])
+        self.tts_provider_select_var.set(self.data['tts_provider'])
         self.tts_model_name.insert(0, self.data['tts_model_name'])
         self.tts_endpoint.insert(0, self.data['tts_endpoint'])
         self.tts_api_key.insert(0, self.data['tts_api_key'])
-        self.alternative_stt_var.set(self.data['alternative_stt_var'])
-        self.alternative_tts_var.set(self.data['alternative_tts_var'])
         self.tools_var.set(self.data['tools_var'])
         self.vision_var.set(self.data['vision_var'])
         self.ptt_var.set(self.data['ptt_var'])
@@ -907,9 +1005,9 @@ class App:
 
         self.update_label_text()
         self.toggle_ptt()
-        self.toggle_local_stt()
-        self.toggle_local_tts()
         self.toggle_vision()
+        self.toggle_stt_provider(self.data['stt_provider'])
+        self.toggle_tts_provider(self.data['tts_provider'])
 
     def toggle_ai_geeks_section(self):
         if self.ai_geeks_frame.winfo_viewable():
@@ -938,42 +1036,6 @@ class App:
             self.pptButton.grid()
         else:
             self.pptButton.grid_remove()
-
-    def toggle_local_stt(self):
-        if self.alternative_stt_var.get():
-            self.stt_model_name.grid_remove()
-            self.stt_model_name_label.grid_remove()
-            self.stt_endpoint.grid_remove()
-            self.stt_endpoint_label.grid_remove()
-            self.stt_api_key.grid_remove()
-            self.stt_api_key_label.grid_remove()
-        else:
-            self.stt_model_name.grid()
-            self.stt_model_name_label.grid()
-            self.stt_endpoint.grid()
-            self.stt_endpoint_label.grid()
-            self.stt_api_key.grid()
-            self.stt_api_key_label.grid()
-
-    def toggle_local_tts(self):
-        if self.alternative_tts_var.get():
-            self.tts_model_name.grid_remove()
-            self.tts_model_name_label.grid_remove()
-            self.tts_endpoint.grid_remove()
-            self.tts_endpoint_label.grid_remove()
-            self.tts_api_key.grid_remove()
-            self.tts_api_key_label.grid_remove()
-            self.tts_voice.grid_remove()
-            self.tts_voice_label.grid_remove()
-        else:
-            self.tts_model_name.grid()
-            self.tts_model_name_label.grid()
-            self.tts_endpoint.grid()
-            self.tts_endpoint_label.grid()
-            self.tts_api_key.grid()
-            self.tts_api_key_label.grid()
-            self.tts_voice.grid()
-            self.tts_voice_label.grid()
 
     def toggle_vision(self):
         if self.vision_var.get():
