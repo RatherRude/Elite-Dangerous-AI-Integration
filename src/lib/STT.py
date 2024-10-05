@@ -3,7 +3,6 @@ import queue
 import threading
 from sys import platform
 from time import sleep, time
-from typing import Optional
 
 import openai
 import speech_recognition as sr
@@ -102,7 +101,7 @@ class STT:
                 if frames_duration > 0.5:
                     #log('debug','checking for voice activity in', frames_duration, 'seconds of audio')
                     audio_raw = b''.join(frames)
-                    if self.vad(audio_raw) < self.voice_activity_threshold:
+                    if self.vad(audio_raw) < self.vad_threshold:
                         # no voice detected in the recording so far, so clear the buffer
                         # and keep only last 0.1 seconds of audio for the next iteration
                         #log('debug','no voice detected, clearing buffer')
@@ -114,7 +113,7 @@ class STT:
                         # check if there is voice in the last 0.5 seconds
                         #log('debug','voice detected, checking for pause in the last 1.0 seconds')
                         audio_last_half_sec = b''.join(frames[-int(self.phrase_end_pause * source.SAMPLE_RATE / source.CHUNK):])
-                        if self.vad(audio_last_half_sec) < self.voice_activity_threshold:
+                        if self.vad(audio_last_half_sec) < self.vad_threshold:
                             # no voice in the last 0.5 seconds, so we know the user has stopped speaking
                             # so we can transcribe the audio
                             #log('debug','no voice detected in the last 0.5 seconds, transcribing')
@@ -145,7 +144,7 @@ class STT:
         if audio_length < 0.2:
             # print('skipping short audio')
             return ''
-        if self.vad(audio_raw) <= self.voice_activity_threshold:
+        if self.vad(audio_raw) <= self.vad_threshold:
             # print('skipping audio without voice')
             return ''
 
