@@ -83,6 +83,12 @@ In order for the AI to perform actions within the game a list of assigned keyboa
 - fireChaffLauncher: Fire chaff launcher.
 - nightVisionToggle: Toggle night vision.
 - recallDismissShip: Recall or dismiss ship, available on foot and inside SRV.
+  
+The following buttons are required to perform advanced UI actions, like setting routes:
+- UI Up
+- UI Right
+- UI Select
+- UI Back
 
 ##### 2.1.2 Audio Management
 
