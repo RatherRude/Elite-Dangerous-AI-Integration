@@ -53,17 +53,6 @@ class STT:
         self.listening = False
 
     def _listen_once_thread(self):
-        backoff = 1
-        while True:
-            try: 
-                self._playback_loop()
-            except Exception as e:
-                log('error', 'An error occurred during speech recognition', e)
-                sleep(backoff)
-                log('info', 'Attempting to restart speech recognition after failure')
-                backoff *= 2
-
-    def _listen_once_loop(self):
         """
         Push to talk like functionality, immediately records audio and sends it to the OpenAI API, bypassing the VAD.
         """
@@ -90,6 +79,17 @@ class STT:
         threading.Thread(target=self._listen_continuous_thread, daemon=True).start()
                         
     def _listen_continuous_thread(self):
+        backoff = 1
+        while True:
+            try: 
+                self._listen_continuous_loop()
+            except Exception as e:
+                log('error', 'An error occurred during speech recognition', e)
+                sleep(backoff)
+                log('info', 'Attempting to restart speech recognition after failure')
+                backoff *= 2
+
+    def _listen_continuous_loop(self):
         source = self._get_microphone()
         with source as source:
             timestamp = time()
