@@ -134,7 +134,9 @@ def create_chat_completion_handler(
         max_tokens = max_tokens if max_tokens is not None else llama.n_ctx()
         print ('max_tokens:', max_tokens)
         for token in token_gen:
-            print(llama._model.detokenize(tokens, special=True).decode("utf-8"))
+            print('---')
+            print(llama._model.detokenize(tokens + [token], special=True).decode("utf-8"), token)
+            grammar.parse_state
             if token in stop_tokens:
                 stop_reason = "stop"
                 break
