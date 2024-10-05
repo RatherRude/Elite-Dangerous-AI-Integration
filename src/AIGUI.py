@@ -385,11 +385,15 @@ class App:
         root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         parser = argparse.ArgumentParser()
+
         python_executable = sys.executable
+
         parser.add_argument("--chat", default=python_executable + " ./src/Chat.py", help="command to run the chat app")
+        parser.add_argument("--server", default=python_executable + " ./src/AIServer.py", help="command to run the chat app")
         parser.add_argument("--release", default="", help="current release")
         args = parser.parse_args()
         self.chat_command_arg: str = args.chat
+        self.server_command_arg: str = args.server
         self.release_version_arg: str = args.release
 
         self.check_vars = {}
@@ -398,7 +402,7 @@ class App:
 
         self.controller_manager = ControllerManager()
 
-        self.process = None
+        self.chat_process = None
         self.output_queue = Queue()
         self.read_thread = None
         # Load initial data from JSON file if exists
@@ -677,7 +681,7 @@ class App:
         self.update_fields()
 
         # Process handle for subprocess
-        self.process = None
+        self.chat_process = None
 
         if self.release_version_arg:
             check_for_updates(self.release_version_arg)
@@ -1011,9 +1015,17 @@ class App:
             if platform == "win32":
                 startupinfo = subprocess.STARTUPINFO()
                 startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            self.process = subprocess.Popen(self.chat_command_arg.split(' '), startupinfo=startupinfo,
+            self.chat_process = subprocess.Popen(self.chat_command_arg.split(' '), startupinfo=startupinfo,
                                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1,
                                             universal_newlines=True, encoding='utf-8', shell=False, close_fds=True)
+            
+            if self.data['alternative_stt_var'] or self.data['alternative_tts_var']:
+                tts_args = [] if not self.data['alternative_tts_var'] else ['--tts', self.data['tts_model_name']]
+                stt_args = [] if not self.data['alternative_stt_var'] else ['--stt', self.data['stt_model_name']]
+                print('starting AIServer',self.server_command_arg.split(' ')+tts_args+stt_args)
+                self.server_process = subprocess.Popen(self.server_command_arg.split(' ')+tts_args+stt_args, startupinfo=startupinfo,
+                                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1,
+                                                universal_newlines=True, encoding='utf-8', close_fds=True)
 
             self.debug_frame.pack()
             self.main_frame.pack_forget()
@@ -1021,10 +1033,19 @@ class App:
             self.start_button.pack_forget()  # Hide the start button
 
             # Read output in a separate thread
-            self.thread_process_stdout = Thread(target=self.read_process_output, args=[self.process, self.outlog_file], daemon=True)
+            self.thread_process_stdout = Thread(target=self.read_process_output, args=[self.chat_process, self.outlog_file], daemon=True)
             self.thread_process_stdout.start()
-            self.thread_process_stderr = Thread(target=self.read_process_error, args=[self.process, self.outlog_file], daemon=True)
+            self.thread_process_stderr = Thread(target=self.read_process_error, args=[self.chat_process, self.outlog_file], daemon=True)
             self.thread_process_stderr.start()
+            if self.data['alternative_stt_var'] or self.data['alternative_tts_var']:
+                outlog_server = f"./logs/{int(time.time())}.serverout.log"
+                os.makedirs(os.path.dirname(outlog_server), exist_ok=True)
+                self.outlog_server_file = open(outlog_server, "w")
+
+                self.server_thread_process_stdout = Thread(target=self.read_process_output, args=[self.server_process, self.outlog_server_file], daemon=True)
+                self.server_thread_process_stdout.start()
+                self.server_thread_process_stderr = Thread(target=self.read_process_error, args=[self.server_process, self.outlog_server_file], daemon=True)
+                self.server_thread_process_stderr.start()
 
         except FileNotFoundError as e:
             print(e)
@@ -1085,12 +1106,16 @@ class App:
                 self.debug_text.see(tk.END)
 
     def stop_external_script(self):
-        if self.process:
+        if self.chat_process:
             # self.send_signal(signal.SIGINT)  # Terminate the subprocess
             # self.process.wait()  # Terminate the subprocess
-            self.process.kill()  # Terminate the subprocess (@TODO check why terminate doesn't work on linux, windows does the same for both anyway)
-            self.process.wait()
-            self.process = None
+            self.chat_process.kill()  # Terminate the subprocess (@TODO check why terminate doesn't work on linux, windows does the same for both anyway)
+            self.chat_process.wait()
+            self.chat_process = None
+        if self.server_process:
+            self.server_process.kill()
+            self.server_process.wait()
+            self.server_process = None
         if self.thread_process_stdout:
             if self.thread_process_stdout.is_alive():
                 self.thread_process_stdout.join(timeout=1)  # Wait for the thread to complete
@@ -1099,6 +1124,20 @@ class App:
             if self.thread_process_stderr.is_alive():
                 self.thread_process_stderr.join(timeout=1)  # Wait for the thread to complete
             self.thread_process_stderr = None
+        if self.server_thread_process_stdout:
+            if self.server_thread_process_stdout.is_alive():
+                self.server_thread_process_stdout.join(timeout=1)  # Wait for the thread to complete
+            self.server_thread_process_stdout = None
+        if self.server_thread_process_stderr:
+            if self.server_thread_process_stderr.is_alive():
+                self.server_thread_process_stderr.join(timeout=1)  # Wait for the thread to complete
+            self.server_thread_process_stderr = None
+        if self.outlog_file:
+            self.outlog_file.close()
+            self.outlog_file = None
+        if self.outlog_server_file:
+            self.outlog_server_file.close()
+            self.outlog_server_file = None
         self.debug_text.insert(tk.END, "Elite Dangerous AI Integration stopped.\n")
         self.debug_text.see(tk.END)
         self.stop_button.pack_forget()
@@ -1112,8 +1151,8 @@ class App:
         return (name + '...') if len(name) == 31 else name
 
     def shutdown(self):
-        if self.process:
-            self.process.terminate()  # Terminate the subprocess
+        if self.chat_process:
+            self.chat_process.terminate()  # Terminate the subprocess
 
 
 if __name__ == "__main__":
