@@ -2,11 +2,12 @@ import json
 from functools import lru_cache
 
 import requests
+from dataclasses import asdict
 
+from .StatusParser import Status
 from .EDJournal import *
 from .Event import GameEvent, Event, ConversationEvent, ToolEvent, ExternalEvent
 from .Logger import log
-from .StatusParser import StatusParser
 
 startupEvents = {
     "Cargo": "Commander {commanderName} has updated their cargo inventory.",
@@ -416,7 +417,7 @@ class PromptGenerator:
             log('error', f"Error: {e}")
             return "Currently no information on system available"
 
-    def generate_prompt(self, events: List[Event], status: Dict[str, any]):
+    def generate_prompt(self, events: List[Event], status: Status):
         # Collect the last 50 conversational pieces
         conversational_pieces: List[any] = list()
 
@@ -448,7 +449,12 @@ class PromptGenerator:
             "extra_events"
         }
         filtered_state = {key: value for key, value in rawState.items() if key not in keysToFilterOut}
-        combined_state = {**filtered_state, **status}
+
+        flags = [key for key, value in asdict(status.flags).items() if value]
+        if status.flags2:
+            flags += [key for key, value in asdict(status.flags2).items() if value]
+        
+        combined_state = {**filtered_state, "status": flags, "balance": status.Balance, "pips": status.Pips, "cargo": status.Cargo}
 
         if 'location' in filtered_state and filtered_state['location'] and 'StarSystem' in filtered_state['location']:
             conversational_pieces.append({
