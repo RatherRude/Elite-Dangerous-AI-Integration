@@ -441,7 +441,8 @@ class PromptGenerator:
                     pass
             
             if event.kind == 'status':
-                conversational_pieces.append(self.status_message(event))
+                if len(conversational_pieces) < 20:
+                    conversational_pieces.append(self.status_message(event))
 
             if event.kind == 'user' or event.kind == 'assistant':
                 conversational_pieces.append(self.conversation_message(event))
