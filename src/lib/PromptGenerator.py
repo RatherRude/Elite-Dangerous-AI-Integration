@@ -1,3 +1,4 @@
+from datetime import timedelta
 import json
 from functools import lru_cache
 
@@ -454,7 +455,14 @@ class PromptGenerator:
         if status.flags2:
             flags += [key for key, value in asdict(status.flags2).items() if value]
         
-        combined_state = {**filtered_state, "status": flags, "balance": status.Balance, "pips": status.Pips, "cargo": status.Cargo}
+        combined_state = {
+            **filtered_state, 
+            "status": flags, 
+            "balance": status.Balance, 
+            "pips": status.Pips, 
+            "cargo": status.Cargo,
+            "time": (datetime.now() + timedelta(days=469711)).isoformat()
+        }
 
         if 'location' in filtered_state and filtered_state['location'] and 'StarSystem' in filtered_state['location']:
             conversational_pieces.append({
