@@ -215,18 +215,6 @@ def select_highest_threat(args):
     return f"Highest threat (if one exists) is now target locked"
 
 
-def radar_increase_range(args):
-    setGameWindowActive()
-    keys.send('RadarIncreaseRange')
-    return "Radar range increased"
-
-
-def radar_decrease_range(args):
-    setGameWindowActive()
-    keys.send('RadarDecreaseRange')
-    return "Radar Range decreased"
-
-
 def toggle_cargo_scoop(args):
     setGameWindowActive()
     keys.send('ToggleCargoScoop')
@@ -1672,16 +1660,6 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "type": "object",
         "properties": {}
     }, select_highest_threat)
-
-    actionManager.registerAction('radarIncreaseRange', "Decreases radar range", {
-        "type": "object",
-        "properties": {}
-    }, radar_increase_range)
-
-    actionManager.registerAction('radarDecreaseRange', "Decreases radar range", {
-        "type": "object",
-        "properties": {}
-    }, radar_decrease_range)
 
     actionManager.registerAction('toggleCargoScoop', "Toggles cargo scoop", {
         "type": "object",
