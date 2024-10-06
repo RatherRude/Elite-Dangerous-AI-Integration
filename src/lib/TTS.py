@@ -47,7 +47,7 @@ class TTS:
             format=pyaudio.paInt16,
             channels=1,
             rate=24_000,
-            output=True
+            output=True,
         )
         while True:
             self.is_aborted = False
@@ -89,7 +89,10 @@ class TTS:
                     chunks.append(chunk["data"])
             audio_mp3 = b"".join(chunks)
             audio = miniaudio.decode(audio_mp3, output_format=miniaudio.SampleFormat.SIGNED16, nchannels=1, sample_rate=24000)
-            yield audio.samples.tobytes()
+            data = audio.samples.tobytes()
+            # iterate over the data in chunks of 1024 bytes
+            for i in range(0, len(data), 1024):
+                yield data[i:i + 1024]
         else:
             with self.openai_client.audio.speech.with_streaming_response.create(
                     model=self.model,

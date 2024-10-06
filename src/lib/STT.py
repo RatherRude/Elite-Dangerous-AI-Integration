@@ -29,12 +29,9 @@ class STT:
 
     prompt = "COVAS, give me a status update... and throw in something inspiring, would you?"
 
-    def __init__(self, openai_client: openai.OpenAI, phrase_time_limit=15, energy_threshold=1000,
-                 linux_mic_name='pipewire', model='whisper-1', language=None):
+    def __init__(self, openai_client: openai.OpenAI, linux_mic_name='pipewire', model='whisper-1', language=None):
         self.openai_client = openai_client
         self.vad = SileroVoiceActivityDetector()
-        self.phrase_time_limit = phrase_time_limit
-        self.energy_threshold = energy_threshold
         self.linux_mic_name = linux_mic_name
         self.model = model
         self.language = language
@@ -110,10 +107,10 @@ class STT:
                         continue
                     else:
                         # we have voice activity in current recording
-                        # check if there is voice in the last 0.5 seconds
-                        #log('debug','voice detected, checking for pause in the last 1.0 seconds')
-                        audio_last_half_sec = b''.join(frames[-int(self.phrase_end_pause * source.SAMPLE_RATE / source.CHUNK):])
-                        if self.vad(audio_last_half_sec) < self.vad_threshold:
+                        # check if there is voice in the last phrase_end_pause seconds
+                        #log('debug','voice detected, checking for pause in the last phrase_end_pause seconds')
+                        audio_end_slice = b''.join(frames[-int(self.phrase_end_pause * source.SAMPLE_RATE / source.CHUNK):])
+                        if self.vad(audio_end_slice) < self.vad_threshold:
                             # no voice in the last 0.5 seconds, so we know the user has stopped speaking
                             # so we can transcribe the audio
                             #log('debug','no voice detected in the last 0.5 seconds, transcribing')
@@ -129,14 +126,14 @@ class STT:
         if 'linux' in platform:
             for index, name in enumerate(sr.Microphone.list_microphone_names()):
                 if self.linux_mic_name in name:
-                    return sr.Microphone(sample_rate=16000, device_index=index)
+                    return sr.Microphone(sample_rate=16000, device_index=index, chunk_size=1600, )
 
             # print ("Available microphones:")
             for index, name in enumerate(sr.Microphone.list_microphone_names()):
                 print(f" {index}) {name}")
             raise Exception('Microphone not found')
         else:
-            return sr.Microphone(sample_rate=16000)
+            return sr.Microphone(sample_rate=16000, chunk_size=1600)
 
     def _transcribe(self, audio: sr.AudioData) -> str:
         audio_raw = audio.get_raw_data(convert_rate=16000, convert_width=2)
