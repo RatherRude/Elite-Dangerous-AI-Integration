@@ -7,7 +7,7 @@ from dataclasses import asdict
 
 from .StatusParser import Status
 from .EDJournal import *
-from .Event import GameEvent, Event, ConversationEvent, ToolEvent, ExternalEvent
+from .Event import GameEvent, Event, ConversationEvent, StatusEvent, ToolEvent, ExternalEvent
 from .Logger import log
 
 startupEvents = {
@@ -331,6 +331,12 @@ class PromptGenerator:
             "role": "user",
             "content": f"({allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)})"
         }
+    
+    def status_message(self, event: StatusEvent):
+        return {
+            "role": "user",
+            "content": f"(Status changed: {event.status.get('event')} Details: {json.dumps(event.status)})"
+        }
 
     def conversation_message(self, event: ConversationEvent):
         return {
@@ -433,6 +439,9 @@ class PromptGenerator:
                     conversational_pieces.append(self.simple_event_message(event))
                 else:
                     pass
+            
+            if event.kind == 'status':
+                conversational_pieces.append(self.status_message(event))
 
             if event.kind == 'user' or event.kind == 'assistant':
                 conversational_pieces.append(self.conversation_message(event))

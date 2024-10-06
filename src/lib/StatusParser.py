@@ -325,9 +325,9 @@ class StatusParser:
             events.append({"event": "SilentRunningOn"})
         
         if old_status.flags.ScoopingFuel and not new_status.flags.ScoopingFuel:
-            events.append({"event": "FuelScoopStarted"})
-        if not old_status.flags.ScoopingFuel and new_status.flags.ScoopingFuel:
             events.append({"event": "FuelScoopEnded"})
+        if not old_status.flags.ScoopingFuel and new_status.flags.ScoopingFuel:
+            events.append({"event": "FuelScoopStarted"})
 
         if old_status.flags.SrvHandbrake and not new_status.flags.SrvHandbrake:
             events.append({"event": "SrvHandbrakeOff"})
@@ -335,9 +335,9 @@ class StatusParser:
             events.append({"event": "SrvHandbrakeOn"})
 
         if old_status.flags.SrvUsingTurretView and not new_status.flags.SrvUsingTurretView:
-            events.append({"event": "SrvTurretViewConnected"})
-        if not old_status.flags.SrvUsingTurretView and new_status.flags.SrvUsingTurretView:
             events.append({"event": "SrvTurretViewDisconnected"})
+        if not old_status.flags.SrvUsingTurretView and new_status.flags.SrvUsingTurretView:
+            events.append({"event": "SrvTurretViewConnected"})
         
         if old_status.flags.SrvDriveAssist and not new_status.flags.SrvDriveAssist:
             events.append({"event": "SrvDriveAssistOff"})
