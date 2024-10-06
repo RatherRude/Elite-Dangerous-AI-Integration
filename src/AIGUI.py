@@ -762,8 +762,8 @@ class App:
             custom: model_endpoint (default: https://api.openai.com/v1), model_name (default: whisper-1), api_key (default: "")
         """
         if provider == 'openai':
-            self.stt_model_name_label.grid()
-            self.stt_model_name.grid()
+            self.stt_model_name_label.grid_remove()
+            self.stt_model_name.grid_remove()
             self.stt_model_name.delete(0, tk.END)
             self.stt_model_name.insert(0, "whisper-1")
             self.stt_endpoint_label.grid_remove()
