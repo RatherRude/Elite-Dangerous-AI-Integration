@@ -476,13 +476,13 @@ class App:
         self.game_events_frame.update()  # update scrollable area
         self.game_events_frame.grid_remove()  # Initially hide
 
-        # AI Geeks Section (Initially hidden)
+        # AI Settings (Initially hidden)
         self.ai_geeks_frame = VerticalScrolledFrame(self.main_frame, width=600)
         self.ai_geeks_frame.grid(row=7, column=0, columnspan=2)
         self.ai_geeks_frame.grid_remove()  # Initially hide
 
         # Disclaimer
-        tk.Label(self.ai_geeks_frame.inner_frame, text="None of the AI Geek options are required.",
+        tk.Label(self.ai_geeks_frame.inner_frame, text="None of the AI Settings are required.",
                  font="Helvetica 12 bold").grid(row=0, column=0, columnspan=2, sticky="")
 
         self.incr = 0
@@ -1012,7 +1012,7 @@ class App:
     def toggle_ai_geeks_section(self):
         if self.ai_geeks_frame.winfo_viewable():
             self.ai_geeks_frame.grid_remove()
-            self.toggle_ai_geeks_section_button.config(text="Show AI Geeks Section")
+            self.toggle_ai_geeks_section_button.config(text="Show AI Settings")
         else:
             self.ai_geeks_frame.grid()
             self.toggle_ai_geeks_section_button.config(text="Hide AI Settings")
