@@ -770,7 +770,7 @@ class App:
             self.stt_endpoint.grid_remove()
             self.stt_endpoint.delete(0, tk.END)
             self.stt_endpoint.insert(0, "https://api.openai.com/v1")
-            self.stt_api_key_label.grid()
+            self.stt_api_key_label.grid_remove()
             self.stt_api_key.grid_remove()
             self.stt_api_key.delete(0, tk.END)
             self.stt_api_key.insert(0, "")
