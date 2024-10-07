@@ -1058,9 +1058,10 @@ class App:
             return
 
         self.save_settings()
-        self.debug_text.delete('1.0', tk.END)
-        self.debug_text.insert(tk.END, "Starting Elite Dangerous AI Integration...\n", "normal")
-        # self.debug_text.update_idletasks()
+        self.debug_text.config(state=tk.NORMAL) # Make the text widget read-write
+        self.debug_text.delete("1.0", tk.END)
+        self.debug_text.focus_set()  # Give focus to the text widget
+        self.print_to_debug("Starting Elite Dangerous AI Integration...\n")
 
         try:
             # create log file
@@ -1099,6 +1100,41 @@ class App:
 
     def strip_ansi_codes(self, s: str):
         return re.sub(r'\x1b\[([0-9,A-Z]{1,2}(;[0-9]{1,2})?(;[0-9]{3})?)?[m|K]?', '', s)
+    
+    def print_to_debug(self, line: str):
+        prefixes = {
+            "cmdr": "CMDR",
+            "covas": "COVAS",
+            "event": "Event",
+            "action": "Action",
+            "info": "Info",
+            "debug": "Debug",
+            "error": "Error",
+        }
+        colors = {
+            "cmdr": "human",
+            "covas": "ai",
+            "event": "event",
+            "action": "action",
+            "info": "debug",
+            "debug": "debug",
+            "error": "error",
+        }
+        # set the debug widget to read-write
+        self.debug_text.config(state=tk.NORMAL)
+
+        for prefix, label in prefixes.items():
+            if prefix == "debug": # Debug is hidden in the UI, but can be found in the log file
+                continue
+            if line.startswith(prefix):
+                self.debug_text.insert(tk.END, label, colors[prefix])
+                self.debug_text.insert(tk.END, line[len(prefix):], "normal")
+        if not any(line.startswith(prefix) for prefix in prefixes): 
+            self.debug_text.insert(tk.END, line, "normal")
+        
+        #self.debug_text.update_idletasks()
+        self.debug_text.config(state=tk.DISABLED) # Make the text widget read-only
+        self.debug_text.see(tk.END)  # Scroll to the end of the text widget
 
     def read_process_output(self, process: subprocess.Popen, outlog_file: typing.TextIO):
         while process and process.poll() is None:
@@ -1107,33 +1143,7 @@ class App:
             outlog_file.write(stdout_line)
             outlog_file.flush()
             if stdout_line:
-                if stdout_line.startswith("cmdr"):
-                    self.debug_text.insert(tk.END, "CMDR", "human")
-                    self.debug_text.insert(tk.END, stdout_line[4:], "normal")
-                elif stdout_line.startswith("covas"):
-                    self.debug_text.insert(tk.END, "COVAS", "ai")
-                    self.debug_text.insert(tk.END, stdout_line[5:], "normal")
-                elif stdout_line.startswith("event"):
-                    self.debug_text.insert(tk.END, "Event", "event")
-                    self.debug_text.insert(tk.END, stdout_line[5:], "normal")
-                elif stdout_line.startswith("action"):
-                    self.debug_text.insert(tk.END, "Action", "action")
-                    self.debug_text.insert(tk.END, stdout_line[6:], "normal")
-                elif stdout_line.startswith("info"):
-                    self.debug_text.insert(tk.END, "Info", "debug")
-                    self.debug_text.insert(tk.END, stdout_line[4:], "normal")
-                elif stdout_line.startswith("debug"):
-                    # Debug is hidden in the UI, but can be found in the log file
-                    # self.debug_text.insert(tk.END, "Debug", "debug")
-                    # self.debug_text.insert(tk.END, stdout_line[5:], "normal")
-                    pass
-                elif stdout_line.startswith("error"):
-                    self.debug_text.insert(tk.END, "Error", "error")
-                    self.debug_text.insert(tk.END, stdout_line[5:], "normal")
-                else:
-                    self.debug_text.insert(tk.END, stdout_line, "normal")
-
-                self.debug_text.see(tk.END)  # Scroll to the end of the text widget
+                self.print_to_debug(stdout_line)
 
     def read_process_error(self, process: subprocess.Popen, outlog_file: typing.TextIO):
         while process and process.poll() is None:
@@ -1142,9 +1152,7 @@ class App:
             outlog_file.write("Error: "+stderr_line)
             outlog_file.flush()
             if stderr_line:
-                self.debug_text.insert(tk.END, "Error: ", "error")
-                self.debug_text.insert(tk.END, stderr_line, "normal")
-                self.debug_text.see(tk.END)
+                self.print_to_debug('error:'+stderr_line)
 
     def stop_external_script(self):
         if self.process:
@@ -1161,8 +1169,7 @@ class App:
             if self.thread_process_stderr.is_alive():
                 self.thread_process_stderr.join(timeout=1)  # Wait for the thread to complete
             self.thread_process_stderr = None
-        self.debug_text.insert(tk.END, "Elite Dangerous AI Integration stopped.\n")
-        self.debug_text.see(tk.END)
+        self.print_to_debug("Elite Dangerous AI Integration stopped.\n")
         self.stop_button.pack_forget()
         self.debug_frame.pack_forget()
         self.main_frame.pack(padx=20, pady=20)
