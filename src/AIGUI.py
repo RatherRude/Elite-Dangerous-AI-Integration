@@ -699,7 +699,7 @@ class App:
             self.tts_endpoint.grid_remove()
             self.tts_endpoint.delete(0, tk.END)
             self.tts_endpoint.insert(0, "https://api.openai.com/v1")
-            self.tts_api_key_label.grid()
+            self.tts_api_key_label.grid_remove()
             self.tts_api_key.grid_remove()
             self.tts_api_key.delete(0, tk.END)
             self.tts_api_key.insert(0, "")
