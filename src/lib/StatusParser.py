@@ -141,8 +141,8 @@ class Pips:
 
 @dataclass
 class Fuel:
-    main: float
-    reservoir: float
+    FuelMain: float
+    FuelReservoir: float
 
 @dataclass
 class Destination:
@@ -157,18 +157,18 @@ class Status:
     Pips: Optional[Pips]
     Firegroup: Optional[int]
     GuiFocus: Optional[Literal[
-        'NoFocus'
-        'InternalPanel'
-        'ExternalPanel'
-        'CommsPanel'
-        'RolePanel'
-        'StationServices'
-        'GalaxyMap'
-        'SystemMap'
-        'Orrery'
-        'FSS'
-        'SAA'
-        'Codex'
+        'NoFocus',
+        'InternalPanel',
+        'ExternalPanel',
+        'CommsPanel',
+        'RolePanel',
+        'StationServices',
+        'GalaxyMap',
+        'SystemMap',
+        'Orrery',
+        'FSS',
+        'SAA',
+        'Codex',
     ]]
     Fuel: Optional[Fuel]
     Cargo: Optional[float]
@@ -198,42 +198,43 @@ class Status:
 
     def from_status_file(value: dict[str, any]):
         """Converts the status file data to a Status object. All fields are optional."""
+        GuiPanels = [
+                'NoFocus',
+                'InternalPanel',
+                'ExternalPanel',
+                'CommsPanel',
+                'RolePanel',
+                'StationServices',
+                'GalaxyMap',
+                'SystemMap',
+                'Orrery',
+                'FSS',
+                'SAA',
+                'Codex',
+        ]
         return Status(
             flags=BaseFlags.from_status_flag(value.get('Flags', 0)),
             flags2=OdysseyFlags.from_status_flag(value.get('Flags2', 0)) if 'Flags2' in value else None,
             Pips=Pips.from_status_flag(value.get('Pips', [0,0,0])) if 'Pips' in value else None,
-            Firegroup=value.get('Firegroup'),
-            GuiFocus=[
-                'NoFocus'
-                'InternalPanel'
-                'ExternalPanel'
-                'CommsPanel'
-                'RolePanel'
-                'StationServices'
-                'GalaxyMap'
-                'SystemMap'
-                'Orrery'
-                'FSS'
-                'SAA'
-                'Codex'
-            ][value.get('GuiFocus', 0)] if 'GuiFocus' in value else None,
+            Firegroup=value.get('Firegroup') if 'Firegroup' in value else None,
+            GuiFocus=GuiPanels[value.get('GuiFocus', 0)] if 'GuiFocus' in value else None,
             Fuel=Fuel(**value.get('Fuel', {})) if 'Fuel' in value else None,
-            Cargo=value.get('Cargo'),
-            LegalState=value.get('LegalState'),
-            Latitude=value.get('Latitude'),
-            Altitude=value.get('Altitude'),
-            Longitude=value.get('Longitude'),
-            Heading=value.get('Heading'),
-            BodyName=value.get('BodyName'),
-            PlanetRadius=value.get('PlanetRadius'),
-            Balance=value.get('Balance'),
+            Cargo=value.get('Cargo', None),
+            LegalState=value.get('LegalState', None),
+            Latitude=value.get('Latitude', None),
+            Altitude=value.get('Altitude', None),
+            Longitude=value.get('Longitude', None),
+            Heading=value.get('Heading', None),
+            BodyName=value.get('BodyName', None),
+            PlanetRadius=value.get('PlanetRadius', None),
+            Balance=value.get('Balance', None),
             Destination=Destination(**value.get('Destination', {})) if 'Destination' in value else None,
 
-            Oxygen=value.get('Oxygen'),
-            Health=value.get('Health'),
-            Temperature=value.get('Temperature'),
-            SelectedWeapon=value.get('SelectedWeapon'),
-            Gravity=value.get('Gravity'),
+            Oxygen=value.get('Oxygen', None),
+            Health=value.get('Health', None),
+            Temperature=value.get('Temperature', None),
+            SelectedWeapon=value.get('SelectedWeapon', None),
+            Gravity=value.get('Gravity', None),
         )
 
 
