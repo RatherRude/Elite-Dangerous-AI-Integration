@@ -1,11 +1,10 @@
 import io
 import time
-from faster_whisper import WhisperModel
+from pywhispercpp.model import Model
 import samplerate
 import soundfile as sf
 
 stt_models_names = [
-    'deepdml/faster-whisper-large-v3-turbo-ct2',
     'distil-medium.en',
     'distil-small.en', 
 
@@ -26,10 +25,10 @@ stt_models_names = [
 ]
 
 def init_stt(model_name="distil-medium.en"):
-    model = WhisperModel(model_name, device="cpu", compute_type="int8")
+    model = Model(model_name)
     return model
 
-def stt(model: WhisperModel, wav: bytes, language="en-US"):
+def stt(model: Model, wav: bytes, language="en-US"):
     # convert wav bytes to 16k S16_LE
 
     start = time.time()
@@ -42,13 +41,14 @@ def stt(model: WhisperModel, wav: bytes, language="en-US"):
     print("Resample time:", end - start)
 
     start = time.time()
-    gen, info = model.transcribe(audio, language=language, beam_size=4)
-    
-    segments = []
-    for segment in gen:
-        segments.append(segment)
+    segments = model.transcribe(audio)
+    #gen, info = model.transcribe(audio)
+    #
+    #segments = []
+    #for segment in gen:
+    #    segments.append(segment)
     
     end = time.time()
     print("Transcribe time:", end - start)
     
-    return segments, info
+    return segments, None
