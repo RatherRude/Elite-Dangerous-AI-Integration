@@ -183,6 +183,8 @@ def main():
             base_url="https://api.openai.com/v1" if vision_endpoint == '' else vision_endpoint,
             api_key=apiKey if vision_api_key == '' else vision_api_key,
         )
+    else:
+        visionClient = None
 
 
     sttClient = OpenAI(
