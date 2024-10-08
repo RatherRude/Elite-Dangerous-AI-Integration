@@ -44,8 +44,6 @@ class EDKeys:
             'NightVisionToggle',
             'RecallDismissShip',
             'SelectHighestThreat',
-            'RadarIncreaseRange',
-            'RadarDecreaseRange',
             'ToggleCargoScoop',
             'ChargeECM',
             #'CycleNextPanel',
