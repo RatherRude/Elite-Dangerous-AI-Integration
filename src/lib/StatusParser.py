@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 import json
 import time
 from datetime import datetime, timedelta
@@ -8,9 +7,9 @@ import threading
 from time import sleep
 from typing import Literal, Optional, Union
 from .Logger import log
+from pydantic import BaseModel 
 
-@dataclass
-class BaseFlags:
+class BaseFlags(BaseModel):
     Docked: bool
     Landed: bool
     LandingGearDown: bool
@@ -80,8 +79,8 @@ class BaseFlags:
             SrvHighBeam=bool(value & 2147483648),
         )
 
-@dataclass
-class OdysseyFlags():
+
+class OdysseyFlags(BaseModel):
     OnFoot: bool
     InTaxi: bool
     InMultiCrew: bool
@@ -126,9 +125,9 @@ class OdysseyFlags():
             PhysicalMulticrew=bool(value & 262144),
             FsdHyperdriveCharging=bool(value & 524288),
         )
-    
-@dataclass
-class Pips:
+
+
+class Pips(BaseModel):
     system: float
     engine: float
     weapons: float
@@ -139,19 +138,20 @@ class Pips:
             weapons=value[2] / 2
         )
 
-@dataclass
-class Fuel:
+
+class Fuel(BaseModel):
     FuelMain: float
     FuelReservoir: float
 
-@dataclass
-class Destination:
-    System: str
-    Body: str
+
+class Destination(BaseModel):
+    System: int
+    Body: int
     Name: str
-    
-@dataclass
-class Status:
+    Name_Localised: str
+
+
+class Status(BaseModel):
     flags: BaseFlags
     flags2: Optional[OdysseyFlags]
     Pips: Optional[Pips]

@@ -461,15 +461,15 @@ class PromptGenerator:
         }
         filtered_state = {key: value for key, value in rawState.items() if key not in keysToFilterOut}
 
-        flags = [key for key, value in asdict(status.flags).items() if value]
+        flags = [key for key, value in status.flags.model_dump().items() if value]
         if status.flags2:
-            flags += [key for key, value in asdict(status.flags2).items() if value]
+            flags += [key for key, value in status.flags2.model_dump().items() if value]
         
         combined_state = {
             **filtered_state, 
             "status": flags, 
             "balance": status.Balance, 
-            "pips": status.Pips, 
+            "pips": status.Pips.model_dump(), 
             "cargo": status.Cargo,
             "time": (datetime.now() + timedelta(days=469711)).isoformat()
         }
