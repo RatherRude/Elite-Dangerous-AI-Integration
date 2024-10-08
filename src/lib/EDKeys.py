@@ -123,7 +123,6 @@ class EDKeys:
                             binding['mod'] = di.SCANCODE[binding['pre_mod']]
                 except KeyError:
                     print("Unrecognised key '" + binding['pre_key'] + "' for bind '" + item.tag + "'")
-                    exit(1)
                 if binding is not None:
                     direct_input_keys[item.tag] = binding
                 #     else:
