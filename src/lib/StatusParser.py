@@ -148,7 +148,7 @@ class Destination(BaseModel):
     System: int
     Body: int
     Name: str
-    Name_Localised: str
+    Name_Localised: str = None
 
 
 class Status(BaseModel):

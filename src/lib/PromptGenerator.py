@@ -466,10 +466,10 @@ class PromptGenerator:
             flags += [key for key, value in status.flags2.model_dump().items() if value]
         
         combined_state = {
-            **filtered_state, 
-            "status": flags, 
-            "balance": status.Balance, 
-            "pips": status.Pips.model_dump(), 
+            **filtered_state,
+            "status": flags,
+            "balance": status.Balance,
+            "pips": status.Pips.model_dump() if status.Pips else None,
             "cargo": status.Cargo,
             "time": (datetime.now() + timedelta(days=469711)).isoformat()
         }
