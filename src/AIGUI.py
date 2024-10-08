@@ -682,7 +682,7 @@ class App:
         if self.release_version_arg:
             check_for_updates(self.release_version_arg)
 
-    def toggle_tts_provider(self, provider):
+    def toggle_tts_provider(self, provider, defaults: False):
         """
             Toggle the input options for each provider.
             Hide the inputs that are not needed, show the ones that are and set the default values.
@@ -693,68 +693,83 @@ class App:
         if provider == 'openai':
             self.tts_model_name_label.grid()
             self.tts_model_name.grid()
-            self.tts_model_name.delete(0, tk.END)
-            self.tts_model_name.insert(0, "tts-1")
+            if defaults:
+                self.tts_model_name.delete(0, tk.END)
+                self.tts_model_name.insert(0, "tts-1")
             self.tts_endpoint_label.grid_remove()
             self.tts_endpoint.grid_remove()
-            self.tts_endpoint.delete(0, tk.END)
-            self.tts_endpoint.insert(0, "https://api.openai.com/v1")
+            if defaults:
+                self.tts_endpoint.delete(0, tk.END)
+                self.tts_endpoint.insert(0, "https://api.openai.com/v1")
             self.tts_api_key_label.grid_remove()
             self.tts_api_key.grid_remove()
-            self.tts_api_key.delete(0, tk.END)
-            self.tts_api_key.insert(0, "")
+            if defaults:
+                self.tts_api_key.delete(0, tk.END)
+                self.tts_api_key.insert(0, "")
             self.tts_voice_label.grid()
             self.tts_voice.grid()
-            self.tts_voice.delete(0, tk.END)
-            self.tts_voice.insert(0, "nova")
+            if defaults:
+                self.tts_voice.delete(0, tk.END)
+                self.tts_voice.insert(0, "nova")
             self.tts_speed_label.grid()
             self.tts_speed.grid()
-            self.tts_speed.delete(0, tk.END)
-            self.tts_speed.insert(0, "1.2")
+            if defaults:
+                self.tts_speed.delete(0, tk.END)
+                self.tts_speed.insert(0, "1.2")
         elif provider == 'edge-tts':
             self.tts_model_name_label.grid_remove()
             self.tts_model_name.grid_remove()
-            self.tts_model_name.delete(0, tk.END)
-            self.tts_model_name.insert(0, "edge-tts")
+            if defaults:
+                self.tts_model_name.delete(0, tk.END)
+                self.tts_model_name.insert(0, "edge-tts")
             self.tts_endpoint_label.grid_remove()
             self.tts_endpoint.grid_remove()
-            self.tts_endpoint.delete(0, tk.END)
-            self.tts_endpoint.insert(0, "")
+            if defaults:
+                self.tts_endpoint.delete(0, tk.END)
+                self.tts_endpoint.insert(0, "")
             self.tts_api_key_label.grid_remove()
             self.tts_api_key.grid_remove()
-            self.tts_api_key.delete(0, tk.END)
-            self.tts_api_key.insert(0, "")
+            if defaults:
+                self.tts_api_key.delete(0, tk.END)
+                self.tts_api_key.insert(0, "")
             self.tts_voice_label.grid()
             self.tts_voice.grid()
-            self.tts_voice.delete(0, tk.END)
-            self.tts_voice.insert(0, "en-GB-SoniaNeural")
+            if defaults:
+                self.tts_voice.delete(0, tk.END)
+                self.tts_voice.insert(0, "en-GB-SoniaNeural")
             self.tts_speed_label.grid()
             self.tts_speed.grid()
-            self.tts_speed.delete(0, tk.END)
-            self.tts_speed.insert(0, "1.2")
+            if defaults:
+                self.tts_speed.delete(0, tk.END)
+                self.tts_speed.insert(0, "1.2")
         elif provider == 'custom':
             self.tts_model_name_label.grid()
             self.tts_model_name.grid()
-            self.tts_model_name.delete(0, tk.END)
-            self.tts_model_name.insert(0, "tts-1")
+            if defaults:
+                self.tts_model_name.delete(0, tk.END)
+                self.tts_model_name.insert(0, "tts-1")
             self.tts_endpoint_label.grid()
             self.tts_endpoint.grid()
-            self.tts_endpoint.delete(0, tk.END)
-            self.tts_endpoint.insert(0, "https://api.openai.com/v1")
+            if defaults:
+                self.tts_endpoint.delete(0, tk.END)
+                self.tts_endpoint.insert(0, "https://api.openai.com/v1")
             self.tts_api_key_label.grid()
             self.tts_api_key.grid()
-            self.tts_api_key.delete(0, tk.END)
-            self.tts_api_key.insert(0, "")
+            if defaults:
+                self.tts_api_key.delete(0, tk.END)
+                self.tts_api_key.insert(0, "")
             self.tts_voice_label.grid()
             self.tts_voice.grid()
-            self.tts_voice.delete(0, tk.END)
-            self.tts_voice.insert(0, "nova")
+            if defaults:
+                self.tts_voice.delete(0, tk.END)
+                self.tts_voice.insert(0, "nova")
             self.tts_speed_label.grid()
             self.tts_speed.grid()
-            self.tts_speed.delete(0, tk.END)
-            self.tts_speed.insert(0, "1.2")
+            if defaults:
+                self.tts_speed.delete(0, tk.END)
+                self.tts_speed.insert(0, "1.2")
 
-    def toggle_stt_provider(self, provider):
+    def toggle_stt_provider(self, provider, defaults=True):
         """
             Toggle the input options for each provider.
             Hide the inputs that are not needed, show the ones that are and set the default values.
@@ -764,29 +779,35 @@ class App:
         if provider == 'openai':
             self.stt_model_name_label.grid_remove()
             self.stt_model_name.grid_remove()
-            self.stt_model_name.delete(0, tk.END)
-            self.stt_model_name.insert(0, "whisper-1")
+            if defaults:
+                self.stt_model_name.delete(0, tk.END)
+                self.stt_model_name.insert(0, "whisper-1")
             self.stt_endpoint_label.grid_remove()
             self.stt_endpoint.grid_remove()
-            self.stt_endpoint.delete(0, tk.END)
-            self.stt_endpoint.insert(0, "https://api.openai.com/v1")
+            if defaults:
+                self.stt_endpoint.delete(0, tk.END)
+                self.stt_endpoint.insert(0, "https://api.openai.com/v1")
             self.stt_api_key_label.grid_remove()
             self.stt_api_key.grid_remove()
-            self.stt_api_key.delete(0, tk.END)
-            self.stt_api_key.insert(0, "")
+            if defaults:
+                self.stt_api_key.delete(0, tk.END)
+                self.stt_api_key.insert(0, "")
         elif provider == 'custom':
             self.stt_model_name_label.grid()
             self.stt_model_name.grid()
-            self.stt_model_name.delete(0, tk.END)
-            self.stt_model_name.insert(0, "whisper-1")
+            if defaults:
+                self.stt_model_name.delete(0, tk.END)
+                self.stt_model_name.insert(0, "whisper-1")
             self.stt_endpoint_label.grid()
             self.stt_endpoint.grid()
-            self.stt_endpoint.delete(0, tk.END)
-            self.stt_endpoint.insert(0, "https://api.openai.com/v1")
+            if defaults:
+                self.stt_endpoint.delete(0, tk.END)
+                self.stt_endpoint.insert(0, "https://api.openai.com/v1")
             self.stt_api_key_label.grid()
             self.stt_api_key.grid()
-            self.stt_api_key.delete(0, tk.END)
-            self.stt_api_key.insert(0, "")
+            if defaults:
+                self.stt_api_key.delete(0, tk.END)
+                self.stt_api_key.insert(0, "")
 
     def populate_game_events_frame(self, frame: tk.Frame, game_events: Dict[str, Dict[str, bool]]):
         category_values: Dict[str, Dict[str, tk.BooleanVar]] = {}
@@ -1006,8 +1027,8 @@ class App:
         self.update_label_text()
         self.toggle_ptt()
         self.toggle_vision()
-        self.toggle_stt_provider(self.data['stt_provider'])
-        self.toggle_tts_provider(self.data['tts_provider'])
+        self.toggle_stt_provider(self.data['stt_provider'], defaults=False)
+        self.toggle_tts_provider(self.data['tts_provider'], defaults=False)
 
     def toggle_ai_geeks_section(self):
         if self.ai_geeks_frame.winfo_viewable():
