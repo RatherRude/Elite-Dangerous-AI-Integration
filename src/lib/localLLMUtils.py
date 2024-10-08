@@ -3,11 +3,13 @@ import re
 import sys
 import time
 from typing import Callable, Dict, Iterator, List, Optional, Union
-from llama_cpp import Llama
+from llama_cpp import Llama, LlamaDiskCache, LlamaRAMCache
 import llama_cpp as llama
 from llama_cpp.llama_chat_format import Jinja2ChatFormatter
 import llama_cpp.llama_types as llama_types
 import llama_cpp.llama_grammar as llama_grammar
+
+from .localLLMGrammarUtils import functions_to_gbnf
 
 
 def create_chat_completion_handler(
@@ -21,6 +23,9 @@ def create_chat_completion_handler(
 ):
     if tool_use_parser is None:
         tool_use_parser = lambda regex: json.loads(regex.group(0))
+    
+    #cache = LlamaRAMCache()
+    cache = LlamaDiskCache()
 
     def chat_completion_handler(
         *,
@@ -95,13 +100,15 @@ def create_chat_completion_handler(
                 )
 
         if tools and tool_choice != "none":
-            grammar_str = "\n".join(llama_grammar.JSON_GBNF.split("\n")[2:])
-            grammar_str += tool_use_grammar  # TODO fix spaces around special token
+            grammar_str = functions_to_gbnf([tool["function"] for tool in tools if tool["type"] == "function"])+"\n"
+            grammar_str += tool_use_grammar(tools) 
             print(grammar_str)
 
             grammar = llama_grammar.LlamaGrammar.from_string(
                 grammar_str, verbose=llama.verbose
             )
+
+        llama.set_cache(cache)
         
         token_gen = llama.generate(
             tokens=prompt_tokens,
@@ -136,7 +143,6 @@ def create_chat_completion_handler(
         for token in token_gen:
             print('---')
             print(llama._model.detokenize(tokens + [token], special=True).decode("utf-8"), token)
-            grammar.parse_state
             if token in stop_tokens:
                 stop_reason = "stop"
                 break
@@ -152,6 +158,8 @@ def create_chat_completion_handler(
         tool_calls = None
         content = None
         # check if the completion contains tool calls using regex
+        if grammar:
+            print(grammar.parse_state)
         if re.search(tool_use_regex, completion):
             match = re.search(tool_use_regex, completion)
             functions = tool_use_parser(match)

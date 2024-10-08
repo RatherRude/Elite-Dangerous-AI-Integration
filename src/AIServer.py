@@ -25,13 +25,9 @@ print(f'Selected TTS model: {tts_model_name}')
 print(f'Selected STT model: {stt_model_name}')
 print(f'Selected LLM model: {llm_model_name}')
 
-_llm_model = init_llm(llm_model_name)
-models = {
-    'tts-1': init_tts(tts_model_name),
-    'whisper-1': init_stt(stt_model_name),
-    'gpt-4o-mini': _llm_model,
-    'gpt-4o': _llm_model,
-}
+llm_model = init_llm(llm_model_name)
+tts_model = init_tts(tts_model_name)
+stt_model = init_stt(stt_model_name)
 
 # create flask api endpoint
 from flask import Flask, request, jsonify
@@ -41,27 +37,25 @@ app = Flask(__name__)
 @app.route('/v1/chat/completions', methods=['POST'])
 def createChatCompletion():
     chat = request.json
-    model = models[chat.get('model', 'gpt-4o-mini')]
-    if not model:
+    if not llm_model:
         return jsonify({'error': 'model not found'}), 400
     if 'messages' not in chat:
         return jsonify({'error': 'messages is required'}), 400
 
-    completion = llm(model, chat)
+    completion = llm(llm_model, chat)
     return jsonify(completion)
 
 @app.route('/v1/audio/speech', methods=['POST'])
 def createSpeech():
     data = request.json
     
-    model = models[data.get('model', 'tts-1')]
     voice = data.get('voice')
     input = data.get('input')
     if not input:
         return jsonify({'error': 'input is required'}), 400
     speed = float(data.get('speed', 1.0))
 
-    audio = tts(model, input, speed, voice)
+    audio = tts(tts_model, input, speed, voice)
 
     response_format = data.get('response_format', 'wav')
     if response_format == 'pcm':
@@ -89,12 +83,11 @@ def createTranscription():
     # decode form data
     data = request.form
 
-    model = models[data.get('model', 'whisper-1')]
     language = data.get('language', 'en')
     name, file = next(request.files.items())
     print(name, file)
 
-    segments, info = stt(model, file.stream.read(), language)
+    segments, info = stt(stt_model, file.stream.read(), language)
     text = ''.join([segment.text for segment in segments])
     return jsonify({'text': text}) # TODO more details, spec compliance
 
