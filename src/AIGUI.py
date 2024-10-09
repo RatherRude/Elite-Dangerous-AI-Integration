@@ -682,7 +682,7 @@ class App:
         if self.release_version_arg:
             check_for_updates(self.release_version_arg)
 
-    def toggle_tts_provider(self, provider, defaults: False):
+    def toggle_tts_provider(self, provider, defaults=False):
         """
             Toggle the input options for each provider.
             Hide the inputs that are not needed, show the ones that are and set the default values.
