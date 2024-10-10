@@ -1029,7 +1029,7 @@ class App:
         self.tts_voice.insert(0, self.data['tts_voice'])
         self.tts_speed.insert(0, self.data['tts_speed'])
         self.ptt_key = self.data['ptt_key']
-        self.input_device_name_var.set(self.data['input_device_name'])
+        self.input_device_name_var.set(self.data['input_device_name'] if self.data['input_device_name'] in self.get_input_device_names() else self.get_input_device_names()[0])
 
         self.update_label_text()
         self.toggle_ptt()
@@ -1206,15 +1206,15 @@ class App:
     def get_input_device_names(self) -> str:
         p = pyaudio.PyAudio()
         default_name = p.get_default_input_device_info()["name"]
-        mic_names = {default_name}
+        mic_names = [default_name]
         host_api = p.get_default_host_api_info()
         for i in range(host_api.get('deviceCount')):
             device = p.get_device_info_by_host_api_device_index(host_api.get('index'), i)
             if device['maxInputChannels'] > 0:
                 name = device['name']
-                mic_names.add(name)
+                mic_names.append(name)
         p.terminate()
-        return list(mic_names)
+        return sorted(set(mic_names), key=mic_names.index)
 
     def shutdown(self):
         if self.process:
