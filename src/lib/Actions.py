@@ -1180,13 +1180,13 @@ def prepare_station_request(obj):
                     "comparison": "<=>"
                 }
             market_filters.append(market_filter)
-        filters["market"] = {"value": market_filters}
+        filters["market"] = market_filters
     if "modules" in obj:
         for module in obj["modules"]:
             if module["name"] not in known_modules:
                 raise Exception(
                     f"Invalid module name: {module['name']}. {educated_guesses_message(module['name'], known_modules)}")
-        filters["modules"] = {"value": obj["modules"]}
+        filters["modules"] = obj["modules"]
     if "ships" in obj:
         for ship in obj["ships"]:
             if ship["name"] not in known_ships:
