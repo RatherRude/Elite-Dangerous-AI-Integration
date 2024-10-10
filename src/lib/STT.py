@@ -3,7 +3,6 @@ import queue
 import threading
 from sys import platform
 from time import sleep, time
-import pyaudio
 
 import openai
 import speech_recognition as sr
@@ -30,15 +29,12 @@ class STT:
 
     prompt = "COVAS, give me a status update... and throw in something inspiring, would you?"
 
-    def __init__(self, openai_client: openai.OpenAI, input_device_name, model='whisper-1', language=None):
+    def __init__(self, openai_client: openai.OpenAI, linux_mic_name='pipewire', model='whisper-1', language=None):
         self.openai_client = openai_client
         self.vad = SileroVoiceActivityDetector()
-        self.input_device_name = input_device_name
+        self.linux_mic_name = linux_mic_name
         self.model = model
         self.language = language
-
-        self.rate=16000
-        self.frames_per_buffer=1600
 
         self.vad_threshold = 0.2
         self.phrase_end_pause = 1.0
@@ -58,16 +54,16 @@ class STT:
         """
         # print('Running STT in PTT mode')
         source = self._get_microphone()
-        timestamp = time()
-        frames = []
-        while self.listening:
-            buffer = source.read(self.frames_per_buffer)
-            if len(buffer) == 0: break  # reached end of the stream
-            frames.append(buffer)
-        source.close()
+        with source as source:
+            timestamp = time()
+            frames = []
+            while self.listening:
+                buffer = source.stream.read(source.CHUNK)
+                if len(buffer) == 0: break  # reached end of the stream
+                frames.append(buffer)
 
         audio_raw = b''.join(frames)
-        audio_data = sr.AudioData(audio_raw, self.rate, pyaudio.get_sample_size(pyaudio.paInt16))
+        audio_data = sr.AudioData(audio_raw, source.SAMPLE_RATE, source.SAMPLE_WIDTH)
         text = self._transcribe(audio_data)
         if not text:
             return
@@ -90,68 +86,54 @@ class STT:
                 backoff *= 2
 
     def _listen_continuous_loop(self):
-        source: pyaudio.Stream = self._get_microphone()
-        timestamp = time()
-        frames = []
-        while self.listening:
-            buffer = source.read(self.frames_per_buffer)
-            if len(buffer) == 0: break  # reached end of the stream
-            frames.append(buffer)
-            frames_duration = len(frames) * self.frames_per_buffer / self.rate
-            if frames_duration > 0.5:
-                #log('debug','checking for voice activity in', frames_duration, 'seconds of audio')
-                audio_raw = b''.join(frames)
-                if self.vad(audio_raw) < self.vad_threshold:
-                    # no voice detected in the recording so far, so clear the buffer
-                    # and keep only last 0.1 seconds of audio for the next iteration
-                    #log('debug','no voice detected, clearing buffer')
-                    frames = frames[-int(0.1 * self.rate / self.frames_per_buffer):]
-                    timestamp = time()
-                    continue
-                else:
-                    # we have voice activity in current recording
-                    # check if there is voice in the last phrase_end_pause seconds
-                    #log('debug','voice detected, checking for pause in the last phrase_end_pause seconds')
-                    audio_end_slice = b''.join(frames[-int(self.phrase_end_pause * self.rate / self.frames_per_buffer):])
-                    if self.vad(audio_end_slice) < self.vad_threshold:
-                        # no voice in the last 0.5 seconds, so we know the user has stopped speaking
-                        # so we can transcribe the audio
-                        #log('debug','no voice detected in the last 0.5 seconds, transcribing')
-                        audio_data = sr.AudioData(audio_raw, self.rate, pyaudio.get_sample_size(pyaudio.paInt16))
-                        text = self._transcribe(audio_data)
-                        frames = []
-                        if text:
-                            self.resultQueue.put(STTResult(text, audio_data, timestamp))
-        source.close()
+        source = self._get_microphone()
+        with source as source:
+            timestamp = time()
+            frames = []
+            while self.listening:
+                buffer = source.stream.read(source.CHUNK)
+                if len(buffer) == 0: break  # reached end of the stream
+                frames.append(buffer)
+                frames_duration = len(frames) * source.CHUNK / source.SAMPLE_RATE
+                if frames_duration > 0.5:
+                    #log('debug','checking for voice activity in', frames_duration, 'seconds of audio')
+                    audio_raw = b''.join(frames)
+                    if self.vad(audio_raw) < self.vad_threshold:
+                        # no voice detected in the recording so far, so clear the buffer
+                        # and keep only last 0.1 seconds of audio for the next iteration
+                        #log('debug','no voice detected, clearing buffer')
+                        frames = frames[-int(0.1 * source.SAMPLE_RATE / source.CHUNK):]
+                        timestamp = time()
+                        continue
+                    else:
+                        # we have voice activity in current recording
+                        # check if there is voice in the last phrase_end_pause seconds
+                        #log('debug','voice detected, checking for pause in the last phrase_end_pause seconds')
+                        audio_end_slice = b''.join(frames[-int(self.phrase_end_pause * source.SAMPLE_RATE / source.CHUNK):])
+                        if self.vad(audio_end_slice) < self.vad_threshold:
+                            # no voice in the last 0.5 seconds, so we know the user has stopped speaking
+                            # so we can transcribe the audio
+                            #log('debug','no voice detected in the last 0.5 seconds, transcribing')
+                            audio_data = sr.AudioData(audio_raw, source.SAMPLE_RATE, source.SAMPLE_WIDTH)
+                            text = self._transcribe(audio_data)
+                            frames = []
+                            if text:
+                                self.resultQueue.put(STTResult(text, audio_data, timestamp))
 
-    def _get_microphone(self) -> pyaudio.Stream:
-        audio = pyaudio.PyAudio()
-        try:
-            for i in range(audio.get_device_count()):
-                device = audio.get_device_info_by_index(i)
-                if device['name'] == self.input_device_name:
-                    device_index = i
-                    break
-            
-            source = audio.open(
-                input_device_index=device_index,
-                format=pyaudio.paInt16,
-                channels=1,
-                rate=self.rate,
-                input=True,
-                frames_per_buffer=self.frames_per_buffer
-            )
-        except Exception as e:
-            log('error', 'Failed to open microphone', e)
-            log('info', 'Fallback to default microphone')
-            source = audio.open(
-                format=pyaudio.paInt16,
-                channels=1,
-                rate=self.rate,
-                input=True,
-                frames_per_buffer=self.frames_per_buffer
-            )
-        return source
+    def _get_microphone(self) -> sr.Microphone:
+        # Important for linux users.
+        # Prevents permanent application hang and crash by using the wrong Microphone
+        if 'linux' in platform:
+            for index, name in enumerate(sr.Microphone.list_microphone_names()):
+                if self.linux_mic_name in name:
+                    return sr.Microphone(sample_rate=16000, device_index=index, chunk_size=1600, )
+
+            # print ("Available microphones:")
+            for index, name in enumerate(sr.Microphone.list_microphone_names()):
+                print(f" {index}) {name}")
+            raise Exception('Microphone not found')
+        else:
+            return sr.Microphone(sample_rate=16000, chunk_size=1600)
 
     def _transcribe(self, audio: sr.AudioData) -> str:
         audio_raw = audio.get_raw_data(convert_rate=16000, convert_width=2)
