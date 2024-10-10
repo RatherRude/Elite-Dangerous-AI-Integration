@@ -41,6 +41,8 @@ def createChatCompletion():
         return jsonify({'error': 'model not found'}), 400
     if 'messages' not in chat:
         return jsonify({'error': 'messages is required'}), 400
+    
+    print(chat)
 
     completion = llm(llm_model, chat)
     return jsonify(completion)

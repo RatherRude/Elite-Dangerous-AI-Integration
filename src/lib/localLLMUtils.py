@@ -2,15 +2,16 @@ import json
 import re
 import sys
 import time
-from typing import Callable, Dict, Iterator, List, Optional, Union
-from llama_cpp import Llama, LlamaDiskCache, LlamaRAMCache
+from typing import Callable, Dict, Iterator, List, Optional, Sequence, Tuple, Union
+import diskcache
+from llama_cpp import BaseLlamaCache, Llama, LlamaDiskCache, LlamaRAMCache
 import llama_cpp as llama
+import llama_cpp
 from llama_cpp.llama_chat_format import Jinja2ChatFormatter
 import llama_cpp.llama_types as llama_types
 import llama_cpp.llama_grammar as llama_grammar
 
 from .localLLMGrammarUtils import functions_to_gbnf
-
 
 def create_chat_completion_handler(
     template: str,
@@ -22,10 +23,7 @@ def create_chat_completion_handler(
     **kwargs,  # type: ignore
 ):
     if tool_use_parser is None:
-        tool_use_parser = lambda regex: json.loads(regex.group(0))
-    
-    #cache = LlamaRAMCache()
-    cache = LlamaDiskCache()
+        tool_use_parser = lambda regex: json.loads(regex.group(1))
 
     def chat_completion_handler(
         *,
@@ -84,6 +82,7 @@ def create_chat_completion_handler(
             add_bos=not result.added_special,
             special=True,
         )
+        print('prompt_tokens:', len(prompt_tokens))
         if result.stop is not None:
             stop = [] if stop is None else [stop] if isinstance(stop, str) else stop
             rstop = result.stop if isinstance(result.stop, list) else [result.stop]
@@ -91,25 +90,43 @@ def create_chat_completion_handler(
 
         if response_format is not None and response_format["type"] == "json_object":
             grammar = llama_grammar.LlamaGrammar.from_string(
-                llama_grammar.JSON_GBNF, verbose=llama.verbose
+                llama_grammar.JSON_GBNF, verbose=False
             )
             if response_format["schema"] is not None:
                 grammar = llama_grammar.LlamaGrammar.from_json_schema(
                     json.dumps(response_format["schema"]), 
-                    verbose=llama.verbose
+                    verbose=False
                 )
 
         if tools and tool_choice != "none":
             grammar_str = functions_to_gbnf([tool["function"] for tool in tools if tool["type"] == "function"])+"\n"
             grammar_str += tool_use_grammar(tools) 
-            print(grammar_str)
 
             grammar = llama_grammar.LlamaGrammar.from_string(
-                grammar_str, verbose=llama.verbose
+                grammar_str, verbose=False
             )
-
-        llama.set_cache(cache)
         
+        llama.reset()
+
+        if llama.cache:
+            llama._ctx.set_rng_seed(1) # deterministic cache
+            try:
+                cache_item = llama.cache[prompt_tokens]
+                llama.cache[cache_item.input_ids.tolist()] = cache_item # somehow the cache is removed using __getitem__, so we need to re-add it
+                cache_prefix_len = Llama.longest_token_prefix(
+                    cache_item.input_ids.tolist(), prompt_tokens
+                )
+                eval_prefix_len = Llama.longest_token_prefix(
+                    llama._input_ids.tolist(), prompt_tokens
+                )
+                if cache_prefix_len > eval_prefix_len:
+                    llama.load_state(cache_item)
+                    if llama.verbose:
+                        print("Llama._create_completion: cache hit", file=sys.stderr)
+            except KeyError:
+                if llama.verbose:
+                    print("Llama._create_completion: cache miss", file=sys.stderr)
+
         token_gen = llama.generate(
             tokens=prompt_tokens,
             temp=temperature,
@@ -135,40 +152,44 @@ def create_chat_completion_handler(
             #logit_bias=logit_bias,
         )
 
-        tokens = []
+        generated_tokens = []
         stop_tokens = [llama.tokenize(token.encode('utf-8'), False, True)[0] for token in stop]
         stop_reason = None
         max_tokens = max_tokens if max_tokens is not None else llama.n_ctx()
         print ('max_tokens:', max_tokens)
         for token in token_gen:
-            print('---')
-            print(llama._model.detokenize(tokens + [token], special=True).decode("utf-8"), token)
+            print(llama.detokenize([token], generated_tokens).decode('utf-8'), end="")
+            sys.stdout.flush()
             if token in stop_tokens:
                 stop_reason = "stop"
                 break
-            if len(tokens) > max_tokens:
+            if len(generated_tokens) > max_tokens:
                 stop_reason = "length"
                 break
-            tokens.append(token)
+            generated_tokens.append(token)
         
-        completion = llama._model.detokenize(tokens, special=True).decode("utf-8")
-        print(completion)
+        print()
+        completion = llama._model.detokenize(generated_tokens, special=True).decode("utf-8")
+
+        if llama.cache:
+            if llama.verbose:
+                print("Llama._create_completion: cache save", file=sys.stderr)
+            llama.cache[prompt_tokens + generated_tokens] = llama.save_state()
 
         completion_id = "chat_" + str(int(time.time()))
         tool_calls = None
         content = None
         # check if the completion contains tool calls using regex
-        if grammar:
-            print(grammar.parse_state)
         if re.search(tool_use_regex, completion):
             match = re.search(tool_use_regex, completion)
             functions = tool_use_parser(match)
+            print('extracted functions:', functions)
             tool_calls: llama_types.ChatCompletionMessageToolCalls = [{
                 "id": "call_" + "_"+ str(i) +"_" + completion_id,
                 "type": "function",
                 "function": {
                     "name": function["name"],
-                    "arguments": function["arguments"],
+                    "arguments": json.dumps(function["arguments"]),
                 },
             } for i, function in enumerate(functions)]
         else:
@@ -192,10 +213,65 @@ def create_chat_completion_handler(
                 }
             ],
             "usage": {
-                "completion_tokens": len(tokens),
+                "completion_tokens": len(generated_tokens),
                 "prompt_tokens": len(prompt_tokens),
-                "total_tokens": len(tokens) + len(prompt_tokens),
+                "total_tokens": len(generated_tokens) + len(prompt_tokens),
             },
         }
         return chat_completion
     return chat_completion_handler
+
+
+
+class LlamaDiskCache(BaseLlamaCache):
+    """Cache for a llama.cpp model using disk."""
+
+    def __init__(
+        self, cache_dir: str = ".cache/llama_cache", capacity_bytes: int = (2 << 30)
+    ):
+        super().__init__(capacity_bytes)
+        self.cache = diskcache.Cache(cache_dir, size_limit=capacity_bytes, cull_limit=1)
+
+    @property
+    def cache_size(self):
+        return int(self.cache.volume())  # type: ignore
+
+    def _find_longest_prefix_key(
+        self,
+        key: Tuple[int, ...],
+    ) -> Optional[Tuple[int, ...]]:
+        min_len = 0
+        min_key: Optional[Tuple[int, ...]] = None
+        for k in self.cache.iterkeys():  # type: ignore
+            prefix_len = llama_cpp.llama.Llama.longest_token_prefix(k, key)
+            if prefix_len > min_len:
+                min_len = prefix_len
+                min_key = k  # type: ignore
+        return min_key
+
+    def __getitem__(self, key: Sequence[int]) -> "llama_cpp.llama.LlamaState":
+        key = tuple(key)
+        _key = self._find_longest_prefix_key(key)
+        if _key is None:
+            raise KeyError("Key not found")
+        value: "llama_cpp.llama.LlamaState" = self.cache.pop(_key)  # type: ignore
+        # NOTE: This puts an integer as key in cache, which breaks,
+        # Llama.longest_token_prefix(k, key) above since k is not a tuple of ints/tokens
+        # self.cache.push(_key, side="front")  # type: ignore
+        return value
+
+    def __contains__(self, key: Sequence[int]) -> bool:
+        return self._find_longest_prefix_key(tuple(key)) is not None
+
+    def __setitem__(self, key: Sequence[int], value: "llama_cpp.llama.LlamaState"):
+        print("LlamaDiskCache.__setitem__: called", file=sys.stderr)
+        key = tuple(key)
+        if key in self.cache:
+            print("LlamaDiskCache.__setitem__: delete", file=sys.stderr)
+            del self.cache[key]
+        res = self.cache.set(key, value)
+        print("LlamaDiskCache.__setitem__: set", res, file=sys.stderr)
+        while self.cache_size > self.capacity_bytes and len(self.cache) > 0:
+            print("LlamaDiskCache.__setitem__: trim",  self.cache_size, self.capacity_bytes, file=sys.stderr)
+            key_to_remove = next(iter(self.cache))
+            del self.cache[key_to_remove]

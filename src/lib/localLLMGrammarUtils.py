@@ -7,7 +7,7 @@ def gbnf_char(char: str):
     """
     Escapes a character for use in a GBNF rule.
     """
-    specials = ['\\', '"', '[', ']', '{', '}', '(', ')', '<', '>', '|', '^', '$', '*', '+', '?', '.']
+    specials = ['\\', '"', '[', ']', '{', '}', '(', ')', '|', '^', '$', '*', '+', '?', '.']
     for special in specials:
         char = char.replace(special, "\\" + special)
     return char
@@ -53,9 +53,17 @@ def functions_to_gbnf(functions: list[dict[str, any]]):
     converter.visit({}, 'object') # guarantee that object is defined
     for function in functions:
         name = gbnf_sanitize(function["name"])
-        parameters = function["parameters"]
+        parameters = {
+            "type":"object", 
+            "properties": {
+                "name": {"const": function["name"]}, 
+                "arguments": function["parameters"]
+            },
+            "required": ["name", "arguments"],
+            "additionalProperties": False
+        }
         schema = converter.resolve_refs(parameters, "stdin")
-        converter.visit(schema, name+'-parameters')
+        converter.visit(schema, name)
     
     return "\n".join(
         f"{name} ::= {rule}"
