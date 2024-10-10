@@ -1219,14 +1219,12 @@ def prepare_station_request(obj):
 # filter a spansh station result set for only relevant information
 def filter_station_response(request, response):
     # Extract requested commodities and modules
-    commodities_requested = {item["name"] for item in request["filters"].get("market", {}).get("value", [])}
-    modules_requested = {item["name"] for item in request["filters"].get("modules", {}).get("value", [])}
+    commodities_requested = {item["name"] for item in request["filters"].get("market", {})}
+    modules_requested = {item["name"] for item in request["filters"].get("modules", {})}
     ships_requested = {item["name"] for item in request["filters"].get("ships", {}).get("value", [])}
     services_requested = {item["name"] for item in request["filters"].get("services", {}).get("value", [])}
 
-    for module_filter in request["filters"].get("modules", []):
-        if isinstance(module_filter, dict) and "name" in module_filter:
-            modules_requested.update(module_filter["name"])
+    log('debug', 'modules_requested',modules_requested)
 
     filtered_results = []
 
