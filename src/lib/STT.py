@@ -137,7 +137,6 @@ class STT:
                     device_index = device.get('index')
                     break
 
-            log('info', 'Opening input device', device_index)
             source = audio.open(
                 input_device_index=device_index,
                 format=pyaudio.paInt16,
@@ -148,7 +147,7 @@ class STT:
             )
         except Exception as e:
             log('error', 'Failed to open microphone', e)
-            log('info', 'Fallback to default microphone')
+            log('error', 'Fallback to default microphone')
             source = audio.open(
                 format=pyaudio.paInt16,
                 channels=1,
