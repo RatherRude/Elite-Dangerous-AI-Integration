@@ -5,6 +5,7 @@ from pathlib import Path
 
 from openai import OpenAI
 
+from lib.Config import Config
 from lib.ActionManager import ActionManager
 from lib.Actions import register_actions
 from lib.ControllerManager import ControllerManager
@@ -35,35 +36,12 @@ action_manager = ActionManager()
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 
-def load_or_prompt_config():
+def load_config() -> Config:
     config_file = Path("config.json")
     if config_file.exists():
         with open(config_file, 'r') as f:
-            config = json.load(f)
-            api_key = config.get('api_key', '')
-            llm_api_key = config.get('llm_api_key', '')
-            llm_endpoint = config.get('llm_endpoint', '')
-            commander_name = config.get('commander_name', '')
-            character = config.get('character', '')
-            llm_model_name = config.get('llm_model_name', '')
-            vision_model_name = config.get('vision_model_name', '')
-            vision_endpoint = config.get('vision_endpoint', '')
-            vision_api_key = config.get('vision_api_key', '')
-            stt_model_name = config.get('stt_model_name', '')
-            stt_api_key = config.get('stt_api_key', '')
-            stt_endpoint = config.get('stt_endpoint', '')
-            tts_model_name = config.get('tts_model_name', '')
-            tts_api_key = config.get('tts_api_key', '')
-            tts_endpoint = config.get('tts_endpoint', '')
-            tools_var = config.get('tools_var', '')
-            vision_var = config.get('vision_var', '')
-            ptt_var = config.get('ptt_var', '')
-            continue_conversation_var = config.get('continue_conversation_var', '')
-            tts_voice = config.get('tts_voice', '')
-            tts_speed = config.get('tts_speed', '')
-            ptt_key = config.get('ptt_key', '')
-            game_events = config.get('game_events', '[]')
-    return api_key, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commander_name, character, llm_model_name, tools_var, vision_var, ptt_var, continue_conversation_var, tts_voice, tts_speed, ptt_key, game_events
+            return json.load(f)
+    raise FileNotFoundError("config.json not found")
 
 is_thinking = False
 
@@ -116,7 +94,7 @@ def getCurrentState():
 previous_status = None
 
 
-def checkForJournalUpdates(client, eventManager, commanderName, boot):
+def checkForJournalUpdates(client, eventManager, commander_name, boot):
     global previous_status
     if boot:
         previous_status['extra_events'].clear()
@@ -157,65 +135,66 @@ def main():
     global llmClient, sttClient, ttsClient, tts, aiModel, backstory, useTools, jn, previous_status, event_manager, prompt_generator, llm_model_name
 
     # Load or prompt for configuration
-    apiKey, llm_api_key, llm_endpoint, vision_model_name, vision_endpoint, vision_api_key, stt_model_name, stt_api_key, stt_endpoint, tts_model_name, tts_api_key, tts_endpoint, commanderName, character, llm_model_name, tools_var, vision_var, ptt_var, continue_conversation_var, tts_voice, tts_speed, ptt_key, game_events = load_or_prompt_config()
+    config = load_config()
+    llm_model_name = config["llm_model_name"]
 
-    jn = EDJournal(game_events)
+    jn = EDJournal(config["game_events"])
     previous_status = getCurrentState()
 
     # gets API Key from config.json
     llmClient = OpenAI(
-        base_url="https://api.openai.com/v1" if llm_endpoint == '' else llm_endpoint,
-        api_key=apiKey if llm_api_key == '' else llm_api_key,
+        base_url="https://api.openai.com/v1" if config["llm_endpoint"] == '' else config["llm_endpoint"],
+        api_key=config["api_key"] if config["llm_api_key"] == '' else config["llm_api_key"],
     )
 
     # tool usage
-    if tools_var:
+    if config["tools_var"]:
         useTools = True
     # alternative models
     if llm_model_name != '':
         aiModel = llm_model_name
     # alternative character
-    if character != '':
-        backstory = character
+    if config["character"] != '':
+        backstory = config["character"]
     # vision
-    if vision_var:
+    if config["vision_var"]:
         visionClient = OpenAI(
-            base_url="https://api.openai.com/v1" if vision_endpoint == '' else vision_endpoint,
-            api_key=apiKey if vision_api_key == '' else vision_api_key,
+            base_url="https://api.openai.com/v1" if config["vision_endpoint"] == '' else config["vision_endpoint"],
+            api_key=config["api_key"] if config["vision_api_key"] == '' else config["vision_api_key"],
         )
     else:
         visionClient = None
 
 
     sttClient = OpenAI(
-        base_url=stt_endpoint,
-        api_key=apiKey if stt_api_key == '' else stt_api_key,
+        base_url=config["stt_endpoint"],
+        api_key=config["api_key"] if config["stt_api_key"] == '' else config["stt_api_key"],
     )
 
-    if tts_model_name != 'edge-tts':
+    if config["tts_model_name"] != 'edge-tts':
         ttsClient = OpenAI(
-            base_url=tts_endpoint,
-            api_key=apiKey if tts_api_key == '' else tts_api_key,
+            base_url=config["tts_endpoint"],
+            api_key=config["api_key"] if config["tts_api_key"] == '' else config["tts_api_key"],
         )
 
-    log('info', f"Initializing CMDR {commanderName}'s personal AI...\n")
+    log('info', f"Initializing CMDR {config['commander_name']}'s personal AI...\n")
     log('info', "API Key: Loaded")
-    log('info', f"Using Push-to-Talk: {ptt_var}")
+    log('info', f"Using Push-to-Talk: {config['ptt_var']}")
     log('info', f"Using Function Calling: {useTools}")
     log('info', f"Current model: {llm_model_name}")
-    log('info', f"Current TTS voice: {tts_voice}")
-    log('info', f"Current TTS Speed: {tts_speed}")
-    log('info', "Current backstory: " + backstory.replace("{commander_name}", commanderName))
+    log('info', f"Current TTS voice: {config['tts_voice']}")
+    log('info', f"Current TTS Speed: {config['tts_speed']}")
+    log('info', "Current backstory: " + backstory.replace("{commander_name}", config['commander_name']))
 
     # TTS Setup
     log('info', "Basic configuration complete.")
     log('info', "Loading voice output...")
-    tts = TTS(openai_client=ttsClient, model=tts_model_name, voice=tts_voice, speed=tts_speed)
-    stt = STT(openai_client=sttClient, model=stt_model_name)
+    tts = TTS(openai_client=ttsClient, model=config["tts_model_name"], voice=config["tts_voice"], speed=config["tts_speed"])
+    stt = STT(openai_client=sttClient, input_device_name=config["input_device_name"], model=config["stt_model_name"])
 
-    if ptt_var and ptt_key:
-        log('info', f"Setting push-to-talk hotkey {ptt_key}.")
-        controller_manager.register_hotkey(ptt_key, lambda _: stt.listen_once_start(),
+    if config['ptt_var'] and config['ptt_key']:
+        log('info', f"Setting push-to-talk hotkey {config['ptt_key']}.")
+        controller_manager.register_hotkey(config["ptt_key"], lambda _: stt.listen_once_start(),
                                            lambda _: stt.listen_once_end())
     else:
         stt.listen_continuous()
@@ -223,22 +202,22 @@ def main():
 
 
     enabled_game_events = []
-    for category in game_events.values():
+    for category in config["game_events"].values():
         for event, state in category.items():
             if state:
                 enabled_game_events.append(event)
 
     status_parser = StatusParser()
-    prompt_generator = PromptGenerator(commanderName, character, journal=jn)
+    prompt_generator = PromptGenerator(config["commander_name"], config["character"], journal=jn)
     event_manager = EventManager(
         on_reply_request=lambda events, new_events: reply(llmClient, events, new_events, prompt_generator, status_parser, event_manager,
                                                           tts),
         game_events=enabled_game_events,
-        continue_conversation=continue_conversation_var
+        continue_conversation=config["continue_conversation_var"]
     )
 
     if useTools:
-        register_actions(action_manager, event_manager, llmClient, llm_model_name, visionClient, vision_model_name, status_parser)
+        register_actions(action_manager, event_manager, llmClient, llm_model_name, visionClient, config["vision_model_name"], status_parser)
         log('info', "Actions ready.")
 
     # Cue the user that we're ready to go.
@@ -265,7 +244,7 @@ def main():
 
             # check EDJournal files for updates
             if counter % 5 == 0:
-                checkForJournalUpdates(llmClient, event_manager, commanderName, counter <= 5)
+                checkForJournalUpdates(llmClient, event_manager, config["commander_name"], counter <= 5)
 
             event_manager.reply()
 
