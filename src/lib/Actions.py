@@ -1224,7 +1224,7 @@ def filter_station_response(request, response):
     ships_requested = {item["name"] for item in request["filters"].get("ships", {}).get("value", [])}
     services_requested = {item["name"] for item in request["filters"].get("services", {}).get("value", [])}
 
-    log('debug', 'modules_requested', modules_requested)
+    log('debug', 'modules_requested',modules_requested)
 
     filtered_results = []
 
@@ -1526,8 +1526,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, hold_fire_secondary_weapon)
 
-    actionManager.registerAction('hyperSuperCombination',
-                                 "initiate FSD Jump, required to jump to the next system or to enter supercruise", {
+    actionManager.registerAction('hyperSuperCombination', "initiate FSD Jump, required to jump to the next system or to enter supercruise", {
                                      "type": "object",
                                      "properties": {}
                                  }, hyper_super_combination)
@@ -1929,7 +1928,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                                 "example": ["A", "B", "C", "D"]
                             }
                         },
-                        "required": ["name", "class"]
+                        "required": ["name", "class", "rating"]
                     },
                     "minItems": 1,
                 },
