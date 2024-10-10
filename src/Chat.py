@@ -5,7 +5,7 @@ from pathlib import Path
 
 from openai import OpenAI
 
-from lib import Config
+from lib.Config import Config
 from lib.ActionManager import ActionManager
 from lib.Actions import register_actions
 from lib.ControllerManager import ControllerManager
@@ -136,6 +136,7 @@ def main():
 
     # Load or prompt for configuration
     config = load_config()
+    llm_model_name = config["llm_model_name"]
 
     jn = EDJournal(config["game_events"])
     previous_status = getCurrentState()
@@ -189,7 +190,7 @@ def main():
     log('info', "Basic configuration complete.")
     log('info', "Loading voice output...")
     tts = TTS(openai_client=ttsClient, model=config["tts_model_name"], voice=config["tts_voice"], speed=config["tts_speed"])
-    stt = STT(openai_client=sttClient, model=config["stt_model_name"])
+    stt = STT(openai_client=sttClient, input_device_name=config["input_device_name"], model=config["stt_model_name"])
 
     if config['ptt_var'] and config['ptt_key']:
         log('info', f"Setting push-to-talk hotkey {config['ptt_key']}.")

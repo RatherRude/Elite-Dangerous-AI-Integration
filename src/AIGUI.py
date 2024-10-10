@@ -18,6 +18,7 @@ import pyaudio
 import requests
 from openai import APIError, OpenAI
 
+from lib.Config import Config
 from lib.ControllerManager import ControllerManager
 
 
@@ -402,7 +403,7 @@ class App:
         self.output_queue = Queue()
         self.read_thread = None
         # Load initial data from JSON file if exists
-        self.data = self.load_data()
+        self.data: Config = self.load_data()
 
         # Background Image
         try:
@@ -849,8 +850,8 @@ class App:
         else:
             self.pptButton.config(text="Set Key Binding")
 
-    def load_data(self):
-        defaults = {
+    def load_data(self) -> Config:
+        defaults: Config = {
             'commander_name': "",
             'character':
                 "I am Commander {commander_name}, an independent pilot and secret member of the Dark Wheel. \n\n" +
