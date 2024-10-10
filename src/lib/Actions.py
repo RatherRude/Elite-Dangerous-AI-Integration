@@ -108,7 +108,7 @@ def galaxy_map_open(args):
     sleep(.15)
 
     # Galaxy map already open, so we close it
-    if status_parser.get_gui_focus() == 6:
+    if status_parser.current_status.GuiFocus != 'GalaxyMap':
         keys.send('GalaxyMapOpen')
         sleep(.15)
 
@@ -143,7 +143,7 @@ def galaxy_map_open(args):
 def galaxy_map_close(args):
     setGameWindowActive()
     sleep(.15)
-    if status_parser.get_gui_focus() == 6:
+    if status_parser.current_status.GuiFocus == 'GalaxyMap':
         keys.send('GalaxyMapOpen')
 
     return f"Galaxy map closed"

@@ -91,6 +91,9 @@ class EventManager:
             if isinstance(event, GameEvent) and event.content.get("event") in self.game_events:
                 return True
 
+            if isinstance(event, StatusEvent) and event.status.get("event") in self.game_events:
+                return True
+            
             if isinstance(event, ExternalEvent):
                 return True
 

@@ -71,7 +71,7 @@ def reply(client, events: List[Event], new_events: List[Event], prompt_generator
           event_manager: EventManager, tts: TTS):
     global is_thinking
     is_thinking = True
-    prompt = prompt_generator.generate_prompt(events=events, status=status_parser.get_cleaned_data())
+    prompt = prompt_generator.generate_prompt(events=events, status=status_parser.current_status)
 
     use_tools = useTools and any([event.kind == 'user' for event in new_events])
 
@@ -250,9 +250,9 @@ def main():
             counter += 1
 
             # check status file for updates
-            # while not status_parser.status_queue.empty():
-            #     status = status_parser.status_queue.get()
-            #     event_manager.add_status_event(status)
+            while not status_parser.status_queue.empty():
+                status = status_parser.status_queue.get()
+                event_manager.add_status_event(status)
 
             # check STT result queue
             if not stt.resultQueue.empty():
