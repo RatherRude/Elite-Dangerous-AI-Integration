@@ -126,13 +126,18 @@ class STT:
 
     def _get_microphone(self) -> pyaudio.Stream:
         audio = pyaudio.PyAudio()
+
+        host_api = audio.get_default_host_api_info()
+
         try:
-            for i in range(audio.get_device_count()):
-                device = audio.get_device_info_by_index(i)
+            device_index = 0
+            for i in range(host_api.get('deviceCount')):
+                device = audio.get_device_info_by_host_api_device_index(host_api.get('index'), i)
                 if device['name'] == self.input_device_name:
-                    device_index = i
+                    device_index = device.get('index')
                     break
-            
+
+            log('info', 'Opening input device', device_index)
             source = audio.open(
                 input_device_index=device_index,
                 format=pyaudio.paInt16,

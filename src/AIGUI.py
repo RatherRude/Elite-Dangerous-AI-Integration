@@ -1207,9 +1207,11 @@ class App:
         p = pyaudio.PyAudio()
         default_name = p.get_default_input_device_info()["name"]
         mic_names = {default_name}
-        for i in range(p.get_device_count()):
-            if p.get_device_info_by_index(i)['maxInputChannels'] > 0:
-                name = p.get_device_info_by_index(i)['name']
+        host_api = p.get_default_host_api_info()
+        for i in range(host_api.get('deviceCount')):
+            device = p.get_device_info_by_host_api_device_index(host_api.get('index'), i)
+            if device['maxInputChannels'] > 0:
+                name = device['name']
                 mic_names.add(name)
         p.terminate()
         return list(mic_names)
