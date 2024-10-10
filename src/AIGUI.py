@@ -18,7 +18,6 @@ import pyaudio
 import requests
 from openai import APIError, OpenAI
 
-from lib.Config import Config
 from lib.ControllerManager import ControllerManager
 
 
@@ -403,7 +402,7 @@ class App:
         self.output_queue = Queue()
         self.read_thread = None
         # Load initial data from JSON file if exists
-        self.data: Config = self.load_data()
+        self.data = self.load_data()
 
         # Background Image
         try:
@@ -467,11 +466,8 @@ class App:
                                                                                                                 pady=5)
 
         tk.Label(self.main_frame, text="Input Device:", font=('Arial', 10)).grid(row=5, column=0, sticky=tk.W)
-        input_device_names = self.get_input_device_names()
-        self.input_device_name_var = tk.StringVar()
-        self.input_device_name_var.set(input_device_names[0])
-        self.input_device_name = tk.OptionMenu(self.main_frame, self.input_device_name_var, *input_device_names)
-        self.input_device_name.grid(row=5, column=1, padx=10, pady=5, sticky=tk.W)
+        self.input_device_name = tk.Label(self.main_frame, text=self.get_default_microphone_name(),
+                                          font=('Arial', 10)).grid(row=5, column=1, sticky=tk.W)
 
         self.game_events_frame = VerticalScrolledFrame(self.main_frame, width=600)
         self.game_events_frame.grid(row=7, column=0, columnspan=2, sticky="")
@@ -850,8 +846,8 @@ class App:
         else:
             self.pptButton.config(text="Set Key Binding")
 
-    def load_data(self) -> Config:
-        defaults: Config = {
+    def load_data(self):
+        defaults = {
             'commander_name': "",
             'character':
                 "I am Commander {commander_name}, an independent pilot and secret member of the Dark Wheel. \n\n" +
@@ -865,7 +861,6 @@ class App:
             'vision_var': True,
             'ptt_var': False,
             'continue_conversation_var': True,
-            'input_device_name': self.get_input_device_names()[0],
             'llm_model_name': "gpt-4o-mini",
             'llm_endpoint': "https://api.openai.com/v1",
             'llm_api_key': "",
@@ -996,7 +991,6 @@ class App:
         self.data['tts_voice'] = self.tts_voice.get()
         self.data['tts_speed'] = self.tts_speed.get()
         self.data['ptt_key'] = self.ptt_key
-        self.data['input_device_name'] = self.input_device_name_var.get()
         self.data['game_events'] = self.game_events_save_cb()
 
         with open('config.json', 'w') as file:
@@ -1029,7 +1023,6 @@ class App:
         self.tts_voice.insert(0, self.data['tts_voice'])
         self.tts_speed.insert(0, self.data['tts_speed'])
         self.ptt_key = self.data['ptt_key']
-        self.input_device_name_var.set(self.data['input_device_name'])
 
         self.update_label_text()
         self.toggle_ptt()
@@ -1102,7 +1095,7 @@ class App:
             if platform == "win32":
                 startupinfo = subprocess.STARTUPINFO()
                 startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            self.process = subprocess.Popen(self.chat_command_arg.split(' ')+['--microphone', self.input_device_name_var.get()], startupinfo=startupinfo,
+            self.process = subprocess.Popen(self.chat_command_arg.split(' '), startupinfo=startupinfo,
                                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1,
                                             universal_newlines=True, encoding='utf-8', shell=False, close_fds=True)
 
@@ -1203,16 +1196,10 @@ class App:
         self.main_frame.pack(padx=20, pady=20)
         self.start_button.pack()
 
-    def get_input_device_names(self) -> str:
+    def get_default_microphone_name(self) -> str:
         p = pyaudio.PyAudio()
-        default_name = p.get_default_input_device_info()["name"]
-        mic_names = {default_name}
-        for i in range(p.get_device_count()):
-            if p.get_device_info_by_index(i)['maxInputChannels'] > 0:
-                name = p.get_device_info_by_index(i)['name']
-                mic_names.add(name)
-        p.terminate()
-        return list(mic_names)
+        name = p.get_default_input_device_info()['name']
+        return (name + '...') if len(name) == 31 else name
 
     def shutdown(self):
         if self.process:
