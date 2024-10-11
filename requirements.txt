@@ -39,6 +39,7 @@ pefile==2023.2.7
 pick==2.4.0
 pillow==10.4.0
 protobuf==5.27.3
+psutil==6.0.0
 PyAudio==0.2.14
 PyAutoGUI==0.9.54
 pydantic==2.8.2

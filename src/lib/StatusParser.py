@@ -279,11 +279,11 @@ class StatusParser:
     def _read_status_file(self) -> Status:
         """Loads data from the JSON file and returns a cleaned version"""
         try:
-            with open(self.file_path, 'r') as file:
+            with open(self.file_path, 'r', encoding='utf-8') as file:
                 data = json.load(file)
         except json.JSONDecodeError:
             sleep(0.1)
-            with open(self.file_path, 'r') as file:
+            with open(self.file_path, 'r', encoding='utf-8') as file:
                 data = json.load(file)
 
         status = Status.from_status_file(data)

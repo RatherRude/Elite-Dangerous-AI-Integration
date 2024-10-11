@@ -1,4 +1,4 @@
-
+import time
 
 from .Logger import log
 from typing import Optional
@@ -33,7 +33,7 @@ class EDCoPilot:
         try:
             import winreg
             key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 'SOFTWARE\\EDCoPilot')
-            value = winreg.QueryValueEx(key, 'EDCoPilotLib')
+            value, _ = winreg.QueryValueEx(key, 'EDCoPilotLib')
             winreg.CloseKey(key)
             return value
         except FileNotFoundError:
@@ -46,7 +46,8 @@ class EDCoPilot:
             for proc in psutil.process_iter():
                 if 'EDCoPilot' in proc.name():
                     return proc.pid
-        finally:
+            return None
+        except Exception:
             return None
     
     def write_request(self, message: str):
@@ -58,8 +59,8 @@ class EDCoPilot:
         install_path = self.get_install_path()
         if install_path:
             path = os.path.join(install_path, 'EDCoPilot.request.txt')
-            with open(path, 'w') as f:
-                f.write(message.replace('\n', ' '))
+            with open(path, 'a', encoding='utf-8') as f:
+                f.write(message.replace('\n', ' ')+'\r\n')
             return True
         return False
 
@@ -74,5 +75,6 @@ class EDCoPilot:
 
 if __name__ == '__main__':
     copilot = EDCoPilot(is_enabled=True)
-    copilot.print_this('Hello, World!')
-    copilot.speak_this('Hello, World!')
+    copilot.print_this('covas: What the hell do you want, Commander? You know I\ufffdm not here to hold your hand while you shoot stuff in this chaotic mess of a system!')
+    time.sleep(2)
+    copilot.speak_this('covas: What the hell do you want, Commander? You know I\'m not here to hold your hand while you shoot stuff in this chaotic mess of a system!')
