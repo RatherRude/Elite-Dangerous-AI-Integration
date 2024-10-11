@@ -9,7 +9,7 @@ class EDCoPilot:
         self.install_path = self.get_install_path()
         self.proc_id = self.get_process_id()
         self.is_enabled = is_enabled and self.is_installed()
-        
+
         log('info', f'EDCoPilot is installed: {self.is_installed()}')
         log('info', f'EDCoPilot is running: {self.is_running()}')
         log('info', f'EDCoPilot is enabled: {self.is_enabled}')
@@ -70,3 +70,9 @@ class EDCoPilot:
     def speak_this(self, message: str):
         """send SpeakThis: "message" request"""
         return self.write_request('SpeakThis: '+message)
+    
+
+if __name__ == '__main__':
+    copilot = EDCoPilot(is_enabled=True)
+    copilot.print_this('Hello, World!')
+    copilot.speak_this('Hello, World!')
