@@ -1,12 +1,14 @@
+from datetime import timedelta
 import json
 from functools import lru_cache
 
 import requests
+from dataclasses import asdict
 
+from .StatusParser import Status
 from .EDJournal import *
-from .Event import GameEvent, Event, ConversationEvent, ToolEvent, ExternalEvent
+from .Event import GameEvent, Event, ConversationEvent, StatusEvent, ToolEvent, ExternalEvent
 from .Logger import log
-from .StatusParser import StatusParser
 
 startupEvents = {
     "Cargo": "Commander {commanderName} has updated their cargo inventory.",
@@ -329,6 +331,12 @@ class PromptGenerator:
             "role": "user",
             "content": f"({allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)})"
         }
+    
+    def status_message(self, event: StatusEvent):
+        return {
+            "role": "user",
+            "content": f"(Status changed: {event.status.get('event')} Details: {json.dumps(event.status)})"
+        }
 
     def conversation_message(self, event: ConversationEvent):
         return {
@@ -416,7 +424,7 @@ class PromptGenerator:
             log('error', f"Error: {e}")
             return "Currently no information on system available"
 
-    def generate_prompt(self, events: List[Event], status: Dict[str, any]):
+    def generate_prompt(self, events: List[Event], status: Status):
         # Collect the last 50 conversational pieces
         conversational_pieces: List[any] = list()
 
@@ -431,6 +439,10 @@ class PromptGenerator:
                     conversational_pieces.append(self.simple_event_message(event))
                 else:
                     pass
+            
+            if event.kind == 'status':
+                if len(conversational_pieces) < 20:
+                    conversational_pieces.append(self.status_message(event))
 
             if event.kind == 'user' or event.kind == 'assistant':
                 conversational_pieces.append(self.conversation_message(event))
@@ -448,7 +460,19 @@ class PromptGenerator:
             "extra_events"
         }
         filtered_state = {key: value for key, value in rawState.items() if key not in keysToFilterOut}
-        combined_state = {**filtered_state, **status}
+
+        flags = [key for key, value in status.flags.model_dump().items() if value]
+        if status.flags2:
+            flags += [key for key, value in status.flags2.model_dump().items() if value]
+        
+        combined_state = {
+            **filtered_state,
+            "status": flags,
+            "balance": status.Balance,
+            "pips": status.Pips.model_dump() if status.Pips else None,
+            "cargo": status.Cargo,
+            "time": (datetime.now() + timedelta(days=469711)).isoformat()
+        }
 
         if 'location' in filtered_state and filtered_state['location'] and 'StarSystem' in filtered_state['location']:
             conversational_pieces.append({
