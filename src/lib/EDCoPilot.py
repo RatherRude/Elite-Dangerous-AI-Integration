@@ -36,7 +36,7 @@ class EDCoPilot:
             value, _ = winreg.QueryValueEx(key, 'EDCoPilotLib')
             winreg.CloseKey(key)
             return value
-        except FileNotFoundError:
+        except Exception:
             return None
 
     def get_process_id(self) -> Optional[int]:

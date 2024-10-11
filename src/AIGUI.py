@@ -20,6 +20,7 @@ from openai import APIError, OpenAI
 
 from lib.Config import Config
 from lib.ControllerManager import ControllerManager
+from lib.EDCoPilot import EDCoPilot
 
 
 class VerticalScrolledFrame(tk.Frame):
@@ -440,6 +441,7 @@ class App:
         self.ptt_key = None
 
         self.controller_manager = ControllerManager()
+        self.edcopilot = EDCoPilot(True)
 
         self.process = None
         self.output_queue = Queue()
@@ -460,6 +462,15 @@ class App:
         except tk.TclError as e:
             print(f"Failed to load background image: {e}")
 
+        self.incr = 0
+
+        def get_next():
+            self.incr += 1
+            return self.incr
+
+        def get_same():
+            return self.incr
+
         # Main Frame (for other widgets)
         self.main_frame = tk.Frame(root, bd=1)  # White background for visibility
         self.main_frame.pack(padx=20, pady=20)
@@ -470,53 +481,77 @@ class App:
         self.commander_name.grid(row=0, column=1, padx=10, pady=5, sticky=tk.W)
 
         # Character (Multi-line Input)
-        tk.Label(self.main_frame, text="AI Character:").grid(row=1, column=0, sticky=tk.W)
+        tk.Label(self.main_frame, text="AI Character:").grid(row=get_next(), column=0, sticky=tk.W)
         self.character = tk.Text(self.main_frame, width=80, height=15)
-        self.character.grid(row=1, column=1, padx=10, pady=5, sticky=tk.W)
+        self.character.grid(row=get_same(), column=1, padx=10, pady=5, sticky=tk.W)
 
         # API Key (Secure Entry) - Placed above the first button
-        tk.Label(self.main_frame, text="OpenAI API Key:").grid(row=2, column=0, sticky=tk.W)
+        tk.Label(self.main_frame, text="OpenAI API Key:").grid(row=get_next(), column=0, sticky=tk.W)
         self.api_key = tk.Entry(self.main_frame, show='*', width=50)  # Show '*' to indicate a secure entry
-        self.api_key.grid(row=2, column=1, padx=10, pady=5, sticky=tk.W)
+        self.api_key.grid(row=get_same(), column=1, padx=10, pady=5, sticky=tk.W)
 
         # Push-to-talk
-        tk.Label(self.main_frame, text="Push-to-talk:", font=('Arial', 10)).grid(row=3, column=0, sticky=tk.W)
+        tk.Label(self.main_frame, text="Push-to-talk:", font=('Arial', 10)).grid(row=get_next(), column=0, sticky=tk.W)
         # PTT (Checkbox)
         self.ptt_var = tk.BooleanVar()
         self.ptt_var.set(False)  # Default value
         self.ptt_checkbox = tk.Checkbutton(self.main_frame, text="Enabled", variable=self.ptt_var,
                                            command=self.toggle_ptt)
-        self.ptt_checkbox.grid(row=3, column=1, sticky=tk.W, padx=5, pady=5)
+        self.ptt_checkbox.grid(row=get_same(), column=1, sticky=tk.W, padx=5, pady=5)
         tk.Label(self.main_frame, text="Uses automatic voice detection if not enabled", font="Arial 10 italic").grid(
-            row=3, column=1, sticky=tk.W, padx=80, pady=5)
+            row=get_same(), column=1, sticky=tk.W, padx=80, pady=5)
 
         self.pptButton = tk.Button(self.main_frame, text="Key Binding: Press any key", font=('Arial', 10))
-        self.pptButton.grid(row=3, column=1, sticky=tk.W, padx=(360, 10), pady=5)
+        self.pptButton.grid(row=get_same(), column=1, sticky=tk.W, padx=(360, 10), pady=5)
         self.pptButton.bind("<Button-1>", self.on_label_click)
 
         # Continue Conversation
-        tk.Label(self.main_frame, text="Resume Chat:", font=('Arial', 10)).grid(row=4, column=0, sticky=tk.W)
+        tk.Label(self.main_frame, text="Resume Chat:", font=('Arial', 10)).grid(row=get_next(), column=0, sticky=tk.W)
         # Conversation (Checkbox)
         self.continue_conversation_var = tk.BooleanVar()
         self.continue_conversation_var.set(True)  # Default value
         self.continue_conversation_checkbox = tk.Checkbutton(self.main_frame, text="Enabled",
                                                              variable=self.continue_conversation_var)
-        self.continue_conversation_checkbox.grid(row=4, column=1, sticky=tk.W, padx=5, pady=5)
-        tk.Label(self.main_frame, text="Resumes previous conversation if enabled", font="Arial 10 italic").grid(row=4,
+        self.continue_conversation_checkbox.grid(row=get_same(), column=1, sticky=tk.W, padx=5, pady=5)
+        tk.Label(self.main_frame, text="Resumes previous conversation if enabled", font="Arial 10 italic").grid(row=get_same(),
                                                                                                                 column=1,
                                                                                                                 sticky=tk.W,
                                                                                                                 padx=80,
                                                                                                                 pady=5)
 
-        tk.Label(self.main_frame, text="Input Device:", font=('Arial', 10)).grid(row=5, column=0, sticky=tk.W)
+        # EDCoPilot (Checkbox)
+        self.edcopilot_label = tk.Label(self.main_frame, text="EDCoPilot:", font=('Arial', 10))
+        self.edcopilot_label.grid(row=get_next(), column=0, sticky=tk.W)
+        self.edcopilot_var = tk.BooleanVar()
+        self.edcopilot_var.set(True)
+        self.edcopilot_checkbox = tk.Checkbutton(self.main_frame, text="EDCoPilot Enabled", variable=self.edcopilot_var)
+        self.edcopilot_checkbox.grid(row=get_same(), column=1, sticky=tk.W, padx=5, pady=5)
+        if not self.edcopilot.is_installed():
+            self.edcopilot_label.grid_remove()
+            self.edcopilot_checkbox.grid_remove()
+
+
+        tk.Label(self.main_frame, text="Input Device:", font=('Arial', 10)).grid(row=get_next(), column=0, sticky=tk.W)
         input_device_names = self.get_input_device_names()
         self.input_device_name_var = tk.StringVar()
         self.input_device_name_var.set(input_device_names[0])
         self.input_device_name = tk.OptionMenu(self.main_frame, self.input_device_name_var, *input_device_names)
-        self.input_device_name.grid(row=5, column=1, padx=10, pady=5, sticky=tk.W)
+        self.input_device_name.grid(row=get_same(), column=1, padx=10, pady=5, sticky=tk.W)
 
+
+        # Toggle Section Button
+        self.toggle_ai_geeks_section_button = tk.Button(self.main_frame, text="Show AI Settings",
+                                                        command=self.toggle_ai_geeks_section)
+        self.toggle_ai_geeks_section_button.grid(row=get_next(), column=0, columnspan=2, pady=10, padx=(150, 0), sticky="")
+
+        # Toggle Section Button
+        self.toggle_game_events_section_button = tk.Button(self.main_frame, text="Show Events Triggers",
+                                                           command=self.toggle_game_events_section)
+        self.toggle_game_events_section_button.grid(row=get_same(), column=0, columnspan=2, pady=10, padx=(0, 150), sticky="")
+
+        # Game Events (Initially hidden)
         self.game_events_frame = VerticalScrolledFrame(self.main_frame, width=600)
-        self.game_events_frame.grid(row=7, column=0, columnspan=2, sticky="")
+        self.game_events_frame.grid(row=get_next(), column=0, columnspan=2, sticky="")
         self.game_events_save_cb = self.populate_game_events_frame(self.game_events_frame.inner_frame,
                                                                    self.data['game_events'])
         self.game_events_frame.update()  # update scrollable area
@@ -524,7 +559,7 @@ class App:
 
         # AI Settings (Initially hidden)
         self.ai_geeks_frame = VerticalScrolledFrame(self.main_frame, width=600)
-        self.ai_geeks_frame.grid(row=7, column=0, columnspan=2)
+        self.ai_geeks_frame.grid(row=get_same(), column=0, columnspan=2)
         self.ai_geeks_frame.grid_remove()  # Initially hide
 
         # Disclaimer
@@ -532,13 +567,6 @@ class App:
                  font="Helvetica 12 bold").grid(row=0, column=0, columnspan=2, sticky="")
 
         self.incr = 0
-
-        def get_next():
-            self.incr += 1
-            return self.incr
-
-        def get_same():
-            return self.incr
 
         # LLM
         tk.Label(self.ai_geeks_frame.inner_frame, text="Text LLM options",
@@ -668,16 +696,6 @@ class App:
         self.vision_checkbox.grid(row=get_next(), column=0, padx=10, pady=10, sticky=tk.W)
 
         self.ai_geeks_frame.update()
-
-        # Toggle Section Button
-        self.toggle_ai_geeks_section_button = tk.Button(self.main_frame, text="Show AI Settings",
-                                                        command=self.toggle_ai_geeks_section)
-        self.toggle_ai_geeks_section_button.grid(row=6, column=0, columnspan=2, pady=10, padx=(150, 0), sticky="")
-
-        # Toggle Section Button
-        self.toggle_game_events_section_button = tk.Button(self.main_frame, text="Show Events Triggers",
-                                                           command=self.toggle_game_events_section)
-        self.toggle_game_events_section_button.grid(row=6, column=0, columnspan=2, pady=10, padx=(0, 150), sticky="")
 
         # Debug Frame and Text Widget
         self.debug_frame = tk.Frame(root, bg='black', bd=1)  # White background for visibility
@@ -907,6 +925,7 @@ class App:
             'vision_var': True,
             'ptt_var': False,
             'continue_conversation_var': True,
+            'edcopilot': True,
             'input_device_name': self.get_input_device_names()[0],
             'llm_model_name': "gpt-4o-mini",
             'llm_endpoint': "https://api.openai.com/v1",
@@ -1035,6 +1054,7 @@ class App:
         self.data['vision_var'] = self.vision_var.get()
         self.data['ptt_var'] = self.ptt_var.get()
         self.data['continue_conversation_var'] = self.continue_conversation_var.get()
+        self.data['edcopilot'] = self.edcopilot_var.get()
         self.data['tts_voice'] = self.tts_voice.get()
         self.data['tts_speed'] = self.tts_speed.get()
         self.data['ptt_key'] = self.ptt_key
@@ -1068,6 +1088,7 @@ class App:
         self.vision_var.set(self.data['vision_var'])
         self.ptt_var.set(self.data['ptt_var'])
         self.continue_conversation_var.set(self.data['continue_conversation_var'])
+        self.edcopilot_var.set(self.data['edcopilot'])
         self.tts_voice.insert(0, self.data['tts_voice'])
         self.tts_speed.insert(0, self.data['tts_speed'])
         self.ptt_key = self.data['ptt_key']
