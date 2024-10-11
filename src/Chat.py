@@ -9,6 +9,7 @@ from lib.Config import Config
 from lib.ActionManager import ActionManager
 from lib.Actions import register_actions
 from lib.ControllerManager import ControllerManager
+from lib.EDCoPilot import EDCoPilot
 from lib.Event import Event
 from lib.PromptGenerator import PromptGenerator
 from lib.STT import STT
@@ -46,7 +47,7 @@ def load_config() -> Config:
 is_thinking = False
 
 def reply(client, events: List[Event], new_events: List[Event], prompt_generator: PromptGenerator, status_parser: StatusParser,
-          event_manager: EventManager, tts: TTS):
+          event_manager: EventManager, tts: TTS, copilot: EDCoPilot):
     global is_thinking
     is_thinking = True
     prompt = prompt_generator.generate_prompt(events=events, status=status_parser.current_status)
@@ -68,6 +69,7 @@ def reply(client, events: List[Event], new_events: List[Event], prompt_generator
     response_text = completion.choices[0].message.content
     if response_text:
         tts.say(response_text)
+        copilot.print_this('COVAS: '+response_text)
         event_manager.add_conversation_event('assistant', completion.choices[0].message.content)
     is_thinking = False
 
@@ -139,6 +141,7 @@ def main():
     llm_model_name = config["llm_model_name"]
 
     jn = EDJournal(config["game_events"])
+    copilot = EDCoPilot(True)  # TODO make this configurable
     previous_status = getCurrentState()
 
     # gets API Key from config.json
@@ -211,7 +214,7 @@ def main():
     prompt_generator = PromptGenerator(config["commander_name"], config["character"], journal=jn)
     event_manager = EventManager(
         on_reply_request=lambda events, new_events: reply(llmClient, events, new_events, prompt_generator, status_parser, event_manager,
-                                                          tts),
+                                                          tts, copilot),
         game_events=enabled_game_events,
         continue_conversation=config["continue_conversation_var"]
     )
@@ -237,6 +240,7 @@ def main():
             if not stt.resultQueue.empty():
                 text = stt.resultQueue.get().text
                 tts.abort()
+                copilot.print_this('CMDR: '+text)
                 event_manager.add_conversation_event('user', text)
 
             if not is_thinking and not tts.get_is_playing() and event_manager.is_replying:
