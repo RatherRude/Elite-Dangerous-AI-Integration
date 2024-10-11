@@ -59,8 +59,8 @@ class EDCoPilot:
         install_path = self.get_install_path()
         if install_path:
             path = os.path.join(install_path, 'EDCoPilot.request.txt')
-            with open(path, 'a', encoding='utf-8') as f:
-                f.write(message.replace('\n', ' ')+'\r\n')
+            with open(path, 'w', encoding='utf-8') as f:
+                f.write(message.replace('\n', ' '))
             return True
         return False
 
