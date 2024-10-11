@@ -141,7 +141,7 @@ def main():
     llm_model_name = config["llm_model_name"]
 
     jn = EDJournal(config["game_events"])
-    copilot = EDCoPilot(True)  # TODO make this configurable
+    copilot = EDCoPilot(config["edcopilot"])
     previous_status = getCurrentState()
 
     # gets API Key from config.json
