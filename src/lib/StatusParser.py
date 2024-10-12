@@ -364,7 +364,7 @@ class StatusParser:
         if not old_status.flags.NightVision and new_status.flags.NightVision:
             events.append({"event": "NightVisionOn"})
         
-        if old_status.flags2:
+        if old_status.flags2 and new_status.flags2:
             if old_status.flags2.LowOxygen and not new_status.flags2.LowOxygen:
                 events.append({"event": "LowOxygenWarningCleared"})
             if not old_status.flags2.LowOxygen and new_status.flags2.LowOxygen:
