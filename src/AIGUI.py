@@ -331,7 +331,7 @@ game_events = {
         'RebootRepair': True,
         'ReceiveText': False,
         'RepairDrone': False,
-        'ReservoirReplenished': False,
+        # 'ReservoirReplenished': False,
         'Resurrect': True,
         'Scanned': True,
         'SelfDestruct': True,
