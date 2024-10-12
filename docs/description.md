@@ -55,32 +55,7 @@ The same technique is used to take screenshots or fetch internet data if the AI 
 
 **If this feature is turned off the AI will no longer try to: emulate button presses, use internet tools, take screenshots**. It will still be able to chat normally and react to game events, so deactivating it might also be a valid option for commanders that prefer to have an AI that only talks.
 
-These functions are currently callable:
-
-- fire: Start firing primary weapons.
-- holdFire: Stop firing primary weapons.
-- fireSecondary: Start firing secondary weapons.
-- holdFireSecondary: Stop firing secondary weapons.
-- hyperSuperCombination: Initiate FSD Jump, required to jump to the next system or enter supercruise.
-- setSpeedZero: Set speed to 0%.
-- setSpeed50: Set speed to 50%.
-- setSpeed100: Set speed to 100%.
-- deployHeatSink: Deploy heat sink.
-- deployHardpointToggle: Deploy or retract hardpoints.
-- increaseEnginesPower: Increase engine power.
-- increaseWeaponsPower: Increase weapon power.
-- increaseSystemsPower: Increase systems power.
-- galaxyMapOpen: Open or close the galaxy map.
-- systemMapOpen: Open or close the system map.
-- cycleNextTarget: Cycle to the next target.
-- cycleFireGroupNext: Cycle to the next fire group.
-- shipSpotLightToggle: Toggle ship spotlight.
-- ejectAllCargo: Eject all cargo.
-- landingGearToggle: Toggle landing gear.
-- useShieldCell: Use a shield cell.
-- fireChaffLauncher: Fire chaff launcher.
-- nightVisionToggle: Toggle night vision.
-- recallDismissShip: Recall or dismiss ship, available on foot and inside SRV.
+[Here](./aiToolList.md) you can find a list of all currently supported AI Tools that can be called.
 
 ![Function Calling](screen/function_calling.png?raw=true "Screen")
 
