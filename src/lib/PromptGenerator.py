@@ -182,13 +182,13 @@ odysseyEvents = {
     'UseConsumable': "Commander {commanderName} has used a consumable."
 }
 combatEvents = {
-    'Bounty': "Commander {commanderName} is awarded a bounty for a kill.",
+    'Bounty': "Commander {commanderName} has eliminated a hostile.",
     'Died': "Commander {commanderName} has lost consciousness.",
-    'CapShipBond': "Commander {commanderName} has been rewarded for a capital ship combat.",
+    'CapShipBond': "Commander {commanderName} has been rewarded for taking part in a capital ship combat.",
     'Interdiction': "Commander {commanderName} has attempted an interdiction.",
     'Interdicted': "Commander {commanderName} is being interdicted.",
     'EscapeInterdiction': "Commander {commanderName} has escaped the interdiction.",
-    'FactionKillBond': "Commander {commanderName} was rewarded for taking part in a combat zone.",
+    'FactionKillBond': "Commander {commanderName} has eliminated a hostile.",
     'FighterDestroyed': "A ship-launched fighter was destroyed.",
     'HeatDamage': "Commander {commanderName} is taking heat damage.",
     'HeatWarning': "Commander {commanderName}'s ship's heat has exceeded 100%.",
@@ -213,7 +213,7 @@ travelEvents = {
     "LeaveBody": "Commander {commanderName} is exiting an orbit.",
     "Liftoff": "Commander {commanderName} has lifted off.",
     "Location": "Commander {commanderName} has changed location.",
-    "StartJump": "Commander {commanderName} starts the hyperjump. say: '3, 2, 1 , engage'.",
+    "StartJump": "Commander {commanderName} starts the hyperjump.",
     "SupercruiseEntry": "Commander {commanderName} has entered supercruise from normal space.",
     "SupercruiseExit": "Commander {commanderName} has exited supercruise and returned to normal space.",
     "Touchdown": "Commander {commanderName} has touched down on a planet surface.",
@@ -484,7 +484,7 @@ class PromptGenerator:
                 "role": "user",
                 "content": f"(Stations in current system: {self.get_station_info(filtered_state['location']['StarSystem'])})"
             })
-
+        log('info', json.dumps(combined_state))
         conversational_pieces.append({
             "role": "user",
             "content": f"(Ship status: {json.dumps(combined_state)})"
