@@ -1137,7 +1137,7 @@ class App:
             # create log file
             outlog = f"./logs/{int(time.time())}.out.log"
             os.makedirs(os.path.dirname(outlog), exist_ok=True)
-            self.outlog_file = open(outlog, "w")
+            self.outlog_file = open(outlog, "w", encoding="utf-8")
 
             # Script execution
             startupinfo = None
