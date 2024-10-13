@@ -484,7 +484,6 @@ class PromptGenerator:
                 "role": "user",
                 "content": f"(Stations in current system: {self.get_station_info(filtered_state['location']['StarSystem'])})"
             })
-        log('info', json.dumps(combined_state))
         conversational_pieces.append({
             "role": "user",
             "content": f"(Ship status: {json.dumps(combined_state)})"
