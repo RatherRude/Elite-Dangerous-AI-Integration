@@ -132,19 +132,8 @@ def galaxy_map_open(args):
 
         sleep(.05)
         keys.send('UI_Right')
-        sleep(.05)
+        sleep(.3)
         keys.send('UI_Select')
-
-        if 'start_navigation' in args and args['start_navigation']:
-            keys.send('UI_Right')
-            keys.send('UI_Back')
-            keys.send('UI_Back')
-            sleep(.05)
-            keys.send('UI_Select', hold=0.66)
-
-            keys.send('GalaxyMapOpen')
-
-            return f"A route to {args['system_name']} has been plotted."
 
         return f"The galaxy map has opened. It is now zoomed in on \"{args['system_name']}\". No route was plotted yet, only the commander can do that."
 
@@ -1600,17 +1589,13 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "required": ["pips"]
     }, increase_systems_power)
 
-    actionManager.registerAction('galaxyMapOpen', "Open galaxy map. Focus on a system or start a navigation route", {
+    actionManager.registerAction('galaxyMapOpen', "Open galaxy map. Zoom in on system in map or plot a route.", {
         "type": "object",
         "properties": {
             "system_name": {
                 "type": "string",
-                "description": "System to display or plot to",
+                "description": "System to display in the galaxy map, for route plotting.",
             },
-            "start_navigation": {
-                "type": "boolean",
-                "description": "Start navigation route to the system",
-            }
         },
     }, galaxy_map_open)
 
