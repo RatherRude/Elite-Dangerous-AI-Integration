@@ -3,18 +3,20 @@ from typing import Optional
 from llama_cpp import Llama
 
 from .localLLMGrammarUtils import gbnf_literal, gbnf_not, gbnf_or, gbnf_sanitize
-from .localLLMUtils import create_chat_completion_handler, LlamaDiskCache
-
+from .localLLMUtils import create_chat_completion_handler, LlamaDiskCache 
 
 llm_model_names = [
+    "lucaelin/llama-3.2-3b-instruct-fc-gguf",
     "lmstudio-community/Llama-3.2-3B-Instruct-GGUF",
     "lmstudio-community/Mistral-7B-Instruct-v0.3-GGUF",
     "lmstudio-community/Meta-Llama-3.1-8B-Instruct-GGUF",
     "lmstudio-community/Mistral-Nemo-Instruct-2407-GGUF",
     "allenai/OLMoE-1B-7B-0924-Instruct-GGUF",
     "Salesforce/xLAM-1b-fc-r-gguf",
+    "bartowski/functionary-small-v3.1-GGUF",
     "None",
 
+    #"NousResearch/Llama-3.2-1B",
     #"bartowski/Phi-3.5-mini-instruct-GGUF",
     #"phi0112358/DeepSeek-V2-Lite-Chat-Q4_0-GGUF",
     #"tiiuae/falcon-mamba-7b-instruct-Q4_K_M-GGUF",
@@ -22,6 +24,16 @@ llm_model_names = [
 
 
 model_presets = {
+    "lucaelin/llama-3.2-3b-instruct-fc-gguf": {
+        "filename": "unsloth.Q4_K_M.gguf",
+        "template": "{% set loop_messages = messages %}{% for message in loop_messages %}{% set role = message['role'] %}{% if 'tool_calls' in message %}{% set text = '<tool_call>' + message['tool_calls'][0]['function']|tojson + '</tool_call>' %}{% endif %}{% if 'content' in message %}{% set text = message['content'] %}{% endif %}{% if loop.index0 == 0 and tools is defined %}{% set text = message['content'] + '\n<tools>\n' + tools|tojson + '\n</tools>' %}{% endif %}{% set content = '<|start_header_id|>' + role + '<|end_header_id|>\n\n'+ text | trim + '<|eot_id|>' %}{% if loop.index0 == 0 %}{% set content = bos_token + content %}{% endif %}{{ content }}{% endfor %}{{ '<|start_header_id|>assistant<|end_header_id|>\n\n' }}",
+        "tool_use_grammar": lambda tools: f"""
+            root   ::= ("<tool_call>" {gbnf_or([gbnf_sanitize(tool["function"]["name"]) for tool in tools])} "</tool_call>") | (nottoolcalls .*)
+            nottoolcalls ::= {gbnf_not("<tool_call>")}
+        """,
+        "tool_use_regex": '^<tool_call>(.*)</tool_call>',
+        "tool_use_parser": lambda regex: [json.loads(regex.group(1))]
+    },
     "lmstudio-community/Llama-3.2-3B-Instruct-GGUF": {
         "filename": "Llama-3.2-3B-Instruct-Q4_K_M.gguf",
         "template": "{% set loop_messages = messages %}{% for message in loop_messages %}{% set role = message['role'] %}{% if role == 'tool' %}{% set role = 'ipython' %}{% endif %}{% set text = message['content'] %}{% if loop.index0 == 0 and tools is defined %}{% set text = message['content'] + '\nHere is a list of functions in JSON format that you can invoke:\n' + tools|tojson + '\nShould you decide to return the function call, must put it at the beginning of your response, without any additional text and in the following format: [func_name({\"params_name1\":\"params_value1\", \"params_name2\"=\"params_value2\"})]. You may also choose not to call any function, if no function matches the users request.' %}{% endif %}{% set content = '<|start_header_id|>' + role + '<|end_header_id|>\n\n'+ text | trim + '<|eot_id|>' %}{% if loop.index0 == 0 %}{% set content = bos_token + content %}{% endif %}{{ content }}{% endfor %}{{ '<|start_header_id|>assistant<|end_header_id|>\n\n' }}",
@@ -82,7 +94,7 @@ model_presets = {
         """,
         "tool_use_regex": '^<function=([a-zA-Z0-9_-]+)>(.*)</function>',
         "tool_use_parser": lambda regex: [{"name": regex.groups()[0], "arguments": json.loads(regex.groups()[1])}],
-    }
+    },
 }
 
 
@@ -96,7 +108,6 @@ def init_llm(model_path: str):
         filename=model_preset.get("filename"),
         n_ctx=8192,
         n_gpu_layers=1000,
-
 
         chat_handler=create_chat_completion_handler(
             **model_preset,
@@ -124,7 +135,8 @@ def llm(model: Llama, prompt):
         messages=messages,
         tools=prompt.get("tools", []),
         tool_choice=prompt.get("tool_choice", None),
-
+        temperature=1.5,
+        min_p=0.1,
     )
 
     return completion
