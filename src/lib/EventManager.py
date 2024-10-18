@@ -13,6 +13,7 @@ class EventManager:
         self.pending: List[Event] = []
         self.processed: List[Event] = []
         self.is_replying = False
+        self.is_listening = False
         self.on_reply_request = on_reply_request
         self.game_events = game_events
 
@@ -62,7 +63,7 @@ class EventManager:
         return self._handle_new_event()
 
     def reply(self):
-        if not self.is_replying and self.should_reply():
+        if not self.is_replying and not self.is_listening and self.should_reply():
             self.is_replying = True
             new_events = self.pending
             self.processed += self.pending
@@ -126,7 +127,7 @@ class EventManager:
             history = []
 
         for rawevent in history:
-            if rawevent["kind"] in ['user', 'assistant', 'assistant_completed']:
+            if rawevent["kind"] in ['user', 'assistant', 'assistant_completed', 'assistant_listening']:
                 self.processed.append(ConversationEvent(**rawevent))
             if rawevent["kind"] == 'tool':
                 self.processed.append(ToolEvent(**rawevent))

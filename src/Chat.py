@@ -233,6 +233,17 @@ def main():
                 status = status_parser.status_queue.get()
                 event_manager.add_status_event(status)
 
+            # check STT recording
+            if stt.recording:
+                if tts.get_is_playing():
+                    log('debug', 'interrupting TTS')
+                    tts.abort()
+                if not event_manager.is_listening:
+                    event_manager.is_listening = True
+            else:
+                if event_manager.is_listening:
+                    event_manager.is_listening = False
+
             # check STT result queue
             if not stt.resultQueue.empty():
                 text = stt.resultQueue.get().text
