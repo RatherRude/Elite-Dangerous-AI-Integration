@@ -7,3 +7,6 @@ __pycache__
 config*.json
 conversation.json
 *.log
+.env
+.cache
+/linux_ed
