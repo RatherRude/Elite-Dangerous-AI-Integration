@@ -26,6 +26,7 @@ class STTResult:
 
 class STT:
     listening = False
+    recording = False
     resultQueue = queue.Queue()
 
     prompt = "COVAS, give me a status update... and throw in something inspiring, would you?"
@@ -40,7 +41,7 @@ class STT:
         self.rate=16000
         self.frames_per_buffer=1600
 
-        self.vad_threshold = 0.2
+        self.vad_threshold = 0.4
         self.phrase_end_pause = 1.0
 
     def listen_once_start(self):
@@ -58,6 +59,7 @@ class STT:
         """
         # print('Running STT in PTT mode')
         source = self._get_microphone()
+        self.recording = True
         timestamp = time()
         frames = []
         while self.listening:
@@ -69,8 +71,11 @@ class STT:
         audio_raw = b''.join(frames)
         audio_data = sr.AudioData(audio_raw, self.rate, pyaudio.get_sample_size(pyaudio.paInt16))
         text = self._transcribe(audio_data)
+        self.recording = False
+        
         if not text:
             return
+        
         self.resultQueue.put(STTResult(text, audio_data, timestamp))
 
     def listen_continuous(self):
@@ -109,6 +114,7 @@ class STT:
                     timestamp = time()
                     continue
                 else:
+                    self.recording = True
                     # we have voice activity in current recording
                     # check if there is voice in the last phrase_end_pause seconds
                     #log('debug','voice detected, checking for pause in the last phrase_end_pause seconds')
@@ -122,6 +128,7 @@ class STT:
                         frames = []
                         if text:
                             self.resultQueue.put(STTResult(text, audio_data, timestamp))
+                        self.recording = False
         source.close()
 
     def _get_microphone(self) -> pyaudio.Stream:
