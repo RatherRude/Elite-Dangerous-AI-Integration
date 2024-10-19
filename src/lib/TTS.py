@@ -7,6 +7,7 @@ from time import sleep
 from typing import Optional
 
 from num2words import num2words
+import strip_markdown
 import openai
 import edge_tts
 import pyaudio
@@ -58,6 +59,7 @@ class TTS:
                     text = self.read_queue.get()
                     # Remove commas from numbers to fix OpenAI TTS
                     text = re.sub(r"\d+(,\d{3})*(\.\d+)?", self._number_to_text, text)
+                    text = strip_markdown.strip_markdown(text)
                     # print('reading:', text)
                     try:                            
                         for chunk in self._stream_audio(text):
