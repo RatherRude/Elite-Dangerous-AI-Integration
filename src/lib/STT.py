@@ -41,7 +41,7 @@ class STT:
         self.rate=16000
         self.frames_per_buffer=1600
 
-        self.vad_threshold = 0.4
+        self.vad_threshold = 0.2
         self.phrase_end_pause = 1.0
 
     def listen_once_start(self):

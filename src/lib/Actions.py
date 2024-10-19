@@ -139,7 +139,7 @@ def galaxy_map_open(args):
             keys.send('UI_Right')
             keys.send('UI_Back')
             keys.send('UI_Back')
-            sleep(.05)
+            sleep(.3)
             keys.send('UI_Select', hold=0.66)
 
             keys.send('GalaxyMapOpen')
@@ -1152,6 +1152,19 @@ def prepare_station_request(obj):
     ]
     log('debug', 'Station Finder Request', obj)
     filters = {
+        "type": {
+            "value": [
+                "Asteroid base",
+                "Coriolis Starport",
+                "Mega ship",
+                "Ocellus Starport",
+                "Orbis Starport",
+                "Outpost",
+                "Planetary Outpost",
+                "Planetary Port",
+                "Settlement"
+            ]
+        },
         "distance": {
             "min": "0",
             "max": str(obj.get("distance", 50000))
@@ -1928,8 +1941,9 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                                     "type": "string",
                                     "enum": [
                                         "0", "1", "2", "3", "4", "5", "6", "7", "8"
-                                    ]
+                                    ],
                                 },
+                                "minItems": 1,
                             },
                             "rating": {
                                 "type": "array",
@@ -1940,10 +1954,11 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                                         "A", "B", "C", "D", "E", "F", "G", "H", "I"
                                     ]
                                 },
-                                "example": ["A", "B", "C", "D"]
+                                "example": ["A", "B", "C", "D"],
+                                "minItems": 1
                             }
                         },
-                        "required": ["name", "class", "rating"]
+                        "required": ["name"]
                     },
                     "minItems": 1,
                 },
