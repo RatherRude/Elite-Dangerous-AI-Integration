@@ -71,10 +71,11 @@ class STT:
         audio_raw = b''.join(frames)
         audio_data = sr.AudioData(audio_raw, self.rate, pyaudio.get_sample_size(pyaudio.paInt16))
         text = self._transcribe(audio_data)
+        self.recording = False
+        
         if not text:
             return
         
-        self.recording = False
         self.resultQueue.put(STTResult(text, audio_data, timestamp))
 
     def listen_continuous(self):
