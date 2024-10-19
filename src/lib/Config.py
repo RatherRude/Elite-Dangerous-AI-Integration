@@ -21,6 +21,7 @@ class Config(TypedDict):
     vision_var: bool
     ptt_var: bool
     continue_conversation_var: bool
+    edcopilot: bool
     tts_voice: str
     tts_speed: str
     ptt_key: str

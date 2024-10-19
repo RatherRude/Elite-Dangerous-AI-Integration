@@ -39,10 +39,11 @@ pefile==2023.2.7
 pick==2.4.0
 pillow==10.4.0
 protobuf==5.27.3
+psutil==6.0.0
 PyAudio==0.2.14
 PyAutoGUI==0.9.54
-pydantic==2.8.2
-pydantic-core==2.20.1
+pydantic==2.9.1
+pydantic-core==2.23.3
 pygame==2.6.0
 PyGetWindow==0.0.9
 pyinstaller==6.9.0
@@ -73,3 +74,4 @@ tqdm==4.66.4
 typing-extensions==4.12.2
 urllib3==2.2.2
 zipp==3.19.2
+EDMesg @ git+https://github.com/RatherRude/EDMesg.git@ddb2664
