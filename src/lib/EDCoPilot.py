@@ -3,12 +3,14 @@ import time
 from .Logger import log
 from typing import Optional
 import os
+from EDMesg.EDCoPilot import create_edcopilot_client, PrintThisAction, SpeakThisAction
 
 class EDCoPilot:
     def __init__(self, is_enabled: bool):
         self.install_path = self.get_install_path()
         self.proc_id = self.get_process_id()
         self.is_enabled = is_enabled and self.is_installed()
+        self.client = create_edcopilot_client() if self.is_enabled else None
 
         log('info', f'EDCoPilot is installed: {self.is_installed()}')
         log('info', f'EDCoPilot is running: {self.is_running()}')
@@ -50,27 +52,15 @@ class EDCoPilot:
         except Exception:
             return None
     
-    def write_request(self, message: str):
-        """write "message" to EDCoPilot.request.txt in the install path"""
-        if not self.is_enabled:
-            return False
-        if not self.is_running():
-            return False
-        install_path = self.get_install_path()
-        if install_path:
-            path = os.path.join(install_path, 'EDCoPilot.request.txt')
-            with open(path, 'w', encoding='utf-8') as f:
-                f.write(message.replace('\n', ' '))
-            return True
-        return False
-
     def print_this(self, message: str):
         """send PrintThis: "message" request"""
-        return self.write_request('PrintThis: '+message)
+        if self.client:
+            return self.client.publish(PrintThisAction(text=message))
 
     def speak_this(self, message: str):
         """send SpeakThis: "message" request"""
-        return self.write_request('SpeakThis: '+message)
+        if self.client:
+            return self.client.publish(SpeakThisAction(text=message))
     
 
 if __name__ == '__main__':
