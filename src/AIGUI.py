@@ -524,8 +524,9 @@ class App:
         self.edcopilot_label.grid(row=get_next(), column=0, sticky=tk.W)
         self.edcopilot_var = tk.BooleanVar()
         self.edcopilot_var.set(True)
-        self.edcopilot_checkbox = tk.Checkbutton(self.main_frame, text="EDCoPilot Enabled", variable=self.edcopilot_var)
+        self.edcopilot_checkbox = tk.Checkbutton(self.main_frame, text="Enabled", variable=self.edcopilot_var)
         self.edcopilot_checkbox.grid(row=get_same(), column=1, sticky=tk.W, padx=5, pady=5)
+
         if not self.edcopilot.is_installed():
             self.edcopilot_label.grid_remove()
             self.edcopilot_checkbox.grid_remove()
