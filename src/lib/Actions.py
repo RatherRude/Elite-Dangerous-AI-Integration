@@ -139,7 +139,7 @@ def galaxy_map_open(args):
             keys.send('UI_Right')
             keys.send('UI_Back')
             keys.send('UI_Back')
-            sleep(.3)
+            sleep(3)
             keys.send('UI_Select', hold=0.66)
 
             keys.send('GalaxyMapOpen')
