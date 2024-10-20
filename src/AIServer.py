@@ -8,6 +8,17 @@ from lib.localTTS import init_tts, tts, tts_model_names
 tts_model, _ = pick(options=tts_model_names, title='Select a TTS model')
 stt_model, _ = pick(options=stt_models_names, title='Select a STT model')
 
+# Show an ip selection menu with
+host, _ = pick(options=[
+    '127.0.0.1',
+    '0.0.0.0',
+    '::'
+], title='Select an IP address to bind to', default_index=0)
+# Show a port selection menu between 1025 the upper limit with 8080 as the default
+port = int(input('Enter the port number or leave empty for default port [8080]: ') or '8080')
+if port < 1025 or port > 65535:
+    raise ValueError('Port number must be between 1025 and 65535')
+
 print(f'Selected TTS model: {tts_model}')
 print(f'Selected STT model: {stt_model}')
 
@@ -70,7 +81,7 @@ def createTranscription():
     return jsonify({'text': text}) # TODO more details, spec compliance
 
 if __name__ == '__main__':
-    app.run(port=8080, host='::', threaded=True)
+    app.run(port=port, host=host, threaded=True)
 
 """
 sample curl request to create a speech:
