@@ -142,6 +142,7 @@ def galaxy_map_open(args):
             sleep(3)
             keys.send('UI_Select', hold=0.66)
 
+            sleep(.05)
             keys.send('GalaxyMapOpen')
 
             return f"A route to {args['system_name']} has been plotted."
