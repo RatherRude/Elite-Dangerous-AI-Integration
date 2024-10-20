@@ -180,6 +180,7 @@ class Status(BaseModel):
         "Hostile",
         "PassengerWanted",
         "Warrant",
+        "Thargoid",
     ]]
     Latitude: Optional[float]
     Altitude: Optional[float]
