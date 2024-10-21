@@ -109,7 +109,7 @@ Lastly, you will need to configure the AI Integration itself.
 
 ```
 STT Provider: Custom
-STT Model Name: tts-1
+STT Model Name: whisper-1
 STT Endpoint URL: http://localhost:8080/v1
 STT API Key: <empty>
 ``` 
