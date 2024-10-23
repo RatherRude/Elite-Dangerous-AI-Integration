@@ -4,7 +4,7 @@
 There are 3 main components that need to be configured for a free setup: LLM, STT, TTS.
 
 ## 1. LLM Configuration
-The LLM is the brains of the operation. It is responsible for understanding the context of the conversation and generating the next response or dispatching actions. The LLM is a large model that requires a lot of resources to run so it requires either using a cloud service or having a really good GPU available.
+The LLM is the brains of the operation. It is responsible for understanding the context of the conversation and generating the next response or dispatching actions. The LLM is a large model that requires a lot of resources to run, so it requires either using a cloud service or having a really good GPU available.
 
 
 ### 1.1 Using OpenRouter.ai (cloud-based)
@@ -13,7 +13,7 @@ The cloud service https://openrouter.ai provides a free tier that can be used to
 *Upsides:*
 - Free tier available
 - Does not require a powerful GPU
-- Good reponse times
+- Good response times
 
 *Downsides:*
 - Account creation is required
@@ -32,7 +32,7 @@ LLM API Key: <your API key>
 ```
 
 ### 1.2 Using Ollama (local)
-https://ollama.com is a thrid-party application that can run the LLM locally on your computer. 
+https://ollama.com is a third-party application that can run the LLM locally on your computer. 
 
 *Upsides:*
 - Can be used offline
@@ -73,7 +73,7 @@ You can simply select Edge-TTS as the TTS provider.
 - High quality voices
 
 *Downsides:*
-- Its a cloud service, so it requires an internet connection
+- It's a cloud service, so it requires an internet connection
 
 
 ### 3.2 Using AIServer (local)
@@ -81,7 +81,7 @@ See the section on AIServer below.
 
 
 ## Using AIServer
-**WARNING: This setup is highly experimental and is potentially difficult to setup.**
+**WARNING: This setup is highly experimental and is potentially difficult to set up.**
 The AIServer can serve as a local STT or TTS service.
 It is included in the download of our software and can be found in the `aiserver` folder. You can run it by double-clicking the `AIServer.exe` file.
 
@@ -92,7 +92,7 @@ It is included in the download of our software and can be found in the `aiserver
 
 *Downsides:*
 - Tricky to set up, as it is still highly experimental
-- May struggle with multi-lingual input/output
+- May struggle with multilingual input/output
 - Higher latency than cloud services
 
 Upon starting the AIServer, need to configure it using the window that pops up. 
@@ -101,7 +101,7 @@ You will first need to select a TTS Model. At the time of writing we recommend u
 
 Secondly, you will need to configure the STT model. At the time of writing we recommend using `distil-medium.en` or `distil-small.en`.
 
-Thrid, you will need to configure the network access. Confirm the defaults as 127.0.0.0 and port 8080 if you are unsure.
+Third, you will need to configure the network access. Confirm the defaults as 127.0.0.0 and port 8080 if you are unsure.
 
 The AIServer window will then download the selected models and show a message when done: `* Running on http://127.0.0.1:8080`.
 
