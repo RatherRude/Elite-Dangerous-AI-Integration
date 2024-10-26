@@ -129,7 +129,7 @@ If you are happy, head over to the final tab. Enter your project name, refresh d
 # Setting up an OpenAI compatable TTS server than can use XTTS models
 
 ## Preparing for OpenedAI Speech
- The server we will be using here is [OpenedAI Speech](https://github.com/matatonic/openedai-speech). We're gonna gonna start by opening a WSL terminal from the command prompt, cloning the repo and enter the folder:
+ The server we will be using here is [OpenedAI Speech](https://github.com/matatonic/openedai-speech). We're gonna start by opening a WSL terminal from the command prompt, cloning the repo and enter the folder:
 
   	wsl -d Ubuntu
   	git clone https://github.com/matatonic/openedai-speech
