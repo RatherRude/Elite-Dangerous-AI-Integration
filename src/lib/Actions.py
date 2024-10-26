@@ -218,7 +218,7 @@ def night_vision_toggle(args):
 def recall_dismiss_ship(args):
     setGameWindowActive()
     keys.send('RecallDismissShip')
-    return f"Ship has either been recalled or dismissed"
+    return f"Remote ship has either been recalled or dismissed"
 
 
 def select_highest_threat(args):
@@ -340,35 +340,6 @@ def format_image(image, query=""):
     ]
 
 
-# fetch station info from EDSM and summarizes it
-def get_station_info(obj):
-    url = "https://www.edsm.net/api-system-v1/stations"
-    params = {
-        "systemName": obj.get('systemName'),
-    }
-
-    try:
-        response = requests.get(url, params=params)
-        response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
-
-        completion = llm_client.chat.completions.create(
-            extra_headers={
-                "HTTP-Referer": "https://github.com/RatherRude/Elite-Dangerous-AI-Integration",
-                "X-Title": "Elite Dangerous AI Integration",
-            },
-            model=llm_model_name,
-            messages=[{
-                "role": "user",
-                "content": f"Analyze the following data: {response.text}\nInquiry: {obj.get('query')}"
-            }],
-        )
-
-        return completion.choices[0].message.content
-
-    except:
-        return "Currently no information on system available"
-
-
 # returns summary of galnet news
 def get_galnet_news(obj):
     url = "https://cms.zaonce.net/en-GB/jsonapi/node/galnet_article?&sort=-published_at&page[offset]=0&page[limit]=10"
@@ -406,36 +377,6 @@ def get_galnet_news(obj):
 
     except:
         return "News feed currently unavailable"
-
-
-# fetch faction info from EDSM and summarizes it
-def get_faction_info(obj):
-    url = "https://www.edsm.net/api-system-v1/factions"
-    params = {
-        "systemName": obj.get('systemName'),
-        "showHistory": 0,
-    }
-
-    try:
-        response = requests.get(url, params=params)
-        response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
-
-        completion = llm_client.chat.completions.create(
-            extra_headers={
-                "HTTP-Referer": "https://github.com/RatherRude/Elite-Dangerous-AI-Integration",
-                "X-Title": "Elite Dangerous AI Integration",
-            },
-            model=llm_model_name,
-            messages=[{
-                "role": "user",
-                "content": f"Analyze the following data: {response.text}\nInquiry: {obj.get('query')}"
-            }],
-        )
-
-        return completion.choices[0].message.content
-
-    except:
-        return "Currently no information on factions inside this system available"
 
 
 # Region: Trade Planner Start
@@ -1182,7 +1123,7 @@ def prepare_station_request(obj):
         market_filters = []
         valid_market_filters = []
         for market_item in obj["market"]:
-            if not market_item["name"] in known_commodities:
+            if not market_item["name"].capitalize() in known_commodities:
                 raise Exception(
                     f"Invalid commodity name: {market_item['name']}. {educated_guesses_message(market_item['name'], known_commodities)}")
             market_filter = {
@@ -1208,19 +1149,19 @@ def prepare_station_request(obj):
         filters["market"] = market_filters
     if "modules" in obj:
         for module in obj["modules"]:
-            if module["name"] not in known_modules:
+            if module["name"].capitalize() not in known_modules:
                 raise Exception(
                     f"Invalid module name: {module['name']}. {educated_guesses_message(module['name'], known_modules)}")
         filters["modules"] = obj["modules"]
     if "ships" in obj:
         for ship in obj["ships"]:
-            if ship["name"] not in known_ships:
+            if ship["name"].capitalize() not in known_ships:
                 raise Exception(
                     f"Invalid ship name: {ship['name']}. {educated_guesses_message(ship['name'], known_ships)}")
         filters["ships"] = {"value": obj["ships"]}
     if "services" in obj:
         for service in obj["services"]:
-            if service["name"] not in known_services:
+            if service["name"].capitalize() not in known_services:
                 raise Exception(
                     f"Invalid service name: {service['name']}. {educated_guesses_message(service['name'], known_services)}")
         filters["services"] = {"value": obj["services"]}
@@ -1249,7 +1190,7 @@ def filter_station_response(request, response):
     ships_requested = {item["name"] for item in request["filters"].get("ships", {}).get("value", [])}
     services_requested = {item["name"] for item in request["filters"].get("services", {}).get("value", [])}
 
-    log('debug', 'modules_requested',modules_requested)
+    log('debug', 'modules_requested', modules_requested)
 
     filtered_results = []
 
@@ -1551,7 +1492,8 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, hold_fire_secondary_weapon)
 
-    actionManager.registerAction('hyperSuperCombination', "initiate FSD Jump, required to jump to the next system or to enter supercruise", {
+    actionManager.registerAction('hyperSuperCombination',
+                                 "initiate FSD Jump, required to jump to the next system or to enter supercruise", {
                                      "type": "object",
                                      "properties": {}
                                  }, hyper_super_combination)
@@ -1697,36 +1639,6 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "type": "object",
         "properties": {}
     }, charge_ecm)
-
-    actionManager.registerAction('getFactions', "Retrieve information about factions for a system", {
-        "type": "object",
-        "properties": {
-            "query": {
-                "type": "string",
-                "description": "Answer inquiry if given, otherise give general overview. Example: 'What factions are at war?'"
-            },
-            "systemName": {
-                "type": "string",
-                "description": "Name of relevant system. Example: 'Sol'"
-            },
-        },
-        "required": ["query", "systemName"]
-    }, get_faction_info)
-
-    actionManager.registerAction('getStations', "Retrieve information about stations for a system", {
-        "type": "object",
-        "properties": {
-            "query": {
-                "type": "string",
-                "description": "Answer inquiry if given, otherise give general overview. Example: 'What stations require immediate repair?'"
-            },
-            "systemName": {
-                "type": "string",
-                "description": "Name of relevant system. Example: 'Sol'"
-            },
-        },
-        "required": ["query", "systemName"]
-    }, get_station_info)
 
     actionManager.registerAction('getGalnetNews', "Retrieve current interstellar news from Galnet", {
         "type": "object",
