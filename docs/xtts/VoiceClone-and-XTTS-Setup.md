@@ -2,7 +2,7 @@
  You can skip to the bottom if you simply want to use an existing XTTS voice model.
 
 # Preamble
- Hey commanders, welcome back from the black. If you aren't aware, there is this really cool piece of software called Covas Next being developed to make the solitude of being in space a little less lonely. Powered by AI, it aims to give your ship a bit of its own personality. After struggling for an unreasonable amount of time, I have finally managed to get it set up with the specific voice that I want. I figured that with the pain I went through to accomplish that, I would make a bit of a guide documenting my set up and how I accomplished it. It is likely far from ideal, and there are probably easier methods, but this is how I did it.
+ Hey commanders, welcome back from the black. After struggling for an unreasonable amount of time, I have finally managed to get Covas set up with the specific voice that I want. I figured that with the pain I went through to accomplish that, I would make a bit of a guide documenting my set up and how I accomplished it. It is likely far from ideal, and there are probably easier methods, but this is how I did it.
  
  As a note, we are going to be using WSL and windows for this, but all of the software runs on linux as well, this should work there as well.
 
@@ -129,7 +129,7 @@ If you are happy, head over to the final tab. Enter your project name, refresh d
 # Setting up an OpenAI compatable TTS server than can use XTTS models
 
 ## Preparing for OpenedAI Speech
- The server we will be using here is [OpenedAI Speech](https://github.com/matatonic/openedai-speech). We're gonna gonna start by opening a WSL terminal from the command prompt, cloning the repo and enter the folder:
+ The server we will be using here is [OpenedAI Speech](https://github.com/matatonic/openedai-speech). We're gonna start by opening a WSL terminal from the command prompt, cloning the repo and enter the folder:
 
   	wsl -d Ubuntu
   	git clone https://github.com/matatonic/openedai-speech
