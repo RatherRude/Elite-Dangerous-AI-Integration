@@ -1,0 +1,300 @@
+Vous avez besoin de mon aide?
+Avez-vous trouvé ce dont vous avez besoin?
+Auriez-vous envie de faire un essai?
+Quelle est la couleur que vous préférez?
+Qu'est ce que vous recherchez?
+Quelle est votre pointure s'il vous plaît?
+Laissez-moi vérifier s'il y a une taille plus petite disponible.
+Je pense que le rouge vous va plus que le bleu.
+Pourriez-vous nous indiquer l'adresse de livraison?
+Souhaitez-vous avoir une facture?
+Nous sommes désolés, ce produit n'est plus disponible.
+Nous avons une très forte demande sur ce produit, le stock est épuisé.
+Nous n'avons plus de stock, car ce téléphone est d'une édition limitée.
+Je suis désolé, nous ne prenons que les espèces.
+Vous voulez payer en espèces ou par carte de crédit?
+Avez-vous une préférence en matière de couleur?
+Quel est le matériau que vous désirez?
+Quelles sont les dimensions de votre tableau?
+Avez-vous un grand ou un petit espace pour le canapé?
+Le style scandinave vous convient-il?
+Avez-vous déjà fait votre choix?
+Quelles sont les dimensions du four encastré que vous recherchez?
+Découvrez notre collection de chaussures à talons et plates pour 2021.
+Avez-vous déjà reçu un e-mail de confirmation d’expédition?
+Vous pouvez suivre votre commande en utilisant votre numéro de commande.
+Votre commande est en attente d’expédition.
+Si vous n'avez pas de numéro de commande, connectez-vous à votre compte pour en obtenir un.
+Cette annulation est due à un manque de stock dans l’entrepôt.
+Vous recevrez un e-mail de remboursement dans 24 heures.
+Le remboursement peut prendre jusqu’à 7 jours en fonction du délai bancaire.
+Vous pouvez nous contacter directement par téléphone pour avoir plus d'informations.
+Vous pouvez également nous envoyer un mail à l’adresse suivante.
+Veuillez remplir notre formulaire de demande de devis.
+Nous vous invitons à aller sur notre site pour découvrir les détails de nos services.
+Nous prendrons contact avec vous par téléphone ou par mail.
+Notre horaire d'ouverture est de 08h à 19h, lundi au vendredi.
+Notre siège se trouve à l'adresse suivante.
+Notre équipe est à votre disposition pour créer votre site web.
+Nous sommes une équipe d'organisateurs de mariage.
+Consultez notre section de questions et réponses.
+Nous sommes un constructeur de référence dans la région.
+Vous pouvez voir les garanties possibles sur notre site web.
+Que puis-je faire pour résoudre vos problèmes?
+Pouvez-vous patienter s'il vous plaît?
+Quel est votre numéro de commande?
+Où est-ce que vous avez acheté le produit?
+Quels sont les problèmes avec votre téléphone?
+Je suis désolé, votre garantie a expiré il y a quelques semaines.
+Notre garantie ne couvre que les pièces, pas la main-d'œuvre.
+Souhaitez-vous être remboursé ou recevoir un autre produit?
+Le transport n'est pas couvert par la garantie.
+Nous vous demandons de patienter un peu, il nous faut quelques jours pour la réparation.
+Vous devez prendre rendez-vous pour la maintenance de votre voiture.
+Tous les retours doivent être accompagnés d'un formulaire.
+Si vous rencontrez des problèmes, n'hésitez pas à nous appeler.
+Je suis désolé d'entendre cela, nous vous enverrons un produit de remplacement immédiatement.
+Je vous appelle pour vous informer que votre commande a été retardée.
+Depuis quand l'appareil est-il tombé en panne?
+Vous êtes sûr qu'il n'était pas tombé?
+Nous sommes désolés, cet appareil ne peut plus fonctionner.
+Je suis désolé monsieur, mais cette panne n'est pas couverte par votre garantie.
+Vous n'avez qu'à suivre le guide d'utilisateur pour mettre l'appareil en marche.
+Nous allons d'abord faire un premier diagnostic.
+Une réparation en atelier est la plus appropriée pour votre smartphone.
+Nous allons vous communiquer un suivi de réparation.
+Je vous conseille de prendre un rendez-vous au siège de notre marque.
+Vous avez droit à une assistance technique téléphonique gratuite dans les 90 jours.
+Je vous conseille de choisir parmi nos options de garantie matérielle pour vos produits.
+Vous devez d'abord charger votre batterie avant d'allumer le téléphone.
+Vous devez changer votre batterie.
+Souhaitez-vous avoir un technicien pour l'installation de votre écran plat?
+L'installation de ce logiciel doit être faite par un professionnel.
+Je pense qu'une télémaintenance est plus rapide pour votre cas.
+Je trouve que ce PC a besoin d'une configuration spécifique.
+Vous devez rallumer l'appareil pour voir le changement.
+Essayez de suivre cette ligne directrice pour résoudre le problème de connexion.
+Votre imprimante a besoin d'une maintenance.
+Vous avez besoin de faire un changement de vos connecteurs électriques.
+Nous proposons un service de soutien et de maintenance informatique au professionnel et particulier.
+Nous pouvons vous dépanner en urgence si nécessaire.
+Pourriez-vous me décrire vos besoins pour que je puisse vous aider?
+Pour un usage bureautique, ce modèle est le plus approprié.
+Le prix est à partir de 300 ou 400 $.
+Pour un usage multimédia, vous avez besoin d'un processeur plus puissant.
+Une carte graphique performante est nécessaire si vous comptez jouer aux jeux vidéos.
+Les guides d’installation se trouvent ici.
+J'ai besoin de votre code s'il vous plaît.
+Veuillez cliquer sur le bouton à gauche.
+Appuyez en permanence sur le bouton de démarrage.
+Êtes-vous sûr que l'appareil est bien alimenté?
+C'est au second étage sur votre gauche.
+N'hésitez pas à contacter notre ingénieur en informatique pour vous conseiller.
+Nous réparons tout matériel informatique endommagé.
+Nous assurons un dépannage de votre réseau informatique dans les plus brefs délais.
+Nous allons faire intervenir notre technicien de soutien pour trouver la cause de la panne.
+Préférez-vous une réparation sur place ou dans nos ateliers?
+Notre équipe va intervenir dans la mesure du possible.
+Nous voulons également vous faire des propositions de solutions pour prévenir une panne ultérieure.
+Notre aide va vous mettre à l’abri de pannes liées à l’obsolescence du matériel.
+Appuyez sans relâcher sur le bouton rouge de votre imprimante pendant environ 10 secondes.
+Pouvez-vous me dire la marque de votre imprimante?
+Calmez-vous, ce n'est pas nécessairement un signe que votre imprimante est complètement inutilisable.
+Je pense que la cause de ce dysfonctionnement est l'accumulation de poussière dans l'appareil.
+Veuillez vous identifier pour accéder à votre compte.
+Rejoignez-nous par mail ou par téléphone aux adresses suivantes.
+Pour voir toutes nos boutiques, rendez-vous sur notre site web.
+Pour quel type d'équipement souhaitez-vous obtenir de l'aide?
+L'intervention du technicien peut prendre entre 2 et 4h selon la configuration des lieux.
+Sélectionnez une date de rendez-vous pour l'installation de la fibre dans votre logement.
+Vous disposez déjà d'une prise Fibre dans votre logement?
+La coupure de ligne pendant l'intervention du technicien dure entre 2h et 4h.
+Votre présence pendant l'installation est indispensable.
+Avez-vous fait votre choix?
+Avez-vous déjà réservé une table?
+Quelle est la meilleure montre connectée?
+C'est pour consommer des boissons ou pour manger?
+Que commandez-vous comme boisson?
+Avez-vous besoin d'un peu plus de pain?
+Je reviens vite avec votre assiette supplémentaire.
+Souhaitez-vous avoir vue sur mer?
+Attends, je vais voir s'il y a une table discrète disponible.
+Vous avez bien mangé?
+Le service vous a plu?
+Est-ce que tout va bien?
+Tout s'est passé comme vous le souhaitiez?
+Si vous avez oublié votre mot de passe, veuillez appeler le 0000.
+Si vous ne l’avez pas reçu, vérifiez le dossier des spams de votre boîte de réception.
+Pour une opposition sur vos chéquiers, veuillez contacter le responsable au numéro suivant.
+Souscrivez à un crédit à la consommation en cliquant ici.
+Votre demande de hausse ponctuelle du plafond est en cours.
+Veuillez nous signaler tout changement de vos coordonnées personnelles.
+Veuillez s'il vous plaît m'expliquer la nature de votre réclamation.
+Je vous conseille de prendre contact avec le Directeur de l'Agence.
+Vous êtes déjà client?
+Regarder la télévision française depuis l'étranger.
+Votre facture est maintenant disponible sur votre compte en ligne.
+Votre offre Internet expire dans 2 jours.
+Vous avez épuisé la totalité de votre forfait de ce mois-ci.
+Veuillez appeler le service à la clientèle pour plus d'informations.
+Nous accusons réception du paiement de votre abonnement du mois de janvier.
+Cette transaction est actuellement en cours de traitement.
+Vous trouverez en ligne les informations relatives à cette transaction.
+Votre code de confirmation est le 123456.
+Vous avez gagné une remise de 20 % sur votre prochain achat.
+Voici votre code de réinitialisation de mot de passe.
+Découvrez les offres en ligne, comparez-les avec votre offre actuelle et faites votre choix.
+Consultez et téléchargez votre facture depuis votre smartphone.
+Découvrez les offres disponibles près de chez vous.
+Nous vous mettons en relation avec les plus grandes enseignes de location de voitures.
+Nous pouvons vous proposer une taille plus grande si nécessaire.
+J'ai un autre modèle à vous proposer.
+Je vous conseille de choisir ces paires, elles sont très résistantes!
+Ces boucles d'oreilles sont très en vogue.
+Attends, je vais vous présenter les nouveaux arrivages.
+Nous disposons d'autres marques si vous souhaitez en découvrir d'autres.
+Je peux vous présenter un autre modèle moins cher adapté à votre budget.
+Nos produits sont tous garantis 2 ans.
+Nous vous proposons de faire un essai pour voir son efficacité.
+C'est le dernier modèle qui vient de sortir la semaine dernière.
+Vous pouvez recevoir votre commande dans 2 jours ouvrables.
+Tous nos produits sont 100 % biologiques.
+Les aliments que nous préparons ici sont tous bio et végans.
+Les écrans plats sont en promotion cette semaine uniquement.
+Profitez de notre code promo avant ce soir.
+Nous ferons un déstockage vendredi prochain.
+Si vous voulez mon avis, je propose le modèle 3 en 1!
+Je pense qu'il vaut mieux choisir le produit neuf.
+Nous avons également des machines d'occasions de l'autre côté du magasin.
+Si c'est un cadeau pour quelqu'un, je peux l'emballer pour vous.
+Nous pouvons vous offrir gratuitement les accessoires.
+Essayez ces deux tailles et voyez laquelle vous convient le mieux.
+Vous avez de la chance, ce produit est en promotion aujourd'hui.
+Vous pouvez l'échanger dans les 14 jours si la taille n'est pas la bonne.
+Vous ne regretterez pas ce choix, cette couleur est vraiment tendance.
+Nous proposons une livraison gratuite pour un achat plus de 100 euros.
+Vous n'avez qu'à mettre de l'eau dans le réservoir d'eau et l'aspirateur vapeur marche.
+Bienvenu dans notre magasin!
+Nous avons tout ce qu'il vous faut ici.
+Vous trouverez ici les jouets.
+Nous venons juste d'avoir un arrivage.
+Je suis sûr que ce produit pourra vous intéresser.
+Nous effectuons une remise de 20 % sur toutes nos chaussures.
+Nos produits sont tous authentiques.
+Souhaitez-vous encore essayer un autre modèle?
+Avez-vous déjà essayé la pointure 39?
+Ce produit présente un grand rapport qualité prix.
+Nous proposons un service après vente pour cette télévision.
+Vous pouvez payer par carte de crédit.
+J'ai beaucoup de modèles à vous présenter.
+Nous avons le produit qui correspond à votre budget.
+Vous trouverez la cabine d'essayage au fond du couloir.
+Je peux vous aider à trouver la décoration murale qu'il vous faut?
+Quel est le style que vous recherchez?
+Nous vous prions de vous rendre à la caisse pour régler votre facture.
+N'hésitez pas à nous contacter si vous avez des problèmes.
+Nous vous remercions de votre visite!
+Cette machine à laver est livrée et installée gratuitement par notre équipe.
+Profitez de nos tarifs ultra-compétitifs aux rayons des plaques à induction.
+Nous vous proposons des centaines de références à prix discount.
+Découvrez nos marques populaires en cliquant ici!
+Ce sèche linge fait partie de nos meilleures ventes.
+Les appareils électroménagers connectés sont actuellement disponibles chez nous.
+Nous avons un large choix de marques et de modèles de fours.
+Que pensez-vous de cette robe blazer?
+Oui, les robes à chemise sont disponibles à toutes tailles.
+Nous sommes une entreprise qui peut transformer votre salle de bain en un lieu de détente.
+Un de nos conseillers traitera votre demande dans les plus brefs délais.
+La demande et la réalisation de devis sont gratuites et sans engagement de votre part.
+Si vous avez besoin de plus de conseils et d’explications, contactez-nous!
+Nous serons évidemment heureux d’échanger avec vous à propos de votre projet.
+Vous serez rappelé par un de nos conseillers qui validera votre demande avec vous.
+Notre agence est présente uniquement en ligne.
+Nous pouvons organiser un rendez-vous afin de vous présenter nos services.
+Nous pouvons vous proposer un voyage personnalisé pour votre famille.
+Nous créons pour vous des plans convenables à vos besoins.
+Nous organisons également d'autres événements.
+Nous vous proposons les prix les plus intéressants.
+N'ayez pas de souci, nous utilisons les meilleurs matériaux et équipements.
+Nous réalisons pour vous une maison 100% sur-mesure.
+Nous pouvons réaliser le modèle de votre choix présent dans notre catalogue.
+Nos experts mitonnent pour vous de bons conseils pour votre aménagement de cuisine.
+Nous avons toutes les clefs pour une décoration d'intérieur à votre image.
+Nos conseillers répondent à vos questions pour bâtir et embellir vos murs.
+Nous sommes des spécialistes en piscines et en spa pour votre domicile.
+Vous pouvez nous renvoyer le produit pour effectuer l'échange.
+Votre produit est toujours sous garantie.
+Nous sommes à votre disposition 7 jours sur 7.
+Un de nos techniciens qualifiés va prendre soin de votre appareil.
+Nous disposons également d'assistance en ligne.
+Nous ferons de notre mieux pour accélérer la livraison.
+Nous pouvons vous envoyer une pièce de rechange dans 3 jours.
+Nos techniciens sont à votre disposition pour toutes questions.
+Nous sommes là pour vous aider si vous avez des questions.
+Notre technicien peut faire un dépannage par téléphone en fonction du problème.
+Si nécessaire, nous pouvons nous déplacer pour une intervention à domicile.
+Vous serez informé lorsque votre smartphone sera réparé.
+Pour toute demande d'assistance, veuillez effectuer votre demande en ligne.
+Notre service d'assistance technique est disponible au numéro suivant.
+Découvrez l'information sur notre site.
+Notre assistance technique en ligne est disponible à tout moment.
+Nous disposons d'une nouvelle batterie en vente sur notre site web.
+Nous allons vous envoyer une personne qualifiée pour ce dépannage.
+Nous pouvons vous assister par téléphone pour vous aider.
+Nous allons nous arranger et envoyer une équipe chez vous dès que possible.
+Nous allons vous contacter dans les jours qui suivent.
+Notre technicien vous aidera pour la récupération de vos données.
+Faites confiance à notre équipe de maintenance informatique.
+Ne vous inquiétez pas, nous allons résoudre vos problèmes.
+Je vous conseille d'opter pour le modèle qui correspond le mieux à vos besoins.
+Je pense qu'avec un modèle pro ou pour joueur, vous ferez le bon choix.
+Ce modèle possède un circuit graphique suffisant pour effectuer les tâches de base.
+Nous assurons un service de grande qualité pour vos besoins en informatique.
+Notre personnel est rapide, efficace et polyvalent.
+En cas de problème, contactez l’assistance.
+Notre technicien est très expérimenté.
+Bienvenue dans votre espace client!
+Notre service client est à l'écoute de votre demande.
+Vous trouverez l'édition spéciale ici.
+Notre boutique vous accueille sur rendez-vous!
+Bonjour, Madame, Monsieur, soyez les bienvenus!
+Nous sommes heureux de vous recevoir!
+Je vous souhaite bon appétit!
+Veuillez me suivre s’il vous plaît!
+Votre table sera prête dans quelques minutes!
+Je vous apporte une autre serviette.
+Vous avez chez vous des appareils électriques ou électroniques hors d’usage?
+Je vais vous trouver une table dégagée adaptée à vos enfants.
+Le porte-manteau est juste à gauche.
+Veuillez déposer vos appareils usagés dans les bacs de collecte.
+Identifiez-vous avec vos codes personnels pour accéder à vos comptes.
+Je vous prie d'en discuter directement avec votre gestionnaire de compte.
+La modification de votre mot de passe est bien enregistrée.
+Nous sommes à votre disposition pour vous inscrire à nos offres d’épargne.
+Nous mettons tout en œuvre pour vous offrir un service de qualité.
+Nous nous engageons à vous répondre dans les plus brefs délais.
+Votre demande de paiement a bien été enregistrée.
+Votre demande de retrait a été approuvée avec succès.
+Votre commande a été bien enregistrée.
+Nous accusons réception de votre demande.
+Nous ne sommes pas disponibles pour le moment.
+Ne vous inquiétez pas, nos experts vous accompagnent au quotidien.
+Effectuez votre achat maintenant et bénéficiez d'une réduction de 10%!
+Réabonnez-vous une semaine avant la fin de votre abonnement et bénéficiez d'un bonus!
+Votre alerte code promo est active.
+Veuillez trouver en attaché le relevé vous concernant.
+Pour tout besoin d'information complémentaire, veuillez contacter notre relation à la clientèle.
+Votre demande d'envoi de fonds a été approuvée.
+Vous avez reçu de l'argent.
+Nous effectuons la livraison de la voiture à l'aéroport.
+Nous vous envoyons cet email immédiatement lors de votre inscription.
+Nous vous assurons la qualité, le confort et la sécurité.
+Notre agence de location de voiture vous propose sa sélection de tarifs économiques.
+Jusqu'au 30 Janvier, les véhicules de catégorie A sont de 15 $ par jour!
+Notre offre comprend toujours un kilométrage illimité et une assurance tous risques.
+Veuillez sélectionner vos dates de séjour s'il vous plaît.
+Préférez-vous un hébergement indépendant ou un hôtel?
+Nous avons uniquement une place dans la classe économique premium.
+Nous nous adaptons à votre budget.
+Découvrez nos offres de voyages haut de gamme.
+Si ce code d'erreur s'affiche, suivez les instructions suivantes pour vérifier vos fichiers de jeu.

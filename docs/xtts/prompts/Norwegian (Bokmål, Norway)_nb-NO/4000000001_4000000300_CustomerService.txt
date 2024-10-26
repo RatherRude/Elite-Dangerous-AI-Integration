@@ -1,0 +1,300 @@
+Denne varianten kommer også i flere farger.
+Vi har fri frakt på alle ordre.
+Vi frakter varen helt hjem til deg.
+Vi tilbyr kun tilgodelapp på returnerte varer.
+Vil du jeg skal pakke inn varen for deg?
+Alle klesplagg har nå 10% avslag.
+Beklager, men det produktet selger vi ikke lengre.
+Du kan returnere varen inntil 30 dager mot kvittering.
+Vi har åpent fra klokken 8 til 4.
+Gjør klar legitimasjon ved kjøp av alkohol.
+Denne uken har vi 2 for 1.
+Gavekortet kan du bruke på både våre butikker og nettbutikker.
+Vil du jeg skal ringe en annen butikk for å høre om de har varen tilgjengelig?
+Alle varer er nå nedpriset med 40%.
+Hvilken skostørrelse skal skoene ha?
+Denne varen er kun to per kunde.
+Den er vi tom for dessverre.
+Ønsker du å melde deg inn i vår kundeklubb?
+Ønsker du å kjøpe utvidet garanti?
+Takk for at du handlet hos oss.
+Vi får inn flere varer på torsdag.
+Vi har nedbetalingsplaner for enkelte av våre produkter.
+Studenter får studentrabatt ved fremvisning av studiebevis.
+Oppført pris inkluderer ikke merverdiavgift.
+Selvbetjeningskassene har som regel kortere kø.
+Takk for din tilbakemelding, vi setter stor pris på din mening.
+Denne butikken har åpent kjøp i 30 dager.
+Du får 100 kroner avslag om du handler varer for mer enn 500 kroner.
+Vi er midlertidig utsolgt, men du kan komme tilbake i morgen.
+Vi har ikke flere på lager.
+Vi har fornøydgaranti på alle våre varer.
+Butikken stenger klokken 3 på julaften.
+Har du medlemskort hos oss?
+Vi kan holde av varen én dag.
+Denne har vi kun i liten størrelse.
+Forventet leveringstid er 3 dager.
+Dette produktet er nylig lansert, så vi forventer at det blir utsolgt om kort tid.
+Den er dessverre gått ut av produksjon.
+Vi har gensere i både liten, mellom, og stor størrelse.
+Alt i vår butikk er økologisk produsert.
+Hos oss er det raskt og enkelt å registrere seg.
+Våre instruktører skreddersyr opplegget slik at det passer for deg.
+Vi tilbyr alle å delta i våre fokusgrupper.
+Undersøkelser viser at våre studenter ser forbedring allerede etter to uker.
+Er du misfornøyd med undervisningen får du pengene tilbake.
+En forelesning varer som regel to timer.
+Vi har kunnskapsrike rådgivere som kan hjelpe deg.
+Det er kun få plasser igjen.
+En adgangseksamen er påkrevd for nye studenter.
+Våre forelesere er noen av de beste i sitt felt.
+På grunn av den pågående situasjonen holder vi all undervisning på nettet.
+Vi tilbyr en krevende men lærerik studiehverdag.
+I morgen holder vi et gratis nettseminar.
+Den siste studieundersøkelsen viser at 97% av våre studenter er svært fornøyde.
+Gruppeundervisning består vanligvis av 3-4 studenter.
+Vi har en åpen orienteringsdag kommende mandag.
+Vi tilbyr ikke dette faget lengre.
+Intensivkursene varer i to uker, og er blant de mest populære.
+Dette studiet krever en gjennomsnittskarakter på 6,1.
+Vi tilbyr studier i engelsk, fransk, og tysk.
+Semesteravgift må betales før september.
+Vi kan tilby privatundervisning for å sikre bedre resultater.
+Ditt neste programmeringskurs starter tirsdag klokken ett.
+På nåværende tidspunkt er det venteliste på enkelte program.
+Studiebevis utstedes etter at semesteravgiften er betalt.
+Vi krever at kunder må vise kvittering for å benytte seg av vår garanti.
+Det var leit å høre at du ikke ble fornøyd med produktet, ønsker du en tilgodelapp?
+Du har fortsatt garanti på dette produktet.
+Reklamasjonsretten gjelder dessverre ikke for slike produkt etter fire år.
+Om du ønsker kan vi sende deg et nytt produkt.
+Varen må være uåpnet om du ønsker å returnere den.
+Dersom du ikke har kvittering kan du vise ordrebekreftelse som ble sendt på e-post.
+Kjøpte du denne i vår butikk på Karl Johan?
+Jeg beklager, du kan ikke returnere denne typen varer.
+Dette må du snakke om med vår kundestøtteavdeling på baksiden.
+Har du ditt kundenummer som ble brukt ved bestilling?
+Vi kan ikke ta inn varer med brutt forsegling.
+Ønsker du pengene tilbake eller vil du se om du finner noe annet?
+Garantien på denne varen gikk faktisk ut for seks dager siden.
+Du kan ikke returnere varer som ble solgt på salg.
+Rust går dessverre ikke inn under vår garanti.
+Denne modellen er ikke omfattet av tilbakekallingen.
+Husker du hvilken dag du kjøpte varen?
+Du kan levere inn produktet i en av våre butikker eller sende det i posten.
+Vi kan sende en reparatør i morgen tidlig.
+Garantien er utgått, men du har fortsatt en begrenset reklamasjonsrett.
+Det er et halvt år igjen på garantien.
+Ikke nøl med å kontakte oss dersom noe annet skulle oppstå.
+Du vil få tilbakebetalt pengene innen fem virkedager.
+Kjøper må dekke fraktkostnader ved reparasjoner.
+Dersom du er hjemme i morgen kan vi sende en serviceperson som kan undersøke problemet nærmere.
+Vennligst beskriv problemet så detaljert som mulig.
+For 150 kroner kan du utvide garantiperioden.
+Vi har de beste konsulenttjenestene på markedet.
+Vårt ekspertteam kan håndtere de fleste problemer ved hjelp av maskinlæring.
+Vi har omfattende og lang erfaring med analyse.
+Våre kunder er blant de mest fornøyde på markedet.
+Vår høyeste prioritet er alltid våre klienter.
+Vi tilbyr skreddersydde løsninger til våre kunder.
+Langsiktige planer for bedriftsressurser er vår spesialitet.
+Fossefallsmetoden og intelligente utviklingsprosesser blir brukt for å skape dine programvarebehov.
+Våre produkter gjør deg mer konkurransedyktig på det globale markedet.
+Vi hjelper voksende bedrifter med å implementere komplekse bedriftssystemer.
+Vi har over 20 års erfaring med implementering av programvare.
+Vi hjelper våre klienter med utfordringer som dukker opp i et raskt utviklende marked.
+Vi tilbyr effektivisering og innovering på et høyt nivå.
+Varigheten på et prosjekt vil avhenge av budsjett og organisasjonens størrelse.
+Ved retur må du vise frem salgskvittering.
+Vi sikter oss inn på maksimal suksess for våre klienter.
+Våre løsninger er meget fleksible.
+Vi minimerer reiseutgifter for å spare tid og penger ved å fokusere på digitale løsninger.
+Ved større bestillinger tilbyr vi et prosentavslag til våre bedriftskunder.
+Operasjonell redundans reduserer risiko og alvorlighetsgraden av utfallet dersom personer i nøkkelposisjoner uteblir.
+Bedriftsstrategien hos din organisasjon vil være kritisk for å kunne definere optimal bedriftsstyring.
+Du må laste ned den seneste oppdateringen til denne applikasjonen.
+Har du forsøkt å starte den på nytt?
+Først må du åpne kommandolinjen.
+Du kan prøve å starte på nytt.
+Hvilken feilkode står det på skjermen din?
+Det kan være lurt å trekke ut kontakten for å unngå overoppheting.
+Er du sikker på at brannmuren er slått på?
+Hold inn knappen i minst fem sekunder.
+Trykk på knappen på siden hurtig fire ganger på rad.
+Trykk på ikonet øverst til venstre.
+Har du sjekket om du har nok plass på harddisken?
+Er skjermen din fortsatt svart?
+I dette tilfellet ville jeg anbefalt å reinstallere programvaren.
+Vi begynner med å deaktivere tastaturet.
+Dersom ingenting hender etter et par minutter, prøver du på nytt.
+Hvilket versjonsnummer står det at du har?
+Jeg foreslår vi prøver å kjøre feilsøkingsprogrammet.
+Du har ikke nok plass tilgjengelig for å oppdatere.
+Du kan forsøke å slette programmer og filer du ikke bruker lengre.
+Klikk på "Fil" øverst til venstre.
+Datasupport, du snakker med Egil.
+Hvor lenge siden er det du oppdaterte?
+Jeg kan oppgradere for deg.
+Vi har ingen teknikere ledig for tiden, men vi kan tilby hjelp over telefon.
+Vent med å trykke på knappen til den lyser blått.
+Dette kan du bruke søkefunksjonen til.
+Jeg sender verifiseringskoden på e-post til deg.
+Du må ha en gyldig produktnøkkel for å bruke dette produktet.
+Forsøk å vente noen sekunder etter mobilen har slått seg på.
+Lukk alle faner som du ikke bruker.
+Du må vente til nedlastingen er fullført.
+Prosessoren er for gammel til å gjøre dette effektivt.
+Programvaren støtter ikke enheten du bruker.
+Dette ser ut til å være et tjenerproblem.
+Prøveversjonen gikk ut forrige uke.
+Du kan gjerne sende inn forslaget til vår lokale avdeling.
+Prøv å oppdatere siden nå.
+Det er mange fordeler å være medlem av kundeklubben.
+Kundeklubben vår tilbyr deg mange fordeler.
+Deretter sletter du filen før vi går videre.
+Prøv å lagre den i en annen mappe.
+Ved å være medlem av kundeklubben vil du få rabatter og oppdateringer.
+Vi har også en app om du er interessert.
+Du har muligheten til å betale for fullversjonen, eller teste ut en prøveversjon først.
+Kan du fortelle meg hva det står på skjermen din nå?
+Appen vår er selvfølgelig gratis.
+Prøv og se om du kan flytte på musepekeren nå.
+Du kan få en reklamefri versjon for kun 29 kroner i måneden.
+Send en krasjrapport så får vi fikset dette i fremtiden.
+Som plaster på såret skal du få et halvt år gratis abonnement.
+Du kan dessverre ikke sette nedlastingen på pause.
+Sjekk om modemet står på vår liste over støttede enheter.
+Koble fra alle trådløse nettverk.
+Forsøk å bevege deg nærmere den trådløse ruteren din.
+Vennligst sjekk om du har internettforbindelse.
+Det er dessverre ingenting som kan gjøres med akkurat dette.
+Ja, det stemmer, du har allerede fått 10% avslag.
+Fullversjon vil koste deg 99 kroner.
+Jeg skal hjelpe deg gjennom trinnene for å kunne installere programvaren.
+Du må ta vare på produktnøkkelen.
+Nei, det kan vi dessverre ikke gjøre.
+Klikk på "Neste" nede til høyre i vinduet.
+Jeg forstår, la meg sjekke hvilken konto som ble brukt.
+Trykk på på-knappen for å starte opp.
+Du skal ha fått en verifikasjonskode.
+Jeg har gått gjennom ordren registrert på ditt oppgitte ordrenummer.
+Jeg vil absolutt anbefale deg å prøve fullversjonen.
+Dette kommer til å koste rundt 250 kroner.
+Vi har dessverre ikke mer informasjon om denne saken.
+Vi kan ikke uttale oss mer om denne feilen.
+Noen klarer seg uten, men de fleste ønsker å oppgradere.
+Jeg setter deg over til noen som vet mer om dette.
+Nå forstår jeg ikke helt hva du mener.
+Ja, det kan hende at det er årsaken.
+Har du kjøpt et nytt produkt eller kun oppgradert?
+Er dette første gang du ringer kundestøtten vår?
+Vent en liten stund før du prøver på nytt.
+Det ser ut som dette er et alvorlig problem.
+Jeg ville ha kjøpt toppmodellen med en gang.
+Det er ingen tvil om at det er denne som er best på markedet.
+Dukket det opp noe på skjermen din nå?
+Vi kan ikke forlenge denne avtalen for deg.
+Du må fornye avtalen, hvis ikke kommer du til å miste funksjonalitet.
+Hei, jeg er her for å hjelpe og veilede deg gjennom problemene du har opplevd.
+På sosiale medier legger vi ut konkurranser hver uke.
+Du får eksklusive rabatter i kundeklubben.
+Det er derfor din ordre kommer til å bli noe forsinket.
+Det er ikke noe mer vi kan gjøre med denne saken.
+La oss begynne med eposten din.
+Det ser ut til at du fikk tilbakebetalt penger i februar.
+Nei, ikke oppgi ditt passord til noen, ikke til oss heller.
+Vi skal ordne opp i dette så fort det lar seg gjøre.
+Slik, da skal alt være i orden.
+Har du et annet telefonnummer vi kan bruke?
+500 kroner for et gullmedlemskap er standard pris.
+Jeg forstår, men la meg poengtere at feilen ikke ligger hos oss.
+Nei, gi meg et par minutter for å sjekke.
+Jeg sender deg en lenke til nedlastingen.
+Greit, det skal jeg sjekke, ett øyeblikk.
+Skjønner, hvordan logger du deg på datamaskinen?
+Har du oppdatert operativsystemet ditt i det siste?
+Det kan hende aktiveringen går av seg selv etter installeringen.
+I dette tilfellet kan vi ikke refundere deg.
+Refunderingen er oppført som utført i våre systemer.
+Om du ikke har mottatt en verifikasjonskode kan det lønne seg å sjekke søppelpostmappen.
+Pakken din er på vei!
+Du er nå logget ut.
+Din ordre er nå bekreftet.
+Du har mottatt en innbetaling.
+Venter på internettforbindelse for å fortsette nedlastingen.
+Du får tilgang til kundeavisen på nettsidene våre.
+Ta en undersøkelse til for å motta flere poeng!
+Dette vedlegget kom fra en annen datamaskin, er du sikker på at du vil fortsette?
+Betaling mottatt, din ordre er på vei!
+Her er din bestillings- og fraktinformasjon.
+Last ned vår app for en bedre opplevelse!
+Prøveperioden på ditt produkt utløper om 10 dager.
+Det kan jeg selvfølgelig hjelpe deg med.
+Fortell mer mer om utfordringen du opplever.
+Dersom du oppgir adressen din så kan jeg sende deg katalogen vår.
+Ordren er levert og er nå markert som fullført, vi håper du blir fornøyd med din bestilling.
+Din sikkerhetskode er 122675.
+Jeg kan sette deg over til en ekspert.
+Du har 4 avtaler i ettermiddag.
+Din pizza er nå på vei hjem til deg!
+Send 123 til 9948 for å se alle oppdateringene.
+Ønsker du å prøve de på?
+Om de ikke passer har vi flere størrelser du kan prøve.
+Dessverre, det er helt tomt på vårt lager også.
+Foretrekker du disse i fargen rød eller brun?
+Hvilken type sko er du på utkikk etter?
+Du kan prøve på Skoringen lengre ned i gaten.
+Er de til deg selv eller noen andre?
+Vi har en stol her som du kan bruke om du ønsker å prøve de på.
+Si fra om du trenger hjelp med noe annet.
+Hvordan ble det, passet skoene?
+Denne kjolen har vi også i en mindre størrelse.
+Jeg kan sjekke på nettsiden vår om vi har flere av denne typen.
+Jeg anbefaler deg denne modellen, den er håndlaget i Italia.
+Kjenn på materialet, det er svært behagelig.
+Vi har prøverom helt innerst i butikken.
+Ønsker du det sendt hjem til deg eller ønsker du å hente det i butikken?
+Jeg legger kvitteringen din i posen.
+Takk for handelen, god jul!
+Dersom du skal bruke denne til spilling ville jeg anbefalt å oppgradere til denne modellen.
+Denne er en åttekjerners prosessor, som vil passe deg ypperlig til videoredigering.
+Trenger du kun datamaskin, eller har du behov for en skjerm i tillegg?
+Om det er fart du ser etter, bør du oppgradere til en raskere modell.
+For 700 kroner kan vi tilby en utvidet garanti på 7 år.
+Denne modellen er den dyreste, men er også den nyeste.
+Vi vil anbefale deg å kjøpe noe som varer lengre.
+Flott, vi sender deg utstyret så snart vi har fått det inn på vårt hovedlager.
+Alle grønnsakene er produsert i Norge.
+Kjøttet er importert fra Danmark, som holder samme kvalitetsstandard som oss, om ikke høyere.
+Du finner de sammen med hermetikken.
+Det ser ut til at vi er utsolgt, men jeg kan sjekke på bakrommet.
+Vi har tilbud på torsk i dag.
+Vi får vanligvis inn fersk frukt på tirsdager.
+Jeg tror ikke vi har andre merker for denne typen vare.
+Jeg skal ta det opp med sjefen.
+Vi selger både nye og brukte biler.
+Er du interessert i en elektrisk bil, eller kanskje en hybrid?
+Personlig vil jeg anbefale denne, da den er meget driftssikker.
+Du kan prøvekjøre, så får du oppleve komforten selv.
+Vi tilbyr en omfattende garanti i syv år.
+Hovedforskjellen er skinninteriøret på disse modellene.
+Jeg ville selv gått for toppmodellen når man først skal kjøpe nytt.
+Jeg har selv denne modellen, og jeg er veldig fornøyd.
+Alle poteter hos vår kjede kommer fra lokale gårder.
+Denne fredagen får du 40% på alle tacoprodukter.
+Har du handlet hos oss tidligere?
+Pose koster to kroner, hvor mange ønsker du?
+Vi tilbyr et bredere utvalg på våre nettsider.
+Forsøk å holde bankkortet nærmere terminalen.
+Prisen du sikter til gjelder kun ved kjøp på nettet.
+Det vil alltid lønne seg å kjøpe flere samtidig.
+Konsollen er en såkalt begrenset utgave, så vi får nok ikke inn flere av denne.
+Skal du betale med kredittkort?
+Beklager, vi tar kun kontanter.
+Av hygieniske årsaker kan du ikke returnere sokker eller undertøy.
+Du kan prøve disse to for å se hva som passer deg best.
+Du sa du hadde en kupong for disse?
+Du kan kontakte oss på alle hverdager.
+Vår garanti dekker kun delekostnader, ikke selve reparasjonen.
+Det er mulig å skru av funksjonen om du ikke liker den.
+Jeg kan sende deg en liste over produkter som passer modellen du har kjøpt.
