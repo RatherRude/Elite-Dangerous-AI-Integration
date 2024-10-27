@@ -46,8 +46,8 @@ Run the setup script:
   * Select Standalone Installation and then Option 1.
   * Follow any additional instructions to install required files.
 
-# Creating samples for our dataset
- From here we are ready to begin creating our voice model. The first thing you will want to do is get a wav file of the voice you want to clone and place it in the voices folder of your Alltalk installation.
+## Step One: Creating samples for our dataset
+ From here we are ready to begin creating our voice model. The first thing you will want to do is get a wav file of the voice you want to clone and place it in the voices folder of your Alltalk installation. An important thing to note here is that you typically want a minimum of 2 minutes of total audio samples (Alltalk won't even allow you to proceed without this minimum met). If you have enough audio of the voice you want to train, you can skip the first portion and go stright to training. That is typically pretty easy to meet if you have the dumped audio files for a character from a game, as an exmaple. 
  
  <details><summary>Screenshot</summary>
 
@@ -67,7 +67,7 @@ Run the setup script:
 
 </details>
 
-## Its time for our Anime Training Arc!
+## Step Two: Its time for our Anime Training Arc!
  Now that we have our samples, we are going to move on to training. We now want to go back to our Alltalk directory. Because we have 1150 samples, it is best that we transfer them first, then begin the dataset creation. The TTS generator will have put them in the outputs folder. We want to copy them to the finetune/put-voice-samples-in-here folder, as shown below. 
 
  <details><summary>Screenshot</summary>
@@ -126,7 +126,7 @@ If you are happy, head over to the final tab. Enter your project name, refresh d
 
 </details>
 
-# Setting up an OpenAI compatable TTS server that can use XTTS models
+# Setting up an OpenAI compatable TTS server than can use XTTS models
 
 ## Preparing for OpenedAI Speech
  The server we will be using here is [OpenedAI Speech](https://github.com/matatonic/openedai-speech). We're gonna start by opening a WSL terminal from the command prompt, cloning the repo and enter the folder:
@@ -141,17 +141,32 @@ If you are happy, head over to the final tab. Enter your project name, refresh d
 
 </details>
 
- Now we want to make a copy of sample.env and rename it speech.env. It may also a good idea to edit speech.env and uncomment one of the lines to preload XTTS.
+ Now that we have it cloned, lets go ahead and start the server once to pre-download all of the included models and generate the default configuration files. This will also download all of the sample wavs for the pre-configured voices.
+
+```
+docker compose up
+```
+
+<details><summary>OpenedAI First Run</summary>
+
+![](screenshots/openedfirstrun.png?raw=true)
+
+</details>
+
+ Now we want to make a copy of sample.env and rename it speech.env. It may also a good idea to edit speech.env and uncomment one of the lines to preload XTTS. You will only want to set one model to preload. If you are using a non-nvidia GPU, you can uncomment the USE_ROCM line. I don't have a non-nvidia card, so I cannot attest to its performance. In addtion, the below includes two models with preload to display that you can specify older versions of models. XTTS and XTTS_V2.0.2 being the latest and older version respectively in this instance.
+
  ```
 TTS_HOME=voices
 HF_HOME=voices
-#PRELOAD_MODEL=xtts
-PRELOAD_MODEL=xtts_v2.0.2
+PRELOAD_MODEL=xtts
+#PRELOAD_MODEL=xtts_v2.0.2
 #EXTRA_ARGS=--log-level DEBUG --unload-timer 300
 #USE_ROCM=1
 ```
 
- If you have your own model, you will want to copy it into the voices/tts folder. We then want to open the voice_to_speaker.yaml in the config folder and add the model beneath the tts-1-hd heading. You can also place a wav file in the voices folder and map it to one of the default voices. An example of both is included in the screenshot below. 
+ If you have your own model, you will want to copy it into the voices/tts folder. In order to prepare the setup
+
+ We then want to open the voice_to_speaker.yaml in the config folder and add the model beneath the tts-1-hd heading. You can also place a wav file in the voices folder and map it to one of the default voices. An example of both is included in the screenshot below. 
 
 <details><summary>OpenedAI Speech Dir</summary>
 
@@ -159,11 +174,8 @@ PRELOAD_MODEL=xtts_v2.0.2
 
 </details>
 
-With everything set up, we can run the following command inside the repo folder to start up the OpenedAI Speech server:
+With everything set up, we can go ahead and restart the server with the same command from above.
 
-```
-docker compose up
-```
 <details><summary>OpenedAI running in docker</summary>
 
 ![](screenshots/dockerterm.png?raw=true)
