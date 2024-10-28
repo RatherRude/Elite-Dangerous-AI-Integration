@@ -36,24 +36,24 @@ services:
     # Nothing required - comment out the other hardware sections.
 
     ### Nvidia (default) ###
-#    deploy:
-#        resources:
-#          reservations:
-#            devices:
-#              - driver: nvidia
-#                device_ids: ['0']
-#                capabilities: [gpu]
+    deploy:
+        resources:
+          reservations:
+            devices:
+              - driver: nvidia
+                device_ids: ['0']
+                capabilities: [gpu]
 
     ### AMD ROCM or Intel Arc ###
-    stdin_open: true
-    group_add:
-      - video
-    tty: true
-    ipc: host
-    devices:
-      - /dev/kfd
-      - /dev/dri 
-    cap_add: 
-      - SYS_PTRACE
-    security_opt:
-      - seccomp=unconfined
+#    stdin_open: true
+#    group_add:
+#      - video
+#    tty: true
+#    ipc: host
+#    devices:
+#      - /dev/kfd
+#      - /dev/dri 
+#    cap_add: 
+#      - SYS_PTRACE
+#    security_opt:
+#      - seccomp=unconfined
