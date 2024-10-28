@@ -93,6 +93,8 @@ Next we are going to jump down to ports, and uncomment the API port by removing 
 
 </details>  
 
+You can find my completed [docker-compose file here](https://github.com/Antivash/Elite-Dangerous-AI-Integration/blob/LLM/docs/text-generation/docker-compose.yml) to compare with your own, or to simply download and use if you so choose. It is set up for Nvidia with TensorRT support.
+
 With our changes complete, we can now start the server by running the following command:
 
 ```
