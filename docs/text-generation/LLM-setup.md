@@ -83,7 +83,7 @@ Next we are going to jump down to ports, and uncomment the API port by removing 
        - ./config/settings.yaml:/app/settings.yaml
  ```
 
- The settings file will _not_ be present when you first clone or launch the container, and this is fine. This will be generated after we launch the server. 
+ The settings file will _not_ be present when you first clone or launch the container, and this is fine. This will be generated after we save our settings from the webui. 
 
  Finally, we are going to jump down to the Hardware acceleration section. If you do _not_ an nvidia card, you will want to comment out  all of the nvidia section. Do this by adding a # to the beginning of each line. If you have an Intel or AMD card, uncomment the appropriate section by deleting the # at the beginning of the lines, as exampled below.
 
