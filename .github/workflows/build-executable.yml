@@ -54,7 +54,7 @@ jobs:
 
       - name: Create Executable for AIServer
         run: |
-          pyinstaller .\src\AIServer.py -y --onedir --clean --console --hidden-import=comtypes.stream --add-binary ${{ env.ONNXRUNTIME_DLL }}:. --add-binary ${{ env.LLAMACPP_DLL }}:.
+          pyinstaller .\src\AIServer.py -y --onedir --clean --console --hidden-import=comtypes.stream --add-binary ${{ env.ONNXRUNTIME_DLL }}:. --add-binary ${{ env.LLAMACPP_DLL }}:.\llama_cpp\lib
 
       - name: Get current commit ID
         id: get_commit
@@ -69,10 +69,11 @@ jobs:
           $start | Out-File -Encoding ASCII .\\dist\\start.bat
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: COVAS_NEXT_v${{ env.COMMIT_ID }}
           path: ./dist
+          compression-level: 0 # no compression
 
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v2
@@ -91,10 +92,11 @@ jobs:
 
       - name: Create Executable for AIServer with llamacpp[vulkan]
         run: |
-          pyinstaller .\src\AIServer.py -y --onedir --clean --console --hidden-import=comtypes.stream --add-binary ${{ env.ONNXRUNTIME_DLL }}:. --add-binary ${{ env.LLAMACPP_DLL }}:.
+          pyinstaller .\src\AIServer.py -y --onedir --clean --console --hidden-import=comtypes.stream --add-binary ${{ env.ONNXRUNTIME_DLL }}:. --add-binary ${{ env.LLAMACPP_DLL }}:.\llama_cpp\lib
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: COVAS_NEXT_v${{ env.COMMIT_ID }}-vulkan
           path: ./dist
+          compression-level: 0 # no compression
