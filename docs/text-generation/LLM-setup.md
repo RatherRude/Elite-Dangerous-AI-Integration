@@ -40,7 +40,7 @@ image: atinoda/text-generation-webui:{VARIANT-{PLATFORM} # Specify variant as th
 |---|---|
 | `default-*` | Standard deployment with all default bundled extensions installed. Normal image intended for everyday usage. |
 | `base-*` | Basic deployment with no extensions installed. Slimmer image intended for customisation or lightweight deployment.  |
-|---|---|
+
 
 | Platform | Description | 
 |---|---|
@@ -50,7 +50,7 @@ image: atinoda/text-generation-webui:{VARIANT-{PLATFORM} # Specify variant as th
 | `*-cpu` | CPU-only inference. *Has become surprisingly fast since the early days!* |
 | `*-rocm` | ROCM 5.6 inference acceleration. *Experimental and unstable.* |
 | `*-arc` | Intel Arc XPU and oneAPI inference acceleration.  **Not compatible with Intel integrated GPU (iGPU).** *Experimental and unstable.* |
-|---|---| ---|
+
 
  * If you have an Nvidia card, my recommended setting is:
     * image: atinoda/text-generation-webui:default-nvidia-tensorrtllm
@@ -111,7 +111,7 @@ With the container running, we can now access the server by heading to a browser
 
 </details>    
 
- Next we are going to set up the model you are using for text generation. Use the above image and the below table to configure as you need. Notes will be below.
+ Next we are going to set up the model you are using for text generation. Use the above image and the below table to configure as you need in the order they are numbered. Notes will be below.
 
  | # | setting |Description | 
 |---|---| ---|
@@ -122,4 +122,42 @@ With the container running, we can now access the server by heading to a browser
 | 5 | streaming_llm  | Experimental setting to help generation |
 | 6 | numa | Numa memory support |
 | 7 | Save | Load/Unload model and save settings |
-|---|---| ---|
+
+The model is self explanatory, but the rest require a bit of info. Lets start with GPU layers.
+
+## n-gpu-layers
+<details><summary>n-gpu-layers</summary>
+
+![](screens/gpulayers.png?raw=true)
+
+</details>    
+
+ This setting is going to tell the server how much of th model to load into your GPU. Loading into GPU will make text generation faster, but also uses more Vram. Typically, if you want faster and smoother generations, you want to load most of or all of the model into gpu. Example outputs of both full and no offload are below, to help decide how much you wish to offload. The below screenshots were talking with tensorcores off.
+
+<details><summary>Full Offload</summary>
+
+![](screens/fullload.png?raw=true)
+
+</details>    
+<details><summary>No Offload</summary>
+
+![](screens/noload.png?raw=true)
+
+</details>    
+
+## n-ctx
+This is context. Or in simpler terms: How much of previous responses and prompts to keep each time you ask the model to generate a response. This is what gives the bot its ability to remember your conversation. The larger the number here, the more the model "remembers" form your conversations, but this also increases the amount of memory used. Common values tend to be 4096/8192/16384. In our case, I would not suggest going beyond this, but it is technically possible for it to be higher. 
+
+## tensorcores
+If you are using the default-nvidia-tensorrtllm container, you can enable this setting to help performance on newer nvidia cards. Below are examples of generations done with this  setting on. You can judge for yourself the value of this setting.
+
+<details><summary>Full Offload</summary>
+
+![](screens/fullload-tensors.png?raw=true)
+
+</details>    
+<details><summary>No Offload</summary>
+
+![](screens/noload-tensors.png?raw=true)
+
+</details> 
