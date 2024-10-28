@@ -108,9 +108,9 @@ def galaxy_map_open(args):
     sleep(.15)
 
     # Galaxy map already open, so we close it
-    if status_parser.current_status.GuiFocus != 'GalaxyMap':
+    if status_parser.current_status.GuiFocus == 'GalaxyMap':
         keys.send('GalaxyMapOpen')
-        sleep(.15)
+        sleep(1)
 
     # Freshly open the galaxy map
     keys.send('GalaxyMapOpen')
@@ -130,19 +130,22 @@ def galaxy_map_open(args):
         sleep(0.05)
         keys.send_key('Up', 28)
 
-        sleep(.05)
+        sleep(.15)
         keys.send('UI_Right')
-        sleep(.05)
+        sleep(.15)
         keys.send('UI_Select')
 
         if 'start_navigation' in args and args['start_navigation']:
+            sleep(0.25)
             keys.send('UI_Right')
+            sleep(0.25)
             keys.send('UI_Back')
+            sleep(0.25)
             keys.send('UI_Back')
-            sleep(3)
-            keys.send('UI_Select', hold=0.66)
+            sleep(3.5)
+            keys.send('UI_Select', hold=1)
 
-            sleep(.05)
+            sleep(.2)
             keys.send('GalaxyMapOpen')
 
             return f"A route to {args['system_name']} has been plotted."
