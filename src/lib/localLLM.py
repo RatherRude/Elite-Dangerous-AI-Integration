@@ -25,10 +25,10 @@ llm_model_names = [
 
 model_presets = {
     "lucaelin/llama-3.2-3b-instruct-fc-gguf": {
-        "filename": "unsloth.Q4_K_M.gguf",
-        "template": "{% set loop_messages = messages %}{% for message in loop_messages %}{% set role = message['role'] %}{% if 'tool_calls' in message %}{% set text = '<tool_call>' + message['tool_calls'][0]['function']|tojson + '</tool_call>' %}{% endif %}{% if 'content' in message %}{% set text = message['content'] %}{% endif %}{% if loop.index0 == 0 and tools is defined %}{% set text = message['content'] + '\n<tools>\n' + tools|tojson + '\n</tools>' %}{% endif %}{% set content = '<|start_header_id|>' + role + '<|end_header_id|>\n\n'+ text | trim + '<|eot_id|>' %}{% if loop.index0 == 0 %}{% set content = bos_token + content %}{% endif %}{{ content }}{% endfor %}{{ '<|start_header_id|>assistant<|end_header_id|>\n\n' }}",
+        "filename": "unsloth.Q8_0.gguf",
+        "template": "{% set loop_messages = messages %}{% for message in loop_messages %}{% set role = message['role'] %}{% if 'tool_calls' in message %}{% set text = '<tool_call>' + message['tool_calls'][0]['function']|tojson + '</tool_call>' %}{% endif %}{% if 'content' in message %}{% set text = message['content'] %}{% endif %}{% if loop.index0 == 0 and tools is defined %}{% set text = message['content'] + '\n\nYou are able to call the following tools, when needed, call them using the <tool_call> xml-tag, followed by name and arguments as json.\n<tools>\n' + tools|tojson + '\n</tools>' %}{% endif %}{% set content = '<|start_header_id|>' + role + '<|end_header_id|>\n\n'+ text | trim + '<|eot_id|>' %}{% if loop.index0 == 0 %}{% set content = bos_token + content %}{% endif %}{{ content }}{% endfor %}{{ '<|start_header_id|>assistant<|end_header_id|>\n\n' }}",
         "tool_use_grammar": lambda tools: f"""
-            root   ::= ("<tool_call>" {gbnf_or([gbnf_sanitize(tool["function"]["name"]) for tool in tools])} "</tool_call>") | (nottoolcalls .*)
+            root   ::= ("<tool_call>" {gbnf_or([gbnf_sanitize(tool["function"]["name"]) for tool in tools])} "</tool_call>") | (.*)
             nottoolcalls ::= {gbnf_not("<tool_call>")}
         """,
         "tool_use_regex": '^<tool_call>(.*)</tool_call>',
