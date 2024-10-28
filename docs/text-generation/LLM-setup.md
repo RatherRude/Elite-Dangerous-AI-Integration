@@ -34,7 +34,7 @@ This is a pretty straight forward and easy to setup guide on setting up Oobaboog
  Now that we have those set up docker config file to load our desired settings. Open the docker-compose.yml in your editor of choice and we can begin. Our first change will be to line 3 of the compose file, the image. 
 
 ```
-image: atinoda/text-generation-webui:{VARIANT-{PLATFORM} # Specify variant as the :tag
+image: atinoda/text-generation-webui:{VARIANT}-{PLATFORM} # Specify variant as the :tag
 ```
 
 | Variant | Description | 
@@ -57,7 +57,8 @@ image: atinoda/text-generation-webui:{VARIANT-{PLATFORM} # Specify variant as th
     * image: atinoda/text-generation-webui:default-nvidia-tensorrtllm
  * The above uses TensorRT to increase performance, but requires newer cards. If you aren't certain you can handle this, you can drop that portion as in the example below.
     * image: atinoda/text-generation-webui:default-nvidia
- Next we are going to jump down to ports, and uncomment the API port.
+
+Next we are going to jump down to ports, and uncomment the API port by removing the # at the beginning of the line.
 
  ```
  #      - 5000:5000  # Default API port
