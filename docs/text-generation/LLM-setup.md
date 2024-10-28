@@ -3,9 +3,10 @@ This is a pretty straight forward and easy to setup guide on setting up Oobaboog
 # Acquiring necessary files
  First up, we are going to grab everything we need to get the server up and running.
   * You can find the repository for the [container here](https://github.com/Atinoda/text-generation-webui-docker)
-  * We will also need a model to run. These can typically be found on [huggingface](https://huggingface.co/). Some suggestions if you don't know what to look for:
-    * [OpenChat-3.5 i1-Q4_K_M](https://huggingface.co/mradermacher/openchat-3.5-1210-i1-GGUF/resolve/main/openchat-3.5-1210.i1-Q4_K_M.gguf)
+  * We will also need a model to run. These can typically be found on [huggingface](https://huggingface.co/). Some suggestions if you don't know what to look for (Top to bottom for my preferences):
     * [openhermes-2.5-mistral-7b.Q4_K_M](https://huggingface.co/TheBloke/OpenHermes-2.5-Mistral-7B-GGUF/blob/main/openhermes-2.5-mistral-7b.Q4_K_M.gguf)
+    * [OpenChat-3.5 i1-Q4_K_M](https://huggingface.co/mradermacher/openchat-3.5-1210-i1-GGUF/resolve/main/openchat-3.5-1210.i1-Q4_K_M.gguf)
+    
  
  We want to start out by cloning the repo in a WSL terminal.
  ```
@@ -161,3 +162,37 @@ If you are using the default-nvidia-tensorrtllm container, you can enable this s
 ![](screens/noload-tensors.png?raw=true)
 
 </details> 
+
+## streaming_llm
+This setting is meant to help when older messages get removed. Typically this happens when you hit the token limit for context, or in the case of something like SillyTavern roleplaying, you delete other messages. I tend to recomment turning this on.
+
+## NUMA
+I tend to turn this on, but .... Imma be honest and say I have no idea what this is actually for. I havent noticed any negatives for using it vs not using it. You can check out the [wikipedia](https://en.wikipedia.org/wiki/Non-uniform_memory_access) page on NUMA if you are curious.
+
+## Load/Unload/Save
+Once you have your settings in place you can hit load model. If you don't want to fill this out every time, you can hit Save Settings, and next time you select the model, it will preload your configuration. When you finish using the model, you can hit unload and close the server.
+
+# Covas Settings
+
+<details><summary>Covas API settings</summary>
+
+![](screens/covas.png?raw=true)
+
+</details>    
+
+<details><summary>Covas nagging about model provider.</summary>
+
+![](screens/nag.png?raw=true)
+
+</details>    
+
+```
+LLM Model Name: gpt-3.5-turbo
+LLM Endpoint: http://127.0.0.1:5000/v1
+LLM API Key: Can be blank, or anything at all.
+```
+So here is where things get a bit scuffed. Regardless of the model name you have loaded, you want to enter gpt-3.5-turbo because covas doesn't like anything else here. Also, when you click Start AI, Covas is going to complain about your model provider not servering gpt-4o-mini. Ignore it and continue anyway. It will still work fine, even with this nag. I don't understand it either.
+
+# Afterthoughts
+
+Sitting here and rereading what I wrote to make sure its easy to understand and follow, I realized the above screenshots contain some other models. Namely ones including LimaRP in the file names. This leaves me with a bit of advice: Those models are desiged for Roleplay (if the RP didn't make that clear.) While this does mean they are a bit better at being characters, they can also add responses for _you_ in the responses as well. You can decide for yourself if you want to take that chance, but if you do, I suggest you add something to your prompt to prevent this. Things like "Do not speak or act for {{user}}" and "You may only speak for {{char}}". Note the double brackets, which differs from {commander_name} in the default prompt. This is the required syntax for the user and char variables in the LLM server software. 
