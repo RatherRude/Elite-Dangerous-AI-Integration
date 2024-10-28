@@ -13,7 +13,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
       - name: Install dependencies
         run: |
@@ -34,12 +34,12 @@ jobs:
           echo "VAD_MODEL=$VAD_MODEL" >> $env:GITHUB_ENV
           python -c 'import onnxruntime; print("onnxruntime path:", onnxruntime.__file__)'
           python -c 'import pysilero_vad; print("pysilero_vad path:", pysilero_vad.__file__)'
-    
+
       - name: Debug environment variables
         run: |
           echo "ONNXRUNTIME_DLL=${{ env.ONNXRUNTIME_DLL }}"
           echo "VAD_MODEL=${{ env.VAD_MODEL }}"
-  
+
       - name: Create Executable for AIGUI
         run: |
           pyinstaller .\src\AIGUI.py -y --onedir --clean --noconsole --add-data .\docs\screen\EDAI_logo.png:.\screen
@@ -51,7 +51,7 @@ jobs:
       - name: Create Executable for AIServer
         run: |
           pyinstaller .\src\AIServer.py -y --onedir --clean --console --hidden-import=comtypes.stream --add-binary ${{ env.ONNXRUNTIME_DLL }}:.
-  
+
       - name: Get current commit ID
         id: get_commit
         run: |
@@ -68,4 +68,26 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: COVAS_NEXT_v${{ env.COMMIT_ID }}
+          path: ./dist
+
+      - name: Prepare Vulkan SDK
+        uses: humbletim/setup-vulkan-sdk@v1.2.0
+        with:
+          vulkan-query-version: 1.3.204.0
+          vulkan-components: Vulkan-Headers, Vulkan-Loader
+          vulkan-use-cache: true
+
+      - name: Install llamacpp with Vulkan support
+        run: |
+          $Env:CMAKE_ARGS = "-DGGML_VULKAN=on"
+          pip install --force-reinstall --ignore-installed --no-binary :all: llama-cpp-python==0.2.90
+
+      - name: Create Executable for AIServer with llamacpp[vulkan]
+        run: |
+          pyinstaller .\src\AIServer.py -y --onedir --clean --console --hidden-import=comtypes.stream --add-binary ${{ env.ONNXRUNTIME_DLL }}:.
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: COVAS_NEXT_v${{ env.COMMIT_ID }}-vulkan
           path: ./dist
