@@ -1,0 +1,59 @@
+services:
+  text-generation-webui-docker:
+    image: atinoda/text-generation-webui:default-nvidia-tensorrtllm # Specify variant as the :tag
+    container_name: text-generation-webui
+    environment:
+      - EXTRA_LAUNCH_ARGS="--listen --verbose" # Custom launch args (e.g., --model MODEL_NAME)
+#      - BUILD_EXTENSIONS_LIVE="coqui_tts whisper_stt" # Install named extensions during every container launch. THIS WILL SIGNIFICANLTLY SLOW LAUNCH TIME AND IS NORMALLY NOT REQUIRED.
+#      - OPENEDAI_EMBEDDING_MODEL=intfloat/e5-large-v2  # Specify custom model for embeddings
+#      - OPENEDAI_EMBEDDING_DEVICE=cuda  # Specify processing device for embeddings
+    init: true  # Runs an init process (PID 1) that forwards signals and reaps processes
+    ports:
+      - 7860:7860  # Default web port
+- 5000:5000  # Default API port
+#      - 5005:5005  # Default streaming port
+    volumes:
+      - ./config/cache:/root/.cache  # WARNING: Libraries may save large files here!
+      - ./config/characters:/app/characters
+      - ./config/instruction-templates:/app/instruction-templates
+      - ./config/loras:/app/loras
+      - ./config/models:/app/models  # WARNING - very large files!
+      - ./config/presets:/app/presets
+      - ./config/prompts:/app/prompts
+      - ./config/training:/app/training
+      - ./config/extensions:/app/extensions  # Persist all extensions
+      - ./config/settings.yaml:/app/settings.yaml
+#      - ./config/extensions/coqui_tts:/app/extensions/coqui_tts  # Persist a single extension
+    logging:
+      driver:  json-file
+      options:
+        max-file: "3"   # number of files or file count
+        max-size: "10M"
+
+    ### HARDWARE ACCELERATION: comment or uncomment according to your hardware! ###
+
+    ### CPU only ###
+    # Nothing required - comment out the other hardware sections.
+
+    ### Nvidia (default) ###
+#    deploy:
+#        resources:
+#          reservations:
+#            devices:
+#              - driver: nvidia
+#                device_ids: ['0']
+#                capabilities: [gpu]
+
+    ### AMD ROCM or Intel Arc ###
+    stdin_open: true
+    group_add:
+      - video
+    tty: true
+    ipc: host
+    devices:
+      - /dev/kfd
+      - /dev/dri 
+    cap_add: 
+      - SYS_PTRACE
+    security_opt:
+      - seccomp=unconfined
