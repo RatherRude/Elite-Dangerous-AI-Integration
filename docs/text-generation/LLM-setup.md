@@ -16,9 +16,9 @@ This is a pretty straight forward and easy to setup guide on setting up Oobaboog
  cd text-generation-webui-docker
  ```
 
-<details><summary></summary>
+<details><summary>Clone Result</summary>
 
-![](screens/.png?raw=true)
+![](screens/clone.png?raw=true)
 
 </details>  
 
