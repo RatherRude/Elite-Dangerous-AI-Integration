@@ -90,7 +90,7 @@ jobs:
           pip install --upgrade pip setuptools
           pip uninstall -y llama-cpp-python
           $Env:CMAKE_ARGS = "-DGGML_VULKAN=on"
-          pip install --force-reinstall llama-cpp-python==0.2.90
+          pip install --force-reinstall --ignore-installed --no-cache-dir llama-cpp-python==0.2.90
 
       - name: Create Executable for AIServer with llamacpp[vulkan]
         run: |
