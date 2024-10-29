@@ -53,6 +53,7 @@ def reply(client, events: List[Event], new_events: List[Event], prompt_generator
     prompt = prompt_generator.generate_prompt(events=events, status=status_parser.current_status, pending_events=new_events)
 
     use_tools = useTools and any([event.kind == 'user' for event in new_events])
+    reasons = [event.content.get('event', event.kind) if event.kind=='Game' else event.kind for event in new_events]
 
     completion = client.chat.completions.create(
         model=llm_model_name,
@@ -69,8 +70,8 @@ def reply(client, events: List[Event], new_events: List[Event], prompt_generator
     response_text = completion.choices[0].message.content
     if response_text:
         tts.say(response_text)
-        copilot.print_this('COVAS: '+response_text)
         event_manager.add_conversation_event('assistant', completion.choices[0].message.content)
+        copilot.output_covas(response_text, reasons)
     is_thinking = False
 
     response_actions = completion.choices[0].message.tool_calls
@@ -251,7 +252,7 @@ def main():
             if not stt.resultQueue.empty():
                 text = stt.resultQueue.get().text
                 tts.abort()
-                copilot.print_this('CMDR: '+text)
+                copilot.output_commander(text)
                 event_manager.add_conversation_event('user', text)
 
             if not is_thinking and not tts.get_is_playing() and event_manager.is_replying:
