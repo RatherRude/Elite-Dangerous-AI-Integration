@@ -88,6 +88,7 @@ jobs:
       - name: Install llamacpp with Vulkan support
         run: |
           pip install --upgrade pip setuptools
+          pip uninstall llama-cpp-python
           $Env:CMAKE_ARGS = "-DGGML_VULKAN=on"
           pip install --force-reinstall llama-cpp-python==0.2.90
 
