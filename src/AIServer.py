@@ -1,4 +1,6 @@
 import io
+import json
+from typing import TypedDict
 import soundfile as sf
 from pick import pick
 
@@ -6,28 +8,51 @@ from lib.localSTT import init_stt, stt, stt_models_names
 from lib.localTTS import init_tts, tts, tts_model_names
 from lib.localLLM import init_llm, llm, llm_model_names
 
-tts_model_name, _ = pick(options=tts_model_names, title='Select a TTS model')
-stt_model_name, _ = pick(options=stt_models_names, title='Select a STT model')
-llm_model_name, _ = pick(options=llm_model_names, title='Select a LLM model')
+class Config(TypedDict):
+    tts_model_name: str
+    stt_model_name: str
+    llm_model_name: str
+    host: str
+    port: int
+    
+def load_config() -> Config:
+    config: Config = {}
+    try:
+        with open('aiserver.config.json', 'r') as f:
+            config = Config(**json.load(f))
+    except FileNotFoundError:
+        pass
+    except json.JSONDecodeError:
+        pass
+    
+    if not 'tts_model_name' in config:
+        config['tts_model_name'] = pick(options=tts_model_names, title='Select a TTS model')[0]
 
-# Show an ip selection menu with
-host, _ = pick(options=[
-    '127.0.0.1',
-    '0.0.0.0',
-    '::'
-], title='Select an IP address to bind to', default_index=0)
-# Show a port selection menu between 1025 the upper limit with 8080 as the default
-port = int(input('Enter the port number or leave empty for default port [8080]: ') or '8080')
-if port < 1025 or port > 65535:
-    raise ValueError('Port number must be between 1025 and 65535')
+    if not 'stt_model_name' in config:
+        config['stt_model_name'] = pick(options=stt_models_names, title='Select a STT model')[0]
+        
+    if not 'llm_model_name' in config:
+        config['llm_model_name'] = pick(options=llm_model_names, title='Select a LLM model')[0]
+    
+    if not 'host' in config:
+        config['host'] = input('Enter the IP to bind or leave empty for default [127.0.0.1]: ') or '127.0.0.1'
+        
+    if not 'port' in config:
+        config['port'] = int(input('Enter the port number or leave empty for default port [8080]: ') or '8080')
 
-print(f'Selected TTS model: {tts_model_name}')
-print(f'Selected STT model: {stt_model_name}')
-print(f'Selected LLM model: {llm_model_name}')
+    if config['port'] < 1025 or config['port'] > 65535:
+        raise ValueError('Port number must be between 1025 and 65535')
 
-llm_model = init_llm(llm_model_name)
-tts_model = init_tts(tts_model_name)
-stt_model = init_stt(stt_model_name)
+    print(f'Selected STT model: {config["stt_model_name"]}')
+    print(f'Selected LLM model: {config["llm_model_name"]}')
+    print(f'Selected TTS model: {config["tts_model_name"]}')
+    return config
+
+config = load_config()
+
+llm_model = init_llm(config['llm_model_name'])
+tts_model = init_tts(config['tts_model_name'])
+stt_model = init_stt(config['stt_model_name'])
 
 # create flask api endpoint
 from flask import Flask, request, jsonify
@@ -94,7 +119,7 @@ def createTranscription():
     return jsonify({'text': text}) # TODO more details, spec compliance
 
 if __name__ == '__main__':
-    app.run(port=port, host=host, threaded=True)
+    app.run(port=config['port'], host=config['host'], threaded=True)
 
 """
 sample curl request to create a speech:

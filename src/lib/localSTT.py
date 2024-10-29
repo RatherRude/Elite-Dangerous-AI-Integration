@@ -5,6 +5,7 @@ import samplerate
 import soundfile as sf
 
 stt_models_names = [
+    'None',
     'distil-medium.en',
     'distil-small.en', 
 
@@ -26,6 +27,9 @@ stt_models_names = [
 ]
 
 def init_stt(model_name="distil-medium.en"):
+    if model_name == 'None':
+        return None
+    
     model = WhisperModel(model_name, device="cpu", compute_type="int8")
     return model
 

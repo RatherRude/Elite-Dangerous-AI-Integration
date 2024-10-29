@@ -1,0 +1,32 @@
+FROM python:3.10.14-slim-bookworm
+
+# Set the working directory
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  wget \
+  bzip2 \
+  ca-certificates \
+  build-essential \
+  portaudio19-dev \ 
+  cmake \
+  git \
+  && rm -rf /var/lib/apt/lists/*
+
+# Copy the requirements file into the container at /app
+COPY requirements.txt /app
+
+# Install any needed packages specified in requirements.txt
+RUN pip install --break-system-packages --no-cache-dir -r requirements.txt
+
+# Copy the source contents into the container at /app
+COPY ./src /app/src
+
+# Write the config.json file
+RUN echo "{\"host\":\"0.0.0.0\",\"port\":8080,\"tts_model_name\":\"vits-piper-en_US-libritts-high.tar.bz2\",\"stt_model_name\":\"tiny.en\",\"llm_model_name\":\"lucaelin/llama-3.2-3b-instruct-fc-gguf\"}" > /app/aiserver.config.json
+
+# Make port 8080 available to the world outside this container
+EXPOSE 8080
+
+# Run AIServer when the container launches
+CMD ["python", "src/AIServer.py"]

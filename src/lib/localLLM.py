@@ -6,6 +6,7 @@ from .localLLMGrammarUtils import gbnf_literal, gbnf_not, gbnf_or, gbnf_sanitize
 from .localLLMUtils import create_chat_completion_handler, LlamaDiskCache 
 
 llm_model_names = [
+    "None",
     "lucaelin/llama-3.2-3b-instruct-fc-gguf",
     "lmstudio-community/Llama-3.2-3B-Instruct-GGUF",
     "lmstudio-community/Mistral-7B-Instruct-v0.3-GGUF",
@@ -14,7 +15,6 @@ llm_model_names = [
     "allenai/OLMoE-1B-7B-0924-Instruct-GGUF",
     "Salesforce/xLAM-1b-fc-r-gguf",
     "bartowski/functionary-small-v3.1-GGUF",
-    "None",
 
     #"NousResearch/Llama-3.2-1B",
     #"bartowski/Phi-3.5-mini-instruct-GGUF",

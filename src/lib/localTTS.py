@@ -5,6 +5,7 @@ import sherpa_onnx
 import samplerate
 
 tts_model_names = [
+  'None',
   'vits-piper-en_US-libritts-high.tar.bz2',
   'vits-piper-en_US-ryan-high.tar.bz2',
   'vits-piper-en_US-ljspeech-high.tar.bz2',
@@ -206,6 +207,9 @@ tts_model_names = [
 
 
 def init_tts(asset: str = "vits-piper-en_US-ljspeech-high.tar.bz2"):
+    if asset == 'None':
+        return
+    
     path = cached_path("https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/"+asset, extract_archive=True)
     files = [file for file in path.glob("*/*")]
 
