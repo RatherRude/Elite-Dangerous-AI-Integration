@@ -50,7 +50,7 @@ def reply(client, events: List[Event], new_events: List[Event], prompt_generator
           event_manager: EventManager, tts: TTS, copilot: EDCoPilot):
     global is_thinking
     is_thinking = True
-    prompt = prompt_generator.generate_prompt(events=events, status=status_parser.current_status)
+    prompt = prompt_generator.generate_prompt(events=events, status=status_parser.current_status, pending_events=new_events)
 
     use_tools = useTools and any([event.kind == 'user' for event in new_events])
 
@@ -211,7 +211,7 @@ def main():
                 enabled_game_events.append(event)
 
     status_parser = StatusParser()
-    prompt_generator = PromptGenerator(config["commander_name"], config["character"], journal=jn)
+    prompt_generator = PromptGenerator(config["commander_name"], config["character"], journal=jn, important_game_events=enabled_game_events)
     event_manager = EventManager(
         on_reply_request=lambda events, new_events: reply(llmClient, events, new_events, prompt_generator, status_parser, event_manager,
                                                           tts, copilot),

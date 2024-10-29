@@ -301,10 +301,11 @@ externalEvents = {
 
 
 class PromptGenerator:
-    def __init__(self, commander_name: str, character_prompt: str, journal: EDJournal):
+    def __init__(self, commander_name: str, character_prompt: str, journal: EDJournal, important_game_events=List[str]):
         self.commander_name = commander_name
         self.character_prompt = character_prompt
         self.journal = journal
+        self.important_game_events = important_game_events
 
     # def time_since(self, timestamp):
     #     # Current time
@@ -320,10 +321,10 @@ class PromptGenerator:
     #
     #     return days, hours, minutes
 
-    def full_event_message(self, event: GameEvent):
+    def full_event_message(self, event: GameEvent, is_important: bool):
         return {
             "role": "user",
-            "content": f"({allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)} Details: {json.dumps(event.content)})"
+            "content": f"({'IMPORTANT: ' if is_important else ''}{allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)} Details: {json.dumps(event.content)})"
         }
 
     def simple_event_message(self, event: GameEvent):
@@ -424,7 +425,7 @@ class PromptGenerator:
             log('error', f"Error: {e}")
             return "Currently no information on system available"
 
-    def generate_prompt(self, events: List[Event], status: Status):
+    def generate_prompt(self, events: List[Event], status: Status, pending_events: List[Event]):
         # Collect the last 50 conversational pieces
         conversational_pieces: List[any] = list()
 
@@ -432,9 +433,12 @@ class PromptGenerator:
             if len(conversational_pieces) >= 50:
                 break
 
+            is_pending = conversational_pieces in pending_events
+
             if event.kind == 'game':
-                if len(conversational_pieces) < 5:
-                    conversational_pieces.append(self.full_event_message(event))
+                if len(conversational_pieces) < 5 or is_pending:
+                    is_important = is_pending and event.content.get('event') in self.important_game_events
+                    conversational_pieces.append(self.full_event_message(event, is_important))
                 elif len(conversational_pieces) < 20:
                     conversational_pieces.append(self.simple_event_message(event))
                 else:
