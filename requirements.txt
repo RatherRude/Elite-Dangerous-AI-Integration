@@ -75,4 +75,4 @@ tqdm==4.66.4
 typing-extensions==4.12.2
 urllib3==2.2.2
 zipp==3.19.2
-EDMesg @ git+https://github.com/RatherRude/EDMesg.git@ddb2664
+EDMesg @ git+https://github.com/RatherRude/EDMesg.git@51e59cf
