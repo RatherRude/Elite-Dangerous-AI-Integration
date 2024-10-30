@@ -53,7 +53,7 @@ def reply(client, events: List[Event], new_events: List[Event], prompt_generator
     prompt = prompt_generator.generate_prompt(events=events, status=status_parser.current_status, pending_events=new_events)
 
     use_tools = useTools and any([event.kind == 'user' for event in new_events])
-    reasons = [event.content.get('event', event.kind) if event.kind=='game' else event.kind for event in new_events]
+    reasons = [event.content.get('event', event.kind) if event.kind=='game' else event.kind for event in new_events if event.kind in ['user', 'game', 'tool', 'status']]
 
     completion = client.chat.completions.create(
         model=llm_model_name,

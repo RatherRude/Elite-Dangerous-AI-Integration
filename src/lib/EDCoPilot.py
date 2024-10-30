@@ -4,7 +4,7 @@ from .Logger import log
 from typing import Optional
 import os
 from EDMesg.EDCoPilot import create_edcopilot_client
-from EDMesg.CovasNext import create_covasnext_provider, CommanderSpoke, CovasReplied
+from EDMesg.CovasNext import create_covasnext_provider, create_covasnext_client, CommanderSpoke, CovasReplied
 
 class EDCoPilot:
     def __init__(self, is_enabled: bool):
@@ -66,7 +66,9 @@ class EDCoPilot:
     
 
 if __name__ == '__main__':
-    copilot = EDCoPilot(is_enabled=True)
-    copilot.output_covas('What the hell do you want, Commander? You know I\ufffdm not here to hold your hand while you shoot stuff in this chaotic mess of a system!')
-    time.sleep(2)
-    copilot.output_covas('What the hell do you want, Commander? You know I\'m not here to hold your hand while you shoot stuff in this chaotic mess of a system!')
+    client = create_covasnext_client()
+    while True:
+        while not client.pending_events.empty():
+            print('incoming event')
+            print(client.pending_events.get())
+        time.sleep(0.1)
