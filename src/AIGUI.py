@@ -441,7 +441,7 @@ class App:
         self.ptt_key = None
 
         self.controller_manager = ControllerManager()
-        self.edcopilot = EDCoPilot(True)
+        self.edcopilot = EDCoPilot(False)
 
         self.process = None
         self.output_queue = Queue()
