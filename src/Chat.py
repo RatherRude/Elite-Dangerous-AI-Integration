@@ -142,7 +142,7 @@ def main():
     llm_model_name = config["llm_model_name"]
 
     jn = EDJournal(config["game_events"])
-    copilot = EDCoPilot(config["edcopilot"])
+    copilot = EDCoPilot(config["edcopilot"], is_edcopilot_dominant=config["edcopilot_dominant"])
     previous_status = getCurrentState()
 
     # gets API Key from config.json
@@ -175,7 +175,7 @@ def main():
         api_key=config["api_key"] if config["stt_api_key"] == '' else config["stt_api_key"],
     )
 
-    if config["tts_model_name"] != 'edge-tts':
+    if config["tts_model_name"] in ['openai', 'custom']:
         ttsClient = OpenAI(
             base_url=config["tts_endpoint"],
             api_key=config["api_key"] if config["tts_api_key"] == '' else config["tts_api_key"],
@@ -193,7 +193,10 @@ def main():
     # TTS Setup
     log('info', "Basic configuration complete.")
     log('info', "Loading voice output...")
-    tts = TTS(openai_client=ttsClient, model=config["tts_model_name"], voice=config["tts_voice"], speed=config["tts_speed"])
+    if config["edcopilot_dominant"]:
+        log('info', "EDCoPilot is dominant, voice output will be handled by EDCoPilot.")
+    tts_model_name = config["tts_model_name"] if not config["edcopilot_dominant"] else "none"
+    tts = TTS(openai_client=ttsClient, model=tts_model_name, voice=config["tts_voice"], speed=config["tts_speed"])
     stt = STT(openai_client=sttClient, input_device_name=config["input_device_name"], model=config["stt_model_name"])
 
     if config['ptt_var'] and config['ptt_key']:

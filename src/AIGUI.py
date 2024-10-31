@@ -441,7 +441,7 @@ class App:
         self.ptt_key = None
 
         self.controller_manager = ControllerManager()
-        self.edcopilot = EDCoPilot(False)
+        self.edcopilot = EDCoPilot(False, is_edcopilot_dominant=False) # this is only for the GUI, the actual EDCoPilot client is created in the Chat
 
         self.process = None
         self.output_queue = Queue()
@@ -530,6 +530,17 @@ class App:
         if not self.edcopilot.is_installed():
             self.edcopilot_label.grid_remove()
             self.edcopilot_checkbox.grid_remove()
+            
+        self.edcopilot_dominant_label = tk.Label(self.main_frame, text="EDCoPilot Dominant:", font=('Arial', 10))
+        self.edcopilot_dominant_label.grid(row=get_next(), column=0, sticky=tk.W)
+        self.edcopilot_dominant_var = tk.BooleanVar()
+        self.edcopilot_dominant_var.set(False)
+        self.edcopilot_dominant_checkbox = tk.Checkbutton(self.main_frame, text="Enabled", variable=self.edcopilot_dominant_var)
+        self.edcopilot_dominant_checkbox.grid(row=get_same(), column=1, sticky=tk.W, padx=5, pady=5)
+
+        if not self.edcopilot.is_installed():
+            self.edcopilot_dominant_label.grid_remove()
+            self.edcopilot_dominant_checkbox.grid_remove()
 
 
         tk.Label(self.main_frame, text="Input Device:", font=('Arial', 10)).grid(row=get_next(), column=0, sticky=tk.W)
@@ -633,8 +644,9 @@ class App:
         self.tts_provider_label = tk.Label(self.ai_geeks_frame.inner_frame, text="TTS Provider:")
         self.tts_provider_label.grid(row=get_next(), column=0, sticky=tk.W)
         self.tts_provider_select_var = tk.StringVar()
-        self.tts_provider_select = tk.OptionMenu(self.ai_geeks_frame.inner_frame, self.tts_provider_select_var, "openai", "edge-tts", "custom",
-                                                    command=self.toggle_tts_provider)
+        self.tts_provider_select = tk.OptionMenu(self.ai_geeks_frame.inner_frame, self.tts_provider_select_var,
+                                                 "openai", "edge-tts", "custom", "none",
+                                                 command=self.toggle_tts_provider)
         self.tts_provider_select.grid(row=get_same(), column=1, padx=10, pady=5, sticky=tk.W)
 
         ## TTS Model
@@ -833,6 +845,32 @@ class App:
             if defaults:
                 self.tts_speed.delete(0, tk.END)
                 self.tts_speed.insert(0, "1.2")
+        elif provider == 'none':
+            self.tts_model_name_label.grid_remove()
+            self.tts_model_name.grid_remove()
+            if defaults:
+                self.tts_model_name.delete(0, tk.END)
+                self.tts_model_name.insert(0, "none")
+            self.tts_endpoint_label.grid_remove()
+            self.tts_endpoint.grid_remove()
+            if defaults:
+                self.tts_endpoint.delete(0, tk.END)
+                self.tts_endpoint.insert(0, "")
+            self.tts_api_key_label.grid_remove()
+            self.tts_api_key.grid_remove()
+            if defaults:
+                self.tts_api_key.delete(0, tk.END)
+                self.tts_api_key.insert(0, "")
+            self.tts_voice_label.grid_remove()
+            self.tts_voice.grid_remove()
+            if defaults:
+                self.tts_voice.delete(0, tk.END)
+                self.tts_voice.insert(0, "")
+            self.tts_speed_label.grid_remove()
+            self.tts_speed.grid_remove()
+            if defaults:
+                self.tts_speed.delete(0, tk.END)
+                self.tts_speed.insert(0, "1.2")
 
     def toggle_stt_provider(self, provider, defaults=True):
         """
@@ -927,6 +965,7 @@ class App:
             'ptt_var': False,
             'continue_conversation_var': True,
             'edcopilot': True,
+            'edcopilot_dominant': False,
             'input_device_name': self.get_input_device_names()[0],
             'llm_model_name': "gpt-4o-mini",
             'llm_endpoint': "https://api.openai.com/v1",
@@ -1056,6 +1095,7 @@ class App:
         self.data['ptt_var'] = self.ptt_var.get()
         self.data['continue_conversation_var'] = self.continue_conversation_var.get()
         self.data['edcopilot'] = self.edcopilot_var.get()
+        self.data['edcopilot_dominant'] = self.edcopilot_dominant_var.get()
         self.data['tts_voice'] = self.tts_voice.get()
         self.data['tts_speed'] = self.tts_speed.get()
         self.data['ptt_key'] = self.ptt_key
@@ -1090,6 +1130,7 @@ class App:
         self.ptt_var.set(self.data['ptt_var'])
         self.continue_conversation_var.set(self.data['continue_conversation_var'])
         self.edcopilot_var.set(self.data['edcopilot'])
+        self.edcopilot_dominant_var.set(self.data['edcopilot_dominant'])
         self.tts_voice.insert(0, self.data['tts_voice'])
         self.tts_speed.insert(0, self.data['tts_speed'])
         self.ptt_key = self.data['ptt_key']

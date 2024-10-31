@@ -22,6 +22,7 @@ class Config(TypedDict):
     ptt_var: bool
     continue_conversation_var: bool
     edcopilot: bool
+    edcopilot_dominant: bool
     tts_voice: str
     tts_speed: str
     ptt_key: str

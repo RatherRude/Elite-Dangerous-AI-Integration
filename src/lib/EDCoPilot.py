@@ -7,12 +7,13 @@ from EDMesg.EDCoPilot import create_edcopilot_client
 from EDMesg.CovasNext import create_covasnext_provider, create_covasnext_client, CommanderSpoke, CovasReplied
 
 class EDCoPilot:
-    def __init__(self, is_enabled: bool):
+    def __init__(self, is_enabled: bool, is_edcopilot_dominant: bool):
         self.install_path = self.get_install_path()
         self.proc_id = self.get_process_id()
         self.is_enabled = is_enabled and self.is_installed()
         self.client = create_edcopilot_client() if self.is_enabled else None
         self.provider = create_covasnext_provider() if self.is_enabled else None
+        self.is_edcopilot_dominant = is_edcopilot_dominant
 
         log('info', f'EDCoPilot is installed: {self.is_installed()}')
         log('info', f'EDCoPilot is running: {self.is_running()}')
@@ -57,12 +58,12 @@ class EDCoPilot:
     def output_commander(self, message: str):
         """send PrintThis: "message" request"""
         if self.provider:
-            return self.provider.publish(CommanderSpoke(muted=False, text=message))
+            return self.provider.publish(CommanderSpoke(muted=self.is_edcopilot_dominant, text=message))
 
     def output_covas(self, message: str, reasons: list[str]):
         """send SpeakThis: "message" request"""
         if self.provider:
-            return self.provider.publish(CovasReplied(muted=False, text=message, reasons=reasons))
+            return self.provider.publish(CovasReplied(muted=self.is_edcopilot_dominant, text=message, reasons=reasons))
     
 
 if __name__ == '__main__':

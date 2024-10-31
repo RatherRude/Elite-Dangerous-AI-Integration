@@ -4,6 +4,7 @@ import re
 from sys import platform
 import threading
 from time import sleep
+import traceback
 from typing import Optional
 
 from num2words import num2words
@@ -38,7 +39,7 @@ class TTS:
             try: 
                 self._playback_loop()
             except Exception as e:
-                log('error', 'An error occurred during speech synthesis', e)
+                log('error', 'An error occurred during speech synthesis', e, traceback.format_exc())
                 sleep(backoff)
                 log('info', 'Attempting to restart audio playback after failure')
                 backoff *= 2
@@ -82,7 +83,14 @@ class TTS:
             stream.stop_stream()
     
     def _stream_audio(self, text):
-        if not self.openai_client and self.model == "edge-tts":
+        if self.model == 'none':
+            word_count = len(text.split())
+            words_per_minute = 150 * float(self.speed)
+            audio_duration = word_count / words_per_minute * 60
+            # generate silent audio for 
+            for _ in range(int(audio_duration * 24_000 / 1024)):
+                yield b"\x00" * 1024
+        elif self.model == "edge-tts":
             rate = f"+{int((float(self.speed) - 1) * 100)}%" if float(self.speed) > 1 else f"-{int((1 - float(self.speed)) * 100)}%"
             response = edge_tts.Communicate(text, voice=self.voice, rate=rate)
             chunks = []
