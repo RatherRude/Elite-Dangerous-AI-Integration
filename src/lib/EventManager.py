@@ -3,7 +3,7 @@ import dataclasses
 import json
 from typing import Literal, Callable, Optional
 import sqlite3
-import sqlite_vss
+import sqlite_vec
 
 from .EDJournal import *
 from .Event import GameEvent, Event, ConversationEvent, StatusEvent, ToolEvent, ExternalEvent
@@ -38,7 +38,7 @@ class EventManager:
     def init_db(self):
         conn = sqlite3.connect('./covas.db')
         conn.enable_load_extension(True)
-        sqlite_vss.load(conn)
+        sqlite_vec.load(conn)
         conn.enable_load_extension(False)
         cursor = conn.cursor()
 
