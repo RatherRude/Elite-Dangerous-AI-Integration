@@ -23,8 +23,9 @@ class TTS:
     is_aborted = False
     _is_playing = False
 
-    def __init__(self, openai_client: Optional[openai.OpenAI] = None, model='tts-1', voice="nova", speed=1):
+    def __init__(self, openai_client: Optional[openai.OpenAI] = None, provider='openai', model='tts-1', voice="nova", speed=1):
         self.openai_client = openai_client
+        self.provider = provider
         self.model = model
         self.voice = voice
         self.speed = speed
@@ -83,14 +84,14 @@ class TTS:
             stream.stop_stream()
     
     def _stream_audio(self, text):
-        if self.model == 'none':
+        if self.provider == 'none':
             word_count = len(text.split())
             words_per_minute = 150 * float(self.speed)
             audio_duration = word_count / words_per_minute * 60
             # generate silent audio for 
             for _ in range(int(audio_duration * 24_000 / 1024)):
                 yield b"\x00" * 1024
-        elif self.model == "edge-tts":
+        elif self.provider == "edge-tts":
             rate = f"+{int((float(self.speed) - 1) * 100)}%" if float(self.speed) > 1 else f"-{int((1 - float(self.speed)) * 100)}%"
             response = edge_tts.Communicate(text, voice=self.voice, rate=rate)
             chunks = []
