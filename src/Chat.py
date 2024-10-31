@@ -11,6 +11,7 @@ from lib.Actions import register_actions
 from lib.ControllerManager import ControllerManager
 from lib.EDCoPilot import EDCoPilot
 from lib.Event import Event
+from lib.Projection import Projection
 from lib.PromptGenerator import PromptGenerator
 from lib.STT import STT
 from lib.TTS import TTS
@@ -224,6 +225,15 @@ def main():
         game_events=enabled_game_events,
         continue_conversation=config["continue_conversation_var"]
     )
+    class EventCounter(Projection):
+        def get_default_state(self) -> dict:
+            return {"count": 0}
+        
+        def process(self, event: Event) -> dict:
+            self.state["count"] += 1
+            print('Event count:', self.state["count"])
+
+    event_manager.register_projection(EventCounter)
 
     if useTools:
         register_actions(action_manager, event_manager, llmClient, llm_model_name, visionClient, config["vision_model_name"], status_parser)
@@ -267,7 +277,7 @@ def main():
             if counter % 5 == 0:
                 checkForJournalUpdates(llmClient, event_manager, config["commander_name"], counter <= 5)
 
-            event_manager.reply()
+            event_manager.process()
 
             # Infinite loops are bad for processors, must sleep.
             sleep(0.25)
@@ -276,9 +286,6 @@ def main():
         except Exception as e:
             log("error", str(e), e)
             break
-
-    # save_conversation(conversation)
-    event_manager.save_history()
 
     # Teardown TTS
     tts.quit()
