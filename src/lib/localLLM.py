@@ -119,7 +119,11 @@ def init_llm(model_path: str):
 
     if use_disk_cache:
         #cache = LlamaRAMCache()
-        cache = LlamaDiskCache(capacity_bytes=(8 << 30))
+        cache = LlamaDiskCache(
+            capacity_bytes=(8 << 30),
+            cache_read_penalty=1000,
+            cache_write_penalty=2000,
+        )
         llm.set_cache(cache)
 
     return llm

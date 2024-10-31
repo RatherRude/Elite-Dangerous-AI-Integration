@@ -113,8 +113,7 @@ def create_chat_completion_handler(
                 eval_prefix_len = Llama.longest_token_prefix(
                     llama._input_ids.tolist(), prompt_tokens
                 )
-                cache_read_penalty = 1000  # cache needs to be at least 1000 tokens longer to be worth reading
-                if cache_length > eval_prefix_len + cache_read_penalty:
+                if cache_length > eval_prefix_len + llama.cache.cache_read_penalty:
                     cache_state = llama.cache.load_state(cache_key)
                     llama.load_state(cache_state)
                     if llama.verbose:
@@ -173,8 +172,7 @@ def create_chat_completion_handler(
         if llama.cache:
             cache_key, cache_length = llama.cache.find_prefix(prompt_tokens + generated_tokens)
             state_length = len(prompt_tokens + generated_tokens)
-            cache_write_penalty = 2000  # new state needs to be at least 1000 tokens longer to be worth writing
-            if cache_length < state_length - cache_write_penalty:
+            if cache_length < state_length - llama.cache.cache_write_penalty:
                 if llama.verbose:
                     print("Llama._create_completion: cache save", file=sys.stderr)
                 llama.cache[prompt_tokens + generated_tokens] = llama.save_state()
@@ -232,10 +230,14 @@ class LlamaDiskCache(BaseLlamaCache):
     """Cache for a llama.cpp model using disk."""
 
     def __init__(
-        self, cache_dir: str = ".cache/llama_cache", capacity_bytes: int = (2 << 30)
+        self, cache_dir: str = ".cache/llama_cache", capacity_bytes: int = (2 << 30),
+        cache_read_penalty: int = 1000,
+        cache_write_penalty: int = 2000,
     ):
         super().__init__(capacity_bytes)
         self.cache = diskcache.Cache(cache_dir, size_limit=capacity_bytes, cull_limit=1)
+        self.cache_read_penalty = cache_read_penalty
+        self.cache_write_penalty = cache_write_penalty
 
     @property
     def cache_size(self):
