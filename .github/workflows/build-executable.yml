@@ -10,10 +10,15 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v2
 
+      - name: Install winget
+        uses: Cyberboss/install-winget@v1
+      - name: Set up SQLite
+        run: winget install -e --id SQLite.SQLite
+
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
       - name: Install dependencies
         run: |
@@ -34,12 +39,12 @@ jobs:
           echo "VAD_MODEL=$VAD_MODEL" >> $env:GITHUB_ENV
           python -c 'import onnxruntime; print("onnxruntime path:", onnxruntime.__file__)'
           python -c 'import pysilero_vad; print("pysilero_vad path:", pysilero_vad.__file__)'
-    
+
       - name: Debug environment variables
         run: |
           echo "ONNXRUNTIME_DLL=${{ env.ONNXRUNTIME_DLL }}"
           echo "VAD_MODEL=${{ env.VAD_MODEL }}"
-  
+
       - name: Create Executable for AIGUI
         run: |
           pyinstaller .\src\AIGUI.py -y --onedir --clean --noconsole --add-data .\docs\screen\EDAI_logo.png:.\screen
@@ -51,7 +56,7 @@ jobs:
       - name: Create Executable for AIServer
         run: |
           pyinstaller .\src\AIServer.py -y --onedir --clean --console --hidden-import=comtypes.stream --add-binary ${{ env.ONNXRUNTIME_DLL }}:.
-  
+
       - name: Get current commit ID
         id: get_commit
         run: |
