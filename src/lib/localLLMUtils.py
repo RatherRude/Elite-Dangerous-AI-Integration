@@ -105,24 +105,23 @@ def create_chat_completion_handler(
             grammar = llama_grammar.LlamaGrammar.from_string(
                 grammar_str, verbose=False
             )
-        
-        llama.reset()
 
         if llama.cache:
             llama._ctx.set_rng_seed(1) # deterministic cache
             try:
-                cache_item = llama.cache[prompt_tokens]
-                llama.cache[cache_item.input_ids.tolist()] = cache_item # somehow the cache is removed using __getitem__, so we need to re-add it
-                cache_prefix_len = Llama.longest_token_prefix(
-                    cache_item.input_ids.tolist(), prompt_tokens
-                )
+                cache_key, cache_length = llama.cache.find_prefix(prompt_tokens)
                 eval_prefix_len = Llama.longest_token_prefix(
                     llama._input_ids.tolist(), prompt_tokens
                 )
-                if cache_prefix_len > eval_prefix_len:
-                    llama.load_state(cache_item)
+                cache_read_penalty = 1000  # cache needs to be at least 1000 tokens longer to be worth reading
+                if cache_length > eval_prefix_len + cache_read_penalty:
+                    cache_state = llama.cache.load_state(cache_key)
+                    llama.load_state(cache_state)
                     if llama.verbose:
                         print("Llama._create_completion: cache hit", file=sys.stderr)
+                elif llama.verbose:
+                    print("Llama._create_completion: cache skip", file=sys.stderr)
+                    
             except KeyError:
                 if llama.verbose:
                     print("Llama._create_completion: cache miss", file=sys.stderr)
@@ -172,9 +171,15 @@ def create_chat_completion_handler(
         completion = llama._model.detokenize(generated_tokens, special=True).decode("utf-8")
 
         if llama.cache:
-            if llama.verbose:
-                print("Llama._create_completion: cache save", file=sys.stderr)
-            llama.cache[prompt_tokens + generated_tokens] = llama.save_state()
+            cache_key, cache_length = llama.cache.find_prefix(prompt_tokens + generated_tokens)
+            state_length = len(prompt_tokens + generated_tokens)
+            cache_write_penalty = 2000  # new state needs to be at least 1000 tokens longer to be worth writing
+            if cache_length < state_length - cache_write_penalty:
+                if llama.verbose:
+                    print("Llama._create_completion: cache save", file=sys.stderr)
+                llama.cache[prompt_tokens + generated_tokens] = llama.save_state()
+            elif llama.verbose:
+                print("Llama._create_completion: cache save skip", file=sys.stderr)
 
         completion_id = "chat_" + str(int(time.time()))
         tool_calls = None
@@ -247,21 +252,31 @@ class LlamaDiskCache(BaseLlamaCache):
             if prefix_len > min_len:
                 min_len = prefix_len
                 min_key = k  # type: ignore
-        return min_key
+        return min_key, min_len
+
+
+    def find_prefix(self, key: Sequence[int]) -> "llama_cpp.llama.LlamaState":
+        key = tuple(key)
+        _key, _len = self._find_longest_prefix_key(key)
+        return _key, _len
+    
+    def load_state(self, key: tuple) -> "llama_cpp.llama.LlamaState":
+        value: "llama_cpp.llama.LlamaState" = self.cache.get(key)
+        self.cache.touch(key)
+        return value
 
     def __getitem__(self, key: Sequence[int]) -> "llama_cpp.llama.LlamaState":
         key = tuple(key)
-        _key = self._find_longest_prefix_key(key)
+        _key, _len = self._find_longest_prefix_key(key)
         if _key is None:
             raise KeyError("Key not found")
-        value: "llama_cpp.llama.LlamaState" = self.cache.pop(_key)  # type: ignore
-        # NOTE: This puts an integer as key in cache, which breaks,
-        # Llama.longest_token_prefix(k, key) above since k is not a tuple of ints/tokens
-        # self.cache.push(_key, side="front")  # type: ignore
+        value: "llama_cpp.llama.LlamaState" = self.cache.get(_key)  # type: ignore
+        self.cache.touch(_key)  # type: ignore
         return value
 
     def __contains__(self, key: Sequence[int]) -> bool:
-        return self._find_longest_prefix_key(tuple(key)) is not None
+        _key, _len = self._find_longest_prefix_key(tuple(key)) is not None
+        return _key
 
     def __setitem__(self, key: Sequence[int], value: "llama_cpp.llama.LlamaState"):
         print("LlamaDiskCache.__setitem__: called", file=sys.stderr)

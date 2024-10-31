@@ -1,6 +1,7 @@
 import json
 from typing import Optional
 from llama_cpp import Llama
+from pick import pick
 
 from .localLLMGrammarUtils import gbnf_literal, gbnf_not, gbnf_or, gbnf_sanitize
 from .localLLMUtils import create_chat_completion_handler, LlamaDiskCache 
@@ -102,11 +103,13 @@ def init_llm(model_path: str):
     if model_path == "None":
         return None
     
+    use_disk_cache = pick(["Disabled", "Enabled"], "Enable LLM Disk cache? This may speed up response times if the disk is faster than prompt evaluation, but also doubles memory usage.")[0] == "Enabled"
+    
     model_preset = model_presets.get(model_path)
     llm = Llama.from_pretrained(
         repo_id=model_path,
         filename=model_preset.get("filename"),
-        n_ctx=8192,
+        n_ctx=12*1024,
         n_gpu_layers=1000,
 
         chat_handler=create_chat_completion_handler(
@@ -114,10 +117,10 @@ def init_llm(model_path: str):
         ),
     )
 
-    
-    #cache = LlamaRAMCache()
-    cache = LlamaDiskCache(capacity_bytes=(8 << 30))
-    llm.set_cache(cache)
+    if use_disk_cache:
+        #cache = LlamaRAMCache()
+        cache = LlamaDiskCache(capacity_bytes=(8 << 30))
+        llm.set_cache(cache)
 
     return llm
 
@@ -135,8 +138,8 @@ def llm(model: Llama, prompt):
         messages=messages,
         tools=prompt.get("tools", []),
         tool_choice=prompt.get("tool_choice", None),
-        temperature=1.5,
-        min_p=0.1,
+        temperature=0,
+        #min_p=0.1,
     )
 
     return completion
