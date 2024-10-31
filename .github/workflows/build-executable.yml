@@ -10,11 +10,6 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v2
 
-      - name: Install winget
-        uses: Cyberboss/install-winget@v1
-      - name: Set up SQLite
-        run: winget install -e --id SQLite.SQLite --accept-source-agreements
-
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
