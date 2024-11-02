@@ -231,9 +231,9 @@ def main():
         
         def process(self, event: Event) -> dict:
             self.state["count"] += 1
-            print('Event count:', self.state["count"])
+            log('info','Event count:', self.state["count"])
 
-    event_manager.register_projection(EventCounter)
+    event_manager.register_projection(EventCounter())
 
     if useTools:
         register_actions(action_manager, event_manager, llmClient, llm_model_name, visionClient, config["vision_model_name"], status_parser)

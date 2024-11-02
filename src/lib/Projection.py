@@ -11,9 +11,9 @@ class Projection(ABC):
     def get_default_state(self) -> dict:
         return {}
     
-    def __init__(self, state: Optional[dict] = None, offset: Optional[int] = 0):
-        self.state = state if state!=None else self.get_default_state()
-        self.offset = offset
+    def __init__(self):
+        self.state = self.get_default_state()
+        self.last_processed = 0.0
         pass
 
     @abstractmethod
