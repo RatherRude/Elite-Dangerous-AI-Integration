@@ -1,7 +1,6 @@
 import json
 from typing import Optional
 from llama_cpp import Llama
-from pick import pick
 
 from .localLLMGrammarUtils import gbnf_literal, gbnf_not, gbnf_or, gbnf_sanitize
 from .localLLMUtils import create_chat_completion_handler, LlamaDiskCache 
@@ -9,6 +8,7 @@ from .localLLMUtils import create_chat_completion_handler, LlamaDiskCache
 llm_model_names = [
     "None",
     "lucaelin/llama-3.2-3b-instruct-fc-gguf",
+    "lmstudio-community/SmolLM2-1.7B-Instruct-GGUF",
     "lmstudio-community/Llama-3.2-3B-Instruct-GGUF",
     "lmstudio-community/Mistral-7B-Instruct-v0.3-GGUF",
     "lmstudio-community/Meta-Llama-3.1-8B-Instruct-GGUF",
@@ -34,6 +34,16 @@ model_presets = {
         """,
         "tool_use_regex": '^<tool_call>(.*)</tool_call>',
         "tool_use_parser": lambda regex: [json.loads(regex.group(1))]
+    },
+    "lmstudio-community/SmolLM2-1.7B-Instruct-GGUF": {
+        "filename": "SmolLM2-1.7B-Instruct-Q8_0.gguf",
+        "template": "{% set loop_messages = messages %}{% for message in loop_messages %}{% set role = message['role'] %}{% if 'tool_calls' in message %}{% set text = '<tool_call>' + message['tool_calls'][0]['function']|tojson + '</tool_call>' %}{% endif %}{% if 'content' in message %}{% set text = message['content'] %}{% endif %}{% if loop.index0 == 0 and tools is defined %}{% set text = message['content'] + '\n\nYou have access to the following tools:\n<tools>\n' + tools|tojson + '\n</tools>' %}{% endif %}{% set content = '<|im_start|>' + role + '\n'+ text | trim + '<|im_end|>' %}{% if loop.index0 == 0 %}{% set content = bos_token + content %}{% endif %}{{ content }}{% endfor %}{{ '<|im_start|>assistant\n' }}",
+        "tool_use_grammar": lambda tools: f"""
+            root   ::= ("<tool_call>[\\n" {gbnf_or([gbnf_sanitize(tool["function"]["name"])+' ' for tool in tools])} "\\n]</tool_call>") | (nottoolcalls .*)
+            nottoolcalls ::= {gbnf_not("<tool_call>")}
+        """,
+        "tool_use_regex": '^<tool_call>((.|\\n)*)</tool_call>',
+        "max_context": 8192,
     },
     "lmstudio-community/Llama-3.2-3B-Instruct-GGUF": {
         "filename": "Llama-3.2-3B-Instruct-Q4_K_M.gguf",
@@ -78,6 +88,7 @@ model_presets = {
             root   ::= .*
         ''',
         "tool_use_regex": '^\\[TOOL_CALLS\\] (\\[.*\\])$',
+        "max_context": 4096,
     },
     "Salesforce/xLAM-1b-fc-r-gguf": {
         "filename": "xLAM-1b-fc-r.Q4_K_M.gguf",
@@ -86,6 +97,7 @@ model_presets = {
             root   ::= {gbnf_literal('{"tool_calls": [')} {gbnf_or([gbnf_sanitize(tool["function"]["name"]) for tool in tools])}  {gbnf_literal("]}")}
         """,
         "tool_use_regex": '^\\{"tool_calls": (\\[.*\\])\\}$',
+        #"max_context": 16384,
     },
     "bartowski/functionary-small-v3.1-GGUF": {
         "filename": "functionary-small-v3.1-IQ4_XS.gguf",
@@ -99,17 +111,15 @@ model_presets = {
 }
 
 
-def init_llm(model_path: str):
+def init_llm(model_path: str, use_disk_cache: bool = False) -> Optional[Llama]:
     if model_path == "None":
         return None
-    
-    use_disk_cache = pick(["Disabled", "Enabled"], "Enable LLM Disk cache? This may speed up response times if the disk is faster than prompt evaluation, but also doubles memory usage.")[0] == "Enabled"
     
     model_preset = model_presets.get(model_path)
     llm = Llama.from_pretrained(
         repo_id=model_path,
         filename=model_preset.get("filename"),
-        n_ctx=12*1024,
+        n_ctx=model_preset.get('max_context', 12*1024),
         n_gpu_layers=1000,
 
         chat_handler=create_chat_completion_handler(

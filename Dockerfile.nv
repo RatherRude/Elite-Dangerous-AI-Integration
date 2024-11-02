@@ -1,0 +1,40 @@
+FROM nvidia/cuda:12.5.1-cudnn-runtime-ubuntu22.04
+
+# Set the working directory
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  wget \
+  bzip2 \
+  ca-certificates \
+  build-essential \
+  portaudio19-dev \ 
+  cmake \
+  git \
+  python3 \
+  python3-dev \
+  python3-pip \
+  python-is-python3 \
+  && rm -rf /var/lib/apt/lists/*
+
+# Copy the requirements file into the container at /app
+COPY requirements.txt /app
+
+# Install any needed packages specified in requirements.txt
+RUN pip install --upgrade pip setuptools
+RUN pip install --break-system-packages --no-cache-dir -r requirements.txt
+
+RUN pip uninstall -y llama-cpp-python
+RUN pip install --force-reinstall --ignore-installed --no-cache-dir llama-cpp-python --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu125
+
+# Copy the source contents into the container at /app
+COPY ./src /app/src
+
+# Write the config.json file
+RUN echo "{\"host\":\"0.0.0.0\",\"port\":8080,\"tts_model_name\":\"vits-piper-en_US-libritts-high.tar.bz2\",\"stt_model_name\":\"distil-large-v3\",\"llm_model_name\":\"lucaelin/llama-3.2-3b-instruct-fc-gguf\",\"use_disk_cache\":false}" > /app/aiserver.config.json
+
+# Make port 8080 available to the world outside this container
+EXPOSE 8080
+
+# Run AIServer when the container launches
+CMD ["python", "src/AIServer.py"]

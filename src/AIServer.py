@@ -12,6 +12,7 @@ class Config(TypedDict):
     tts_model_name: str
     stt_model_name: str
     llm_model_name: str
+    use_disk_cache: bool
     host: str
     port: int
     
@@ -33,6 +34,10 @@ def load_config() -> Config:
         
     if not 'llm_model_name' in config:
         config['llm_model_name'] = pick(options=llm_model_names, title='Select a LLM model')[0]
+        
+    if not 'use_disk_cache' in config:
+        config['use_disk_cache'] = pick(["Disabled", "Enabled"], "Enable LLM Disk cache? This may speed up response times if the disk is faster than prompt evaluation, but also doubles memory usage.")[0] == "Enabled"
+    
     
     if not 'host' in config:
         config['host'] = input('Enter the IP to bind or leave empty for default [127.0.0.1]: ') or '127.0.0.1'
@@ -50,7 +55,7 @@ def load_config() -> Config:
 
 config = load_config()
 
-llm_model = init_llm(config['llm_model_name'])
+llm_model = init_llm(config['llm_model_name'], config['use_disk_cache'])
 tts_model = init_tts(config['tts_model_name'])
 stt_model = init_stt(config['stt_model_name'])
 
@@ -119,12 +124,12 @@ def createTranscription():
     return jsonify({'text': text}) # TODO more details, spec compliance
 
 if __name__ == '__main__':
-    app.run(port=config['port'], host=config['host'], threaded=True)
+    app.run(port=config['port'], host=config['host'], threaded=False)
 
 """
 sample curl request to create a speech:
 curl -X POST "http://localhost:8080/v1/audio/speech" -H "Content-Type: application/json" -d "{\"input\":\"Hello, world!\", \"response_format\":\"wav\"}" > audio.wav
 
 sample curl request to create a transcription:
-curl -X POST "http://localhost:8080/v1/audio/transcriptions" -F "audio=@./audio.wav" -F "language=en-US"
+curl -X POST "http://localhost:8080/v1/audio/transcriptions" -F "audio=@./audio.wav" -F "language=en"
 """
