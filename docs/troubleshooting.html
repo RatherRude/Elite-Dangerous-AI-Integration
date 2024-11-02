@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Interactive Troubleshooting Guide</title>
+    <!-- Bootstrap CSS -->
+    <link 
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" 
+        rel="stylesheet" 
+        crossorigin="anonymous">
+    <style>
+        body {
+            padding: 20px;
+        }
+        .question-container {
+            margin-bottom: 20px;
+        }
+        .error-container {
+            margin-top: 10px;
+        }
+        .follow-up-question {
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Interactive Troubleshooting Guide</h1>
+        <div id="guide"></div>
+    </div>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script 
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" 
+        crossorigin="anonymous">
+    </script>
+    <!-- js-yaml library -->
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+    <script>
+        (function() {
+            // YAML data as a string
+            var yamlData = `
+- Question: Did the application download successfully?
+  Yes:
+    - Solution: Good, now extract the zip file.
+  No:
+    - Error: Virus detected
+      Explanation: Some antivirus software may detect the application as a virus. This is a false positive. The application is safe to use.
+      Solution: Try downloading again, maybe a couple of time or add an exception for the application in your antivirus software or disable it temporarily while using the application.
+
+- Question: Did the downloaded zip file extract successfully?
+  Yes:
+    - Solution: Good, now open the extracted folder, and double-click on the "start" file.
+  No:
+    - Error: Virus detected
+      Explanation: Some antivirus software may detect the application as a virus. This is a false positive. The application is safe to use.
+      Solution: Add an exception for the application in your antivirus software or disable it temporarily while using the application.
+
+- Question: Does the configuration UI start up?
+  Yes:
+    - Solution: Good, now you can enter your commander name and an OpenAI API key.
+  No:
+    - Error: I don't know how to start it
+      Explanation: 
+      Solution: Open the extracted folder and double-click on the "start" file.
+    - Error: Virus detected
+      Explanation: Some antivirus software may detect the application as a virus. This is a false positive. The application is safe to use.
+      Solution: Add an exception for the application in your antivirus software or disable it temporarily while using the application.
+    - Error: 
+      Explanation: Your antivirus software may have deleted some files.
+      Solution: Re-extract the zip file and make sure to add an exception to the quarantine list of your antivirus software.
+    - Error: Window closes immediately
+      Explanation: The application could not start up due to an error.
+      Solution: Contact us for support. This is an with the application itself and needs to be fixed by the developers.
+    - Error: An error message appears
+      Explanation: The application could not start up due to an error. The error message will provide more details on the issue.
+      Solution: Contact us for support. This is an with the application itself and needs to be fixed by the developers.
+
+- Question: Did you enter the commander name correctly?
+  Yes:
+    - Solution: Good, now enter your OpenAI API key.
+  No:
+    - Explanation: The commander name is required for the application to function properly.
+      Solution: Enter a valid commander name.
+
+- Question: Did you enter the API key correctly?
+  Yes:
+    - Solution: Good, now click on the "Save" button.
+  No:
+    - Error: I don't know how to get an API key
+      Explanation: OpenAI likes changing their API key system, so documentation may be out of date.
+      Solution: At the time of writing, you can get an API key navigating to https://platform.openai.com/ and sign up for an account. Once you have an account, you can create an API key at https://platform.openai.com/api-keys. Note that you may need to charge your account with some money before you can use the API key.
+
+- Question: Does the black "Debug Output" window appear?
+  Yes:
+    - Solution: Good, continue with the next check.
+  No:
+    - Error: The application is not responding
+      Explanation: We try to check your configuration for errors, but the application may be stuck.
+      Solution: Close the application and try again. If the issue persists, contact us for support.
+
+- Question: Does the "Debug Output" window show any errors immediately after starting the application?
+  No:
+    - Solution: Good, now start talking to the AI, either via PTT or voice detection.
+  Yes:
+    - Error: chat.exe is missing
+      Explanation: You anti-virus software deleted the chat.exe file.
+      Solution: Re-extract the zip file and make sure to add an exception to the quarantine list of your anti-virus software.
+    - Error: Error message
+      Explanation: This is fine...
+      Solution: Continue with the next check.
+
+- Question: When you start talking (either via PTT or voice detection), does the text of what you say appear in the "Debug Output" window?
+  Yes:
+    - Solution: Good, continue with the next check.
+  No:
+    - Error: There is an error message
+    - Error: Nothing happens
+
+- Question: After you start talking, does a response text appear in the "Debug Output" window?
+  Yes:
+    - Solution: Good, continue with the next check.
+  No:
+    - Error: There is an error message
+    - Error: Nothing happens
+
+- Question: After the response text appears, does read the response text out loud?
+  Yes:
+    - Solution: Good, try giving a command to the AI, e.g. "Retract landing gear".
+  No:
+    - Error: There is an error message
+    - Error: Nothing happens
+
+- Question: When giving a command, does the AI perform the action, e.g. "Retract landing gear"?
+  Yes:
+    - Solution: Good, you are all set!
+  No:
+    - Error: The AI pretends to do the action but nothing happens
+    - Error: The AI complains about missing keybindings
+    - Error: The AI complains about not being able to do the action
+    - Error: There is an error message
+`;
+
+            // Parse YAML data
+            var questions = jsyaml.load(yamlData);
+
+            var currentQuestionIndex = 0;
+            var guideContainer = document.getElementById('guide');
+
+            function renderQuestion(index) {
+                if (index >= questions.length) {
+                    // All questions answered positively
+                    var completionDiv = document.createElement('div');
+                    completionDiv.className = 'alert alert-success';
+                    completionDiv.textContent = 'Congratulations! You have successfully completed all the troubleshooting steps.';
+                    guideContainer.appendChild(completionDiv);
+                    return;
+                }
+
+                var questionObj = questions[index];
+                var questionText = questionObj.Question;
+
+                var questionDiv = document.createElement('div');
+                questionDiv.className = 'question-container';
+                questionDiv.setAttribute('data-question-index', index);
+
+                var questionElement = document.createElement('h4');
+                questionElement.textContent = questionText;
+                questionDiv.appendChild(questionElement);
+
+                var buttonsDiv = document.createElement('div');
+                buttonsDiv.className = 'btn-group';
+                buttonsDiv.setAttribute('role', 'group');
+
+                var yesButton = document.createElement('button');
+                yesButton.className = 'btn btn-success';
+                yesButton.textContent = 'Yes';
+                yesButton.onclick = function() {
+                    handleYes(index);
+                };
+
+                var noButton = document.createElement('button');
+                noButton.className = 'btn btn-danger';
+                noButton.textContent = 'No';
+                noButton.onclick = function() {
+                    handleNo(index);
+                };
+
+                buttonsDiv.appendChild(yesButton);
+                buttonsDiv.appendChild(noButton);
+                questionDiv.appendChild(buttonsDiv);
+
+                guideContainer.appendChild(questionDiv);
+            }
+
+            function handleYes(index) {
+                var questionDivs = guideContainer.querySelectorAll('.question-container');
+                var currentDiv = null;
+                questionDivs.forEach(function(div) {
+                    if (parseInt(div.getAttribute('data-question-index')) === index) {
+                        currentDiv = div;
+                    }
+                });
+
+                if (currentDiv) {
+                    // Hide buttons
+                    var buttonsGroup = currentDiv.querySelector('.btn-group');
+                    buttonsGroup.style.display = 'none';
+
+                    // Show solution
+                    var solution = questions[index].Yes[0].Solution;
+                    var solutionDiv = document.createElement('div');
+                    solutionDiv.className = 'alert alert-info mt-2';
+                    solutionDiv.textContent = solution;
+                    currentDiv.appendChild(solutionDiv);
+
+                    // Proceed to next question
+                    currentQuestionIndex++;
+                    renderQuestion(currentQuestionIndex);
+                }
+            }
+
+            function handleNo(index) {
+                var questionDivs = guideContainer.querySelectorAll('.question-container');
+                var currentDiv = null;
+                questionDivs.forEach(function(div) {
+                    if (parseInt(div.getAttribute('data-question-index')) === index) {
+                        currentDiv = div;
+                    }
+                });
+
+                if (currentDiv) {
+                    // Hide buttons
+                    var buttonsGroup = currentDiv.querySelector('.btn-group');
+                    buttonsGroup.style.display = 'none';
+
+                    var noAnswers = questions[index].No;
+
+                    noAnswers.forEach(function(errorObj, idx) {
+                        var cardDiv = document.createElement('div');
+                        cardDiv.className = 'card error-container';
+
+                        var cardHeader = document.createElement('div');
+                        cardHeader.className = 'card-header';
+                        var collapseId = 'collapse' + index + '_' + idx;
+                        var headingId = 'heading' + index + '_' + idx;
+
+                        var h2 = document.createElement('h2');
+                        h2.className = 'mb-0';
+
+                        var button = document.createElement('button');
+                        button.className = 'btn btn-link';
+                        button.type = 'button';
+                        button.setAttribute('data-bs-toggle', 'collapse');
+                        button.setAttribute('data-bs-target', '#' + collapseId);
+                        button.setAttribute('aria-expanded', 'false');
+                        button.setAttribute('aria-controls', collapseId);
+                        button.textContent = errorObj.Error ? errorObj.Error : 'Unknown Error';
+
+                        h2.appendChild(button);
+                        cardHeader.appendChild(h2);
+                        cardDiv.appendChild(cardHeader);
+
+                        var collapseDiv = document.createElement('div');
+                        collapseDiv.id = collapseId;
+                        collapseDiv.className = 'collapse';
+                        collapseDiv.setAttribute('aria-labelledby', headingId);
+                        collapseDiv.setAttribute('data-bs-parent', '#guide');
+
+                        var cardBody = document.createElement('div');
+                        cardBody.className = 'card-body';
+
+                        if (errorObj.Explanation) {
+                            var explanationP = document.createElement('p');
+                            explanationP.innerHTML = '<strong>Explanation:</strong> ' + errorObj.Explanation;
+                            cardBody.appendChild(explanationP);
+                        }
+
+                        if (errorObj.Solution) {
+                            var solutionP = document.createElement('p');
+                            solutionP.innerHTML = '<strong>Solution:</strong> ' + errorObj.Solution;
+                            cardBody.appendChild(solutionP);
+                        }
+
+                        collapseDiv.appendChild(cardBody);
+                        cardDiv.appendChild(collapseDiv);
+
+                        currentDiv.appendChild(cardDiv);
+                    });
+
+                    // Add follow-up question: "Is it working now?"
+                    var followUpDiv = document.createElement('div');
+                    followUpDiv.className = 'follow-up-question';
+                    followUpDiv.setAttribute('data-follow-up-for', index);
+
+                    var followUpQuestion = document.createElement('h5');
+                    followUpQuestion.textContent = 'Is it working now?';
+                    followUpDiv.appendChild(followUpQuestion);
+
+                    var followUpButtonsDiv = document.createElement('div');
+                    followUpButtonsDiv.className = 'btn-group';
+                    followUpButtonsDiv.setAttribute('role', 'group');
+
+                    var followUpYesButton = document.createElement('button');
+                    followUpYesButton.className = 'btn btn-success';
+                    followUpYesButton.textContent = 'Yes';
+                    followUpYesButton.onclick = function() {
+                        handleFollowUpYes(index);
+                    };
+
+                    var followUpNoButton = document.createElement('button');
+                    followUpNoButton.className = 'btn btn-danger';
+                    followUpNoButton.textContent = 'No';
+                    followUpNoButton.onclick = function() {
+                        handleFollowUpNo(index);
+                    };
+
+                    followUpButtonsDiv.appendChild(followUpYesButton);
+                    followUpButtonsDiv.appendChild(followUpNoButton);
+                    followUpDiv.appendChild(followUpButtonsDiv);
+
+                    currentDiv.appendChild(followUpDiv);
+                }
+            }
+
+            function handleFollowUpYes(index) {
+                // Optionally, you can remove errors and proceed
+                var questionDivs = guideContainer.querySelectorAll('.question-container');
+                var currentDiv = null;
+                questionDivs.forEach(function(div) {
+                    if (parseInt(div.getAttribute('data-question-index')) === index) {
+                        currentDiv = div;
+                    }
+                });
+
+                if (currentDiv) {
+                    // Optionally, show a message that the issue is resolved
+                    var resolvedDiv = document.createElement('div');
+                    resolvedDiv.className = 'alert alert-success mt-2';
+                    resolvedDiv.textContent = 'Great! Proceeding to the next step.';
+                    currentDiv.appendChild(resolvedDiv);
+
+                    // Proceed to next question after a short delay
+                    setTimeout(function() {
+                        currentQuestionIndex++;
+                        renderQuestion(currentQuestionIndex);
+                    }, 1000);
+                }
+            }
+
+            function handleFollowUpNo(index) {
+                // Optionally, you can prompt the user to contact support or retry
+                var questionDivs = guideContainer.querySelectorAll('.question-container');
+                var currentDiv = null;
+                questionDivs.forEach(function(div) {
+                    if (parseInt(div.getAttribute('data-question-index')) === index) {
+                        currentDiv = div;
+                    }
+                });
+
+                if (currentDiv) {
+                    // Show a message to contact support
+                    var supportDiv = document.createElement('div');
+                    supportDiv.className = 'alert alert-warning mt-2';
+                    supportDiv.innerHTML = 'If the issue persists, please contact our support team for further assistance.';
+                    currentDiv.appendChild(supportDiv);
+
+                    // Optionally, you can stop the guide here
+                }
+            }
+
+            // Initialize the guide
+            renderQuestion(currentQuestionIndex);
+        })();
+    </script>
+</body>
+</html>
