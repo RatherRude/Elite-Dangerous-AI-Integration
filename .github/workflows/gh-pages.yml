@@ -1,6 +1,9 @@
 name: Build and Deploy Pages
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - main
 
 jobs:
   # Build job
