@@ -931,8 +931,6 @@ class App:
             'llm_model_name': "gpt-4o-mini",
             'llm_endpoint': "https://api.openai.com/v1",
             'llm_api_key': "",
-            'tts_voice': "nova",
-            'tts_speed': "1.2",
             'ptt_key': '',
             'vision_model_name': "gpt-4o-mini",
             'vision_endpoint': "https://api.openai.com/v1",
@@ -941,10 +939,12 @@ class App:
             'stt_model_name': "whisper-1",
             'stt_endpoint': "https://api.openai.com/v1",
             'stt_api_key': "",
-            'tts_provider': "openai",
-            'tts_model_name': "tts-1",
-            'tts_endpoint': "https://api.openai.com/v1",
+            'tts_provider': "edge-tts",
+            'tts_model_name': "edge-tts",
+            'tts_endpoint': "",
             'tts_api_key': "",
+            'tts_voice': "en-GB-SoniaNeural",
+            'tts_speed': "1.2",
             'game_events': game_events
         }
         try:
