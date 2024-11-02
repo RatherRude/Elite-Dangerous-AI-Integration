@@ -7,9 +7,9 @@ import threading
 from time import sleep
 from typing import Literal, Optional, Union
 from .Logger import log
-from pydantic import BaseModel 
+from typing import TypedDict
 
-class BaseFlags(BaseModel):
+class BaseFlags(TypedDict):
     Docked: bool
     Landed: bool
     LandingGearDown: bool
@@ -43,6 +43,7 @@ class BaseFlags(BaseModel):
     FsdJump: bool
     SrvHighBeam: bool
 
+    @staticmethod
     def from_status_flag(value: int):
         return BaseFlags(
             Docked=bool(value & 1),
@@ -80,7 +81,7 @@ class BaseFlags(BaseModel):
         )
 
 
-class OdysseyFlags(BaseModel):
+class OdysseyFlags(TypedDict):
     OnFoot: bool
     InTaxi: bool
     InMultiCrew: bool
@@ -102,6 +103,7 @@ class OdysseyFlags(BaseModel):
     PhysicalMulticrew: bool
     FsdHyperdriveCharging: bool
 
+    @staticmethod
     def from_status_flag(value: int):
         return OdysseyFlags(
             OnFoot=bool(value & 1),
@@ -127,10 +129,12 @@ class OdysseyFlags(BaseModel):
         )
 
 
-class Pips(BaseModel):
+class Pips(TypedDict):
     system: float
     engine: float
     weapons: float
+    
+    @staticmethod
     def from_status_flag(value: list[int]):
         return Pips(
             system=value[0] / 2,
@@ -139,19 +143,19 @@ class Pips(BaseModel):
         )
 
 
-class Fuel(BaseModel):
+class Fuel(TypedDict):
     FuelMain: float
     FuelReservoir: float
 
 
-class Destination(BaseModel):
+class Destination(TypedDict):
     System: int
     Body: int
     Name: str
     Name_Localised: str = None
 
 
-class Status(BaseModel):
+class Status(TypedDict):
     flags: BaseFlags
     flags2: Optional[OdysseyFlags]
     Pips: Optional[Pips]
@@ -198,6 +202,7 @@ class Status(BaseModel):
     SelectedWeapon: Optional[str]
     Gravity: Optional[float]
 
+    @staticmethod
     def from_status_file(value: dict[str, any]):
         """Converts the status file data to a Status object. All fields are optional."""
         GuiPanels = [
@@ -296,102 +301,102 @@ class StatusParser:
         """Creates events specific field that has changed."""
         events = []
         
-        if old_status.flags.LandingGearDown and not new_status.flags.LandingGearDown:
+        if old_status["flags"]["LandingGearDown"] and not new_status["flags"]["LandingGearDown"]:
             events.append({"event": "LandingGearUp"})
-        if not old_status.flags.LandingGearDown and new_status.flags.LandingGearDown:
+        if not old_status["flags"]["LandingGearDown"] and new_status["flags"]["LandingGearDown"]:
             events.append({"event": "LandingGearDown"})
         
-        if old_status.flags.FlightAssistOff and not new_status.flags.FlightAssistOff:
+        if old_status["flags"]["FlightAssistOff"] and not new_status["flags"]["FlightAssistOff"]:
             events.append({"event": "FlightAssistOn"})
-        if not old_status.flags.FlightAssistOff and new_status.flags.FlightAssistOff:
+        if not old_status["flags"]["FlightAssistOff"] and new_status["flags"]["FlightAssistOff"]:
             events.append({"event": "FlightAssistOff"})
         
-        if old_status.flags.HardpointsDeployed and not new_status.flags.HardpointsDeployed:
+        if old_status["flags"]["HardpointsDeployed"] and not new_status["flags"]["HardpointsDeployed"]:
             events.append({"event": "HardpointsRetracted"})
-        if not old_status.flags.HardpointsDeployed and new_status.flags.HardpointsDeployed:
+        if not old_status["flags"]["HardpointsDeployed"] and new_status["flags"]["HardpointsDeployed"]:
             events.append({"event": "HardpointsDeployed"})
         
-        if old_status.flags.LightsOn and not new_status.flags.LightsOn:
+        if old_status["flags"]["LightsOn"] and not new_status["flags"]["LightsOn"]:
             events.append({"event": "LightsOff"})
-        if not old_status.flags.LightsOn and new_status.flags.LightsOn:
+        if not old_status["flags"]["LightsOn"] and new_status["flags"]["LightsOn"]:
             events.append({"event": "LightsOn"})
 
-        if old_status.flags.CargoScoopDeployed and not new_status.flags.CargoScoopDeployed:
+        if old_status["flags"]["CargoScoopDeployed"] and not new_status["flags"]["CargoScoopDeployed"]:
             events.append({"event": "CargoScoopRetracted"})
-        if not old_status.flags.CargoScoopDeployed and new_status.flags.CargoScoopDeployed:
+        if not old_status["flags"]["CargoScoopDeployed"] and new_status["flags"]["CargoScoopDeployed"]:
             events.append({"event": "CargoScoopDeployed"})
         
-        if old_status.flags.SilentRunning and not new_status.flags.SilentRunning:
+        if old_status["flags"]["SilentRunning"] and not new_status["flags"]["SilentRunning"]:
             events.append({"event": "SilentRunningOff"})
-        if not old_status.flags.SilentRunning and new_status.flags.SilentRunning:
+        if not old_status["flags"]["SilentRunning"] and new_status["flags"]["SilentRunning"]:
             events.append({"event": "SilentRunningOn"})
         
-        if old_status.flags.ScoopingFuel and not new_status.flags.ScoopingFuel:
+        if old_status["flags"]["ScoopingFuel"] and not new_status["flags"]["ScoopingFuel"]:
             events.append({"event": "FuelScoopEnded"})
-        if not old_status.flags.ScoopingFuel and new_status.flags.ScoopingFuel:
+        if not old_status["flags"]["ScoopingFuel"] and new_status["flags"]["ScoopingFuel"]:
             events.append({"event": "FuelScoopStarted"})
 
-        if old_status.flags.SrvHandbrake and not new_status.flags.SrvHandbrake:
+        if old_status["flags"]["SrvHandbrake"] and not new_status["flags"]["SrvHandbrake"]:
             events.append({"event": "SrvHandbrakeOff"})
-        if not old_status.flags.SrvHandbrake and new_status.flags.SrvHandbrake:
+        if not old_status["flags"]["SrvHandbrake"] and new_status["flags"]["SrvHandbrake"]:
             events.append({"event": "SrvHandbrakeOn"})
 
-        if old_status.flags.SrvUsingTurretView and not new_status.flags.SrvUsingTurretView:
+        if old_status["flags"]["SrvUsingTurretView"] and not new_status["flags"]["SrvUsingTurretView"]:
             events.append({"event": "SrvTurretViewDisconnected"})
-        if not old_status.flags.SrvUsingTurretView and new_status.flags.SrvUsingTurretView:
+        if not old_status["flags"]["SrvUsingTurretView"] and new_status["flags"]["SrvUsingTurretView"]:
             events.append({"event": "SrvTurretViewConnected"})
         
-        if old_status.flags.SrvDriveAssist and not new_status.flags.SrvDriveAssist:
+        if old_status["flags"]["SrvDriveAssist"] and not new_status["flags"]["SrvDriveAssist"]:
             events.append({"event": "SrvDriveAssistOff"})
-        if not old_status.flags.SrvDriveAssist and new_status.flags.SrvDriveAssist:
+        if not old_status["flags"]["SrvDriveAssist"] and new_status["flags"]["SrvDriveAssist"]:
             events.append({"event": "SrvDriveAssistOn"})
 
-        if old_status.flags.FsdMassLocked and not new_status.flags.FsdMassLocked:
+        if old_status["flags"]["FsdMassLocked"] and not new_status["flags"]["FsdMassLocked"]:
             events.append({"event": "FsdMassLockEscaped"})
-        if not old_status.flags.FsdMassLocked and new_status.flags.FsdMassLocked:
+        if not old_status["flags"]["FsdMassLocked"] and new_status["flags"]["FsdMassLocked"]:
             events.append({"event": "FsdMassLocked"})
         
-        if old_status.flags.LowFuel and not new_status.flags.LowFuel:
+        if old_status["flags"]["LowFuel"] and not new_status["flags"]["LowFuel"]:
             events.append({"event": "LowFuelWarningCleared"})
-        if not old_status.flags.LowFuel and new_status.flags.LowFuel:
+        if not old_status["flags"]["LowFuel"] and new_status["flags"]["LowFuel"]:
             events.append({"event": "LowFuelWarning"})
         
-        if old_status.flags.InDanger and not new_status.flags.InDanger:
+        if old_status["flags"]["InDanger"] and not new_status["flags"]["InDanger"]:
             events.append({"event": "OutofDanger"})
-        if not old_status.flags.InDanger and new_status.flags.InDanger:
+        if not old_status["flags"]["InDanger"] and new_status["flags"]["InDanger"]:
             events.append({"event": "InDanger"})
         
-        if old_status.flags.NightVision and not new_status.flags.NightVision:
+        if old_status["flags"]["NightVision"] and not new_status["flags"]["NightVision"]:
             events.append({"event": "NightVisionOff"})
-        if not old_status.flags.NightVision and new_status.flags.NightVision:
+        if not old_status["flags"]["NightVision"] and new_status["flags"]["NightVision"]:
             events.append({"event": "NightVisionOn"})
         
-        if old_status.flags2 and new_status.flags2:
-            if old_status.flags2.LowOxygen and not new_status.flags2.LowOxygen:
+        if old_status["flags2"] and new_status["flags2"]:
+            if old_status["flags2"]["LowOxygen"] and not new_status["flags2"]["LowOxygen"]:
                 events.append({"event": "LowOxygenWarningCleared"})
-            if not old_status.flags2.LowOxygen and new_status.flags2.LowOxygen:
+            if not old_status["flags2"]["LowOxygen"] and new_status["flags2"]["LowOxygen"]:
                 events.append({"event": "LowOxygenWarning"})
             
-            if old_status.flags2.LowHealth and not new_status.flags2.LowHealth:
+            if old_status["flags2"]["LowHealth"] and not new_status["flags2"]["LowHealth"]:
                 events.append({"event": "LowHealthWarningCleared"})
-            if not old_status.flags2.LowHealth and new_status.flags2.LowHealth:
+            if not old_status["flags2"]["LowHealth"] and new_status["flags2"]["LowHealth"]:
                 events.append({"event": "LowHealthWarning"})
             
-            if old_status.flags2.GlideMode and not new_status.flags2.GlideMode:
+            if old_status["flags2"]["GlideMode"] and not new_status["flags2"]["GlideMode"]:
                 events.append({"event": "GlideModeExited"})
-            if not old_status.flags2.GlideMode and new_status.flags2.GlideMode:
+            if not old_status["flags2"]["GlideMode"] and new_status["flags2"]["GlideMode"]:
                 events.append({"event": "GlideModeEntered"})
 
-            if old_status.flags2.BreathableAtmosphere and not new_status.flags2.BreathableAtmosphere:
+            if old_status["flags2"]["BreathableAtmosphere"] and not new_status["flags2"]["BreathableAtmosphere"]:
                 events.append({"event": "BreathableAtmosphereExited"})
-            if not old_status.flags2.BreathableAtmosphere and new_status.flags2.BreathableAtmosphere:
+            if not old_status["flags2"]["BreathableAtmosphere"] and new_status["flags2"]["BreathableAtmosphere"]:
                 events.append({"event": "BreathableAtmosphereEntered"})
         
-        if old_status.LegalState and old_status.LegalState != new_status.LegalState:
-            events.append({"event": "LegalStateChanged", "LegalState": new_status.LegalState})
+        if old_status["LegalState"] and old_status["LegalState"] != new_status["LegalState"]:
+            events.append({"event": "LegalStateChanged", "LegalState": new_status["LegalState"]})
         
-        if old_status.SelectedWeapon and old_status.SelectedWeapon != new_status.SelectedWeapon:
-            events.append({"event": "WeaponSelected", "SelectedWeapon": new_status.SelectedWeapon})
+        if old_status["SelectedWeapon"] and old_status["SelectedWeapon"] != new_status["SelectedWeapon"]:
+            events.append({"event": "WeaponSelected", "SelectedWeapon": new_status["SelectedWeapon"]})
 
         return events
 
