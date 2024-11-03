@@ -134,6 +134,10 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 
 ??? note "Common Issues"
 
+    - **Problem:** An error message appears containing the number "429"
+        
+        **Solution:** If you have recently charged your credit balance, you may need to wait a few minute for the payment to process. If you have not charged your account, you need to do so to use the API.
+
     - **Problem:** Nothing happens when you speak.
     
         **Solution:** Check your microphone settings and ensure it’s properly configured for the application.
