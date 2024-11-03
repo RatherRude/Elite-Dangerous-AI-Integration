@@ -10,13 +10,28 @@ import sqlite3
 import sqlite_vec
 
 from .EDJournal import *
-from .Event import GameEvent, Event, ConversationEvent, StatusEvent, ToolEvent, ExternalEvent
+from .Event import Event, GameEvent, ConversationEvent, StatusEvent, ToolEvent, ExternalEvent
 from .Logger import log
-from .Projection import Projection
 
+from abc import ABC, abstractmethod
+
+
+class Projection(ABC):
+    @abstractmethod
+    def get_default_state(self) -> dict:
+        return {}
+    
+    def __init__(self):
+        self.state = self.get_default_state()
+        self.last_processed = 0.0
+        pass
+
+    @abstractmethod
+    def process(self, event: Event) -> dict:
+        pass
 
 class EventManager:
-    def __init__(self, on_reply_request: Callable[[List[Event], List[Event]], any], game_events: List[str],
+    def __init__(self, on_reply_request: Callable[[List[Event], List[Event], dict[str, dict]], any], game_events: List[str],
                  continue_conversation: bool = False):
         self.incoming: List[Event] = []
         self.pending: List[Event] = []
@@ -81,7 +96,8 @@ class EventManager:
     def add_status_event(self, status: Dict):
         event = StatusEvent(status=status)
         self.incoming.append(event)
-        log('Event', event)
+        if status.get("event") != 'Status':
+            log('Event', event)
 
     def add_conversation_event(self, role: Literal['user', 'assistant'], content: str):
         event = ConversationEvent(kind=role, content=content)
@@ -117,7 +133,10 @@ class EventManager:
             self.processed += self.pending
             self.pending = []
             log('debug', 'eventmanager requesting reply')
-            self.on_reply_request(self.processed, new_events)
+            projected_states = {}
+            for projection in self.projections:
+                projected_states[projection.__class__.__name__] = projection.state.copy()
+            self.on_reply_request(self.processed, new_events, projected_states)
             return True
 
         return False
@@ -215,7 +234,6 @@ class EventManager:
             LIMIT 100
         ''')
         rows = self.cursor.fetchall()
-        log('log', rows)
         for rawevent in reversed(rows):
             class_name = rawevent[0]
             event_data = json.loads(rawevent[1])

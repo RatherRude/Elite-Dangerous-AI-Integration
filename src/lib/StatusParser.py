@@ -276,7 +276,7 @@ class StatusParser:
         
             if status != self.current_status:
                 log('debug', 'Status changed', status)
-                #self.status_queue.put(status)
+                self.status_queue.put({"event": "Status", **status})
                 events = self._create_delta_events(self.current_status, status)
                 for event in events:
                     self.status_queue.put(event)

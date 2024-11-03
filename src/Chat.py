@@ -11,7 +11,7 @@ from lib.Actions import register_actions
 from lib.ControllerManager import ControllerManager
 from lib.EDCoPilot import EDCoPilot
 from lib.Event import Event
-from lib.Projection import Projection
+from lib.Projections import registerProjections
 from lib.PromptGenerator import PromptGenerator
 from lib.STT import STT
 from lib.TTS import TTS
@@ -47,11 +47,11 @@ def load_config() -> Config:
 
 is_thinking = False
 
-def reply(client, events: List[Event], new_events: List[Event], prompt_generator: PromptGenerator, status_parser: StatusParser,
+def reply(client, events: List[Event], new_events: List[Event], projected_states: dict[str, dict], prompt_generator: PromptGenerator, status_parser: StatusParser,
           event_manager: EventManager, tts: TTS, copilot: EDCoPilot):
     global is_thinking
     is_thinking = True
-    prompt = prompt_generator.generate_prompt(events=events, status=status_parser.current_status, pending_events=new_events)
+    prompt = prompt_generator.generate_prompt(events=events, projected_states=projected_states, pending_events=new_events)
 
     use_tools = useTools and any([event.kind == 'user' for event in new_events])
     reasons = [event.content.get('event', event.kind) if event.kind=='game' else event.kind for event in new_events if event.kind in ['user', 'game', 'tool', 'status']]
@@ -220,20 +220,12 @@ def main():
     status_parser = StatusParser()
     prompt_generator = PromptGenerator(config["commander_name"], config["character"], journal=jn, important_game_events=enabled_game_events)
     event_manager = EventManager(
-        on_reply_request=lambda events, new_events: reply(llmClient, events, new_events, prompt_generator, status_parser, event_manager,
+        on_reply_request=lambda events, new_events, states: reply(llmClient, events, new_events, states, prompt_generator, status_parser, event_manager,
                                                           tts, copilot),
         game_events=enabled_game_events,
         continue_conversation=config["continue_conversation_var"]
     )
-    class EventCounter(Projection):
-        def get_default_state(self) -> dict:
-            return {"count": 0}
-        
-        def process(self, event: Event) -> dict:
-            self.state["count"] += 1
-            log('info','Event count:', self.state["count"])
-
-    event_manager.register_projection(EventCounter())
+    registerProjections(event_manager)
 
     if useTools:
         register_actions(action_manager, event_manager, llmClient, llm_model_name, visionClient, config["vision_model_name"], status_parser)
