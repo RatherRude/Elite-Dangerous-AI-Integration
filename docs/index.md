@@ -19,15 +19,12 @@ Also, please check our [FAQ](./faq.md) for additional information.
 1. Download the zip file containing the application.
 2. Once downloaded, locate the zip file on your computer.
 
-<details markdown="1">
-<summary>Common Issues</summary>
+!!! note "Common Issues"
 
-- **Problem:** A virus was detected during the download.
+    - **Problem:** A virus was detected during the download.
 
-    **Solution:** Some antivirus software may flag the application as a virus due to a false positive. The application is safe to use.
-    Try downloading it again. If the issue persists, you may need to add an exception in your antivirus software or disable it temporarily while downloading.
-
-</details>
+        **Solution:** Some antivirus software may flag the application as a virus due to a false positive. The application is safe to use.
+        Try downloading it again. If the issue persists, you may need to add an exception in your antivirus software or disable it temporarily while downloading.
 
 ---
 
@@ -36,15 +33,12 @@ Also, please check our [FAQ](./faq.md) for additional information.
 1. Right-click on the downloaded zip file and choose "Extract All..." or similar based on your operating system.
 2. Choose a folder for extraction and ensure all files are successfully extracted.
 
-<details markdown="1">
-<summary>Common Issues</summary>
+!!! note "Common Issues"
 
-- **Problem:** A virus was detected during extraction.
-  
-    **Solution:** Some antivirus software may detect the application as a virus. This is a false positive.  
-    Add an exception for the application in your antivirus software or disable it temporarily while extracting.
-
-</details>
+    - **Problem:** A virus was detected during extraction.
+    
+        **Solution:** Some antivirus software may detect the application as a virus. This is a false positive.  
+        Add an exception for the application in your antivirus software or disable it temporarily while extracting.
 
 ---
 
@@ -53,30 +47,28 @@ Also, please check our [FAQ](./faq.md) for additional information.
 1. Open the extracted folder.
 2. Double-click on the "start" file to launch the application. This should open the configuration UI.
 
-<details markdown="1">
-<summary>Common Issues</summary>
+!!! note "Common Issues"
 
-- **Problem:** I don't know how to start the application.
-  
-  **Solution:** Open the extracted folder and double-click on the "start" file.
+    - **Problem:** I don't know how to start the application.
+    
+        **Solution:** Open the extracted folder and double-click on the "start" file.
 
-- **Problem:** A virus was detected.
-  
-  **Solution:** Add an exception for the application in your antivirus software or disable it temporarily.
+    - **Problem:** A virus was detected.
+    
+        **Solution:** Add an exception for the application in your antivirus software or disable it temporarily.
 
-- **Problem:** An error message about "chat.exe" or "chat.py" appears.
+    - **Problem:** An error message about "chat.exe" or "chat.py" appears.
 
-  **Solution:** Re-extract the zip file and add an exception in your antivirus software to prevent files from being quarantined.
+        **Solution:** Re-extract the zip file and add an exception in your antivirus software to prevent files from being quarantined.
 
-- **Problem:** The window closes immediately.
-  
-  **Solution:** Contact support. This may be an application issue requiring developer intervention.
+    - **Problem:** The window closes immediately.
+    
+        **Solution:** Contact support. This may be an application issue requiring developer intervention.
 
-- **Problem:** An error message appears on startup.
-  
-  **Solution:** Contact support with details from the error message.
+    - **Problem:** An error message appears on startup.
+    
+        **Solution:** Contact support with details from the error message.
 
-</details>
 
 ---
 
@@ -98,18 +90,15 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 2. Next, enter your OpenAI API key.
 3. We recommend using Push-to-Talk (PTT) for voice detection and setting the keybind accordingly (HOTAS, Controller or Keyboard supported).
 
-<details markdown="1">
-<summary>Common Issues</summary>
+!!! note "Common Issues"
 
-- **Problem:** I don’t know what to enter as the commander name.
-  
-  - **Solution:** Use any name you prefer. This is how the AI will address you in the game and relate events inside the game to you.
+    - **Problem:** I don’t know what to enter as the commander name.
+    
+        **Solution:** Use any name you prefer. This is how the AI will address you in the game and relate events inside the game to you.
 
-- **Problem:** I don’t know how to obtain an API key.
-  
-  - **Solution:** Visit [OpenAI API Keys](https://platform.openai.com/api-keys) to sign up and generate a key if you haven’t done so already. Note that you may need to add credits to your account to activate the API.
-
-</details>
+    - **Problem:** I don’t know how to obtain an API key.
+    
+        **Solution:** Visit [OpenAI API Keys](https://platform.openai.com/api-keys) to sign up and generate a key if you haven’t done so already. Note that you may need to add credits to your account to activate the API.
 
 ---
 
@@ -118,14 +107,11 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 1. Click the "Start AI" button to get started.
 2. Verify that a black "Debug Output" window appears.
 
-<details markdown="1">
-<summary>Common Issues</summary>
+!!! note "Common Issues"
 
-- **Problem:** The application is unresponsive.
-  
-  **Solution:** Close the application and try again. If the issue persists, reach out to support for assistance.
-
-</details>
+    - **Problem:** The application is unresponsive.
+    
+        **Solution:** Close the application and try again. If the issue persists, reach out to support for assistance.
 
 ---
 
@@ -133,14 +119,11 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 
 1. Look for any error messages in the "Debug Output" window immediately after starting the application.
 
-<details markdown="1">
-<summary>Common Issues</summary>
+!!! note "Common Issues"
 
-- **Problem:** Errors related to "chat.exe" appear.
-  
-  **Solution:** Re-extract the zip file and ensure an antivirus exception is set to prevent file deletion.
-
-</details>
+    - **Problem:** Errors related to "chat.exe" appear.
+    
+        **Solution:** Re-extract the zip file and ensure an antivirus exception is set to prevent file deletion.
 
 ---
 
@@ -149,14 +132,11 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 1. Start speaking into your microphone, either using Push-to-Talk (PTT) or voice detection.
 2. Verify that your speech text appears in the "Debug Output" window.
 
-<details markdown="1">
-<summary>Common Issues</summary>
+!!! note "Common Issues"
 
-- **Problem:** Nothing happens when you speak.
-  
-  **Solution:** Check your microphone settings and ensure it’s properly configured for the application.
-
-</details>
+    - **Problem:** Nothing happens when you speak.
+    
+        **Solution:** Check your microphone settings and ensure it’s properly configured for the application.
 
 ---
 
@@ -165,14 +145,11 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 1. After you speak, confirm that the AI generates a response, visible in the "Debug Output" window.
 2. Ensure that the application reads the response text aloud.
 
-<details markdown="1">
-<summary>Common Issues</summary>
+!!! note "Common Issues"
 
-- **Problem:** The application doesn't generate or read out responses.
-  
-  **Solution:** Ensure your audio output is working correctly. If the issue persists, check for error messages and consult support if needed.
-
-</details>
+    - **Problem:** The application doesn't generate or read out responses.
+    
+        **Solution:** Ensure your audio output is working correctly. If the issue persists, check for error messages and consult support if needed.
 
 ---
 
@@ -181,17 +158,14 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 1. Try issuing a command to the AI, such as "Retract landing gear."
 2. Observe if the AI performs the action.
 
-<details markdown="1">
-<summary>Common Issues</summary>
+!!! note "Common Issues"
 
-- **Problem:** The AI acknowledges the command but does not perform it.**
-  
-  **Solution:** Ensure that all keybindings are properly configured. See [Keybindings](./keybindings.md) for more information.
+    - **Problem:** The AI acknowledges the command but does not perform it.**
+    
+        **Solution:** Ensure that all keybindings are properly configured. See [Keybindings](./keybindings.md) for more information.
 
-- **Problem:** The AI tells me to check the keybindings.
-  
-  **Solution:** Check the [Keybindings](./keybindings.md) documentation for more information.
-
-</details>
+    - **Problem:** The AI tells me to check the keybindings.
+    
+        **Solution:** Check the [Keybindings](./keybindings.md) documentation for more information.
 
 ---
