@@ -14,9 +14,10 @@ Welcome to the setup guide for COVAS:NEXT! Follow the steps below to get up and 
 <details>
 <summary><strong>Common Issues</strong></summary>
 
-- **Problem: A virus was detected during the download.**
-  - Some antivirus software may flag the application as a virus due to a false positive. The application is safe to use.
-  - **Solution:** Try downloading it again. If the issue persists, you may need to add an exception in your antivirus software or disable it temporarily while downloading.
+- Problem: **A virus was detected during the download.**
+
+    **Solution:** Some antivirus software may flag the application as a virus due to a false positive. The application is safe to use.
+    Try downloading it again. If the issue persists, you may need to add an exception in your antivirus software or disable it temporarily while downloading.
 
 </details>
 
@@ -30,9 +31,10 @@ Welcome to the setup guide for COVAS:NEXT! Follow the steps below to get up and 
 <details>
 <summary><strong>Common Issues</strong></summary>
 
-- **Problem: A virus was detected during extraction.**
-  - Some antivirus software may detect the application as a virus. This is a false positive.
-  - **Solution:** Add an exception for the application in your antivirus software or disable it temporarily while extracting.
+- **Problem:** A virus was detected during extraction.
+  
+    **Solution:** Some antivirus software may detect the application as a virus. This is a false positive.  
+    Add an exception for the application in your antivirus software or disable it temporarily while extracting.
 
 </details>
 
@@ -46,16 +48,25 @@ Welcome to the setup guide for COVAS:NEXT! Follow the steps below to get up and 
 <details>
 <summary><strong>Common Issues</strong></summary>
 
-- **Problem: I don't know how to start the application.**
-  - **Solution:** Open the extracted folder and double-click on the "start" file.
-- **Problem: A virus was detected.**
-  - **Solution:** Add an exception for the application in your antivirus software or disable it temporarily.
-- **Problem: An error message about "chat.exe" or "chat.py" appears.**
-  - **Solution:** Re-extract the zip file and add an exception in your antivirus software to prevent files from being quarantined.
-- **Problem: The window closes immediately.**
-  - **Solution:** Contact support. This may be an application issue requiring developer intervention.
-- **Problem: An error message appears on startup.**
-  - **Solution:** Contact support with details from the error message.
+- **Problem:** I don't know how to start the application.
+  
+  **Solution:** Open the extracted folder and double-click on the "start" file.
+
+- **Problem:** A virus was detected.
+  
+  **Solution:** Add an exception for the application in your antivirus software or disable it temporarily.
+
+- **Problem:** An error message about "chat.exe" or "chat.py" appears.
+
+  **Solution:** Re-extract the zip file and add an exception in your antivirus software to prevent files from being quarantined.
+
+- **Problem:** The window closes immediately.
+  
+  **Solution:** Contact support. This may be an application issue requiring developer intervention.
+
+- **Problem:** An error message appears on startup.
+  
+  **Solution:** Contact support with details from the error message.
 
 </details>
 
@@ -79,9 +90,12 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 <details>
 <summary><strong>Common Issues</strong></summary>
 
-- **Problem: I don’t know what to enter as the commander name.**
+- **Problem:** I don’t know what to enter as the commander name.
+  
   - **Solution:** Use any name you prefer. This is how the AI will address you in the game and relate events inside the game to you.
-- **Problem: I don’t know how to obtain an API key.**
+
+- **Problem:** I don’t know how to obtain an API key.
+  
   - **Solution:** Visit [OpenAI API Keys](https://platform.openai.com/api-keys) to sign up and generate a key if you haven’t done so already. Note that you may need to add credits to your account to activate the API.
 
 </details>
@@ -96,8 +110,9 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 <details>
 <summary><strong>Common Issues</strong></summary>
 
-- **Problem: The application is unresponsive.**
-  - **Solution:** Close the application and try again. If the issue persists, reach out to support for assistance.
+- **Problem:** The application is unresponsive.
+  
+  **Solution:** Close the application and try again. If the issue persists, reach out to support for assistance.
 
 </details>
 
@@ -110,8 +125,9 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 <details>
 <summary><strong>Common Issues</strong></summary>
 
-- **Problem: Errors related to "chat.exe" appear.**
-  - **Solution:** Re-extract the zip file and ensure an antivirus exception is set to prevent file deletion.
+- **Problem:** Errors related to "chat.exe" appear.
+  
+  **Solution:** Re-extract the zip file and ensure an antivirus exception is set to prevent file deletion.
 
 </details>
 
@@ -125,8 +141,9 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 <details>
 <summary><strong>Common Issues</strong></summary>
 
-- **Problem: Nothing happens when you speak.**
-  - **Solution:** Check your microphone settings and ensure it’s properly configured for the application.
+- **Problem:** Nothing happens when you speak.
+  
+  **Solution:** Check your microphone settings and ensure it’s properly configured for the application.
 
 </details>
 
@@ -140,8 +157,9 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 <details>
 <summary><strong>Common Issues</strong></summary>
 
-- **Problem: The application doesn't generate or read out responses.**
-  - **Solution:** Ensure your audio output is working correctly. If the issue persists, check for error messages and consult support if needed.
+- **Problem:** The application doesn't generate or read out responses.
+  
+  **Solution:** Ensure your audio output is working correctly. If the issue persists, check for error messages and consult support if needed.
 
 </details>
 
@@ -155,8 +173,9 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 <details>
 <summary><strong>Common Issues</strong></summary>
 
-- **Problem: The AI acknowledges the command but does not perform it.**
-  - **Solution:** Ensure that all keybindings are properly configured. If the issue persists, consult the support team.
+- **Problem:** The AI acknowledges the command but does not perform it.**
+  
+  **Solution:** Ensure that all keybindings are properly configured. If the issue persists, consult the support team.
 
 </details>
 
