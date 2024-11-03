@@ -3,7 +3,7 @@ import time
 from .Logger import log
 from typing import Optional
 import os
-from EDMesg.EDCoPilot import create_edcopilot_client, PrintThisAction, SpeakThisAction
+from EDMesg.EDCoPilot import create_edcopilot_client, PrintThisAction
 
 class EDCoPilot:
     def __init__(self, is_enabled: bool):
@@ -56,11 +56,6 @@ class EDCoPilot:
         """send PrintThis: "message" request"""
         if self.client:
             return self.client.publish(PrintThisAction(text=message))
-
-    def speak_this(self, message: str):
-        """send SpeakThis: "message" request"""
-        if self.client:
-            return self.client.publish(SpeakThisAction(text=message))
     
 
 if __name__ == '__main__':
