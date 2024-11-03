@@ -1,4 +1,4 @@
-## Detailed overview 
+# Detailed overview 
 The AI integration uses several technologies:
 
 1. **OpenAI/OpenRouter Language Models (LLMs)**
@@ -17,7 +17,7 @@ The AI integration uses several technologies:
 7. **Event-Driven Interaction**
 
 
-### 1. OpenAI/OpenRouter/Local Language Models (LLMs)
+### 1. OpenAI / OpenRouter / Local Models
 
 LLMs hosted by e.g. OpenAI or OpenRouter process natural language commands, providing intelligent responses and actions, enabling the autopilot to understand complex instructions.
 

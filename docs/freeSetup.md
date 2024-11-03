@@ -1,6 +1,8 @@
 # Getting started for "free"
 
-**WARNING: This setup is highly experimental and will significantly degrade your experience. We recommend using OpenAI instead.**
+!!! danger
+
+    This setup is highly experimental and will significantly degrade your experience. We recommend using OpenAI instead.**
 
 There are 3 main components that need to be configured for a free setup: LLM, STT, TTS.
 
