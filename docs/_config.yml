@@ -1,0 +1,13 @@
+# jekyll-paginate configuration
+paginate:            5
+
+# Build settings
+markdown:            kramdown
+highlighter:         rouge
+permalink:           none
+plugins:             [jekyll-paginate, jekyll-sitemap, jekyll-feed, jekyll-seo-tag]
+
+# Customise atom feed settings (this is where Jekyll-Feed gets configuration information)
+title:		           "COVAS:NEXT"
+description:	       "AI Integration for Elite:Dangerous"
+author:              "Luca Elin Haneklau"

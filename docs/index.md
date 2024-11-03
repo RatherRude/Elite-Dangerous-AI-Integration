@@ -1,0 +1,1 @@
+# COVAS:NEXT - Elite:Dangerous AI Integration
