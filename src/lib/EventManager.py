@@ -255,9 +255,11 @@ class EventManager:
         raise TypeError(f'Object of type {type(o).__name__} is not JSON serializable')
     
     def clear_history(self):
+        # TODO do we want to clear all events or just conversation?
         self.cursor.execute('''
             DELETE FROM events_v1
         ''')
+        # TODO do we want to clear projections as well?
         self.cursor.execute('''
             DELETE FROM projections_v1
         ''')
