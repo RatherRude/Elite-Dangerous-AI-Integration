@@ -19,7 +19,7 @@ Also, please check our [FAQ](./faq.md) for additional information.
 1. Download the zip file containing the application.
 2. Once downloaded, locate the zip file on your computer.
 
-??? note"Common Issues"
+??? note "Common Issues"
 
     - **Problem:** A virus was detected during the download.
 
@@ -33,7 +33,7 @@ Also, please check our [FAQ](./faq.md) for additional information.
 1. Right-click on the downloaded zip file and choose "Extract All..." or similar based on your operating system.
 2. Choose a folder for extraction and ensure all files are successfully extracted.
 
-??? note"Common Issues"
+??? note "Common Issues"
 
     - **Problem:** A virus was detected during extraction.
     
@@ -47,7 +47,7 @@ Also, please check our [FAQ](./faq.md) for additional information.
 1. Open the extracted folder.
 2. Double-click on the "start" file to launch the application. This should open the configuration UI.
 
-??? note"Common Issues"
+??? note "Common Issues"
 
     - **Problem:** I don't know how to start the application.
     
@@ -90,7 +90,7 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 2. Next, enter your OpenAI API key.
 3. We recommend using Push-to-Talk (PTT) for voice detection and setting the keybind accordingly (HOTAS, Controller or Keyboard supported).
 
-??? note"Common Issues"
+??? note "Common Issues"
 
     - **Problem:** I don’t know what to enter as the commander name.
     
@@ -107,7 +107,7 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 1. Click the "Start AI" button to get started.
 2. Verify that a black "Debug Output" window appears.
 
-??? note"Common Issues"
+??? note "Common Issues"
 
     - **Problem:** The application is unresponsive.
     
@@ -119,7 +119,7 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 
 1. Look for any error messages in the "Debug Output" window immediately after starting the application.
 
-??? note"Common Issues"
+??? note "Common Issues"
 
     - **Problem:** Errors related to "chat.exe" appear.
     
@@ -132,7 +132,7 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 1. Start speaking into your microphone, either using Push-to-Talk (PTT) or voice detection.
 2. Verify that your speech text appears in the "Debug Output" window.
 
-??? note"Common Issues"
+??? note "Common Issues"
 
     - **Problem:** Nothing happens when you speak.
     
@@ -145,7 +145,7 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 1. After you speak, confirm that the AI generates a response, visible in the "Debug Output" window.
 2. Ensure that the application reads the response text aloud.
 
-??? note"Common Issues"
+??? note "Common Issues"
 
     - **Problem:** The application doesn't generate or read out responses.
     
@@ -158,7 +158,7 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 1. Try issuing a command to the AI, such as "Retract landing gear."
 2. Observe if the AI performs the action.
 
-??? note"Common Issues"
+??? note "Common Issues"
 
     - **Problem:** The AI acknowledges the command but does not perform it.**
     
