@@ -4,8 +4,10 @@ Welcome to the setup guide for COVAS:NEXT! Follow the steps below to get up and 
 
 ## Important Notes Before You Begin
 
-- **Costs:** The application uses the OpenAI API, which costs money based on usage. Typical usage costs are **around $0.10 per hour**, depending on your playstyle. 
+- **Costs:** The application uses the OpenAI API, which costs money based on usage. Typical usage costs are **around $0.10 per hour**, depending on your playstyle. Alternatives are available, but they will significantly degrade your experience and are not recommended.
+
 - **Microphone:** You will need a working microphone to interact with the AI and preferably a headset to prevent the AI from hearing itself.
+
 - **Antivirus Software:** Some antivirus software may flag the application as a virus due to **a false positive**. This can be very annoying and you may need to add an exception in your antivirus software or disable it, if you encounter this issue.
 
 Also, please check our [FAQ](./faq.md) for additional information.
@@ -76,11 +78,21 @@ Also, please check our [FAQ](./faq.md) for additional information.
 
 OpenAI likes changing their API key system, so documentation may be out of date. At the time of writing, you can get an API key using the following links:
 
-1. Navigate to https://platform.openai.com/ and sign up for an account.
+1. Navigate to [platform.openai.com](https://platform.openai.com/) and sign up for an account.
 
-2. Create an API key at https://platform.openai.com/api-keys. 
+2. Create an API key at [platform.openai.com/api-keys](https://platform.openai.com/api-keys). 
 
 3. You may need to charge your account with some money before you can use the API key.
+
+??? note "Common Issues"
+
+    - **Problem:** I don't want to pay for an API key.
+    
+        **Solution:** None, unless you know exactly what you're doing and can set up a local models. This is not recommended and will significantly degrade your experience.
+    
+    - **Problem:** I already have a ChatGPT subscription.
+
+        **Solution:** ChatGPT and the OpenAI API are separate services. You cannot use a ChatGPT Subscription for COVAS:NEXT. You will need to sign up for an OpenAI account and generate an API key via [platform.openai.com](https://platform.openai.com/).
 
 ---
 
