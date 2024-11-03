@@ -15,20 +15,9 @@ markdown_extensions:
     - pymdownx.tilde: {
           "subscript": False
       }
-    - pymdownx.emoji: {
-          "emoji_index": emoji.gemoji,
-          "emoji_generator": emoji.to_png,
-          "alt": "short",
-          "options": {
-              "attributes": {
-                  "align": "absmiddle",
-                  "height": "20px",
-                  "width": "20px"
-              },
-              "image_path": "https://github.githubassets.com/images/icons/emoji/unicode/",
-              "non_standard_image_path": "https://github.githubassets.com/images/icons/emoji/"
-          }
-      }
+    - pymdownx.emoji:
+        emoji_index: !!python/name:material.extensions.emoji.twemoji 
+        emoji_generator: !!python/name:material.extensions.emoji.to_svg
     - pymdownx.tasklist: {}
     - pymdownx.superfences: {}
     - pymdownx.saneheader: {}
