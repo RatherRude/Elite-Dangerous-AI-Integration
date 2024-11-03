@@ -1,12 +1,20 @@
 # Getting Started
 
-Welcome to the setup guide for COVAS:NEXT! Follow the steps below to get up and running. If you encounter any issues along the way, check the **Common Issues** section under each step.
+Welcome to the setup guide for COVAS:NEXT! Follow the steps below to get up and running. If you encounter any issues along the way, check the **Common Issues** section under each step and join the [Discord server](https://discord.gg/9c58jxVuAT) for additional support.
 
-> **Note:** You can download the latest version of the application from the [GitHub Releases page](https://github.com/) (link to the specific release if possible).
+## Important Notes Before You Begin
+
+- **Costs:** The application uses the OpenAI API, which costs money based on usage. Typical usage costs are **around $0.10 per hour**, depending on your playstyle. 
+- **Microphone:** You will need a working microphone to interact with the AI and preferably a headset to prevent the AI from hearing itself.
+- **Antivirus Software:** Some antivirus software may flag the application as a virus due to **a false positive**. This can be very annoying and you may need to add an exception in your antivirus software or disable it, if you encounter this issue.
+
+Also, please check our [FAQ](./faq.md) for additional information.
 
 ---
 
 ## Step 1: Download the Application
+
+## [> Download from GitHub](https://github.com/RatherRude/Elite-Dangerous-AI-Integration/releases/latest)
 
 1. Download the zip file containing the application.
 2. Once downloaded, locate the zip file on your computer.
@@ -14,7 +22,7 @@ Welcome to the setup guide for COVAS:NEXT! Follow the steps below to get up and 
 <details markdown="1">
 <summary>Common Issues</summary>
 
-- Problem: **A virus was detected during the download.**
+- **Problem:** A virus was detected during the download.
 
     **Solution:** Some antivirus software may flag the application as a virus due to a false positive. The application is safe to use.
     Try downloading it again. If the issue persists, you may need to add an exception in your antivirus software or disable it temporarily while downloading.
@@ -178,10 +186,12 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 
 - **Problem:** The AI acknowledges the command but does not perform it.**
   
-  **Solution:** Ensure that all keybindings are properly configured. If the issue persists, consult the support team.
+  **Solution:** Ensure that all keybindings are properly configured. See [Keybindings](./keybindings.md) for more information.
+
+- **Problem:** The AI tells me to check the keybindings.
+  
+  **Solution:** Check the [Keybindings](./keybindings.md) documentation for more information.
 
 </details>
 
 ---
-
-You're all set! Enjoy using the application, and feel free to reach out to support if you encounter any issues not covered here.

@@ -1,5 +1,6 @@
-# List of supported AI Tools
-This is a list of all currently supported Ai Tools that can be triggered via Function Calling:
+# Available Actions
+This is a list of all currently supported actions the AI can perform. Just talk to it naturally and it will understand your intent.
+
 1. **fire**
 
     Start firing primary weapons.

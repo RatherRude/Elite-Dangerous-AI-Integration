@@ -55,7 +55,7 @@ The same technique is used to take screenshots or fetch internet data if the AI 
 
 **If this feature is turned off the AI will no longer try to: emulate button presses, use internet tools, take screenshots**. It will still be able to chat normally and react to game events, so deactivating it might also be a valid option for commanders that prefer to have an AI that only talks.
 
-[Here](./aiToolList.md) you can find a list of all currently supported AI Tools that can be called.
+[Here](./actions.md) you can find a list of all currently supported AI Tools that can be called.
 
 ![Function Calling](screen/function_calling.png?raw=true "Screen")
 
