@@ -1,0 +1,45 @@
+{
+    "include": [
+        "src"
+    ],
+    "exclude": [
+        "**/node_modules",
+        "**/__pycache__",
+        "src/experimental",
+        "src/typestubs"
+    ],
+    "ignore": [
+        "src/oldstuff"
+    ],
+    "defineConstant": {
+        "DEBUG": true
+    },
+    "stubPath": "src/stubs",
+    "reportMissingImports": "error",
+    "reportMissingTypeStubs": false,
+    "pythonVersion": "3.10",
+    "pythonPlatform": "Windows",
+    "executionEnvironments": [
+        {
+            "root": "src/AIGUI",
+            "pythonVersion": "3.10",
+            "pythonPlatform": "Windows",
+            "extraPaths": [],
+            "reportMissingImports": "warning"
+        },
+        {
+            "root": "src/AIServer",
+            "pythonVersion": "3.10",
+            "pythonPlatform": "Windows",
+            "extraPaths": []
+        },
+        {
+            "root": "src/tests",
+            "reportPrivateUsage": false,
+            "extraPaths": []
+        },
+        {
+            "root": "src"
+        }
+    ]
+}
