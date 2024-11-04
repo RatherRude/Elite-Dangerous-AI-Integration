@@ -290,18 +290,3 @@ These event-driven interactions are designed to enhance safety, decision-making,
 
 ![Event-driven](screen/event_driven.png?raw=true "Screen")
 
-## Troubleshooting
-
-1.  You can remove `config.json` to reset the GUI to its default values.
-2.  You need to set certain key bindings so the AI is able to trigger the corresponding action. In case you forgot a key the integration the AI will tell you to register the missing keybinding. The integration will also list a warning at the top of the output window for each missing key.
-
-# Contact
-* Discord Server: https://discord.gg/9c58jxVuAT
-
-# Credits
-* [SumZer0](https://github.com/SumZer0-git) *For teaching me a thing or two about python programming, and giving me the idea to build a game event-driven RAG system!*
-
-# @ToDos
-* Installation video guide
-* Add an auto-updater
-* Add more APIs (atleast road-to-riches, neutron plotter and trader planner)

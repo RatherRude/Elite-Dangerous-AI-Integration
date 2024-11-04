@@ -1,7 +1,14 @@
 site_name: COVAS:NEXT
 site_url: https://lucaelin.github.io/elite-dangerous-ai-integration
+repo_url: https://github.com/RatherRude/Elite-Dangerous-AI-Integration
+
 theme:
     name: material
+    logo: screen/EDAI_logo.png
+    favicon: screen/EDAI_logo.png
+    palette:
+        scheme: slate
+        accent: deep orange
 
 markdown_extensions:
     - attr_list: {}

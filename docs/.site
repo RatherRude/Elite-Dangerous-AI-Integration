@@ -1,0 +1,10 @@
+# .site
+nav:
+    - index.md
+    - keybindings.md
+    - actions.md
+    - description.md
+    - edgeTTSVoices.md
+    - support.md
+    - credits.md
+    - advanced
