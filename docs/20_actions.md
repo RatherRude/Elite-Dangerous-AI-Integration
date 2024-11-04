@@ -1,4 +1,24 @@
-# Available Actions
+# Actions
+
+Actions (also called Tools, Commands, or Functions) are the actions that COVAS:NEXT can perform in Elite: Dangerous or outside. There is no need to remember specific commands, as the AI will understand your intent and perform the action accordingly.
+Primarily, these actions can be used to control various ship operations, such as firing weapons, adjusting speed, deploying heat sinks, and more.
+Additionally, the AI can fetch internet data if it deems it relevant for the conversation, by either your inquiry or game events happening.
+
+# Keybindings
+
+In order to perform actions in Elite: Dangerous, COVAS:NEXT requires keybindings to be set up in the game. These keybindings are used to emulate button presses, allowing the AI to control various ship operations. At the time of writing, COVAS:NEXT only supports for the following Elite: Dangerous keys:
+
+![Available keys for keybindings](./screen/keybindings.png)
+
+## Usage with HOTAS or other controllers
+
+A common workaround is to assign keyboard bindings alongside your controller bindings, even if you don't use a keyboard. This allows COVAS:NEXT to use these keybindings for its commands, while you continue to use your controller for the game.
+
+## Secondary Keybindings
+
+TODO: check how secondary keybindings can be used
+
+## Available Ship Actions
 This is a list of all currently supported actions the AI can perform. Just talk to it naturally and it will understand your intent.
 
 1. **fire**
@@ -117,24 +137,26 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 
      Charge ECM.
 
-29. **getFactions**
+## Available Online-Lookup Actions
+
+1. **getFactions**
     - `query`: String (optional).
     - `systemName`: String.
 
      Retrieve information about factions for a system. Answers the question that lead to tool usage.
 
-30. **getStations**
+2. **getStations**
     - `query`: String (optional).
     - `systemName`: String.
 
      Retrieve information about stations for a system. Answers the question that lead to tool usage.
 
-31. **getGalnetNews**
+3. **getGalnetNews**
     - `query`: String.
 
      Retrieve current interstellar news from Galnet. Answers the question that lead to tool usage.
 
-32. **trade_plotter**
+4. **trade_plotter**
     - `system`: String.
     - `station`: String.
     - `max_hops`: Integer.
@@ -145,7 +167,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 
      Retrieve a trade route from the trade plotter.
 
-33. **system_finder**
+5. **system_finder**
     - `reference_system`: String.
     - `distance`: Number (default: 50000).
     - `allegiance`: Array of strings.
@@ -161,7 +183,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 
      Find a star system based on various filters.
 
-34. **station_finder**
+6. **station_finder**
     - `reference_system`: String.
     - `has_large_pad`: Boolean.
     - `distance`: Number (optional).
@@ -182,7 +204,9 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 
      Find a station based on various filters.
 
-35. **getVisuals**
+## Miscellaneous Actions
+
+1. **getVisuals**
     - `query`: String.
 
      Describe what's currently visible to the Commander. Answers the question that lead to tool usage.

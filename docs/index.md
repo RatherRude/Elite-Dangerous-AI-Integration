@@ -10,7 +10,7 @@ Welcome to the setup guide for COVAS:NEXT! Follow the steps below to get up and 
 
 - **Antivirus Software:** Some antivirus software may flag the application as a virus due to **a false positive**. This can be very annoying and you may need to add an exception in your antivirus software or disable it, if you encounter this issue.
 
-Also, please check our [FAQ](./faq.md) for additional information.
+Also, please check our [FAQ](./10_faq.md) for additional information.
 
 ---
 
@@ -173,6 +173,7 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 
 1. Try issuing a command to the AI, such as "Retract landing gear."
 2. Observe if the AI performs the action.
+3. Read more about the available commands in the [Actions](./20_actions.md) documentation.
 
 ??? note "Common Issues"
 
