@@ -5,7 +5,7 @@ from sys import platform
 import threading
 from time import sleep
 import traceback
-from typing import Optional
+from typing import Optional, Union, final
 
 from num2words import num2words
 import strip_markdown
@@ -17,13 +17,14 @@ import miniaudio
 from .Logger import log
 
 
+@final
 class TTS:
     p = pyaudio.PyAudio()
     read_queue = queue.Queue()
     is_aborted = False
     _is_playing = False
 
-    def __init__(self, openai_client: Optional[openai.OpenAI] = None, provider='openai', model='tts-1', voice="nova", speed=1):
+    def __init__(self, openai_client: Optional[openai.OpenAI] = None, provider='openai', model='tts-1', voice="nova", speed: Union[str,float]=1):
         self.openai_client = openai_client
         self.provider = provider
         self.model = model
@@ -104,17 +105,19 @@ class TTS:
             # iterate over the data in chunks of 1024 bytes
             for i in range(0, len(data), 1024):
                 yield data[i:i + 1024]
-        else:
+        elif self.openai_client:
             with self.openai_client.audio.speech.with_streaming_response.create(
                     model=self.model,
-                    voice=self.voice,
+                    voice=self.voice, # type: ignore
                     input=text,
                     response_format="pcm",
                     # raw samples in 24kHz (16-bit signed, low-endian), without the header.
-                    speed=self.speed
+                    speed=float(self.speed)
             ) as response:
                 for chunk in response.iter_bytes(1024):
                     yield chunk
+        else: 
+            raise ValueError('No TTS client provided')
 
     def _number_to_text(self, match: re.Match):
         """Converts numbers like 100,203.12 to one hundred thousand two hundred three point one two"""

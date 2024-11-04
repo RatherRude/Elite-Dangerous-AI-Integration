@@ -42,7 +42,7 @@ class ConversationEvent(Event):
 
 @dataclass
 class ToolEvent(Event):
-    request: Dict
+    request: List[Dict]
     results: List[Dict]
     timestamp: datetime = field(default_factory=lambda: datetime.now() + timedelta(days=469711))
     kind: Literal['tool'] = field(default='tool')

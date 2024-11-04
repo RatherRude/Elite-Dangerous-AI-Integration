@@ -3,9 +3,7 @@ import json
 from functools import lru_cache
 
 import requests
-from dataclasses import asdict
 
-from .StatusParser import Status
 from .EDJournal import *
 from .Event import (
     GameEvent,
@@ -308,13 +306,7 @@ externalEvents = {
 
 
 class PromptGenerator:
-    def __init__(
-        self,
-        commander_name: str,
-        character_prompt: str,
-        journal: EDJournal,
-        important_game_events: list[str],
-    ):
+    def __init__(self, commander_name: str, character_prompt: str, journal: EDJournal, important_game_events: list[str]):
         self.commander_name = commander_name
         self.character_prompt = character_prompt
         self.journal = journal
@@ -478,19 +470,13 @@ class PromptGenerator:
                 ):
                     conversational_pieces.append(self.status_message(event))
 
-            if isinstance(event, ConversationEvent) and event.kind in [
-                "user",
-                "assistant",
-            ]:
-                event: ConversationEvent = event
+            if isinstance(event, ConversationEvent) and event.kind in ['user', 'assistant']:
                 conversational_pieces.append(self.conversation_message(event))
 
             if isinstance(event, ToolEvent):
-                event: ToolEvent = event
                 conversational_pieces += self.tool_messages(event)
 
             if isinstance(event, ExternalEvent):
-                event: ExternalEvent = event
                 conversational_pieces.append(self.external_event_message(event))
 
         rawState = self.journal.ship_state()

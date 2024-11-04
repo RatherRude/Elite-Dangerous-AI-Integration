@@ -1,22 +1,27 @@
-
-from .StatusParser import BaseFlags, Status
+from typing import Any
+from typing_extensions import override
+from .StatusParser import parse_status_flags, parse_status_json
 from .Event import Event, StatusEvent
 from .Logger import log
 from .EventManager import EventManager, Projection
 
   
 class EventCounter(Projection):
-    def get_default_state(self) -> dict:
+    @override
+    def get_default_state(self) -> dict[str, Any]:
         return {"count": 0}
     
+    @override
     def process(self, event: Event) -> None:
         self.state["count"] += 1
         log('info','Event count:', self.state["count"])
 
 class CurrentStatus(Projection):
-    def get_default_state(self) -> None:
-        return Status(flags=BaseFlags.from_status_flag(0))
+    @override
+    def get_default_state(self) -> dict[str, Any]:
+        return parse_status_json({"flags": parse_status_flags(0)})  # type: ignore
     
+    @override
     def process(self, event: Event) -> None:
         if isinstance(event, StatusEvent) and event.status.get("event") == "Status":
             log('info', 'Current Status:', event.status)

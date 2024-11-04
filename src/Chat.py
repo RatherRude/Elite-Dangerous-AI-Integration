@@ -95,15 +95,8 @@ def getCurrentState():
     return {key: value for key, value in rawState.items() if key not in keysToFilterOut}
 
 
-previous_status = None
-
 
 def checkForJournalUpdates(client, eventManager, commander_name, boot):
-    global previous_status
-    if boot:
-        previous_status['extra_events'].clear()
-        return
-
     current_status = getCurrentState()
 
     if current_status['extra_events'] and len(current_status['extra_events']) > 0:
@@ -122,12 +115,9 @@ def checkForJournalUpdates(client, eventManager, commander_name, boot):
             eventManager.add_game_event(item['event_content'])
             current_status['extra_events'].pop(0)
 
-    # Update previous status
-    previous_status = current_status
-
-
-jn = None
-tts = None
+backstory: str = None
+jn: EDJournal = None
+tts: TTS = None
 prompt_generator: PromptGenerator = None
 status_parser: StatusParser = None
 event_manager: EventManager = None
@@ -136,7 +126,7 @@ controller_manager = ControllerManager()
 
 
 def main():
-    global llmClient, sttClient, ttsClient, tts, aiModel, backstory, useTools, jn, previous_status, event_manager, prompt_generator, llm_model_name
+    global llmClient, sttClient, ttsClient, tts, aiModel, backstory, useTools, jn, event_manager, prompt_generator, llm_model_name
 
     # Load configuration
     config = load_config()
@@ -146,7 +136,6 @@ def main():
 
     jn = EDJournal(config["game_events"])
     copilot = EDCoPilot(config["edcopilot"], is_edcopilot_dominant=config["edcopilot_dominant"])
-    previous_status = getCurrentState()
 
     # gets API Key from config.json
     llmClient = OpenAI(
@@ -211,7 +200,7 @@ def main():
     log('info', "Voice interface ready.")
 
 
-    enabled_game_events = []
+    enabled_game_events: list[str] = []
     for category in config["game_events"].values():
         for event, state in category.items():
             if state:

@@ -1,11 +1,9 @@
 from abc import ABC, abstractmethod
-import dataclasses
 from datetime import timezone
 import hashlib
 import inspect
 import json
-import time
-from typing import Literal, Callable, Optional
+from typing import Any, Literal, Callable, Optional, final
 import sqlite3
 import sqlite_vec
 
@@ -13,36 +11,35 @@ from .EDJournal import *
 from .Event import Event, GameEvent, ConversationEvent, StatusEvent, ToolEvent, ExternalEvent
 from .Logger import log
 
-from abc import ABC, abstractmethod
-
 
 class Projection(ABC):
     @abstractmethod
-    def get_default_state(self) -> dict:
+    def get_default_state(self) -> dict[str, Any]:
         return {}
     
     def __init__(self):
-        self.state = self.get_default_state()
-        self.last_processed = 0.0
+        self.state: dict[str, Any] = self.get_default_state()
+        self.last_processed: float = 0.0
         pass
 
     @abstractmethod
-    def process(self, event: Event) -> dict:
+    def process(self, event: Event) -> None:
         pass
 
+@final
 class EventManager:
-    def __init__(self, on_reply_request: Callable[[List[Event], List[Event], dict[str, dict]], any], game_events: List[str],
+    def __init__(self, on_reply_request: Callable[[list[Event], list[Event], dict[str, dict[str, Any]]], Any], game_events: list[str],
                  continue_conversation: bool = False):
-        self.incoming: List[Event] = []
-        self.pending: List[Event] = []
-        self.processed: List[Event] = []
+        self.incoming: list[Event] = []
+        self.pending: list[Event] = []
+        self.processed: list[Event] = []
         self.is_replying = False
         self.is_listening = False
         self.on_reply_request = on_reply_request
         self.game_events = game_events
         
-        self.event_classes = [ConversationEvent, ToolEvent, GameEvent, StatusEvent, ExternalEvent]
-        self.projections: List[type[Projection]] = []
+        self.event_classes: list[type[Event]] = [ConversationEvent, ToolEvent, GameEvent, StatusEvent, ExternalEvent]
+        self.projections: list[Projection] = []
         
         self.conn, self.cursor = self.init_db()
 
@@ -60,7 +57,7 @@ class EventManager:
         conn.enable_load_extension(False)
         cursor = conn.cursor()
 
-        cursor.execute(f'''
+        _ = cursor.execute(f'''
             CREATE TABLE IF NOT EXISTS events_v1 (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 class TEXT,
@@ -70,7 +67,7 @@ class EventManager:
                 timestamp DATETIME
             )
         ''')
-        cursor.execute(f'''
+        _ = cursor.execute(f'''
             CREATE TABLE IF NOT EXISTS projections_v1 (
                 class TEXT PRIMARY KEY,
                 version INTEGER,
@@ -83,17 +80,17 @@ class EventManager:
         
         return conn, cursor
         
-    def add_game_event(self, content: Dict):
+    def add_game_event(self, content: dict[str, Any]):
         event = GameEvent(content=content)
         self.incoming.append(event)
         log('Event', event)
 
-    def add_external_event(self, content: Dict):
+    def add_external_event(self, content: dict[str, Any]):
         event = ExternalEvent(content=content)
         self.incoming.append(event)
         log('Event', event)
 
-    def add_status_event(self, status: Dict):
+    def add_status_event(self, status: dict[str, Any]):
         event = StatusEvent(status=status)
         self.incoming.append(event)
         if status.get("event") != 'Status':
@@ -113,7 +110,7 @@ class EventManager:
         self.is_replying = False
         # log('debug', event)
 
-    def add_tool_call(self, request: Dict, results: List[Dict]):
+    def add_tool_call(self, request: list[dict[str, Any]], results: list[dict[str, Any]]):
         event = ToolEvent(request=request, results=results)
         self.incoming.append(event)
         log('Action', [result['name'] + ': ' + result['content'] for result in results])
@@ -133,7 +130,7 @@ class EventManager:
             self.processed += self.pending
             self.pending = []
             log('debug', 'eventmanager requesting reply')
-            projected_states = {}
+            projected_states: dict[str, Any] = {}
             for projection in self.projections:
                 projected_states[projection.__class__.__name__] = projection.state.copy()
             self.on_reply_request(self.processed, new_events, projected_states)
@@ -150,7 +147,7 @@ class EventManager:
         if event.processed_at < projection.last_processed:
             log('warn', 'Projection', projection.__class__.__name__, 'is running backwards in time!', 'Event:', event.processed_at, 'Projection:', projection.last_processed)
         projection.last_processed = event.processed_at
-        self.cursor.execute('''
+        _ = self.cursor.execute('''
             UPDATE projections_v1 SET state = ?, last_processed = ? WHERE class = ?
         ''', (json.dumps(projection.state), projection.last_processed, projection.__class__.__name__))
         self.conn.commit()
@@ -163,7 +160,7 @@ class EventManager:
         projection_version = hashlib.sha256(projection_source.encode()).hexdigest()
         log('debug', 'Register projection', projection_class_name, 'version', projection_version)
         
-        self.cursor.execute('''
+        _ = self.cursor.execute('''
             SELECT state, last_processed FROM projections_v1 WHERE class = ? AND version = ?
         ''', (projection_class_name, projection_version, ))
         row = self.cursor.fetchone()
@@ -175,10 +172,10 @@ class EventManager:
             projection.last_processed = last_processed
         else:
             log('debug', 'Initializing new state for', projection_class_name, projection_version)
-            self.cursor.execute('''
+            _ = self.cursor.execute('''
                 DELETE FROM projections_v1 WHERE class = ?
             ''', (projection_class_name,))
-            self.cursor.execute('''
+            _ = self.cursor.execute('''
                 INSERT INTO projections_v1 (class, version, state, last_processed) VALUES (?, ?, ?, ?)
             ''', (projection_class_name, projection_version, json.dumps(projection.get_default_state()), 0.0))
             self.conn.commit()
@@ -222,13 +219,13 @@ class EventManager:
         for event in self.incoming:
             event_data = json.dumps(event.__dict__, default=self._json_serializer)
             event_class = event.__class__.__name__
-            self.cursor.execute('''
+            _ = self.cursor.execute('''
                 INSERT INTO events_v1 (class, kind, data, processed_at, timestamp) VALUES (?, ?, ?, ?, ?)
             ''', (event_class, event.kind, event_data, event.processed_at, event.timestamp))
         self.conn.commit()
 
     def load_history(self):
-        self.cursor.execute('''
+        _ = self.cursor.execute('''
             SELECT class as class_name, data, timestamp FROM events_v1
             ORDER BY timestamp DESC
             LIMIT 100
@@ -243,7 +240,7 @@ class EventManager:
             else:
                 log('error', 'Could not instantiate event', class_name)
     
-    def _instantiate_event(self, type_name: str, data: dict) -> GameEvent:
+    def _instantiate_event(self, type_name: str, data: dict[str, Any]) -> (Event | None):
         for event_class in self.event_classes:
             if event_class.__name__ == type_name:
                 return event_class(**data)
@@ -256,11 +253,11 @@ class EventManager:
     
     def clear_history(self):
         # TODO do we want to clear all events or just conversation?
-        self.cursor.execute('''
+        _ = self.cursor.execute('''
             DELETE FROM events_v1
         ''')
         # TODO do we want to clear projections as well?
-        self.cursor.execute('''
+        _ = self.cursor.execute('''
             DELETE FROM projections_v1
         ''')
         self.conn.commit()

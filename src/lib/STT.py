@@ -4,6 +4,7 @@ import threading
 from sys import platform
 from time import sleep, time
 import traceback
+from typing import final
 import pyaudio
 
 import openai
@@ -12,6 +13,7 @@ from pysilero_vad import SileroVoiceActivityDetector
 
 from .Logger import log
 
+@final
 class STTResult:
     def __init__(self, text: str, audio: sr.AudioData, timestamp: float):
         self.text = text
@@ -24,7 +26,7 @@ class STTResult:
     def __repr__(self):
         return self.text
 
-
+@final
 class STT:
     listening = False
     recording = False

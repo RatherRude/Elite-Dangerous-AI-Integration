@@ -5,7 +5,7 @@ import queue
 from sys import platform
 import threading
 from time import sleep
-from typing import Literal, Optional, Union
+from typing import Any, Literal, Optional, Union
 from .Logger import log
 from typing import TypedDict
 
@@ -43,42 +43,41 @@ class BaseFlags(TypedDict):
     FsdJump: bool
     SrvHighBeam: bool
 
-    @staticmethod
-    def from_status_flag(value: int):
-        return BaseFlags(
-            Docked=bool(value & 1),
-            Landed=bool(value & 2),
-            LandingGearDown=bool(value & 4),
-            ShieldsUp=bool(value & 8),
-            Supercruise=bool(value & 16),
-            FlightAssistOff=bool(value & 32),
-            HardpointsDeployed=bool(value & 64),
-            InWing=bool(value & 128),
-            LightsOn=bool(value & 256),
-            CargoScoopDeployed=bool(value & 512),
-            SilentRunning=bool(value & 1024),
-            ScoopingFuel=bool(value & 2048),
-            SrvHandbrake=bool(value & 4096),
-            SrvUsingTurretView=bool(value & 8192),
-            SrvTurretRetracted=bool(value & 16384),
-            SrvDriveAssist=bool(value & 32768),
-            FsdMassLocked=bool(value & 65536),
-            FsdCharging=bool(value & 131072),
-            FsdCooldown=bool(value & 262144),
-            LowFuel=bool(value & 524288),
-            OverHeating=bool(value & 1048576),
-            HasLatLong=bool(value & 2097152),
-            InDanger=bool(value & 4194304),
-            BeingInterdicted=bool(value & 8388608),
-            InMainShip=bool(value & 16777216),
-            InFighter=bool(value & 33554432),
-            InSRV=bool(value & 67108864),
-            HudInAnalysisMode=bool(value & 134217728),
-            NightVision=bool(value & 268435456),
-            AltitudeFromAverageRadius=bool(value & 536870912),
-            FsdJump=bool(value & 1073741824),
-            SrvHighBeam=bool(value & 2147483648),
-        )
+def parse_status_flags(value: int) -> BaseFlags:
+    return BaseFlags(
+        Docked=bool(value & 1),
+        Landed=bool(value & 2),
+        LandingGearDown=bool(value & 4),
+        ShieldsUp=bool(value & 8),
+        Supercruise=bool(value & 16),
+        FlightAssistOff=bool(value & 32),
+        HardpointsDeployed=bool(value & 64),
+        InWing=bool(value & 128),
+        LightsOn=bool(value & 256),
+        CargoScoopDeployed=bool(value & 512),
+        SilentRunning=bool(value & 1024),
+        ScoopingFuel=bool(value & 2048),
+        SrvHandbrake=bool(value & 4096),
+        SrvUsingTurretView=bool(value & 8192),
+        SrvTurretRetracted=bool(value & 16384),
+        SrvDriveAssist=bool(value & 32768),
+        FsdMassLocked=bool(value & 65536),
+        FsdCharging=bool(value & 131072),
+        FsdCooldown=bool(value & 262144),
+        LowFuel=bool(value & 524288),
+        OverHeating=bool(value & 1048576),
+        HasLatLong=bool(value & 2097152),
+        InDanger=bool(value & 4194304),
+        BeingInterdicted=bool(value & 8388608),
+        InMainShip=bool(value & 16777216),
+        InFighter=bool(value & 33554432),
+        InSRV=bool(value & 67108864),
+        HudInAnalysisMode=bool(value & 134217728),
+        NightVision=bool(value & 268435456),
+        AltitudeFromAverageRadius=bool(value & 536870912),
+        FsdJump=bool(value & 1073741824),
+        SrvHighBeam=bool(value & 2147483648),
+    )
 
 
 class OdysseyFlags(TypedDict):
@@ -103,30 +102,29 @@ class OdysseyFlags(TypedDict):
     PhysicalMulticrew: bool
     FsdHyperdriveCharging: bool
 
-    @staticmethod
-    def from_status_flag(value: int):
-        return OdysseyFlags(
-            OnFoot=bool(value & 1),
-            InTaxi=bool(value & 2),
-            InMultiCrew=bool(value & 4),
-            OnFootInStation=bool(value & 8),
-            OnFootOnPlanet=bool(value & 16),
-            AimDownSight=bool(value & 32),
-            LowOxygen=bool(value & 64),
-            LowHealth=bool(value & 128),
-            Cold=bool(value & 256),
-            Hot=bool(value & 512),
-            VeryCold=bool(value & 1024),
-            VeryHot=bool(value & 2048),
-            GlideMode=bool(value & 4096),
-            OnFootInHangar=bool(value & 8192),
-            OnFootSocialSpace=bool(value & 16384),
-            OnFootExterior=bool(value & 32768),
-            BreathableAtmosphere=bool(value & 65536),
-            TelepresenceMulticrew=bool(value & 131072),
-            PhysicalMulticrew=bool(value & 262144),
-            FsdHyperdriveCharging=bool(value & 524288),
-        )
+def parse_odyssey_flags(value: int) -> OdysseyFlags:
+    return OdysseyFlags(
+        OnFoot=bool(value & 1),
+        InTaxi=bool(value & 2),
+        InMultiCrew=bool(value & 4),
+        OnFootInStation=bool(value & 8),
+        OnFootOnPlanet=bool(value & 16),
+        AimDownSight=bool(value & 32),
+        LowOxygen=bool(value & 64),
+        LowHealth=bool(value & 128),
+        Cold=bool(value & 256),
+        Hot=bool(value & 512),
+        VeryCold=bool(value & 1024),
+        VeryHot=bool(value & 2048),
+        GlideMode=bool(value & 4096),
+        OnFootInHangar=bool(value & 8192),
+        OnFootSocialSpace=bool(value & 16384),
+        OnFootExterior=bool(value & 32768),
+        BreathableAtmosphere=bool(value & 65536),
+        TelepresenceMulticrew=bool(value & 131072),
+        PhysicalMulticrew=bool(value & 262144),
+        FsdHyperdriveCharging=bool(value & 524288),
+    )
 
 
 class Pips(TypedDict):
@@ -134,13 +132,12 @@ class Pips(TypedDict):
     engine: float
     weapons: float
     
-    @staticmethod
-    def from_status_flag(value: list[int]):
-        return Pips(
-            system=value[0] / 2,
-            engine=value[1] / 2,
-            weapons=value[2] / 2
-        )
+def parse_pips_flags(value: list[int]) -> Pips:
+    return Pips(
+        system=value[0] / 2,
+        engine=value[1] / 2,
+        weapons=value[2] / 2
+    )
 
 
 class Fuel(TypedDict):
@@ -152,7 +149,7 @@ class Destination(TypedDict):
     System: int
     Body: int
     Name: str
-    Name_Localised: str = None
+    Name_Localised: Optional[str]
 
 
 class Status(TypedDict):
@@ -202,47 +199,46 @@ class Status(TypedDict):
     SelectedWeapon: Optional[str]
     Gravity: Optional[float]
 
-    @staticmethod
-    def from_status_file(value: dict[str, any]):
-        """Converts the status file data to a Status object. All fields are optional."""
-        GuiPanels = [
-                'NoFocus',
-                'InternalPanel',
-                'ExternalPanel',
-                'CommsPanel',
-                'RolePanel',
-                'StationServices',
-                'GalaxyMap',
-                'SystemMap',
-                'Orrery',
-                'FSS',
-                'SAA',
-                'Codex',
-        ]
-        return Status(
-            flags=BaseFlags.from_status_flag(value.get('Flags', 0)),
-            flags2=OdysseyFlags.from_status_flag(value.get('Flags2', 0)) if 'Flags2' in value else None,
-            Pips=Pips.from_status_flag(value.get('Pips', [0,0,0])) if 'Pips' in value else None,
-            Firegroup=value.get('Firegroup') if 'Firegroup' in value else None,
-            GuiFocus=GuiPanels[value.get('GuiFocus', 0)] if 'GuiFocus' in value else None,
-            Fuel=Fuel(**value.get('Fuel', {})) if 'Fuel' in value else None,
-            Cargo=value.get('Cargo', None),
-            LegalState=value.get('LegalState', None),
-            Latitude=value.get('Latitude', None),
-            Altitude=value.get('Altitude', None),
-            Longitude=value.get('Longitude', None),
-            Heading=value.get('Heading', None),
-            BodyName=value.get('BodyName', None),
-            PlanetRadius=value.get('PlanetRadius', None),
-            Balance=value.get('Balance', None),
-            Destination=Destination(**value.get('Destination', {})) if 'Destination' in value else None,
+def parse_status_json(value: dict[str, Any]) -> Status:
+    """Converts the status file data to a Status object. All fields are optional."""
+    GuiPanels = [
+            'NoFocus',
+            'InternalPanel',
+            'ExternalPanel',
+            'CommsPanel',
+            'RolePanel',
+            'StationServices',
+            'GalaxyMap',
+            'SystemMap',
+            'Orrery',
+            'FSS',
+            'SAA',
+            'Codex',
+    ]
+    return Status(
+        flags=parse_status_flags(value.get('Flags', 0)),
+        flags2=parse_odyssey_flags(value.get('Flags2', 0)) if 'Flags2' in value else None,
+        Pips=parse_pips_flags(value.get('Pips', [0,0,0])) if 'Pips' in value else None,
+        Firegroup=value.get('Firegroup') if 'Firegroup' in value else None,
+        GuiFocus=GuiPanels[value.get('GuiFocus', 0)] if 'GuiFocus' in value else None,
+        Fuel=Fuel(**value.get('Fuel', {})) if 'Fuel' in value else None,
+        Cargo=value.get('Cargo', None),
+        LegalState=value.get('LegalState', None),
+        Latitude=value.get('Latitude', None),
+        Altitude=value.get('Altitude', None),
+        Longitude=value.get('Longitude', None),
+        Heading=value.get('Heading', None),
+        BodyName=value.get('BodyName', None),
+        PlanetRadius=value.get('PlanetRadius', None),
+        Balance=value.get('Balance', None),
+        Destination=Destination(**value.get('Destination', {})) if 'Destination' in value else None,
 
-            Oxygen=value.get('Oxygen', None),
-            Health=value.get('Health', None),
-            Temperature=value.get('Temperature', None),
-            SelectedWeapon=value.get('SelectedWeapon', None),
-            Gravity=value.get('Gravity', None),
-        )
+        Oxygen=value.get('Oxygen', None),
+        Health=value.get('Health', None),
+        Temperature=value.get('Temperature', None),
+        SelectedWeapon=value.get('SelectedWeapon', None),
+        Gravity=value.get('Gravity', None),
+    )
 
 
 class StatusParser:
@@ -251,7 +247,7 @@ class StatusParser:
             self.file_path = file_path if file_path else "./linux_ed/Status.json"
         else:
             from .WindowsKnownPaths import get_path, FOLDERID, UserHandle
-            self.file_path = file_path if file_path else (get_path(FOLDERID.SavedGames, UserHandle.current) + "\Frontier Developments\Elite Dangerous\Status.json")
+            self.file_path = file_path if file_path else (get_path(FOLDERID.SavedGames, UserHandle.current) + "\\Frontier Developments\\Elite Dangerous\\Status.json")
 
         self.current_status = self._read_status_file()
         self.watch_thread = threading.Thread(target=self._watch_file_thread, daemon=True)
@@ -293,7 +289,7 @@ class StatusParser:
             with open(self.file_path, 'r', encoding='utf-8') as file:
                 data = json.load(file)
 
-        status = Status.from_status_file(data)
+        status = parse_status_json(data)
 
         return status
 

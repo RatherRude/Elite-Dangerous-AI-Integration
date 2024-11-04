@@ -1,5 +1,7 @@
 import time
 
+from EDMesg.EDMesgClient import EDMesgClient
+
 from .Logger import log
 from typing import Optional
 import os
@@ -41,7 +43,7 @@ class EDCoPilot:
         self.proc_id = self.get_process_id()
         return self.proc_id is not None
 
-    def get_install_path(self) -> Optional[str]:
+    def get_install_path(self) -> (str | None):
         """Check the windows registry for COMPUTER / HKEY_CURRENT_USER / SOFTWARE / EDCoPilot"""
         try:
             import winreg
@@ -53,7 +55,7 @@ class EDCoPilot:
         except Exception:
             return None
 
-    def get_process_id(self) -> Optional[int]:
+    def get_process_id(self) -> (int | None):
         """Check if EDCoPilot is running"""
         try:
             import psutil
