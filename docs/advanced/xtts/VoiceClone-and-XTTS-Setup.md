@@ -1,4 +1,4 @@
-# Note
+# VoiceClone and XTTS Setup
  You can skip to the bottom if you simply want to use an existing XTTS voice model.
 
 # Preamble

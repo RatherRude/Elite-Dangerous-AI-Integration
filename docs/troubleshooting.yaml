@@ -1,0 +1,101 @@
+
+- Question: Did the application download successfully?
+  Yes:
+    - Solution: Good, now extract the zip file.
+  No:
+    - Error: A Virus was detected
+      Explanation: Some antivirus software may detect the application as a virus. This is a false positive. The application is safe to use.
+      Solution: Try downloading again, maybe a couple of time or add an exception for the application in your antivirus software or disable it temporarily while using the application.
+
+- Question: Did the downloaded zip file extract successfully?
+  Yes:
+    - Solution: Good, now open the extracted folder, and double-click on the "start" file.
+  No:
+    - Error: A Virus was detected
+      Explanation: Some antivirus software may detect the application as a virus. This is a false positive. The application is safe to use.
+      Solution: Add an exception for the application in your antivirus software or disable it temporarily while using the application.
+
+- Question: Does the configuration UI start up?
+  Yes:
+    - Solution: Good, now you can enter your commander name and an OpenAI API key.
+  No:
+    - Error: I don't know how to start it
+      Explanation: 
+      Solution: Open the extracted folder and double-click on the "start" file.
+    - Error: A Virus was detected
+      Explanation: Some antivirus software may detect the application as a virus. This is a false positive. The application is safe to use.
+      Solution: Add an exception for the application in your antivirus software or disable it temporarily while using the application.
+    - Error: An error regarding "chat.exe" or "chat.py" appears
+      Explanation: Your antivirus software may have deleted some files.
+      Solution: Re-extract the zip file and make sure to add an exception to the quarantine list of your antivirus software.
+    - Error: The window closes immediately
+      Explanation: The application could not start up due to an error.
+      Solution: Contact us for support. This is an with the application itself and needs to be fixed by the developers.
+    - Error: An error message appears
+      Explanation: The application could not start up due to an error. The error message will provide more details on the issue.
+      Solution: Contact us for support. This is an with the application itself and needs to be fixed by the developers.
+
+- Question: Did you enter the commander name correctly?
+  Yes:
+    - Solution: Good, now enter your OpenAI API key.
+  No:
+    - Error: The commander name is required
+      Explanation: The commander name is required for the application to function properly.
+      Solution: Enter a valid commander name.
+
+- Question: Did you enter the API key correctly?
+  Yes:
+    - Solution: Good, now click on the "Save" button.
+  No:
+    - Error: I don't know how to get an API key
+      Explanation: OpenAI likes changing their API key system, so documentation may be out of date.
+      Solution: At the time of writing, you can get an API key navigating to https://platform.openai.com/ and sign up for an account. Once you have an account, you can create an API key at https://platform.openai.com/api-keys. Note that you may need to charge your account with some money before you can use the API key.
+
+- Question: Does the black "Debug Output" window appear?
+  Yes:
+    - Solution: Good, continue with the next check.
+  No:
+    - Error: The application is not responding
+      Explanation: We try to check your configuration for errors, but the application may be stuck.
+      Solution: Close the application and try again. If the issue persists, contact us for support.
+
+- Question: Make sure the "Debug Output" window show no errors immediately after starting the application.
+  Yes:
+    - Solution: Good, now start talking to the AI, either via PTT or voice detection.
+  No:
+    - Error: chat.exe is missing
+      Explanation: You anti-virus software deleted the chat.exe file.
+      Solution: Re-extract the zip file and make sure to add an exception to the quarantine list of your anti-virus software.
+    - Error: Error message
+      Explanation: This is fine...
+      Solution: Continue with the next check.
+
+- Question: When you start talking (either via PTT or voice detection), does the text of what you say appear in the "Debug Output" window?
+  Yes:
+    - Solution: Good, continue with the next check.
+  No:
+    - Error: There is an error message
+    - Error: Nothing happens
+
+- Question: After you start talking, does a response text appear in the "Debug Output" window?
+  Yes:
+    - Solution: Good, continue with the next check.
+  No:
+    - Error: There is an error message
+    - Error: Nothing happens
+
+- Question: After the response text appears, does read the response text out loud?
+  Yes:
+    - Solution: Good, try giving a command to the AI, e.g. "Retract landing gear".
+  No:
+    - Error: There is an error message
+    - Error: Nothing happens
+
+- Question: When giving a command, does the AI perform the action, e.g. "Retract landing gear"?
+  Yes:
+    - Solution: Good, you are all set!
+  No:
+    - Error: The AI pretends to do the action but nothing happens
+    - Error: The AI complains about missing keybindings
+    - Error: The AI complains about not being able to do the action
+    - Error: There is an error message

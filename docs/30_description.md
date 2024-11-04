@@ -1,16 +1,23 @@
-## Detailed overview 
+# Detailed overview 
 The AI integration uses several technologies:
+
 1. **OpenAI/OpenRouter Language Models (LLMs)**
    1. **Pricing Information**
+
 2. **Whisper Speech-to-Text (STT)**
+
 3. **Text-to-Speech (TTS)**
+
 4. **Vision Capabilities**
+
 5. **Function Calling**
+
 6. **Web Lookups for Detailed Information (EDSM)**
+
 7. **Event-Driven Interaction**
 
 
-### 1. OpenAI/OpenRouter/Local Language Models (LLMs)
+### 1. OpenAI / OpenRouter / Local Models
 
 LLMs hosted by e.g. OpenAI or OpenRouter process natural language commands, providing intelligent responses and actions, enabling the autopilot to understand complex instructions.
 
@@ -55,7 +62,7 @@ The same technique is used to take screenshots or fetch internet data if the AI 
 
 **If this feature is turned off the AI will no longer try to: emulate button presses, use internet tools, take screenshots**. It will still be able to chat normally and react to game events, so deactivating it might also be a valid option for commanders that prefer to have an AI that only talks.
 
-[Here](./aiToolList.md) you can find a list of all currently supported AI Tools that can be called.
+[Here](./20_actions.md) you can find a list of all currently supported AI Tools that can be called.
 
 ![Function Calling](screen/function_calling.png?raw=true "Screen")
 
@@ -69,230 +76,217 @@ Galnet news can be fetched to answer questions or inform about relevant news in 
 
 The system dynamically responds to game events such as ship type changes, new jump destinations, shield status updates, attacks, and more, keeping the commander informed of critical events and statuses.
 
-We support **every event** in the game that is written to the journal file. You can toggle which game events should be reacted to. Here is a list of the currently supported event types:
+We support **every event** in the game that is written to the journal file. You can toggle which game events should be reacted to.
 
-#### Startup Events:
-- Cargo
-- Materials
-- Missions
-- Progress
-- Rank
-- Reputation
-- Statistics
+!!! note "List of all currently supported event types"
 
-#### Powerplay Events:
-- PowerplayCollect
-- PowerplayDefect
-- PowerplayDeliver
-- PowerplayFastTrack
-- PowerplayJoin
-- PowerplayLeave
-- PowerplaySalary
-- PowerplayVote
-- PowerplayVoucher
+   #### Startup Events:
+   - Cargo
+   - Materials
+   - Missions
+   - Progress
+   - Rank
+   - Reputation
+   - Statistics
 
-#### Squadron Events:
-- AppliedToSquadron
-- DisbandedSquadron
-- InvitedToSquadron
-- JoinedSquadron
-- KickedFromSquadron
-- LeftSquadron
-- SharedBookmarkToSquadron
-- SquadronCreated
-- SquadronDemotion
-- SquadronPromotion
-- SquadronStartup
-- WonATrophyForSquadron
+   #### Powerplay Events:
+   - PowerplayCollect
+   - PowerplayDefect
+   - PowerplayDeliver
+   - PowerplayFastTrack
+   - PowerplayJoin
+   - PowerplayLeave
+   - PowerplaySalary
+   - PowerplayVote
+   - PowerplayVoucher
 
-#### Exploration Events:
-- CodexEntry
-- DiscoveryScan
-- Scan
+   #### Squadron Events:
+   - AppliedToSquadron
+   - DisbandedSquadron
+   - InvitedToSquadron
+   - JoinedSquadron
+   - KickedFromSquadron
+   - LeftSquadron
+   - SharedBookmarkToSquadron
+   - SquadronCreated
+   - SquadronDemotion
+   - SquadronPromotion
+   - SquadronStartup
+   - WonATrophyForSquadron
 
-#### Trade Events:
-- Trade
-- AsteroidCracked
-- BuyTradeData
-- CollectCargo
-- EjectCargo
-- MarketBuy
-- MarketSell
-- MiningRefined
+   #### Exploration Events:
+   - CodexEntry
+   - DiscoveryScan
+   - Scan
 
-#### Station Services Events:
-- StationServices
-- BuyAmmo
-- BuyDrones
-- CargoDepot
-- CommunityGoal
-- CommunityGoalDiscard
-- CommunityGoalJoin
-- CommunityGoalReward
-- CrewAssign
-- CrewFire
-- CrewHire
-- EngineerContribution
-- EngineerCraft
-- EngineerLegacyConvert
-- EngineerProgress
-- FetchRemoteModule
-- Market
-- MassModuleStore
-- MaterialTrade
-- MissionAbandoned
-- MissionAccepted
-- MissionCompleted
-- MissionFailed
-- MissionRedirected
-- ModuleBuy
-- ModuleRetrieve
-- ModuleSell
-- ModuleSellRemote
-- ModuleStore
-- ModuleSwap
-- Outfitting
-- PayBounties
-- PayFines
-- PayLegacyFines
-- RedeemVoucher
-- RefuelAll
-- RefuelPartial
-- Repair
-- RepairAll
-- RestockVehicle
-- ScientificResearch
-- Shipyard
-- ShipyardBuy
-- ShipyardNew
-- ShipyardSell
-- ShipyardTransfer
-- ShipyardSwap
-- StoredModules
-- StoredShips
-- TechnologyBroker
-- ClearImpound
+   #### Trade Events:
+   - Trade
+   - AsteroidCracked
+   - BuyTradeData
+   - CollectCargo
+   - EjectCargo
+   - MarketBuy
+   - MarketSell
+   - MiningRefined
 
-#### Fleet Carrier Events:
-- CarrierJump
-- CarrierBuy
-- CarrierStats
-- CarrierJumpRequest
-- CarrierDecommission
-- CarrierCancelDecommission
-- CarrierBankTransfer
-- CarrierDepositFuel
-- CarrierCrewServices
-- CarrierFinance
-- CarrierShipPack
-- CarrierModulePack
-- CarrierTradeOrder
-- CarrierDockingPermission
-- CarrierNameChanged
-- CarrierJumpCancelled
+   #### Station Services Events:
+   - StationServices
+   - BuyAmmo
+   - BuyDrones
+   - CargoDepot
+   - CommunityGoal
+   - CommunityGoalDiscard
+   - CommunityGoalJoin
+   - CommunityGoalReward
+   - CrewAssign
+   - CrewFire
+   - CrewHire
+   - EngineerContribution
+   - EngineerCraft
+   - EngineerLegacyConvert
+   - EngineerProgress
+   - FetchRemoteModule
+   - Market
+   - MassModuleStore
+   - MaterialTrade
+   - MissionAbandoned
+   - MissionAccepted
+   - MissionCompleted
+   - MissionFailed
+   - MissionRedirected
+   - ModuleBuy
+   - ModuleRetrieve
+   - ModuleSell
+   - ModuleSellRemote
+   - ModuleStore
+   - ModuleSwap
+   - Outfitting
+   - PayBounties
+   - PayFines
+   - PayLegacyFines
+   - RedeemVoucher
+   - RefuelAll
+   - RefuelPartial
+   - Repair
+   - RepairAll
+   - RestockVehicle
+   - ScientificResearch
+   - Shipyard
+   - ShipyardBuy
+   - ShipyardNew
+   - ShipyardSell
+   - ShipyardTransfer
+   - ShipyardSwap
+   - StoredModules
+   - StoredShips
+   - TechnologyBroker
+   - ClearImpound
 
-#### Odyssey Events:
-- Backpack
-- BackpackChange
-- BookDropship
-- BookTaxi
-- BuyMicroResources
-- BuySuit
-- BuyWeapon
-- CancelDropship
-- CancelTaxi
-- CollectItems
-- CreateSuitLoadout
-- DeleteSuitLoadout
-- Disembark
-- DropItems
-- DropShipDeploy
-- Embark
-- FCMaterials
-- LoadoutEquipModule
-- LoadoutRemoveModule
-- RenameSuitLoadout
-- ScanOrganic
-- SellMicroResources
-- SellOrganicData
-- SellWeapon
-- SwitchSuitLoadout
-- TransferMicroResources
-- TradeMicroResources
-- UpgradeSuit
-- UpgradeWeapon
-- UseConsumable
+   #### Fleet Carrier Events:
+   - CarrierJump
+   - CarrierBuy
+   - CarrierStats
+   - CarrierJumpRequest
+   - CarrierDecommission
+   - CarrierCancelDecommission
+   - CarrierBankTransfer
+   - CarrierDepositFuel
+   - CarrierCrewServices
+   - CarrierFinance
+   - CarrierShipPack
+   - CarrierModulePack
+   - CarrierTradeOrder
+   - CarrierDockingPermission
+   - CarrierNameChanged
+   - CarrierJumpCancelled
 
-#### Other Events:
-- AfmuRepairs
-- ApproachSettlement
-- ChangeCrewRole
-- CockpitBreached
-- CommitCrime
-- Continued
-- CrewLaunchFighter
-- CrewMemberJoins
-- CrewMemberQuits
-- CrewMemberRoleChange
-- CrimeVictim
-- DatalinkScan
-- DatalinkVoucher
-- DataScanned
-- DockFighter
-- DockSRV
-- EndCrewSession
-- FighterRebuilt
-- FuelScoop
-- Friends
-- JetConeBoost
-- JetConeDamage
-- JoinACrew
-- KickCrewMember
-- LaunchDrone
-- LaunchFighter
-- LaunchSRV
-- ModuleInfo
-- NpcCrewPaidWage
-- NpcCrewRank
-- Promotion
-- ProspectedAsteroid
-- QuitACrew
-- RebootRepair
-- ReceiveText
-- RepairDrone
-- ReservoirReplenished
-- Resurrect
-- Scanned
-- SelfDestruct
-- SendText
-- Shutdown
-- Synthesis
-- SystemsShutdown
-- USSDrop
-- VehicleSwitch
-- WingAdd
-- WingInvite
-- WingJoin
-- WingLeave
-- CargoTransfer
-- SupercruiseDestinationDrop
+   #### Odyssey Events:
+   - Backpack
+   - BackpackChange
+   - BookDropship
+   - BookTaxi
+   - BuyMicroResources
+   - BuySuit
+   - BuyWeapon
+   - CancelDropship
+   - CancelTaxi
+   - CollectItems
+   - CreateSuitLoadout
+   - DeleteSuitLoadout
+   - Disembark
+   - DropItems
+   - DropShipDeploy
+   - Embark
+   - FCMaterials
+   - LoadoutEquipModule
+   - LoadoutRemoveModule
+   - RenameSuitLoadout
+   - ScanOrganic
+   - SellMicroResources
+   - SellOrganicData
+   - SellWeapon
+   - SwitchSuitLoadout
+   - TransferMicroResources
+   - TradeMicroResources
+   - UpgradeSuit
+   - UpgradeWeapon
+   - UseConsumable
+
+   #### Other Events:
+   - AfmuRepairs
+   - ApproachSettlement
+   - ChangeCrewRole
+   - CockpitBreached
+   - CommitCrime
+   - Continued
+   - CrewLaunchFighter
+   - CrewMemberJoins
+   - CrewMemberQuits
+   - CrewMemberRoleChange
+   - CrimeVictim
+   - DatalinkScan
+   - DatalinkVoucher
+   - DataScanned
+   - DockFighter
+   - DockSRV
+   - EndCrewSession
+   - FighterRebuilt
+   - FuelScoop
+   - Friends
+   - JetConeBoost
+   - JetConeDamage
+   - JoinACrew
+   - KickCrewMember
+   - LaunchDrone
+   - LaunchFighter
+   - LaunchSRV
+   - ModuleInfo
+   - NpcCrewPaidWage
+   - NpcCrewRank
+   - Promotion
+   - ProspectedAsteroid
+   - QuitACrew
+   - RebootRepair
+   - ReceiveText
+   - RepairDrone
+   - ReservoirReplenished
+   - Resurrect
+   - Scanned
+   - SelfDestruct
+   - SendText
+   - Shutdown
+   - Synthesis
+   - SystemsShutdown
+   - USSDrop
+   - VehicleSwitch
+   - WingAdd
+   - WingInvite
+   - WingJoin
+   - WingLeave
+   - CargoTransfer
+   - SupercruiseDestinationDrop
 
 These event-driven interactions are designed to enhance safety, decision-making, and overall user engagement throughout the journey in Elite Dangerous.
 
 ![Event-driven](screen/event_driven.png?raw=true "Screen")
 
-## Troubleshooting
-
-1.  You can remove `config.json` to reset the GUI to its default values.
-2.  You need to set certain key bindings so the AI is able to trigger the corresponding action. In case you forgot a key the integration the AI will tell you to register the missing keybinding. The integration will also list a warning at the top of the output window for each missing key.
-
-# Contact
-* Discord Server: https://discord.gg/9c58jxVuAT
-
-# Credits
-* [SumZer0](https://github.com/SumZer0-git) *For teaching me a thing or two about python programming, and giving me the idea to build a game event-driven RAG system!*
-
-# @ToDos
-* Installation video guide
-* Add an auto-updater
-* Add more APIs (atleast road-to-riches, neutron plotter and trader planner)
