@@ -1,6 +1,9 @@
 name: Documentation
 
-on: ["push"]
+on:
+  push:
+    branches:
+      - main
 
 permissions:
   contents: read # Adjusted from 'write'
