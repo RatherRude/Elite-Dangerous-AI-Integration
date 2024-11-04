@@ -139,24 +139,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 
 ## Available Online-Lookup Actions
 
-1. **getFactions**
-    - `query`: String (optional).
-    - `systemName`: String.
-
-     Retrieve information about factions for a system. Answers the question that lead to tool usage.
-
-2. **getStations**
-    - `query`: String (optional).
-    - `systemName`: String.
-
-     Retrieve information about stations for a system. Answers the question that lead to tool usage.
-
-3. **getGalnetNews**
+1. **getGalnetNews**
     - `query`: String.
 
      Retrieve current interstellar news from Galnet. Answers the question that lead to tool usage.
 
-4. **trade_plotter**
+2. **trade_plotter**
     - `system`: String.
     - `station`: String.
     - `max_hops`: Integer.
@@ -167,7 +155,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 
      Retrieve a trade route from the trade plotter.
 
-5. **system_finder**
+3. **system_finder**
     - `reference_system`: String.
     - `distance`: Number (default: 50000).
     - `allegiance`: Array of strings.
@@ -183,7 +171,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 
      Find a star system based on various filters.
 
-6. **station_finder**
+4. **station_finder**
     - `reference_system`: String.
     - `has_large_pad`: Boolean.
     - `distance`: Number (optional).
