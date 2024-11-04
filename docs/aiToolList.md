@@ -116,18 +116,6 @@ This is a list of all currently supported Ai Tools that can be triggered via Fun
 
      Charge ECM.
 
-29. **getFactions**
-    - `query`: String (optional).
-    - `systemName`: String.
-
-     Retrieve information about factions for a system. Answers the question that lead to tool usage.
-
-30. **getStations**
-    - `query`: String (optional).
-    - `systemName`: String.
-
-     Retrieve information about stations for a system. Answers the question that lead to tool usage.
-
 31. **getGalnetNews**
     - `query`: String.
 
