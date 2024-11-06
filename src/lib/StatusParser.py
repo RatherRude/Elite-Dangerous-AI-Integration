@@ -391,8 +391,15 @@ class StatusParser:
                 events.append({"event": "BreathableAtmosphereExited"})
             if not old_status["flags2"]["BreathableAtmosphere"] and new_status["flags2"]["BreathableAtmosphere"]:
                 events.append({"event": "BreathableAtmosphereEntered"})
-        
-        if old_status["LegalState"] and old_status["LegalState"] != new_status["LegalState"]:
+
+        if (
+            old_status["LegalState"]
+            and old_status["LegalState"] != new_status["LegalState"]
+            and (
+                old_status["LegalState"] not in ["Clean", "Speeding", "Allied"]
+                or new_status["LegalState"] not in ["Clean", "Speeding", "Allied"]
+            )
+        ):
             events.append({"event": "LegalStateChanged", "LegalState": new_status["LegalState"]})
         
         if old_status["SelectedWeapon"] and old_status["SelectedWeapon"] != new_status["SelectedWeapon"]:
