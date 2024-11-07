@@ -136,8 +136,10 @@ controller_manager = ControllerManager()
 def main():
     global llmClient, sttClient, ttsClient, tts, aiModel, backstory, useTools, jn, previous_status, event_manager, prompt_generator, llm_model_name
 
-    # Load or prompt for configuration
+    # Load configuration
     config = load_config()
+    if config["api_key"] == '':
+        config["api_key"] = '-'
     llm_model_name = config["llm_model_name"]
 
     jn = EDJournal(config["game_events"])
