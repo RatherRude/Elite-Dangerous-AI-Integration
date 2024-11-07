@@ -2,6 +2,7 @@ import json
 from sys import platform
 import threading
 from time import sleep
+import traceback
 from typing import Optional
 
 import openai
@@ -414,7 +415,7 @@ def check_trade_planner_job(job_id):
                 # persist route as optional piece
                 return
         except Exception as e:
-            log('error', f"Error: {e}")
+            log('error', e, traceback.format_exc())
             # add conversational piece - error request
             event_manager.add_external_event({'event': 'SpanshTradePlannerFailed',
                                               'reason': 'The Spansh API has encountered an error! Please try at a later point in time!',
@@ -452,7 +453,7 @@ def trade_planner_create_thread(obj):
 
 
     except Exception as e:
-        log('error', f"Error: {e}")
+        log('error', e, traceback.format_exc())
         event_manager.add_external_event({'event': 'SpanshTradePlannerFailed',
                                           'reason': 'The request to the Spansh API wasn\'t successful! Please try at a later point in time!',
                                           'error': f'{e}'})
@@ -1275,7 +1276,7 @@ def station_finder(obj):
 
         return f'Here is a list of stations: {json.dumps(filtered_data)}'
     except Exception as e:
-        log('error', f"Error: {e}")
+        log('error', e, traceback.format_exc())
         return 'An error has occurred. The station finder seems currently not available.'
 
 
@@ -1469,7 +1470,7 @@ def system_finder(obj):
         return f'Here is a list of systems: {json.dumps(filtered_data)}'
 
     except Exception as e:
-        log('error', f"Error: {e}")
+        log('error', e, traceback.format_exc())
         return 'An error occurred. The system finder seems to be currently unavailable.'
 
 

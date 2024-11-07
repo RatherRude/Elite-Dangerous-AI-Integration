@@ -1,6 +1,7 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 import json
 from functools import lru_cache
+import traceback
 
 import requests
 
@@ -382,7 +383,7 @@ class PromptGenerator:
             return response.text
 
         except Exception as e:
-            log("error", f"Error: {e}")
+            log('error', e, traceback.format_exc())
             return "Currently no information on system available"
 
     # fetch station info from EDSM
@@ -434,12 +435,7 @@ class PromptGenerator:
             log("error", f"Error: {e}")
             return "Currently no information on system available"
 
-    def generate_prompt(
-        self,
-        events: List[Event],
-        projected_states: dict[str, dict],
-        pending_events: List[Event],
-    ):
+    def generate_prompt(self, events: list[Event], projected_states: dict[str, dict], pending_events: list[Event]):
         # Collect the last 50 conversational pieces
         conversational_pieces: list = list()
 
@@ -450,19 +446,17 @@ class PromptGenerator:
             is_pending = event in pending_events
 
             if isinstance(event, GameEvent):
-                if len(conversational_pieces) < 5 or is_pending:
-                    is_important = (
-                        is_pending
-                        and event.content.get("event") in self.important_game_events
-                    )
-                    conversational_pieces.append(
-                        self.full_event_message(event, is_important)
-                    )
-                elif len(conversational_pieces) < 20:
-                    conversational_pieces.append(self.simple_event_message(event))
-                else:
-                    pass
-
+                if event.content.get('event') in allGameEvents:
+                    if len(conversational_pieces) < 5 or is_pending:
+                        is_important = is_pending and event.content.get('event') in self.important_game_events
+                        conversational_pieces.append(self.full_event_message(event, is_important))
+                    elif len(conversational_pieces) < 20:
+                        conversational_pieces.append(self.simple_event_message(event))
+                    else:
+                        pass
+                else: 
+                    log('debug', "PromptGenerator ignoring event", event.content.get('event'))
+            
             if isinstance(event, StatusEvent):
                 if (
                     len(conversational_pieces) < 20
@@ -479,10 +473,11 @@ class PromptGenerator:
             if isinstance(event, ExternalEvent):
                 conversational_pieces.append(self.external_event_message(event))
 
-        rawState = self.journal.ship_state()
-        keysToFilterOut = {"mission_completed", "mission_redirected", "extra_events"}
-        filtered_state = {
-            key: value for key, value in rawState.items() if key not in keysToFilterOut
+        rawState = {}
+        keysToFilterOut = {
+            "mission_completed",
+            "mission_redirected",
+            "extra_events"
         }
 
         status = projected_states.get("CurrentStatus", {})

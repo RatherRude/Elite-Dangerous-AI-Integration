@@ -17,6 +17,10 @@
     "stubPath": "src/stubs",
     "reportMissingImports": "error",
     "reportMissingTypeStubs": false,
+    "reportUnusedCallResult": false,
+    "reportUnknownMemberType": false,
+    "reportUnknownVariableType": false,
+    "reportUnknownArgumentType": false,
     "pythonVersion": "3.10",
     "pythonPlatform": "Windows",
     "executionEnvironments": [

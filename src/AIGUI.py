@@ -6,6 +6,7 @@ import re
 import subprocess
 import sys
 import tkinter as tk
+import traceback
 import webbrowser
 from queue import Queue
 from sys import platform
@@ -13,6 +14,7 @@ from threading import Thread
 from tkinter import messagebox
 from typing import Dict
 import typing
+from wrapt import synchronized
 
 import pyaudio
 import requests
@@ -1041,7 +1043,7 @@ class App:
             else:
                 print('APIError', e)
         except Exception as e:
-            print(e)
+            print(e, traceback.format_exc())
 
         return True
 
@@ -1240,13 +1242,14 @@ class App:
             self.debug_text.insert(tk.END, "Failed to start Elite Dangerous AI Integration: File not found.\n")
             self.debug_text.see(tk.END)
         except Exception as e:
-            print(e)
+            print(e, traceback.format_exc())
             self.debug_text.insert(tk.END, f"Failed to start Elite Dangerous AI Integration: {str(e)}\n")
             self.debug_text.see(tk.END)
 
     def strip_ansi_codes(self, s: str):
         return re.sub(r'\x1b\[([0-9,A-Z]{1,2}(;[0-9]{1,2})?(;[0-9]{3})?)?[m|K]?', '', s)
     
+    @synchronized  # TODO useful but still not enough, segfaults on large amounts of text... probably needs to run in the main thread
     def print_to_debug(self, line: str):
         prefixes = {
             "cmdr": "CMDR",
@@ -1278,7 +1281,6 @@ class App:
         if not any(line.startswith(prefix) for prefix in prefixes): 
             self.debug_text.insert(tk.END, line, "normal")
         
-        #self.debug_text.update_idletasks()
         self.debug_text.config(state=tk.DISABLED) # Make the text widget read-only
         self.debug_text.see(tk.END)  # Scroll to the end of the text widget
 

@@ -2,6 +2,7 @@ import io
 import json
 import sys
 from pathlib import Path
+import traceback
 
 from openai import OpenAI
 
@@ -47,7 +48,7 @@ def load_config() -> Config:
 
 is_thinking = False
 
-def reply(client, events: List[Event], new_events: List[Event], projected_states: dict[str, dict], prompt_generator: PromptGenerator, status_parser: StatusParser,
+def reply(client, events: list[Event], new_events: list[Event], projected_states: dict[str, dict], prompt_generator: PromptGenerator, status_parser: StatusParser,
           event_manager: EventManager, tts: TTS, copilot: EDCoPilot):
     global is_thinking
     is_thinking = True
@@ -87,33 +88,6 @@ def reply(client, events: List[Event], new_events: List[Event], projected_states
 
 useTools = False
 
-
-def getCurrentState():
-    keysToFilterOut = ["time"]
-    rawState = jn.ship_state()
-
-    return {key: value for key, value in rawState.items() if key not in keysToFilterOut}
-
-
-
-def checkForJournalUpdates(client, eventManager, commander_name, boot):
-    current_status = getCurrentState()
-
-    if current_status['extra_events'] and len(current_status['extra_events']) > 0:
-        while current_status['extra_events']:
-            item = current_status['extra_events'][0]  # Get the first item
-            if 'event_content' in item:
-                if item['event_content'].get('ScanType') == "AutoScan":
-                    current_status['extra_events'].pop(0)
-                    continue
-
-                elif 'Message_Localised' in item['event_content'] and item['event_content']['Message'].startswith(
-                        "$COMMS_entered"):
-                    current_status['extra_events'].pop(0)
-                    continue
-
-            eventManager.add_game_event(item['event_content'])
-            current_status['extra_events'].pop(0)
 
 backstory: str = None
 jn: EDJournal = None
@@ -219,6 +193,15 @@ def main():
     if useTools:
         register_actions(action_manager, event_manager, llmClient, llm_model_name, visionClient, config["vision_model_name"], status_parser)
         log('info', "Actions ready.")
+        
+    log('info', 'Initializing states...')
+    event_manager.add_status_event(status_parser.current_status)
+    
+    while not jn.events.empty():
+        while not jn.events.empty():
+            event = jn.events.get()
+            event_manager.add_game_event(event)
+        sleep(0.5)
 
     # Cue the user that we're ready to go.
     log('info', "System Ready.")
@@ -255,8 +238,9 @@ def main():
                 event_manager.add_assistant_complete_event()
 
             # check EDJournal files for updates
-            if counter % 5 == 0:
-                checkForJournalUpdates(llmClient, event_manager, config["commander_name"], counter <= 5)
+            while not jn.events.empty():
+                event = jn.events.get()
+                event_manager.add_game_event(event)
 
             event_manager.process()
 
@@ -265,7 +249,7 @@ def main():
         except KeyboardInterrupt:
             break
         except Exception as e:
-            log("error", str(e), e)
+            log("error", e, traceback.format_exc())
             break
 
     # Teardown TTS
