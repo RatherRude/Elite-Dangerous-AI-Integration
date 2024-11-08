@@ -30,7 +30,7 @@ class Projection(ABC):
 class EventManager:
     def __init__(self, on_reply_request: Callable[[list[Event], list[Event], dict[str, dict[str, Any]]], Any], game_events: list[str],
                  continue_conversation: bool = False):
-        self.incoming: list[Event] = []
+        self.incoming: Queue[Event] = Queue()
         self.pending: list[Event] = []
         self.processed: list[Event] = []
         self.is_replying = False
@@ -81,24 +81,30 @@ class EventManager:
         return conn, cursor
         
     def add_game_event(self, content: dict[str, Any]):
-        event = GameEvent(content=content)
-        self.incoming.append(event)
+        event = GameEvent(content=content, historic=False)
+        self.incoming.put(event)
         log('Event', event)
+
+    def add_historic_game_event(self, content: dict[str, Any]):
+        event = GameEvent(content=content, historic=True)
+        self.incoming.put(event)
+        
+        log('Info', content.get('timestamp'))
 
     def add_external_event(self, content: dict[str, Any]):
         event = ExternalEvent(content=content)
-        self.incoming.append(event)
+        self.incoming.put(event)
         log('Event', event)
 
     def add_status_event(self, status: dict[str, Any]):
         event = StatusEvent(status=status)
-        self.incoming.append(event)
+        self.incoming.put(event)
         if status.get("event") != 'Status':
             log('Event', event)
 
     def add_conversation_event(self, role: Literal['user', 'assistant'], content: str):
         event = ConversationEvent(kind=role, content=content)
-        self.incoming.append(event)
+        self.incoming.put(event)
         if role == 'user':
             log('CMDR', content)
         elif role == 'assistant':
@@ -106,24 +112,30 @@ class EventManager:
 
     def add_assistant_complete_event(self):
         event = ConversationEvent(kind='assistant_completed', content='')
-        self.incoming.append(event)
+        self.incoming.put(event)
         self.is_replying = False
         # log('debug', event)
 
     def add_tool_call(self, request: list[dict[str, Any]], results: list[dict[str, Any]]):
         event = ToolEvent(request=request, results=results)
-        self.incoming.append(event)
+        self.incoming.put(event)
         log('Action', [result['name'] + ': ' + result['content'] for result in results])
 
     def process(self):
-        for event in self.incoming:
+        incoming: list[Event] = []
+        while not self.incoming.empty():
+            event = self.incoming.get()
             timestamp = datetime.now(timezone.utc).timestamp()
             event.processed_at = timestamp
             self.update_projections(event)
-        self.save_incoming_history()
-        for event in self.incoming:
-            self.incoming.remove(event)
-            self.pending.append(event)
+            incoming.append(event)
+        self.save_incoming_history(incoming)
+        for event in incoming:
+            if isinstance(event, GameEvent) and event.historic:
+                #self.processed.append(event)
+                pass
+            else:
+                self.pending.append(event)
         if not self.is_replying and not self.is_listening and self.should_reply():
             self.is_replying = True
             new_events = self.pending
@@ -215,8 +227,8 @@ class EventManager:
 
         return False
 
-    def save_incoming_history(self):
-        for event in self.incoming:
+    def save_incoming_history(self, incoming: list[Event]):
+        for event in incoming:
             event_data = json.dumps(event.__dict__, default=self._json_serializer)
             event_class = event.__class__.__name__
             _ = self.cursor.execute('''

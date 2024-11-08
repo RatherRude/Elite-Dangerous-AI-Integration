@@ -19,9 +19,28 @@ class EDJournal:
     def __init__(self, game_events: dict[str, dict[str, bool]]):
         self.events: Queue[JournalEntry] = Queue()
         
+        self.historic_events: list[JournalEntry] = []
+        self.load_timestamp: str = '1970-01-01T00:00:00Z'
+        self.load_history()
+        
         thread = threading.Thread(target=self._reading_loop)
         thread.daemon = True
         thread.start()
+        
+    def load_history(self):
+        latest_log = self.get_latest_log()
+        if latest_log is None:
+            return
+
+        with open(latest_log, 'r') as f:
+            # read the file from start to finish, line by line
+            for line in f:
+                try:
+                    entry = json.loads(line)
+                    self.historic_events.append(entry)
+                    self.load_timestamp = entry.get("timestamp")
+                except json.JSONDecodeError:
+                    continue
 
     def _reading_thread(self):
         backoff = 1
@@ -41,11 +60,12 @@ class EDJournal:
                 sleep(1)
                 continue
             with open(latest_log, 'r') as f:
-                f.seek(0, SEEK_END) # TODO we want to read old events too
                 while True: # TODO we need to check if there is a new file
                     line = f.readline() # this is blocking, so we need to check if the file has changed somehow
                     try:
                         entry = json.loads(line)  # pyright: ignore[reportAny]
+                        if entry.get("timestamp") <= self.load_timestamp:
+                            continue
                         self.events.put(entry)  # pyright: ignore[reportAny]
                     except json.JSONDecodeError:
                         sleep(0.1)

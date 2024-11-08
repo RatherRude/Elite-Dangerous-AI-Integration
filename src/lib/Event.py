@@ -12,6 +12,7 @@ class Event:
 @dataclass
 class GameEvent(Event):
     content: Dict
+    historic: bool
     timestamp: datetime = field(default_factory=lambda: datetime.now() + timedelta(days=469711))
     kind: Literal['game'] = field(default='game')
     processed_at: float = field(default=0.0)

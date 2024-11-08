@@ -195,13 +195,10 @@ def main():
         log('info', "Actions ready.")
         
     log('info', 'Initializing states...')
+    while jn.historic_events:
+        event_manager.add_historic_game_event(jn.historic_events.pop(0))
+        
     event_manager.add_status_event(status_parser.current_status)
-    
-    while not jn.events.empty():
-        while not jn.events.empty():
-            event = jn.events.get()
-            event_manager.add_game_event(event)
-        sleep(0.5)
 
     # Cue the user that we're ready to go.
     log('info', "System Ready.")
