@@ -18,6 +18,7 @@ class EDCoPilot:
         log('info', f'EDCoPilot is installed: {self.is_installed()}')
         log('info', f'EDCoPilot is running: {self.is_running()}')
         log('info', f'EDCoPilot is enabled: {self.is_enabled}')
+        log('info', f'EDCoPilot is dominant: {self.is_edcopilot_dominant}')
 
     def is_installed(self) -> bool:
         """Check if EDCoPilot is installed"""
