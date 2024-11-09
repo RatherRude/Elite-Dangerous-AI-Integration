@@ -1124,9 +1124,9 @@ def prepare_station_request(obj):
         filters["technology_broker"] = {"value": obj["technology_broker"]}
     if "market" in obj and obj["market"]:
         market_filters = []
-        valid_market_filters = []
         for market_item in obj["market"]:
-            if not market_item["name"].capitalize() in known_commodities:
+            market_item["name"] = ' '.join(word.capitalize() for word in market_item["name"].split())
+            if not market_item["name"] in known_commodities:
                 raise Exception(
                     f"Invalid commodity name: {market_item['name']}. {educated_guesses_message(market_item['name'], known_commodities)}")
             market_filter = {
@@ -1151,20 +1151,24 @@ def prepare_station_request(obj):
             market_filters.append(market_filter)
         filters["market"] = market_filters
     if "modules" in obj:
+        modules_filter = {}
         for module in obj["modules"]:
-            if module["name"].capitalize() not in known_modules:
+            module["name"] = ' '.join(word.capitalize() for word in module["name"].split())
+            if module["name"] not in known_modules:
                 raise Exception(
                     f"Invalid module name: {module['name']}. {educated_guesses_message(module['name'], known_modules)}")
         filters["modules"] = obj["modules"]
     if "ships" in obj:
         for ship in obj["ships"]:
-            if ship["name"].capitalize() not in known_ships:
+            ship["name"] = ' '.join(word.capitalize() for word in ship["name"].split())
+            if ship["name"] not in known_ships:
                 raise Exception(
                     f"Invalid ship name: {ship['name']}. {educated_guesses_message(ship['name'], known_ships)}")
         filters["ships"] = {"value": obj["ships"]}
     if "services" in obj:
         for service in obj["services"]:
-            if service["name"].capitalize() not in known_services:
+            service["name"] = ' '.join(word.capitalize() for word in service["name"].split())
+            if service["name"] not in known_services:
                 raise Exception(
                     f"Invalid service name: {service['name']}. {educated_guesses_message(service['name'], known_services)}")
         filters["services"] = {"value": obj["services"]}
