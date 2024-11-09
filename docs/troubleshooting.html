@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Interactive Troubleshooting Guide</title>
+    <!-- Bootstrap CSS -->
+    <link 
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" 
+        rel="stylesheet" 
+        crossorigin="anonymous">
+    <style>
+        body {
+            padding: 20px;
+        }
+        .question-container {
+            margin-bottom: 20px;
+        }
+        .error-container {
+            margin-top: 10px;
+        }
+        .follow-up-question {
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Interactive Troubleshooting Guide</h1>
+        <div id="guide"></div>
+    </div>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script 
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" 
+        crossorigin="anonymous">
+    </script>
+    <!-- js-yaml library -->
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+    <script>
+        (function() {
+            var questions = [];
+            var currentQuestionIndex = 0;
+            var guideContainer = document.getElementById('guide');
+
+            // Function to fetch and parse YAML
+            function loadYAML() {
+                fetch('troubleshooting.yaml')
+                    .then(function(response) {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.text();
+                    })
+                    .then(function(text) {
+                        questions = jsyaml.load(text);
+                        renderQuestion(currentQuestionIndex);
+                    })
+                    .catch(function(error) {
+                        var errorDiv = document.createElement('div');
+                        errorDiv.className = 'alert alert-danger';
+                        errorDiv.textContent = 'Failed to load troubleshooting data: ' + error.message;
+                        guideContainer.appendChild(errorDiv);
+                    });
+            }
+
+            // Function to render a question
+            function renderQuestion(index) {
+                if (index >= questions.length) {
+                    // All questions answered positively
+                    var completionDiv = document.createElement('div');
+                    completionDiv.className = 'alert alert-success';
+                    completionDiv.textContent = 'Congratulations! You have successfully completed all the troubleshooting steps.';
+                    guideContainer.appendChild(completionDiv);
+                    return;
+                }
+
+                var questionObj = questions[index];
+                var questionText = questionObj.Question;
+
+                var questionDiv = document.createElement('div');
+                questionDiv.className = 'question-container';
+                questionDiv.setAttribute('data-question-index', index);
+
+                var questionElement = document.createElement('h4');
+                questionElement.textContent = questionText;
+                questionDiv.appendChild(questionElement);
+
+                var buttonsDiv = document.createElement('div');
+                buttonsDiv.className = 'btn-group';
+                buttonsDiv.setAttribute('role', 'group');
+
+                var yesButton = document.createElement('button');
+                yesButton.className = 'btn btn-success';
+                yesButton.textContent = 'Yes';
+                yesButton.onclick = function() {
+                    handleYes(index);
+                };
+
+                var noButton = document.createElement('button');
+                noButton.className = 'btn btn-danger';
+                noButton.textContent = 'No';
+                noButton.onclick = function() {
+                    handleNo(index);
+                };
+
+                buttonsDiv.appendChild(yesButton);
+                buttonsDiv.appendChild(noButton);
+                questionDiv.appendChild(buttonsDiv);
+
+                guideContainer.appendChild(questionDiv);
+            }
+
+            // Function to handle "Yes" response
+            function handleYes(index) {
+                var questionDiv = getQuestionDiv(index);
+                if (!questionDiv) return;
+
+                // Hide buttons
+                var buttonsGroup = questionDiv.querySelector('.btn-group');
+                buttonsGroup.style.display = 'none';
+
+                // Show solution
+                showSolution(questionDiv, questions[index].Yes[0].Solution);
+
+                // Proceed to next question
+                currentQuestionIndex++;
+                renderQuestion(currentQuestionIndex);
+            }
+
+            // Function to handle "No" response
+            function handleNo(index) {
+                var questionDiv = getQuestionDiv(index);
+                if (!questionDiv) return;
+
+                // Hide buttons
+                var buttonsGroup = questionDiv.querySelector('.btn-group');
+                buttonsGroup.style.display = 'none';
+
+                var noAnswers = questions[index].No;
+
+                // Add "Possible Issues:" label
+                var possibleIssuesLabel = document.createElement('h5');
+                possibleIssuesLabel.textContent = 'Possible Issues:';
+                possibleIssuesLabel.className = 'mt-3';
+                questionDiv.appendChild(possibleIssuesLabel);
+
+                noAnswers.forEach(function(errorObj, idx) {
+                    var cardDiv = document.createElement('div');
+                    cardDiv.className = 'card error-container';
+
+                    var cardHeader = document.createElement('div');
+                    cardHeader.className = 'card-header';
+                    var collapseId = 'collapse' + index + '_' + idx;
+                    var headingId = 'heading' + index + '_' + idx;
+
+                    var h2 = document.createElement('h2');
+                    h2.className = 'mb-0';
+
+                    var button = document.createElement('button');
+                    button.className = 'btn btn-link';
+                    button.type = 'button';
+                    button.setAttribute('data-bs-toggle', 'collapse');
+                    button.setAttribute('data-bs-target', '#' + collapseId);
+                    button.setAttribute('aria-expanded', 'false');
+                    button.setAttribute('aria-controls', collapseId);
+                    button.textContent = errorObj.Error ? errorObj.Error : 'Unknown Error';
+
+                    h2.appendChild(button);
+                    cardHeader.appendChild(h2);
+                    cardDiv.appendChild(cardHeader);
+
+                    var collapseDiv = document.createElement('div');
+                    collapseDiv.id = collapseId;
+                    collapseDiv.className = 'collapse';
+                    collapseDiv.setAttribute('aria-labelledby', headingId);
+                    collapseDiv.setAttribute('data-bs-parent', '#guide');
+
+                    var cardBody = document.createElement('div');
+                    cardBody.className = 'card-body';
+
+                    if (errorObj.Explanation) {
+                        var explanationP = document.createElement('p');
+                        explanationP.innerHTML = '<strong>Explanation:</strong> ' + errorObj.Explanation;
+                        cardBody.appendChild(explanationP);
+                    }
+
+                    if (errorObj.Solution) {
+                        var solutionP = document.createElement('p');
+                        solutionP.innerHTML = '<strong>Solution:</strong> ' + errorObj.Solution;
+                        cardBody.appendChild(solutionP);
+                    }
+
+                    collapseDiv.appendChild(cardBody);
+                    cardDiv.appendChild(collapseDiv);
+
+                    questionDiv.appendChild(cardDiv);
+                });
+
+                // Add follow-up question: "Is it working now?" with only "Yes" button
+                var followUpDiv = document.createElement('div');
+                followUpDiv.className = 'follow-up-question';
+                followUpDiv.setAttribute('data-follow-up-for', index);
+
+                var followUpQuestion = document.createElement('h5');
+                followUpQuestion.textContent = 'Is it working now?';
+                followUpQuestion.className = 'mt-3';
+                followUpDiv.appendChild(followUpQuestion);
+
+                var followUpButtonsDiv = document.createElement('div');
+                followUpButtonsDiv.className = 'btn-group';
+                followUpButtonsDiv.setAttribute('role', 'group');
+
+                var followUpYesButton = document.createElement('button');
+                followUpYesButton.className = 'btn btn-success';
+                followUpYesButton.textContent = 'Yes';
+                followUpYesButton.onclick = function() {
+                    handleFollowUpYes(index);
+                };
+
+                followUpButtonsDiv.appendChild(followUpYesButton);
+                followUpDiv.appendChild(followUpButtonsDiv);
+
+                questionDiv.appendChild(followUpDiv);
+            }
+
+            // Function to handle follow-up "Yes" response
+            function handleFollowUpYes(index) {
+                var questionDiv = getQuestionDiv(index);
+                if (!questionDiv) return;
+
+                // Remove follow-up question
+                var followUpDiv = questionDiv.querySelector('.follow-up-question');
+                if (followUpDiv) {
+                    followUpDiv.remove();
+                }
+
+                // Show solution associated with "Yes" response
+                showSolution(questionDiv, questions[index].Yes[0].Solution);
+
+                // Proceed to next question
+                currentQuestionIndex++;
+                renderQuestion(currentQuestionIndex);
+            }
+
+            // Utility function to get question div by index
+            function getQuestionDiv(index) {
+                var questionDivs = guideContainer.querySelectorAll('.question-container');
+                for (var i = 0; i < questionDivs.length; i++) {
+                    if (parseInt(questionDivs[i].getAttribute('data-question-index')) === index) {
+                        return questionDivs[i];
+                    }
+                }
+                return null;
+            }
+
+            // Function to display the solution
+            function showSolution(questionDiv, solutionText) {
+                var solutionDiv = document.createElement('div');
+                solutionDiv.className = 'alert alert-info mt-2';
+                solutionDiv.textContent = solutionText;
+                questionDiv.appendChild(solutionDiv);
+            }
+
+            // Initialize the guide by loading YAML
+            loadYAML();
+        })();
+    </script>
+</body>
+</html>

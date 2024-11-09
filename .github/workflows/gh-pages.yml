@@ -1,0 +1,44 @@
+name: Documentation
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read # Adjusted from 'write'
+  pages: write # Added
+  id-token: write # Added
+
+# Used to avoid concurrency issues
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }} # Retrieved from deploy-pages action
+    steps:
+      - uses: actions/checkout@v4
+      # Removed Git Credentials setup (Redundant)
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+      - run: echo "cache_id=$(date --utc '+%V')" >> $GITHUB_ENV
+      - uses: actions/cache@v4
+        with:
+          key: mkdocs-material-${{ env.cache_id }}
+          path: .cache
+          restore-keys: |
+            mkdocs-material-
+      - run: pip install mkdocs-material
+      - run: mkdocs build # Adjusted from 'mkdocs gh-deploy'
+      - uses: actions/configure-pages@v5 # Added
+      - uses: actions/upload-pages-artifact@v3 # Added
+        with:
+          path: "site/"
+      - uses: actions/deploy-pages@v4 # Added
+        id: deployment
