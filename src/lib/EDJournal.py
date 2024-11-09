@@ -12,6 +12,7 @@ from typing import TypedDict
 from .Logger import log
 
 class JournalEntry(TypedDict):
+    id: str
     timestamp: str
     event: str
 
@@ -26,6 +27,10 @@ class EDJournal:
         thread = threading.Thread(target=self._reading_loop)
         thread.daemon = True
         thread.start()
+    
+    def get_event_id(self, log: str, file_index: int) -> str:
+        return log.replace('\\', '/').split('/')[-1] + '.' + str(file_index).zfill(6)
+        
         
     def load_history(self):
         latest_log = self.get_latest_log()
@@ -33,10 +38,13 @@ class EDJournal:
             return
 
         with open(latest_log, 'r') as f:
+            file_index = 0
             # read the file from start to finish, line by line
             for line in f:
+                file_index += 1
                 try:
-                    entry = json.loads(line)
+                    entry: JournalEntry = json.loads(line)
+                    entry['id'] = self.get_event_id(latest_log, file_index)
                     self.historic_events.append(entry)
                     self.load_timestamp = entry.get("timestamp")
                 except json.JSONDecodeError:
@@ -60,13 +68,16 @@ class EDJournal:
                 sleep(1)
                 continue
             with open(latest_log, 'r') as f:
+                file_index = 0
                 while True: # TODO we need to check if there is a new file
+                    file_index += 1
                     line = f.readline() # this is blocking, so we need to check if the file has changed somehow
                     try:
-                        entry = json.loads(line)  # pyright: ignore[reportAny]
-                        if entry.get("timestamp") <= self.load_timestamp:
+                        entry: JournalEntry = json.loads(line)
+                        entry['id'] = self.get_event_id(latest_log, file_index)
+                        if self.historic_events and self.historic_events[-1].get('id') >= entry.get('id'):
                             continue
-                        self.events.put(entry)  # pyright: ignore[reportAny]
+                        self.events.put(entry)
                     except json.JSONDecodeError:
                         sleep(0.1)
                         continue

@@ -7,6 +7,7 @@ from typing import Any, Literal, Callable, Optional, final
 import sqlite3
 import sqlite_vec
 
+from .Database import EventStore, KeyValueStore
 from .EDJournal import *
 from .Event import Event, GameEvent, ConversationEvent, StatusEvent, ToolEvent, ExternalEvent
 from .Logger import log
@@ -41,7 +42,8 @@ class EventManager:
         self.event_classes: list[type[Event]] = [ConversationEvent, ToolEvent, GameEvent, StatusEvent, ExternalEvent]
         self.projections: list[Projection] = []
         
-        self.conn, self.cursor = self.init_db()
+        self.event_store = EventStore('events', self.event_classes)
+        self.projection_store = KeyValueStore('projections')
 
         if continue_conversation:
             self.load_history()
@@ -50,35 +52,6 @@ class EventManager:
             self.clear_history()
             log('info', 'Starting a new conversation.')
             
-    def init_db(self):
-        conn = sqlite3.connect('./covas.db')
-        conn.enable_load_extension(True)
-        sqlite_vec.load(conn)
-        conn.enable_load_extension(False)
-        cursor = conn.cursor()
-
-        _ = cursor.execute(f'''
-            CREATE TABLE IF NOT EXISTS events_v1 (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                class TEXT,
-                kind TEXT,
-                data TEXT,
-                processed_at FLOAT,
-                timestamp DATETIME
-            )
-        ''')
-        _ = cursor.execute(f'''
-            CREATE TABLE IF NOT EXISTS projections_v1 (
-                class TEXT PRIMARY KEY,
-                version INTEGER,
-                state TEXT,
-                last_processed FLOAT,
-                updated DATETIME DEFAULT CURRENT_TIMESTAMP
-            );
-        ''')
-        conn.commit()
-        
-        return conn, cursor
         
     def add_game_event(self, content: dict[str, Any]):
         event = GameEvent(content=content, historic=False)
@@ -86,11 +59,13 @@ class EventManager:
         log('Event', event)
 
     def add_historic_game_event(self, content: dict[str, Any]):
+        max_event_id = max([event.content.get('id') for event in self.processed if isinstance(event, GameEvent)], default='') # TODO: this is not efficient
+        if content.get('id', '') <= max_event_id:
+            return
         event = GameEvent(content=content, historic=True)
         self.incoming.put(event)
+        # log('Event', event)
         
-        log('Info', content.get('timestamp'))
-
     def add_external_event(self, content: dict[str, Any]):
         event = ExternalEvent(content=content)
         self.incoming.put(event)
@@ -122,20 +97,21 @@ class EventManager:
         log('Action', [result['name'] + ': ' + result['content'] for result in results])
 
     def process(self):
-        incoming: list[Event] = []
         while not self.incoming.empty():
             event = self.incoming.get()
             timestamp = datetime.now(timezone.utc).timestamp()
             event.processed_at = timestamp
-            self.update_projections(event)
-            incoming.append(event)
-        self.save_incoming_history(incoming)
-        for event in incoming:
+            self.update_projections(event, save_later=True)
+            self.event_store.insert_event(event, timestamp)  
+            
             if isinstance(event, GameEvent) and event.historic:
                 #self.processed.append(event)
                 pass
             else:
                 self.pending.append(event)
+        
+        self.save_projections()
+        
         if not self.is_replying and not self.is_listening and self.should_reply():
             self.is_replying = True
             new_events = self.pending
@@ -150,56 +126,44 @@ class EventManager:
 
         return False
 
-    def update_projections(self, event: Event):
+    def update_projections(self, event: Event, save_later: bool = False):
         for projection in self.projections:
-            self.update_projection(projection, event)
+            self.update_projection(projection, event, save_later=save_later)
     
-    def update_projection(self, projection: Projection, event: Event):
-        projection.process(event)
+    def update_projection(self, projection: Projection, event: Event, save_later: bool = False):
+        try:
+            projection.process(event)
+        except Exception as e:
+            log('error', 'Error processing event', event, 'with projection', projection, e, traceback.format_exc())
+            return
         if event.processed_at < projection.last_processed:
             log('warn', 'Projection', projection.__class__.__name__, 'is running backwards in time!', 'Event:', event.processed_at, 'Projection:', projection.last_processed)
         projection.last_processed = event.processed_at
-        _ = self.cursor.execute('''
-            UPDATE projections_v1 SET state = ?, last_processed = ? WHERE class = ?
-        ''', (json.dumps(projection.state), projection.last_processed, projection.__class__.__name__))
-        self.conn.commit()
+        if not save_later:
+            self.projection_store.set(projection.__class__.__name__, {"state": projection.state, "last_processed": projection.last_processed})
+    
+    def save_projections(self):
+        for projection in self.projections:
+            self.projection_store.set(projection.__class__.__name__, {"state": projection.state, "last_processed": projection.last_processed})
     
     def register_projection(self, projection: Projection):
-        # check if projection is already in db, if not insert, if yes load state
         projection_class_name = projection.__class__.__name__
         projection_source = inspect.getsource(projection.__class__)
-        log('debug', 'Projection source', projection_source)
         projection_version = hashlib.sha256(projection_source.encode()).hexdigest()
         log('debug', 'Register projection', projection_class_name, 'version', projection_version)
         
-        _ = self.cursor.execute('''
-            SELECT state, last_processed FROM projections_v1 WHERE class = ? AND version = ?
-        ''', (projection_class_name, projection_version, ))
-        row = self.cursor.fetchone()
-        
-        if row:
-            state, last_processed = row
-            log('debug', 'Loading state for', projection_class_name, projection_version, state, last_processed)
-            projection.state = json.loads(state)
-            projection.last_processed = last_processed
-        else:
-            log('debug', 'Initializing new state for', projection_class_name, projection_version)
-            _ = self.cursor.execute('''
-                DELETE FROM projections_v1 WHERE class = ?
-            ''', (projection_class_name,))
-            _ = self.cursor.execute('''
-                INSERT INTO projections_v1 (class, version, state, last_processed) VALUES (?, ?, ?, ?)
-            ''', (projection_class_name, projection_version, json.dumps(projection.get_default_state()), 0.0))
-            self.conn.commit()
+        state = self.projection_store.init(projection_class_name, projection_version, {"state": projection.get_default_state(), "last_processed": 0.0})
+        projection.state = state["state"]
+        projection.last_processed = state["last_processed"]
         
         for event in self.processed + self.pending:
             if event.processed_at <= projection.last_processed:
                 continue
             log('debug', 'updating', projection_class_name, 'with', event, 'after starting from', projection.last_processed)
-            self.update_projection(projection, event)
+            self.update_projection(projection, event, save_later=True)
         
-        self.conn.commit()
         self.projections.append(projection)
+        self.save_projections()
 
     def should_reply(self):
         if len(self.pending) == 0:
@@ -229,28 +193,12 @@ class EventManager:
 
     def save_incoming_history(self, incoming: list[Event]):
         for event in incoming:
-            event_data = json.dumps(event.__dict__, default=self._json_serializer)
-            event_class = event.__class__.__name__
-            _ = self.cursor.execute('''
-                INSERT INTO events_v1 (class, kind, data, processed_at, timestamp) VALUES (?, ?, ?, ?, ?)
-            ''', (event_class, event.kind, event_data, event.processed_at, event.timestamp))
-        self.conn.commit()
+            self.event_store.insert_event(event, event.processed_at)
 
     def load_history(self):
-        _ = self.cursor.execute('''
-            SELECT class as class_name, data, timestamp FROM events_v1
-            ORDER BY timestamp DESC
-            LIMIT 100
-        ''')
-        rows = self.cursor.fetchall()
-        for rawevent in reversed(rows):
-            class_name = rawevent[0]
-            event_data = json.loads(rawevent[1])
-            event = self._instantiate_event(class_name, event_data)
-            if event:
-                self.processed.append(event)
-            else:
-                log('error', 'Could not instantiate event', class_name)
+        events: list[Event] = self.event_store.get_latest()
+        for event in reversed(events):
+            self.processed.append(event)
     
     def _instantiate_event(self, type_name: str, data: dict[str, Any]) -> (Event | None):
         for event_class in self.event_classes:
@@ -265,15 +213,6 @@ class EventManager:
     
     def clear_history(self):
         # TODO do we want to clear all events or just conversation?
-        _ = self.cursor.execute('''
-            DELETE FROM events_v1
-        ''')
+        self.event_store.delete_all()
         # TODO do we want to clear projections as well?
-        _ = self.cursor.execute('''
-            DELETE FROM projections_v1
-        ''')
-        self.conn.commit()
-
-    def __del__(self):
-        if 'conn' in self.__dict__:
-            self.conn.close()
+        self.projection_store.delete_all()

@@ -199,6 +199,7 @@ def main():
         event_manager.add_historic_game_event(jn.historic_events.pop(0))
         
     event_manager.add_status_event(status_parser.current_status)
+    event_manager.process()
 
     # Cue the user that we're ready to go.
     log('info', "System Ready.")
