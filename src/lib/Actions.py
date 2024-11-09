@@ -1168,6 +1168,10 @@ def prepare_station_request(obj):
                 raise Exception(
                     f"Invalid service name: {service['name']}. {educated_guesses_message(service['name'], known_services)}")
         filters["services"] = {"value": obj["services"]}
+    if "name" in obj and obj["name"]:
+        filters["name"] = {
+            "value": obj["name"]
+        }
     # Build the request body
     request_body = {
         "filters": filters,
@@ -1287,11 +1291,9 @@ def prepare_system_request(obj):
         "Investment", "Lockdown", "Natural Disaster", "None", "Outbreak",
         "Pirate Attack", "Public Holiday", "Retreat", "Terrorist Attack", "War"
     ]
-    known_powers = [
-        "A. Lavigny-Duval", "Aisling Duval", "Archon Delaine", "Denton Patreus",
-        "Edmund Mahon", "Felicia Winters", "Li Yong-Rui", "Pranav Antal",
-        "Yuri Grom", "Zachary Hudson", "Zemina Torval"
-    ]
+    known_powers = ["A. Lavigny-Duval", "Aisling Duval", "Archon Delaine", "Denton Patreus", "Edmund Mahon",
+                    "Felicia Winters", "Jerome Archer", "Li Yong-Rui", "Nakato Kaine", "Pranav Antal", "Yuri Grom",
+                    "Zemina Torval"]
     known_economies = [
         "Agriculture", "Colony", "Extraction", "High Tech", "Industrial",
         "Military", "None", "Refinery", "Service", "Terraforming", "Tourism"
@@ -1334,7 +1336,7 @@ def prepare_system_request(obj):
             if power not in known_powers:
                 raise Exception(
                     f"Invalid power: {power}. {educated_guesses_message(power, known_powers)}")
-        filters["power"] = {"value": obj["power"]}
+        filters["controlling_power"] = {"value": obj["power"]}
 
     if "primary_economy" in obj and obj["primary_economy"]:
         for economy in obj["primary_economy"]:
@@ -1367,6 +1369,11 @@ def prepare_system_request(obj):
         filters["population"] = {
             "comparison": "<=>",
             "value": [lower_bound, upper_bound]
+        }
+
+    if "name" in obj and obj["name"]:
+        filters["name"] = {
+            "value": obj["name"]
         }
 
     # Build the request body
@@ -1656,49 +1663,49 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
 
     # if ARC:
     actionManager.registerAction('trade_plotter',
-     "Retrieve a trade route from the trade plotter. Ask for unknown values and make sure they are known.",
-     {
-         "type": "object",
-         "properties": {
-             "system": {
-                 "type": "string",
-                 "description": "Name of the current system. Example: 'Sol'"
-             },
-             "station": {
-                 "type": "string",
-                 "description": "Name of the current station. Example: 'Wakata Station'"
-             },
-             "max_hops": {
-                 "type": "integer",
-                 "description": "Maximum number of hops (jumps) allowed for the route."
-             },
-             "max_hop_distance": {
-                 "type": "number",
-                 "description": "Maximum distance in light-years for a single hop."
-             },
-             "starting_capital": {
-                 "type": "number",
-                 "description": "Available starting capital in credits."
-             },
-             "max_cargo": {
-                 "type": "integer",
-                 "description": "Maximum cargo capacity in tons."
-             },
-             "requires_large_pad": {
-                 "type": "boolean",
-                 "description": "Whether the station must have a large landing pad."
-             },
-         },
-         "required": [
-             "system",
-             "station",
-             "max_hops",
-             "max_hop_distance",
-             "starting_capital",
-             "max_cargo",
-             "requires_large_pad",
-         ]
-     }, trade_planner)
+                                 "Retrieve a trade route from the trade plotter. Ask for unknown values and make sure they are known.",
+                                 {
+                                     "type": "object",
+                                     "properties": {
+                                         "system": {
+                                             "type": "string",
+                                             "description": "Name of the current system. Example: 'Sol'"
+                                         },
+                                         "station": {
+                                             "type": "string",
+                                             "description": "Name of the current station. Example: 'Wakata Station'"
+                                         },
+                                         "max_hops": {
+                                             "type": "integer",
+                                             "description": "Maximum number of hops (jumps) allowed for the route."
+                                         },
+                                         "max_hop_distance": {
+                                             "type": "number",
+                                             "description": "Maximum distance in light-years for a single hop."
+                                         },
+                                         "starting_capital": {
+                                             "type": "number",
+                                             "description": "Available starting capital in credits."
+                                         },
+                                         "max_cargo": {
+                                             "type": "integer",
+                                             "description": "Maximum cargo capacity in tons."
+                                         },
+                                         "requires_large_pad": {
+                                             "type": "boolean",
+                                             "description": "Whether the station must have a large landing pad."
+                                         },
+                                     },
+                                     "required": [
+                                         "system",
+                                         "station",
+                                         "max_hops",
+                                         "max_hop_distance",
+                                         "starting_capital",
+                                         "max_cargo",
+                                         "requires_large_pad",
+                                     ]
+                                 }, trade_planner)
 
     # Register AI action for system finder
     actionManager.registerAction(
@@ -1710,6 +1717,10 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "reference_system": {
                     "type": "string",
                     "description": "Name of the current system. Example: 'Sol'"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Required string in system name"
                 },
                 "distance": {
                     "type": "number",
@@ -1803,6 +1814,10 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "reference_system": {
                     "type": "string",
                     "description": "Name of the current system. Example: 'Sol'"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Required string in station name"
                 },
                 "has_large_pad": {
                     "type": "boolean",
