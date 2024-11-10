@@ -301,7 +301,7 @@ externalEvents = {
 
 
 class PromptGenerator:
-    def __init__(self, commander_name: str, character_prompt: str, journal: EDJournal, important_game_events=List[str]):
+    def __init__(self, commander_name: str, character_prompt: str, journal: EDJournal, important_game_events: list[str]):
         self.commander_name = commander_name
         self.character_prompt = character_prompt
         self.journal = journal
@@ -425,15 +425,15 @@ class PromptGenerator:
             log('error', f"Error: {e}")
             return "Currently no information on system available"
 
-    def generate_prompt(self, events: List[Event], status: Status, pending_events: List[Event]):
+    def generate_prompt(self, events: List[Event], status: Status, pending_events: list[Event]):
         # Collect the last 50 conversational pieces
-        conversational_pieces: List[any] = list()
+        conversational_pieces: list = list()
 
         for event in events[::-1]:
             if len(conversational_pieces) >= 50:
                 break
 
-            is_pending = conversational_pieces in pending_events
+            is_pending = event in pending_events
 
             if event.kind == 'game':
                 if len(conversational_pieces) < 5 or is_pending:
