@@ -53,6 +53,7 @@ def reply(client, events: List[Event], new_events: List[Event], prompt_generator
     prompt = prompt_generator.generate_prompt(events=events, status=status_parser.current_status, pending_events=new_events)
 
     use_tools = useTools and any([event.kind == 'user' for event in new_events])
+    reasons = [event.content.get('event', event.kind) if event.kind=='game' else event.kind for event in new_events if event.kind in ['user', 'game', 'tool', 'status']]
 
     completion = client.chat.completions.create(
         model=llm_model_name,
@@ -69,8 +70,8 @@ def reply(client, events: List[Event], new_events: List[Event], prompt_generator
     response_text = completion.choices[0].message.content
     if response_text:
         tts.say(response_text)
-        copilot.print_this('COVAS: '+response_text)
         event_manager.add_conversation_event('assistant', completion.choices[0].message.content)
+        copilot.output_covas(response_text, reasons)
     is_thinking = False
 
     response_actions = completion.choices[0].message.tool_calls
@@ -143,7 +144,7 @@ def main():
     llm_model_name = config["llm_model_name"]
 
     jn = EDJournal(config["game_events"])
-    copilot = EDCoPilot(config["edcopilot"])
+    copilot = EDCoPilot(config["edcopilot"], is_edcopilot_dominant=config["edcopilot_dominant"])
     previous_status = getCurrentState()
 
     # gets API Key from config.json
@@ -176,7 +177,7 @@ def main():
         api_key=config["api_key"] if config["stt_api_key"] == '' else config["stt_api_key"],
     )
 
-    if config["tts_model_name"] != 'edge-tts':
+    if config["tts_model_name"] in ['openai', 'custom']:
         ttsClient = OpenAI(
             base_url=config["tts_endpoint"],
             api_key=config["api_key"] if config["tts_api_key"] == '' else config["tts_api_key"],
@@ -194,7 +195,10 @@ def main():
     # TTS Setup
     log('info', "Basic configuration complete.")
     log('info', "Loading voice output...")
-    tts = TTS(openai_client=ttsClient, model=config["tts_model_name"], voice=config["tts_voice"], speed=config["tts_speed"])
+    if config["edcopilot_dominant"]:
+        log('info', "EDCoPilot is dominant, voice output will be handled by EDCoPilot.")
+    tts_provider = 'none' if config["edcopilot_dominant"] else config["tts_provider"]
+    tts = TTS(openai_client=ttsClient, provider=tts_provider, model=config["tts_model_name"], voice=config["tts_voice"], speed=config["tts_speed"])
     stt = STT(openai_client=sttClient, input_device_name=config["input_device_name"], model=config["stt_model_name"])
 
     if config['ptt_var'] and config['ptt_key']:
@@ -253,7 +257,7 @@ def main():
             if not stt.resultQueue.empty():
                 text = stt.resultQueue.get().text
                 tts.abort()
-                copilot.print_this('CMDR: '+text)
+                copilot.output_commander(text)
                 event_manager.add_conversation_event('user', text)
 
             if not is_thinking and not tts.get_is_playing() and event_manager.is_replying:

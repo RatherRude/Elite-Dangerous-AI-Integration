@@ -1,4 +1,4 @@
-from typing import TypedDict
+from typing import Literal, TypedDict
 
 
 class Config(TypedDict):
@@ -11,9 +11,11 @@ class Config(TypedDict):
     vision_model_name: str
     vision_endpoint: str
     vision_api_key: str
+    stt_provider: Literal['openai', 'custom', 'none']
     stt_model_name: str
     stt_api_key: str
     stt_endpoint: str
+    tts_provider: Literal['openai', 'edge-tts', 'custom', 'none']
     tts_model_name: str
     tts_api_key: str
     tts_endpoint: str
@@ -22,6 +24,7 @@ class Config(TypedDict):
     ptt_var: bool
     continue_conversation_var: bool
     edcopilot: bool
+    edcopilot_dominant: bool
     tts_voice: str
     tts_speed: str
     ptt_key: str
