@@ -547,7 +547,7 @@ class App:
         self.edcopilot_dominant_var.set(False)
         self.edcopilot_dominant_checkbox = tk.Checkbutton(self.main_frame, text="Enabled", variable=self.edcopilot_dominant_var)
         self.edcopilot_dominant_checkbox.grid(row=get_same(), column=1, sticky=tk.W, padx=5, pady=5)
-        self.edcopilot_dominant_description = tk.Label(self.main_frame, text="Warning: Uses EDCoPilot's TTS and stops all event reactions by COVAS:NEXT!", font=('Arial 10 bold'))
+        self.edcopilot_dominant_description = tk.Label(self.main_frame, text="Uses EDCoPilot's TTS and prevents certain reactions in COVAS:NEXT to be read", font=('Arial 10 italic'))
         self.edcopilot_dominant_description.grid(row=get_same(), column=1, sticky=tk.W, padx=80, pady=5)
 
         if not self.edcopilot.is_installed():
