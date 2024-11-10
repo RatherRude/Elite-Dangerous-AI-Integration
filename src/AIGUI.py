@@ -519,6 +519,13 @@ class App:
                                                                                                                 padx=80,
                                                                                                                 pady=5)
 
+        tk.Label(self.main_frame, text="Input Device:", font=('Arial', 10)).grid(row=get_next(), column=0, sticky=tk.W)
+        input_device_names = self.get_input_device_names()
+        self.input_device_name_var = tk.StringVar()
+        self.input_device_name_var.set(input_device_names[0])
+        self.input_device_name = tk.OptionMenu(self.main_frame, self.input_device_name_var, *input_device_names)
+        self.input_device_name.grid(row=get_same(), column=1, padx=10, pady=5, sticky=tk.W)
+
         # EDCoPilot (Checkbox)
         self.edcopilot_label = tk.Label(self.main_frame, text="EDCoPilot:", font=('Arial', 10))
         self.edcopilot_label.grid(row=get_next(), column=0, sticky=tk.W)
@@ -526,29 +533,30 @@ class App:
         self.edcopilot_var.set(True)
         self.edcopilot_checkbox = tk.Checkbutton(self.main_frame, text="Enabled", variable=self.edcopilot_var)
         self.edcopilot_checkbox.grid(row=get_same(), column=1, sticky=tk.W, padx=5, pady=5)
+        self.edcopilot_description = tk.Label(self.main_frame, text="Send messages to EDCoPilot (WIP)", font=('Arial 10 italic'))
+        self.edcopilot_description.grid(row=get_same(), column=1, sticky=tk.W, padx=80, pady=5)
 
         if not self.edcopilot.is_installed():
             self.edcopilot_label.grid_remove()
             self.edcopilot_checkbox.grid_remove()
-            
-        self.edcopilot_dominant_label = tk.Label(self.main_frame, text="EDCoPilot Dominant:", font=('Arial', 10))
+            self.edcopilot_description.grid_remove()
+
+        self.edcopilot_dominant_label = tk.Label(self.main_frame, text="EDCoPilot-Dominant:", font=('Arial', 10))
         self.edcopilot_dominant_label.grid(row=get_next(), column=0, sticky=tk.W)
         self.edcopilot_dominant_var = tk.BooleanVar()
         self.edcopilot_dominant_var.set(False)
         self.edcopilot_dominant_checkbox = tk.Checkbutton(self.main_frame, text="Enabled", variable=self.edcopilot_dominant_var)
         self.edcopilot_dominant_checkbox.grid(row=get_same(), column=1, sticky=tk.W, padx=5, pady=5)
+        self.edcopilot_dominant_description = tk.Label(self.main_frame, text="Warning: Uses EDCoPilot's TTS and stops all event reactions by COVAS:NEXT!", font=('Arial 10 bold'))
+        self.edcopilot_dominant_description.grid(row=get_same(), column=1, sticky=tk.W, padx=80, pady=5)
 
         if not self.edcopilot.is_installed():
             self.edcopilot_dominant_label.grid_remove()
             self.edcopilot_dominant_checkbox.grid_remove()
+            self.edcopilot_dominant_description.grid_remove()
 
 
-        tk.Label(self.main_frame, text="Input Device:", font=('Arial', 10)).grid(row=get_next(), column=0, sticky=tk.W)
-        input_device_names = self.get_input_device_names()
-        self.input_device_name_var = tk.StringVar()
-        self.input_device_name_var.set(input_device_names[0])
-        self.input_device_name = tk.OptionMenu(self.main_frame, self.input_device_name_var, *input_device_names)
-        self.input_device_name.grid(row=get_same(), column=1, padx=10, pady=5, sticky=tk.W)
+
 
 
         # Toggle Section Button
