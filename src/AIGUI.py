@@ -87,7 +87,6 @@ game_events = {
     'Startup Events': {
         # 'Cargo': False,
         # 'ClearSavedGame': False,
-        # 'Loadout': True,
         'LoadGame': True,
         'NewCommander': True,
         # 'Materials': False,

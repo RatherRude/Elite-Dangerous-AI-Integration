@@ -17,17 +17,17 @@ from .Event import (
 from .Logger import log
 
 startupEvents = {
-    "Cargo": "Commander {commanderName} has updated their cargo inventory.",
-    "ClearSavedGame": "Commander {commanderName} has reset their game.",
+    # "Cargo": "Commander {commanderName} has updated their cargo inventory.",
+    # "ClearSavedGame": "Commander {commanderName} has reset their game.",
     "LoadGame": "Commander {commanderName} has loaded the game.",
     "NewCommander": "Commander {commanderName} has started a new game.",
-    "Materials": "Commander {commanderName} has updated their materials inventory.",
+    # "Materials": "Commander {commanderName} has updated their materials inventory.",
     "Missions": "Commander {commanderName} has updated their missions.",
-    "Progress": "Commander {commanderName} has made progress in various activities.",
-    "Rank": "Commander {commanderName} has updated their ranks.",
-    "Reputation": "Commander {commanderName} has updated their reputation.",
+    # "Progress": "Commander {commanderName} has made progress in various activities.",
+    # "Rank": "Commander {commanderName} has updated their ranks.",
+    # "Reputation": "Commander {commanderName} has updated their reputation.",
     "Statistics": "Commander {commanderName} has updated their statistics.",
-    "SquadronStartup": "Commander {commanderName} is a member of a squadron.",
+    #"SquadronStartup": "Commander {commanderName} is a member of a squadron.",
 }
 powerplayEvents = {
     "PowerplayCollect": "Commander {commanderName} collected powerplay commodities.",
@@ -127,13 +127,13 @@ stationServiceEvents = {
     "RestockVehicle": "Commander {commanderName} has restocked vehicle.",
     "ScientificResearch": "Commander {commanderName} has conducted scientific research.",
     "Shipyard": "Commander {commanderName} has visited a shipyard.",
-    "ShipyardNew": "Commander {commanderName} has acquired a new ship.",
+    # "ShipyardNew": "Commander {commanderName} has acquired a new ship.",
     "ShipyardSell": "Commander {commanderName} has sold a ship.",
     "ShipyardSwap": "Commander {commanderName} has swapped ships.",
     "ShipyardTransfer": "Commander {commanderName} has transfersd a ship.",
     "ShipyardBuy": "Commander {commanderName} has bought a ship.",
-    "StoredShips": "Commander {commanderName} has stored ships.",
-    "StoredModules": "Commander {commanderName} has stored modules.",
+    # "StoredShips": "Commander {commanderName} has stored ships.",
+    # "StoredModules": "Commander {commanderName} has stored modules.",
     "TechnologyBroker": "Commander {commanderName} has accessed a technology broker.",
 }
 carrierEvents = {
@@ -155,37 +155,37 @@ carrierEvents = {
     "CarrierJumpCancelled": "Commander {commanderName} has canceled a jump request for carrier.",
 }
 odysseyEvents = {
-    "Backpack": "Commander {commanderName} has interacted with their backpack.",
-    "BackpackChange": "Commander {commanderName} has changed items in their backpack.",
-    "BookDropship": "Commander {commanderName} has booked a dropship.",
-    "BookTaxi": "Commander {commanderName} has booked a taxi.",
-    "BuyMicroResources": "Commander {commanderName} has bought micro resources.",
-    "BuySuit": "Commander {commanderName} has bought a suit.",
-    "BuyWeapon": "Commander {commanderName} has bought a weapon.",
-    "CancelDropship": "Commander {commanderName} has cancelled a dropship booking.",
-    "CancelTaxi": "Commander {commanderName} has cancelled a taxi booking.",
-    "CollectItems": "Commander {commanderName} has collected items.",
-    "CreateSuitLoadout": "Commander {commanderName} has created a suit loadout.",
-    "DeleteSuitLoadout": "Commander {commanderName} has deleted a suit loadout.",
-    "Disembark": "Commander {commanderName} has disembarked.",
-    "DropItems": "Commander {commanderName} has dropped items.",
-    "DropShipDeploy": "Commander {commanderName} has deployed their dropship.",
-    "Embark": "Commander {commanderName} has embarked.",
-    "FCMaterials": "Commander {commanderName} has managed fleet carrier materials.",
-    "LoadoutEquipModule": "Commander {commanderName} has equipped a module in suit loadout.",
-    "LoadoutRemoveModule": "Commander {commanderName} has removed a module from suit loadout.",
-    "RenameSuitLoadout": "Commander {commanderName} has renamed a suit loadout.",
-    "ScanOrganic": "Commander {commanderName} has scanned organic life.",
-    "SellMicroResources": "Commander {commanderName} has sold micro resources.",
-    "SellOrganicData": "Commander {commanderName} has sold organic data.",
-    "SellWeapon": "Commander {commanderName} has sold a weapon.",
-    "ShipLocker": "Commander {commanderName} has accessed ship locker.",
-    "SwitchSuitLoadout": "Commander {commanderName} has switched to suit loadout.",
-    "TransferMicroResources": "Commander {commanderName} has transferred micro resources.",
-    "TradeMicroResources": "Commander {commanderName} has traded micro resources.",
-    "UpgradeSuit": "Commander {commanderName} has upgraded a suit.",
-    "UpgradeWeapon": "Commander {commanderName} has upgraded a weapon.",
-    "UseConsumable": "Commander {commanderName} has used a consumable.",
+    'Backpack': "Commander {commanderName} has interacted with their backpack.",
+    'BackpackChange': "Commander {commanderName} has changed items in their backpack.",
+    'BookDropship': "Commander {commanderName} has booked a dropship.",
+    'BookTaxi': "Commander {commanderName} has booked a taxi.",
+    'BuyMicroResources': "Commander {commanderName} has bought micro resources.",
+    'BuySuit': "Commander {commanderName} has bought a suit.",
+    'BuyWeapon': "Commander {commanderName} has bought a weapon.",
+    'CancelDropship': "Commander {commanderName} has cancelled a dropship booking.",
+    'CancelTaxi': "Commander {commanderName} has cancelled a taxi booking.",
+    # 'CollectItems': "Commander {commanderName} has collected items.",
+    'CreateSuitLoadout': "Commander {commanderName} has created a suit loadout.",
+    'DeleteSuitLoadout': "Commander {commanderName} has deleted a suit loadout.",
+    'Disembark': "Commander {commanderName} has disembarked.",
+    'DropItems': "Commander {commanderName} has dropped items.",
+    'DropShipDeploy': "Commander {commanderName} has deployed their dropship.",
+    'Embark': "Commander {commanderName} has embarked.",
+    'FCMaterials': "Commander {commanderName} has managed fleet carrier materials.",
+    'LoadoutEquipModule': "Commander {commanderName} has equipped a module in suit loadout.",
+    'LoadoutRemoveModule': "Commander {commanderName} has removed a module from suit loadout.",
+    'RenameSuitLoadout': "Commander {commanderName} has renamed a suit loadout.",
+    'ScanOrganic': "Commander {commanderName} has scanned organic life.",
+    'SellMicroResources': "Commander {commanderName} has sold micro resources.",
+    'SellOrganicData': "Commander {commanderName} has sold organic data.",
+    'SellWeapon': "Commander {commanderName} has sold a weapon.",
+    # 'ShipLocker': "Commander {commanderName} has accessed ship locker.",
+    'SwitchSuitLoadout': "Commander {commanderName} has switched to suit loadout.",
+    'TransferMicroResources': "Commander {commanderName} has transferred micro resources.",
+    'TradeMicroResources': "Commander {commanderName} has traded micro resources.",
+    'UpgradeSuit': "Commander {commanderName} has upgraded a suit.",
+    'UpgradeWeapon': "Commander {commanderName} has upgraded a weapon.",
+    'UseConsumable': "Commander {commanderName} has used a consumable."
 }
 combatEvents = {
     "Bounty": "Commander {commanderName} has eliminated a hostile.",
@@ -248,7 +248,7 @@ otherEvents = {
     "FighterRebuilt": "Commander {commanderName} has rebuilt a fighter.",
     "FuelScoop": "Commander {commanderName} has scooped fuel.",
     "Friends": "The status of a friend of Commander {commanderName} has changed.",
-    "Music": "Commander {commanderName} has triggered music playback.",
+    # "Music": "Commander {commanderName} has triggered music playback.",
     "JetConeBoost": "Commander {commanderName} has executed a jet cone boost.",
     "JetConeDamage": "Commander {commanderName} has received damage from a jet cone.",
     "JoinACrew": "Commander {commanderName} has joined a crew.",
@@ -256,7 +256,7 @@ otherEvents = {
     "LaunchDrone": "Commander {commanderName} has launched a drone.",
     "LaunchFighter": "Commander {commanderName} has launched a fighter.",
     "LaunchSRV": "Commander {commanderName} has launched an SRV.",
-    "ModuleInfo": "Commander {commanderName} has received module info.",
+    # "ModuleInfo": "Commander {commanderName} has received module info.",
     "NpcCrewPaidWage": "Commander {commanderName} has paid an NPC crew member.",
     "NpcCrewRank": "Commander {commanderName} has received NPC crew rank update.",
     "Promotion": "Commander {commanderName} has received a promotion.",
@@ -471,7 +471,8 @@ class PromptGenerator:
                 conversational_pieces += self.tool_messages(event)
 
             if isinstance(event, ExternalEvent):
-                conversational_pieces.append(self.external_event_message(event))
+                if event.content.get('event') in externalEvents:
+                    conversational_pieces.append(self.external_event_message(event))
 
         rawState = {}
         keysToFilterOut = {
@@ -480,7 +481,7 @@ class PromptGenerator:
             "extra_events"
         }
 
-        status = projected_states.get("CurrentStatus", {})
+        status = projected_states.get('Status', {})
         flags = [key for key, value in status["flags"].items() if value]
         if status.get("flags2"):
             flags += [key for key, value in status["flags2"].items() if value]
