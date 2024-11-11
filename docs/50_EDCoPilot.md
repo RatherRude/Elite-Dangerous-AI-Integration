@@ -42,4 +42,4 @@ We aim to expand this functionality in the future.
 - Let COVAS:NEXT access EDCoPilot UI contents.
 - Add functionality to control the EDCoPilot UI using COVAS:NEXT commands.
 - Add support for time sensitive messages (like Time Trails) to COVAS:NEXT.
-- Make the integration more seemless.
+- Make the integration more seamless.
