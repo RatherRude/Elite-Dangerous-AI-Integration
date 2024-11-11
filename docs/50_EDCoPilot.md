@@ -20,7 +20,7 @@ We provide two different solutions:
 ### 1. COVAS:NEXT Dominant Mode 
 This mode lets you talk to COVAS:NEXT as usual, while COVAS:NEXT use EDCoPilot as a source of additional information.
 
-In order to mute EDCoPilot game commentary, you need to // TODO //
+In order to mute EDCoPilot game commentary, you need to open EDCoPilot Settings -> Ship AI Personality -> Disable "EDCoPilot Dominant"
 
 This will allow COVAS:NEXT to use information from EDCoPilot in its own responses*.
 
