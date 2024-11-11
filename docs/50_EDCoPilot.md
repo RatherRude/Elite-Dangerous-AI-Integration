@@ -2,10 +2,10 @@
 
 We are excited to work with Razzafrag on integrating **COVAS:NEXT** with **EDCoPilot**!
 This currently has two benefits:
-1) You can see the COVAS:NEXT dialog in EDCoPilot Voice Activity
+1) You can see the COVAS:NEXT dialogue in EDCoPilot Voice Activity
 2) You can prevent both applications from talking over each other
 
-## Show dialog in EDCoPilot
+## Show dialogue in EDCoPilot
 With EDCoPilot installed, COVAS:NEXT will automatically add a new configuration option to enable EDCoPilot.
 This option is enabled by default, so it should work without further modification.
 
