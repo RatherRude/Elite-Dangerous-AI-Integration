@@ -547,13 +547,18 @@ class App:
         self.edcopilot_dominant_var.set(False)
         self.edcopilot_dominant_checkbox = tk.Checkbutton(self.main_frame, text="Enabled", variable=self.edcopilot_dominant_var)
         self.edcopilot_dominant_checkbox.grid(row=get_same(), column=1, sticky=tk.W, padx=5, pady=5)
-        self.edcopilot_dominant_description = tk.Label(self.main_frame, text="Uses EDCoPilot's TTS and prevents certain reactions in COVAS:NEXT to be read", font=('Arial 10 italic'))
+        self.edcopilot_dominant_description = tk.Label(self.main_frame, text="Audio output and game reactions are managed by EDCoPilot. Read more about this", font=('Arial 10 italic'))
         self.edcopilot_dominant_description.grid(row=get_same(), column=1, sticky=tk.W, padx=80, pady=5)
+        self.edcopilot_dominant_doc_link = tk.Label(self.main_frame, text="[here]", fg="blue", cursor="hand2", font=('Arial 10 bold'))
+        self.edcopilot_dominant_doc_link.grid(row=get_same(), column=1, sticky=tk.W, padx=(570, 0), pady=5)
+
+        self.edcopilot_dominant_doc_link.bind("<Button-1>", lambda e: webbrowser.open_new("https://ratherrude.github.io/Elite-Dangerous-AI-Integration/50_EDCoPilot/"))
 
         if not self.edcopilot.is_installed():
             self.edcopilot_dominant_label.grid_remove()
             self.edcopilot_dominant_checkbox.grid_remove()
             self.edcopilot_dominant_description.grid_remove()
+            self.edcopilot_dominant_doc_link.grid_remove()
 
 
 
