@@ -1,0 +1,34 @@
+site_name: COVAS:NEXT
+site_url: https://ratherrude.github.io/elite-dangerous-ai-integration
+repo_url: https://github.com/RatherRude/Elite-Dangerous-AI-Integration
+
+theme:
+    name: material
+    logo: screen/EDAI_logo_transparent.png
+    favicon: screen/EDAI_logo_transparent.png
+    palette:
+        scheme: slate
+        primary: orange
+        accent: cyan
+
+markdown_extensions:
+    - attr_list: {}
+    - admonition: {}
+    - markdown.extensions.tables: {}
+    - pymdownx.details: {}
+    - pymdownx.magiclink: {
+          "repo_url_shortener": True,
+          "repo_url_shorthand": True,
+          "provider": "github",
+          "user": "RatherRude",
+          "repo": "Elite-Dangerous-AI-Integration"
+      }
+    - pymdownx.betterem: {}
+    - pymdownx.tilde: {
+          "subscript": False
+      }
+    - pymdownx.emoji:
+        emoji_index: !!python/name:material.extensions.emoji.twemoji 
+        emoji_generator: !!python/name:material.extensions.emoji.to_svg
+    - pymdownx.tasklist: {}
+    - pymdownx.superfences: {}

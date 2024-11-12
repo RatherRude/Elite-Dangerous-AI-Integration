@@ -1,0 +1,300 @@
+Informa’t de les condicions d’entrega de cada venedor.
+Vol que l'ajudi en alguna cosa més?
+Què li sembla aquest model?
+És a la secció de roba infantil.
+Hi ha una rebaixa del trenta per cent sobre el preu marcat.
+Pot emprovar-s' ho abans de comprar.
+Acompanyi’m a la caixa, si us plau.
+Vol emprovar-se una talla més gran?
+Ho paga en efectiu o amb targeta de crèdit?
+Guardi’s el tiquet de compra per si l’ha de canviar.
+Recull de manera gratuïta a la teva botiga per a comandes majors de cinquanta euros.
+Aprofita els descomptes de primavera.
+Un moment, que truco al magatzem i ho comprovo.
+Cap problema, ja poden passar.
+Vol que l’hi portem a casa?
+Perdoni, com es diu, vostè?
+La targeta client és gratuïta i ofereix descomptes.
+Li fa res que li pregunti algunes dades personals per omplir el formulari?
+Obrim a dos quarts de dues, més o menys.
+Ja funciona el servei a domicili.
+Em sap greu, però fins divendres no en tindrem.
+Ho sento, però no me’n queda cap.
+Em pot signar aquí, si us plau?
+Té el tiquet de compra, si us plau?
+Ara li abono la diferència.
+Si compres més d’un producte et farem un cinc per cent de descompte.
+Pots recollir la butlleta de participació en qualsevol caixa.
+Si necessita alguna cosa, avisi’m.
+Vol que ho emboliqui per regalar?
+Passin per caixa i allà els hi cobraran.
+Cal triar el sistema de pagament i també cal introduir l’adreça on es vol rebre la comanda.
+Afegeix els productes seleccionats al carro de la compra clicant a la icona del carret.
+Confirma la comanda prement el botó “passa per caixa”.
+El client pot recollir personalment les compres als nostres establiments.
+Si ho vol, pot demanar que li portin la comanda a casa amb un recàrrec de quatre euros.
+La franja horària disponible per el repartiment a domicili va des de les deu fins a les vint-i-dues hores.
+En cas d’incompliment dels horaris d’entrega per culpa de l’empresa, no es cobrarà el cost d'enviament.
+Em pot deixar un número de telèfon?
+Compris el que compris en línia, t'ho portem a casa.
+Selecciona la data de lliurament que prefereixis entre les disponibles.
+El transportista et contactarà el dia en què vagi a lliurar la comanda per a coordinar el lliurament.
+Tota la informació sobre mides la pot trobar a la pàgina de cada producte.
+Per qualsevol consulta, pot contactar amb nosaltres a través del nostre telèfon o enviant un correu electrònic.
+En qualsevol cas, ens pots enviar un correu electrònic a qualsevol hora i et respondrem tan aviat com ens sigui possible.
+Si sol·licites el lliurament de la teva comanda a qualsevol de les nostres botigues, les despeses d’enviament són gratuïtes.
+Bon dia, com podem ajudar-te?
+Pots finançar les teves compres en línia a partir de noranta euros de forma fàcil i còmode!
+Una vegada realitzada la teva comanda i finalitzat el pagament, rebràs un correu electrònic de “Confirmació de la comanda”.
+Indiqueu les dades personals i les de pagament.
+Quan hàgiu acabat de seleccionar els productes i sigueu a la cistella, haureu de prémer el botó "Anar a caixa".
+És recomanable d’imprimir aquesta pantalla, tot i que us enviarem una confirmació per correu electrònic.
+Els dies feiners, la comanda us ha d’arribar entre quaranta-vuit i setanta-dues hores, si s’envia per agència de transport.
+A partir de cinc quilos, el cost de tramesa és de vuit coma cinc euros.
+A la web es pot seguir l’estat de la comanda.
+Us recomanem que abans de comprar un producte en mireu la guia de mides per a saber quina talla cerqueu.
+Tots els productes es poden canviar en un termini de quinze dies a partir del lliurament del paquet.
+No acceptarem devolucions de productes amb proves evidents d’haver estat utilitzats o que tinguin qualsevol mena de desperfecte.
+Si el canvi és degut a un defecte del producte, us abonarem el cost del vostre enviament.
+Pots navegar pel nostre catàleg movent-te per les diferents categories que pots veure a la part superior del portal.
+Si no et convenç el producte, pots canviar-lo.
+Genera vals regal trimestrals acumulant punts amb les teves compres.
+Només amb la teva targeta client, podràs gaudir de totes les promocions en productes seleccionats a les nostres botigues.
+Cada mes rebràs descomptes personalitzats adaptats als teus gustos a través de missatge de text, correu electrònic i app.
+Per cada euro de compra acumularàs quatre punts.
+El val regal s'aplicarà en la propera compra sense import mínim i té una validesa de tres mesos.
+Compra a la nostra botiga en línia amb les millors promocions.
+No hi ha comanda mínima.
+Indica el codi postal on vols rebre o recollir la comanda.
+Busca els productes des del cercador o dins la categoria del producte corresponent.
+Una vegada afegits tots els productes, fes clic a “Finalitzar” a la teva cistella.
+Completa tots els camps fins arribar a la pàgina de confirmació d’encàrrec.
+Conserva el rebut fins que la comanda hagi arribat al seu destí.
+Si necessites modificar l’encàrrec, el pots cancel·lar i començar de nou.
+Una vegada realitzat l’encàrrec, no és possible afegir ni eliminar productes.
+Per a cancel·lar la teva comanda, contacta amb Atenció al client.
+La nova botiga en línia ofereix descomptes de fins al setanta per cent.
+Aquesta botiga està oberta tot el dia.
+Acumula punts per valor del cinc per cent de cada compra i bescanvia’ls per descomptes o per ofertes exclusives.
+Palamós construirà el primer habitatge cooperatiu de la província de Girona.
+Pots modificar les quantitats canviant la xifra a la casella corresponent.
+Per eliminar un producte de la cistella, prem la icona de la paperera.
+Les comandes a recollir a una de les nostres botigues podran retirar-se en un termini aproximat de quatre dies laborables.
+T'avisarem quan en tornem a tenir.
+Ens sap greu, però no podem servir la comanda en el termini previst.
+Pots fer-nos arribar qualsevol queixa o reclamació relacionada amb el servei prestat a través del web.
+Elaborem pressupostos a mida i sense compromís.
+Ens encarreguem de tot, des de la preparació dels articles a l’entrega allà on ens diguis.
+Els vals es podran bescanviar en compres mínimes de trenta euros als establiments adherits.
+Demana els teus vals de descompte clicant aquí!
+Si tens un codi promocional, fes clic al botó «Continua» i sortirà un desplegable on hauràs d’introduir el codi.
+Al correu de confirmació de la compra, t'adjuntem les teves entrades per a portar-les al teu telèfon mòbil.
+En cada compra en línia només es podrà utilitzar un sol codi de descompte.
+Compra des de qualsevol lloc les vint-i-quatre hores els tres-cents seixanta-cinc dies de l'any.
+Pots començar la compra des de l’ordinador i acabar-la des del mòbil, i la cistella de compra incorporarà els canvis.
+Consulta el nostre catàleg d'ofertes quinzenals.
+Entra el teu codi postal i t'informem si et portem la compra a casa.
+Per demanar les teves factures, has de sol·licitar-ho des de l' Espai Privat.
+Per aplicar el descompte, hauràs d' introduir el codi promocional que apareix en el detall de l' oferta.
+Teniu descomptes a tota la botiga en línia fins al dia vint-i-cinc d'agost.
+Fem enviaments durant tot l' estiu.
+Per poder inscriure’t has de tenir entre 18 i 30 anys.
+Les places al curs són limitades.
+Les inscripcions a tots els cursos s’iniciaran el proper vint-i-dos de febrer, a partir de les deu hores del matí.
+Les places pel curs de preparació s' han esgotat.
+La formació, d’un total de vuitanta-quatre hores, es cursarà en línia a través del Campus Virtual.
+El curs es podrà pagar de cop o de manera fraccionada mensualment.
+Podeu consultar el llistat d’inscripcions de la primera edició aquí.
+Contactarem amb vosaltres seguint l’ordre de llista.
+Ampliem places per al curs en línia del proper dimarts.
+Si vols apuntar-te a la llista d' espera envia' ns un correu electrònic.
+Aquests cursos d’ introducció són una mica més avançats i complets que els de tipus intensiu.
+Els alumnes podran interactuar amb el professor des del xat de la videoconferència.
+Aquest és un curs obert però està especialment adreçat als alumnes que estan seguint un itinerari formatiu.
+Entra a la teva àrea de membre i comprova que has introduït correctament totes les dades que es sol·liciten.
+Cerca el curs al qual et vols inscriure.
+Matricula' t des de casa teva amb tota comoditat.
+L' aplicatiu et demanarà que especifiquis els codis d'estudi i edició del programa al qual et vols matricular.
+També pots matricular-te en persona.
+Recorda que si fas la matrícula en línia, serà necessari que enviïs després la documentació compulsada per correu postal.
+Consulta el coordinador davant de qualsevol dubte.
+Aviat us informarem amb nous cursos intensius d' estiu.
+La nostra garantia s’estén durant un any natural a partir de la data de subministrament.
+La garantia només es limita a reparar els productes que pateixin averies degudes a defectes de producció.
+Les despeses d' instal·lació i transport corren a càrrec del comprador.
+La forma més senzilla de retornar un article comprat en línica, és fer-ho en una de les nostres botigues.
+Hauràs de presentar el número de comanda que figura en l' email de confirmació de compra per a realitzar un canvi.
+També pots sol·licitar una devolució a domicili des del teu compte de client en línia.
+Selecciona quins productes desitges retornar.
+En els camps següents, indica si el paquet està obert i que és una devolució.
+Si desitges afegir informació addicional, pots fer-ho en l' espai habilitat.
+No fem canvis directes: si desitges fer un canvi, has de sol·licitar una devolució i realitzar una nova compra.
+En un màxim de setanta-dues hores s'aprovarà la sol·licitud i s'enviarà a un transportista a recollir el paquet.
+Quan haguem rebut el producte a retornar, es procedirà al reemborsament de l' import en el mateix mètode de pagament.
+Els nostres tècnics realitzaran un diagnòstic de la possible avaria tan ràpidament com sigui possible.
+Si va adquirir el producte a un distribuïdor, ha de dirigir-se a ell per sol·licitar la devolució o el canvi.
+Volem saber la teva opinió sobre els serveis que t' oferim als nostres centres.
+Haurà d’embalar novament el producte o productes, i posar-se en contacte amb nosaltres, perquè puguem avisar al servei de missatgeria.
+En cas que el producte a canviar sigui d' un import inferior al comprat, se li abonarà la diferència.
+Per quin altre producte vols realitzar el canvi?
+Quan contractes els nostres serveis ets lliure de quedar-te o anar-te en qualsevol moment, sota previ avís.
+Té algun problema amb la seva instal·lació?
+No haurà de pagar ni els desplaçaments ni la mà d'obra.
+Per fer una reclamació cal que et posis en contacte amb el nostre departament d’Atenció al Client.
+Et lliurarem una Targeta Abonament en retornar un article a un centre comercial.
+Els productes frescos o peribles tenen condicions especials.
+Només es poden ajornar rebuts de targeta si se sol·licita abans del dia vint del mes següent.
+El teu període de garantia ha caducat.
+Envia' ns una còpia del correu de confirmació de la teva compra.
+Pot sotmetre les seves reclamacions a través de la plataforma de resolució de litigis en línia.
+Si tens algun problema, el nostre servei d'atenció al client està sempre disponible.
+En general, està satisfet amb el nostre servei?
+Per a la devolució de les entrades, pots escriure al nostre correu electrònic.
+En cas que prefereixis sol·licitar la devolució de l’import de les entrades, pots fer-ho seguint els passos que s’indiquen aquí.
+Tens fins el dia vint-i-u de febrer per a sol·licitar la devolució, un bescanvi o renunciar a la teva entrada.
+Accedeix al sistema de devolucions per a seleccionar l’opció que més et convenci.
+Un dels nostres operaris es desplaçarà al lloc on ens indiqui.
+Si cancel·les o modifiques la reserva fins a dos dies abans de la data d'arribada, no s'efectuaran càrrecs.
+Aquesta reserva no es pot cancel·lar gratis.
+L' establiment és qui decideix els càrrecs de cancel·lació o modificació.
+Si no has quedat satisfet en algun dels productes, si us plau, diga' ns-ho i trobarem una solució.
+Si tens algun suggeriment o no has quedat satisfet amb la teva compra, escriu-nos!
+Totes les reparacions o instal·lacions realitzades a qualsevol taller, tenen una garantia de dos mil quilòmetres o de tres mesos.
+Les targetes malmeses per la persona usuària no donen dret a un bescanvi ni a una compensació.
+Estarem encantats de rebre els seus suggeriments per poder-li oferir l' atenció més personalitzada.
+Aquesta valoració és totalment voluntària, i li assegurem que qualsevol opinió o crítica constructiva serà considerada.
+No, ens sap greu, però no és possible fer una devolució d' aquest producte.
+Lamentablement no podem acceptar devolucions, però pots optar en revendre la teva entrada.
+En relació a la teva reclamació, t'informem que no podem reemborsar els vint-i-nou euros de l'entrega prèmium.
+Marca la casella al costat del contingut en qüestió, i selecciona l' opció «Devolució per reembossament».
+Faci una breu descripció del problema que presenta el producte i de com s’ha originat.
+Necessito saber el nom de la persona que envia el producte per reparar, adreça completa, telèfon i correu electrònic.
+Caldrà incloure el document a l’interior del paquet, i retolar a l’exterior del paquet el número de reparació.
+Si hem de substituir la pantalla, la bateria també es reemplaçarà sense càrrec addicional.
+Les reparacions que realitzen els nostres serveis tècnics oficials tindran un període de garantia mínim de tres mesos.
+Primer de tot, li demanem disculpes.
+En cas de persistir l' error, contacteu amb el nostre departament d' Atenció en línia.
+És important que el producte es torni en l' embalatge original i en les mateixes condicions que es va enviar.
+Per a realitzar el reemborsament, necessitarem que ens facilitis les teves dades bancàries.
+Si desitges canviar la teva peça per un altre model o color, puc sol·licitar-te un canvi.
+Si tens un projecte escalable i vols ser global, t' oferim solucions de finançament i serveis a la teva mida.
+Et posem en contacte amb els principals ecosistemes d'empreses emergents de tot el món.
+T' ajudem a multiplicar la teva visibilitat internacional.
+Tot l’assessorament per a la teva empresa, cara a cara, siguis on siguis.
+Reforcem els seus canals d’assessorament empresarial mitjançant una nova metodologia de teleassessorament.
+Utilitza aquest formulari per explicar-nos què t’estàs plantejant.
+Trenta anys d’experiència assessorant les seves decisions.
+Som una empresa de consultoria estratègica, financera i tecnològica amb operacions a nivell internacional.
+Tot això ens situa com a referència dins del sector de la consultoria.
+Necessites col·laboracions estratègiques per innovar?
+Solo a través de los hechos podemos entender la realidad.
+Disposem d' ajuts per subcontractar serveis d’innovació.
+Oferim mediació, interlocució i acompanyament amb tots els agents de l’administració implicats.
+En el moment de fer efectiva la inversió, t’assessorarem sobre incentius i finançament.
+Nosaltres som una consultoria digital estratègica per a millorar la imatge en línia de la teva empresa.
+Les activitats que desenvolupem impliquen la creació de plans estratègics de màrqueting digital, auditories de llocs web i presència en línia.
+Dissenyem i integrem entorns TIC optimitzats i solucions per a la millora de l’ús de la informació.
+Repassem amb tu alguns dels nostres casos d' èxit.
+Sumem deu anys com a socis gestionant tot el procés de transformació digital en les àrees de màrqueting.
+Per descomptat, treballarem en el teu projecte de manera personalitzada i farem un pla d’acció adaptat als teus objectius.
+T'informem que el termini per dipositar el treball és el dilluns dos de setembre.
+Apaga’l prement el botó d’arrencada durant uns deu segons.
+Aquesta comprovació pot durar uns moments, esperi, si us plau.
+Has canviat de lloc o de nom un arxiu o una carpeta del sistema?
+Després, reinicia el telèfon per veure si s' ha resolt el problema.
+Obre l' aplicació Configuració del telèfon.
+Ara, segueix els passos en pantalla.
+Si prems la tecla “Opció” mentre visualitzes un menú, es mostren opcions de menú ocultes.
+Surt de totes les apps que no fas servir.
+El nom de la targeta gràfica de l’ordinador es mostra al centre de la finestra.
+Sap quin processador té l’ordinador?
+T'agrairem que, si ho autoritzes, ens lliuris el formulari original signat.
+Podeu provar de treure la bateria i veure si hi ha signes evidents de danys als contactes.
+Si teniu un segon controlador, proveu de comprovar si es carrega normalment.
+Això vol dir que el controlador està executant el microprogramari més recent.
+Engegueu la consola i comproveu si s’encén correctament.
+Et recomanem que consultis la nostra pàgina web on hi trobaràs tota la informació.
+Espereu que es carregui la llista d’aplicacions instal·lades.
+Feu clic al camp de cerca de la barra de tasques i escriviu "bloc de notes".
+Reinicia l' equip si encara no ho has fet.
+A la nova pantalla que apareix, també en el menú de l’esquerra, clicar sobre "Recuperació".
+No es preocupi, l’equip és reiniciarà sol.
+Indica el nom de l’usuari i la contrasenya que vulguis utilitzar.
+Desactiva l' antivirus que tinguis instal·lat a l' ordinador.
+Accedeix al teu correu electrònic, hauries de rebre el codi d' activació en uns instants.
+Escríbenos en el chat para resolver cualquier duda sobre la suscripción.
+Quan acabis, torna a fer clic al menú.
+Es mostrarà a la barra d’estat de la part inferior de la finestra, la veus?
+M' indica que la vostra subscripció de suport ha caducat.
+Quina és la seva preferència d' idioma?
+No podeu crear una reunió des de l' aplicació mòbil.
+Aniria bé que adjuntessis una captura de pantalla de l'error que t' apareix.
+Mentrestant, pots actualitzar el controlador de la teva impressora a l' última versió.
+Si has sol·licitat una beca o n'ets beneficiari, has de presentar l'original i una còpia de la credencial.
+Assegura' t abans de començar, que tens prou bateria.
+Al tauler de navegació de la part superior esquerra, feu clic a "Dades i personalització".
+Podeu marcar la casella que hi ha al costat de l' opció “Inclou l'historial”?
+En cas de dubte pots contactar amb el coordinador.
+La meva companya m'ha passat la documentació que vas presentar ahir.
+L' únic que heu de fer a partir d'aquí és desconnectar el comandament i ja es finalitza el programa.
+Ha aconseguit descarregar el fitxer?
+Si tens pensat fer el pagament per domiciliació bancària, necessito que emplenis també aquest document.
+Veu una icona amb forma de monitor situada a la part superior de la finestra?
+Deixa l' ordinador apagat uns quants minuts.
+Espera uns minuts per que es refresqui la memòria cau de dades internes.
+Prem el botó d' encesa de l'ordinador.
+Potser hagis de dur-la a el servei tècnic perquè li facin un diagnòstic.
+En acabar de iniciar-se, tornarà a la manera normal.
+El certificat és vàlid durant quatre anys.
+El certificat es pot renovar una vegada des de l'ordinador on tens instal·lat el certificat.
+Caldrà que tornis a validar la teva identitat.
+La descàrrega s'ha de fer en un ordinador personal.
+Si ja sou usuari verificat, us heu d'identificar.
+Durant cent vint dies la suspensió es reversible, i el pots tornar a habilitar el compte.
+Espereu un moment, si us plau.
+És molt important que recordis el codi indicat.
+Finalitza l' assistent i ja tindràs creat el fitxer al teu ordinador.
+Et demana la paraula de pas?
+Si habilites aquesta opció, el sistema t' avisarà cada cop que calgui actualitzar.
+Revisa les dades introduïdes perquè alguna és incorrecta.
+Vés amb compte amb les majúscules i minúscules.
+Torna a fer la prova més tard perquè hi ha hagut un problema puntual de connexió.
+Aquest error vol dir que ja el vas descarregar.
+Passat aquest termini ja no tornaràs a rebre cap comunicació al respecte.
+El codi que has rebut és totalment vàlid, i el pots utilitzar amb total normalitat.
+Si el tràmit requereix autenticació t’hauràs d’identificar mitjançant el certificat digital.
+S’enviarà un missatge de correu electrònic informant del número de registre.
+Copia l’enllaç i envia’l, per exemple, mitjançant un missatge.
+Has provat de desactivar-lo i tornar-lo a activar de nou?
+Has provat a desactivar les extensions?
+L' altre mètode de configuració, el manual, implica la instal·lació del certificat al dispositiu.
+Primerament hem de seleccionar a quina xarxa ens volem connectar.
+Demà ho tindrem a punt.
+Em podria fer un llistat dels proveïdors que compleixin les condicions, si us plau?
+Vol adquirir la llicència per a ús comercial?
+Quants comptes d' usuari vol crear?
+La seva llicència ha de ser compatible amb la d' aquell altre programari.
+Si és tan amable d’esperar un moment.
+Us enviarem un avís amb un mes d' antelació com a mínim abans de tancar el compte.
+Diguim, de què es tracta?
+Torni a intentar el tràmit sense tancar el navegador.
+Li suggerim que tanqui per complet la sessió oberta del navegador.
+Per evitar que l' error es repeteixi per estar en la mateixa sessió, tanqui totes la pàgines obertes.
+Tingui en compte que si el certificat electrònic no és vigent serà precís sol·licitar-ne un de nou.
+Vol que li facilitem l' enllaç a la pàgina?
+Necessito el seu permís per a la visualització de la pantalla.
+Farem servir una eina de suport remot per agilitar la resolució de la consulta.
+Em pot dir el seu nom, si us plau?
+Introdueix el codi sis vuit sis nou quatre quatre per continuar amb la seva compra.
+En què la puc ajudar?
+Con el objetivo de ofrecer al usuario contenidos e información más adecuados a sus intereses y facilitar su navegación a través de nuestros Servicios.
+Un moment, si us plau, provo de localitzar-lo.
+S' ha desconnectat del control remot.
+Para registrar las preferencias del usuario y proporcionarle un acceso más rápido.
+El seu enviament és al punt d'entrega.
+El pagament s' ha executat correctament.
+No s' ha pogut instal·lar l' aplicació.
+Hem rebut la seva comanda correctament.
+És possible que dijous ja sigui aquí.
+S' ha exhaurit el temps d' inactivitat.
+No tens accés a aquest servei.

@@ -301,7 +301,7 @@ externalEvents = {
 
 
 class PromptGenerator:
-    def __init__(self, commander_name: str, character_prompt: str, journal: EDJournal, important_game_events=List[str]):
+    def __init__(self, commander_name: str, character_prompt: str, journal: EDJournal, important_game_events: list[str]):
         self.commander_name = commander_name
         self.character_prompt = character_prompt
         self.journal = journal
@@ -425,15 +425,15 @@ class PromptGenerator:
             log('error', f"Error: {e}")
             return "Currently no information on system available"
 
-    def generate_prompt(self, events: List[Event], status: Status, pending_events: List[Event]):
+    def generate_prompt(self, events: List[Event], status: Status, pending_events: list[Event]):
         # Collect the last 50 conversational pieces
-        conversational_pieces: List[any] = list()
+        conversational_pieces: list = list()
 
         for event in events[::-1]:
             if len(conversational_pieces) >= 50:
                 break
 
-            is_pending = conversational_pieces in pending_events
+            is_pending = event in pending_events
 
             if event.kind == 'game':
                 if len(conversational_pieces) < 5 or is_pending:
@@ -465,16 +465,16 @@ class PromptGenerator:
         }
         filtered_state = {key: value for key, value in rawState.items() if key not in keysToFilterOut}
 
-        flags = [key for key, value in status.flags.model_dump().items() if value]
-        if status.flags2:
-            flags += [key for key, value in status.flags2.model_dump().items() if value]
+        flags = [key for key, value in status["flags"].items() if value]
+        if status["flags2"]:
+            flags += [key for key, value in status["flags2"].items() if value]
         
         combined_state = {
             **filtered_state,
             "status": flags,
-            "balance": status.Balance,
-            "pips": status.Pips.model_dump() if status.Pips else None,
-            "cargo": status.Cargo,
+            "balance": status.get('Balance', None),
+            "pips": status.get('Pips', None),
+            "cargo": status.get("Cargo", None),
             "time": (datetime.now() + timedelta(days=469711)).isoformat()
         }
 

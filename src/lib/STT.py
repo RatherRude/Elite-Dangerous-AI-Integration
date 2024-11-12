@@ -3,6 +3,7 @@ import queue
 import threading
 from sys import platform
 from time import sleep, time
+import traceback
 import pyaudio
 
 import openai
@@ -89,7 +90,7 @@ class STT:
             try: 
                 self._listen_continuous_loop()
             except Exception as e:
-                log('error', 'An error occurred during speech recognition', e)
+                log('error', 'An error occurred during speech recognition', e, traceback.format_exc())
                 sleep(backoff)
                 log('info', 'Attempting to restart speech recognition after failure')
                 backoff *= 2
@@ -153,7 +154,7 @@ class STT:
                 frames_per_buffer=self.frames_per_buffer
             )
         except Exception as e:
-            log('error', 'Failed to open microphone', e)
+            log('error', 'Failed to open microphone', e, traceback.format_exc())
             log('error', 'Fallback to default microphone')
             source = audio.open(
                 format=pyaudio.paInt16,

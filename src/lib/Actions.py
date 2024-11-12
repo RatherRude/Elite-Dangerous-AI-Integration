@@ -108,7 +108,7 @@ def galaxy_map_open(args):
     sleep(.15)
 
     # Galaxy map already open, so we close it
-    if status_parser.current_status.GuiFocus == 'GalaxyMap':
+    if status_parser.current_status["GuiFocus"] == 'GalaxyMap':
         keys.send('GalaxyMapOpen')
         sleep(1)
 
@@ -158,7 +158,7 @@ def galaxy_map_open(args):
 def galaxy_map_close(args):
     setGameWindowActive()
     sleep(.15)
-    if status_parser.current_status.GuiFocus == 'GalaxyMap':
+    if status_parser.current_status["GuiFocus"] == 'GalaxyMap':
         keys.send('GalaxyMapOpen')
 
     return f"Galaxy map closed"
@@ -1124,9 +1124,9 @@ def prepare_station_request(obj):
         filters["technology_broker"] = {"value": obj["technology_broker"]}
     if "market" in obj and obj["market"]:
         market_filters = []
-        valid_market_filters = []
         for market_item in obj["market"]:
-            if not market_item["name"].capitalize() in known_commodities:
+            market_item["name"] = ' '.join(word.capitalize() for word in market_item["name"].split())
+            if not market_item["name"] in known_commodities:
                 raise Exception(
                     f"Invalid commodity name: {market_item['name']}. {educated_guesses_message(market_item['name'], known_commodities)}")
             market_filter = {
@@ -1151,23 +1151,31 @@ def prepare_station_request(obj):
             market_filters.append(market_filter)
         filters["market"] = market_filters
     if "modules" in obj:
+        modules_filter = {}
         for module in obj["modules"]:
-            if module["name"].capitalize() not in known_modules:
+            module["name"] = ' '.join(word.capitalize() for word in module["name"].split())
+            if module["name"] not in known_modules:
                 raise Exception(
                     f"Invalid module name: {module['name']}. {educated_guesses_message(module['name'], known_modules)}")
         filters["modules"] = obj["modules"]
     if "ships" in obj:
         for ship in obj["ships"]:
-            if ship["name"].capitalize() not in known_ships:
+            ship["name"] = ' '.join(word.capitalize() for word in ship["name"].split())
+            if ship["name"] not in known_ships:
                 raise Exception(
                     f"Invalid ship name: {ship['name']}. {educated_guesses_message(ship['name'], known_ships)}")
         filters["ships"] = {"value": obj["ships"]}
     if "services" in obj:
         for service in obj["services"]:
-            if service["name"].capitalize() not in known_services:
+            service["name"] = ' '.join(word.capitalize() for word in service["name"].split())
+            if service["name"] not in known_services:
                 raise Exception(
                     f"Invalid service name: {service['name']}. {educated_guesses_message(service['name'], known_services)}")
         filters["services"] = {"value": obj["services"]}
+    if "name" in obj and obj["name"]:
+        filters["name"] = {
+            "value": obj["name"]
+        }
     # Build the request body
     request_body = {
         "filters": filters,
@@ -1287,11 +1295,9 @@ def prepare_system_request(obj):
         "Investment", "Lockdown", "Natural Disaster", "None", "Outbreak",
         "Pirate Attack", "Public Holiday", "Retreat", "Terrorist Attack", "War"
     ]
-    known_powers = [
-        "A. Lavigny-Duval", "Aisling Duval", "Archon Delaine", "Denton Patreus",
-        "Edmund Mahon", "Felicia Winters", "Li Yong-Rui", "Pranav Antal",
-        "Yuri Grom", "Zachary Hudson", "Zemina Torval"
-    ]
+    known_powers = ["A. Lavigny-Duval", "Aisling Duval", "Archon Delaine", "Denton Patreus", "Edmund Mahon",
+                    "Felicia Winters", "Jerome Archer", "Li Yong-Rui", "Nakato Kaine", "Pranav Antal", "Yuri Grom",
+                    "Zemina Torval"]
     known_economies = [
         "Agriculture", "Colony", "Extraction", "High Tech", "Industrial",
         "Military", "None", "Refinery", "Service", "Terraforming", "Tourism"
@@ -1334,7 +1340,7 @@ def prepare_system_request(obj):
             if power not in known_powers:
                 raise Exception(
                     f"Invalid power: {power}. {educated_guesses_message(power, known_powers)}")
-        filters["power"] = {"value": obj["power"]}
+        filters["controlling_power"] = {"value": obj["power"]}
 
     if "primary_economy" in obj and obj["primary_economy"]:
         for economy in obj["primary_economy"]:
@@ -1367,6 +1373,11 @@ def prepare_system_request(obj):
         filters["population"] = {
             "comparison": "<=>",
             "value": [lower_bound, upper_bound]
+        }
+
+    if "name" in obj and obj["name"]:
+        filters["name"] = {
+            "value": obj["name"]
         }
 
     # Build the request body
@@ -2425,6 +2436,10 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                     "type": "string",
                     "description": "Name of the current system. Example: 'Sol'"
                 },
+                "name": {
+                    "type": "string",
+                    "description": "Required string in system name"
+                },
                 "distance": {
                     "type": "number",
                     "description": "Maximum distance to search for systems, default: 50000"
@@ -2517,6 +2532,10 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "reference_system": {
                     "type": "string",
                     "description": "Name of the current system. Example: 'Sol'"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Required string in station name"
                 },
                 "has_large_pad": {
                     "type": "boolean",
