@@ -249,7 +249,8 @@ class StatusParser:
             from .WindowsKnownPaths import get_path, FOLDERID, UserHandle
             self.file_path = file_path if file_path else (get_path(FOLDERID.SavedGames, UserHandle.current) + "\\Frontier Developments\\Elite Dangerous\\Status.json")
 
-        self.current_status = self._read_status_file()
+        current_status_raw = self._read_status_file()
+        self.current_status = parse_status_json(current_status_raw)
         self.watch_thread = threading.Thread(target=self._watch_file_thread, daemon=True)
         self.watch_thread.start()
         self.status_queue = queue.Queue()
@@ -268,7 +269,8 @@ class StatusParser:
     def _watch_file(self):
         """Detects changes in the Status.json file."""
         while True:
-            status = self._read_status_file()
+            status_raw = self._read_status_file()
+            status = parse_status_json(status_raw)
         
             if status != self.current_status:
                 log('debug', 'Status changed', status)
@@ -279,7 +281,7 @@ class StatusParser:
                 self.current_status = status
             sleep(1)
 
-    def _read_status_file(self) -> Status:
+    def _read_status_file(self) -> dict:
         """Loads data from the JSON file and returns a cleaned version"""
         try:
             with open(self.file_path, 'r', encoding='utf-8') as file:
@@ -289,9 +291,7 @@ class StatusParser:
             with open(self.file_path, 'r', encoding='utf-8') as file:
                 data = json.load(file)
 
-        status = parse_status_json(data)
-
-        return status
+        return data
 
     def _create_delta_events(self, old_status: Status, new_status: Status):
         """Creates events specific field that has changed."""
@@ -409,7 +409,8 @@ class StatusParser:
 if __name__ == "__main__":
     while True:
         parser = StatusParser()
-        cleaned_data = parser._read_status_file()
+        cleaned_data_raw = parser._read_status_file()
+        cleaned_data = parse_status_json(cleaned_data_raw)
         print(json.dumps(cleaned_data, indent=4))
         time.sleep(1)
         print("\n"*10)

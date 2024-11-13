@@ -17,8 +17,9 @@ class JournalEntry(TypedDict):
     event: str
 
 class EDJournal:
-    def __init__(self, game_events: dict[str, dict[str, bool]]):
+    def __init__(self, game_events: dict[str, dict[str, bool]], path_logs: str | None = None):
         self.events: Queue[JournalEntry] = Queue()
+        self.logs_path = self.get_logs_path(path_logs)
         
         self.historic_events: list[JournalEntry] = []
         self.load_timestamp: str = '1970-01-01T00:00:00Z'
@@ -81,20 +82,24 @@ class EDJournal:
                     except json.JSONDecodeError:
                         sleep(0.1)
                         continue
-
-    def get_latest_log(self):
+                    
+    def get_logs_path(self, path_logs: str | None) -> str:
         """Returns the full path of the latest (most recent) elite log file (journal) from specified path"""
-        if platform != "win32":
-            path_logs = './linux_ed'
-        else:
+        if path_logs:
+            return path_logs
+        elif platform == 'win32':
             from . import WindowsKnownPaths as winpaths
             saved_games = winpaths.get_path(winpaths.FOLDERID.SavedGames, winpaths.UserHandle.current) 
             if saved_games is None:
                 raise FileNotFoundError("Saved Games folder not found")
-            path_logs = saved_games + "\\Frontier Developments\\Elite Dangerous"
+            return saved_games + "\\Frontier Developments\\Elite Dangerous"
+        else:
+            return './linux_ed'
+
+    def get_latest_log(self):
         try:
-            list_of_logs = [join(path_logs, f) for f in listdir(path_logs) if
-                            isfile(join(path_logs, f)) and f.startswith('Journal.')]
+            list_of_logs = [join(self.logs_path, f) for f in listdir(self.logs_path) if
+                            isfile(join(self.logs_path, f)) and f.startswith('Journal.')]
         except:
             return None
         if not list_of_logs:

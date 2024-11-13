@@ -56,6 +56,7 @@ pyreadline3==3.4.1
 PyRect==0.2.0
 PyScreeze==0.1.30
 pysilero-vad==1.0.0
+pytest==8.3.3
 pyttsx3==2.90
 pytweening==1.2.0
 pywin32==306 ; sys_platform == "win32"
