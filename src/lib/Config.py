@@ -1,4 +1,5 @@
 from typing import Literal, TypedDict
+import platform
 
 
 class Config(TypedDict):
@@ -30,3 +31,15 @@ class Config(TypedDict):
     ptt_key: str
     input_device_name: str
     game_events: dict[str, dict[str, bool]]
+    
+                    
+def get_ed_journals_path() -> str:
+    """Returns the full path of the latest (most recent) elite log file (journal) from specified path"""
+    if platform == 'win32':
+        from . import WindowsKnownPaths as winpaths
+        saved_games = winpaths.get_path(winpaths.FOLDERID.SavedGames, winpaths.UserHandle.current) 
+        if saved_games is None:
+            raise FileNotFoundError("Saved Games folder not found")
+        return saved_games + "\\Frontier Developments\\Elite Dangerous"
+    else:
+        return './linux_ed'

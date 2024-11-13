@@ -1,4 +1,5 @@
 import json
+import os
 import time
 from datetime import datetime, timedelta
 import queue
@@ -242,12 +243,8 @@ def parse_status_json(value: dict[str, Any]) -> Status:
 
 
 class StatusParser:
-    def __init__(self, file_path=None):
-        if platform != "win32":
-            self.file_path = file_path if file_path else "./linux_ed/Status.json"
-        else:
-            from .WindowsKnownPaths import get_path, FOLDERID, UserHandle
-            self.file_path = file_path if file_path else (get_path(FOLDERID.SavedGames, UserHandle.current) + "\\Frontier Developments\\Elite Dangerous\\Status.json")
+    def __init__(self, journals_path: str):
+        self.file_path = os.path.join(journals_path, "Status.json")
 
         current_status_raw = self._read_status_file()
         self.current_status = parse_status_json(current_status_raw)

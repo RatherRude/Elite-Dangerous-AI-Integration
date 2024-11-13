@@ -4,9 +4,10 @@ import sys
 from pathlib import Path
 import traceback
 
+from httpx import get
 from openai import OpenAI
 
-from lib.Config import Config
+from lib.Config import Config, get_ed_journals_path
 from lib.ActionManager import ActionManager
 from lib.Actions import register_actions
 from lib.ControllerManager import ControllerManager
@@ -24,7 +25,6 @@ from lib.StatusParser import StatusParser
 parent_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(parent_dir))
 
-from lib.Voice import *
 from lib.EDJournal import *
 from lib.EventManager import EventManager
 
@@ -48,7 +48,7 @@ def load_config() -> Config:
 
 is_thinking = False
 
-def reply(client, events: list[Event], new_events: list[Event], projected_states: dict[str, dict], prompt_generator: PromptGenerator, status_parser: StatusParser,
+def reply(client, events: list[Event], new_events: list[Event], projected_states: dict[str, dict], prompt_generator: PromptGenerator,
           event_manager: EventManager, tts: TTS, copilot: EDCoPilot):
     global is_thinking
     is_thinking = True
@@ -89,7 +89,6 @@ def reply(client, events: list[Event], new_events: list[Event], projected_states
 useTools = False
 
 
-backstory: str = None
 jn: EDJournal = None
 tts: TTS = None
 prompt_generator: PromptGenerator = None
@@ -100,7 +99,7 @@ controller_manager = ControllerManager()
 
 
 def main():
-    global llmClient, sttClient, ttsClient, tts, aiModel, backstory, useTools, jn, event_manager, prompt_generator, llm_model_name
+    global llmClient, sttClient, ttsClient, tts, aiModel, useTools, jn, event_manager, prompt_generator, llm_model_name
 
     # Load configuration
     config = load_config()
@@ -108,7 +107,7 @@ def main():
         config["api_key"] = '-'
     llm_model_name = config["llm_model_name"]
 
-    jn = EDJournal(config["game_events"])
+    jn = EDJournal(config["game_events"], get_ed_journals_path())
     copilot = EDCoPilot(config["edcopilot"], is_edcopilot_dominant=config["edcopilot_dominant"])
 
     # gets API Key from config.json
@@ -123,9 +122,8 @@ def main():
     # alternative models
     if llm_model_name != '':
         aiModel = llm_model_name
-    # alternative character
-    if config["character"] != '':
-        backstory = config["character"]
+    # character prompt
+    backstory = config["character"]
     # vision
     if config["vision_var"]:
         visionClient = OpenAI(
@@ -180,10 +178,10 @@ def main():
             if state:
                 enabled_game_events.append(event)
 
-    status_parser = StatusParser()
-    prompt_generator = PromptGenerator(config["commander_name"], config["character"], journal=jn, important_game_events=enabled_game_events)
+    status_parser = StatusParser(get_ed_journals_path())
+    prompt_generator = PromptGenerator(config["commander_name"], config["character"], important_game_events=enabled_game_events)
     event_manager = EventManager(
-        on_reply_request=lambda events, new_events, states: reply(llmClient, events, new_events, states, prompt_generator, status_parser, event_manager,
+        on_reply_request=lambda events, new_events, states: reply(llmClient, events, new_events, states, prompt_generator, event_manager,
                                                           tts, copilot),
         game_events=enabled_game_events,
         continue_conversation=config["continue_conversation_var"]

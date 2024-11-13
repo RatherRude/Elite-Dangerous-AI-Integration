@@ -1,9 +1,7 @@
-from io import SEEK_END
 import json
 from os import listdir
 from os.path import join, isfile, getmtime
 from queue import Queue
-from sys import platform
 import threading
 from time import sleep
 import traceback
@@ -17,9 +15,9 @@ class JournalEntry(TypedDict):
     event: str
 
 class EDJournal:
-    def __init__(self, game_events: dict[str, dict[str, bool]], path_logs: str | None = None):
+    def __init__(self, game_events: dict[str, dict[str, bool]], logs_path: str):
         self.events: Queue[JournalEntry] = Queue()
-        self.logs_path = self.get_logs_path(path_logs)
+        self.logs_path: str = logs_path
         
         self.historic_events: list[JournalEntry] = []
         self.load_timestamp: str = '1970-01-01T00:00:00Z'
@@ -82,19 +80,6 @@ class EDJournal:
                     except json.JSONDecodeError:
                         sleep(0.1)
                         continue
-                    
-    def get_logs_path(self, path_logs: str | None) -> str:
-        """Returns the full path of the latest (most recent) elite log file (journal) from specified path"""
-        if path_logs:
-            return path_logs
-        elif platform == 'win32':
-            from . import WindowsKnownPaths as winpaths
-            saved_games = winpaths.get_path(winpaths.FOLDERID.SavedGames, winpaths.UserHandle.current) 
-            if saved_games is None:
-                raise FileNotFoundError("Saved Games folder not found")
-            return saved_games + "\\Frontier Developments\\Elite Dangerous"
-        else:
-            return './linux_ed'
 
     def get_latest_log(self):
         try:

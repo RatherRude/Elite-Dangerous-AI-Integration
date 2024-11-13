@@ -1,11 +1,12 @@
 import json
+import os
 import pytest
 import time
 
 from src.lib.StatusParser import StatusParser
 
 @pytest.fixture
-def status_file(tmp_path):
+def status_file_path(tmp_path):
     status_data = {
         "event": "Status",
         "timestamp": "2024-11-12T13:14:15Z",
@@ -15,10 +16,10 @@ def status_file(tmp_path):
     file_path = tmp_path / "Status.json"
     with open(file_path, "w") as f:
         json.dump(status_data, f)
-    return file_path
+    return tmp_path
 
-def test_statusparser_file_update(status_file):
-    parser = StatusParser(str(status_file))
+def test_statusparser_file_update(status_file_path):
+    parser = StatusParser(str(status_file_path))
     time.sleep(0.1)  # Let the watch thread start
     
     # Update file with new status
@@ -26,7 +27,7 @@ def test_statusparser_file_update(status_file):
         "Flags": 4,
         "GuiFocus": 1
     }
-    with open(status_file, "w") as f:
+    with open(os.path.join(status_file_path, "Status.json"), "w") as f:
         json.dump(new_status, f)
     
     # Wait for update

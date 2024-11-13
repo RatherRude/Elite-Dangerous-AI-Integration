@@ -307,10 +307,9 @@ externalEvents = {
 
 
 class PromptGenerator:
-    def __init__(self, commander_name: str, character_prompt: str, journal: EDJournal, important_game_events: list[str]):
+    def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str]):
         self.commander_name = commander_name
         self.character_prompt = character_prompt
-        self.journal = journal
         self.important_game_events = important_game_events
 
     # def time_since(self, timestamp):
