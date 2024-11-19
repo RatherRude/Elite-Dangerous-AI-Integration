@@ -1,11 +1,17 @@
 from datetime import datetime
 import json
+import os
 import sqlite3
 from typing import Any, final
 import sqlite_vec
 
+from .Config import get_cn_appdata_path
+
+def get_db_path() -> str:
+    return os.path.join(get_cn_appdata_path(), 'covas.db')
+
 def get_connection() -> sqlite3.Connection:
-    conn = sqlite3.connect('./covas.db')
+    conn = sqlite3.connect(get_db_path())
     conn.enable_load_extension(True)
     sqlite_vec.load(conn)
     conn.enable_load_extension(False)
@@ -82,7 +88,7 @@ class KeyValueStore():
         self.cursor.execute(f'''
             CREATE TABLE IF NOT EXISTS {self.table_name} (
                 key TEXT PRIMARY KEY,
-                version str,
+                version TEXT,
                 value TEXT,
                 inserted_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )

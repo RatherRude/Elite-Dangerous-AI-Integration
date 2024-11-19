@@ -8,13 +8,15 @@ from typing import Optional
 import openai
 import requests
 
+from lib.Config import get_ed_appdata_path
+
 from .StatusParser import StatusParser
 from .Logger import log
 from .EDKeys import EDKeys
 from .EventManager import EventManager
 from .ActionManager import ActionManager
 
-keys = EDKeys()
+keys = EDKeys(get_ed_appdata_path())
 vision_client: openai.OpenAI = None
 llm_client: openai.OpenAI = None
 llm_model_name: str = None

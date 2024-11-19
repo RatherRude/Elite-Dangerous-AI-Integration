@@ -19,17 +19,17 @@ from .Logger import log
 
 @final
 class TTS:
-    p = pyaudio.PyAudio()
-    read_queue = queue.Queue()
-    is_aborted = False
-    _is_playing = False
-
     def __init__(self, openai_client: Optional[openai.OpenAI] = None, provider='openai', model='tts-1', voice="nova", speed: Union[str,float]=1):
         self.openai_client = openai_client
         self.provider = provider
         self.model = model
         self.voice = voice
         self.speed = speed
+        
+        self.p = pyaudio.PyAudio()
+        self.read_queue = queue.Queue()
+        self.is_aborted = False
+        self._is_playing = False
 
         thread = threading.Thread(target=self._playback_thread)
         thread.daemon = True
@@ -108,7 +108,7 @@ class TTS:
         elif self.openai_client:
             with self.openai_client.audio.speech.with_streaming_response.create(
                     model=self.model,
-                    voice=self.voice, # type: ignore
+                    voice=self.voice, # pyright: ignore[reportArgumentType]
                     input=text,
                     response_format="pcm",
                     # raw samples in 24kHz (16-bit signed, low-endian), without the header.
@@ -119,7 +119,7 @@ class TTS:
         else: 
             raise ValueError('No TTS client provided')
 
-    def _number_to_text(self, match: re.Match):
+    def _number_to_text(self, match: re.Match[str]):
         """Converts numbers like 100,203.12 to one hundred thousand two hundred three point one two"""
         if len(match.group()) <= 2:
             return match.group()

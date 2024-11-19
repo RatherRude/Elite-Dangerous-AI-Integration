@@ -20,7 +20,6 @@ class EDJournal:
         self.logs_path: str = logs_path
         
         self.historic_events: list[JournalEntry] = []
-        self.load_timestamp: str = '1970-01-01T00:00:00Z'
         self.load_history()
         
         thread = threading.Thread(target=self._reading_loop)
@@ -45,7 +44,6 @@ class EDJournal:
                     entry: JournalEntry = json.loads(line)
                     entry['id'] = self.get_event_id(latest_log, file_index)
                     self.historic_events.append(entry)
-                    self.load_timestamp = entry.get("timestamp")
                 except json.JSONDecodeError:
                     continue
 
@@ -69,8 +67,9 @@ class EDJournal:
             with open(latest_log, 'r') as f:
                 file_index = 0
                 while True: # TODO we need to check if there is a new file
-                    file_index += 1
                     line = f.readline() # this is blocking, so we need to check if the file has changed somehow
+                    if line: # TODO do we need to check if the line is empty? can it be empty with readline, if not written completely?
+                        file_index += 1 
                     try:
                         entry: JournalEntry = json.loads(line)
                         entry['id'] = self.get_event_id(latest_log, file_index)

@@ -1,7 +1,7 @@
 import json
 import pytest
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from src.lib.EDJournal import EDJournal
 
@@ -26,7 +26,7 @@ def journal_file(journal_dir):
 def write_event(file_path, event_name="TestEvent"):
     """Helper to write a test event to journal file"""
     event_data = {
-        "timestamp": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "event": event_name
     }
     with open(file_path, "a") as f:
@@ -50,7 +50,6 @@ def test_edjournal_init_empty(journal_dir):
     """Test initialization with empty directory"""
     journal = EDJournal({}, journal_dir)
     assert journal.historic_events == []
-    assert journal.load_timestamp == "1970-01-01T00:00:00Z"
     assert journal.events.empty()
 
 def test_edjournal_load_history(journal_file):
