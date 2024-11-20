@@ -168,7 +168,6 @@ class STT:
         return source
 
     def _transcribe(self, audio: sr.AudioData) -> str:
-        print('audio data received')
         audio_raw = audio.get_raw_data(convert_rate=16000, convert_width=2)
         audio_length = len(audio_raw) / 2 / 16000
         if audio_length < 0.2:
