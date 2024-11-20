@@ -177,7 +177,7 @@ def main():
         api_key=config["api_key"] if config["stt_api_key"] == '' else config["stt_api_key"],
     )
 
-    if config["tts_model_name"] in ['openai', 'custom']:
+    if config["tts_provider_name"] in ['openai', 'custom']:
         ttsClient = OpenAI(
             base_url=config["tts_endpoint"],
             api_key=config["api_key"] if config["tts_api_key"] == '' else config["tts_api_key"],
