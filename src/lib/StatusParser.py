@@ -154,6 +154,7 @@ class Destination(TypedDict):
 
 
 class Status(TypedDict):
+    event: Literal["Status"]
     flags: BaseFlags
     flags2: Optional[OdysseyFlags]
     Pips: Optional[Pips]
@@ -217,6 +218,7 @@ def parse_status_json(value: dict[str, Any]) -> Status:
             'Codex',
     ]
     return Status(
+        event='Status',
         flags=parse_status_flags(value.get('Flags', 0)),
         flags2=parse_odyssey_flags(value.get('Flags2', 0)) if 'Flags2' in value else None,
         Pips=parse_pips_flags(value.get('Pips', [0,0,0])) if 'Pips' in value else None,

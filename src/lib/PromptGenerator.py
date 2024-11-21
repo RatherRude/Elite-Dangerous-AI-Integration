@@ -338,11 +338,13 @@ class PromptGenerator:
             "content": f"({allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)})",
         }
 
-    def status_message(self, event: StatusEvent):
-        return {
-            "role": "user",
-            "content": f"(Status changed: {event.status.get('event')} Details: {json.dumps(event.status)})",
-        }
+    def status_messages(self, event: StatusEvent):
+        if event.status.get('event'):
+            return [{
+                "role": "user",
+                "content": f"(Status changed: {event.status.get('event')} Details: {json.dumps(event.status)})",
+            }]
+        return []
 
     def conversation_message(self, event: ConversationEvent):
         return {"role": event.kind, "content": event.content}
@@ -461,7 +463,7 @@ class PromptGenerator:
                     len(conversational_pieces) < 20
                     and event.status.get("event") != "Status"
                 ):
-                    conversational_pieces.append(self.status_message(event))
+                    conversational_pieces += self.status_messages(event)
 
             if isinstance(event, ConversationEvent) and event.kind in ['user', 'assistant']:
                 conversational_pieces.append(self.conversation_message(event))
@@ -474,6 +476,7 @@ class PromptGenerator:
                     conversational_pieces.append(self.external_event_message(event))
 
         rawState = {}
+        filtered_state = {}
         keysToFilterOut = {
             "mission_completed",
             "mission_redirected",
@@ -485,8 +488,7 @@ class PromptGenerator:
         if status.get("flags2"):
             flags += [key for key, value in status["flags2"].items() if value]
 
-        combined_state = {
-            **filtered_state,
+        status_info = {
             "status": flags,
             "balance": status.get("Balance", None),
             "pips": status.get("Pips", None),
@@ -513,7 +515,7 @@ class PromptGenerator:
                 }
             )
         conversational_pieces.append(
-            {"role": "user", "content": f"(Ship status: {json.dumps(combined_state)})"}
+            {"role": "user", "content": f"(Ship status: {json.dumps(status_info)})"}
         )
         conversational_pieces.append(
             {
@@ -527,6 +529,7 @@ class PromptGenerator:
 
         conversational_pieces.reverse()  # Restore the original order
 
-        # log('debug', 'conversation', conversational_pieces)
+        #log('debug', 'states', json.dumps(projected_states))
+        log('debug', 'conversation', json.dumps(conversational_pieces))
 
         return conversational_pieces
