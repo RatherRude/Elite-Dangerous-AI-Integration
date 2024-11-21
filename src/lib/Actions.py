@@ -16,7 +16,7 @@ from .EDKeys import EDKeys
 from .EventManager import EventManager
 from .ActionManager import ActionManager
 
-keys = EDKeys(get_ed_appdata_path())
+keys = None
 vision_client: openai.OpenAI = None
 llm_client: openai.OpenAI = None
 llm_model_name: str = None
@@ -1478,8 +1478,9 @@ def system_finder(obj):
 
 def register_actions(actionManager: ActionManager, eventManager: EventManager, llmClient: openai.OpenAI,
                      llmModelName: str, visionClient: Optional[openai.OpenAI], visionModelName: Optional[str],
-                     statusParser: StatusParser):
-    global event_manager, vision_client, llm_client, llm_model_name, vision_model_name, status_parser
+                     statusParser: StatusParser, edKeys: EDKeys):
+    global event_manager, vision_client, llm_client, llm_model_name, vision_model_name, status_parser, keys
+    keys = edKeys
     event_manager = eventManager
     llm_client = llmClient
     llm_model_name = llmModelName

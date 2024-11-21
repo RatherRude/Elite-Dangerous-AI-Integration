@@ -6,7 +6,6 @@ from time import sleep
 from typing import Any
 from xml.etree.ElementTree import parse
 
-from .Config import get_ed_appdata_path
 from .EDlogger import logger
 from .directinput import PressKey, ReleaseKey, SCANCODE
 

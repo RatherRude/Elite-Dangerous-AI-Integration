@@ -7,11 +7,12 @@ import traceback
 from httpx import get
 from openai import OpenAI
 
-from lib.Config import Config, get_ed_journals_path
+from lib.Config import Config, get_ed_appdata_path, get_ed_journals_path
 from lib.ActionManager import ActionManager
 from lib.Actions import register_actions
 from lib.ControllerManager import ControllerManager
 from lib.EDCoPilot import EDCoPilot
+from lib.EDKeys import EDKeys
 from lib.Event import Event
 from lib.Projections import registerProjections
 from lib.PromptGenerator import PromptGenerator
@@ -107,7 +108,7 @@ def main():
         config["api_key"] = '-'
     llm_model_name = config["llm_model_name"]
 
-    jn = EDJournal(config["game_events"], get_ed_journals_path())
+    jn = EDJournal(config["game_events"], get_ed_journals_path(config))
     copilot = EDCoPilot(config["edcopilot"], is_edcopilot_dominant=config["edcopilot_dominant"])
 
     # gets API Key from config.json
@@ -178,7 +179,8 @@ def main():
             if state:
                 enabled_game_events.append(event)
 
-    status_parser = StatusParser(get_ed_journals_path())
+    ed_keys = EDKeys(get_ed_appdata_path(config))
+    status_parser = StatusParser(get_ed_journals_path(config))
     prompt_generator = PromptGenerator(config["commander_name"], config["character"], important_game_events=enabled_game_events)
     event_manager = EventManager(
         on_reply_request=lambda events, new_events, states: reply(llmClient, events, new_events, states, prompt_generator, event_manager,
@@ -189,7 +191,7 @@ def main():
     registerProjections(event_manager)
 
     if useTools:
-        register_actions(action_manager, event_manager, llmClient, llm_model_name, visionClient, config["vision_model_name"], status_parser)
+        register_actions(action_manager, event_manager, llmClient, llm_model_name, visionClient, config["vision_model_name"], status_parser, ed_keys)
         log('info', "Actions ready.")
         
     log('info', 'Initializing states...')

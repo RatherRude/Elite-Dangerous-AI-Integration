@@ -998,7 +998,9 @@ class App:
             'tts_api_key': "",
             'tts_voice': "en-GB-SoniaNeural",
             'tts_speed': "1.2",
-            'game_events': game_events
+            'game_events': game_events,
+            "ed_journal_path": "",
+            "ed_appdata_path": ""
         }
         try:
             with open('config.json', 'r') as file:
