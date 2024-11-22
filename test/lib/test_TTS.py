@@ -90,7 +90,7 @@ def test_openai_tts_playback(mock_pyaudio, mock_openai):
     
 def test_edge_tts_playback(mock_pyaudio, mock_miniaudio, mock_openai):
     """Test Edge-TTS playback"""
-    tts =  TTS(None, "edge-tts", "en-GB-SoniaNeural", 1)
+    tts =  TTS(None, "edge-tts", "edge-tts", "en-GB-SoniaNeural", 1)
     tts.say("Hello world")
     
     while not mock_pyaudio['stream'].write.call_count >= 10:

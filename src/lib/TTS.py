@@ -5,7 +5,7 @@ from sys import platform
 import threading
 from time import sleep
 import traceback
-from typing import Optional, Union, final
+from typing import Literal, Optional, Union, final
 
 from num2words import num2words
 import strip_markdown
@@ -19,7 +19,7 @@ from .Logger import log
 
 @final
 class TTS:
-    def __init__(self, openai_client: Optional[openai.OpenAI] = None, provider='openai', model='tts-1', voice="nova", speed: Union[str,float]=1):
+    def __init__(self, openai_client: Optional[openai.OpenAI] = None, provider: Literal["none", "edge-tts", "openai"]='openai', model='tts-1', voice="nova", speed: Union[str,float]=1):
         self.openai_client = openai_client
         self.provider = provider
         self.model = model
