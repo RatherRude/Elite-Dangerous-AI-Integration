@@ -16,11 +16,11 @@ from .EDKeys import EDKeys
 from .EventManager import EventManager
 from .ActionManager import ActionManager
 
-keys = None
-vision_client: openai.OpenAI = None
+keys: EDKeys = None
+vision_client: openai.OpenAI | None = None
 llm_client: openai.OpenAI = None
 llm_model_name: str = None
-vision_model_name: str = None
+vision_model_name: str | None = None
 event_manager: EventManager = None
 status_parser: StatusParser = None
 

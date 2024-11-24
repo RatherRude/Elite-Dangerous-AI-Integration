@@ -4,7 +4,6 @@ import sys
 from pathlib import Path
 import traceback
 
-from httpx import get
 from openai import OpenAI
 
 from lib.Config import Config, get_ed_appdata_path, get_ed_journals_path
@@ -90,11 +89,11 @@ def reply(client, events: list[Event], new_events: list[Event], projected_states
 useTools = False
 
 
-jn: EDJournal = None
-tts: TTS = None
-prompt_generator: PromptGenerator = None
-status_parser: StatusParser = None
-event_manager: EventManager = None
+jn: EDJournal | None = None
+tts: TTS | None = None
+prompt_generator: PromptGenerator | None = None
+status_parser: StatusParser | None = None
+event_manager: EventManager | None = None
 
 controller_manager = ControllerManager()
 

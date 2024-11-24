@@ -1,12 +1,10 @@
-from os import environ, listdir
+from os import listdir
 import os
 from os.path import getmtime, isfile, join
-from sys import platform
 from time import sleep
-from typing import Any
+from typing import Any, final
 from xml.etree.ElementTree import parse
 
-from .EDlogger import logger
 from .directinput import PressKey, ReleaseKey, SCANCODE
 
 """
@@ -16,7 +14,7 @@ Description:  Pulls the keybindings for specific controls from the ED Key Bindin
 Constraints:  This file will use the latest modified *.binds file
 """
 
-
+@final
 class EDKeys:
 
     def __init__(self, appdata_path: str):
@@ -195,12 +193,3 @@ class EDKeys:
                 sleep(repeat_delay)
             else:
                 sleep(self.key_repeat_delay)
-
-
-def main():
-    k = EDKeys()
-    # k.send(k.keys['ExplorationFSSEnter'], hold=3)
-
-
-if __name__ == "__main__":
-    main()

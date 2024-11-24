@@ -21,6 +21,7 @@
     "reportUnknownMemberType": false,
     "reportUnknownVariableType": false,
     "reportUnknownArgumentType": false,
+    "reportMissingTypeArgument": "warning",
     "pythonVersion": "3.10",
     "pythonPlatform": "Windows",
     "executionEnvironments": [
