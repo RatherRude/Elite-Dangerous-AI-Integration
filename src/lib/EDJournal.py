@@ -70,12 +70,13 @@ class EDJournal:
                 file_index = 0
                 while True:
                     line = f.readline() # this is blocking, so we need to check if the file has changed somehow
-                    if line: # TODO do we need to check if the line is empty? can it be empty with readline, if not written completely?
-                        file_index += 1 
-                    else:
+                    if not line:
                         if latest_log != self.get_latest_log():
                             break
                         sleep(0.01)
+                        continue
+
+                    file_index += 1 
                     try:
                         entry: JournalEntry = json.loads(line)
                         entry['id'] = self.get_event_id(latest_log, file_index)
