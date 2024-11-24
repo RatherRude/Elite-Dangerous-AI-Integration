@@ -3,7 +3,7 @@ from datetime import timezone, datetime
 import hashlib
 import inspect
 import json
-from typing import Any, Literal, Callable, Optional, final
+from typing import Any, Generic, Literal, Callable, Optional, TypeVar, final
 import sqlite3
 import sqlite_vec
 
@@ -13,13 +13,15 @@ from .Event import Event, GameEvent, ConversationEvent, StatusEvent, ToolEvent, 
 from .Logger import log
 
 
-class Projection(ABC):
+ProjectedState = TypeVar("ProjectedState")
+
+class Projection(ABC, Generic[ProjectedState]):
     @abstractmethod
-    def get_default_state(self) -> dict[str, Any]:
-        return {}
+    def get_default_state(self) -> ProjectedState:
+        pass
     
     def __init__(self):
-        self.state: dict[str, Any] = self.get_default_state()
+        self.state: ProjectedState = self.get_default_state()
         self.last_processed: float = 0.0
         pass
 

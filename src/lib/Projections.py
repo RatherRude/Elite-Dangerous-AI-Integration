@@ -1,6 +1,6 @@
-from typing import Any
-from typing_extensions import override
-from .StatusParser import parse_status_flags, parse_status_json
+from typing import Any, Generic, Literal, TypeVar, TypedDict, final
+from typing_extensions import NotRequired, override
+from .StatusParser import parse_status_flags, parse_status_json, Status
 from .Event import Event, StatusEvent, GameEvent
 from .Logger import log
 from .EventManager import EventManager, Projection
@@ -33,9 +33,9 @@ class EventCounter(Projection):
         self.state["count"] += 1
 
 
-class Status(Projection):
+class CurrentStatus(Projection[Status]):
     @override
-    def get_default_state(self) -> dict[str, Any]:
+    def get_default_state(self) -> Status:
         return parse_status_json({"flags": parse_status_flags(0)})  # type: ignore
 
     @override
@@ -43,6 +43,90 @@ class Status(Projection):
         if isinstance(event, StatusEvent) and event.status.get("event") == "Status":
             self.state = event.status
 
+
+LocationState = TypedDict('LocationState', {
+    "StarSystem": str,
+    "Star": NotRequired[str],
+    "Planet": NotRequired[str],
+    "PlanetaryRing": NotRequired[str],
+    "StellarRing": NotRequired[str],
+    "Station": NotRequired[str],
+    "AsteroidCluster": NotRequired[str],
+    "Docked": NotRequired[Literal[True]],
+    "Landed": NotRequired[Literal[True]], # only set when true
+    "NearestDestination": NotRequired[str], # only when landed on a planet
+})
+
+@final
+class Location(Projection[LocationState]):
+    @override
+    def get_default_state(self) -> LocationState:
+        return {
+            "StarSystem": 'Unknown',
+        }
+    
+    @override
+    def process(self, event: Event) -> None:
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Location':
+            star_system = event.content.get('StarSystem', 'Unknown')
+            body_type = event.content.get('BodyType', 'Null')
+            body = event.content.get('Body', 'Unknown')
+            docked = event.content.get('Docked', False)
+            
+            self.state = {
+                "StarSystem": star_system,
+                "Docked": docked,
+            }
+            if body_type and body_type != 'Null':
+                self.state[body_type] = body
+                
+        if isinstance(event, GameEvent) and event.content.get('event') == 'SupercruiseEntry':
+            star_system = event.content.get('StarSystem', 'Unknown')
+            
+            self.state = {
+                "StarSystem": star_system,
+            }
+                
+        if isinstance(event, GameEvent) and event.content.get('event') == 'SupercruiseExit':
+            star_system = event.content.get('StarSystem', 'Unknown')
+            body_type = event.content.get('BodyType', 'Null')
+            body = event.content.get('Body', 'Unknown')
+            
+            self.state = {
+                "StarSystem": star_system,
+            }
+            if body_type and body_type != 'Null':
+                self.state[body_type] = body
+        
+        if isinstance(event, GameEvent) and event.content.get('event') == 'FSDJump':
+            star_system = event.content.get('StarSystem', 'Unknown')
+            body_type = event.content.get('BodyType', 'Null')
+            body = event.content.get('Body', 'Unknown')
+            self.state = {
+                "StarSystem": star_system,
+            }
+            
+            if body_type and body_type != 'Null':
+                self.state[body_type] = body
+                
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Docked':
+            self.state['Docked'] = True
+            self.state['Station'] = event.content.get('StationName', 'Unknown')
+        
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Undocked':
+            self.state.pop('Docked', None)
+                
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Touchdown':
+            self.state['Landed'] = True
+            self.state['NearestDestination'] = event.content.get('NearestDestination', 'Unknown')
+        
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Liftoff':
+            self.state.pop('Landed', None)
+            
+        if isinstance(event, GameEvent) and event.content.get('event') == 'ApproachSettlement':
+            self.state['Station'] = event.content.get('Name', 'Unknown')
+            self.state['Planet'] = event.content.get('BodyName', 'Unknown')
+        
 
 # class Location(Projection):
 #     @override
@@ -257,7 +341,8 @@ class Status(Projection):
 
 def registerProjections(event_manager: EventManager):
     event_manager.register_projection(EventCounter())
-    event_manager.register_projection(Status())
+    event_manager.register_projection(CurrentStatus())
+    event_manager.register_projection(Location())
 
     for proj in [
         'Commander',
@@ -269,7 +354,6 @@ def registerProjections(event_manager: EventManager):
         'EngineerProgress',
         'SquadronStartup',
         'Statistics',
-        'Location',
         'Powerplay',
         'ShipLocker',
         'Loadout',
