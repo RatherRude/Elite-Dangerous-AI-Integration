@@ -1,5 +1,7 @@
+import io
 import json
 from os import listdir
+import os
 from os.path import join, isfile, getmtime
 from queue import Queue
 import threading
@@ -66,10 +68,14 @@ class EDJournal:
                 continue
             with open(latest_log, 'r') as f:
                 file_index = 0
-                while True: # TODO we need to check if there is a new file
+                while True:
                     line = f.readline() # this is blocking, so we need to check if the file has changed somehow
                     if line: # TODO do we need to check if the line is empty? can it be empty with readline, if not written completely?
                         file_index += 1 
+                    else:
+                        if latest_log != self.get_latest_log():
+                            break
+                        sleep(0.01)
                     try:
                         entry: JournalEntry = json.loads(line)
                         entry['id'] = self.get_event_id(latest_log, file_index)
@@ -79,6 +85,7 @@ class EDJournal:
                     except json.JSONDecodeError:
                         sleep(0.1)
                         continue
+            sleep(0.01)
 
     def get_latest_log(self):
         try:

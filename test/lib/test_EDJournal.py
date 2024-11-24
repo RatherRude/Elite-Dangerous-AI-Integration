@@ -80,3 +80,27 @@ def test_edjournal_multiple_files(journal_dir):
     # Should load from most recent file (file2)
     assert len(journal.historic_events) == 1
     assert journal.historic_events[0]["event"] == "File2Event"
+
+def test_edjournal_switch_to_new_file(journal_dir):
+    """Test switching to newer journal file during runtime"""
+    # Create initial journal file
+    file1 = Path(journal_dir) / "Journal.2024-01-01T120000.01.log"
+
+    # Initialize journal reader
+    journal = EDJournal({}, journal_dir)
+    time.sleep(0.1)  # Let reader start monitoring
+    
+    write_event(file1, "File1Event2")
+
+    event = journal.events.get(timeout=1)
+    assert event["event"] == "File1Event2"
+        
+    # Create newer journal file
+    file2 = Path(journal_dir) / "Journal.2024-01-01T130000.01.log" 
+        
+    write_event(file2, "File2Event1")
+
+    # Verify event from new file is detected
+    event = journal.events.get(timeout=1)
+    assert event["event"] == "File2Event1"
+    assert file2.name in event["id"]
