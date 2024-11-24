@@ -126,6 +126,16 @@ class Location(Projection[LocationState]):
         if isinstance(event, GameEvent) and event.content.get('event') == 'ApproachSettlement':
             self.state['Station'] = event.content.get('Name', 'Unknown')
             self.state['Planet'] = event.content.get('BodyName', 'Unknown')
+            
+        if isinstance(event, GameEvent) and event.content.get('event') == 'ApproachBody':
+            self.state['Station'] = event.content.get('Name', 'Unknown')
+            self.state['Planet'] = event.content.get('BodyName', 'Unknown')
+            
+        if isinstance(event, GameEvent) and event.content.get('event') == 'LeaveBody':
+            self.state = {
+                "StarSystem": self.state.get('StarSystem', 'Unknown'),
+            }
+        
         
 
 # class Location(Projection):

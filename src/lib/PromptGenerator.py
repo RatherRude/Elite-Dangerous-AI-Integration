@@ -5,6 +5,8 @@ import traceback
 
 import requests
 
+from lib.Projections import LocationState
+
 from .EDJournal import *
 from .Event import (
     GameEvent,
@@ -475,15 +477,7 @@ class PromptGenerator:
                 if event.content.get('event') in externalEvents:
                     conversational_pieces.append(self.external_event_message(event))
 
-        rawState = {}
-        filtered_state = {}
-        keysToFilterOut = {
-            "mission_completed",
-            "mission_redirected",
-            "extra_events"
-        }
-
-        status = projected_states.get('Status', {})
+        status = projected_states.get('CurrentStatus', {})
         flags = [key for key, value in status["flags"].items() if value]
         if status.get("flags2"):
             flags += [key for key, value in status["flags2"].items() if value]
@@ -495,25 +489,27 @@ class PromptGenerator:
             "cargo": status.get("Cargo", None),
             "time": (datetime.now() + timedelta(days=469711)).isoformat(),
         }
+        
+        location_info: LocationState = projected_states.get('Location', {})
 
-        if (
-            "location" in filtered_state
-            and filtered_state["location"]
-            and "StarSystem" in filtered_state["location"]
-        ):
+        if "StarSystem" in location_info and location_info["StarSystem"] != "Unknown":
             conversational_pieces.append(
                 {
                     "role": "user",
-                    "content": f"(Current system: {self.get_system_info(filtered_state['location']['StarSystem'])})",
+                    "content": f"(Current system: {self.get_system_info(location_info['StarSystem'])})",
                 }
             )
 
             conversational_pieces.append(
                 {
                     "role": "user",
-                    "content": f"(Stations in current system: {self.get_station_info(filtered_state['location']['StarSystem'])})",
+                    "content": f"(Stations in current system: {self.get_station_info(location_info['StarSystem'])})",
                 }
             )
+        
+        conversational_pieces.append(
+            {"role": "user", "content": f"(Current location: {json.dumps(location_info)})"}
+        )
         conversational_pieces.append(
             {"role": "user", "content": f"(Ship status: {json.dumps(status_info)})"}
         )
