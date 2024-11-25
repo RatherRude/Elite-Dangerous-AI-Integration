@@ -20,7 +20,7 @@ The cloud service https://openrouter.ai provides a free tier that can be used to
 
 *Downsides:*
 - Account creation is required
-- Tool use is almost impossible, so the AI will not be able to control your ship or search for information on the web
+- Tool use is unreliable and may crash the integration, [see why here](llmInternals.md).
 - The free tier has significant rate-limiting
 - The available models are not as powerful as the ones available on OpenAI, they may hallucinate more and be less coherent
 
@@ -46,14 +46,14 @@ https://ollama.com is a third-party application that can run the LLM locally on 
 - Requires a powerful GPU (RTX 3090 or better recommended)
 - High latency, especially on weaker GPUs
 - Not trivial to set up
-- Tool use is almost difficult, so the AI will not be able to control your ship or search for information on the web in most cases
+- Tool use is unreliable and may crash the integration, [see why here](llmInternals.md).
 
-After installing Ollama, you need to download a model according to the instructions on their website. At the time of writing we recommend using `mistral-nemo`.
+After installing Ollama, you need to download a model according to the instructions on their website. At the time of writing we recommend using `llama3.1:8b`.
 Once the download is complete you can configure the LLM as follows:
 
 ```
 LLM Provider: Custom
-LLM Model Name: mistral-nemo
+LLM Model Name: llama3.1:8b
 LLM Endpoint URL: http://localhost:11434/v1
 LLM API Key: <empty>
 ```
@@ -83,42 +83,9 @@ You can simply select Edge-TTS as the TTS provider.
 See the section on AIServer below.
 
 
-## Using AIServer
+## Using AIServer (beta)
 **WARNING: This setup is highly experimental and is potentially difficult to set up.**
-The AIServer can serve as a local STT or TTS service.
-It is included in the download of our software and can be found in the `aiserver` folder. You can run it by double-clicking the `AIServer.exe` file.
 
-*Upsides:*
-- Can be used offline
-- It is free, except for the cost of the GPU and electricity
-- No rate limiting (except for the hardware)
+We are currently working on our own local server that can provide all the necessary services locally for free, given that you have a powerful system available.
 
-*Downsides:*
-- Tricky to set up, as it is still highly experimental
-- May struggle with multilingual input/output
-- Higher latency than cloud services
-
-Upon starting the AIServer, need to configure it using the window that pops up. 
-
-You will first need to select a TTS Model. At the time of writing we recommend using `vits-piper-en_US-libritts-high.tar.bz2`. 
-
-Secondly, you will need to configure the STT model. At the time of writing we recommend using `distil-medium.en` or `distil-small.en`.
-
-Third, you will need to configure the network access. Confirm the defaults as 127.0.0.0 and port 8080 if you are unsure.
-
-The AIServer window will then download the selected models and show a message when done: `* Running on http://127.0.0.1:8080`.
-
-Lastly, you will need to configure the AI Integration itself. 
-
-```
-STT Provider: Custom
-STT Model Name: whisper-1
-STT Endpoint URL: http://localhost:8080/v1
-STT API Key: <empty>
-``` 
-```
-TTS Provider: Custom
-TTS Model Name: tts-1
-TTS Endpoint URL: http://localhost:8080/v1
-TTS API Key: <empty>
-```
+You can read more about the AIServer [here](./AIServer.md).

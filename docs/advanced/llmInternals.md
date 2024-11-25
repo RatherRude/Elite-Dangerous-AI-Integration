@@ -12,6 +12,7 @@ They may output:
 Why do they need to flap their wings? In the following article we will explore this in more detail.
 ```
 Which is a likely continuation of some internet article, but obviously not what you intended to get as an response.
+
 So generally you need to trick the model into answering the question, instead of completing text i.e. like this:
 ```
 Question: How do birds fly?
@@ -22,6 +23,7 @@ And now the prediction by the model is much more likely to be what you desire:
 Birds fly by flapping their wings and displacing the air around them.
 ```
 This works because the model is trained on a lot of internet text, and it is very likely that it has seen a question followed by an answer in the same format before. But you are not required to use `Question:` and `Answer:` markers, you can use whatever makes the prediction to be the way you want it to be.
+
 These were the early days of LLMs, but researchers soon realized that training the models on specific formats for "instruction following" would make them more reliable and then published the appropriate prompt formatting alongside their instruction-tuned models like:
 ```
 ### Instruction:
@@ -41,6 +43,7 @@ How do birds fly?<|im_end|>
 <|im_start|>assistant
 ```
 And this is now true for almost all models, they support some kind of text-formatting that the model is optimized for, but different models, different formats.
+
 So people started abstracting these formats away and instead used a common json structure that would then get translated into the different text-formats for each specific model, the most common one is the OpenAI Chat format:
 ```
 [
@@ -49,7 +52,8 @@ So people started abstracting these formats away and instead used a common json 
 ]
 ```
 What almost all models have in common today is that they have some kind of a "system" instruction alongside "user" and "assistant" messages, but the way they indicate to the model which part is "user" and which parts are "assistant" is very different.
-Now as you can see, this format has no idea about what a game event is or what the current ships status is, all of that is custom made by us in order to make the model better "understand" what and how it should generate its next response.
+
+As you can see, this format has no idea about what a game event is or what the current ships status is, all of that is custom made by us in order to make the model better "understand" what and how it should generate its next response, see more about how we implement this below.
 
 ## Tool-Use
 
@@ -86,7 +90,9 @@ This way software like LMStudio or ollama can look out for these special tokens 
 [TOOL_CALLS] [{"name":"list_files", "arguments": {"drive": "C:"}}]
 ```
 (Note: Two things have changed, first it used the wrong function name, and secondly it used an argument called "drive" instead of "path")
+
 This is obviously wrong and may cause errors in an application that attempts to now convert this response into an actual function inside of an application. There is nothing in the model that guarantees that an LLM will respond the way you want it to, but the more advanced a model is, the more likely it is to "do the right thing" especially if it is trained on a specific format, like Mistral.
+
 Now let's look at how Llama models do this:
 https://www.llama.com/docs/model-cards-and-prompt-formats/llama3_1/#json-based-tool-calling
 ```
@@ -96,4 +102,28 @@ Respond in the format {"name": function name, "parameters": dictionary of argume
 ```
 This is an instruction that you have to add to your prompt in order for the model to even know how it should format the tool-call, unlike Mistral which has a specific format that is trained into the model. The result of using a written instruction to tell the model how it should call tools make it even more unreliably, because the model may ignore these instructions, especially if there is a lot more other instruction that are also given to the model (think Character prompt).
 
-This whole thing becomes more of a guessing game, hoping that the model outputs exactly what we expect it to and if it doesn't we just have to hope that nothing breaks. OpenAI is insanely reliable at function calling, they even guarantee at 100% success-rate on function parameters (because they use clever technical tricks to double check the models output). Mistral is also pretty reliable, they don't guarantee success, but at least they trained their model on a specific output format, which is easy to detect and process. Llama is in a weird place, their models are good and so they will "most likely" follow the instruction, but there isn't even a specific format they were trained on, so tools like Ollama and LMStudio have to "beg the model" to follow theirs and hope that their processing can somehow deal with the output.
+### Tool-Use Support
+
+As you can see, there are three requirements for reliable tool-use:
+1) ✅ The model provider has to support tool-use, translating the tool-call into the appropriate format.
+2) ✅ The model has to be trained for tool-use and should produce correct tool-calls.
+3) ✅ The model provider should verify the tool-calls to ensure that they are correct.
+
+- ✅✅✅ **OpenAI** \
+openai.com checks all three boxes, they support tool-use in their API, they have models that are very well trained for tool-use and they have a verification system in place that checks if the model output is a valid tool-call and even guarantee 100% success rate for tool-use in strict-mode. [Docs.](https://platform.openai.com/docs/guides/function-calling)
+- ✅✅❌ **Anthropic** and **Mistral** \
+anthropic.com and mistral.ai are also pretty reliable, they don't guarantee success accoding to their documentation, but it works very reliably in practice. (Note that we do not support these providers directly, as they do not provide an OpenAI-compatible API, but you can use them with OpenRouter or LiteLLM)
+- ✅❓❓ **OpenRouter** \
+openrouter.ai has general support for tool-use with some models and providers, if you use OpenAI, Anthropic or Mistral, you can expect the same reliability as with the original tools. Other models and providers may have less reliable tool-use support. [List of supported models.](https://openrouter.ai/models?fmt=cards&order=newest&supported_parameters=tools)
+- ✅❓❌ **Ollama** \
+Ollama has support for tool-use in selected models. The reliability of tool-use is not guaranteed and will get worse the smaller the model is. [Docs.](https://ollama.com/blog/tool-support)
+- ✅❓❌ **LMStudio** \
+LMStudio has support for tool-use in selected models. The reliability of tool-use is not guaranteed and will get worse the smaller the model is. [Docs.](https://lmstudio.ai/docs/advanced/tool-use)
+- ✅✅✅ **COVAS:NEXT AIServer** (beta) \
+We are currently working on our own local server that will support tool-use in a select set of models. This way we can ensure that the tool-calls are correct and even provide models, that are specifically trained for this purpose by us. [Learn more.](./AIServer.md)
+
+## Game Events and State
+
+In order to make the AI understand the context of a game, we need to provide it with the current state of the game and the events that are happening in the game. This is done by adding a special instruction to the prompt that tells the AI about the game state and the events that are happening in the game. The AI can then use this information to generate responses that are relevant to the game.
+
+TODO
