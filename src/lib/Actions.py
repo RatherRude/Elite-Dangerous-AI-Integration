@@ -108,7 +108,6 @@ def galaxy_map_open(args):
     from pyautogui import typewrite
 
     setGameWindowActive()
-    sleep(.15)
 
     # Galaxy map already open, so we close it
     if status_parser.current_status["GuiFocus"] == 'GalaxyMap':
@@ -160,7 +159,7 @@ def galaxy_map_open(args):
 
 def galaxy_map_close(args):
     setGameWindowActive()
-    sleep(.15)
+
     if status_parser.current_status["GuiFocus"] == 'GalaxyMap':
         keys.send('GalaxyMapOpen')
 
@@ -268,6 +267,7 @@ def setGameWindowActive():
     if handle:
         try:
             win32gui.SetForegroundWindow(handle)  # give focus to ED
+            sleep(.15)
             log("debug", "Set game window as active")
         except:
             log("error", "Failed to set game window as active")
