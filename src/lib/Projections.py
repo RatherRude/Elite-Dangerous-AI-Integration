@@ -135,224 +135,96 @@ class Location(Projection[LocationState]):
             self.state = {
                 "StarSystem": self.state.get('StarSystem', 'Unknown'),
             }
-        
-        
 
-# class Location(Projection):
-#     @override
-#     def get_default_state(self) -> dict[str, Any]:
-#         return {"StarSystem": None}
-#
-#     @override
-#     def process(self, event: Event) -> None:
-#         if isinstance(event, GameEvent) and event.content.get('event') == 'Location':
-#             location = {
-#   "timestamp": "2024-11-10T15:47:05Z",
-#   "event": "Location",
-#   "DistFromStarLS": 507.757003,
-#   "Docked": True,
-#   "StationName": "Smith Landing",
-#   "StationType": "Coriolis",
-#   "MarketID": 3229680640,
-#   "StationFaction": {
-#     "Name": "Congressus Tenebris",
-#     "FactionState": "Boom"
-#   },
-#   "StationGovernment": "$government_Corporate;",
-#   "StationGovernment_Localised": "Corporate",
-#   "StationServices": [
-#     "dock",
-#     "autodock",
-#     "commodities",
-#     "contacts",
-#     "exploration",
-#     "missions",
-#     "outfitting",
-#     "crewlounge",
-#     "rearm",
-#     "refuel",
-#     "repair",
-#     "shipyard",
-#     "tuning",
-#     "engineer",
-#     "missionsgenerated",
-#     "flightcontroller",
-#     "stationoperations",
-#     "powerplay",
-#     "searchrescue",
-#     "stationMenu",
-#     "shop",
-#     "livery",
-#     "socialspace",
-#     "bartender",
-#     "vistagenomics",
-#     "pioneersupplies",
-#     "apexinterstellar",
-#     "frontlinesolutions"
-#   ],
-#   "StationEconomy": "$economy_Industrial;",
-#   "StationEconomy_Localised": "Industrial",
-#   "StationEconomies": [
-#     {
-#       "Name": "$economy_Industrial;",
-#       "Name_Localised": "Industrial",
-#       "Proportion": 1.000000
-#     }
-#   ],
-#   "Taxi": False,
-#   "Multicrew": False,
-#   "StarSystem": "HIP 38747",
-#   "SystemAddress": 491547265379,
-#   "StarPos": [
-#     111.71875,
-#     25.84375,
-#     -95.03125
-#   ],
-#   "SystemAllegiance": "Independent",
-#   "SystemEconomy": "$economy_Industrial;",
-#   "SystemEconomy_Localised": "Industrial",
-#   "SystemSecondEconomy": "$economy_Extraction;",
-#   "SystemSecondEconomy_Localised": "Extraction",
-#   "SystemGovernment": "$government_Corporate;",
-#   "SystemGovernment_Localised": "Corporate",
-#   "SystemSecurity": "$SYSTEM_SECURITY_medium;",
-#   "SystemSecurity_Localised": "Medium Security",
-#   "Population": 2420624,
-#   "Body": "Smith Landing",
-#   "BodyID": 33,
-#   "BodyType": "Station",
-#   "ControllingPower": "Felicia Winters",
-#   "Powers": [
-#     "Felicia Winters"
-#   ],
-#   "PowerplayState": "Stronghold",
-#   "Factions": [
-#     {
-#       "Name": "HIP 38747 & Co",
-#       "FactionState": "None",
-#       "Government": "Corporate",
-#       "Influence": 0.038268,
-#       "Allegiance": "Independent",
-#       "Happiness": "$Faction_HappinessBand2;",
-#       "Happiness_Localised": "Happy",
-#       "MyReputation": 0.000000
-#     },
-#     {
-#       "Name": "Workers of HIP 38747 Progressive Party",
-#       "FactionState": "None",
-#       "Government": "Democracy",
-#       "Influence": 0.030211,
-#       "Allegiance": "Independent",
-#       "Happiness": "$Faction_HappinessBand2;",
-#       "Happiness_Localised": "Happy",
-#       "MyReputation": 0.000000
-#     },
-#     {
-#       "Name": "Defence Force of HIP 38747",
-#       "FactionState": "None",
-#       "Government": "Dictatorship",
-#       "Influence": 0.034240,
-#       "Allegiance": "Independent",
-#       "Happiness": "$Faction_HappinessBand2;",
-#       "Happiness_Localised": "Happy",
-#       "MyReputation": 0.000000
-#     },
-#     {
-#       "Name": "Silver United Co",
-#       "FactionState": "None",
-#       "Government": "Corporate",
-#       "Influence": 0.024169,
-#       "Allegiance": "Independent",
-#       "Happiness": "$Faction_HappinessBand2;",
-#       "Happiness_Localised": "Happy",
-#       "MyReputation": 0.000000
-#     },
-#     {
-#       "Name": "Congressus Tenebris",
-#       "FactionState": "Boom",
-#       "Government": "Corporate",
-#       "Influence": 0.779456,
-#       "Allegiance": "Independent",
-#       "Happiness": "$Faction_HappinessBand2;",
-#       "Happiness_Localised": "Happy",
-#       "MyReputation": 15.000000,
-#       "PendingStates": [
-#         {
-#           "State": "Expansion",
-#           "Trend": 0
-#         }
-#       ],
-#       "ActiveStates": [
-#         {
-#           "State": "Boom"
-#         }
-#       ]
-#     },
-#     {
-#       "Name": "Wraith Shipping",
-#       "FactionState": "None",
-#       "Government": "Cooperative",
-#       "Influence": 0.093656,
-#       "Allegiance": "Independent",
-#       "Happiness": "$Faction_HappinessBand2;",
-#       "Happiness_Localised": "Happy",
-#       "MyReputation": 0.000000
-#     }
-#   ],
-#   "SystemFaction": {
-#     "Name": "Congressus Tenebris",
-#     "FactionState": "Boom"
-#   }
-# }
-#
-#             new_projection = {
-#                 "system": {
-#                     "name": location["StarSystem"],
-#                     "allegiance": {
-#                         "superPower": "",
-#                         "power": "",
-#                         "faction": ""
-#                     },
-#                     "economy": location["SystemEconomy_Localised"],
-#                     "second_economy": location["SystemSecondEconomy_Localised"],
-#                     "government": location["SystemGovernment_Localised"],
-#                     "security": location["SystemSecurity_Localised"],
-#                     "population": location["Population"],
-#                 },
-#                 "station": {
-#                     "name": location["Body"],
-#                     "type": location["BodyType"],
-#                     "government": location["StationGovernment_Localised"],
-#                     "economy": location["SystemEconomy_Localised"], # secondary economy?
-#                 },
-#                 "body": {
-#                     "name": location["Body"],
-#                     "type": location["BodyType"],
-#                     "coordinates": {
-#                         "latitude": 0,
-#                         "longitude": 0,
-#                         "altitude": 0,
-#                     }
-#                 },
-#                 "settlement": {
-#
-#                 },
-#                 "factions": [
-#                     {
-#                         "name": location["Factions"][0]["Name"],
-#                         "state": location["Factions"][0]["FactionState"],
-#                         "reputation": location["Factions"][0]["MyReputation"]
-#                     }
-#                 ]
-#             }
-#
-#             self.state = new_projection
+MissionState = TypedDict('MissionState', {
+    "Faction": str,
+    "Name": str,
+    "LocalisedName": str,
+    "Donation": NotRequired[int],
+    "TargetFaction": NotRequired[str],
+    "DestinationSystem": NotRequired[str],
+    "DestinationSettlement": NotRequired[str],
+    "DestinationStation": NotRequired[str],
+    "Reward": NotRequired[int],
+    # TODO: Are there more fields?
+    "Expiry": str,
+    "Wing": bool,
+    "Influence": str,
+    "Reputation": str,
+    "MissionID": int,
+})
+
+MissionsState = TypedDict('MissionsState', {
+    "Active":list[MissionState], 
+})
+
+@final
+class Missions(Projection[MissionsState]):
+    @override
+    def get_default_state(self) -> MissionsState:
+        return {
+            "Active": [],
+        }
+    
+    @override
+    def process(self, event: Event) -> None:
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Missions':
+            active_ids = [mission["MissionID"] for mission in event.content.get('Active', [])]
+            self.state["Active"] = [mission for mission in self.state["Active"] if mission["MissionID"] in active_ids]
+        
+        if isinstance(event, GameEvent) and event.content.get('event') == 'MissionAccepted':
+            mission: MissionState = {
+                "Faction": event.content.get('Faction', 'Unknown'),
+                "Name": event.content.get('Name', 'Unknown'),
+                "LocalisedName": event.content.get('LocalisedName', 'Unknown'),
+                "Expiry": event.content.get('Expiry', '1970-01-01T00:00:00Z'),
+                "Wing": event.content.get('Wing', False),
+                "Influence": event.content.get('Influence', 'Unknown'),
+                "Reputation": event.content.get('Reputation', 'Unknown'),
+                "MissionID": event.content.get('MissionID', 0),
+            }
+            if 'Donation' in event.content:
+                mission["Donation"] = event.content.get('Donation', 0)
+            if 'TargetFaction' in event.content:
+                mission["TargetFaction"] = event.content.get('TargetFaction', 'Unknown')
+            if 'DestinationSystem' in event.content:
+                mission["DestinationSystem"] = event.content.get('DestinationSystem', 'Unknown')
+            if 'DestinationSettlement' in event.content:
+                mission["DestinationSettlement"] = event.content.get('DestinationSettlement', 'Unknown')
+            if 'DestinationStation' in event.content:
+                mission["DestinationStation"] = event.content.get('DestinationStation', 'Unknown')
+            if 'Reward' in event.content:
+                mission["Reward"] = event.content.get('Reward', 0)
+                
+            self.state["Active"].append(mission)
+        
+        if isinstance(event, GameEvent) and event.content.get('event') == 'MissionCompleted':
+            mission_id = event.content.get('MissionID', 0)
+            self.state["Active"] = [mission for mission in self.state["Active"] if mission["MissionID"] != mission_id]
+        
+        if isinstance(event, GameEvent) and event.content.get('event') == 'MissionRedirected':
+            existing_mission = next((mission for mission in self.state["Active"] if mission["MissionID"] == event.content.get('MissionID', 0)), None)
+            new_destination_system = event.content.get('NewDestinationSystem', None)
+            new_destination_station = event.content.get('NewDestinationStation', None)
+            new_destination_settlement = event.content.get('NewDestinationSettlement', None)
+            
+            if existing_mission:
+                if new_destination_system:
+                    existing_mission["DestinationSystem"] = new_destination_system
+                if new_destination_station:
+                    existing_mission["DestinationStation"] = new_destination_station
+                if new_destination_settlement:
+                    existing_mission["DestinationSettlement"] = new_destination_settlement
+            
+                self.state["Active"] = [mission for mission in self.state["Active"] if mission["MissionID"] != event.content.get('MissionID', 0)]
+                self.state["Active"].append(existing_mission)
 
 
 def registerProjections(event_manager: EventManager):
     event_manager.register_projection(EventCounter())
     event_manager.register_projection(CurrentStatus())
     event_manager.register_projection(Location())
+    event_manager.register_projection(Missions())
 
     for proj in [
         'Commander',

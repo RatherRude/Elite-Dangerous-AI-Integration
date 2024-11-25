@@ -5,7 +5,7 @@ import traceback
 
 import requests
 
-from lib.Projections import LocationState
+from lib.Projections import LocationState, MissionsState
 
 from .EDJournal import *
 from .Event import (
@@ -476,21 +476,20 @@ class PromptGenerator:
             if isinstance(event, ExternalEvent):
                 if event.content.get('event') in externalEvents:
                     conversational_pieces.append(self.external_event_message(event))
-
-        status = projected_states.get('CurrentStatus', {})
-        flags = [key for key, value in status["flags"].items() if value]
-        if status.get("flags2"):
-            flags += [key for key, value in status["flags2"].items() if value]
-
-        status_info = {
-            "status": flags,
-            "balance": status.get("Balance", None),
-            "pips": status.get("Pips", None),
-            "cargo": status.get("Cargo", None),
-            "time": (datetime.now() + timedelta(days=469711)).isoformat(),
-        }
         
-        location_info: LocationState = projected_states.get('Location', {})
+
+        missions_info: MissionsState = projected_states.get('Missions', {}) # pyright: ignore[reportAssignmentType]
+        
+        if missions_info and 'Active' in missions_info:
+            conversational_pieces.append(
+                {
+                    "role": "user",
+                    "content": f"(Current missions: {json.dumps(missions_info)})",
+                }
+            )
+
+
+        location_info: LocationState = projected_states.get('Location', {}) # pyright: ignore[reportAssignmentType]
 
         if "StarSystem" in location_info and location_info["StarSystem"] != "Unknown":
             conversational_pieces.append(
@@ -510,6 +509,22 @@ class PromptGenerator:
         conversational_pieces.append(
             {"role": "user", "content": f"(Current location: {json.dumps(location_info)})"}
         )
+        
+        
+        status = projected_states.get('CurrentStatus', {})
+        flags = [key for key, value in status["flags"].items() if value]
+        if status.get("flags2"):
+            flags += [key for key, value in status["flags2"].items() if value]
+
+        status_info = {
+            "status": flags,
+            "balance": status.get("Balance", None),
+            "pips": status.get("Pips", None),
+            "cargo": status.get("Cargo", None),
+            "player_time": (datetime.now()).isoformat(),
+            "elite_time": str(datetime.now().year + 1286) + (datetime.now()).isoformat()[4:],
+        }
+        
         conversational_pieces.append(
             {"role": "user", "content": f"(Ship status: {json.dumps(status_info)})"}
         )
