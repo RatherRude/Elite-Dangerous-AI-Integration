@@ -25,8 +25,9 @@ Upon starting the AIServer, need to configure it using the window that pops up.
 
 3) Select an LLM model. At the time of writing we recommend using `lmstudio-community/Llama-3.2-3B-Instruct-GGUF`.
 
+4) You can choose to enable or disable the LLM Disk Cache. Depending on your system (SSD performance), this my speed up the LLM response time or significantly slow it down. We recommend to disable it, if you are unsure.
 
-Third, you will need to configure the network access. Confirm the defaults as 127.0.0.0 and port 8080 if you are unsure.
+5) Configure the network access. Confirm the defaults as 127.0.0.0 and port 8080 if you are unsure.
 
 The AIServer window will then download the selected models and show a message when done: `* Running on http://127.0.0.1:8080`.
 
@@ -50,3 +51,7 @@ LLM Model Name: gpt-4o-mini
 LLM Endpoint URL: http://localhost:8080/v1
 LLM API Key: <empty>
 ```
+
+## Troubleshooting
+
+If you encounter any issues, please contact us on Discord or open an issue on GitHub.

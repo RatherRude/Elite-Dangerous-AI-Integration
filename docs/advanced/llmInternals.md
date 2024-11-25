@@ -119,11 +119,11 @@ openrouter.ai has general support for tool-use with some models and providers, i
 Ollama has support for tool-use in selected models. The reliability of tool-use is not guaranteed and will get worse the smaller the model is. [Docs.](https://ollama.com/blog/tool-support)
 - ✅❓❌ **LMStudio** \
 LMStudio has support for tool-use in selected models. The reliability of tool-use is not guaranteed and will get worse the smaller the model is. [Docs.](https://lmstudio.ai/docs/advanced/tool-use)
-- ✅✅✅ **COVAS:NEXT AIServer** (beta) \
-We are currently working on our own local server that will support tool-use in a select set of models. This way we can ensure that the tool-calls are correct and even provide models, that are specifically trained for this purpose by us. [Learn more.](./AIServer.md)
+- ✅❓✅ **COVAS:NEXT AIServer** (beta) \
+We are currently working on our own local server that will support tool-use in a select set of models. This way we can ensure that the tool-calls are correct and even provide models that are specifically trained for this purpose by us in the future. [Learn more.](./AIServer.md)
 
 ## Game Events and State
 
 In order to make the AI understand the context of a game, we need to provide it with the current state of the game and the events that are happening in the game. This is done by adding a special instruction to the prompt that tells the AI about the game state and the events that are happening in the game. The AI can then use this information to generate responses that are relevant to the game.
 
-TODO
+*TODO: document how we do this*

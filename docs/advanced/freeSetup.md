@@ -2,7 +2,8 @@
 
 !!! danger
 
-    This setup is highly experimental and will significantly degrade your experience. We recommend using OpenAI instead.**
+    This setup is highly experimental and will significantly degrade your experience. We recommend using OpenAI instead.
+
 
 There are 3 main components that need to be configured for a free setup: LLM, STT, TTS.
 
@@ -58,34 +59,83 @@ LLM Endpoint URL: http://localhost:11434/v1
 LLM API Key: <empty>
 ```
 
+### 1.3 Using LMStudio (local)
+https://lmstudio.ai is a third-party application that can run the LLM locally on your computer.
+
+*Upsides:*
+- Can be used offline
+- It is free, except for the cost of the GPU and electricity
+- No rate limiting (except for the hardware)
+
+*Downsides:*
+- Requires a powerful GPU (RTX 3090 or better recommended)
+- High latency, especially on weaker GPUs
+- Not trivial to set up
+- Tool use is unreliable and may crash the integration, [see why here](llmInternals.md).
+
+Load the model into LMStudio according to the instructions on their website. At the time of writing we recommend using `llama-3.1-8b`.
+Next, you need to navigate to the Developer tab and click "Start Server". By default, the server will use port 1234.
+
+Once the server is running, you can configure the Integration as follows:
+
+```
+LLM Provider: Custom
+LLM Model Name: llama-3.1-8b
+LLM Endpoint URL: http://localhost:1234/v1
+LLM API Key: <empty>
+```
+
+### 1.4 Using AIServer (local)
+You can read more about the AIServer [here](./AIServer.md).
+
+*Upsides:*
+- Can be used offline
+- It is free, except for the cost of the GPU and electricity
+- No rate limiting (except for the hardware)
+
+*Downsides:*
+- Tricky to set up, as it is still highly experimental
+- May struggle with multilingual input/output
+- Higher latency than cloud services
+
 ## 2. STT Configuration
 The Speech-to-Text (STT) component is responsible for converting your voice into text that the LLM can understand. No cloud service is available that provides free STT, so you will need to run it locally. Luckily it requires a little less resources and can be run on a weaker GPU or even a CPU.
 
+Currently, the only option for free STT is using the local AIServer, if you know of any other free STT services, please let us know.
+
 ### 2.1 Using AIServer (local)
-See the section on AIServer below.
-
-## 3. TTS Configuration
-The Text-to-Speech (TTS) component is responsible for reading out the responses of the LLM. Edge-TTS is a free cloud service that can be used as TTS. Alternatively, you can use the AIServer to run TTS locally.
-
-### 3.1 Using Edge-TTS (cloud-based)
-You can simply select Edge-TTS as the TTS provider.
+You can read more about the AIServer [here](./AIServer.md).
 
 *Upsides:*
-- It is free
-- (Almost) No rate limiting
-- High quality voices
+- Can be used offline
+- It is free, except for the cost of the GPU and electricity
+- No rate limiting (except for the hardware)
 
 *Downsides:*
-- It's a cloud service, so it requires an internet connection
+- Tricky to set up, as it is still highly experimental
+- May struggle with multilingual input/output
+- Higher latency than cloud services
 
+## 3. TTS Configuration
+The Text-to-Speech (TTS) component is responsible for reading out the responses of the LLM. Edge-TTS is a free cloud service and is used by default. Alternatively, you can use the AIServer to run TTS locally.
 
-### 3.2 Using AIServer (local)
-See the section on AIServer below.
+### 3.1 Using Edge-TTS (cloud-based)
+We recommend using Edge-TTS as it is free and has good latency and quality.
 
-
-## Using AIServer (beta)
-**WARNING: This setup is highly experimental and is potentially difficult to set up.**
-
-We are currently working on our own local server that can provide all the necessary services locally for free, given that you have a powerful system available.
-
+### 3.1 Using AIServer (local)
 You can read more about the AIServer [here](./AIServer.md).
+
+*Upsides:*
+- Can be used offline
+- It is free, except for the cost of the GPU and electricity
+- No rate limiting (except for the hardware)
+
+*Downsides:*
+- Tricky to set up, as it is still highly experimental
+- May struggle with multilingual input/output
+- Higher latency than cloud services
+
+## Troubleshooting
+
+While we recommend using OpenAI for the best experience, we understand that there are reasons not to use OpenAI. We will try our best to support you. 
+If you encounter any issues, please contact us on Discord or open an issue on GitHub.
