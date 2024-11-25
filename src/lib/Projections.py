@@ -154,8 +154,14 @@ MissionState = TypedDict('MissionState', {
     "MissionID": int,
 })
 
+UnknownMissionState = TypedDict('UnknownMissionState', {
+    "MissionID": int,
+    "Name": str,
+})
+
 MissionsState = TypedDict('MissionsState', {
     "Active":list[MissionState], 
+    "Unknown": NotRequired[list[UnknownMissionState]],
 })
 
 @final
@@ -170,7 +176,11 @@ class Missions(Projection[MissionsState]):
     def process(self, event: Event) -> None:
         if isinstance(event, GameEvent) and event.content.get('event') == 'Missions':
             active_ids = [mission["MissionID"] for mission in event.content.get('Active', [])]
+            known_ids = [mission["MissionID"] for mission in self.state["Active"]]
             self.state["Active"] = [mission for mission in self.state["Active"] if mission["MissionID"] in active_ids]
+            self.state["Unknown"] = [mission for mission in event.content.get('Active', []) if mission["MissionID"] not in known_ids]
+            if not self.state["Unknown"]:
+                self.state.pop("Unknown", None)
         
         if isinstance(event, GameEvent) and event.content.get('event') == 'MissionAccepted':
             mission: MissionState = {
@@ -201,6 +211,10 @@ class Missions(Projection[MissionsState]):
         if isinstance(event, GameEvent) and event.content.get('event') == 'MissionCompleted':
             mission_id = event.content.get('MissionID', 0)
             self.state["Active"] = [mission for mission in self.state["Active"] if mission["MissionID"] != mission_id]
+            if 'Unknown' in self.state:
+                self.state["Unknown"] = [mission for mission in self.state["Unknown"] if mission["MissionID"] != mission_id]
+                if not self.state["Unknown"]:
+                    self.state.pop("Unknown", None)
         
         if isinstance(event, GameEvent) and event.content.get('event') == 'MissionRedirected':
             existing_mission = next((mission for mission in self.state["Active"] if mission["MissionID"] == event.content.get('MissionID', 0)), None)
