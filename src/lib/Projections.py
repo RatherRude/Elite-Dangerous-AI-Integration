@@ -140,13 +140,24 @@ MissionState = TypedDict('MissionState', {
     "Faction": str,
     "Name": str,
     "LocalisedName": str,
-    "Donation": NotRequired[int],
+    
+    # TODO: Are there more fields?
+    "Commodity": NotRequired[str], # commodity type
+    "Count": NotRequired[int], # number to deliver
+    "Target": NotRequired[str], 
+    "TargetType": NotRequired[str],
     "TargetFaction": NotRequired[str],
     "DestinationSystem": NotRequired[str],
     "DestinationSettlement": NotRequired[str],
     "DestinationStation": NotRequired[str],
+    "PassengerCount": NotRequired[int],
+    "PassengerVIPs": NotRequired[bool],
+    "PassengerWanted": NotRequired[bool],
+    "PassengerType": NotRequired[str], # eg Tourist, Soldier, Explorer,..
+    
+    "Donation": NotRequired[int],
     "Reward": NotRequired[int],
-    # TODO: Are there more fields?
+
     "Expiry": str,
     "Wing": bool,
     "Influence": str,
@@ -195,6 +206,15 @@ class Missions(Projection[MissionsState]):
             }
             if 'Donation' in event.content:
                 mission["Donation"] = event.content.get('Donation', 0)
+            if 'Reward' in event.content:
+                mission["Reward"] = event.content.get('Reward', 0)
+            
+            if 'Commodity' in event.content:
+                mission["Commodity"] = event.content.get('Commodity', 'Unknown')
+            if 'Count' in event.content:
+                mission["Count"] = event.content.get('Count', 0)
+            if 'Target' in event.content:
+                mission["Target"] = event.content.get('Target', 'Unknown')
             if 'TargetFaction' in event.content:
                 mission["TargetFaction"] = event.content.get('TargetFaction', 'Unknown')
             if 'DestinationSystem' in event.content:
@@ -203,8 +223,14 @@ class Missions(Projection[MissionsState]):
                 mission["DestinationSettlement"] = event.content.get('DestinationSettlement', 'Unknown')
             if 'DestinationStation' in event.content:
                 mission["DestinationStation"] = event.content.get('DestinationStation', 'Unknown')
-            if 'Reward' in event.content:
-                mission["Reward"] = event.content.get('Reward', 0)
+            if 'PassengerCount' in event.content:
+                mission["PassengerCount"] = event.content.get('PassengerCount', 0)
+            if 'PassengerVIPs' in event.content:
+                mission["PassengerVIPs"] = event.content.get('PassengerVIPs', False)
+            if 'PassengerWanted' in event.content:
+                mission["PassengerWanted"] = event.content.get('PassengerWanted', False)
+            if 'PassengerType' in event.content:
+                mission["PassengerType"] = event.content.get('PassengerType', 'Unknown')
                 
             self.state["Active"].append(mission)
         
