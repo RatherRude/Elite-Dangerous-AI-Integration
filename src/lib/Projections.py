@@ -7,7 +7,7 @@ from .EventManager import EventManager, Projection
 
 
 def latest_event_projection_factory(projectionName: str, gameEvent: str):
-    class LatestEvent(Projection):
+    class LatestEvent(Projection[dict[str, Any]]):
         @override
         def get_default_state(self) -> dict[str, Any]:
             return {}
@@ -260,11 +260,166 @@ class Missions(Projection[MissionsState]):
                 self.state["Active"].append(existing_mission)
 
 
+ShipInfoState = TypedDict('ShipInfoState', {
+    "Name": str,
+    "Type": str,
+    "ShipIdent": str,
+    "UnladenMass": float,
+    "Cargo": float,
+    "CargoCapacity": float,
+    "FuelMain": float,
+    "FuelMainCapacity": float,
+    "FuelReservoir": float,
+    "FuelReservoirCapacity": float,
+    "MaximumJumpRange": float,
+    "CurrentJumpRange": float,
+    "LandingPadSize": Literal['S', 'M', 'L', 'Unknown'],
+})
+
+ship_sizes: dict[str, Literal['S', 'M', 'L', 'Unknown']] = {
+    'adder':                         'S',
+    'anaconda':                      'L',
+    'asp':                           'M',
+    'asp_scout':                     'M',
+    'belugaliner':                   'L',
+    'cobramkiii':                    'S',
+    'cobramkiv':                     'S',
+    'clipper':                       'Unknown',
+    'cutter':                        'L',
+    'diamondback':                   'S',
+    'diamondbackxl':                 'S',
+    'dolphin':                       'S',
+    'eagle':                         'S',
+    'empire_courier':                'S',
+    'empire_eagle':                  'S',
+    'empire_fighter':                'Unknown',
+    'empire_trader':                 'L',
+    'federation_corvette':           'L',
+    'federation_dropship':           'M',
+    'federation_dropship_mkii':      'M',
+    'federation_gunship':            'M',
+    'federation_fighter':            'Unknown',
+    'ferdelance':                    'M',
+    'hauler':                        'S',
+    'independant_trader':            'M',
+    'independent_fighter':           'Unknown',
+    'krait_mkii':                    'M',
+    'krait_light':                   'M',
+    'mamba':                         'M',
+    'mandalay':                      'M',
+    'orca':                          'L',
+    'python':                        'M',
+    'python_nx':                     'M',
+    'scout':                         'Unknown',
+    'sidewinder':                    'S',
+    'testbuggy':                     'Unknown',
+    'type6':                         'M',
+    'type7':                         'L',
+    'type8':                         'L',
+    'type9':                         'L',
+    'type9_military':                'L',
+    'typex':                         'M',
+    'typex_2':                       'M',
+    'typex_3':                       'M',
+    'viper':                         'S',
+    'viper_mkiv':                    'S',
+    'vulture':                       'S',
+}
+
+@final
+class ShipInfo(Projection[ShipInfoState]):
+    @override
+    def get_default_state(self) -> ShipInfoState:
+        return {
+            "Name": 'Unknown',
+            "Type": 'Unknown',
+            "ShipIdent": "Unknown", 
+            "UnladenMass": 0,
+            "Cargo": 0,
+            "CargoCapacity": 0,
+            "FuelMain": 0,
+            "FuelMainCapacity": 0,
+            "FuelReservoir": 0,
+            "FuelReservoirCapacity": 0,
+            "MaximumJumpRange": 0,
+            "CurrentJumpRange": 0,
+            "LandingPadSize": 'Unknown',
+        }
+    
+    @override
+    def process(self, event: Event) -> None:
+        if isinstance(event, StatusEvent) and event.status.get('event') == 'Status':
+            status: Status = event.status  # pyright: ignore[reportAssignmentType]
+            if 'Cargo' in status and status['Cargo']:
+                self.state['Cargo'] = status['Cargo']
+                
+            if 'Fuel' in status and status['Fuel']:
+                self.state['FuelMain'] = status['Fuel'].get('FuelMain', 0)
+                self.state['FuelReservoir'] = status['Fuel'].get('FuelReservoir', 0)
+        
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Loadout':
+            # { "timestamp":"2024-07-12T21:01:20Z", "event":"Loadout", "Ship":"empire_courier", "ShipID":88, "ShipName":" ", "ShipIdent":"TR-12E", "HullValue":2542931, "ModulesValue":9124352, "HullHealth":1.000000, "UnladenMass":61.713188, "CargoCapacity":0, "MaxJumpRange":50.628967, "FuelCapacity":{ "Main":12.000000, "Reserve":0.410000 }, "Rebuy":583368,
+            if 'ShipName' in event.content:
+                self.state['Name'] = event.content.get('ShipName', 'Unknown')
+            if 'Ship' in event.content:
+                self.state['Type'] = event.content.get('Ship', 'Unknown')
+            if 'ShipIdent' in event.content:
+                self.state['ShipIdent'] = event.content.get('ShipIdent', 'Unknown')
+            if 'UnladenMass' in event.content:
+                self.state['UnladenMass'] = event.content.get('UnladenMass', 0)
+            if 'CargoCapacity' in event.content:
+                self.state['CargoCapacity'] = event.content.get('CargoCapacity', 0)
+            if 'FuelCapacity' in event.content:
+                self.state['FuelMainCapacity'] = event.content['FuelCapacity'].get('Main', 0)
+                self.state['FuelReservoirCapacity'] = event.content['FuelCapacity'].get('Reserve', 0)
+            if 'MaxJumpRange' in event.content:
+                self.state['MaximumJumpRange'] = event.content.get('MaxJumpRange', 0)
+        
+        if self.state['Type'] != 'Unknown':
+            self.state['LandingPadSize'] = ship_sizes.get(self.state['Type'], 'Unknown')
+            
+
+NavInfoState = TypedDict('NavInfoState', {
+    "NextJumpTarget": NotRequired[str],
+    "NavRouteTarget": NotRequired[str],
+    "JumpsRemaining": NotRequired[int],
+    # TODO: System local targets? (planet, station, etc)
+})
+
+@final
+class NavInfo(Projection[NavInfoState]):
+    @override
+    def get_default_state(self) -> NavInfoState:
+        return {
+            "NextJumpTarget": 'Unknown',
+            "NavRouteTarget": 'Unknown',
+            "JumpsRemaining": 0,
+        }
+    
+    @override
+    def process(self, event: Event) -> None:
+        if isinstance(event, StatusEvent) and event.status.get('event') == 'Status':
+            status: Status = event.status  # pyright: ignore[reportAssignmentType]
+            if 'Destination' in status and status['Destination']:
+                self.state['NavRouteTarget'] = status['Destination'].get('Name', 'Unknown')  # TODO: is this the right field? or is this a system local target, like planets or stations?
+        
+        if isinstance(event, GameEvent) and event.content.get('event') == 'FSDTarget':
+            if 'RemainingJumpsInRoute' in event.content:
+                self.state['JumpsRemaining'] = event.content.get('RemainingJumpsInRoute', 0)  # TODO: according to comments in the old journal code, this number is wrong when < 3 jumps remain
+            if 'Name' in event.content:
+                self.state['NextJumpTarget'] = event.content.get('Name', 'Unknown')
+        
+        # TODO: when do we clear the route? if 'FSDJump' 'StarSystem' = 'NavRouteTarget'? or if remaining jumps = 0? what if the user clears?
+
+
+
 def registerProjections(event_manager: EventManager):
     event_manager.register_projection(EventCounter())
     event_manager.register_projection(CurrentStatus())
     event_manager.register_projection(Location())
     event_manager.register_projection(Missions())
+    event_manager.register_projection(ShipInfo())
+    event_manager.register_projection(NavInfo())
 
     for proj in [
         'Commander',
