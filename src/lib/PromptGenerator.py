@@ -5,7 +5,7 @@ import traceback
 
 import requests
 
-from lib.Projections import LocationState, MissionsState
+from .Projections import LocationState, MissionsState, ShipInfoState
 
 from .EDJournal import *
 from .Event import (
@@ -509,8 +509,13 @@ class PromptGenerator:
         conversational_pieces.append(
             {"role": "user", "content": f"(Current location: {json.dumps(location_info)})"}
         )
-        
-        
+
+        ship_info: ShipInfoState = projected_states.get('ShipInfo', {})  # pyright: ignore[reportAssignmentType]
+
+        conversational_pieces.append(
+            {"role": "user", "content": f"(Current ship: {json.dumps(ship_info)})"}
+        )
+
         status = projected_states.get('CurrentStatus', {})
         flags = [key for key, value in status["flags"].items() if value]
         if status.get("flags2"):
@@ -526,7 +531,7 @@ class PromptGenerator:
         }
         
         conversational_pieces.append(
-            {"role": "user", "content": f"(Ship status: {json.dumps(status_info)})"}
+            {"role": "user", "content": f"(Current status: {json.dumps(status_info)})"}
         )
         conversational_pieces.append(
             {
