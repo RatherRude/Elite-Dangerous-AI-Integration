@@ -88,11 +88,15 @@ class EDKeys:
             if item.tag in self.keys_to_obtain:
                 key = None
                 mod = None
+                hold = None
                 # Check primary
                 if item[0].attrib['Device'].strip() == "Keyboard":
                     key = item[0].attrib['Key']
                     if len(item[0]) > 0:
-                        mod = item[0][0].attrib['Key']
+                        if item[0][0].tag == "Modifier":
+                            mod = item[0][0].attrib['Key']
+                        elif item[0][0].tag == "Hold":
+                            hold = True
                 # Check secondary (and prefer secondary)
                 if item[1].attrib['Device'].strip() == "Keyboard":
                     key = item[1].attrib['Key']
@@ -119,6 +123,8 @@ class EDKeys:
                         if mod is not None:
                             binding['pre_mod'] = 'DIK_' + mod.upper()
                             binding['mod'] = di.SCANCODE[binding['pre_mod']]
+                        if hold is not None:
+                            binding['hold'] = True
                 except KeyError:
                     print("Unrecognised key '" + binding['pre_key'] + "' for bind '" + item.tag + "'")
                 if binding is not None:
@@ -178,6 +184,9 @@ class EDKeys:
                     sleep(hold)
                 else:
                     sleep(self.key_default_delay)
+
+            if 'hold' in key:
+                sleep(0.1)
 
             if state is None or state == 0:
                 di.ReleaseKey(key['key'])
