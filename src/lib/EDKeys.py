@@ -101,8 +101,12 @@ class EDKeys:
                 if item[1].attrib['Device'].strip() == "Keyboard":
                     key = item[1].attrib['Key']
                     mod = None
+                    hold = None
                     if len(item[1]) > 0:
-                        mod = item[1][0].attrib['Key']
+                        if item[1][0].tag == "Modifier":
+                            mod = item[1][0].attrib['Key']
+                        elif item[1][0].tag == "Hold":
+                            hold = True
                 # Adequate key to SCANCODE dict standard
                 if key in convert_to_direct_keys:
                     key = convert_to_direct_keys[key]
