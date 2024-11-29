@@ -272,6 +272,22 @@ class Missions(Projection[MissionsState]):
             for mission in self.state["Active"]:
                 if 'Origin' not in mission:
                     mission["OriginStation"] = 'Unknown'
+        
+        if isinstance(event, GameEvent) and event.content.get('event') == 'MissionAbandoned':
+            mission_id = event.content.get('MissionID', 0)
+            self.state["Active"] = [mission for mission in self.state["Active"] if mission["MissionID"] != mission_id]
+            if 'Unknown' in self.state:
+                self.state["Unknown"] = [mission for mission in self.state["Unknown"] if mission["MissionID"] != mission_id]
+                if not self.state["Unknown"]:
+                    self.state.pop("Unknown", None)
+        
+        if isinstance(event, GameEvent) and event.content.get('event') == 'MissionFailed':
+            mission_id = event.content.get('MissionID', 0)
+            self.state["Active"] = [mission for mission in self.state["Active"] if mission["MissionID"] != mission_id]
+            if 'Unknown' in self.state:
+                self.state["Unknown"] = [mission for mission in self.state["Unknown"] if mission["MissionID"] != mission_id]
+                if not self.state["Unknown"]:
+                    self.state.pop("Unknown", None)
 
 
 ShipInfoState = TypedDict('ShipInfoState', {
