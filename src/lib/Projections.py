@@ -140,6 +140,7 @@ MissionState = TypedDict('MissionState', {
     "Faction": str,
     "Name": str,
     "LocalisedName": str,
+    "OriginStation": NotRequired[str | Literal['Unknown']],
     
     # TODO: Are there more fields?
     "Commodity": NotRequired[str], # commodity type
@@ -253,11 +254,24 @@ class Missions(Projection[MissionsState]):
                     existing_mission["DestinationSystem"] = new_destination_system
                 if new_destination_station:
                     existing_mission["DestinationStation"] = new_destination_station
+                    if existing_mission["DestinationStation"] == existing_mission.get("OriginStation", None):
+                        existing_mission["Name"] += " (Collect Reward)"
                 if new_destination_settlement:
                     existing_mission["DestinationSettlement"] = new_destination_settlement
             
                 self.state["Active"] = [mission for mission in self.state["Active"] if mission["MissionID"] != event.content.get('MissionID', 0)]
                 self.state["Active"].append(existing_mission)
+                
+        # If we Undock with a new mission, we probably accepted it at the station we undocked from
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Undocked':
+            for mission in self.state["Active"]:
+                if 'Origin' not in mission:
+                    mission["OriginStation"] = event.content.get('StationName', 'Unknown')
+        # If we Dock with a new mission, we probably accepted it somewhere in space, so we don't know the exact origin
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Docked':
+            for mission in self.state["Active"]:
+                if 'Origin' not in mission:
+                    mission["OriginStation"] = 'Unknown'
 
 
 ShipInfoState = TypedDict('ShipInfoState', {
@@ -272,7 +286,7 @@ ShipInfoState = TypedDict('ShipInfoState', {
     "FuelReservoir": float,
     "FuelReservoirCapacity": float,
     "MaximumJumpRange": float,
-    "CurrentJumpRange": float,
+    #"CurrentJumpRange": float,
     "LandingPadSize": Literal['S', 'M', 'L', 'Unknown'],
 })
 
@@ -342,7 +356,7 @@ class ShipInfo(Projection[ShipInfoState]):
             "FuelReservoir": 0,
             "FuelReservoirCapacity": 0,
             "MaximumJumpRange": 0,
-            "CurrentJumpRange": 0,
+            #"CurrentJumpRange": 0,
             "LandingPadSize": 'Unknown',
         }
     
@@ -381,8 +395,9 @@ class ShipInfo(Projection[ShipInfoState]):
 
 NavInfoState = TypedDict('NavInfoState', {
     "NextJumpTarget": NotRequired[str],
-    "NavRouteTarget": NotRequired[str],
+    #"NavRouteTarget": NotRequired[str],  # TODO: use the navroute.json to set this
     "JumpsRemaining": NotRequired[int],
+    "InJump": NotRequired[bool],
     # TODO: System local targets? (planet, station, etc)
 })
 
@@ -392,22 +407,30 @@ class NavInfo(Projection[NavInfoState]):
     def get_default_state(self) -> NavInfoState:
         return {
             "NextJumpTarget": 'Unknown',
-            "NavRouteTarget": 'Unknown',
+            #"NavRouteTarget": 'Unknown',
             "JumpsRemaining": 0,
         }
     
     @override
     def process(self, event: Event) -> None:
-        if isinstance(event, StatusEvent) and event.status.get('event') == 'Status':
-            status: Status = event.status  # pyright: ignore[reportAssignmentType]
-            if 'Destination' in status and status['Destination']:
-                self.state['NavRouteTarget'] = status['Destination'].get('Name', 'Unknown')  # TODO: is this the right field? or is this a system local target, like planets or stations?
+        #if isinstance(event, StatusEvent) and event.status.get('event') == 'Status':
+        #    status: Status = event.status  # pyright: ignore[reportAssignmentType]
+        #    if 'Destination' in status and status['Destination']:
+        #        self.state['Destination'] = status['Destination'].get('Name', 'Unknown')  # TODO: this could be used for system local target, like planets or stations
         
         if isinstance(event, GameEvent) and event.content.get('event') == 'FSDTarget':
             if 'RemainingJumpsInRoute' in event.content:
                 self.state['JumpsRemaining'] = event.content.get('RemainingJumpsInRoute', 0)  # TODO: according to comments in the old journal code, this number is wrong when < 3 jumps remain
             if 'Name' in event.content:
                 self.state['NextJumpTarget'] = event.content.get('Name', 'Unknown')
+            self.state.pop('InJump', None)
+        
+        if isinstance(event, GameEvent) and event.content.get('event') == 'StartJump':
+            self.state['InJump'] = True
+            
+        if isinstance(event, GameEvent) and event.content.get('event') == 'FSDJump':
+            if self.state.get('InJump', False):
+                self.state = {} # we ended the jump with no new target, so we arrived
         
         # TODO: when do we clear the route? if 'FSDJump' 'StarSystem' = 'NavRouteTarget'? or if remaining jumps = 0? what if the user clears?
 
