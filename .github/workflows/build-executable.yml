@@ -27,7 +27,7 @@ jobs:
       - name: Install pyinstaller
         run: |
           $Env:PYINSTALLER_COMPILE_BOOTLOADER = "true"
-          pip install --user --force-reinstall --ignore-installed --no-binary :all: pyinstaller==6.10.0
+          pip install --user --force-reinstall --ignore-installed --no-binary :all: pyinstaller==6.11.1
 
       - name: Determine paths for dependencies
         id: determine_paths
