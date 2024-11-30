@@ -37,7 +37,7 @@ class EDJournal:
         if latest_log is None:
             return
 
-        with open(latest_log, 'r') as f:
+        with open(latest_log, 'r', encoding='utf-8') as f:
             file_index = 0
             # read the file from start to finish, line by line
             for line in f:
@@ -66,7 +66,7 @@ class EDJournal:
             if latest_log is None:
                 sleep(1)
                 continue
-            with open(latest_log, 'r') as f:
+            with open(latest_log, 'r', encoding='utf-8') as f:
                 file_index = 0
                 while True:
                     line = f.readline() # this is blocking, so we need to check if the file has changed somehow
