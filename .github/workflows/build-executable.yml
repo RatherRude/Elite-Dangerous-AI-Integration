@@ -75,7 +75,7 @@ jobs:
       - name: Run windows defender scan
         run: |
           "C:\Program Files\Windows Defender\MpCmdRun.exe" -SignatureUpdate
-          "C:\Program Files\Windows Defender\MpCmdRun.exe" -Scan -ScanType 2 -File .\\dist
+          "C:\Program Files\Windows Defender\MpCmdRun.exe" -Scan -ScanType 3 -File $PWD\dist
         shell: cmd
 
       - name: Upload build artifact
