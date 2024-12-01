@@ -336,7 +336,7 @@ def test_chat_executable():
     
     # write config.json to temp dir
     with open(f"{temp_dir}/config.json", "w") as f:
-        f.write(json.dumps({"key": "value"}))
+        f.write(json.dumps(default_config))
         
     # run ../../dist/Chat/Chat.exe relative to this file, with temp dir as working directory
     chat_location = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../dist/Chat/Chat.exe")
