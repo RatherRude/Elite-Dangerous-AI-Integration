@@ -72,6 +72,10 @@ jobs:
           $start = "@echo off`r`nstart """" .\\AIGUI\\AIGUI.exe --chat=Chat\\Chat.exe --release=$commitId`r`nexit"
           $start | Out-File -Encoding ASCII .\\dist\\start.bat
 
+      - name: Run e2e tests
+        run: |
+          python test/e2e/test_ChatExecutable.py
+
       - name: Run windows defender scan
         run: |
           & "C:\Program Files\Windows Defender\MpCmdRun.exe" -SignatureUpdate
