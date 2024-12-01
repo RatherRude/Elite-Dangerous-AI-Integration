@@ -323,8 +323,8 @@ default_config = {
             "WeaponSelected": False
         }
     },
-    "ed_journal_path": "/home/luca/Dokumente/Elite-Dangerous-AI-Integration/linux_ed",
-    "ed_appdata_path": "/home/luca/Dokumente/Elite-Dangerous-AI-Integration/linux_ed"
+    "ed_journal_path": ".",
+    "ed_appdata_path": "."
 }
 
 def test_chat_executable():
@@ -337,6 +337,11 @@ def test_chat_executable():
     # write config.json to temp dir
     with open(f"{temp_dir}/config.json", "w") as f:
         f.write(json.dumps(default_config))
+    # write config.json to temp dir
+    with open(f"{temp_dir}/status.json", "w") as f:
+        f.write(json.dumps({"event": "Status", "timestamp": "2024-10-08T18:19:57Z"}))
+    with open(f"{temp_dir}/Journal.2024-11-24T100000.01.log", "w") as f:
+        f.write('')
         
     # run ../../dist/Chat/Chat.exe relative to this file, with temp dir as working directory
     chat_location = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../dist/Chat/Chat.exe")
