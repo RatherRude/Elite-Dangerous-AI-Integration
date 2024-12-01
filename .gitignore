@@ -7,3 +7,4 @@ __pycache__
 config*.json
 conversation.json
 *.log
+covas*.db

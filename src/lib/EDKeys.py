@@ -1,10 +1,11 @@
-from os import environ, listdir
+from os import listdir
+import os
 from os.path import getmtime, isfile, join
-from sys import platform
 from time import sleep
+from typing import Any, final
 from xml.etree.ElementTree import parse
 
-from .EDlogger import logger
+from .directinput import PressKey, ReleaseKey, SCANCODE
 
 """
 Description:  Pulls the keybindings for specific controls from the ED Key Bindings file, this class also
@@ -13,10 +14,11 @@ Description:  Pulls the keybindings for specific controls from the ED Key Bindin
 Constraints:  This file will use the latest modified *.binds file
 """
 
-
+@final
 class EDKeys:
 
-    def __init__(self):
+    def __init__(self, appdata_path: str):
+        self.appdata_path = appdata_path
         self.key_mod_delay = 0.010
         self.key_default_delay = 0.200
         self.key_repeat_delay = 0.100
@@ -54,18 +56,14 @@ class EDKeys:
         ]
         self.keys = self.get_bindings(self.keys_to_obtain)
 
+        self.missing_keys = []
         # dump config to log
         for key in self.keys_to_obtain:
-            try:
-                logger.info('get_bindings_<' + str(key) + '>=' + str(self.keys[key]))
-            except Exception as e:
-                logger.warning(str("get_bindings_<" + key + ">= does not have a valid keyboard keybind.").upper())
+            if not key in self.keys:
+                self.missing_keys.append(key)
 
-    def get_bindings(self, keys_to_obtain):
+    def get_bindings(self, keys_to_obtain) -> dict[str, Any]:
         """Returns a dict struct with the direct input equivalent of the necessary elite keybindings"""
-        if platform != "win32":
-            return {}
-        from . import directinput as di
         direct_input_keys = {}
         convert_to_direct_keys = {
             'Key_LeftShift': 'LShift',
@@ -118,34 +116,30 @@ class EDKeys:
                 elif mod is not None:
                     mod = mod[4:]
                 # Prepare final binding
-                binding = None
+                binding: None | dict[str, Any] = None
                 try:
                     if key is not None:
                         binding = {}
                         binding['pre_key'] = 'DIK_' + key.upper()
-                        binding['key'] = di.SCANCODE[binding['pre_key']]
+                        binding['key'] = SCANCODE[binding['pre_key']]
                         if mod is not None:
                             binding['pre_mod'] = 'DIK_' + mod.upper()
-                            binding['mod'] = di.SCANCODE[binding['pre_mod']]
+                            binding['mod'] = SCANCODE[binding['pre_mod']]
                         if hold is not None:
                             binding['hold'] = True
                 except KeyError:
-                    print("Unrecognised key '" + binding['pre_key'] + "' for bind '" + item.tag + "'")
+                    print("Unrecognised key '" + (binding['pre_key'] if binding else '?')  + "' for bind '" + item.tag + "'")
                 if binding is not None:
                     direct_input_keys[item.tag] = binding
-                #     else:
-                #         logger.warning("get_bindings_<"+item.tag+">= does not have a valid keyboard keybind.")
 
         if len(list(direct_input_keys.keys())) < 1:
-            return None
+            return {}
         else:
             return direct_input_keys
 
     # Note:  this routine will grab the *.binds file which is the latest modified
-    def get_latest_keybinds(self, path_bindings=None):
-        if not path_bindings:
-            path_bindings = environ['LOCALAPPDATA'] + "\Frontier Developments\Elite Dangerous\Options\Bindings"
-
+    def get_latest_keybinds(self):
+        path_bindings = os.path.join(self.appdata_path+'/', "Options", "Bindings")
         try:
             list_of_bindings = [join(path_bindings, f) for f in listdir(path_bindings) if
                                 isfile(join(path_bindings, f)) and f.endswith('.binds')]
@@ -158,30 +152,26 @@ class EDKeys:
         return latest_bindings
 
     def send_key(self, type, key):
-        from . import directinput as di
         if type == 'Up':
-            di.ReleaseKey(key)
+            ReleaseKey(key)
         else:
-            di.PressKey(key)
+            PressKey(key)
 
     def send(self, key_name, hold=None, repeat=1, repeat_delay=None, state=None):
-        from . import directinput as di
         key = self.keys.get(key_name)
         if key is None:
             # logger.warning('SEND=NONE !!!!!!!!')
             raise Exception(
                 f"Unable to retrieve keybinding for {key_name}. Advise user to check game settings for keyboard bindings.")
 
-        logger.debug('send=key:' + str(key) + ',hold:' + str(hold) + ',repeat:' + str(repeat) + ',repeat_delay:' + str(
-            repeat_delay) + ',state:' + str(state))
         for i in range(repeat):
 
             if state is None or state == 1:
                 if 'mod' in key:
-                    di.PressKey(key['mod'])
+                    PressKey(key['mod'])
                     sleep(self.key_mod_delay)
 
-                di.PressKey(key['key'])
+                PressKey(key['key'])
 
             if state is None:
                 if hold:
@@ -193,23 +183,13 @@ class EDKeys:
                 sleep(0.1)
 
             if state is None or state == 0:
-                di.ReleaseKey(key['key'])
+                ReleaseKey(key['key'])
 
                 if 'mod' in key:
                     sleep(self.key_mod_delay)
-                    di.ReleaseKey(key['mod'])
+                    ReleaseKey(key['mod'])
 
             if repeat_delay:
                 sleep(repeat_delay)
             else:
                 sleep(self.key_repeat_delay)
-
-
-def main():
-    k = EDKeys()
-    # logger.info("get_latest_keybinds="+str(k.get_latest_keybinds()))
-    # k.send(k.keys['ExplorationFSSEnter'], hold=3)
-
-
-if __name__ == "__main__":
-    main()

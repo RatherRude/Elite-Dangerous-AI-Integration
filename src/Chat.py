@@ -2,15 +2,18 @@ import io
 import json
 import sys
 from pathlib import Path
+import traceback
 
 from openai import OpenAI
 
-from lib.Config import Config
+from lib.Config import Config, get_ed_appdata_path, get_ed_journals_path
 from lib.ActionManager import ActionManager
 from lib.Actions import register_actions
 from lib.ControllerManager import ControllerManager
 from lib.EDCoPilot import EDCoPilot
+from lib.EDKeys import EDKeys
 from lib.Event import Event
+from lib.Projections import registerProjections
 from lib.PromptGenerator import PromptGenerator
 from lib.STT import STT
 from lib.TTS import TTS
@@ -22,7 +25,6 @@ from lib.StatusParser import StatusParser
 parent_dir = Path(__file__).resolve().parent.parent
 sys.path.append(str(parent_dir))
 
-from lib.Voice import *
 from lib.EDJournal import *
 from lib.EventManager import EventManager
 
@@ -46,11 +48,11 @@ def load_config() -> Config:
 
 is_thinking = False
 
-def reply(client, events: List[Event], new_events: List[Event], prompt_generator: PromptGenerator, status_parser: StatusParser,
+def reply(client, events: list[Event], new_events: list[Event], projected_states: dict[str, dict], prompt_generator: PromptGenerator,
           event_manager: EventManager, tts: TTS, copilot: EDCoPilot):
     global is_thinking
     is_thinking = True
-    prompt = prompt_generator.generate_prompt(events=events, status=status_parser.current_status, pending_events=new_events)
+    prompt = prompt_generator.generate_prompt(events=events, projected_states=projected_states, pending_events=new_events)
 
     use_tools = useTools and any([event.kind == 'user' for event in new_events])
     reasons = [event.content.get('event', event.kind) if event.kind=='game' else event.kind for event in new_events if event.kind in ['user', 'game', 'tool', 'status']]
@@ -87,55 +89,17 @@ def reply(client, events: List[Event], new_events: List[Event], prompt_generator
 useTools = False
 
 
-def getCurrentState():
-    keysToFilterOut = ["time"]
-    rawState = jn.ship_state()
-
-    return {key: value for key, value in rawState.items() if key not in keysToFilterOut}
-
-
-previous_status = None
-
-
-def checkForJournalUpdates(client, eventManager, commander_name, boot):
-    global previous_status
-    if boot:
-        previous_status['extra_events'].clear()
-        return
-
-    current_status = getCurrentState()
-
-    if current_status['extra_events'] and len(current_status['extra_events']) > 0:
-        while current_status['extra_events']:
-            item = current_status['extra_events'][0]  # Get the first item
-            if 'event_content' in item:
-                if item['event_content'].get('ScanType') == "AutoScan":
-                    current_status['extra_events'].pop(0)
-                    continue
-
-                elif 'Message_Localised' in item['event_content'] and item['event_content']['Message'].startswith(
-                        "$COMMS_entered"):
-                    current_status['extra_events'].pop(0)
-                    continue
-
-            eventManager.add_game_event(item['event_content'])
-            current_status['extra_events'].pop(0)
-
-    # Update previous status
-    previous_status = current_status
-
-
-jn = None
-tts = None
-prompt_generator: PromptGenerator = None
-status_parser: StatusParser = None
-event_manager: EventManager = None
+jn: EDJournal | None = None
+tts: TTS | None = None
+prompt_generator: PromptGenerator | None = None
+status_parser: StatusParser | None = None
+event_manager: EventManager | None = None
 
 controller_manager = ControllerManager()
 
 
 def main():
-    global llmClient, sttClient, ttsClient, tts, aiModel, backstory, useTools, jn, previous_status, event_manager, prompt_generator, llm_model_name
+    global llmClient, sttClient, ttsClient, tts, aiModel, useTools, jn, event_manager, prompt_generator, llm_model_name
 
     # Load configuration
     config = load_config()
@@ -143,9 +107,8 @@ def main():
         config["api_key"] = '-'
     llm_model_name = config["llm_model_name"]
 
-    jn = EDJournal(config["game_events"])
+    jn = EDJournal(config["game_events"], get_ed_journals_path(config))
     copilot = EDCoPilot(config["edcopilot"], is_edcopilot_dominant=config["edcopilot_dominant"])
-    previous_status = getCurrentState()
 
     # gets API Key from config.json
     llmClient = OpenAI(
@@ -159,9 +122,8 @@ def main():
     # alternative models
     if llm_model_name != '':
         aiModel = llm_model_name
-    # alternative character
-    if config["character"] != '':
-        backstory = config["character"]
+    # character prompt
+    backstory = config["character"]
     # vision
     if config["vision_var"]:
         visionClient = OpenAI(
@@ -210,24 +172,33 @@ def main():
     log('info', "Voice interface ready.")
 
 
-    enabled_game_events = []
+    enabled_game_events: list[str] = []
     for category in config["game_events"].values():
         for event, state in category.items():
             if state:
                 enabled_game_events.append(event)
 
-    status_parser = StatusParser()
-    prompt_generator = PromptGenerator(config["commander_name"], config["character"], journal=jn, important_game_events=enabled_game_events)
+    ed_keys = EDKeys(get_ed_appdata_path(config))
+    status_parser = StatusParser(get_ed_journals_path(config))
+    prompt_generator = PromptGenerator(config["commander_name"], config["character"], important_game_events=enabled_game_events)
     event_manager = EventManager(
-        on_reply_request=lambda events, new_events: reply(llmClient, events, new_events, prompt_generator, status_parser, event_manager,
+        on_reply_request=lambda events, new_events, states: reply(llmClient, events, new_events, states, prompt_generator, event_manager,
                                                           tts, copilot),
         game_events=enabled_game_events,
         continue_conversation=config["continue_conversation_var"]
     )
+    registerProjections(event_manager)
 
     if useTools:
-        register_actions(action_manager, event_manager, llmClient, llm_model_name, visionClient, config["vision_model_name"], status_parser)
+        register_actions(action_manager, event_manager, llmClient, llm_model_name, visionClient, config["vision_model_name"], status_parser, ed_keys)
         log('info', "Actions ready.")
+        
+    log('info', 'Initializing states...')
+    while jn.historic_events:
+        event_manager.add_historic_game_event(jn.historic_events.pop(0))
+        
+    event_manager.add_status_event(status_parser.current_status)
+    event_manager.process()
 
     # Cue the user that we're ready to go.
     log('info', "System Ready.")
@@ -264,21 +235,19 @@ def main():
                 event_manager.add_assistant_complete_event()
 
             # check EDJournal files for updates
-            if counter % 5 == 0:
-                checkForJournalUpdates(llmClient, event_manager, config["commander_name"], counter <= 5)
+            while not jn.events.empty():
+                event = jn.events.get()
+                event_manager.add_game_event(event)
 
-            event_manager.reply()
+            event_manager.process()
 
             # Infinite loops are bad for processors, must sleep.
             sleep(0.25)
         except KeyboardInterrupt:
             break
         except Exception as e:
-            log("error", str(e), e)
+            log("error", e, traceback.format_exc())
             break
-
-    # save_conversation(conversation)
-    event_manager.save_history()
 
     # Teardown TTS
     tts.quit()
