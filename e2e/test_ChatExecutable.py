@@ -328,6 +328,9 @@ default_config = {
 }
 
 def test_chat_executable():
+    import subprocess
+    import os
+    
     # create temp dir
     temp_dir = tempfile.mkdtemp()
     
@@ -335,10 +338,10 @@ def test_chat_executable():
     with open(f"{temp_dir}/config.json", "w") as f:
         f.write(json.dumps({"key": "value"}))
         
-    # run ../../dist/Chat/Chat.exe with temp dir as working directory
-    import subprocess
+    # run ../../dist/Chat/Chat.exe relative to this file, with temp dir as working directory
+    chat_location = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../dist/Chat/Chat.exe")
     proc = subprocess.Popen(
-        ["../../dist/Chat/Chat.exe"], 
+        [chat_location],
         cwd=temp_dir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1,
         universal_newlines=True, encoding='utf-8', shell=False, close_fds=True
     )
