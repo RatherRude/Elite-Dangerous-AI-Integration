@@ -152,8 +152,9 @@ def llm(model: Llama, prompt):
         messages=messages,
         tools=prompt.get("tools", []),
         tool_choice=prompt.get("tool_choice", None),
-        temperature=0,
-        #min_p=0.1,
+        temperature=prompt.get("temperature", 0),
+        max_tokens=prompt.get("max_tokens", 1024),
+        min_p=prompt.get("min_p", 0.1),
     )
 
     return completion
