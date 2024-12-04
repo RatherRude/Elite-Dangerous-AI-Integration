@@ -35,11 +35,12 @@ class EDCoPilot:
         log("info", f"EDCoPilot is dominant: {self.is_edcopilot_dominant}")
 
     def listen_actions(self):
+        log("debug", "Waiting for EDCoPilot to connect...")
         while True:
             if not self.provider.pending_actions.empty():
                 action = self.provider.pending_actions.get()
                 if isinstance(action, EDMesgWelcomeAction):
-                    print("new client connected")
+                    log("debug", "EDCoPilot connected, sharing config")
                     self.share_config()
             time.sleep(0.1)
 
@@ -85,6 +86,7 @@ class EDCoPilot:
     def share_config(self):
         """send Config"""
         if self.provider:
+            log("debug", "Sharing config with EDCoPilot")
             return self.provider.publish(
                 ConfigurationUpdated(is_dominant=not self.is_edcopilot_dominant ,enabled_game_events=self.enabled_game_events)
             )
