@@ -2,10 +2,13 @@ import json
 from sys import platform
 import threading
 from time import sleep
+import traceback
 from typing import Optional
 
 import openai
 import requests
+
+from lib.Config import get_ed_appdata_path
 
 from .StatusParser import StatusParser
 from .Logger import log
@@ -13,11 +16,11 @@ from .EDKeys import EDKeys
 from .EventManager import EventManager
 from .ActionManager import ActionManager
 
-keys = EDKeys()
-vision_client: openai.OpenAI = None
+keys: EDKeys = None
+vision_client: openai.OpenAI | None = None
 llm_client: openai.OpenAI = None
 llm_model_name: str = None
-vision_model_name: str = None
+vision_model_name: str | None = None
 event_manager: EventManager = None
 status_parser: StatusParser = None
 
@@ -105,7 +108,6 @@ def galaxy_map_open(args):
     from pyautogui import typewrite
 
     setGameWindowActive()
-    sleep(.15)
 
     # Galaxy map already open, so we close it
     if status_parser.current_status["GuiFocus"] == 'GalaxyMap':
@@ -157,7 +159,7 @@ def galaxy_map_open(args):
 
 def galaxy_map_close(args):
     setGameWindowActive()
-    sleep(.15)
+
     if status_parser.current_status["GuiFocus"] == 'GalaxyMap':
         keys.send('GalaxyMapOpen')
 
@@ -265,6 +267,7 @@ def setGameWindowActive():
     if handle:
         try:
             win32gui.SetForegroundWindow(handle)  # give focus to ED
+            sleep(.15)
             log("debug", "Set game window as active")
         except:
             log("error", "Failed to set game window as active")
@@ -414,7 +417,7 @@ def check_trade_planner_job(job_id):
                 # persist route as optional piece
                 return
         except Exception as e:
-            log('error', f"Error: {e}")
+            log('error', e, traceback.format_exc())
             # add conversational piece - error request
             event_manager.add_external_event({'event': 'SpanshTradePlannerFailed',
                                               'reason': 'The Spansh API has encountered an error! Please try at a later point in time!',
@@ -452,7 +455,7 @@ def trade_planner_create_thread(obj):
 
 
     except Exception as e:
-        log('error', f"Error: {e}")
+        log('error', e, traceback.format_exc())
         event_manager.add_external_event({'event': 'SpanshTradePlannerFailed',
                                           'reason': 'The request to the Spansh API wasn\'t successful! Please try at a later point in time!',
                                           'error': f'{e}'})
@@ -1275,7 +1278,7 @@ def station_finder(obj):
 
         return f'Here is a list of stations: {json.dumps(filtered_data)}'
     except Exception as e:
-        log('error', f"Error: {e}")
+        log('error', e, traceback.format_exc())
         return 'An error has occurred. The station finder seems currently not available.'
 
 
@@ -1469,14 +1472,15 @@ def system_finder(obj):
         return f'Here is a list of systems: {json.dumps(filtered_data)}'
 
     except Exception as e:
-        log('error', f"Error: {e}")
+        log('error', e, traceback.format_exc())
         return 'An error occurred. The system finder seems to be currently unavailable.'
 
 
 def register_actions(actionManager: ActionManager, eventManager: EventManager, llmClient: openai.OpenAI,
                      llmModelName: str, visionClient: Optional[openai.OpenAI], visionModelName: Optional[str],
-                     statusParser: StatusParser):
-    global event_manager, vision_client, llm_client, llm_model_name, vision_model_name, status_parser
+                     statusParser: StatusParser, edKeys: EDKeys):
+    global event_manager, vision_client, llm_client, llm_model_name, vision_model_name, status_parser, keys
+    keys = edKeys
     event_manager = eventManager
     llm_client = llmClient
     llm_model_name = llmModelName

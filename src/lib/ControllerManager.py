@@ -1,20 +1,24 @@
 import threading
 import time
-from typing import Callable, Any
+from typing import Callable, Any, final
 
 import pygame
 from pynput.keyboard import Controller as KeyboardController, Listener as KeyboardListener
 from pynput.mouse import Controller as MouseController, Listener as MouseListener
 
-
+@final
 class ControllerManager:
     def __init__(self):
         self.keyboard_controller = KeyboardController()
         self.mouse_controller = MouseController()
 
         self.is_pressed = False
-        self.last_press = None
-        self.last_release = None
+        self.last_press: str | None = None
+        self.last_release: str | None = None
+        
+        self.keyboard_listener: KeyboardListener | None = None
+        self.mouse_listener: MouseListener | None = None
+        self.joystick_listener: threading.Thread | None = None
 
         pygame.init()
         pygame.joystick.init()
@@ -46,7 +50,7 @@ class ControllerManager:
 
 
     # PTT: Captures mouse, keyboard, and controller inputs to save them as PTT key
-    def listen_hotkey(self, callback: Callable[[str], any]):
+    def listen_hotkey(self, callback: Callable[[str], Any]):
         self.last_press = None
         self.last_release = None
         def on_press(key):
