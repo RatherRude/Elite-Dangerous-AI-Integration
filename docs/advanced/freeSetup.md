@@ -2,7 +2,8 @@
 
 !!! danger
 
-    This setup is highly experimental and will significantly degrade your experience. We recommend using OpenAI instead.**
+    This setup is highly experimental and will significantly degrade your experience. We recommend using OpenAI instead.
+
 
 There are 3 main components that need to be configured for a free setup: LLM, STT, TTS.
 
@@ -20,7 +21,7 @@ The cloud service https://openrouter.ai provides a free tier that can be used to
 
 *Downsides:*
 - Account creation is required
-- Tool use is almost impossible, so the AI will not be able to control your ship or search for information on the web
+- Tool use is unreliable and may crash the integration, [see why here](llmInternals.md).
 - The free tier has significant rate-limiting
 - The available models are not as powerful as the ones available on OpenAI, they may hallucinate more and be less coherent
 
@@ -46,47 +47,46 @@ https://ollama.com is a third-party application that can run the LLM locally on 
 - Requires a powerful GPU (RTX 3090 or better recommended)
 - High latency, especially on weaker GPUs
 - Not trivial to set up
-- Tool use is almost difficult, so the AI will not be able to control your ship or search for information on the web in most cases
+- Tool use is unreliable and may crash the integration, [see why here](llmInternals.md).
 
-After installing Ollama, you need to download a model according to the instructions on their website. At the time of writing we recommend using `mistral-nemo`.
+After installing Ollama, you need to download a model according to the instructions on their website. At the time of writing we recommend using `llama3.1:8b`.
 Once the download is complete you can configure the LLM as follows:
 
 ```
 LLM Provider: Custom
-LLM Model Name: mistral-nemo
+LLM Model Name: llama3.1:8b
 LLM Endpoint URL: http://localhost:11434/v1
 LLM API Key: <empty>
 ```
 
-## 2. STT Configuration
-The Speech-to-Text (STT) component is responsible for converting your voice into text that the LLM can understand. No cloud service is available that provides free STT, so you will need to run it locally. Luckily it requires a little less resources and can be run on a weaker GPU or even a CPU.
-
-### 2.1 Using AIServer (local)
-See the section on AIServer below.
-
-## 3. TTS Configuration
-The Text-to-Speech (TTS) component is responsible for reading out the responses of the LLM. Edge-TTS is a free cloud service that can be used as TTS. Alternatively, you can use the AIServer to run TTS locally.
-
-### 3.1 Using Edge-TTS (cloud-based)
-You can simply select Edge-TTS as the TTS provider.
+### 1.3 Using LMStudio (local)
+https://lmstudio.ai is a third-party application that can run the LLM locally on your computer.
 
 *Upsides:*
-- It is free
-- (Almost) No rate limiting
-- High quality voices
+- Can be used offline
+- It is free, except for the cost of the GPU and electricity
+- No rate limiting (except for the hardware)
 
 *Downsides:*
-- It's a cloud service, so it requires an internet connection
+- Requires a powerful GPU (RTX 3090 or better recommended)
+- High latency, especially on weaker GPUs
+- Not trivial to set up
+- Tool use is unreliable and may crash the integration, [see why here](llmInternals.md).
 
+Load the model into LMStudio according to the instructions on their website. At the time of writing we recommend using `llama-3.1-8b`.
+Next, you need to navigate to the Developer tab and click "Start Server". By default, the server will use port 1234.
 
-### 3.2 Using AIServer (local)
-See the section on AIServer below.
+Once the server is running, you can configure the Integration as follows:
 
+```
+LLM Provider: Custom
+LLM Model Name: llama-3.1-8b
+LLM Endpoint URL: http://localhost:1234/v1
+LLM API Key: <empty>
+```
 
-## Using AIServer
-**WARNING: This setup is highly experimental and is potentially difficult to set up.**
-The AIServer can serve as a local STT or TTS service.
-It is included in the download of our software and can be found in the `aiserver` folder. You can run it by double-clicking the `AIServer.exe` file.
+### 1.4 Using AIServer (local)
+You can read more about the AIServer [here](./AIServer.md).
 
 *Upsides:*
 - Can be used offline
@@ -98,27 +98,44 @@ It is included in the download of our software and can be found in the `aiserver
 - May struggle with multilingual input/output
 - Higher latency than cloud services
 
-Upon starting the AIServer, need to configure it using the window that pops up. 
+## 2. STT Configuration
+The Speech-to-Text (STT) component is responsible for converting your voice into text that the LLM can understand. No cloud service is available that provides free STT, so you will need to run it locally. Luckily it requires a little less resources and can be run on a weaker GPU or even a CPU.
 
-You will first need to select a TTS Model. At the time of writing we recommend using `vits-piper-en_US-libritts-high.tar.bz2`. 
+Currently, the only option for free STT is using the local AIServer, if you know of any other free STT services, please let us know.
 
-Secondly, you will need to configure the STT model. At the time of writing we recommend using `distil-medium.en` or `distil-small.en`.
+### 2.1 Using AIServer (local)
+You can read more about the AIServer [here](./AIServer.md).
 
-Third, you will need to configure the network access. Confirm the defaults as 127.0.0.0 and port 8080 if you are unsure.
+*Upsides:*
+- Can be used offline
+- It is free, except for the cost of the GPU and electricity
+- No rate limiting (except for the hardware)
 
-The AIServer window will then download the selected models and show a message when done: `* Running on http://127.0.0.1:8080`.
+*Downsides:*
+- Tricky to set up, as it is still highly experimental
+- May struggle with multilingual input/output
+- Higher latency than cloud services
 
-Lastly, you will need to configure the AI Integration itself. 
+## 3. TTS Configuration
+The Text-to-Speech (TTS) component is responsible for reading out the responses of the LLM. Edge-TTS is a free cloud service and is used by default. Alternatively, you can use the AIServer to run TTS locally.
 
-```
-STT Provider: Custom
-STT Model Name: whisper-1
-STT Endpoint URL: http://localhost:8080/v1
-STT API Key: <empty>
-``` 
-```
-TTS Provider: Custom
-TTS Model Name: tts-1
-TTS Endpoint URL: http://localhost:8080/v1
-TTS API Key: <empty>
-```
+### 3.1 Using Edge-TTS (cloud-based)
+We recommend using Edge-TTS as it is free and has good latency and quality.
+
+### 3.1 Using AIServer (local)
+You can read more about the AIServer [here](./AIServer.md).
+
+*Upsides:*
+- Can be used offline
+- It is free, except for the cost of the GPU and electricity
+- No rate limiting (except for the hardware)
+
+*Downsides:*
+- Tricky to set up, as it is still highly experimental
+- May struggle with multilingual input/output
+- Higher latency than cloud services
+
+## Troubleshooting
+
+While we recommend using OpenAI for the best experience, we understand that there are reasons not to use OpenAI. We will try our best to support you. 
+If you encounter any issues, please contact us on Discord or open an issue on GitHub.

@@ -1,4 +1,5 @@
 config.json
+*.config.json
 EDAI.log
 /build
 /dist
@@ -7,3 +8,6 @@ __pycache__
 config*.json
 conversation.json
 *.log
+.env
+.cache
+/linux_ed
