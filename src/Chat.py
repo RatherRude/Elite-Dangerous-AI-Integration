@@ -123,8 +123,17 @@ def main():
         config["api_key"] = '-'
     llm_model_name = config["llm_model_name"]
 
+
+    enabled_game_events: list[str] = []
+    for category in config["game_events"].values():
+        for event, state in category.items():
+            if state:
+                enabled_game_events.append(event)
+
     jn = EDJournal(config["game_events"], get_ed_journals_path(config))
-    copilot = EDCoPilot(config["edcopilot"], is_edcopilot_dominant=config["edcopilot_dominant"])
+
+    copilot = EDCoPilot(config["edcopilot"], is_edcopilot_dominant=config["edcopilot_dominant"],
+                        enabled_game_events=enabled_game_events)
 
     # gets API Key from config.json
     llmClient = OpenAI(
@@ -186,13 +195,6 @@ def main():
     else:
         stt.listen_continuous()
     log('info', "Voice interface ready.")
-
-
-    enabled_game_events: list[str] = []
-    for category in config["game_events"].values():
-        for event, state in category.items():
-            if state:
-                enabled_game_events.append(event)
 
     ed_keys = EDKeys(get_ed_appdata_path(config))
     status_parser = StatusParser(get_ed_journals_path(config))
