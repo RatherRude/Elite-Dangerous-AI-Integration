@@ -33,7 +33,7 @@ class ControllerManager:
         self.controller_thread = None
         self.controller_running = False
         
-    # Register event listeners for push-to-talk functionality
+    # PPT: Registers event listener for ptt
     def register_hotkey(self, key: str, on_press: Callable[[str], Any], on_release: Callable[[str], Any]) -> None:
         def on_press_wrapper(k):
             if k == key and not self.is_pressed:
@@ -49,7 +49,7 @@ class ControllerManager:
 
         self._start_listeners(on_press_wrapper, on_release_wrapper)
         
-    # Capture and save push-to-talk key from mouse, keyboard, or controller input
+    # PTT: Captures mouse, keyboard, and controller inputs to save them as PTT key
     def listen_hotkey(self, callback: Callable[[str], any]):
         self.last_press = None
         self.last_release = None
@@ -89,7 +89,7 @@ class ControllerManager:
                 on_release(str(key))
             return True
 
-        # Start keyboard and mouse listeners
+        # Start listeners for keyboard and mouse
         self.keyboard_listener = KeyboardListener(on_press=on_key_press, on_release=on_key_release)
         self.keyboard_listener.start()
         self.mouse_listener = MouseListener(on_click=on_mouse_click)
@@ -122,13 +122,14 @@ class ControllerManager:
                                         on_release(f"Controller.{button_mapping}")
                 except:
                     pass
-                time.sleep(0.01)
-
+                time.sleep(0.01) # Small sleep to prevent high CPU usage
+                
+        # Start a thread for capturing game controller events
         self.controller_running = True
         self.controller_thread = threading.Thread(target=capture_controller, daemon=True)
         self.controller_thread.start()
 
-    # Stop all active input listeners
+    # Stop existing listeners
     def _stop_listeners(self):
         try:
             self.keyboard_listener.stop()
@@ -143,10 +144,12 @@ class ControllerManager:
     # Emulate keyboard or mouse input based on the provided key
     def emulate_hotkey(self, key: str) -> None:
         try:
+            # Try to interpret key as a Key object
             key_obj = eval(key)
             self.keyboard_controller.press(key_obj)
             self.keyboard_controller.release(key_obj)
         except (NameError, SyntaxError):
+            # If not a keyboard key, check for mouse button
             if key.startswith("Button."):
                 button = eval(key)
                 self.mouse_controller.click(button)
