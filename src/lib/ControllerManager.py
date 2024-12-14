@@ -24,10 +24,16 @@ class ControllerManager:
             'BTN_SELECT': 'Select',
             'BTN_TL': 'LB',
             'BTN_TR': 'RB',
-            'BTN_THUMBL': 'LS',  # Left stick button
-            'BTN_THUMBR': 'RS',  # Right stick button
-            'ABS_HAT0X': {-1: 'DPad.Left', 1: 'DPad.Right'},  # D-pad horizontal axis
-            'ABS_HAT0Y': {-1: 'DPad.Up', 1: 'DPad.Down'}      # D-pad vertical axis
+            'BTN_THUMBL': 'LS',
+            'BTN_THUMBR': 'RS',
+            'ABS_HAT0X': {-1: 'DPad.Left', 1: 'DPad.Right'},
+            'ABS_HAT0Y': {-1: 'DPad.Up', 1: 'DPad.Down'},
+            'ABS_X': {'press': 0.6, 'release': 0.4, -1: 'LeftStick.Left', 1: 'LeftStick.Right'},
+            'ABS_Y': {'press': 0.6, 'release': 0.4, -1: 'LeftStick.Up', 1: 'LeftStick.Down'},
+            'ABS_RX': {'press': 0.6, 'release': 0.4, -1: 'RightStick.Left', 1: 'RightStick.Right'},
+            'ABS_RY': {'press': 0.6, 'release': 0.4, -1: 'RightStick.Up', 1: 'RightStick.Down'},
+            'ABS_Z': {'press': 0.6, 'release': 0.4, 1: 'LeftTrigger'},  # Left Trigger
+            'ABS_RZ': {'press': 0.6, 'release': 0.4, 1: 'RightTrigger'} # Right Trigger
         }
         
         self.controller_thread = None
@@ -105,15 +111,30 @@ class ControllerManager:
                             if event.code in self.button_states:
                                 button_mapping = self.button_states[event.code]
                                 
-                                # Handle D-pad inputs
+                                # Handle D-pad and analog inputs
                                 if isinstance(button_mapping, dict):
-                                    if event.state in button_mapping:
-                                        button_name = button_mapping[event.state]
-                                        on_press(f"Controller.{button_name}")
+                                    if 'press' in button_mapping:
+                                        # Handle analog sticks and triggers
+                                        normalized_value = abs(event.state) / 32768
+                                        direction = 1 if event.state > 0 else -1
+                                        
+                                        if normalized_value > button_mapping['press']:
+                                            button_name = button_mapping[direction]
+                                            on_press(f"Controller.{button_name}")
+                                        elif normalized_value < button_mapping['release']:
+                                            # Release both directions when below release threshold
+                                            for direction in [-1, 1]:
+                                                if direction in button_mapping:
+                                                    on_release(f"Controller.{button_mapping[direction]}")
                                     else:
-                                        # Release all directions when D-pad is centered
-                                        for direction in button_mapping.values():
-                                            on_release(f"Controller.{direction}")
+                                        # Handle D-pad
+                                        if event.state in button_mapping:
+                                            button_name = button_mapping[event.state]
+                                            on_press(f"Controller.{button_name}")
+                                        else:
+                                            # Release all directions when D-pad is centered
+                                            for direction in button_mapping.values():
+                                                on_release(f"Controller.{direction}")
                                 # Handle standard button inputs
                                 else:
                                     if event.state == 1:
