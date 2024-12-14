@@ -1,7 +1,7 @@
 {
     "recommendations": [
         "ms-python.black-formatter",
-        "ms-pyright.pyright",
-        "ms-python.python"
+        "ms-python.python",
+        "detachhead.basedpyright"
     ]
 }

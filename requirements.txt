@@ -31,7 +31,7 @@ miniaudio==1.61
 MouseInfo==0.1.3
 mpmath==1.3.0
 num2words==0.5.13
-numpy==1.24.4
+numpy==1.25.2
 onnxruntime==1.18.1
 openai==1.37.1
 packaging==24.1
@@ -46,8 +46,8 @@ pydantic==2.9.1
 pydantic-core==2.23.3
 pygame==2.6.0
 PyGetWindow==0.0.9
-pyinstaller==6.9.0
-pyinstaller-hooks-contrib==2024.7
+pyinstaller==6.11.1
+pyinstaller-hooks-contrib==2024.10
 PyMsgBox==1.0.9
 pynput==1.7.7
 pyperclip==1.9.0
@@ -56,6 +56,7 @@ pyreadline3==3.4.1
 PyRect==0.2.0
 PyScreeze==0.1.30
 pysilero-vad==1.0.0
+pytest==8.3.3
 pyttsx3==2.90
 pytweening==1.2.0
 pywin32==306 ; sys_platform == "win32"
@@ -67,12 +68,14 @@ six==1.16.0
 sniffio==1.3.1
 soundfile==0.12.1
 SpeechRecognition==3.10.4
+sqlite-vec==0.1.3
 strip_markdown==1.3
-sherpa-onnx==1.10.27
+sherpa-onnx==1.10.29
 sympy==1.13.1
 tokenizers==0.19.1
 tqdm==4.66.4
 typing-extensions==4.12.2
 urllib3==2.2.2
+wrapt==1.16.0
 zipp==3.19.2
 EDMesg @ git+https://github.com/RatherRude/EDMesg.git@00cfd54
