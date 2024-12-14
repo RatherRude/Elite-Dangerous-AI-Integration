@@ -1,4 +1,6 @@
 import json
+from .Logger import log
+import traceback
 
 
 class ActionManager:
@@ -24,6 +26,7 @@ class ActionManager:
             try:
                 function_result = function_to_call(function_args)
             except Exception as e:
+                log("debug", "An error occurred during function:", e, traceback.format_exc())
                 function_result = "ERROR: " + repr(e)
         else:
             function_result = f"ERROR: Function {function_name} does not exist!"

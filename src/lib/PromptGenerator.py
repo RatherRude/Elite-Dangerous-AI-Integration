@@ -1,27 +1,35 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 import json
 from functools import lru_cache
+import traceback
 
 import requests
-from dataclasses import asdict
 
-from .StatusParser import Status
+from .Projections import LocationState, MissionsState, ShipInfoState
+
 from .EDJournal import *
-from .Event import GameEvent, Event, ConversationEvent, StatusEvent, ToolEvent, ExternalEvent
+from .Event import (
+    GameEvent,
+    Event,
+    ConversationEvent,
+    StatusEvent,
+    ToolEvent,
+    ExternalEvent,
+)
 from .Logger import log
 
 startupEvents = {
-    "Cargo": "Commander {commanderName} has updated their cargo inventory.",
-    "ClearSavedGame": "Commander {commanderName} has reset their game.",
+    # "Cargo": "Commander {commanderName} has updated their cargo inventory.",
+    # "ClearSavedGame": "Commander {commanderName} has reset their game.",
     "LoadGame": "Commander {commanderName} has loaded the game.",
     "NewCommander": "Commander {commanderName} has started a new game.",
-    "Materials": "Commander {commanderName} has updated their materials inventory.",
+    # "Materials": "Commander {commanderName} has updated their materials inventory.",
     "Missions": "Commander {commanderName} has updated their missions.",
-    "Progress": "Commander {commanderName} has made progress in various activities.",
-    "Rank": "Commander {commanderName} has updated their ranks.",
-    "Reputation": "Commander {commanderName} has updated their reputation.",
+    # "Progress": "Commander {commanderName} has made progress in various activities.",
+    # "Rank": "Commander {commanderName} has updated their ranks.",
+    # "Reputation": "Commander {commanderName} has updated their reputation.",
     "Statistics": "Commander {commanderName} has updated their statistics.",
-    "SquadronStartup": "Commander {commanderName} is a member of a squadron."
+    #"SquadronStartup": "Commander {commanderName} is a member of a squadron.",
 }
 powerplayEvents = {
     "PowerplayCollect": "Commander {commanderName} collected powerplay commodities.",
@@ -32,7 +40,7 @@ powerplayEvents = {
     "PowerplayLeave": "Commander {commanderName} left a power.",
     "PowerplaySalary": "Commander {commanderName} received salary payment from a power.",
     "PowerplayVote": "Commander {commanderName} voted for system expansion.",
-    "PowerplayVoucher": "Commander {commanderName} received payment for powerplay combat."
+    "PowerplayVoucher": "Commander {commanderName} received payment for powerplay combat.",
 }
 squadronEvents = {
     "AppliedToSquadron": "Commander {commanderName} applied to a squadron.",
@@ -45,7 +53,7 @@ squadronEvents = {
     "SquadronCreated": "A squadron was created by commander {commanderName}.",
     "SquadronDemotion": "Commander {commanderName} was demoted in a squadron.",
     "SquadronPromotion": "Commander {commanderName} was promoted in a squadron.",
-    "WonATrophyForSquadron": "Commander {commanderName} won a trophy for a squadron."
+    "WonATrophyForSquadron": "Commander {commanderName} won a trophy for a squadron.",
 }
 explorationEvents = {
     "CodexEntry": "Commander {commanderName} has logged a Codex entry.",
@@ -65,7 +73,7 @@ explorationEvents = {
     "SAASignalsFound": "Commander {commanderName} has found signals using the SAA scanner.",
     "ScanBaryCentre": "Commander {commanderName} has scanned a BaryCentre.",
     "SellExplorationData": "Commander {commanderName} has sold exploration data in Cartographics.",
-    "Screenshot": "Commander {commanderName} has taken a screenshot."
+    "Screenshot": "Commander {commanderName} has taken a screenshot.",
 }
 tradeEvents = {
     "Trade": "Commander {commanderName} has performed a trade.",
@@ -75,7 +83,7 @@ tradeEvents = {
     "EjectCargo": "Commander {commanderName} has ejected cargo.",
     "MarketBuy": "Commander {commanderName} has bought market goods.",
     "MarketSell": "Commander {commanderName} has sold market goods.",
-    "MiningRefined": "Commander {commanderName} has refined a resource."
+    "MiningRefined": "Commander {commanderName} has refined a resource.",
 }
 stationServiceEvents = {
     "StationServices": "Commander {commanderName} has accessed station services.",
@@ -121,13 +129,13 @@ stationServiceEvents = {
     "RestockVehicle": "Commander {commanderName} has restocked vehicle.",
     "ScientificResearch": "Commander {commanderName} has conducted scientific research.",
     "Shipyard": "Commander {commanderName} has visited a shipyard.",
-    "ShipyardNew": "Commander {commanderName} has acquired a new ship.",
+    # "ShipyardNew": "Commander {commanderName} has acquired a new ship.",
     "ShipyardSell": "Commander {commanderName} has sold a ship.",
     "ShipyardSwap": "Commander {commanderName} has swapped ships.",
     "ShipyardTransfer": "Commander {commanderName} has transfersd a ship.",
     "ShipyardBuy": "Commander {commanderName} has bought a ship.",
-    "StoredShips": "Commander {commanderName} has stored ships.",
-    "StoredModules": "Commander {commanderName} has stored modules.",
+    # "StoredShips": "Commander {commanderName} has stored ships.",
+    # "StoredModules": "Commander {commanderName} has stored modules.",
     "TechnologyBroker": "Commander {commanderName} has accessed a technology broker.",
 }
 carrierEvents = {
@@ -146,7 +154,7 @@ carrierEvents = {
     "CarrierTradeOrder": "Commander {commanderName} has placed a trade order on carrier.",
     "CarrierDockingPermission": "Commander {commanderName} has updated docking permissions for carrier.",
     "CarrierNameChanged": "Commander {commanderName} has changed the name of carrier.",
-    "CarrierJumpCancelled": "Commander {commanderName} has canceled a jump request for carrier."
+    "CarrierJumpCancelled": "Commander {commanderName} has canceled a jump request for carrier.",
 }
 odysseyEvents = {
     'Backpack': "Commander {commanderName} has interacted with their backpack.",
@@ -158,7 +166,7 @@ odysseyEvents = {
     'BuyWeapon': "Commander {commanderName} has bought a weapon.",
     'CancelDropship': "Commander {commanderName} has cancelled a dropship booking.",
     'CancelTaxi': "Commander {commanderName} has cancelled a taxi booking.",
-    'CollectItems': "Commander {commanderName} has collected items.",
+    # 'CollectItems': "Commander {commanderName} has collected items.",
     'CreateSuitLoadout': "Commander {commanderName} has created a suit loadout.",
     'DeleteSuitLoadout': "Commander {commanderName} has deleted a suit loadout.",
     'Disembark': "Commander {commanderName} has disembarked.",
@@ -173,7 +181,7 @@ odysseyEvents = {
     'SellMicroResources': "Commander {commanderName} has sold micro resources.",
     'SellOrganicData': "Commander {commanderName} has sold organic data.",
     'SellWeapon': "Commander {commanderName} has sold a weapon.",
-    'ShipLocker': "Commander {commanderName} has accessed ship locker.",
+    # 'ShipLocker': "Commander {commanderName} has accessed ship locker.",
     'SwitchSuitLoadout': "Commander {commanderName} has switched to suit loadout.",
     'TransferMicroResources': "Commander {commanderName} has transferred micro resources.",
     'TradeMicroResources': "Commander {commanderName} has traded micro resources.",
@@ -182,22 +190,22 @@ odysseyEvents = {
     'UseConsumable': "Commander {commanderName} has used a consumable."
 }
 combatEvents = {
-    'Bounty': "Commander {commanderName} has eliminated a hostile.",
-    'Died': "Commander {commanderName} has lost consciousness.",
-    'CapShipBond': "Commander {commanderName} has been rewarded for taking part in a capital ship combat.",
-    'Interdiction': "Commander {commanderName} has attempted an interdiction.",
-    'Interdicted': "Commander {commanderName} is being interdicted.",
-    'EscapeInterdiction': "Commander {commanderName} has escaped the interdiction.",
-    'FactionKillBond': "Commander {commanderName} has eliminated a hostile.",
-    'FighterDestroyed': "A ship-launched fighter was destroyed.",
-    'HeatDamage': "Commander {commanderName} is taking heat damage.",
-    'HeatWarning': "Commander {commanderName}'s ship's heat has exceeded 100%.",
-    'HullDamage': "Commander {commanderName} is taking hull damage.",
-    'PVPKill': "Commander {commanderName} has eliminated another commander.",
-    'ShieldState': "Commander {commanderName}'s shield state has changed.",
-    'ShipTargetted': "Commander {commanderName} is targeting a ship.",
-    'SRVDestroyed': "Commander {commanderName}'s SRV was destroyed.",
-    'UnderAttack': "Commander {commanderName} is under attack."
+    "Bounty": "Commander {commanderName} has eliminated a hostile.",
+    "Died": "Commander {commanderName} has lost consciousness.",
+    "CapShipBond": "Commander {commanderName} has been rewarded for taking part in a capital ship combat.",
+    "Interdiction": "Commander {commanderName} has attempted an interdiction.",
+    "Interdicted": "Commander {commanderName} is being interdicted.",
+    "EscapeInterdiction": "Commander {commanderName} has escaped the interdiction.",
+    "FactionKillBond": "Commander {commanderName} has eliminated a hostile.",
+    "FighterDestroyed": "A ship-launched fighter was destroyed.",
+    "HeatDamage": "Commander {commanderName} is taking heat damage.",
+    "HeatWarning": "Commander {commanderName}'s ship's heat has exceeded 100%.",
+    "HullDamage": "Commander {commanderName} is taking hull damage.",
+    "PVPKill": "Commander {commanderName} has eliminated another commander.",
+    "ShieldState": "Commander {commanderName}'s shield state has changed.",
+    "ShipTargetted": "Commander {commanderName} is targeting a ship.",
+    "SRVDestroyed": "Commander {commanderName}'s SRV was destroyed.",
+    "UnderAttack": "Commander {commanderName} is under attack.",
 }
 travelEvents = {
     "ApproachBody": "Commander {commanderName} is entering an orbit.",
@@ -242,7 +250,7 @@ otherEvents = {
     "FighterRebuilt": "Commander {commanderName} has rebuilt a fighter.",
     "FuelScoop": "Commander {commanderName} has scooped fuel.",
     "Friends": "The status of a friend of Commander {commanderName} has changed.",
-    "Music": "Commander {commanderName} has triggered music playback.",
+    # "Music": "Commander {commanderName} has triggered music playback.",
     "JetConeBoost": "Commander {commanderName} has executed a jet cone boost.",
     "JetConeDamage": "Commander {commanderName} has received damage from a jet cone.",
     "JoinACrew": "Commander {commanderName} has joined a crew.",
@@ -250,7 +258,7 @@ otherEvents = {
     "LaunchDrone": "Commander {commanderName} has launched a drone.",
     "LaunchFighter": "Commander {commanderName} has launched a fighter.",
     "LaunchSRV": "Commander {commanderName} has launched an SRV.",
-    "ModuleInfo": "Commander {commanderName} has received module info.",
+    # "ModuleInfo": "Commander {commanderName} has received module info.",
     "NpcCrewPaidWage": "Commander {commanderName} has paid an NPC crew member.",
     "NpcCrewRank": "Commander {commanderName} has received NPC crew rank update.",
     "Promotion": "Commander {commanderName} has received a promotion.",
@@ -275,7 +283,7 @@ otherEvents = {
     "WingJoin": "Commander {commanderName} has joined a wing.",
     "WingLeave": "Commander {commanderName} has left a wing.",
     "CargoTransfer": "Commander {commanderName} has transferred cargo.",
-    "SupercruiseDestinationDrop": "Commander {commanderName} has dropped out at a supercruise destination."
+    "SupercruiseDestinationDrop": "Commander {commanderName} has dropped out at a supercruise destination.",
 }
 
 allGameEvents = {
@@ -289,7 +297,7 @@ allGameEvents = {
     **squadronEvents,
     **carrierEvents,
     **odysseyEvents,
-    **otherEvents
+    **otherEvents,
 }
 
 externalEvents = {
@@ -301,10 +309,9 @@ externalEvents = {
 
 
 class PromptGenerator:
-    def __init__(self, commander_name: str, character_prompt: str, journal: EDJournal, important_game_events: list[str]):
+    def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str]):
         self.commander_name = commander_name
         self.character_prompt = character_prompt
-        self.journal = journal
         self.important_game_events = important_game_events
 
     # def time_since(self, timestamp):
@@ -324,42 +331,39 @@ class PromptGenerator:
     def full_event_message(self, event: GameEvent, is_important: bool):
         return {
             "role": "user",
-            "content": f"({'IMPORTANT: ' if is_important else ''}{allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)} Details: {json.dumps(event.content)})"
+            "content": f"({'IMPORTANT: ' if is_important else ''}{allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)} Details: {json.dumps(event.content)})",
         }
 
     def simple_event_message(self, event: GameEvent):
         return {
             "role": "user",
-            "content": f"({allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)})"
-        }
-    
-    def status_message(self, event: StatusEvent):
-        return {
-            "role": "user",
-            "content": f"(Status changed: {event.status.get('event')} Details: {json.dumps(event.status)})"
+            "content": f"({allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)})",
         }
 
+    def status_messages(self, event: StatusEvent):
+        if event.status.get('event'):
+            return [{
+                "role": "user",
+                "content": f"(Status changed: {event.status.get('event')} Details: {json.dumps(event.status)})",
+            }]
+        return []
+
     def conversation_message(self, event: ConversationEvent):
-        return {
-            "role": event.kind,
-            "content": event.content
-        }
+        return {"role": event.kind, "content": event.content}
 
     def tool_messages(self, event: ToolEvent):
         responses = []
         for result in event.results:
             responses.append(result)
-        responses.append({
-            "role": 'assistant',
-            "content": None,
-            "tool_calls": event.request
-        })
+        responses.append(
+            {"role": "assistant", "content": None, "tool_calls": event.request}
+        )
         return responses
 
     def external_event_message(self, event: ExternalEvent):
         return {
             "role": "user",
-            "content": f"({externalEvents[event.content.get('event')].format(commanderName=self.commander_name)} Details: {json.dumps(event.content)})"
+            "content": f"({externalEvents[event.content.get('event')].format(commanderName=self.commander_name)} Details: {json.dumps(event.content)})",
         }
 
     def tool_response_message(self, event: ToolEvent):
@@ -382,7 +386,7 @@ class PromptGenerator:
             return response.text
 
         except Exception as e:
-            log('error', f"Error: {e}")
+            log('error', e, traceback.format_exc())
             return "Currently no information on system available"
 
     # fetch station info from EDSM
@@ -408,24 +412,33 @@ class PromptGenerator:
                     "government": station.get("government", "None"),
                     "economy": station.get("economy", "None"),
                     "secondEconomy": station.get("secondEconomy", "None"),
-                    "controllingFaction": station.get("controllingFaction", {}).get("name", "Unknown"),
+                    "controllingFaction": station.get("controllingFaction", {}).get(
+                        "name", "Unknown"
+                    ),
                     "services": [
-                        service for service, has_service in {
+                        service
+                        for service, has_service in {
                             "market": station.get("haveMarket", False),
                             "shipyard": station.get("haveShipyard", False),
-                            "outfitting": station.get("haveOutfitting", False)
-                        }.items() if has_service
+                            "outfitting": station.get("haveOutfitting", False),
+                        }.items()
+                        if has_service
                     ],
-                    **({"body": station["body"]["name"]} if "body" in station and "name" in station["body"] else {})
+                    **(
+                        {"body": station["body"]["name"]}
+                        if "body" in station and "name" in station["body"]
+                        else {}
+                    ),
                 }
-                for station in data["stations"] if station["type"] != "Fleet Carrier"
+                for station in data["stations"]
+                if station["type"] != "Fleet Carrier"
             ]
 
         except Exception as e:
-            log('error', f"Error: {e}")
+            log("error", f"Error: {e}")
             return "Currently no information on system available"
 
-    def generate_prompt(self, events: List[Event], status: Status, pending_events: list[Event]):
+    def generate_prompt(self, events: list[Event], projected_states: dict[str, dict], pending_events: list[Event]):
         # Collect the last 50 conversational pieces
         conversational_pieces: list = list()
 
@@ -435,73 +448,104 @@ class PromptGenerator:
 
             is_pending = event in pending_events
 
-            if event.kind == 'game':
-                if len(conversational_pieces) < 5 or is_pending:
-                    is_important = is_pending and event.content.get('event') in self.important_game_events
-                    conversational_pieces.append(self.full_event_message(event, is_important))
-                elif len(conversational_pieces) < 20:
-                    conversational_pieces.append(self.simple_event_message(event))
-                else:
-                    pass
+            if isinstance(event, GameEvent):
+                if event.content.get('event') in allGameEvents:
+                    if len(conversational_pieces) < 5 or is_pending:
+                        is_important = is_pending and event.content.get('event') in self.important_game_events
+                        conversational_pieces.append(self.full_event_message(event, is_important))
+                    elif len(conversational_pieces) < 20:
+                        conversational_pieces.append(self.simple_event_message(event))
+                    else:
+                        pass
+                else: 
+                    log('debug', "PromptGenerator ignoring event", event.content.get('event'))
             
-            if event.kind == 'status':
-                if len(conversational_pieces) < 20:
-                    conversational_pieces.append(self.status_message(event))
+            if isinstance(event, StatusEvent):
+                if (
+                    len(conversational_pieces) < 20
+                    and event.status.get("event") != "Status"
+                ):
+                    conversational_pieces += self.status_messages(event)
 
-            if event.kind == 'user' or event.kind == 'assistant':
+            if isinstance(event, ConversationEvent) and event.kind in ['user', 'assistant']:
                 conversational_pieces.append(self.conversation_message(event))
 
-            if event.kind == 'tool':
+            if isinstance(event, ToolEvent):
                 conversational_pieces += self.tool_messages(event)
 
-            if event.kind == 'external':
-                conversational_pieces.append(self.external_event_message(event))
-
-        rawState = self.journal.ship_state()
-        keysToFilterOut = {
-            "mission_completed",
-            "mission_redirected",
-            "extra_events"
-        }
-        filtered_state = {key: value for key, value in rawState.items() if key not in keysToFilterOut}
-
-        flags = [key for key, value in status["flags"].items() if value]
-        if status["flags2"]:
-            flags += [key for key, value in status["flags2"].items() if value]
+            if isinstance(event, ExternalEvent):
+                if event.content.get('event') in externalEvents:
+                    conversational_pieces.append(self.external_event_message(event))
         
-        combined_state = {
-            **filtered_state,
+
+        missions_info: MissionsState = projected_states.get('Missions', {}) # pyright: ignore[reportAssignmentType]
+        
+        if missions_info and 'Active' in missions_info:
+            conversational_pieces.append(
+                {
+                    "role": "user",
+                    "content": f"(Current missions: {json.dumps(missions_info)})",
+                }
+            )
+
+
+        location_info: LocationState = projected_states.get('Location', {}) # pyright: ignore[reportAssignmentType]
+
+        if "StarSystem" in location_info and location_info["StarSystem"] != "Unknown":
+            conversational_pieces.append(
+                {
+                    "role": "user",
+                    "content": f"(Current system: {self.get_system_info(location_info['StarSystem'])})",
+                }
+            )
+
+            conversational_pieces.append(
+                {
+                    "role": "user",
+                    "content": f"(Stations in current system: {self.get_station_info(location_info['StarSystem'])})",
+                }
+            )
+        
+        conversational_pieces.append(
+            {"role": "user", "content": f"(Current location: {json.dumps(location_info)})"}
+        )
+
+        ship_info: ShipInfoState = projected_states.get('ShipInfo', {})  # pyright: ignore[reportAssignmentType]
+
+        conversational_pieces.append(
+            {"role": "user", "content": f"(Current ship: {json.dumps(ship_info)})"}
+        )
+
+        status = projected_states.get('CurrentStatus', {})
+        flags = [key for key, value in status["flags"].items() if value]
+        if status.get("flags2"):
+            flags += [key for key, value in status["flags2"].items() if value]
+
+        status_info = {
             "status": flags,
-            "balance": status.get('Balance', None),
-            "pips": status.get('Pips', None),
+            "balance": status.get("Balance", None),
+            "pips": status.get("Pips", None),
             "cargo": status.get("Cargo", None),
-            "time": (datetime.now() + timedelta(days=469711)).isoformat()
+            "player_time": (datetime.now()).isoformat(),
+            "elite_time": str(datetime.now().year + 1286) + (datetime.now()).isoformat()[4:],
         }
-
-        if 'location' in filtered_state and filtered_state['location'] and 'StarSystem' in filtered_state['location']:
-            conversational_pieces.append({
-                "role": "user",
-                "content": f"(Current system: {self.get_system_info(filtered_state['location']['StarSystem'])})"
-            })
-
-            conversational_pieces.append({
-                "role": "user",
-                "content": f"(Stations in current system: {self.get_station_info(filtered_state['location']['StarSystem'])})"
-            })
-        conversational_pieces.append({
-            "role": "user",
-            "content": f"(Ship status: {json.dumps(combined_state)})"
-        })
-        conversational_pieces.append({
-            "role": "system",
-            "content": "Let's roleplay in the universe of Elite: Dangerous. " +
-                       "I will provide game events in parentheses; do not create new ones. " +
-                       "Do not hallucinate any information that is not given to you. Do not use markdown in your responses. " +
-                       self.character_prompt.format(commander_name=self.commander_name)
-        })
+        
+        conversational_pieces.append(
+            {"role": "user", "content": f"(Current status: {json.dumps(status_info)})"}
+        )
+        conversational_pieces.append(
+            {
+                "role": "system",
+                "content": "Let's roleplay in the universe of Elite: Dangerous. "
+                + "I will provide game events in parentheses; do not create new ones. "
+                + "Do not hallucinate any information that is not given to you. Do not use markdown in your responses. "
+                + self.character_prompt.format(commander_name=self.commander_name),
+            }
+        )
 
         conversational_pieces.reverse()  # Restore the original order
 
-        # log('debug', 'conversation', conversational_pieces)
+        #log('debug', 'states', json.dumps(projected_states))
+        log('debug', 'conversation', json.dumps(conversational_pieces))
 
         return conversational_pieces
