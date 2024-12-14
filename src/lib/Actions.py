@@ -2024,9 +2024,7 @@ def prepare_body_request(obj):
 
     known_subtypes = [item for sublist in known_planet_types_obj.values() for item in sublist]
     known_landmarks = [item for sublist in known_planet_landmarks_obj.values() for item in sublist]
-    log('debug', 'known_landmarks', known_landmarks)
 
-    log('debug', 'System Finder Request', obj)
     filters = {
         "distance": {
             "min": "0",
@@ -2120,15 +2118,12 @@ def body_finder(obj):
     # Build the request body
     request_body = prepare_body_request(obj)
 
-    log('debug', 'body_finder', request_body)
-
     url = "https://spansh.co.uk/api/bodies/search"
 
     try:
         response = requests.post(url, json=request_body)
         response.raise_for_status()
 
-        log('debug,' 'body_finder', response.json())
         data = response.json()
         # Filter the response
         filtered_data = filter_body_response(request_body, data)
