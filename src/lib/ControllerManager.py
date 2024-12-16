@@ -115,17 +115,29 @@ class ControllerManager:
                                 if isinstance(button_mapping, dict):
                                     if 'press' in button_mapping:
                                         # Handle analog sticks and triggers
-                                        normalized_value = abs(event.state) / 32768
-                                        direction = 1 if event.state > 0 else -1
-                                        
-                                        if normalized_value > button_mapping['press']:
-                                            button_name = button_mapping[direction]
-                                            on_press(f"Controller.{button_name}")
-                                        elif normalized_value < button_mapping['release']:
-                                            # Release both directions when below release threshold
-                                            for direction in [-1, 1]:
-                                                if direction in button_mapping:
-                                                    on_release(f"Controller.{button_mapping[direction]}")
+                                        if 'press' in button_mapping:
+                                            if event.code == 'ABS_Z':  # Left Trigger
+                                                normalized_value = event.state / 255
+                                            elif event.code == 'ABS_RZ':  # Right Trigger
+                                                normalized_value = event.state / 255
+                                            else:  # Sticks
+                                                if event.code.endswith('Y'):  # Vertical axes
+                                                    normalized_value = -event.state / 32768  # Invert vertical
+                                                else:  # Horizontal axes
+                                                    normalized_value = event.state / 32768   # Normal horizontal
+                                            
+                                            if abs(normalized_value) < 0.1:  # Deadzone
+                                                normalized_value = 0
+                                            direction = 1 if normalized_value > 0 else -1
+                                            
+                                            if abs(normalized_value) > button_mapping['press']:
+                                                button_name = button_mapping[direction]
+                                                on_press(f"Controller.{button_name}")
+                                            elif abs(normalized_value) < button_mapping['release']:
+                                                # Release both directions when below release threshold
+                                                for direction in [-1, 1]:
+                                                    if direction in button_mapping:
+                                                        on_release(f"Controller.{button_mapping[direction]}")
                                     else:
                                         # Handle D-pad
                                         if event.state in button_mapping:
