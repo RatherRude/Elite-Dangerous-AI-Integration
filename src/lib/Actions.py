@@ -262,82 +262,85 @@ def npc_order(args):
 def toggle_drive_assist(args):
     setGameWindowActive()
     keys.send('ToggleDriveAssist')
-    return f"Remote ship has either been recalled or dismissed"
+    return "Drive assist has been toggled."
 
-def buggy_primary_fire_button(args):
+def buggy_primary_fire(args):
     setGameWindowActive()
     keys.send('BuggyPrimaryFireButton')
-    return f"Remote ship has either been recalled or dismissed"
+    return "Buggy primary fire triggered."
 
-def buggy_secondary_fire_button(args):
+def buggy_secondary_fire(args):
     setGameWindowActive()
     keys.send('BuggySecondaryFireButton')
-    return f"Remote ship has either been recalled or dismissed"
+    return "Buggy secondary fire triggered."
 
-def auto_break_buggy_button(args):
+def auto_break_buggy(args):
     setGameWindowActive()
     keys.send('AutoBreakBuggyButton')
-    return f"Remote ship has either been recalled or dismissed"
+    return "Auto-brake for buggy toggled."
 
-def headlights_buggy_button(args):
+def headlights_buggy(args):
     setGameWindowActive()
     keys.send('HeadlightsBuggyButton')
-    return f"Remote ship has either been recalled or dismissed"
+    return "Buggy headlights toggled."
 
-def toggle_buggy_turret_button(args):
+def toggle_buggy_turret(args):
     setGameWindowActive()
     keys.send('ToggleBuggyTurretButton')
-    return f"Remote ship has either been recalled or dismissed"
+    return "Buggy turret mode toggled."
 
 def select_target_buggy(args):
     setGameWindowActive()
     keys.send('SelectTarget_Buggy')
-    return f"Remote ship has either been recalled or dismissed"
+    return "Buggy target selection activated."
 
 def increase_engines_power_buggy(args):
     setGameWindowActive()
     keys.send('IncreaseEnginesPower_Buggy')
-    return f"Remote ship has either been recalled or dismissed"
+    return "Buggy engine power increased."
 
 def increase_weapons_power_buggy(args):
     setGameWindowActive()
     keys.send('IncreaseWeaponsPower_Buggy')
-    return f"Remote ship has either been recalled or dismissed"
+    return "Buggy weapons power increased."
 
 def increase_systems_power_buggy(args):
     setGameWindowActive()
     keys.send('IncreaseSystemsPower_Buggy')
-    return f"Remote ship has either been recalled or dismissed"
+    return "Buggy systems power increased."
 
 def reset_power_distribution_buggy(args):
     setGameWindowActive()
     keys.send('ResetPowerDistribution_Buggy')
-    return f"Remote ship has either been recalled or dismissed"
+    return "Buggy power distribution reset."
 
 def toggle_cargo_scoop_buggy(args):
     setGameWindowActive()
     keys.send('ToggleCargoScoop_Buggy')
-    return f"Remote ship has either been recalled or dismissed"
+    return "Buggy cargo scoop toggled."
 
 def eject_all_cargo_buggy(args):
     setGameWindowActive()
     keys.send('EjectAllCargo_Buggy')
-    return f"Remote ship has either been recalled or dismissed"
+    return "All cargo ejected from buggy."
 
 def recall_dismiss_ship(args):
     setGameWindowActive()
     keys.send('RecallDismissShip')
-    return f"Remote ship has either been recalled or dismissed"
+    return "Remote ship has been recalled or dismissed."
 
 def galaxy_map_open_buggy(args):
     setGameWindowActive()
     keys.send('GalaxyMapOpen_Buggy')
-    return f"Remote ship has either been recalled or dismissed"
+    return "Galaxy map opened."
 
 def system_map_open_buggy(args):
     setGameWindowActive()
     keys.send('SystemMapOpen_Buggy')
-    return f"Remote ship has either been recalled or dismissed"
+    return "System map opened."
+
+# On-Foot Actions (Odyssey)
+
 
 
 handle = None
@@ -2444,27 +2447,27 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('primaryFireBuggy', "Primary fire", {
         "type": "object",
         "properties": {}
-    }, buggy_primary_fire_button)
+    }, buggy_primary_fire)
 
     actionManager.registerAction('secondaryFireBuggy', "Secondary fire", {
         "type": "object",
         "properties": {}
-    }, buggy_secondary_fire_button)
+    }, buggy_secondary_fire)
 
     actionManager.registerAction('autoBreak', "Toggle auto-brake", {
         "type": "object",
         "properties": {}
-    }, auto_break_buggy_button)
+    }, auto_break_buggy)
 
     actionManager.registerAction('headlights', "Toggle headlights", {
         "type": "object",
         "properties": {}
-    }, headlights_buggy_button)
+    }, headlights_buggy)
 
     actionManager.registerAction('toggleTurret', "Toggle turret mode", {
         "type": "object",
         "properties": {}
-    }, toggle_buggy_turret_button)
+    }, toggle_buggy_turret)
 
     actionManager.registerAction('selectTargetBuggy', "Select target", {
         "type": "object",
@@ -2517,60 +2520,60 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     }, system_map_open_buggy)
 
     # Register actions - On-Foot Actions
-    actionManager.registerAction('HumanoidPrimaryInteractButton', "Primary interact action on foot", {
+    actionManager.registerAction('HumanoidPrimaryInteract', "Primary interact action", {
         "type": "object",
         "properties": {}
-    }, humanoid_primary_interact_button)
+    }, humanoid_primary_interact)
 
-    actionManager.registerAction('HumanoidSecondaryInteractButton', "Secondary interact action on foot", {
+    actionManager.registerAction('HumanoidSecondaryInteract', "Secondary interact action", {
         "type": "object",
         "properties": {}
-    }, humanoid_secondary_interact_button)
+    }, humanoid_secondary_interact)
 
-    actionManager.registerAction('HumanoidToggleFlashlightButton', "Toggle flashlight on foot", {
+    actionManager.registerAction('HumanoidToggleFlashlight', "Toggle flashlight", {
         "type": "object",
         "properties": {}
-    }, humanoid_toggle_flashlight_button)
+    }, humanoid_toggle_flashlight)
 
-    actionManager.registerAction('HumanoidToggleNightVisionButton', "Toggle night vision on foot", {
+    actionManager.registerAction('HumanoidToggleNightVision', "Toggle night vision", {
         "type": "object",
         "properties": {}
-    }, humanoid_toggle_night_vision_button)
+    }, humanoid_toggle_night_vision)
 
-    actionManager.registerAction('HumanoidToggleShieldsButton', "Toggle shields on foot", {
+    actionManager.registerAction('HumanoidToggleShields', "Toggle shields", {
         "type": "object",
         "properties": {}
-    }, humanoid_toggle_shields_button)
+    }, humanoid_toggle_shields)
 
-    actionManager.registerAction('HumanoidClearAuthorityLevel', "Clear authority level on foot", {
+    actionManager.registerAction('HumanoidClearAuthorityLevel', "Clear authority level", {
         "type": "object",
         "properties": {}
     }, humanoid_clear_authority_level)
 
-    actionManager.registerAction('HumanoidHealthPack', "Use health pack on foot", {
+    actionManager.registerAction('HumanoidHealthPack', "Use health pack", {
         "type": "object",
         "properties": {}
     }, humanoid_health_pack)
 
-    actionManager.registerAction('HumanoidBattery', "Use battery on foot", {
+    actionManager.registerAction('HumanoidBattery', "Use battery", {
         "type": "object",
         "properties": {}
     }, humanoid_battery)
 
-    actionManager.registerAction('GalaxyMapOpen_Humanoid', "Open Galaxy Map on foot", {
+    actionManager.registerAction('HumanoidGalaxyMapOpen', "Open Galaxy Map", {
         "type": "object",
         "properties": {}
     }, galaxy_map_open_humanoid)
 
-    actionManager.registerAction('SystemMapOpen_Humanoid', "Open System Map on foot", {
+    actionManager.registerAction('HumanoidSystemMapOpen', "Open System Map", {
         "type": "object",
         "properties": {}
     }, system_map_open_humanoid)
 
-    actionManager.registerAction('HumanoidOpenAccessPanelButton', "Open access panel on foot", {
+    actionManager.registerAction('HumanoidOpenAccessPanel', "Open access panel", {
         "type": "object",
         "properties": {}
-    }, humanoid_open_access_panel_button)
+    }, humanoid_open_access_panel)
 
     # Register actions - Web Tools
     actionManager.registerAction(
