@@ -134,6 +134,7 @@ def select_highest_threat(args):
     keys.send('SelectHighestThreat')
     return f"Highest threat (if one exists) is now target locked"
 
+
 def charge_ecm(args):
     setGameWindowActive()
     keys.send('ChargeECM')
@@ -241,11 +242,101 @@ def hyper_super_combination(args):
 
 
 # Ship Launched Fighter Actions
+def order_request_dock(args):
+    setGameWindowActive()
+    keys.send('OrderRequestDock')
+    return f"A request for docking has been sent"
+
+
 # NPC Crew Order Actions
+def npc_order(args):
+    setGameWindowActive()
+
+    if 'order' in args:
+        for order in args['order']:
+            keys.send(order)
+    return f"Orders {', '.join(str(x) for x in args['order'])} have been transmitted."
+
+
 # SRV Actions (Horizons)
+def toggle_drive_assist(args):
+    setGameWindowActive()
+    keys.send('ToggleDriveAssist')
+    return f"Remote ship has either been recalled or dismissed"
+
+def buggy_primary_fire_button(args):
+    setGameWindowActive()
+    keys.send('BuggyPrimaryFireButton')
+    return f"Remote ship has either been recalled or dismissed"
+
+def buggy_secondary_fire_button(args):
+    setGameWindowActive()
+    keys.send('BuggySecondaryFireButton')
+    return f"Remote ship has either been recalled or dismissed"
+
+def auto_break_buggy_button(args):
+    setGameWindowActive()
+    keys.send('AutoBreakBuggyButton')
+    return f"Remote ship has either been recalled or dismissed"
+
+def headlights_buggy_button(args):
+    setGameWindowActive()
+    keys.send('HeadlightsBuggyButton')
+    return f"Remote ship has either been recalled or dismissed"
+
+def toggle_buggy_turret_button(args):
+    setGameWindowActive()
+    keys.send('ToggleBuggyTurretButton')
+    return f"Remote ship has either been recalled or dismissed"
+
+def select_target_buggy(args):
+    setGameWindowActive()
+    keys.send('SelectTarget_Buggy')
+    return f"Remote ship has either been recalled or dismissed"
+
+def increase_engines_power_buggy(args):
+    setGameWindowActive()
+    keys.send('IncreaseEnginesPower_Buggy')
+    return f"Remote ship has either been recalled or dismissed"
+
+def increase_weapons_power_buggy(args):
+    setGameWindowActive()
+    keys.send('IncreaseWeaponsPower_Buggy')
+    return f"Remote ship has either been recalled or dismissed"
+
+def increase_systems_power_buggy(args):
+    setGameWindowActive()
+    keys.send('IncreaseSystemsPower_Buggy')
+    return f"Remote ship has either been recalled or dismissed"
+
+def reset_power_distribution_buggy(args):
+    setGameWindowActive()
+    keys.send('ResetPowerDistribution_Buggy')
+    return f"Remote ship has either been recalled or dismissed"
+
+def toggle_cargo_scoop_buggy(args):
+    setGameWindowActive()
+    keys.send('ToggleCargoScoop_Buggy')
+    return f"Remote ship has either been recalled or dismissed"
+
+def eject_all_cargo_buggy(args):
+    setGameWindowActive()
+    keys.send('EjectAllCargo_Buggy')
+    return f"Remote ship has either been recalled or dismissed"
+
 def recall_dismiss_ship(args):
     setGameWindowActive()
     keys.send('RecallDismissShip')
+    return f"Remote ship has either been recalled or dismissed"
+
+def galaxy_map_open_buggy(args):
+    setGameWindowActive()
+    keys.send('GalaxyMapOpen_Buggy')
+    return f"Remote ship has either been recalled or dismissed"
+
+def system_map_open_buggy(args):
+    setGameWindowActive()
+    keys.send('SystemMapOpen_Buggy')
     return f"Remote ship has either been recalled or dismissed"
 
 
@@ -2325,118 +2416,102 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     }, order_request_dock)
 
     # Register actions - NPC Crew Order Actions
-    actionManager.registerAction('orderDefensiveBehaviour', "Order NPC to adopt defensive behavior", {
+    actionManager.registerAction('npcOrder', "Order NPC crew ship", {
         "type": "object",
-        "properties": {}
-    }, order_defensive_behaviour)
-
-    actionManager.registerAction('orderAggressiveBehaviour', "Order NPC to adopt aggressive behavior", {
-        "type": "object",
-        "properties": {}
-    }, order_aggressive_behaviour)
-
-    actionManager.registerAction('orderFocusTarget', "Order NPC to focus on the current target", {
-        "type": "object",
-        "properties": {}
-    }, order_focus_target)
-
-    actionManager.registerAction('orderHoldFire', "Order NPC to hold fire", {
-        "type": "object",
-        "properties": {}
-    }, order_hold_fire)
-
-    actionManager.registerAction('orderHoldPosition', "Order NPC to hold their current position", {
-        "type": "object",
-        "properties": {}
-    }, order_hold_position)
-
-    actionManager.registerAction('orderFollow', "Order NPC to follow the commander", {
-        "type": "object",
-        "properties": {}
-    }, order_follow)
+        "properties": {
+            "type": "array",
+            "description": "Orders to give to the NPC pilot",
+            "items": {
+                "type": "string",
+                "enum": [
+                    "OrderDefensiveBehaviour",
+                    "OrderAggressiveBehaviour",
+                    "OrderFocusTarget",
+                    "OrderHoldFire",
+                    "OrderHoldPosition",
+                    "OrderFollow",
+                ]
+            }
+        }
+    }, npc_order)
 
     # Register actions - SRV Actions (Horizons)
-    actionManager.registerAction('toggleDriveAssist', "Toggle drive assist in SRV", {
+    actionManager.registerAction('toggleDriveAssist', "Toggle drive assist", {
         "type": "object",
         "properties": {}
     }, toggle_drive_assist)
 
-    actionManager.registerAction('verticalThrustersButton', "Activate vertical thrusters in SRV", {
-        "type": "object",
-        "properties": {}
-    }, vertical_thrusters_button)
-
-    actionManager.registerAction('buggyPrimaryFireButton', "Primary fire in SRV", {
+    actionManager.registerAction('primaryFireBuggy', "Primary fire", {
         "type": "object",
         "properties": {}
     }, buggy_primary_fire_button)
 
-    actionManager.registerAction('buggySecondaryFireButton', "Secondary fire in SRV", {
+    actionManager.registerAction('secondaryFireBuggy', "Secondary fire", {
         "type": "object",
         "properties": {}
     }, buggy_secondary_fire_button)
 
-    actionManager.registerAction('autoBreakBuggyButton', "Toggle auto-brake in SRV", {
+    actionManager.registerAction('autoBreak', "Toggle auto-brake", {
         "type": "object",
         "properties": {}
     }, auto_break_buggy_button)
 
-    actionManager.registerAction('headlightsBuggyButton', "Toggle headlights in SRV", {
+    actionManager.registerAction('headlights', "Toggle headlights", {
         "type": "object",
         "properties": {}
     }, headlights_buggy_button)
 
-    actionManager.registerAction('toggleBuggyTurretButton', "Toggle turret mode in SRV", {
+    actionManager.registerAction('toggleTurret', "Toggle turret mode", {
         "type": "object",
         "properties": {}
     }, toggle_buggy_turret_button)
 
-    actionManager.registerAction('selectTarget_Buggy', "Select target in SRV", {
+    actionManager.registerAction('selectTargetBuggy', "Select target", {
         "type": "object",
         "properties": {}
     }, select_target_buggy)
 
-    actionManager.registerAction('increaseEnginesPower_Buggy', "Increase engines power in SRV", {
+    actionManager.registerAction('increaseEnginesPowerBuggy', "Increase engines power", {
         "type": "object",
         "properties": {}
     }, increase_engines_power_buggy)
 
-    actionManager.registerAction('increaseWeaponsPower_Buggy', "Increase weapons power in SRV", {
+    actionManager.registerAction('increaseWeaponsPowerBuggy', "Increase weapons power", {
         "type": "object",
         "properties": {}
     }, increase_weapons_power_buggy)
 
-    actionManager.registerAction('increaseSystemsPower_Buggy', "Increase systems power in SRV", {
+    actionManager.registerAction('increaseSystemsPowerBuggy', "Increase systems power", {
         "type": "object",
         "properties": {}
     }, increase_systems_power_buggy)
 
-    actionManager.registerAction('resetPowerDistribution_Buggy', "Reset power distribution in SRV", {
+    actionManager.registerAction('resetPowerDistributionBuggy', "Reset power distribution", {
         "type": "object",
         "properties": {}
     }, reset_power_distribution_buggy)
 
-    actionManager.registerAction('toggleCargoScoop_Buggy', "Toggle cargo scoop in SRV", {
+    actionManager.registerAction('toggleCargoScoopBuggy', "Toggle cargo scoop", {
         "type": "object",
         "properties": {}
     }, toggle_cargo_scoop_buggy)
 
-    actionManager.registerAction('ejectAllCargo_Buggy', "Eject all cargo in SRV", {
+    actionManager.registerAction('ejectAllCargoBuggy', "Eject all cargo", {
         "type": "object",
         "properties": {}
     }, eject_all_cargo_buggy)
 
-    actionManager.registerAction('recallDismissShip', "Recall or dismiss ship, available on foot and inside SRV", {
+    actionManager.registerAction('recallDismissShip', "Recall or dismiss ship", {
         "type": "object",
         "properties": {}
     }, recall_dismiss_ship)
 
-    actionManager.registerAction('galaxyMapOpen_Buggy', "Open galaxy map in SRV", {
+    actionManager.registerAction('galaxyMapOpenBuggy', "Open/close galaxy map", {
         "type": "object",
         "properties": {}
     }, galaxy_map_open_buggy)
 
-    actionManager.registerAction('systemMapOpen_Buggy', "Open system map in SRV", {
+    actionManager.registerAction('systemMapOpenBuggy', "Open/close system map", {
         "type": "object",
         "properties": {}
     }, system_map_open_buggy)
