@@ -340,7 +340,60 @@ def system_map_open_buggy(args):
     return "System map opened."
 
 # On-Foot Actions (Odyssey)
+def primary_interact_humanoid(args):
+    setGameWindowActive()
+    keys.send('HumanoidPrimaryInteractButton')
+    return "Primary interaction initiated."
 
+def secondary_interact_humanoid(args):
+    setGameWindowActive()
+    keys.send('HumanoidSecondaryInteractButton')
+    return "Secondary interaction initiated."
+
+def toggle_flashlight_humanoid(args):
+    setGameWindowActive()
+    keys.send('HumanoidToggleFlashlightButton')
+    return "Flashlight toggled."
+
+def toggle_night_vision_humanoid(args):
+    setGameWindowActive()
+    keys.send('HumanoidToggleNightVisionButton')
+    return "Night vision toggled."
+
+def toggle_shields_humanoid(args):
+    setGameWindowActive()
+    keys.send('HumanoidToggleShieldsButton')
+    return "Shields toggled."
+
+def clear_authority_level_humanoid(args):
+    setGameWindowActive()
+    keys.send('HumanoidClearAuthorityLevel')
+    return "Authority level cleared."
+
+def health_pack_humanoid(args):
+    setGameWindowActive()
+    keys.send('HumanoidHealthPack')
+    return "Health pack used."
+
+def battery_humanoid(args):
+    setGameWindowActive()
+    keys.send('HumanoidBattery')
+    return "Battery used."
+
+def galaxy_map_open_humanoid(args):
+    setGameWindowActive()
+    keys.send('GalaxyMapOpen_Humanoid')
+    return "Galaxy map opened."
+
+def system_map_open_humanoid(args):
+    setGameWindowActive()
+    keys.send('SystemMapOpen_Humanoid')
+    return "System map opened."
+
+def open_access_panel_humanoid(args):
+    setGameWindowActive()
+    keys.send('HumanoidOpenAccessPanelButton')
+    return "Access panel opened."
 
 
 handle = None
@@ -2520,60 +2573,60 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     }, system_map_open_buggy)
 
     # Register actions - On-Foot Actions
-    actionManager.registerAction('HumanoidPrimaryInteract', "Primary interact action", {
+    actionManager.registerAction('primaryInteractHumanoid', "Primary interact action", {
         "type": "object",
         "properties": {}
-    }, humanoid_primary_interact)
+    }, primary_interact_humanoid)
 
-    actionManager.registerAction('HumanoidSecondaryInteract', "Secondary interact action", {
+    actionManager.registerAction('secondaryInteractHumanoid', "Secondary interact action", {
         "type": "object",
         "properties": {}
-    }, humanoid_secondary_interact)
+    }, secondary_interact_humanoid)
 
-    actionManager.registerAction('HumanoidToggleFlashlight', "Toggle flashlight", {
+    actionManager.registerAction('toggleFlashlightHumanoid', "Toggle flashlight", {
         "type": "object",
         "properties": {}
-    }, humanoid_toggle_flashlight)
+    }, toggle_flashlight_humanoid)
 
-    actionManager.registerAction('HumanoidToggleNightVision', "Toggle night vision", {
+    actionManager.registerAction('toggleNightVisionHumanoid', "Toggle night vision", {
         "type": "object",
         "properties": {}
-    }, humanoid_toggle_night_vision)
+    }, toggle_night_vision_humanoid)
 
-    actionManager.registerAction('HumanoidToggleShields', "Toggle shields", {
+    actionManager.registerAction('toggleShieldsHumanoid', "Toggle shields", {
         "type": "object",
         "properties": {}
-    }, humanoid_toggle_shields)
+    }, toggle_shields_humanoid)
 
-    actionManager.registerAction('HumanoidClearAuthorityLevel', "Clear authority level", {
+    actionManager.registerAction('clearAuthorityLevelHumanoid', "Clear authority level", {
         "type": "object",
         "properties": {}
-    }, humanoid_clear_authority_level)
+    }, clear_authority_level_humanoid)
 
-    actionManager.registerAction('HumanoidHealthPack', "Use health pack", {
+    actionManager.registerAction('healthPackHumanoid', "Use health pack", {
         "type": "object",
         "properties": {}
-    }, humanoid_health_pack)
+    }, health_pack_humanoid)
 
-    actionManager.registerAction('HumanoidBattery', "Use battery", {
+    actionManager.registerAction('batteryHumanoid', "Use battery", {
         "type": "object",
         "properties": {}
-    }, humanoid_battery)
+    }, battery_humanoid)
 
-    actionManager.registerAction('HumanoidGalaxyMapOpen', "Open Galaxy Map", {
+    actionManager.registerAction('galaxyMapOpenHumanoid', "Open Galaxy Map", {
         "type": "object",
         "properties": {}
     }, galaxy_map_open_humanoid)
 
-    actionManager.registerAction('HumanoidSystemMapOpen', "Open System Map", {
+    actionManager.registerAction('systemMapOpenHumanoid', "Open System Map", {
         "type": "object",
         "properties": {}
     }, system_map_open_humanoid)
 
-    actionManager.registerAction('HumanoidOpenAccessPanel', "Open access panel", {
+    actionManager.registerAction('openAccessPanelHumanoid', "Open access panel", {
         "type": "object",
         "properties": {}
-    }, humanoid_open_access_panel)
+    }, open_access_panel_humanoid)
 
     # Register actions - Web Tools
     actionManager.registerAction(
