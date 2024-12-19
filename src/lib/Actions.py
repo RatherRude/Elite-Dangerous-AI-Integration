@@ -251,7 +251,6 @@ def order_request_dock(args):
 # NPC Crew Order Actions
 def npc_order(args):
     setGameWindowActive()
-
     if 'order' in args:
         for order in args['order']:
             keys.send(order)
@@ -349,6 +348,11 @@ def secondary_interact_humanoid(args):
     setGameWindowActive()
     keys.send('HumanoidSecondaryInteractButton')
     return "Secondary interaction initiated."
+
+def equip_humanoid(args):
+    if 'equipment' in args:
+        keys.send(args['equipment'])
+    return f"{args['equipment']} has been triggered."
 
 def toggle_flashlight_humanoid(args):
     setGameWindowActive()
@@ -2582,6 +2586,29 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "type": "object",
         "properties": {}
     }, secondary_interact_humanoid)
+
+    actionManager.registerAction('equipGearHumanoid', "Equip or hide a piece of gear", {
+        "type": "object",
+        "properties": {
+        "equipment": {
+            "type": "string",
+            "description": "Gear to equip",
+            "enum": [
+                "HumanoidSelectPrimaryWeaponButton",
+                "HumanoidSelectSecondaryWeaponButton",
+                "HumanoidSelectUtilityWeaponButton",
+                "HumanoidSwitchToRechargeTool",
+                "HumanoidSwitchToCompAnalyser",
+                "HumanoidSwitchToSuitTool",
+                "HumanoidHideWeaponButton",
+                "HumanoidSelectFragGrenade",
+                "HumanoidSelectEMPGrenade",
+                "HumanoidSelectShieldGrenade"
+            ]
+        }
+    },
+    "required": ["equipment"]
+    }, equip_humanoid)
 
     actionManager.registerAction('toggleFlashlightHumanoid', "Toggle flashlight", {
         "type": "object",
