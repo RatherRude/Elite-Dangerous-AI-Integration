@@ -2391,7 +2391,8 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 },
                 "distance": {
                     "type": "number",
-                    "description": "Maximum distance to search for systems, default: 50000"
+                    "description": "The maximum distance to search",
+                    "example": 50000.0
                 },
                 "allegiance": {
                     "type": "array",
@@ -2493,7 +2494,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 },
                 "distance": {
                     "type": "number",
-                    "description": "The maximum distance to search for stations",
+                    "description": "The maximum distance to search",
                     "example": 50000.0
                 },
                 "material_trader": {
@@ -2656,7 +2657,12 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                     "items": {
                         "type": "string",
                     }
-                }
+                },
+                "distance": {
+                    "type": "number",
+                    "description": "Maximum distance to search",
+                    "example": 50000.0
+                },
             },
             "required": [
                 "reference_system",
