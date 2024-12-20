@@ -394,9 +394,20 @@ def system_map_open_humanoid(args):
     keys.send('SystemMapOpen_Humanoid')
     return "System map opened."
 
-def open_access_panel_humanoid(args):
+def recall_dismiss_ship_humanoid(args):
     setGameWindowActive()
-    keys.send('HumanoidOpenAccessPanelButton')
+
+    keys.send('HumanoidOpenAccessPanelButton', state=1)
+    sleep(.3)
+    keys.send('HumanoidOpenAccessPanelButton', state=0)
+    sleep(.05)
+    keys.send('UI_Left')
+    keys.send('UI_Up')
+    sleep(.15)
+    keys.send('UI_Select')
+    keys.send('HumanoidOpenAccessPanelButton', state=1)
+    sleep(.2)
+    keys.send('HumanoidOpenAccessPanelButton', state=0)
     return "Access panel opened."
 
 
@@ -2652,10 +2663,10 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, system_map_open_humanoid, 'humanoid')
 
-    actionManager.registerAction('openAccessPanelHumanoid', "Open access panel", {
+    actionManager.registerAction('openAccessPanelHumanoid', "Recall or dismiss ship", {
         "type": "object",
         "properties": {}
-    }, open_access_panel_humanoid, 'humanoid')
+    }, recall_dismiss_ship_humanoid, 'humanoid')
 
     # Register actions - Web Tools
     actionManager.registerAction(

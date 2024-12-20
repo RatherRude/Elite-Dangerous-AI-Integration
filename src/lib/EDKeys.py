@@ -50,6 +50,7 @@ class EDKeys:
             'ChargeECM',
             #'CycleNextPanel',
             'UI_Up',
+            'UI_Left',
             'UI_Right',
             'UI_Select',
             'UI_Back',
