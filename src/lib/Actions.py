@@ -323,7 +323,7 @@ def eject_all_cargo_buggy(args):
     keys.send('EjectAllCargo_Buggy')
     return "All cargo ejected from buggy."
 
-def recall_dismiss_ship(args):
+def recall_dismiss_ship_buggy(args):
     setGameWindowActive()
     keys.send('RecallDismissShip')
     return "Remote ship has been recalled or dismissed."
@@ -396,7 +396,6 @@ def system_map_open_humanoid(args):
 
 def recall_dismiss_ship_humanoid(args):
     setGameWindowActive()
-
     keys.send('HumanoidOpenAccessPanelButton', state=1)
     sleep(.3)
     keys.send('HumanoidOpenAccessPanelButton', state=0)
@@ -408,7 +407,7 @@ def recall_dismiss_ship_humanoid(args):
     keys.send('HumanoidOpenAccessPanelButton', state=1)
     sleep(.2)
     keys.send('HumanoidOpenAccessPanelButton', state=0)
-    return "Access panel opened."
+    return "Remote ship has been recalled or dismissed."
 
 
 handle = None
@@ -2574,10 +2573,10 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, eject_all_cargo_buggy, 'buggy')
 
-    actionManager.registerAction('recallDismissShip', "Recall or dismiss ship", {
+    actionManager.registerAction('recallDismissShipBuggy', "Recall or dismiss ship", {
         "type": "object",
         "properties": {}
-    }, recall_dismiss_ship, 'buggy')
+    }, recall_dismiss_ship_buggy, 'buggy')
 
     actionManager.registerAction('galaxyMapOpenBuggy', "Open/close galaxy map", {
         "type": "object",
@@ -2663,7 +2662,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, system_map_open_humanoid, 'humanoid')
 
-    actionManager.registerAction('openAccessPanelHumanoid', "Recall or dismiss ship", {
+    actionManager.registerAction('recallDismissShipHumanoid', "Recall or dismiss ship", {
         "type": "object",
         "properties": {}
     }, recall_dismiss_ship_humanoid, 'humanoid')

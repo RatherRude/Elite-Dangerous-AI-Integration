@@ -57,9 +57,7 @@ def reply(client, events: list[Event], new_events: list[Event], projected_states
     use_tools = useTools and any([event.kind == 'user' for event in new_events])
     reasons = [event.content.get('event', event.kind) if event.kind=='game' else event.kind for event in new_events if event.kind in ['user', 'game', 'tool', 'status']]
 
-    # log('debug', 'projected_states', projected_states)
     current_status = projected_states.get("CurrentStatus")
-    log('debug', 'current status: ', current_status)
     flags = current_status["flags"]
     flags2 = current_status["flags2"]
 
