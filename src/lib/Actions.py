@@ -2,10 +2,13 @@ import json
 from sys import platform
 import threading
 from time import sleep
+import traceback
 from typing import Optional
 
 import openai
 import requests
+
+from lib.Config import get_ed_appdata_path
 
 from .StatusParser import StatusParser
 from .Logger import log
@@ -13,11 +16,11 @@ from .EDKeys import EDKeys
 from .EventManager import EventManager
 from .ActionManager import ActionManager
 
-keys = EDKeys()
-vision_client: openai.OpenAI = None
+keys: EDKeys = None
+vision_client: openai.OpenAI | None = None
 llm_client: openai.OpenAI = None
 llm_model_name: str = None
-vision_model_name: str = None
+vision_model_name: str | None = None
 event_manager: EventManager = None
 status_parser: StatusParser = None
 
@@ -105,7 +108,6 @@ def galaxy_map_open(args):
     from pyautogui import typewrite
 
     setGameWindowActive()
-    sleep(.15)
 
     # Galaxy map already open, so we close it
     if status_parser.current_status["GuiFocus"] == 'GalaxyMap':
@@ -157,7 +159,7 @@ def galaxy_map_open(args):
 
 def galaxy_map_close(args):
     setGameWindowActive()
-    sleep(.15)
+
     if status_parser.current_status["GuiFocus"] == 'GalaxyMap':
         keys.send('GalaxyMapOpen')
 
@@ -265,6 +267,7 @@ def setGameWindowActive():
     if handle:
         try:
             win32gui.SetForegroundWindow(handle)  # give focus to ED
+            sleep(.15)
             log("debug", "Set game window as active")
         except:
             log("error", "Failed to set game window as active")
@@ -414,7 +417,7 @@ def check_trade_planner_job(job_id):
                 # persist route as optional piece
                 return
         except Exception as e:
-            log('error', f"Error: {e}")
+            log('error', e, traceback.format_exc())
             # add conversational piece - error request
             event_manager.add_external_event({'event': 'SpanshTradePlannerFailed',
                                               'reason': 'The Spansh API has encountered an error! Please try at a later point in time!',
@@ -452,7 +455,7 @@ def trade_planner_create_thread(obj):
 
 
     except Exception as e:
-        log('error', f"Error: {e}")
+        log('error', e, traceback.format_exc())
         event_manager.add_external_event({'event': 'SpanshTradePlannerFailed',
                                           'reason': 'The request to the Spansh API wasn\'t successful! Please try at a later point in time!',
                                           'error': f'{e}'})
@@ -1255,7 +1258,7 @@ def filter_station_response(request, response):
 
     return {
         "amount_total": response["count"],
-        "amount_displayed": response["size"],
+        "amount_displayed": min(response["count"], response["size"]),
         "results": filtered_results
     }
 
@@ -1275,7 +1278,7 @@ def station_finder(obj):
 
         return f'Here is a list of stations: {json.dumps(filtered_data)}'
     except Exception as e:
-        log('error', f"Error: {e}")
+        log('error', e, traceback.format_exc())
         return 'An error has occurred. The station finder seems currently not available.'
 
 
@@ -1444,7 +1447,7 @@ def filter_system_response(request, response):
     # Construct and return the filtered response
     return {
         "amount_total": response["count"],
-        "amount_displayed": response["size"],
+        "amount_displayed": min(response["count"], response["size"]),
         "results": filtered_results,
     }
 
@@ -1464,9 +1467,668 @@ def system_finder(obj):
         # Filter the response
         filtered_data = filter_system_response(request_body, data)
 
-        # Generate educated guesses if necessary (assuming educated_guesses_message is already implemented)
-
         return f'Here is a list of systems: {json.dumps(filtered_data)}'
+
+    except Exception as e:
+        log('error', e, traceback.format_exc())
+        return 'An error occurred. The system finder seems to be currently unavailable.'
+
+
+def prepare_body_request(obj):
+    known_planet_types_obj = {
+        "Planet": [
+            "Ammonia world",
+            "Class I gas giant",
+            "Class II gas giant",
+            "Class III gas giant",
+            "Class IV gas giant",
+            "Class V gas giant",
+            "Earth-like world",
+            "Gas giant with ammonia-based life",
+            "Gas giant with water-based life",
+            "Helium gas giant",
+            "Helium-rich gas giant",
+            "High metal content world",
+            "Icy body",
+            "Metal-rich body",
+            "Rocky Ice world",
+            "Rocky body",
+            "Water giant",
+            "Water world"
+        ],
+        "Star": [
+            "A (Blue-White super giant) Star",
+            "A (Blue-White) Star",
+            "B (Blue-White super giant) Star",
+            "B (Blue-White) Star",
+            "Black Hole",
+            "C Star",
+            "CJ Star",
+            "CN Star",
+            "F (White super giant) Star",
+            "F (White) Star",
+            "G (White-Yellow super giant) Star",
+            "G (White-Yellow) Star",
+            "Herbig Ae/Be Star",
+            "K (Yellow-Orange giant) Star",
+            "K (Yellow-Orange) Star",
+            "L (Brown dwarf) Star",
+            "M (Red dwarf) Star",
+            "M (Red giant) Star",
+            "M (Red super giant) Star",
+            "MS-type Star",
+            "Neutron Star",
+            "O (Blue-White) Star",
+            "S-type Star",
+            "Supermassive Black Hole",
+            "T (Brown dwarf) Star",
+            "T Tauri Star",
+            "White Dwarf (D) Star",
+            "White Dwarf (DA) Star",
+            "White Dwarf (DAB) Star",
+            "White Dwarf (DAV) Star",
+            "White Dwarf (DAZ) Star",
+            "White Dwarf (DB) Star",
+            "White Dwarf (DBV) Star",
+            "White Dwarf (DBZ) Star",
+            "White Dwarf (DC) Star",
+            "White Dwarf (DCV) Star",
+            "White Dwarf (DQ) Star",
+            "Wolf-Rayet C Star",
+            "Wolf-Rayet N Star",
+            "Wolf-Rayet NC Star",
+            "Wolf-Rayet O Star",
+            "Wolf-Rayet Star",
+            "Y (Brown dwarf) Star"
+        ]
+    }
+    known_planet_landmarks_obj = {
+        "Abandoned Base": [
+            "Abandoned Base"
+        ],
+        "Aleoida": [
+            "Aleoida Arcus",
+            "Aleoida Coronamus",
+            "Aleoida Gravis",
+            "Aleoida Laminiae",
+            "Aleoida Spica"
+        ],
+        "Amphora Plant": [
+            "Amphora Plant"
+        ],
+        "Anemone": [
+            "Blatteum Bioluminescent Anemone",
+            "Croceum Anemone",
+            "Luteolum Anemone",
+            "Prasinum Bioluminescent Anemone",
+            "Puniceum Anemone",
+            "Roseum Anemone",
+            "Roseum Bioluminescent Anemone",
+            "Rubeum Bioluminescent Anemone",
+            "Unknown"
+        ],
+        "Aster": [
+            "Cereum Aster Pod",
+            "Cereum Aster Tree",
+            "Lindigoticum Aster Pod",
+            "Prasinum Aster Tree",
+            "Rubellum Aster Tree"
+        ],
+        "Bacterium": [
+            "Bacterium Acies",
+            "Bacterium Alcyoneum",
+            "Bacterium Aurasus",
+            "Bacterium Bullaris",
+            "Bacterium Cerbrus",
+            "Bacterium Informem",
+            "Bacterium Nebulus",
+            "Bacterium Omentum",
+            "Bacterium Scopulum",
+            "Bacterium Tela",
+            "Bacterium Verrata",
+            "Bacterium Vesicula",
+            "Bacterium Volu"
+        ],
+        "Bark Mounds": [
+            "Bark Mounds"
+        ],
+        "Brain Tree": [
+            "Aureum Brain Tree",
+            "Gypseeum Brain Tree",
+            "Lindigoticum Brain Tree",
+            "Lividum Brain Tree",
+            "Ostrinum Brain Tree",
+            "Puniceum Brain Tree",
+            "Roseum Brain Tree",
+            "Viride Brain Tree"
+        ],
+        "Cactoida": [
+            "Cactoida Cortexum",
+            "Cactoida Lapis",
+            "Cactoida Peperatis",
+            "Cactoida Pullulanta",
+            "Cactoida Vermis"
+        ],
+        "Calcite Plates": [
+            "Lindigoticum Calcite Plates",
+            "Luteolum Calcite Plates",
+            "Rutulum Calcite Plates",
+            "Viride Calcite Plates"
+        ],
+        "Chalice Pod": [
+            "Albidum Chalice Pod",
+            "Caeruleum Chalice Pod",
+            "Ostrinum Chalice Pod",
+            "Rubellum Chalice Pod",
+            "Viride Chalice Pod"
+        ],
+        "Clypeus": [
+            "Clypeus Lacrimam",
+            "Clypeus Margaritus",
+            "Clypeus Speculumi"
+        ],
+        "Collared Pod": [
+            "Blatteum Collared Pod",
+            "Lividum Collared Pod",
+            "Rubicundum Collared Pod"
+        ],
+        "Concha": [
+            "Concha Aureolas",
+            "Concha Biconcavis",
+            "Concha Labiata",
+            "Concha Renibus"
+        ],
+        "Coral Tree": [
+            "Coral Tree"
+        ],
+        "Crashed Ship": [
+            "Crashed Ship"
+        ],
+        "Crystalline Shard": [
+            "Crystalline Shards"
+        ],
+        "E-Type Anomaly": [
+            "E02-Type Anomaly",
+            "E03-Type Anomaly",
+            "E04-Type Anomaly"
+        ],
+        "Electricae": [
+            "Electricae Pluma",
+            "Electricae Radialem"
+        ],
+        "Fonticulua": [
+            "Fonticulua Campestris",
+            "Fonticulua Digitos",
+            "Fonticulua Fluctus",
+            "Fonticulua Lapida",
+            "Fonticulua Segmentatus",
+            "Fonticulua Upupam"
+        ],
+        "Frutexa": [
+            "Frutexa Acus",
+            "Frutexa Collum",
+            "Frutexa Fera",
+            "Frutexa Flabellum",
+            "Frutexa Flammasis",
+            "Frutexa Metallicum",
+            "Frutexa Sponsae"
+        ],
+        "Fumarole": [
+            "Ammonia Ice Fumarole",
+            "Carbon Dioxide Fumarole",
+            "Carbon Dioxide Ice Fumarole",
+            "Methane Ice Fumarole",
+            "Nitrogen Ice Fumarole",
+            "Silicate Vapour Fumarole",
+            "Silicate Vapour Ice Fumarole",
+            "Sulphur Dioxide Fumarole",
+            "Sulphur Dioxide Ice Fumarole",
+            "Water Fumarole",
+            "Water Ice Fumarole"
+        ],
+        "Fumerola": [
+            "Fumerola Aquatis",
+            "Fumerola Carbosis",
+            "Fumerola Extremus",
+            "Fumerola Nitris"
+        ],
+        "Fungoida": [
+            "Fungoida Bullarum",
+            "Fungoida Gelata",
+            "Fungoida Setisis",
+            "Fungoida Stabitis"
+        ],
+        "Gas Vent": [
+            "Carbon Dioxide Gas Vent",
+            "Silicate Vapour Gas Vent",
+            "Sulphur Dioxide Gas Vent",
+            "Water Gas Vent"
+        ],
+        "Geyser": [
+            "Ammonia Ice Geyser",
+            "Carbon Dioxide Ice Geyser",
+            "Methane Ice Geyser",
+            "Nitrogen Ice Geyser",
+            "Water Geyser",
+            "Water Ice Geyser"
+        ],
+        "Guardian": [
+            "Guardian Beacon",
+            "Guardian Codex",
+            "Guardian Data Terminal",
+            "Guardian Pylon",
+            "Guardian Relic Tower",
+            "Guardian Sentinel"
+        ],
+        "Guardian Ruin": [
+            "Unknown"
+        ],
+        "Guardian Structure": [
+            "Bear",
+            "Bowl",
+            "Crossroads",
+            "Fistbump",
+            "Hammerbot",
+            "Lacrosse",
+            "Robolobster",
+            "Squid",
+            "Turtle",
+            "Unknown"
+        ],
+        "Gyre": [
+            "Aurarium Gyre Pod",
+            "Aurarium Gyre Tree",
+            "Roseum Gyre Pod",
+            "Viride Gyre Tree"
+        ],
+        "Ice Crystals": [
+            "Albidum Ice Crystals",
+            "Flavum Ice Crystals",
+            "Lindigoticum Ice Crystals",
+            "Prasinum Ice Crystals",
+            "Purpureum Ice Crystals",
+            "Roseum Ice Crystals",
+            "Rubeum Ice Crystals"
+        ],
+        "K-Type Anomaly": [
+            "K01-Type Anomaly",
+            "K03-Type Anomaly",
+            "K04-Type Anomaly",
+            "K05-Type Anomaly",
+            "K06-Type Anomaly",
+            "K08-Type Anomaly",
+            "K09-Type Anomaly",
+            "K10-Type Anomaly",
+            "K12-Type Anomaly",
+            "K13-Type Anomaly"
+        ],
+        "L-Type Anomaly": [
+            "L01-Type Anomaly",
+            "L04-Type Anomaly",
+            "L06-Type Anomaly",
+            "L07-Type Anomaly",
+            "L08-Type Anomaly",
+            "L09-Type Anomaly"
+        ],
+        "Lagrange Cloud": [
+            "Caeruleum Lagrange Cloud",
+            "Croceum Lagrange Cloud",
+            "Luteolum Lagrange Cloud",
+            "Proto-Lagrange Cloud",
+            "Roseum Lagrange Cloud",
+            "Rubicundum Lagrange Cloud",
+            "Viride Lagrange Cloud"
+        ],
+        "Lava Spout": [
+            "Iron Magma Lava Spout",
+            "Silicate Magma Lava Spout"
+        ],
+        "Metallic Crystals": [
+            "Flavum Metallic Crystals",
+            "Prasinum Metallic Crystals",
+            "Purpureum Metallic Crystals",
+            "Rubeum Metallic Crystals"
+        ],
+        "Mineral Spheres": [
+            "Lattice Mineral Spheres",
+            "Solid Mineral Spheres"
+        ],
+        "Mollusc": [
+            "Albens Bell Mollusc",
+            "Albulum Gourd Mollusc",
+            "Blatteum Bell Mollusc",
+            "Caeruleum Gourd Mollusc",
+            "Caeruleum Torus Mollusc",
+            "Cereum Bullet Mollusc",
+            "Cobalteum Globe Mollusc",
+            "Croceum Globe Mollusc",
+            "Croceum Gourd Mollusc",
+            "Flavum Bullet Mollusc",
+            "Flavum Torus Mollusc",
+            "Gypseeum Bell Mollusc",
+            "Lindigoticum Bell Mollusc",
+            "Lindigoticum Bulb Mollusc",
+            "Lindigoticum Capsule Mollusc",
+            "Lindigoticum Parasol Mollusc",
+            "Lindigoticum Reel Mollusc",
+            "Lindigoticum Umbrella Mollusc",
+            "Lividum Bullet Mollusc",
+            "Luteolum Bell Mollusc",
+            "Luteolum Bulb Mollusc",
+            "Luteolum Capsule Mollusc",
+            "Luteolum Parasol Mollusc",
+            "Luteolum Reel Mollusc",
+            "Luteolum Umbrella Mollusc",
+            "Niveum Globe Mollusc",
+            "Ostrinum Globe Mollusc",
+            "Phoeniceum Gourd Mollusc",
+            "Prasinum Globe Mollusc",
+            "Purpureum Gourd Mollusc",
+            "Roseum Globe Mollusc",
+            "Rubeum Bullet Mollusc",
+            "Rufum Gourd Mollusc",
+            "Rutulum Globe Mollusc",
+            "Viride Bulb Mollusc",
+            "Viride Bullet Mollusc",
+            "Viride Capsule Mollusc",
+            "Viride Parasol Mollusc",
+            "Viride Reel Mollusc",
+            "Viride Umbrella Mollusc"
+        ],
+        "Osseus": [
+            "Osseus Cornibus",
+            "Osseus Discus",
+            "Osseus Fractus",
+            "Osseus Pellebantus",
+            "Osseus Pumice",
+            "Osseus Spiralis"
+        ],
+        "P-Type Anomaly": [
+            "P01-Type Anomaly",
+            "P02-Type Anomaly",
+            "P03-Type Anomaly",
+            "P04-Type Anomaly",
+            "P05-Type Anomaly",
+            "P07-Type Anomaly",
+            "P09-Type Anomaly",
+            "P11-Type Anomaly",
+            "P12-Type Anomaly",
+            "P13-Type Anomaly",
+            "P14-Type Anomaly",
+            "P15-Type Anomaly"
+        ],
+        "Peduncle": [
+            "Albidum Peduncle Tree",
+            "Caeruleum Peduncle Pod",
+            "Caeruleum Peduncle Tree",
+            "Candidum Peduncle Pod",
+            "Gypseeum Peduncle Pod",
+            "Ostrinum Peduncle Tree",
+            "Purpureum Peduncle Pod",
+            "Rubellum Peduncle Tree",
+            "Rufum Peduncle Pod",
+            "Viride Peduncle Tree"
+        ],
+        "Planets": [
+            "Green Class I Gas Giant",
+            "Green Class II Gas Giant",
+            "Green Class III Gas Giant",
+            "Green Class IV Gas Giant",
+            "Green Gas Giant with Ammonia Life",
+            "Green Water Giant"
+        ],
+        "Q-Type Anomaly": [
+            "Q01-Type Anomaly",
+            "Q02-Type Anomaly",
+            "Q06-Type Anomaly",
+            "Q08-Type Anomaly",
+            "Q09-Type Anomaly"
+        ],
+        "Quadripartite": [
+            "Albidum Quadripartite Pod",
+            "Blatteum Quadripartite Pod",
+            "Caeruleum Quadripartite Pod",
+            "Viride Quadripartite Pod"
+        ],
+        "Recepta": [
+            "Recepta Conditivus",
+            "Recepta Deltahedronix",
+            "Recepta Umbrux"
+        ],
+        "Rhizome": [
+            "Candidum Rhizome Pod",
+            "Cobalteum Rhizome Pod",
+            "Gypseeum Rhizome Pod",
+            "Purpureum Rhizome Pod",
+            "Rubeum Rhizome Pod"
+        ],
+        "Shards": [
+            "Crystalline Shards"
+        ],
+        "Silicate Crystals": [
+            "Albidum Silicate Crystals",
+            "Flavum Silicate Crystals",
+            "Lindigoticum Silicate Crystals",
+            "Prasinum Silicate Crystals",
+            "Purpureum Silicate Crystals",
+            "Roseum Silicate Crystals",
+            "Rubeum Silicate Crystals"
+        ],
+        "Stolon": [
+            "Stolon Pod"
+        ],
+        "Storm Cloud": [
+            "Croceum Lagrange Storm Cloud",
+            "Luteolum Lagrange Storm Cloud",
+            "Roseum Lagrange Storm Cloud",
+            "Rubicundum Lagrange Storm Cloud",
+            "Viride Lagrange Storm Cloud"
+        ],
+        "Stratum": [
+            "Stratum Araneamus",
+            "Stratum Cucumisis",
+            "Stratum Excutitus",
+            "Stratum Frigus",
+            "Stratum Laminamus",
+            "Stratum Limaxus",
+            "Stratum Paleas",
+            "Stratum Tectonicas"
+        ],
+        "Surface Station": [
+            "Crater Outpost",
+            "Crater Port",
+            "Installation",
+            "Settlement",
+            "Surface Station"
+        ],
+        "T-Type Anomaly": [
+            "T01-Type Anomaly",
+            "T03-Type Anomaly",
+            "T04-Type Anomaly"
+        ],
+        "Thargoid": [
+            "Common Thargoid Barnacle",
+            "Coral Root",
+            "Large Thargoid Barnacle",
+            "Major Thargoid Spire",
+            "Minor Thargoid Spire",
+            "Primary Thargoid Spire",
+            "Thargoid Banshees",
+            "Thargoid Barnacle Barbs",
+            "Thargoid Caustic Generator",
+            "Thargoid Device",
+            "Thargoid Interceptor Shipwreck",
+            "Thargoid Mega Barnacles",
+            "Thargoid Pod",
+            "Thargoid Scavengers",
+            "Thargoid Scout Shipwreck",
+            "Thargoid Spire",
+            "Thargoid Spires",
+            "Thargoid Uplink Device"
+        ],
+        "Thargoid Barnacle": [
+            "Unknown"
+        ],
+        "Thargoid Structure": [
+            "Thargoid Structure"
+        ],
+        "Toughened Spear Roots": [
+            "Toughened Spear Roots"
+        ],
+        "Tourist Beacon": [
+            "Tourist Beacon"
+        ],
+        "Tubers": [
+            "Albidum Sinuous Tubers",
+            "Blatteum Sinuous Tubers",
+            "Caeruleum Sinuous Tubers",
+            "Lindigoticum Sinuous Tubers",
+            "Prasinum Sinuous Tubers",
+            "Roseum Sinuous Tubers",
+            "Roseus Sinuous Tubers",
+            "Violaceum Sinuous Tubers",
+            "Viride Sinuous Tubers"
+        ],
+        "Tubus": [
+            "Tubus Cavas",
+            "Tubus Compagibus",
+            "Tubus Conifer",
+            "Tubus Rosarium",
+            "Tubus Sororibus"
+        ],
+        "Tussock": [
+            "Tussock Albata",
+            "Tussock Capillum",
+            "Tussock Caputus",
+            "Tussock Catena",
+            "Tussock Cultro",
+            "Tussock Divisa",
+            "Tussock Ignis",
+            "Tussock Pennata",
+            "Tussock Pennatis",
+            "Tussock Propagito",
+            "Tussock Serrati",
+            "Tussock Stigmasis",
+            "Tussock Triticum",
+            "Tussock Ventusa",
+            "Tussock Virgam"
+        ],
+        "Void": [
+            "Caeruleum Octahedral Pod",
+            "Chryseum Void Heart"
+        ],
+        "Wrecked Ship": [
+            "Wrecked Ship"
+        ]
+    }
+
+    known_subtypes = [item for sublist in known_planet_types_obj.values() for item in sublist]
+    known_landmarks = [item for sublist in known_planet_landmarks_obj.values() for item in sublist]
+
+    filters = {
+        "distance": {
+            "min": "0",
+            "max": str(obj.get("distance", 50000))
+        }
+    }
+
+    # Add optional filters if they exist
+    if "subtype" in obj and obj["subtype"]:
+        for subtype in obj["subtype"]:
+            if subtype not in known_subtypes:
+                raise Exception(
+                    f"Invalid celestial body subtype: {subtype}. {educated_guesses_message(subtype, known_subtypes)}")
+        filters["subtype"] = {"value": obj["subtype"]}
+
+    if "landmark_subtype" in obj and obj["landmark_subtype"]:
+        for landmark_subtype in obj["landmark_subtype"]:
+            if landmark_subtype not in known_landmarks:
+                raise Exception(
+                    f"Invalid Landmark Subtype: {landmark_subtype}. {educated_guesses_message(landmark_subtype, known_landmarks)}")
+        filters["landmarks"] = [{"subtype":obj["landmark_subtype"]}]
+
+    if "name" in obj and obj["name"]:
+        filters["name"] = {
+            "value": obj["name"]
+        }
+
+    # Build the request body
+    request_body = {
+        "filters": filters,
+        "sort": [
+            {
+                "distance": {
+                    "direction": "asc"
+                }
+            }
+        ],
+        "size": 3,
+        "page": 0,
+        "reference_system": obj.get("reference_system", "Sol")
+    }
+
+    return request_body
+
+
+# Function to filter and format the system response
+def filter_body_response(request, response):
+    filtered_results = []
+
+    # Check which filters are in the request and adjust the response accordingly
+    request_filters = request.get("filters", {})
+
+    for body in response.get("results", []):
+        filtered_body = {}
+
+        # if "name" in system and system["name"]:
+        filtered_body["name"] = body.get("name")
+        filtered_body["subtype"] = body.get("subtype")
+        filtered_body["system_name"] = body.get("name")
+        # landmark_subtype
+        if "landmark_subtype" in request_filters:
+            if "landmark_subtype" in body and body["landmarks"]:
+                filtered_landmarks = [
+                    {
+                        "latitude": landmark["latitude"],
+                        "longitude": landmark["longitude"],
+                        "subtype": landmark["subtype"],
+                        "type": landmark["type"],
+                        "variant": landmark["variant"]
+                    }
+                    for landmark in body.get("landmarks", [])
+                    if landmark["subtype"] in request_filters["landmark_subtype"]
+                ]
+
+                filtered_body["landmarks"] = filtered_landmarks
+
+
+        # Add filtered system to the list
+        filtered_results.append(filtered_body)
+
+    # Construct and return the filtered response
+    return {
+        "amount_total": response["count"],
+        "amount_displayed": min(response["count"], response["size"]),
+        "results": filtered_results,
+    }
+
+
+# System finder function that sends the request to the Spansh API
+def body_finder(obj):
+    # Build the request body
+    request_body = prepare_body_request(obj)
+
+    url = "https://spansh.co.uk/api/bodies/search"
+
+    try:
+        response = requests.post(url, json=request_body)
+        response.raise_for_status()
+
+        data = response.json()
+        # Filter the response
+        filtered_data = filter_body_response(request_body, data)
+
+        return f'Here is a list of celestial bodies: {json.dumps(filtered_data)}'
 
     except Exception as e:
         log('error', f"Error: {e}")
@@ -1475,8 +2137,9 @@ def system_finder(obj):
 
 def register_actions(actionManager: ActionManager, eventManager: EventManager, llmClient: openai.OpenAI,
                      llmModelName: str, visionClient: Optional[openai.OpenAI], visionModelName: Optional[str],
-                     statusParser: StatusParser):
-    global event_manager, vision_client, llm_client, llm_model_name, vision_model_name, status_parser
+                     statusParser: StatusParser, edKeys: EDKeys):
+    global event_manager, vision_client, llm_client, llm_model_name, vision_model_name, status_parser, keys
+    keys = edKeys
     event_manager = eventManager
     llm_client = llmClient
     llm_model_name = llmModelName
@@ -1728,7 +2391,8 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 },
                 "distance": {
                     "type": "number",
-                    "description": "Maximum distance to search for systems, default: 50000"
+                    "description": "The maximum distance to search",
+                    "example": 50000.0
                 },
                 "allegiance": {
                     "type": "array",
@@ -1830,7 +2494,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 },
                 "distance": {
                     "type": "number",
-                    "description": "The maximum distance to search for stations",
+                    "description": "The maximum distance to search",
                     "example": 50000.0
                 },
                 "material_trader": {
@@ -1966,6 +2630,47 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         },
         station_finder
     )
+    actionManager.registerAction(
+        'body_finder',
+        "Find a planet or star of a certain type or with a landmark. Ask for unknown values and make sure they are known.",
+        {
+            "type": "object",
+            "properties": {
+                "reference_system": {
+                    "type": "string",
+                    "description": "Name of the current system. Example: 'Sol'"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Required string in station name"
+                },
+                "subtype": {
+                    "type": "array",
+                    "description": "Subtype of celestial body",
+                    "items": {
+                        "type": "string",
+                    }
+                },
+                "landmark_subtype": {
+                    "type": "array",
+                    "description": "Landmark subtype on celestial body",
+                    "items": {
+                        "type": "string",
+                    }
+                },
+                "distance": {
+                    "type": "number",
+                    "description": "Maximum distance to search",
+                    "example": 50000.0
+                },
+            },
+            "required": [
+                "reference_system",
+                "has_large_pad"
+            ]
+        },
+        body_finder
+    )
 
     if vision_client:
         actionManager.registerAction('getVisuals', "Describes what's currently visible to the Commander.", {
@@ -1978,3 +2683,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             },
             "required": ["query"]
         }, get_visuals)
+
+if __name__ == "__main__":
+    req = prepare_station_request( {'reference_system': 'Muang', 'has_large_pad': False, 'market': [{'name': 'gold', 'amount': 10, 'transaction': 'Buy'}]})
+    print(json.dumps(req))

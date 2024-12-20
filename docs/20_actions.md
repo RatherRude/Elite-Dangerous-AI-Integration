@@ -156,6 +156,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
      Retrieve a trade route from the trade plotter.
 
 3. **system_finder**
+    - `name`: String.
     - `reference_system`: String.
     - `distance`: Number (default: 50000).
     - `allegiance`: Array of strings.
@@ -172,6 +173,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
      Find a star system based on various filters.
 
 4. **station_finder**
+    - `name`: String.
     - `reference_system`: String.
     - `has_large_pad`: Boolean.
     - `distance`: Number (optional).
@@ -191,6 +193,15 @@ This is a list of all currently supported actions the AI can perform. Just talk 
       - `name`: String.
 
      Find a station based on various filters.
+
+5. **body_finder**
+    - `name`: String.
+    - `reference_system`: String.
+    - `distance`: Number (optional).
+    - `subtype`: Array of strings.
+    - `landmark_subtype`: Array of strings.
+
+     Find a celestial body based on various filters.
 
 ## Miscellaneous Actions
 

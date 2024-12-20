@@ -1,11 +1,12 @@
 import json
+import os
 import time
 from datetime import datetime, timedelta
 import queue
 from sys import platform
 import threading
 from time import sleep
-from typing import Literal, Optional, Union
+from typing import Any, Literal, Optional, Union
 from .Logger import log
 from typing import TypedDict
 
@@ -43,42 +44,41 @@ class BaseFlags(TypedDict):
     FsdJump: bool
     SrvHighBeam: bool
 
-    @staticmethod
-    def from_status_flag(value: int):
-        return BaseFlags(
-            Docked=bool(value & 1),
-            Landed=bool(value & 2),
-            LandingGearDown=bool(value & 4),
-            ShieldsUp=bool(value & 8),
-            Supercruise=bool(value & 16),
-            FlightAssistOff=bool(value & 32),
-            HardpointsDeployed=bool(value & 64),
-            InWing=bool(value & 128),
-            LightsOn=bool(value & 256),
-            CargoScoopDeployed=bool(value & 512),
-            SilentRunning=bool(value & 1024),
-            ScoopingFuel=bool(value & 2048),
-            SrvHandbrake=bool(value & 4096),
-            SrvUsingTurretView=bool(value & 8192),
-            SrvTurretRetracted=bool(value & 16384),
-            SrvDriveAssist=bool(value & 32768),
-            FsdMassLocked=bool(value & 65536),
-            FsdCharging=bool(value & 131072),
-            FsdCooldown=bool(value & 262144),
-            LowFuel=bool(value & 524288),
-            OverHeating=bool(value & 1048576),
-            HasLatLong=bool(value & 2097152),
-            InDanger=bool(value & 4194304),
-            BeingInterdicted=bool(value & 8388608),
-            InMainShip=bool(value & 16777216),
-            InFighter=bool(value & 33554432),
-            InSRV=bool(value & 67108864),
-            HudInAnalysisMode=bool(value & 134217728),
-            NightVision=bool(value & 268435456),
-            AltitudeFromAverageRadius=bool(value & 536870912),
-            FsdJump=bool(value & 1073741824),
-            SrvHighBeam=bool(value & 2147483648),
-        )
+def parse_status_flags(value: int) -> BaseFlags:
+    return BaseFlags(
+        Docked=bool(value & 1),
+        Landed=bool(value & 2),
+        LandingGearDown=bool(value & 4),
+        ShieldsUp=bool(value & 8),
+        Supercruise=bool(value & 16),
+        FlightAssistOff=bool(value & 32),
+        HardpointsDeployed=bool(value & 64),
+        InWing=bool(value & 128),
+        LightsOn=bool(value & 256),
+        CargoScoopDeployed=bool(value & 512),
+        SilentRunning=bool(value & 1024),
+        ScoopingFuel=bool(value & 2048),
+        SrvHandbrake=bool(value & 4096),
+        SrvUsingTurretView=bool(value & 8192),
+        SrvTurretRetracted=bool(value & 16384),
+        SrvDriveAssist=bool(value & 32768),
+        FsdMassLocked=bool(value & 65536),
+        FsdCharging=bool(value & 131072),
+        FsdCooldown=bool(value & 262144),
+        LowFuel=bool(value & 524288),
+        OverHeating=bool(value & 1048576),
+        HasLatLong=bool(value & 2097152),
+        InDanger=bool(value & 4194304),
+        BeingInterdicted=bool(value & 8388608),
+        InMainShip=bool(value & 16777216),
+        InFighter=bool(value & 33554432),
+        InSRV=bool(value & 67108864),
+        HudInAnalysisMode=bool(value & 134217728),
+        NightVision=bool(value & 268435456),
+        AltitudeFromAverageRadius=bool(value & 536870912),
+        FsdJump=bool(value & 1073741824),
+        SrvHighBeam=bool(value & 2147483648),
+    )
 
 
 class OdysseyFlags(TypedDict):
@@ -103,30 +103,29 @@ class OdysseyFlags(TypedDict):
     PhysicalMulticrew: bool
     FsdHyperdriveCharging: bool
 
-    @staticmethod
-    def from_status_flag(value: int):
-        return OdysseyFlags(
-            OnFoot=bool(value & 1),
-            InTaxi=bool(value & 2),
-            InMultiCrew=bool(value & 4),
-            OnFootInStation=bool(value & 8),
-            OnFootOnPlanet=bool(value & 16),
-            AimDownSight=bool(value & 32),
-            LowOxygen=bool(value & 64),
-            LowHealth=bool(value & 128),
-            Cold=bool(value & 256),
-            Hot=bool(value & 512),
-            VeryCold=bool(value & 1024),
-            VeryHot=bool(value & 2048),
-            GlideMode=bool(value & 4096),
-            OnFootInHangar=bool(value & 8192),
-            OnFootSocialSpace=bool(value & 16384),
-            OnFootExterior=bool(value & 32768),
-            BreathableAtmosphere=bool(value & 65536),
-            TelepresenceMulticrew=bool(value & 131072),
-            PhysicalMulticrew=bool(value & 262144),
-            FsdHyperdriveCharging=bool(value & 524288),
-        )
+def parse_odyssey_flags(value: int) -> OdysseyFlags:
+    return OdysseyFlags(
+        OnFoot=bool(value & 1),
+        InTaxi=bool(value & 2),
+        InMultiCrew=bool(value & 4),
+        OnFootInStation=bool(value & 8),
+        OnFootOnPlanet=bool(value & 16),
+        AimDownSight=bool(value & 32),
+        LowOxygen=bool(value & 64),
+        LowHealth=bool(value & 128),
+        Cold=bool(value & 256),
+        Hot=bool(value & 512),
+        VeryCold=bool(value & 1024),
+        VeryHot=bool(value & 2048),
+        GlideMode=bool(value & 4096),
+        OnFootInHangar=bool(value & 8192),
+        OnFootSocialSpace=bool(value & 16384),
+        OnFootExterior=bool(value & 32768),
+        BreathableAtmosphere=bool(value & 65536),
+        TelepresenceMulticrew=bool(value & 131072),
+        PhysicalMulticrew=bool(value & 262144),
+        FsdHyperdriveCharging=bool(value & 524288),
+    )
 
 
 class Pips(TypedDict):
@@ -134,13 +133,12 @@ class Pips(TypedDict):
     engine: float
     weapons: float
     
-    @staticmethod
-    def from_status_flag(value: list[int]):
-        return Pips(
-            system=value[0] / 2,
-            engine=value[1] / 2,
-            weapons=value[2] / 2
-        )
+def parse_pips_flags(value: list[int]) -> Pips:
+    return Pips(
+        system=value[0] / 2,
+        engine=value[1] / 2,
+        weapons=value[2] / 2
+    )
 
 
 class Fuel(TypedDict):
@@ -152,10 +150,11 @@ class Destination(TypedDict):
     System: int
     Body: int
     Name: str
-    Name_Localised: str = None
+    Name_Localised: Optional[str]
 
 
 class Status(TypedDict):
+    event: Literal["Status"]
     flags: BaseFlags
     flags2: Optional[OdysseyFlags]
     Pips: Optional[Pips]
@@ -202,58 +201,55 @@ class Status(TypedDict):
     SelectedWeapon: Optional[str]
     Gravity: Optional[float]
 
-    @staticmethod
-    def from_status_file(value: dict[str, any]):
-        """Converts the status file data to a Status object. All fields are optional."""
-        GuiPanels = [
-                'NoFocus',
-                'InternalPanel',
-                'ExternalPanel',
-                'CommsPanel',
-                'RolePanel',
-                'StationServices',
-                'GalaxyMap',
-                'SystemMap',
-                'Orrery',
-                'FSS',
-                'SAA',
-                'Codex',
-        ]
-        return Status(
-            flags=BaseFlags.from_status_flag(value.get('Flags', 0)),
-            flags2=OdysseyFlags.from_status_flag(value.get('Flags2', 0)) if 'Flags2' in value else None,
-            Pips=Pips.from_status_flag(value.get('Pips', [0,0,0])) if 'Pips' in value else None,
-            Firegroup=value.get('Firegroup') if 'Firegroup' in value else None,
-            GuiFocus=GuiPanels[value.get('GuiFocus', 0)] if 'GuiFocus' in value else None,
-            Fuel=Fuel(**value.get('Fuel', {})) if 'Fuel' in value else None,
-            Cargo=value.get('Cargo', None),
-            LegalState=value.get('LegalState', None),
-            Latitude=value.get('Latitude', None),
-            Altitude=value.get('Altitude', None),
-            Longitude=value.get('Longitude', None),
-            Heading=value.get('Heading', None),
-            BodyName=value.get('BodyName', None),
-            PlanetRadius=value.get('PlanetRadius', None),
-            Balance=value.get('Balance', None),
-            Destination=Destination(**value.get('Destination', {})) if 'Destination' in value else None,
+def parse_status_json(value: dict[str, Any]) -> Status:
+    """Converts the status file data to a Status object. All fields are optional."""
+    GuiPanels = [
+            'NoFocus',
+            'InternalPanel',
+            'ExternalPanel',
+            'CommsPanel',
+            'RolePanel',
+            'StationServices',
+            'GalaxyMap',
+            'SystemMap',
+            'Orrery',
+            'FSS',
+            'SAA',
+            'Codex',
+    ]
+    return Status(
+        event='Status',
+        flags=parse_status_flags(value.get('Flags', 0)),
+        flags2=parse_odyssey_flags(value.get('Flags2', 0)) if 'Flags2' in value else None,
+        Pips=parse_pips_flags(value.get('Pips', [0,0,0])) if 'Pips' in value else None,
+        Firegroup=value.get('Firegroup') if 'Firegroup' in value else None,
+        GuiFocus=GuiPanels[value.get('GuiFocus', 0)] if 'GuiFocus' in value else None,
+        Fuel=Fuel(**value.get('Fuel', {})) if 'Fuel' in value else None,
+        Cargo=value.get('Cargo', None),
+        LegalState=value.get('LegalState', None),
+        Latitude=value.get('Latitude', None),
+        Altitude=value.get('Altitude', None),
+        Longitude=value.get('Longitude', None),
+        Heading=value.get('Heading', None),
+        BodyName=value.get('BodyName', None),
+        PlanetRadius=value.get('PlanetRadius', None),
+        Balance=value.get('Balance', None),
+        Destination=Destination(**value.get('Destination', {})) if 'Destination' in value else None,
 
-            Oxygen=value.get('Oxygen', None),
-            Health=value.get('Health', None),
-            Temperature=value.get('Temperature', None),
-            SelectedWeapon=value.get('SelectedWeapon', None),
-            Gravity=value.get('Gravity', None),
-        )
+        Oxygen=value.get('Oxygen', None),
+        Health=value.get('Health', None),
+        Temperature=value.get('Temperature', None),
+        SelectedWeapon=value.get('SelectedWeapon', None),
+        Gravity=value.get('Gravity', None),
+    )
 
 
 class StatusParser:
-    def __init__(self, file_path=None):
-        if platform != "win32":
-            self.file_path = file_path if file_path else "./linux_ed/Status.json"
-        else:
-            from .WindowsKnownPaths import get_path, FOLDERID, UserHandle
-            self.file_path = file_path if file_path else (get_path(FOLDERID.SavedGames, UserHandle.current) + "\Frontier Developments\Elite Dangerous\Status.json")
+    def __init__(self, journals_path: str):
+        self.file_path = os.path.join(journals_path, "Status.json")
 
-        self.current_status = self._read_status_file()
+        current_status_raw = self._read_status_file()
+        self.current_status = parse_status_json(current_status_raw)
         self.watch_thread = threading.Thread(target=self._watch_file_thread, daemon=True)
         self.watch_thread.start()
         self.status_queue = queue.Queue()
@@ -272,18 +268,19 @@ class StatusParser:
     def _watch_file(self):
         """Detects changes in the Status.json file."""
         while True:
-            status = self._read_status_file()
+            status_raw = self._read_status_file()
+            status = parse_status_json(status_raw)
         
             if status != self.current_status:
                 log('debug', 'Status changed', status)
-                #self.status_queue.put(status)
+                self.status_queue.put({"event": "Status", **status})
                 events = self._create_delta_events(self.current_status, status)
                 for event in events:
                     self.status_queue.put(event)
                 self.current_status = status
             sleep(1)
 
-    def _read_status_file(self) -> Status:
+    def _read_status_file(self) -> dict:
         """Loads data from the JSON file and returns a cleaned version"""
         try:
             with open(self.file_path, 'r', encoding='utf-8') as file:
@@ -293,9 +290,7 @@ class StatusParser:
             with open(self.file_path, 'r', encoding='utf-8') as file:
                 data = json.load(file)
 
-        status = Status.from_status_file(data)
-
-        return status
+        return data
 
     def _create_delta_events(self, old_status: Status, new_status: Status):
         """Creates events specific field that has changed."""
@@ -413,7 +408,8 @@ class StatusParser:
 if __name__ == "__main__":
     while True:
         parser = StatusParser()
-        cleaned_data = parser._read_status_file()
+        cleaned_data_raw = parser._read_status_file()
+        cleaned_data = parse_status_json(cleaned_data_raw)
         print(json.dumps(cleaned_data, indent=4))
         time.sleep(1)
         print("\n"*10)
