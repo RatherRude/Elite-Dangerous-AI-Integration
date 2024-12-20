@@ -64,14 +64,16 @@ def reply(client, events: list[Event], new_events: list[Event], projected_states
     flags2 = current_status["flags2"]
 
     active_mode = None
-    if flags["InMainShip"]:
-        active_mode = "mainship"
-    elif flags["InFighter"]:
-        active_mode = "fighter"
-    elif flags["InSRV"]:
-        active_mode = "buggy"
-    elif flags2["OnFoot"]:
-        active_mode = "humanoid"
+    if flags:
+        if flags["InMainShip"]:
+            active_mode = "mainship"
+        elif flags["InFighter"]:
+            active_mode = "fighter"
+        elif flags["InSRV"]:
+            active_mode = "buggy"
+    if flags2:
+        if flags2["OnFoot"]:
+            active_mode = "humanoid"
 
     completion = client.chat.completions.create(
         model=llm_model_name,
