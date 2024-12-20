@@ -11,4 +11,3 @@ conversation.json
 *.log
 .env
 .cache
-/linux_ed
