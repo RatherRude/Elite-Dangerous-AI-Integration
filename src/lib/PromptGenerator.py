@@ -529,9 +529,25 @@ class PromptGenerator:
             "player_time": (datetime.now()).isoformat(),
             "elite_time": str(datetime.now().year + 1286) + (datetime.now()).isoformat()[4:],
         }
-        
+
+        current_status = projected_states.get("CurrentStatus")
+        flags = current_status["flags"]
+        flags2 = current_status["flags2"]
+
+        active_mode = " "
+        if flags:
+            if flags["InMainShip"]:
+                active_mode += "main ship"
+            elif flags["InFighter"]:
+                active_mode += "ship launched fighter"
+            elif flags["InSRV"]:
+                active_mode += "SRV"
+        if flags2:
+            if flags2["OnFoot"]:
+                active_mode += "suit"
+
         conversational_pieces.append(
-            {"role": "user", "content": f"(Current status: {json.dumps(status_info)})"}
+            {"role": "user", "content": f"(Current{active_mode} status: {json.dumps(status_info)})"}
         )
         conversational_pieces.append(
             {
