@@ -18,12 +18,15 @@ class ActionManager:
         actions = self.actions.values()
         valid_actions = []
         for action in actions:
+            # enable correct actions for game mode
             if action.get("type") == active_mode:
                 valid_actions.append(action.get("tool"))
+            # enable correct actions for extended game mode
             elif active_mode == 'mainship' or active_mode == 'fighter':
                 if action.get("type") == 'ship':
                     valid_actions.append(action.get("tool"))
-            elif action.get("type") == 'global':
+            # enable web tools and vision capabilities (always)
+            if action.get("type") == 'global':
                 valid_actions.append(action.get("tool"))
 
         return valid_actions
