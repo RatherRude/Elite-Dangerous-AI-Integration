@@ -26,6 +26,7 @@ status_parser: StatusParser = None
 
 
 # Define functions for each action
+# General Ship Actions
 def fire_primary_weapon(args):
     setGameWindowActive()
     keys.send('PrimaryFire', state=1)
@@ -48,12 +49,6 @@ def hold_fire_secondary_weapon(args):
     setGameWindowActive()
     keys.send('SecondaryFire', state=0)
     return f"successfully stopped firing with secondary weapons."
-
-
-def hyper_super_combination(args):
-    setGameWindowActive()
-    keys.send('HyperSuperCombination')
-    return f"Frame Shift Drive is charging for a jump"
 
 
 def set_speed_zero(args):
@@ -102,6 +97,48 @@ def increase_systems_power(args):
     setGameWindowActive()
     keys.send('IncreaseSystemsPower', None, args['pips'])
     return f"Systems power increased"
+
+
+def cycle_next_target(args):
+    setGameWindowActive()
+    keys.send('CycleNextTarget')
+    return f"Next target cycled"
+
+
+def cycle_fire_group_next(args):
+    setGameWindowActive()
+    keys.send('CycleFireGroupNext')
+    return f"Fire group cycled"
+
+
+def ship_spot_light_toggle(args):
+    setGameWindowActive()
+    keys.send('ShipSpotLightToggle')
+    return f"Ship spotlight toggled"
+
+
+def fire_chaff_launcher(args):
+    setGameWindowActive()
+    keys.send('FireChaffLauncher')
+    return f"Chaff launcher fired"
+
+
+def night_vision_toggle(args):
+    setGameWindowActive()
+    keys.send('NightVisionToggle')
+    return f"Night vision toggled"
+
+
+def select_highest_threat(args):
+    setGameWindowActive()
+    keys.send('SelectHighestThreat')
+    return f"Highest threat (if one exists) is now target locked"
+
+
+def charge_ecm(args):
+    setGameWindowActive()
+    keys.send('ChargeECM')
+    return "ECM is attempting to charge"
 
 
 def galaxy_map_open(args):
@@ -172,23 +209,7 @@ def system_map_open(args):
     return f"System map opened/closed"
 
 
-def cycle_next_target(args):
-    setGameWindowActive()
-    keys.send('CycleNextTarget')
-    return f"Next target cycled"
-
-
-def cycle_fire_group_next(args):
-    setGameWindowActive()
-    keys.send('CycleFireGroupNext')
-    return f"Fire group cycled"
-
-
-def ship_spot_light_toggle(args):
-    setGameWindowActive()
-    keys.send('ShipSpotLightToggle')
-    return f"Ship spotlight toggled"
-
+# Mainship Actions
 
 def eject_all_cargo(args):
     setGameWindowActive()
@@ -208,40 +229,185 @@ def use_shield_cell(args):
     return f"Shield cell used"
 
 
-def fire_chaff_launcher(args):
-    setGameWindowActive()
-    keys.send('FireChaffLauncher')
-    return f"Chaff launcher fired"
-
-
-def night_vision_toggle(args):
-    setGameWindowActive()
-    keys.send('NightVisionToggle')
-    return f"Night vision toggled"
-
-
-def recall_dismiss_ship(args):
-    setGameWindowActive()
-    keys.send('RecallDismissShip')
-    return f"Remote ship has either been recalled or dismissed"
-
-
-def select_highest_threat(args):
-    setGameWindowActive()
-    keys.send('SelectHighestThreat')
-    return f"Highest threat (if one exists) is now target locked"
-
-
 def toggle_cargo_scoop(args):
     setGameWindowActive()
     keys.send('ToggleCargoScoop')
     return "Cargo scoop toggled"
 
 
-def charge_ecm(args):
+def hyper_super_combination(args):
     setGameWindowActive()
-    keys.send('ChargeECM')
-    return "ECM is attempting to charge"
+    keys.send('HyperSuperCombination')
+    return f"Frame Shift Drive is charging for a jump"
+
+
+# Ship Launched Fighter Actions
+def order_request_dock(args):
+    setGameWindowActive()
+    keys.send('OrderRequestDock')
+    return f"A request for docking has been sent"
+
+
+# NPC Crew Order Actions
+def npc_order(args):
+    setGameWindowActive()
+    if 'orders' in args:
+        for order in args['orders']:
+            keys.send(order)
+    return f"Orders {', '.join(str(x) for x in args['orders'])} have been transmitted."
+
+
+# SRV Actions (Horizons)
+def toggle_drive_assist(args):
+    setGameWindowActive()
+    keys.send('ToggleDriveAssist')
+    return "Drive assist has been toggled."
+
+def buggy_primary_fire(args):
+    setGameWindowActive()
+    keys.send('BuggyPrimaryFireButton')
+    return "Buggy primary fire triggered."
+
+def buggy_secondary_fire(args):
+    setGameWindowActive()
+    keys.send('BuggySecondaryFireButton')
+    return "Buggy secondary fire triggered."
+
+def auto_break_buggy(args):
+    setGameWindowActive()
+    keys.send('AutoBreakBuggyButton')
+    return "Auto-brake for buggy toggled."
+
+def headlights_buggy(args):
+    setGameWindowActive()
+    keys.send('HeadlightsBuggyButton')
+    return "Buggy headlights toggled."
+
+def toggle_buggy_turret(args):
+    setGameWindowActive()
+    keys.send('ToggleBuggyTurretButton')
+    return "Buggy turret mode toggled."
+
+def select_target_buggy(args):
+    setGameWindowActive()
+    keys.send('SelectTarget_Buggy')
+    return "Buggy target selection activated."
+
+def increase_engines_power_buggy(args):
+    setGameWindowActive()
+    keys.send('IncreaseEnginesPower_Buggy')
+    return "Buggy engine power increased."
+
+def increase_weapons_power_buggy(args):
+    setGameWindowActive()
+    keys.send('IncreaseWeaponsPower_Buggy')
+    return "Buggy weapons power increased."
+
+def increase_systems_power_buggy(args):
+    setGameWindowActive()
+    keys.send('IncreaseSystemsPower_Buggy', None, args['pips'])
+    return "Buggy systems power increased."
+
+def reset_power_distribution_buggy(args):
+    setGameWindowActive()
+    keys.send('ResetPowerDistribution_Buggy', None, args['pips'])
+    return "Buggy power distribution reset."
+
+def toggle_cargo_scoop_buggy(args):
+    setGameWindowActive()
+    keys.send('ToggleCargoScoop_Buggy', None, args['pips'])
+    return "Buggy cargo scoop toggled."
+
+def eject_all_cargo_buggy(args):
+    setGameWindowActive()
+    keys.send('EjectAllCargo_Buggy')
+    return "All cargo ejected from buggy."
+
+def recall_dismiss_ship_buggy(args):
+    setGameWindowActive()
+    keys.send('RecallDismissShip')
+    return "Remote ship has been recalled or dismissed."
+
+def galaxy_map_open_buggy(args):
+    setGameWindowActive()
+    keys.send('GalaxyMapOpen_Buggy')
+    return "Galaxy map opened."
+
+def system_map_open_buggy(args):
+    setGameWindowActive()
+    keys.send('SystemMapOpen_Buggy')
+    return "System map opened."
+
+# On-Foot Actions (Odyssey)
+def primary_interact_humanoid(args):
+    setGameWindowActive()
+    keys.send('HumanoidPrimaryInteractButton')
+    return "Primary interaction initiated."
+
+def secondary_interact_humanoid(args):
+    setGameWindowActive()
+    keys.send('HumanoidSecondaryInteractButton')
+    return "Secondary interaction initiated."
+
+def equip_humanoid(args):
+    if 'equipment' in args:
+        keys.send(args['equipment'])
+    return f"{args['equipment']} has been triggered."
+
+def toggle_flashlight_humanoid(args):
+    setGameWindowActive()
+    keys.send('HumanoidToggleFlashlightButton')
+    return "Flashlight toggled."
+
+def toggle_night_vision_humanoid(args):
+    setGameWindowActive()
+    keys.send('HumanoidToggleNightVisionButton')
+    return "Night vision toggled."
+
+def toggle_shields_humanoid(args):
+    setGameWindowActive()
+    keys.send('HumanoidToggleShieldsButton')
+    return "Shields toggled."
+
+def clear_authority_level_humanoid(args):
+    setGameWindowActive()
+    keys.send('HumanoidClearAuthorityLevel')
+    return "Authority level cleared."
+
+def health_pack_humanoid(args):
+    setGameWindowActive()
+    keys.send('HumanoidHealthPack')
+    return "Health pack used."
+
+def battery_humanoid(args):
+    setGameWindowActive()
+    keys.send('HumanoidBattery')
+    return "Battery used."
+
+def galaxy_map_open_humanoid(args):
+    setGameWindowActive()
+    keys.send('GalaxyMapOpen_Humanoid')
+    return "Galaxy map opened."
+
+def system_map_open_humanoid(args):
+    setGameWindowActive()
+    keys.send('SystemMapOpen_Humanoid')
+    return "System map opened."
+
+def recall_dismiss_ship_humanoid(args):
+    setGameWindowActive()
+    keys.send('HumanoidOpenAccessPanelButton', state=1)
+    sleep(.3)
+    keys.send('HumanoidOpenAccessPanelButton', state=0)
+    sleep(.05)
+    keys.send('UI_Left')
+    keys.send('UI_Up')
+    sleep(.15)
+    keys.send('UI_Select')
+    keys.send('HumanoidOpenAccessPanelButton', state=1)
+    sleep(.2)
+    keys.send('HumanoidOpenAccessPanelButton', state=0)
+    return "Remote ship has been recalled or dismissed."
 
 
 handle = None
@@ -2045,7 +2211,7 @@ def prepare_body_request(obj):
             if landmark_subtype not in known_landmarks:
                 raise Exception(
                     f"Invalid Landmark Subtype: {landmark_subtype}. {educated_guesses_message(landmark_subtype, known_landmarks)}")
-        filters["landmarks"] = [{"subtype":obj["landmark_subtype"]}]
+        filters["landmarks"] = [{"subtype": obj["landmark_subtype"]}]
 
     if "name" in obj and obj["name"]:
         filters["name"] = {
@@ -2101,7 +2267,6 @@ def filter_body_response(request, response):
 
                 filtered_body["landmarks"] = filtered_landmarks
 
-
         # Add filtered system to the list
         filtered_results.append(filtered_body)
 
@@ -2148,57 +2313,52 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     status_parser = statusParser
 
     setGameWindowActive()
-    # Register actions
+
+    # Register actions - General Ship Actions
     actionManager.registerAction('fire', "start firing primary weapons", {
         "type": "object",
         "properties": {}
-    }, fire_primary_weapon)
+    }, fire_primary_weapon, 'ship')
 
     actionManager.registerAction('holdFire', "stop firing primary weapons", {
         "type": "object",
         "properties": {}
-    }, hold_fire_primary_weapon)
+    }, hold_fire_primary_weapon, 'ship')
 
     actionManager.registerAction('fireSecondary', "start secondary primary weapons", {
         "type": "object",
         "properties": {}
-    }, fire_secondary_weapon)
+    }, fire_secondary_weapon, 'ship')
 
     actionManager.registerAction('holdFireSecondary', "stop secondary primary weapons", {
         "type": "object",
         "properties": {}
-    }, hold_fire_secondary_weapon)
-
-    actionManager.registerAction('hyperSuperCombination',
-                                 "initiate FSD Jump, required to jump to the next system or to enter supercruise", {
-                                     "type": "object",
-                                     "properties": {}
-                                 }, hyper_super_combination)
+    }, hold_fire_secondary_weapon, 'ship')
 
     actionManager.registerAction('setSpeedZero', "Set speed to 0%", {
         "type": "object",
         "properties": {}
-    }, set_speed_zero)
+    }, set_speed_zero, 'ship')
 
     actionManager.registerAction('setSpeed50', "Set speed to 50%", {
         "type": "object",
         "properties": {}
-    }, set_speed_50)
+    }, set_speed_50, 'ship')
 
     actionManager.registerAction('setSpeed100', "Set speed to 100%", {
         "type": "object",
         "properties": {}
-    }, set_speed_100)
+    }, set_speed_100, 'ship')
 
     actionManager.registerAction('deployHeatSink', "Deploy heat sink", {
         "type": "object",
         "properties": {}
-    }, deploy_heat_sink)
+    }, deploy_heat_sink, 'ship')
 
     actionManager.registerAction('deployHardpointToggle', "Deploy or retract hardpoints", {
         "type": "object",
         "properties": {}
-    }, deploy_hardpoint_toggle)
+    }, deploy_hardpoint_toggle, 'ship')
 
     actionManager.registerAction('increaseEnginesPower', "Increase engine power, can be done multiple times", {
         "type": "object",
@@ -2209,7 +2369,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             },
         },
         "required": ["pips"]
-    }, increase_engines_power)
+    }, increase_engines_power, 'ship')
 
     actionManager.registerAction('increaseWeaponsPower', "Increase weapon power, can be done multiple times", {
         "type": "object",
@@ -2220,7 +2380,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             },
         },
         "required": ["pips"]
-    }, increase_weapons_power)
+    }, increase_weapons_power, 'ship')
 
     actionManager.registerAction('increaseSystemsPower', "Increase systems power, can be done multiple times", {
         "type": "object",
@@ -2231,7 +2391,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             },
         },
         "required": ["pips"]
-    }, increase_systems_power)
+    }, increase_systems_power, 'ship')
 
     actionManager.registerAction('galaxyMapOpen', "Open galaxy map. Focus on a system or start a navigation route", {
         "type": "object",
@@ -2245,134 +2405,358 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "description": "Start navigation route to the system",
             }
         },
-    }, galaxy_map_open)
+    }, galaxy_map_open, 'ship')
 
     actionManager.registerAction('galaxyMapClose', "Close galaxy map", {
         "type": "object",
         "properties": {},
-    }, galaxy_map_close)
+    }, galaxy_map_close, 'ship')
 
     actionManager.registerAction('systemMapOpen', "Open or close system map", {
         "type": "object",
         "properties": {}
-    }, system_map_open)
+    }, system_map_open, 'ship')
 
     actionManager.registerAction('cycleNextTarget', "Cycle to next target", {
         "type": "object",
         "properties": {}
-    }, cycle_next_target)
+    }, cycle_next_target, 'ship')
 
     actionManager.registerAction('cycleFireGroupNext', "Cycle to next fire group", {
         "type": "object",
         "properties": {}
-    }, cycle_fire_group_next)
+    }, cycle_fire_group_next, 'ship')
 
     actionManager.registerAction('shipSpotLightToggle', "Toggle ship spotlight", {
         "type": "object",
         "properties": {}
-    }, ship_spot_light_toggle)
-
-    actionManager.registerAction('ejectAllCargo', "Eject all cargo", {
-        "type": "object",
-        "properties": {}
-    }, eject_all_cargo)
-
-    actionManager.registerAction('landingGearToggle', "Toggle landing gear", {
-        "type": "object",
-        "properties": {}
-    }, landing_gear_toggle)
-
-    actionManager.registerAction('useShieldCell', "Use shield cell", {
-        "type": "object",
-        "properties": {}
-    }, use_shield_cell)
+    }, ship_spot_light_toggle, 'ship')
 
     actionManager.registerAction('fireChaffLauncher', "Fire chaff launcher", {
         "type": "object",
         "properties": {}
-    }, fire_chaff_launcher)
+    }, fire_chaff_launcher, 'ship')
 
     actionManager.registerAction('nightVisionToggle', "Toggle night vision", {
         "type": "object",
         "properties": {}
-    }, night_vision_toggle)
-
-    actionManager.registerAction('recallDismissShip', "Recall or dismiss ship, available on foot and inside SRV", {
-        "type": "object",
-        "properties": {}
-    }, recall_dismiss_ship)
+    }, night_vision_toggle, 'ship')
 
     actionManager.registerAction('selectHighestThreat', "Target lock highest threat", {
         "type": "object",
         "properties": {}
-    }, select_highest_threat)
-
-    actionManager.registerAction('toggleCargoScoop', "Toggles cargo scoop", {
-        "type": "object",
-        "properties": {}
-    }, toggle_cargo_scoop)
+    }, select_highest_threat, 'ship')
 
     actionManager.registerAction('chargeECM', "Charge ECM", {
         "type": "object",
         "properties": {}
-    }, charge_ecm)
+    }, charge_ecm, 'ship')
 
-    actionManager.registerAction('getGalnetNews', "Retrieve current interstellar news from Galnet", {
+    # Register actions - NPC Crew Order Actions
+    actionManager.registerAction('npcOrder', "Order NPC crew ship", {
         "type": "object",
         "properties": {
-            "query": {
-                "type": "string",
-                "description": "Inquiry you are trying to answer. Example: 'What happened to the thargoids recently?'"
+            "orders": {
+                "type": "array",
+                "description": "Orders to give to the NPC pilot",
+                "items": {
+                    "type": "string",
+                    "enum": [
+                        "OrderDefensiveBehaviour",
+                        "OrderAggressiveBehaviour",
+                        "OrderFocusTarget",
+                        "OrderHoldFire",
+                        "OrderHoldPosition",
+                        "OrderFollow",
+                    ]
+                }
+            }
+        }
+    }, npc_order, 'ship')
+
+    # Register actions - Mainship Actions
+    actionManager.registerAction('hyperSuperCombination',
+                                 "initiate FSD Jump, required to jump to the next system or to enter supercruise", {
+                                     "type": "object",
+                                     "properties": {}
+                                 }, hyper_super_combination, 'mainship')
+
+    actionManager.registerAction('toggleCargoScoop', "Toggles cargo scoop", {
+        "type": "object",
+        "properties": {}
+    }, toggle_cargo_scoop, 'mainship')
+
+    actionManager.registerAction('ejectAllCargo', "Eject all cargo", {
+        "type": "object",
+        "properties": {}
+    }, eject_all_cargo, 'mainship')
+
+    actionManager.registerAction('landingGearToggle', "Toggle landing gear", {
+        "type": "object",
+        "properties": {}
+    }, landing_gear_toggle, 'mainship')
+
+    actionManager.registerAction('useShieldCell', "Use shield cell", {
+        "type": "object",
+        "properties": {}
+    }, use_shield_cell, 'mainship')
+
+    # Register actions - Ship Launched Fighter Actions
+    actionManager.registerAction('OrderRequestDock', "Request docking for Ship Launched Fighter", {
+        "type": "object",
+        "properties": {}
+    }, order_request_dock, 'fighter')
+
+    # Register actions - SRV Actions (Horizons)
+    actionManager.registerAction('toggleDriveAssist', "Toggle drive assist", {
+        "type": "object",
+        "properties": {}
+    }, toggle_drive_assist, 'buggy')
+
+    actionManager.registerAction('primaryFireBuggy', "Primary fire", {
+        "type": "object",
+        "properties": {}
+    }, buggy_primary_fire, 'buggy')
+
+    actionManager.registerAction('secondaryFireBuggy', "Secondary fire", {
+        "type": "object",
+        "properties": {}
+    }, buggy_secondary_fire, 'buggy')
+
+    actionManager.registerAction('autoBreak', "Toggle auto-brake", {
+        "type": "object",
+        "properties": {}
+    }, auto_break_buggy, 'buggy')
+
+    actionManager.registerAction('headlights', "Toggle headlights", {
+        "type": "object",
+        "properties": {}
+    }, headlights_buggy, 'buggy')
+
+    actionManager.registerAction('nightVisionToggleBuggy', "Toggle night vision", {
+        "type": "object",
+        "properties": {}
+    }, night_vision_toggle, 'buggy')
+
+    actionManager.registerAction('toggleTurret', "Toggle turret mode", {
+        "type": "object",
+        "properties": {}
+    }, toggle_buggy_turret, 'buggy')
+
+    actionManager.registerAction('selectTargetBuggy', "Select target", {
+        "type": "object",
+        "properties": {}
+    }, select_target_buggy, 'buggy')
+
+    actionManager.registerAction('increaseEnginesPowerBuggy', "Increase engines power, can be done multiple times", {
+        "type": "object",
+        "properties": {
+            "pips": {
+                "type": "integer",
+                "description": "Amount of pips to increase engines power, default: 1, maximum: 4",
             },
         },
-        "required": ["query"]
-    }, get_galnet_news)
+        "required": ["pips"]
+    }, increase_engines_power_buggy, 'buggy')
+
+    actionManager.registerAction('increaseWeaponsPowerBuggy', "Increase weapons power, can be done multiple times", {
+        "type": "object",
+        "properties": {
+            "pips": {
+                "type": "integer",
+                "description": "Amount of pips to increase weapons power, default: 1, maximum: 4",
+            },
+        },
+        "required": ["pips"]
+    }, increase_weapons_power_buggy, 'buggy')
+
+    actionManager.registerAction('increaseSystemsPowerBuggy', "Increase systems power, can be done multiple times", {
+        "type": "object",
+        "properties": {
+            "pips": {
+                "type": "integer",
+                "description": "Amount of pips to increase systems power, default: 1, maximum: 4",
+            },
+        },
+        "required": ["pips"]
+    }, increase_systems_power_buggy, 'buggy')
+
+    actionManager.registerAction('resetPowerDistributionBuggy', "Reset power distribution", {
+        "type": "object",
+        "properties": {}
+    }, reset_power_distribution_buggy, 'buggy')
+
+    actionManager.registerAction('toggleCargoScoopBuggy', "Toggle cargo scoop", {
+        "type": "object",
+        "properties": {}
+    }, toggle_cargo_scoop_buggy, 'buggy')
+
+    actionManager.registerAction('ejectAllCargoBuggy', "Eject all cargo", {
+        "type": "object",
+        "properties": {}
+    }, eject_all_cargo_buggy, 'buggy')
+
+    actionManager.registerAction('recallDismissShipBuggy', "Recall or dismiss ship", {
+        "type": "object",
+        "properties": {}
+    }, recall_dismiss_ship_buggy, 'buggy')
+
+    actionManager.registerAction('galaxyMapOpenBuggy', "Open/close galaxy map", {
+        "type": "object",
+        "properties": {}
+    }, galaxy_map_open_buggy, 'buggy')
+
+    actionManager.registerAction('systemMapOpenBuggy', "Open/close system map", {
+        "type": "object",
+        "properties": {}
+    }, system_map_open_buggy, 'buggy')
+
+    # Register actions - On-Foot Actions
+    actionManager.registerAction('primaryInteractHumanoid', "Primary interact action", {
+        "type": "object",
+        "properties": {}
+    }, primary_interact_humanoid, 'humanoid')
+
+    actionManager.registerAction('secondaryInteractHumanoid', "Secondary interact action", {
+        "type": "object",
+        "properties": {}
+    }, secondary_interact_humanoid, 'humanoid')
+
+    actionManager.registerAction('equipGearHumanoid', "Equip or hide a piece of gear", {
+        "type": "object",
+        "properties": {
+        "equipment": {
+            "type": "string",
+            "description": "Gear to equip",
+            "enum": [
+                "HumanoidSelectPrimaryWeaponButton",
+                "HumanoidSelectSecondaryWeaponButton",
+                "HumanoidSelectUtilityWeaponButton",
+                "HumanoidSwitchToRechargeTool",
+                "HumanoidSwitchToCompAnalyser",
+                "HumanoidSwitchToSuitTool",
+                "HumanoidHideWeaponButton",
+                "HumanoidSelectFragGrenade",
+                "HumanoidSelectEMPGrenade",
+                "HumanoidSelectShieldGrenade"
+            ]
+        }
+    },
+    "required": ["equipment"]
+    }, equip_humanoid, 'humanoid')
+
+    actionManager.registerAction('toggleFlashlightHumanoid', "Toggle flashlight", {
+        "type": "object",
+        "properties": {}
+    }, toggle_flashlight_humanoid, 'humanoid')
+
+    actionManager.registerAction('toggleNightVisionHumanoid', "Toggle night vision", {
+        "type": "object",
+        "properties": {}
+    }, toggle_night_vision_humanoid, 'humanoid')
+
+    actionManager.registerAction('toggleShieldsHumanoid', "Toggle shields", {
+        "type": "object",
+        "properties": {}
+    }, toggle_shields_humanoid, 'humanoid')
+
+    actionManager.registerAction('clearAuthorityLevelHumanoid', "Clear authority level", {
+        "type": "object",
+        "properties": {}
+    }, clear_authority_level_humanoid, 'humanoid')
+
+    actionManager.registerAction('healthPackHumanoid', "Use health pack", {
+        "type": "object",
+        "properties": {}
+    }, health_pack_humanoid, 'humanoid')
+
+    actionManager.registerAction('batteryHumanoid', "Use battery", {
+        "type": "object",
+        "properties": {}
+    }, battery_humanoid, 'humanoid')
+
+    actionManager.registerAction('galaxyMapOpenHumanoid', "Open Galaxy Map", {
+        "type": "object",
+        "properties": {}
+    }, galaxy_map_open_humanoid, 'humanoid')
+
+    actionManager.registerAction('systemMapOpenHumanoid', "Open System Map", {
+        "type": "object",
+        "properties": {}
+    }, system_map_open_humanoid, 'humanoid')
+
+    actionManager.registerAction('recallDismissShipHumanoid', "Recall or dismiss ship", {
+        "type": "object",
+        "properties": {}
+    }, recall_dismiss_ship_humanoid, 'humanoid')
+
+    # Register actions - Web Tools
+    actionManager.registerAction(
+        'getGalnetNews',
+        "Retrieve current interstellar news from Galnet",
+        {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Inquiry you are trying to answer. Example: 'What happened to the thargoids recently?'"
+                },
+            },
+            "required": ["query"]
+        },
+        get_galnet_news,
+        'global'
+    )
 
     # if ARC:
-    actionManager.registerAction('trade_plotter',
-                                 "Retrieve a trade route from the trade plotter. Ask for unknown values and make sure they are known.",
-                                 {
-                                     "type": "object",
-                                     "properties": {
-                                         "system": {
-                                             "type": "string",
-                                             "description": "Name of the current system. Example: 'Sol'"
-                                         },
-                                         "station": {
-                                             "type": "string",
-                                             "description": "Name of the current station. Example: 'Wakata Station'"
-                                         },
-                                         "max_hops": {
-                                             "type": "integer",
-                                             "description": "Maximum number of hops (jumps) allowed for the route."
-                                         },
-                                         "max_hop_distance": {
-                                             "type": "number",
-                                             "description": "Maximum distance in light-years for a single hop."
-                                         },
-                                         "starting_capital": {
-                                             "type": "number",
-                                             "description": "Available starting capital in credits."
-                                         },
-                                         "max_cargo": {
-                                             "type": "integer",
-                                             "description": "Maximum cargo capacity in tons."
-                                         },
-                                         "requires_large_pad": {
-                                             "type": "boolean",
-                                             "description": "Whether the station must have a large landing pad."
-                                         },
-                                     },
-                                     "required": [
-                                         "system",
-                                         "station",
-                                         "max_hops",
-                                         "max_hop_distance",
-                                         "starting_capital",
-                                         "max_cargo",
-                                         "requires_large_pad",
-                                     ]
-                                 }, trade_planner)
+    actionManager.registerAction(
+        'trade_plotter',
+        "Retrieve a trade route from the trade plotter. Ask for unknown values and make sure they are known.",
+        {
+            "type": "object",
+            "properties": {
+                "system": {
+                    "type": "string",
+                    "description": "Name of the current system. Example: 'Sol'"
+                },
+                "station": {
+                    "type": "string",
+                    "description": "Name of the current station. Example: 'Wakata Station'"
+                },
+                "max_hops": {
+                    "type": "integer",
+                    "description": "Maximum number of hops (jumps) allowed for the route."
+                },
+                "max_hop_distance": {
+                    "type": "number",
+                    "description": "Maximum distance in light-years for a single hop."
+                },
+                "starting_capital": {
+                    "type": "number",
+                    "description": "Available starting capital in credits."
+                },
+                "max_cargo": {
+                    "type": "integer",
+                    "description": "Maximum cargo capacity in tons."
+                },
+                "requires_large_pad": {
+                    "type": "boolean",
+                    "description": "Whether the station must have a large landing pad."
+                },
+            },
+            "required": [
+                "system",
+                "station",
+                "max_hops",
+                "max_hop_distance",
+                "starting_capital",
+                "max_cargo",
+                "requires_large_pad",
+            ]
+        },
+        trade_planner,
+        'global'
+    )
 
     # Register AI action for system finder
     actionManager.registerAction(
@@ -2471,7 +2855,8 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             },
             "required": ["reference_system"]
         },
-        system_finder
+        system_finder,
+        'global'
     )
     actionManager.registerAction(
         'station_finder',
@@ -2628,7 +3013,8 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "has_large_pad"
             ]
         },
-        station_finder
+        station_finder,
+        'global'
     )
     actionManager.registerAction(
         'body_finder',
@@ -2669,7 +3055,8 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "has_large_pad"
             ]
         },
-        body_finder
+        body_finder,
+        'global'
     )
 
     if vision_client:
@@ -2682,8 +3069,10 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 }
             },
             "required": ["query"]
-        }, get_visuals)
+        }, get_visuals, 'global')
+
 
 if __name__ == "__main__":
-    req = prepare_station_request( {'reference_system': 'Muang', 'has_large_pad': False, 'market': [{'name': 'gold', 'amount': 10, 'transaction': 'Buy'}]})
+    req = prepare_station_request({'reference_system': 'Muang', 'has_large_pad': False,
+                                   'market': [{'name': 'gold', 'amount': 10, 'transaction': 'Buy'}]})
     print(json.dumps(req))

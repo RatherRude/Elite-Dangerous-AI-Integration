@@ -57,10 +57,26 @@ def reply(client, events: list[Event], new_events: list[Event], projected_states
     use_tools = useTools and any([event.kind == 'user' for event in new_events])
     reasons = [event.content.get('event', event.kind) if event.kind=='game' else event.kind for event in new_events if event.kind in ['user', 'game', 'tool', 'status']]
 
+    current_status = projected_states.get("CurrentStatus")
+    flags = current_status["flags"]
+    flags2 = current_status["flags2"]
+
+    active_mode = None
+    if flags:
+        if flags["InMainShip"]:
+            active_mode = "mainship"
+        elif flags["InFighter"]:
+            active_mode = "fighter"
+        elif flags["InSRV"]:
+            active_mode = "buggy"
+    if flags2:
+        if flags2["OnFoot"]:
+            active_mode = "humanoid"
+
     completion = client.chat.completions.create(
         model=llm_model_name,
         messages=prompt,
-        tools=action_manager.getToolsList() if use_tools else None
+        tools=action_manager.getToolsList(active_mode) if use_tools else None
     )
 
     if hasattr(completion, 'error'):
