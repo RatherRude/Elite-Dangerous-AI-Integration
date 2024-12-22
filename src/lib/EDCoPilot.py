@@ -11,8 +11,6 @@ from EDMesg.CovasNext import (
 from EDMesg.EDCoPilot import create_edcopilot_client
 from EDMesg.base import EDMesgWelcomeAction
 
-from .Logger import log
-
 
 class EDCoPilot:
     def __init__(self, is_enabled: bool, is_edcopilot_dominant: bool=False, enabled_game_events: list[str]=[]):
@@ -29,18 +27,11 @@ class EDCoPilot:
             thread.daemon = True
             thread.start()
 
-        log("info", f"EDCoPilot is installed: {self.is_installed()}")
-        log("info", f"EDCoPilot is running: {self.is_running()}")
-        log("info", f"EDCoPilot is enabled: {self.is_enabled}")
-        log("info", f"EDCoPilot is dominant: {self.is_edcopilot_dominant}")
-
     def listen_actions(self):
-        log("debug", "Waiting for EDCoPilot to connect...")
         while True:
             if not self.provider.pending_actions.empty():
                 action = self.provider.pending_actions.get()
                 if isinstance(action, EDMesgWelcomeAction):
-                    log("debug", "EDCoPilot connected, sharing config")
                     self.share_config()
             time.sleep(0.1)
 
@@ -86,7 +77,6 @@ class EDCoPilot:
     def share_config(self):
         """send Config"""
         if self.provider:
-            log("debug", "Sharing config with EDCoPilot")
             return self.provider.publish(
                 ConfigurationUpdated(is_dominant=not self.is_edcopilot_dominant ,enabled_game_events=self.enabled_game_events)
             )
