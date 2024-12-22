@@ -426,7 +426,7 @@ def check_for_updates(current_commit):
 class App:
     def __init__(self, root):
         self.root = root
-        self.root.title("Elite Dangerous AI Integration")
+        self.root.title("COVAS:NEXT")
         root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         parser = argparse.ArgumentParser()
@@ -527,53 +527,21 @@ class App:
         self.input_device_name = tk.OptionMenu(self.main_frame, self.input_device_name_var, *input_device_names)
         self.input_device_name.grid(row=get_same(), column=1, padx=10, pady=5, sticky=tk.W)
 
-        # EDCoPilot (Checkbox)
-        self.edcopilot_label = tk.Label(self.main_frame, text="EDCoPilot:", font=('Arial', 10))
-        self.edcopilot_label.grid(row=get_next(), column=0, sticky=tk.W)
-        self.edcopilot_var = tk.BooleanVar()
-        self.edcopilot_var.set(True)
-        self.edcopilot_checkbox = tk.Checkbutton(self.main_frame, text="Enabled", variable=self.edcopilot_var)
-        self.edcopilot_checkbox.grid(row=get_same(), column=1, sticky=tk.W, padx=5, pady=5)
-        self.edcopilot_description = tk.Label(self.main_frame, text="Send messages to EDCoPilot (WIP)", font=('Arial 10 italic'))
-        self.edcopilot_description.grid(row=get_same(), column=1, sticky=tk.W, padx=80, pady=5)
-
-        if not self.edcopilot.is_installed():
-            self.edcopilot_label.grid_remove()
-            self.edcopilot_checkbox.grid_remove()
-            self.edcopilot_description.grid_remove()
-
-        self.edcopilot_dominant_label = tk.Label(self.main_frame, text="EDCoPilot-Dominant:", font=('Arial', 10))
-        self.edcopilot_dominant_label.grid(row=get_next(), column=0, sticky=tk.W)
-        self.edcopilot_dominant_var = tk.BooleanVar()
-        self.edcopilot_dominant_var.set(False)
-        self.edcopilot_dominant_checkbox = tk.Checkbutton(self.main_frame, text="Enabled", variable=self.edcopilot_dominant_var)
-        self.edcopilot_dominant_checkbox.grid(row=get_same(), column=1, sticky=tk.W, padx=5, pady=5)
-        self.edcopilot_dominant_description = tk.Label(self.main_frame, text="Audio output and game reactions are managed by EDCoPilot. Read more about this", font=('Arial 10 italic'))
-        self.edcopilot_dominant_description.grid(row=get_same(), column=1, sticky=tk.W, padx=80, pady=5)
-        self.edcopilot_dominant_doc_link = tk.Label(self.main_frame, text="[here]", fg="blue", cursor="hand2", font=('Arial 10 bold'))
-        self.edcopilot_dominant_doc_link.grid(row=get_same(), column=1, sticky=tk.W, padx=(570, 0), pady=5)
-
-        self.edcopilot_dominant_doc_link.bind("<Button-1>", lambda e: webbrowser.open_new("https://ratherrude.github.io/Elite-Dangerous-AI-Integration/50_EDCoPilot/"))
-
-        if not self.edcopilot.is_installed():
-            self.edcopilot_dominant_label.grid_remove()
-            self.edcopilot_dominant_checkbox.grid_remove()
-            self.edcopilot_dominant_description.grid_remove()
-            self.edcopilot_dominant_doc_link.grid_remove()
-
-
-
-
+        
+        # Toggle Section Button
+        self.toggle_third_party_section_button = tk.Button(self.main_frame, text="Third-Party Apps",
+                                                        command=self.toggle_third_party_section)
+        self.toggle_third_party_section_button.grid(row=get_next(), column=0, columnspan=2, pady=10, padx=(420, 0), sticky="")
 
         # Toggle Section Button
         self.toggle_ai_geeks_section_button = tk.Button(self.main_frame, text="Show AI Settings",
                                                         command=self.toggle_ai_geeks_section)
-        self.toggle_ai_geeks_section_button.grid(row=get_next(), column=0, columnspan=2, pady=10, padx=(150, 0), sticky="")
+        self.toggle_ai_geeks_section_button.grid(row=get_same(), column=0, columnspan=2, pady=10, padx=(100, 0), sticky="")
 
         # Toggle Section Button
         self.toggle_game_events_section_button = tk.Button(self.main_frame, text="Show Events Triggers",
                                                            command=self.toggle_game_events_section)
-        self.toggle_game_events_section_button.grid(row=get_same(), column=0, columnspan=2, pady=10, padx=(0, 150), sticky="")
+        self.toggle_game_events_section_button.grid(row=get_same(), column=0, columnspan=2, pady=10, padx=(0, 243), sticky="")
 
         # Game Events (Initially hidden)
         self.game_events_frame = VerticalScrolledFrame(self.main_frame, width=600)
@@ -582,6 +550,88 @@ class App:
                                                                    self.data['game_events'])
         self.game_events_frame.update()  # update scrollable area
         self.game_events_frame.grid_remove()  # Initially hide
+
+
+
+        # AI Settings (Initially hidden)
+        self.third_party_frame = VerticalScrolledFrame(self.main_frame, width=600)
+        self.third_party_frame.grid(row=get_next(), column=0, columnspan=2, sticky="")
+        self.third_party_frame.grid_remove()  # Initially hide
+
+        # self.incr = 0
+        # EDCoPilot (Checkbox)
+        self.edcopilot_label = tk.Label(self.third_party_frame.inner_frame, text="EDCoPilot-Integration (WIP)", font=('Helvetica 12 bold'))
+        self.edcopilot_label.grid(row=0, column=0, columnspan=2, sticky="")
+        # tk.Label(self.third_party_frame.inner_frame, text="EDCoPilot:", font=('Arial', 10)).grid(row=get_next(), column=0, sticky="NW")
+        self.edcopilot_var = tk.BooleanVar()
+        self.edcopilot_var.set(True)
+        self.edcopilot_checkbox = tk.Checkbutton(self.third_party_frame.inner_frame, text="Enabled", variable=self.edcopilot_var)
+        self.edcopilot_checkbox.grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
+        self.edcopilot_description = tk.Label(self.third_party_frame.inner_frame, text="COVAS:NEXT sends messages to EDCoPilot.",
+                                              font=('Arial 10 italic'))
+        self.edcopilot_description.grid(row=1, column=1, sticky=tk.W)
+
+        if not self.edcopilot.is_installed():
+            self.edcopilot_label.grid_remove()
+            self.edcopilot_checkbox.grid_remove()
+            self.edcopilot_description.grid_remove()
+
+        self.edcopilot_dominant_var = tk.BooleanVar()
+        self.edcopilot_dominant_var.set(False)
+        self.edcopilot_dominant_checkbox = tk.Checkbutton(self.third_party_frame.inner_frame, text="EDCoPilot-Dominant",
+                                                          variable=self.edcopilot_dominant_var)
+        self.edcopilot_dominant_checkbox.grid(row=2, column=0, sticky=tk.NW, padx=5, pady=5)
+        self.edcopilot_dominant_description = tk.Text(
+            self.third_party_frame.inner_frame,
+            wrap="word",
+            font=('Helvetica', 10),
+            borderwidth=0,
+            highlightthickness=0,
+            cursor="arrow",
+            bg=self.third_party_frame.inner_frame.cget('background')
+        )
+        # Clear existing content (if necessary)
+        self.edcopilot_dominant_description.delete("1.0", "end")
+
+        # Insert the text
+        self.edcopilot_dominant_description.insert("1.0", "WARNING:")
+        self.edcopilot_dominant_description.insert("1.8",
+                                                   " COVAS:NEXT's reactions and general audio will be\nmanaged by EDCoPilot! ")
+        self.edcopilot_dominant_description.insert("3.0", "Only activate this if you know\nwhat you're doing! ")
+
+        # Apply bold formatting
+        self.edcopilot_dominant_description.tag_configure("bold", font=('Helvetica', 10, 'bold'))
+        self.edcopilot_dominant_description.tag_add("bold", "1.0", "1.8")  # "WARNING:"
+        self.edcopilot_dominant_description.tag_add("bold", "2.21", "3.19")  # "Only activate this..."
+
+
+        # Disable text selection by binding a callback to block selection actions
+        self.edcopilot_dominant_description.bind("<Button-1>", lambda e: "break")
+        self.edcopilot_dominant_description.bind("<Control-c>", lambda e: "break")
+        self.edcopilot_dominant_description.bind("<Control-x>", lambda e: "break")
+        self.edcopilot_dominant_description.bind("<Control-v>", lambda e: "break")
+
+        # Disable editing
+        self.edcopilot_dominant_description.config(state="disabled")
+
+        # Place the Text widget
+        self.edcopilot_dominant_description.grid(row=2, column=1, sticky="W")
+
+        self.edcopilot_dominant_doc_link = tk.Label(self.third_party_frame.inner_frame, text="Read more about this here", fg="blue", cursor="hand2",
+                                                    font=('Arial 10 bold'))
+        self.edcopilot_dominant_doc_link.grid(row=2, column=1, sticky="NW", pady=(49,0), padx=(0,0))
+
+        self.edcopilot_dominant_doc_link.bind("<Button-1>", lambda e: webbrowser.open_new(
+            "https://ratherrude.github.io/Elite-Dangerous-AI-Integration/50_EDCoPilot/"))
+
+        if not self.edcopilot.is_installed():
+            self.edcopilot_dominant_description.grid_remove()
+            self.edcopilot_dominant_checkbox.grid_remove()
+            self.edcopilot_dominant_description.grid_remove()
+            self.edcopilot_dominant_doc_link.grid_remove()
+            self.toggle_third_party_section_button.grid_remove()
+
+        self.third_party_frame.update()
 
         # AI Settings (Initially hidden)
         self.ai_geeks_frame = VerticalScrolledFrame(self.main_frame, width=600)
@@ -723,6 +773,7 @@ class App:
         self.vision_checkbox.grid(row=get_next(), column=0, padx=10, pady=10, sticky=tk.W)
 
         self.ai_geeks_frame.update()
+
 
         # Debug Frame and Text Widget
         self.debug_frame = tk.Frame(root, bg='black', bd=1)  # White background for visibility
@@ -1169,6 +1220,22 @@ class App:
             self.game_events_frame.grid_remove()
             self.toggle_game_events_section_button.config(text="Show Event Triggers")
 
+            self.third_party_frame.grid_remove()
+
+    def toggle_third_party_section(self):
+        if self.third_party_frame.winfo_viewable():
+            self.third_party_frame.grid_remove()
+        else:
+            self.third_party_frame.grid()
+
+            self.ai_geeks_frame.grid_remove()
+            self.toggle_ai_geeks_section_button.config(text="Show AI Settings")
+
+            self.game_events_frame.grid_remove()
+            self.toggle_game_events_section_button.config(text="Show Event Triggers")
+
+            self.game_events_frame.grid_remove()
+
     def toggle_game_events_section(self):
         if self.game_events_frame.winfo_viewable():
             self.game_events_frame.grid_remove()
@@ -1179,6 +1246,8 @@ class App:
 
             self.ai_geeks_frame.grid_remove()
             self.toggle_ai_geeks_section_button.config(text="Show AI Settings")
+
+            self.third_party_frame.grid_remove()
 
     def toggle_ptt(self):
         if self.ptt_var.get():
@@ -1210,7 +1279,7 @@ class App:
         self.debug_text.config(state=tk.NORMAL) # Make the text widget read-write
         self.debug_text.delete("1.0", tk.END)
         self.debug_text.focus_set()  # Give focus to the text widget
-        self.print_to_debug("Starting Elite Dangerous AI Integration...\n")
+        self.print_to_debug("Starting COVAS:NEXT...\n")
 
         try:
             # create log file
@@ -1240,11 +1309,11 @@ class App:
 
         except FileNotFoundError as e:
             print(e)
-            self.debug_text.insert(tk.END, "Failed to start Elite Dangerous AI Integration: File not found.\n")
+            self.debug_text.insert(tk.END, "Failed to start COVAS:NEXT: File not found.\n")
             self.debug_text.see(tk.END)
         except Exception as e:
             print(e, traceback.format_exc())
-            self.debug_text.insert(tk.END, f"Failed to start Elite Dangerous AI Integration: {str(e)}\n")
+            self.debug_text.insert(tk.END, f"Failed to start COVAS:NEXT: {str(e)}\n")
             self.debug_text.see(tk.END)
 
     def strip_ansi_codes(self, s: str):
@@ -1318,7 +1387,7 @@ class App:
             if self.thread_process_stderr.is_alive():
                 self.thread_process_stderr.join(timeout=1)  # Wait for the thread to complete
             self.thread_process_stderr = None
-        self.print_to_debug("Elite Dangerous AI Integration stopped.\n")
+        self.print_to_debug("COVAS:NEXT stopped.\n")
         self.stop_button.pack_forget()
         self.debug_frame.pack_forget()
         self.main_frame.pack(padx=20, pady=20)
