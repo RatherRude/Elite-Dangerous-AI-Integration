@@ -2533,6 +2533,11 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, headlights_buggy, 'buggy')
 
+    actionManager.registerAction('nightVisionToggleBuggy', "Toggle night vision", {
+        "type": "object",
+        "properties": {}
+    }, night_vision_toggle, 'buggy')
+
     actionManager.registerAction('toggleTurret', "Toggle turret mode", {
         "type": "object",
         "properties": {}
@@ -2543,19 +2548,37 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, select_target_buggy, 'buggy')
 
-    actionManager.registerAction('increaseEnginesPowerBuggy', "Increase engines power", {
+    actionManager.registerAction('increaseEnginesPowerBuggy', "Increase engines power, can be done multiple times", {
         "type": "object",
-        "properties": {}
+        "properties": {
+            "pips": {
+                "type": "integer",
+                "description": "Amount of pips to increase engines power, default: 1, maximum: 4",
+            },
+        },
+        "required": ["pips"]
     }, increase_engines_power_buggy, 'buggy')
 
-    actionManager.registerAction('increaseWeaponsPowerBuggy', "Increase weapons power", {
+    actionManager.registerAction('increaseWeaponsPowerBuggy', "Increase weapons power, can be done multiple times", {
         "type": "object",
-        "properties": {}
+        "properties": {
+            "pips": {
+                "type": "integer",
+                "description": "Amount of pips to increase weapons power, default: 1, maximum: 4",
+            },
+        },
+        "required": ["pips"]
     }, increase_weapons_power_buggy, 'buggy')
 
-    actionManager.registerAction('increaseSystemsPowerBuggy', "Increase systems power", {
+    actionManager.registerAction('increaseSystemsPowerBuggy', "Increase systems power, can be done multiple times", {
         "type": "object",
-        "properties": {}
+        "properties": {
+            "pips": {
+                "type": "integer",
+                "description": "Amount of pips to increase systems power, default: 1, maximum: 4",
+            },
+        },
+        "required": ["pips"]
     }, increase_systems_power_buggy, 'buggy')
 
     actionManager.registerAction('resetPowerDistributionBuggy', "Reset power distribution", {
