@@ -441,7 +441,7 @@ def setGameWindowActive():
         log("info", "Unable to find Elite game window")
 
 
-def screenshot():
+def screenshot(new_height: int = 720):
     if platform != "win32":
         return None
     handle = get_game_window_handle()
@@ -462,7 +462,6 @@ def screenshot():
 
         # Resize to height 720 while maintaining aspect ratio
         aspect_ratio = width / height
-        new_height = 720
         new_width = int(new_height * aspect_ratio)
         im = im.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
