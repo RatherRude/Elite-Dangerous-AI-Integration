@@ -426,7 +426,7 @@ def check_for_updates(current_commit):
 class App:
     def __init__(self, root):
         self.root = root
-        self.root.title("Elite Dangerous AI Integration")
+        self.root.title("COVAS:NEXT")
         root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         parser = argparse.ArgumentParser()
@@ -527,53 +527,21 @@ class App:
         self.input_device_name = tk.OptionMenu(self.main_frame, self.input_device_name_var, *input_device_names)
         self.input_device_name.grid(row=get_same(), column=1, padx=10, pady=5, sticky=tk.W)
 
-        # EDCoPilot (Checkbox)
-        self.edcopilot_label = tk.Label(self.main_frame, text="EDCoPilot:", font=('Arial', 10))
-        self.edcopilot_label.grid(row=get_next(), column=0, sticky=tk.W)
-        self.edcopilot_var = tk.BooleanVar()
-        self.edcopilot_var.set(True)
-        self.edcopilot_checkbox = tk.Checkbutton(self.main_frame, text="Enabled", variable=self.edcopilot_var)
-        self.edcopilot_checkbox.grid(row=get_same(), column=1, sticky=tk.W, padx=5, pady=5)
-        self.edcopilot_description = tk.Label(self.main_frame, text="Send messages to EDCoPilot (WIP)", font=('Arial 10 italic'))
-        self.edcopilot_description.grid(row=get_same(), column=1, sticky=tk.W, padx=80, pady=5)
-
-        if not self.edcopilot.is_installed():
-            self.edcopilot_label.grid_remove()
-            self.edcopilot_checkbox.grid_remove()
-            self.edcopilot_description.grid_remove()
-
-        self.edcopilot_dominant_label = tk.Label(self.main_frame, text="EDCoPilot-Dominant:", font=('Arial', 10))
-        self.edcopilot_dominant_label.grid(row=get_next(), column=0, sticky=tk.W)
-        self.edcopilot_dominant_var = tk.BooleanVar()
-        self.edcopilot_dominant_var.set(False)
-        self.edcopilot_dominant_checkbox = tk.Checkbutton(self.main_frame, text="Enabled", variable=self.edcopilot_dominant_var)
-        self.edcopilot_dominant_checkbox.grid(row=get_same(), column=1, sticky=tk.W, padx=5, pady=5)
-        self.edcopilot_dominant_description = tk.Label(self.main_frame, text="Audio output and game reactions are managed by EDCoPilot. Read more about this", font=('Arial 10 italic'))
-        self.edcopilot_dominant_description.grid(row=get_same(), column=1, sticky=tk.W, padx=80, pady=5)
-        self.edcopilot_dominant_doc_link = tk.Label(self.main_frame, text="[here]", fg="blue", cursor="hand2", font=('Arial 10 bold'))
-        self.edcopilot_dominant_doc_link.grid(row=get_same(), column=1, sticky=tk.W, padx=(570, 0), pady=5)
-
-        self.edcopilot_dominant_doc_link.bind("<Button-1>", lambda e: webbrowser.open_new("https://ratherrude.github.io/Elite-Dangerous-AI-Integration/50_EDCoPilot/"))
-
-        if not self.edcopilot.is_installed():
-            self.edcopilot_dominant_label.grid_remove()
-            self.edcopilot_dominant_checkbox.grid_remove()
-            self.edcopilot_dominant_description.grid_remove()
-            self.edcopilot_dominant_doc_link.grid_remove()
-
-
-
-
+        
+        # Toggle Section Button
+        self.toggle_third_party_section_button = tk.Button(self.main_frame, text="Third-Party Apps",
+                                                        command=self.toggle_third_party_section)
+        self.toggle_third_party_section_button.grid(row=get_next(), column=0, columnspan=2, pady=10, padx=(420, 0), sticky="")
 
         # Toggle Section Button
         self.toggle_ai_geeks_section_button = tk.Button(self.main_frame, text="Show AI Settings",
                                                         command=self.toggle_ai_geeks_section)
-        self.toggle_ai_geeks_section_button.grid(row=get_next(), column=0, columnspan=2, pady=10, padx=(150, 0), sticky="")
+        self.toggle_ai_geeks_section_button.grid(row=get_same(), column=0, columnspan=2, pady=10, padx=(100, 0), sticky="")
 
         # Toggle Section Button
         self.toggle_game_events_section_button = tk.Button(self.main_frame, text="Show Events Triggers",
                                                            command=self.toggle_game_events_section)
-        self.toggle_game_events_section_button.grid(row=get_same(), column=0, columnspan=2, pady=10, padx=(0, 150), sticky="")
+        self.toggle_game_events_section_button.grid(row=get_same(), column=0, columnspan=2, pady=10, padx=(0, 250), sticky="")
 
         # Game Events (Initially hidden)
         self.game_events_frame = VerticalScrolledFrame(self.main_frame, width=600)
@@ -582,6 +550,54 @@ class App:
                                                                    self.data['game_events'])
         self.game_events_frame.update()  # update scrollable area
         self.game_events_frame.grid_remove()  # Initially hide
+
+
+
+        # AI Settings (Initially hidden)
+        self.third_party_frame = VerticalScrolledFrame(self.main_frame, width=600)
+        self.third_party_frame.grid(row=get_same(), column=0, columnspan=2)
+        self.third_party_frame.grid_remove()  # Initially hide
+
+        # EDCoPilot (Checkbox)
+        self.edcopilot_label = tk.Label(self.third_party_frame.inner_frame, text="EDCoPilot:", font=('Arial', 10))
+        self.edcopilot_label.grid(row=get_next(), column=0, sticky=tk.W)
+        self.edcopilot_var = tk.BooleanVar()
+        self.edcopilot_var.set(True)
+        self.edcopilot_checkbox = tk.Checkbutton(self.third_party_frame.inner_frame, text="Enabled", variable=self.edcopilot_var)
+        self.edcopilot_checkbox.grid(row=get_same(), column=1, sticky=tk.W, padx=5, pady=5)
+        self.edcopilot_description = tk.Label(self.third_party_frame.inner_frame, text="Send messages to EDCoPilot (WIP)",
+                                              font=('Arial 10 italic'))
+        self.edcopilot_description.grid(row=get_same(), column=1, sticky=tk.W, padx=80, pady=5)
+
+        if not self.edcopilot.is_installed():
+            self.edcopilot_label.grid_remove()
+            self.edcopilot_checkbox.grid_remove()
+            self.edcopilot_description.grid_remove()
+
+        self.edcopilot_dominant_label = tk.Label(self.third_party_frame.inner_frame, text="EDCoPilot-Dominant:", font=('Arial', 10))
+        self.edcopilot_dominant_label.grid(row=get_next(), column=0, sticky=tk.W)
+        self.edcopilot_dominant_var = tk.BooleanVar()
+        self.edcopilot_dominant_var.set(False)
+        self.edcopilot_dominant_checkbox = tk.Checkbutton(self.third_party_frame.inner_frame, text="Enabled",
+                                                          variable=self.edcopilot_dominant_var)
+        self.edcopilot_dominant_checkbox.grid(row=get_same(), column=1, sticky=tk.W, padx=5, pady=5)
+        self.edcopilot_dominant_description = tk.Label(self.third_party_frame.inner_frame,
+                                                       text="Audio output and game reactions are managed by EDCoPilot. Read more about this",
+                                                       font=('Arial 10 italic'))
+        self.edcopilot_dominant_description.grid(row=get_same(), column=1, sticky=tk.W, padx=80, pady=5)
+        self.edcopilot_dominant_doc_link = tk.Label(self.third_party_frame.inner_frame, text="[here]", fg="blue", cursor="hand2",
+                                                    font=('Arial 10 bold'))
+        self.edcopilot_dominant_doc_link.grid(row=get_same(), column=1, sticky=tk.W, padx=(570, 0), pady=5)
+
+        self.edcopilot_dominant_doc_link.bind("<Button-1>", lambda e: webbrowser.open_new(
+            "https://ratherrude.github.io/Elite-Dangerous-AI-Integration/50_EDCoPilot/"))
+
+        if not self.edcopilot.is_installed():
+            self.edcopilot_dominant_label.grid_remove()
+            self.edcopilot_dominant_checkbox.grid_remove()
+            self.edcopilot_dominant_description.grid_remove()
+            self.edcopilot_dominant_doc_link.grid_remove()
+
 
         # AI Settings (Initially hidden)
         self.ai_geeks_frame = VerticalScrolledFrame(self.main_frame, width=600)
@@ -1169,6 +1185,22 @@ class App:
             self.game_events_frame.grid_remove()
             self.toggle_game_events_section_button.config(text="Show Event Triggers")
 
+            self.third_party_frame.grid_remove()
+
+    def toggle_third_party_section(self):
+        if self.third_party_frame.winfo_viewable():
+            self.third_party_frame.grid_remove()
+        else:
+            self.third_party_frame.grid()
+
+            self.ai_geeks_frame.grid_remove()
+            self.toggle_ai_geeks_section_button.config(text="Show AI Settings")
+
+            self.game_events_frame.grid_remove()
+            self.toggle_game_events_section_button.config(text="Show Event Triggers")
+
+            self.game_events_frame.grid_remove()
+
     def toggle_game_events_section(self):
         if self.game_events_frame.winfo_viewable():
             self.game_events_frame.grid_remove()
@@ -1179,6 +1211,8 @@ class App:
 
             self.ai_geeks_frame.grid_remove()
             self.toggle_ai_geeks_section_button.config(text="Show AI Settings")
+
+            self.third_party_frame.grid_remove()
 
     def toggle_ptt(self):
         if self.ptt_var.get():
