@@ -48,7 +48,8 @@ class EDKeys:
             'SelectHighestThreat',
             'ToggleCargoScoop',
             'ChargeECM',
-            #'CycleNextPanel',
+            'CycleNextPanel',
+            'FocusLeftPanel',
             'UI_Up',
             'UI_Left',
             'UI_Right',
@@ -100,7 +101,7 @@ class EDKeys:
             'SystemMapOpen_Humanoid',
             'HumanoidOpenAccessPanelButton',
         ]
-        self.keys = self.get_bindings(self.keys_to_obtain)
+        self.keys = self.get_bindings()
 
         self.missing_keys = []
         # dump config to log
@@ -108,7 +109,7 @@ class EDKeys:
             if not key in self.keys:
                 self.missing_keys.append(key)
 
-    def get_bindings(self, keys_to_obtain) -> dict[str, Any]:
+    def get_bindings(self) -> dict[str, Any]:
         """Returns a dict struct with the direct input equivalent of the necessary elite keybindings"""
         direct_input_keys = {}
         convert_to_direct_keys = {
