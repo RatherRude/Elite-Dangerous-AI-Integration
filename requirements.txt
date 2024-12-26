@@ -70,6 +70,7 @@ soundfile==0.12.1
 SpeechRecognition==3.10.4
 sqlite-vec==0.1.3
 strip_markdown==1.3
+-f https://k2-fsa.github.io/sherpa/onnx/cpu.html
 sherpa-onnx==1.10.29
 sympy==1.13.1
 tokenizers==0.19.1
