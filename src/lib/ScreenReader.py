@@ -1,15 +1,37 @@
-from re import sub
-import time
-from typing import Literal, final
+import glob
+from sys import platform
+from time import sleep
+from typing import final
+from wsgiref.validate import header_re
+
 import cv2
 import numpy as np
-import glob
-import os
 
-from lib.Actions import screenshot
+from .Logger import log
+
 
 @final
 class ScreenReader:
+        def __init__(self):
+            self.templates = {
+                "screen_lhs_header": self.getFeatures(cv2.imread('src/assets/screen_lhs_header.png')),
+                "screen_lhs_navigation": self.getFeatures(cv2.imread('src/assets/screen_lhs_navigation.png')),
+            }
+
+        def calculate_colorfulness(self, image):
+            # Convert the image to the hsv color space
+            hsv_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+
+            # Split into H, S and V channels
+            H, S, V = cv2.split(hsv_image)
+
+            # Calculate the chroma as sqrt(S^2 + V^2)
+            chroma = np.sqrt(S.astype('float32') ** 2 + V.astype('float32') ** 2)
+
+            # Calculate the average chroma as the colorfulness measure
+            colorfulness_score = np.mean(chroma)
+            return colorfulness_score
+
         def angle_between_vectors(self, u, v):
             """
             Returns the angle in degrees between vectors u and v.
@@ -140,103 +162,116 @@ class ScreenReader:
             corrected_img = cv2.warpPerspective(scene_img.copy(), np.linalg.inv(H), (w,h))
             return corrected_img, scene_corners
 
-        def detect_lhs_screen_tab(self):
-            pil_img = screenshot(new_height=1080)
+        def get_screen(self):
+            pil_img = self.screenshot(new_height=1080)
+            if not pil_img:
+                return None
             game_img_color = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
             # get features from scene image
             game_features = self.getFeatures(img=game_img_color)
-            
-            
-            header_pattern = cv2.imread('src/assets/screen_lhs_header.png')
-            header_features = self.getFeatures(header_pattern)
-            
+            return game_img_color, game_features
+
+        def get_template_match(self, feature: str):
+            game_img_color, game_features = self.get_screen()
+            features = self.templates[feature]
+
             # detect features on test image
-            header_image, corners = self.detectFeatures(game_img_color, game_features, header_features)
+            header_image, corners = self.detectFeatures(game_img_color, game_features, features)
             if header_image is None or corners is None:
-                print("Header not found")
+                #print("Header not found")
                 return None
-            
-            # save image to disk
-            cv2.imwrite('header_match.png', header_image)
-            
-            section_offsets = [(0,50),(50,326),(326,604),(604,880)]
-            section_brightness = []
-            # split the header into 4 sections, and take the average brightness of each section
-            for (start_x, end_x) in section_offsets:
-                section = header_image[:,start_x:end_x]
-                brightness = np.mean(cv2.cvtColor(section, cv2.COLOR_BGR2GRAY))
-                section_brightness.append(brightness)
-            
-            # find the index with the highest brightness
-            max_brightness_idx = np.argmax(section_brightness)
-            
-            return ['system', 'navigation', 'transactions', 'contacts'][max_brightness_idx]
-            
+            return header_image
 
-        def main(self):
-            # Scene image
-            scene_files = sorted(glob.glob("game/*.*"))
-            for scene_file in scene_files:
-                scene_img_color = cv2.imread(scene_file)
-                if scene_img_color is None:
-                    raise IOError(f"Could not load scene image: {scene_file}")
-                scene_img_color = cv2.resize(scene_img_color, (1920,1080), interpolation= cv2.INTER_LINEAR)
-                scene_img_gray = cv2.cvtColor(scene_img_color, cv2.COLOR_BGR2GRAY)
-                # get features from scene image
-                scene_features = self.getFeatures(img=scene_img_color)
-                
-                # Get all pattern images
-                pattern_files = sorted(glob.glob("src/assets/screen_*.png"))
-                
-                colors = [(0, 0, 255), (0, 128, 255), (0, 255, 0), (0, 255, 128), (255, 0, 0), (255, 0, 128), (255, 255, 0), (255, 255, 255)]
-                color_idx = -1
-                
-                # get train features
-                for pattern in pattern_files:
-                    print("Detecting screen", pattern)
-                    color_idx += 1
-                    screen_pattern = cv2.imread(pattern)
-                    train_features = self.getFeatures(screen_pattern)
-                    
-                    # detect features on test image
-                    screen_image, corners = self.detectFeatures(scene_img_color, scene_features, train_features)
-                    if screen_image is None or corners is None:
-                        print("Screen not found", pattern)
-                        continue
-                    
-                    button_files = sorted(glob.glob("src/assets/button_*.png"))
-                    
-                    for button in button_files:
-                        #print("Detecting button", button)
-                        # get features from scene image
-                        subimage_features = self.getFeatures(img=screen_image.copy())
-                        button_pattern = cv2.imread(button)
-                        button_features = self.getFeatures(button_pattern.copy())
-                        button_image, button_corners = self.detectFeatures(screen_image.copy(), subimage_features, button_features)
-                        
-                        if button_image is None or button_corners is None:
-                            print("Button not found", button)
-                            continue
-                        #cv2.imshow("Button "+str(button), button_image.copy())
-                        print("Button found", button)
-                        # draw rotated bounding box
-                        #cv2.polylines(screen_image, [np.int32(button_corners)], True, colors[color_idx % len(colors)], 3)
-                        #cv2.putText(subimage, button, (10,30*color_idx+30), cv2.FONT_HERSHEY_SIMPLEX, 1, colors[color_idx % len(colors)], 2)
-                        
-                    # display the image
-                    #cv2.imshow("Preview", screen_image.copy())
+        def detect_lhs_screen_tab(self):
+            header_match = self.get_template_match("screen_lhs_header")
+            if isinstance(header_match, np.ndarray):
+                log('debug', 'tab detection header match')
+                section_offsets = [(10,10+38),(54,54+38),(330,330+38),(608,608+38)]
+                section_colors = []
+                # split the header into 4 sections, and take the average colorfulness of each section
+                for (start_x, end_x) in section_offsets:
+                    section = header_match[:,start_x:end_x]
+                    color = self.calculate_colorfulness(section)
+                    log('debug', 'tab color amount',color)
+                    section_colors.append(color)
 
-                    # wait for window close
-                    #try:
-                    #    while cv2.getWindowProperty("Preview", cv2.WND_PROP_VISIBLE) >= 1:
-                    #        cv2.waitKey(50)
-                    #except KeyboardInterrupt:
-                    #    pass
-                    #finally:
-                    #    cv2.destroyAllWindows()
+                # find the index with the highest brightness
+                max_color_idx = np.argmax(section_colors)
+            
+                return ['system', 'navigation', 'transactions', 'contacts'][max_color_idx]
+
+            navigation_match = self.get_template_match("screen_lhs_navigation")
+            if isinstance(navigation_match, np.ndarray):
+                log('debug', 'tab detection navigation match')
+                return 'navigation'
+
+            return None
+
+        def get_game_window_handle(self):
+            if platform != "win32":
+                return None
+            import win32gui
+
+            handle = win32gui.FindWindow(0, "Elite - Dangerous (CLIENT)")
+            return handle
+
+        def setGameWindowActive(self):
+            if platform != "win32":
+                return None
+            handle = self.get_game_window_handle()
+            import win32gui
+
+            if handle:
+                try:
+                    win32gui.SetForegroundWindow(handle)  # give focus to ED
+                    sleep(.15)
+                    log("debug", "Set game window as active")
+                except:
+                    log("error", "Failed to set game window as active")
+            else:
+                log("info", "Unable to find Elite game window")
+
+        def screenshot(self, new_height: int = 720):
+            if platform != "win32":
+                return None
+            handle = self.get_game_window_handle()
+            import win32gui
+            import pyautogui
+            from PIL import Image
+            if handle:
+                self.setGameWindowActive()
+                x, y, x1, y1 = win32gui.GetClientRect(handle)
+                x, y = win32gui.ClientToScreen(handle, (x, y))
+                x1, y1 = win32gui.ClientToScreen(handle, (x1, y1))
+                width = x1 - x
+                height = y1 - y
+                im = pyautogui.screenshot(region=(x, y, width, height))
+
+                # Convert the screenshot to a PIL image
+                im = im.convert("RGB")
+
+                # Resize to height 720 while maintaining aspect ratio
+                aspect_ratio = width / height
+                new_width = int(new_height * aspect_ratio)
+                im = im.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+                # Crop the center to a 16:9 aspect ratio
+                target_aspect_ratio = 16 / 9
+                target_width = int(new_height * target_aspect_ratio)
+                left = (new_width - target_width) / 2
+                top = 0
+                right = left + target_width
+                bottom = new_height
+                im = im.crop((left, top, right, bottom))
+
+                return im
+            else:
+                log("error", 'Window not found!')
+                return None
+
 
 if __name__ == "__main__":
     while True:
         menu = ScreenReader().detect_lhs_screen_tab()
         print(menu)
-        time.sleep(1)
+        sleep(1)

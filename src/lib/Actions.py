@@ -8,8 +8,7 @@ from typing import Optional
 import openai
 import requests
 
-from lib.Config import get_ed_appdata_path
-
+from .ScreenReader import ScreenReader
 from .StatusParser import StatusParser
 from .Logger import log
 from .EDKeys import EDKeys
@@ -239,6 +238,43 @@ def hyper_super_combination(args):
     setGameWindowActive()
     keys.send('HyperSuperCombination')
     return f"Frame Shift Drive is charging for a jump"
+
+
+def request_docking(args):
+    screenreader = ScreenReader()
+    setGameWindowActive()
+    if status_parser.current_status["GuiFocus"] in ['NoFocus', 'InternalPanel', 'CommsPanel', 'RolePanel']:
+        keys.send('FocusLeftPanel')
+        sleep(1)
+    elif status_parser.current_status["GuiFocus"] == 'ExternalPanel':
+        pass
+    else:
+        raise Exception('Docking menu not available in current UI Mode.')
+
+    mode = None
+    for x in range(4):
+        mode = screenreader.detect_lhs_screen_tab()
+        if mode:
+            break
+        keys.send('CycleNextPanel', None, 1)
+
+    log('debug', 'Docking request screen tab', mode)
+    if not mode:
+        raise Exception('Panel not found')
+    if mode == 'system':
+        keys.send('CycleNextPanel', None, 3)
+    elif mode == 'navigation':
+        keys.send('CycleNextPanel', None, 2)
+    elif mode == 'transactions':
+        keys.send('CycleNextPanel', None, 1)
+
+    sleep(0.3)
+    keys.send('UI_Left')
+    keys.send('UI_Right')
+    sleep(0.1)
+    keys.send('UI_Select')
+
+    return f"Docking has been requested"
 
 
 # Ship Launched Fighter Actions
@@ -2499,6 +2535,11 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "type": "object",
         "properties": {}
     }, use_shield_cell, 'mainship')
+
+    actionManager.registerAction('requestDocking', "Request docking ", {
+        "type": "object",
+        "properties": {}
+    }, request_docking, 'mainship')
 
     # Register actions - Ship Launched Fighter Actions
     actionManager.registerAction('OrderRequestDock', "Request docking for Ship Launched Fighter", {
