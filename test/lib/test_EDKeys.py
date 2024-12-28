@@ -13,22 +13,12 @@ def mock_directinput(monkeypatch):
     mock_press = MagicMock()
     mock_release = MagicMock()
     
-    # Create mock SCANCODE dictionary
-    mock_scancodes = {
-        'DIK_SPACE': 57,
-        'DIK_LSHIFT': 42,
-        'DIK_A': 30,
-        'DIK_MOUSE1': 256
-    }
-    
-    monkeypatch.setattr('src.lib.EDKeys.SCANCODE', mock_scancodes)
     monkeypatch.setattr('src.lib.EDKeys.PressKey', mock_press)
     monkeypatch.setattr('src.lib.EDKeys.ReleaseKey', mock_release)
     
     return {
         'PressKey': mock_press,
-        'ReleaseKey': mock_release,
-        'SCANCODE': mock_scancodes
+        'ReleaseKey': mock_release
     }
 
 @pytest.fixture
@@ -64,11 +54,12 @@ def test_get_bindings_loads_valid_keys(mock_directinput, binds_file):
     
     assert bindings
     assert 'PrimaryFire' in bindings
-    assert bindings['PrimaryFire']['key'] == mock_directinput["SCANCODE"]['DIK_SPACE']
+    assert bindings['PrimaryFire']['key'] == 57
+    assert bindings['PrimaryFire']['mods'] == []
     
     assert 'SecondaryFire' in bindings
-    assert bindings['SecondaryFire']['key'] == mock_directinput["SCANCODE"]['DIK_A']
-    assert bindings['SecondaryFire']['mod'] == mock_directinput["SCANCODE"]['DIK_LSHIFT']
+    assert bindings['SecondaryFire']['key'] == 30
+    assert bindings['SecondaryFire']['mods'] == [42]
     
     assert len(keys.missing_keys) == len(keys.keys_to_obtain) - 2
 
@@ -84,8 +75,8 @@ def test_send_valid_key(mock_directinput, binds_file):
     keys = EDKeys(binds_file)
     keys.send('PrimaryFire')
     
-    mock_directinput["PressKey"].assert_called_with(mock_directinput["SCANCODE"]['DIK_SPACE'])
-    mock_directinput["ReleaseKey"].assert_called_with(mock_directinput["SCANCODE"]['DIK_SPACE'])
+    mock_directinput["PressKey"].assert_called_with(57)
+    mock_directinput["ReleaseKey"].assert_called_with(57)
 
 def test_send_with_modifier(mock_directinput, binds_file):
     """Test sending a key with modifier"""
@@ -93,8 +84,8 @@ def test_send_with_modifier(mock_directinput, binds_file):
     keys.send('SecondaryFire')
     
     # Should press modifier first
-    assert mock_directinput["PressKey"].call_args_list[0][0][0] == mock_directinput["SCANCODE"]['DIK_LSHIFT']
-    assert mock_directinput["PressKey"].call_args_list[1][0][0] == mock_directinput["SCANCODE"]['DIK_A']
+    assert mock_directinput["PressKey"].call_args_list[0][0][0] == 42
+    assert mock_directinput["PressKey"].call_args_list[1][0][0] == 30
 
 def test_send_invalid_key(mock_directinput, binds_file):
     """Test sending an invalid key raises exception"""

@@ -24,6 +24,9 @@ class EDKeys:
         self.key_mod_delay = 0.010
         self.key_default_delay = 0.200
         self.key_repeat_delay = 0.100
+        
+        self.keymap: dict[str, int] = json.load(open(get_asset_path('keymap.json')))
+        
         self.keys_to_obtain = [
             'PrimaryFire',
             'SecondaryFire',
@@ -104,8 +107,6 @@ class EDKeys:
             'HumanoidOpenAccessPanelButton',
         ]
         self.keys = self.get_bindings()
-        
-        self.keymap: dict[str, int] = json.load(open(get_asset_path('keymap.json')))
 
         self.missing_keys = []
         # dump config to log
