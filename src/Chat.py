@@ -189,10 +189,11 @@ def main():
 
 
     enabled_game_events: list[str] = []
-    for category in config["game_events"].values():
-        for event, state in category.items():
-            if state:
-                enabled_game_events.append(event)
+    if config["event_reaction_enabled_var"]:
+        for category in config["game_events"].values():
+            for event, state in category.items():
+                if state:
+                    enabled_game_events.append(event)
 
     ed_keys = EDKeys(get_ed_appdata_path(config))
     status_parser = StatusParser(get_ed_journals_path(config))
