@@ -5,22 +5,14 @@ from typing import final
 import cv2
 from cv2.typing import MatLike
 import numpy as np
-import pkgutil
-import os
-import sys
 
+from .Config import get_asset_path
 from .Logger import log
 
 def read_asset(filename:str) -> MatLike:
-    assets_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../assets'))
-    if hasattr(sys, 'frozen'):
-        assets_dir = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), '../assets'))
+    path = get_asset_path(filename)
     
-    #log('info', 'modules', sys.modules)
-    log('info', 'curdir', os.getcwd())
-    
-    image_data = open(os.path.join(assets_dir, filename), 'rb').read()
+    image_data = open(path, 'rb').read()
     return cv2.imdecode(np.frombuffer(image_data, np.uint8), cv2.IMREAD_COLOR)
 
 @final
