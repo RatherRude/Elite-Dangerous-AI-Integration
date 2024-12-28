@@ -158,7 +158,7 @@ class EDKeys:
                         if hold is not None:
                             binding['hold'] = True
                 except KeyError:
-                    print("Unrecognised key '" + (binding['pre_key'] if binding else '?')  + "' for bind '" + item.tag + "'")
+                    print("Unrecognised key '" + (json.dumps(binding) if binding else '?')  + "' for bind '" + item.tag + "'")
                 if binding is not None:
                     direct_input_keys[item.tag] = binding
 
