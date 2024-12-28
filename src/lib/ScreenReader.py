@@ -7,22 +7,28 @@ from cv2.typing import MatLike
 import numpy as np
 import pkgutil
 import os
+import sys
 
 from .Logger import log
 
-def read_image(package:str, resource:str) -> MatLike:
-    image_data = pkgutil.get_data(package, resource)
-    if image_data is not None:
-        return cv2.imdecode(np.frombuffer(image_data, np.uint8), cv2.IMREAD_COLOR)
-    image_data = open(os.path.join(package, resource), 'rb').read()
+def read_asset(filename:str) -> MatLike:
+    assets_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../assets'))
+    if hasattr(sys, 'frozen'):
+        assets_dir = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), '../assets'))
+    
+    #log('info', 'modules', sys.modules)
+    log('info', 'curdir', os.getcwd())
+    
+    image_data = open(os.path.join(assets_dir, filename), 'rb').read()
     return cv2.imdecode(np.frombuffer(image_data, np.uint8), cv2.IMREAD_COLOR)
 
 @final
 class ScreenReader:
         def __init__(self):
             self.templates = {
-                "screen_lhs_header": self.getFeatures(read_image('assets', 'screen_lhs_header.png')),
-                "screen_lhs_navigation": self.getFeatures(read_image('assets', 'screen_lhs_navigation.png'))
+                "screen_lhs_header": self.getFeatures(read_asset('screen_lhs_header.png')),
+                "screen_lhs_navigation": self.getFeatures(read_asset('screen_lhs_navigation.png'))
             }
 
         def calculate_colorfulness(self, image):
