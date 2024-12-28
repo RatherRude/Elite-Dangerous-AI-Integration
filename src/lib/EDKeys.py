@@ -6,8 +6,7 @@ from time import sleep
 from typing import Any, final
 from xml.etree.ElementTree import parse
 
-from lib.Config import get_asset_path
-
+from .Config import get_asset_path
 from .directinput import PressKey, ReleaseKey
 
 """
