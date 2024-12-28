@@ -1169,6 +1169,7 @@ class App:
         self.data['vision_var'] = self.vision_var.get()
         self.data['ptt_var'] = self.ptt_var.get()
         self.data['continue_conversation_var'] = self.continue_conversation_var.get()
+        self.data['event_reaction_enabled_var'] = self.event_reaction_enabled_var.get()
         self.data['edcopilot'] = self.edcopilot_var.get()
         self.data['edcopilot_dominant'] = self.edcopilot_dominant_var.get()
         self.data['tts_voice'] = self.tts_voice.get()
