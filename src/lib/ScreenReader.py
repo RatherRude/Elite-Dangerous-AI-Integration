@@ -1,21 +1,28 @@
-import glob
 from sys import platform
 from time import sleep
 from typing import final
-from wsgiref.validate import header_re
 
 import cv2
+from cv2.typing import MatLike
 import numpy as np
+import pkgutil
+import os
 
 from .Logger import log
 
+def read_image(package:str, resource:str) -> MatLike:
+    image_data = pkgutil.get_data(package, resource)
+    if image_data is not None:
+        return cv2.imdecode(np.frombuffer(image_data, np.uint8), cv2.IMREAD_COLOR)
+    image_data = open(os.path.join(package, resource), 'rb').read()
+    return cv2.imdecode(np.frombuffer(image_data, np.uint8), cv2.IMREAD_COLOR)
 
 @final
 class ScreenReader:
         def __init__(self):
             self.templates = {
-                "screen_lhs_header": self.getFeatures(cv2.imread('src/assets/screen_lhs_header.png')),
-                "screen_lhs_navigation": self.getFeatures(cv2.imread('src/assets/screen_lhs_navigation.png')),
+                "screen_lhs_header": self.getFeatures(read_image('assets', 'screen_lhs_header.png')),
+                "screen_lhs_navigation": self.getFeatures(read_image('assets', 'screen_lhs_navigation.png'))
             }
 
         def calculate_colorfulness(self, image):
