@@ -25,6 +25,7 @@ class Config(TypedDict):
     vision_var: bool
     ptt_var: bool
     continue_conversation_var: bool
+    game_events_muted_var: bool
     edcopilot: bool
     edcopilot_dominant: bool
     tts_voice: str

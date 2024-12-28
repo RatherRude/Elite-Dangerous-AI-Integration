@@ -492,35 +492,35 @@ class App:
         self.api_key.grid(row=get_same(), column=1, padx=10, pady=5, sticky=tk.W)
 
         # Push-to-talk
-        tk.Label(self.main_frame, text="Push-to-talk:", font=('Arial', 10)).grid(row=get_next(), column=0, sticky=tk.W)
+        tk.Label(self.main_frame, text="Push-to-talk:", font=('Helvetica', 10)).grid(row=get_next(), column=0, sticky=tk.W)
         # PTT (Checkbox)
         self.ptt_var = tk.BooleanVar()
         self.ptt_var.set(False)  # Default value
         self.ptt_checkbox = tk.Checkbutton(self.main_frame, text="Enabled", variable=self.ptt_var,
                                            command=self.toggle_ptt)
         self.ptt_checkbox.grid(row=get_same(), column=1, sticky=tk.W, padx=5, pady=5)
-        tk.Label(self.main_frame, text="Uses automatic voice detection if not enabled", font="Arial 10 italic").grid(
+        tk.Label(self.main_frame, text="Uses automatic voice detection if not enabled", font="Helvetica 10 italic").grid(
             row=get_same(), column=1, sticky=tk.W, padx=80, pady=5)
 
-        self.pptButton = tk.Button(self.main_frame, text="Key Binding: Press any key", font=('Arial', 10))
+        self.pptButton = tk.Button(self.main_frame, text="Key Binding: Press any key", font=('Helvetica', 10))
         self.pptButton.grid(row=get_same(), column=1, sticky=tk.W, padx=(360, 10), pady=5)
         self.pptButton.bind("<Button-1>", self.on_label_click)
 
         # Continue Conversation
-        tk.Label(self.main_frame, text="Resume Chat:", font=('Arial', 10)).grid(row=get_next(), column=0, sticky=tk.W)
+        tk.Label(self.main_frame, text="Resume Chat:", font=('Helvetica', 10)).grid(row=get_next(), column=0, sticky=tk.W)
         # Conversation (Checkbox)
         self.continue_conversation_var = tk.BooleanVar()
         self.continue_conversation_var.set(True)  # Default value
         self.continue_conversation_checkbox = tk.Checkbutton(self.main_frame, text="Enabled",
                                                              variable=self.continue_conversation_var)
         self.continue_conversation_checkbox.grid(row=get_same(), column=1, sticky=tk.W, padx=5, pady=5)
-        tk.Label(self.main_frame, text="Resumes previous conversation if enabled", font="Arial 10 italic").grid(row=get_same(),
+        tk.Label(self.main_frame, text="Resumes previous conversation if enabled", font="Helvetica 10 italic").grid(row=get_same(),
                                                                                                                 column=1,
                                                                                                                 sticky=tk.W,
                                                                                                                 padx=80,
                                                                                                                 pady=5)
 
-        tk.Label(self.main_frame, text="Input Device:", font=('Arial', 10)).grid(row=get_next(), column=0, sticky=tk.W)
+        tk.Label(self.main_frame, text="Input Device:", font=('Helvetica', 10)).grid(row=get_next(), column=0, sticky=tk.W)
         input_device_names = self.get_input_device_names()
         self.input_device_name_var = tk.StringVar()
         self.input_device_name_var.set(input_device_names[0])
@@ -546,6 +546,13 @@ class App:
         # Game Events (Initially hidden)
         self.game_events_frame = VerticalScrolledFrame(self.main_frame, width=600)
         self.game_events_frame.grid(row=get_next(), column=0, columnspan=2, sticky="")
+
+        tk.Label(self.game_events_frame.inner_frame, text="Game Reactions", font=('Helvetica', 14, 'bold')).grid(row=0, column=0, sticky=tk.NW)
+        self.event_reaction_enabled_var = tk.BooleanVar()
+        self.game_events_muted = tk.Checkbutton(self.game_events_frame.inner_frame, text="Enabled",
+                                                 variable=self.event_reaction_enabled_var)
+        self.game_events_muted.grid(row=0, column=1, sticky=tk.NW, pady=(0,15))
+
         self.game_events_save_cb = self.populate_game_events_frame(self.game_events_frame.inner_frame,
                                                                    self.data['game_events'])
         self.game_events_frame.update()  # update scrollable area
@@ -562,13 +569,13 @@ class App:
         # EDCoPilot (Checkbox)
         self.edcopilot_label = tk.Label(self.third_party_frame.inner_frame, text="EDCoPilot-Integration (WIP)", font=('Helvetica 12 bold'))
         self.edcopilot_label.grid(row=0, column=0, columnspan=2, sticky="")
-        # tk.Label(self.third_party_frame.inner_frame, text="EDCoPilot:", font=('Arial', 10)).grid(row=get_next(), column=0, sticky="NW")
+        # tk.Label(self.third_party_frame.inner_frame, text="EDCoPilot:", font=('Helvetica', 10)).grid(row=get_next(), column=0, sticky="NW")
         self.edcopilot_var = tk.BooleanVar()
         self.edcopilot_var.set(True)
         self.edcopilot_checkbox = tk.Checkbutton(self.third_party_frame.inner_frame, text="Enabled", variable=self.edcopilot_var)
         self.edcopilot_checkbox.grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
         self.edcopilot_description = tk.Label(self.third_party_frame.inner_frame, text="COVAS:NEXT sends messages to EDCoPilot.",
-                                              font=('Arial 10 italic'))
+                                              font=('Helvetica 10 italic'))
         self.edcopilot_description.grid(row=1, column=1, sticky=tk.W)
 
         if not self.edcopilot.is_installed():
@@ -618,7 +625,7 @@ class App:
         self.edcopilot_dominant_description.grid(row=2, column=1, sticky="W")
 
         self.edcopilot_dominant_doc_link = tk.Label(self.third_party_frame.inner_frame, text="Read more about this here", fg="blue", cursor="hand2",
-                                                    font=('Arial 10 bold'))
+                                                    font=('Helvetica 10 bold'))
         self.edcopilot_dominant_doc_link.grid(row=2, column=1, sticky="NW", pady=(49,0), padx=(0,0))
 
         self.edcopilot_dominant_doc_link.bind("<Button-1>", lambda e: webbrowser.open_new(
@@ -804,12 +811,12 @@ class App:
         self.stop_button.pack(side=tk.LEFT, padx=5)
         self.stop_button.pack_forget()
 
-        # category_label = tk.Label(self.ai_geeks_frame, text="category", font=('Arial', 14, 'bold'))
+        # category_label = tk.Label(self.ai_geeks_frame, text="category", font=('Helvetica', 14, 'bold'))
         #        var = tk.BooleanVar(value=self.check_vars.get(event, event not in default_off_events))
         #        chk = tk.Checkbutton(self.ai_geeks_frame, text=event, variable=var)
 
         # for category, events in game_events.items():
-        #    category_label = tk.Label(self.ai_geeks_frame, text=category, font=('Arial', 14, 'bold'))
+        #    category_label = tk.Label(self.ai_geeks_frame, text=category, font=('Helvetica', 14, 'bold'))
         #    for event in events:
         #        var = tk.BooleanVar(value=self.check_vars.get(event, event not in default_off_events))
         #        chk = tk.Checkbutton(self.ai_geeks_frame, text=event, variable=var)
@@ -979,9 +986,9 @@ class App:
 
     def populate_game_events_frame(self, frame: tk.Frame, game_events: Dict[str, Dict[str, bool]]):
         category_values: Dict[str, Dict[str, tk.BooleanVar]] = {}
-        rowCounter = 0
+        rowCounter = 1
         for category, events in game_events.items():
-            category_label = tk.Label(frame, text=category, font=('Arial', 14, 'bold'))
+            category_label = tk.Label(frame, text=category, font=('Helvetica', 14, 'bold'))
             category_label.grid(row=rowCounter, column=0, sticky=tk.W)
             category_values[category] = {}
 
@@ -1029,6 +1036,7 @@ class App:
             'vision_var': True,
             'ptt_var': False,
             'continue_conversation_var': True,
+            'event_reaction_enabled_var': True,
             'edcopilot': True,
             'edcopilot_dominant': False,
             'input_device_name': self.get_input_device_names()[0],
@@ -1196,6 +1204,7 @@ class App:
         self.vision_var.set(self.data['vision_var'])
         self.ptt_var.set(self.data['ptt_var'])
         self.continue_conversation_var.set(self.data['continue_conversation_var'])
+        self.event_reaction_enabled_var.set(self.data['event_reaction_enabled_var'])
         self.edcopilot_var.set(self.data['edcopilot'])
         self.edcopilot_dominant_var.set(self.data['edcopilot_dominant'])
         self.tts_voice.insert(0, self.data['tts_voice'])
