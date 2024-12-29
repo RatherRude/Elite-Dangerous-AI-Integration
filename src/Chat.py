@@ -75,11 +75,11 @@ def reply(client, events: list[Event], new_events: list[Event], projected_states
 
     uses_actions = config["game_actions_var"]
     uses_web_actions = config["web_search_actions_var"]
-
+    tool_list = action_manager.getToolsList(active_mode, uses_actions, uses_web_actions)
     completion = client.chat.completions.create(
         model=llm_model_name,
         messages=prompt,
-        tools=action_manager.getToolsList(active_mode, uses_actions, uses_web_actions) if use_tools else None
+        tools= tool_list if use_tools and tool_list else None
     )
 
     if hasattr(completion, 'error'):
