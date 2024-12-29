@@ -570,7 +570,7 @@ class App:
         self.behavior_reactions_checkbox = tk.Checkbutton(self.behavior_frame.inner_frame, text="Enabled",
                                                  variable=self.event_reaction_enabled_var)
         self.behavior_reactions_checkbox.grid(row=1, column=1, sticky=tk.W, padx=5, pady=5)
-        tk.Label(self.behavior_frame.inner_frame, text="Allow reacting to the game", font="Helvetica 10 italic").grid(
+        tk.Label(self.behavior_frame.inner_frame, text="Allow reactions to the game", font="Helvetica 10 italic").grid(
             row=1,
             column=1,
             sticky=tk.W,
@@ -578,14 +578,14 @@ class App:
             pady=5)
         self.behavior_customize_reactions_button = tk.Button(self.behavior_frame.inner_frame, text="Customize",
                                                            command=self.toggle_game_events_section)
-        self.behavior_customize_reactions_button.grid(row=1, column=1, pady=5, padx=245, sticky="")
+        self.behavior_customize_reactions_button.grid(row=1, column=1, pady=5, padx=248, sticky="")
 
         tk.Label(self.behavior_frame.inner_frame, text="Game Actions", font=('Helvetica', 10)).grid(row=2, column=0, sticky=tk.W)
         self.game_actions_var = tk.BooleanVar()
         self.behavior_game_actions_checkbox = tk.Checkbutton(self.behavior_frame.inner_frame, text="Enabled",
                                                  variable=self.game_actions_var)
         self.behavior_game_actions_checkbox.grid(row=2, column=1, sticky=tk.W, padx=5, pady=5)
-        tk.Label(self.behavior_frame.inner_frame, text="Allow controlling the game", font="Helvetica 10 italic").grid(
+        tk.Label(self.behavior_frame.inner_frame, text="Allow controlling the game (Ship/SRV/Suit)", font="Helvetica 10 italic").grid(
             row=2,
             column=1,
             sticky=tk.W,
@@ -600,7 +600,7 @@ class App:
         self.behavior_web_actions_checkbox = tk.Checkbutton(self.behavior_frame.inner_frame, text="Enabled",
                                                  variable=self.web_search_actions_var)
         self.behavior_web_actions_checkbox.grid(row=3, column=1, sticky=tk.W, padx=5, pady=5)
-        tk.Label(self.behavior_frame.inner_frame, text="Allow third-party web searches", font="Helvetica 10 italic").grid(
+        tk.Label(self.behavior_frame.inner_frame, text="Allow third-party web searches (Galnet/Spansh API)", font="Helvetica 10 italic").grid(
             row=3,
             column=1,
             sticky=tk.W,
@@ -618,8 +618,8 @@ class App:
 
         # self.incr = 0
         # EDCoPilot (Checkbox)
-        self.edcopilot_label = tk.Label(self.third_party_frame.inner_frame, text="EDCoPilot-Integration (WIP)", font=('Helvetica 12 bold'))
-        self.edcopilot_label.grid(row=0, column=0, columnspan=2, sticky="")
+        self.edcopilot_label = tk.Label(self.third_party_frame.inner_frame, text="EDCoPilot-Integration (WIP)", font=('Helvetica 11 bold'))
+        self.edcopilot_label.grid(row=0, column=0, columnspan=2, sticky="W")
         # tk.Label(self.third_party_frame.inner_frame, text="EDCoPilot:", font=('Helvetica', 10)).grid(row=get_next(), column=0, sticky="NW")
         self.edcopilot_var = tk.BooleanVar()
         self.edcopilot_var.set(True)
@@ -662,6 +662,10 @@ class App:
         self.edcopilot_dominant_description.tag_add("bold", "1.0", "1.8")  # "WARNING:"
         self.edcopilot_dominant_description.tag_add("bold", "2.21", "3.19")  # "Only activate this..."
 
+        # Apply red color to "WARNING:"
+        self.edcopilot_dominant_description.tag_configure("red", foreground="red")
+        self.edcopilot_dominant_description.tag_add("red", "1.0", "1.8")
+
 
         # Disable text selection by binding a callback to block selection actions
         self.edcopilot_dominant_description.bind("<Button-1>", lambda e: "break")
@@ -700,7 +704,7 @@ class App:
 
         # LLM
         tk.Label(self.ai_geeks_frame.inner_frame, text="Text LLM options",
-                 font="Helvetica 10 bold").grid(row=get_next(), column=0, columnspan=2, sticky="")
+                 font="Helvetica 11 bold").grid(row=get_next(), column=0, columnspan=2, sticky="W")
 
         # LLM Model Name
         tk.Label(self.ai_geeks_frame.inner_frame, text="LLM Model Name:").grid(row=get_next(), column=0, sticky=tk.W)
@@ -720,13 +724,17 @@ class App:
         # Function Calling (Checkbox)
         self.tools_var = tk.BooleanVar()
         self.tools_var.set(True)  # Default value
-        self.tools_checkbox = tk.Checkbutton(self.ai_geeks_frame.inner_frame, text="Function Calling (default: on)",
+        tk.Label(self.ai_geeks_frame.inner_frame, text="Allow AI Actions (Tool Use)", font=('Helvetica', 10)).grid(row=get_next(),
+                                                                                                            column=0,
+                                                                                                            sticky=tk.W)
+
+        self.tools_checkbox = tk.Checkbutton(self.ai_geeks_frame.inner_frame, text="Enable",
                                              variable=self.tools_var)
-        self.tools_checkbox.grid(row=get_next(), column=0, padx=10, pady=10, sticky=tk.W)
+        self.tools_checkbox.grid(row=get_same(), column=1, padx=10, pady=10, sticky=tk.W)
 
         # STT
         tk.Label(self.ai_geeks_frame.inner_frame, text="STT options",
-                 font="Helvetica 10 bold").grid(row=get_next(), column=0, columnspan=2, sticky="")
+                 font="Helvetica 11 bold").grid(row=get_next(), column=0, columnspan=2, sticky="W")
         
         ## STT Provider
         self.stt_provider_label = tk.Label(self.ai_geeks_frame.inner_frame, text="STT Provider:")
@@ -756,7 +764,7 @@ class App:
 
         # TTS
         tk.Label(self.ai_geeks_frame.inner_frame, text="TTS options",
-                 font="Helvetica 10 bold").grid(row=get_next(), column=0, columnspan=2, sticky="")
+                 font="Helvetica 11 bold").grid(row=get_next(), column=0, columnspan=2, sticky="W")
         
         ## TTS Provider
         self.tts_provider_label = tk.Label(self.ai_geeks_frame.inner_frame, text="TTS Provider:")
@@ -799,7 +807,7 @@ class App:
 
         # Vision
         tk.Label(self.ai_geeks_frame.inner_frame, text="Vision LLM options",
-                 font="Helvetica 10 bold").grid(row=get_next(), column=0, columnspan=2, sticky="")
+                 font="Helvetica 11 bold").grid(row=get_next(), column=0, columnspan=2, sticky="W")
 
         ## Vision Model
         self.vision_model_name_label = tk.Label(self.ai_geeks_frame.inner_frame, text="Vision Model Name:")
@@ -820,11 +828,15 @@ class App:
         self.vision_api_key.grid(row=get_same(), column=1, padx=10, pady=5)
 
         # Vision Capabilities (Checkbox)
+        tk.Label(self.ai_geeks_frame.inner_frame, text="Vision Capabilities", font=('Helvetica', 10)).grid(row=get_next(),
+                                                                                                            column=0,
+                                                                                                            sticky=tk.W)
+
         self.vision_var = tk.BooleanVar()
         self.vision_var.set(True)  # Default value
-        self.vision_checkbox = tk.Checkbutton(self.ai_geeks_frame.inner_frame, text="Vision Capabilities (default: on)",
+        self.vision_checkbox = tk.Checkbutton(self.ai_geeks_frame.inner_frame, text="Enable",
                                               variable=self.vision_var, command=self.toggle_vision)
-        self.vision_checkbox.grid(row=get_next(), column=0, padx=10, pady=10, sticky=tk.W)
+        self.vision_checkbox.grid(row=get_same(), column=1, padx=10, pady=10, sticky=tk.W)
 
         self.ai_geeks_frame.update()
 
