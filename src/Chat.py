@@ -49,7 +49,7 @@ def load_config() -> Config:
 is_thinking = False
 
 def reply(client, events: list[Event], new_events: list[Event], projected_states: dict[str, dict], prompt_generator: PromptGenerator,
-          event_manager: EventManager, tts: TTS, copilot: EDCoPilot):
+          event_manager: EventManager, tts: TTS, copilot: EDCoPilot, config: Config):
     global is_thinking
     is_thinking = True
     prompt = prompt_generator.generate_prompt(events=events, projected_states=projected_states, pending_events=new_events)
@@ -73,10 +73,13 @@ def reply(client, events: list[Event], new_events: list[Event], projected_states
         if flags2["OnFoot"]:
             active_mode = "humanoid"
 
+    uses_actions = config["game_actions_var"]
+    uses_web_actions = config["web_search_actions_var"]
+
     completion = client.chat.completions.create(
         model=llm_model_name,
         messages=prompt,
-        tools=action_manager.getToolsList(active_mode) if use_tools else None
+        tools=action_manager.getToolsList(active_mode, uses_actions, uses_web_actions) if use_tools else None
     )
 
     if hasattr(completion, 'error'):
@@ -200,7 +203,7 @@ def main():
     prompt_generator = PromptGenerator(config["commander_name"], config["character"], important_game_events=enabled_game_events)
     event_manager = EventManager(
         on_reply_request=lambda events, new_events, states: reply(llmClient, events, new_events, states, prompt_generator, event_manager,
-                                                          tts, copilot),
+                                                          tts, copilot, config),
         game_events=enabled_game_events,
         continue_conversation=config["continue_conversation_var"]
     )

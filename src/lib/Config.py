@@ -26,6 +26,8 @@ class Config(TypedDict):
     ptt_var: bool
     continue_conversation_var: bool
     event_reaction_enabled_var: bool
+    game_actions_var: bool
+    web_search_actions_var: bool
     edcopilot: bool
     edcopilot_dominant: bool
     tts_voice: str

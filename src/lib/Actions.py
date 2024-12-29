@@ -2705,7 +2705,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             "required": ["query"]
         },
         get_galnet_news,
-        'global'
+        'web'
     )
 
     # if ARC:
@@ -2755,7 +2755,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             ]
         },
         trade_planner,
-        'global'
+        'web'
     )
 
     # Register AI action for system finder
@@ -2856,7 +2856,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             "required": ["reference_system"]
         },
         system_finder,
-        'global'
+        'web'
     )
     actionManager.registerAction(
         'station_finder',
@@ -3014,7 +3014,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             ]
         },
         station_finder,
-        'global'
+        'web'
     )
     actionManager.registerAction(
         'body_finder',
@@ -3056,7 +3056,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             ]
         },
         body_finder,
-        'global'
+        'web'
     )
 
     if vision_client:

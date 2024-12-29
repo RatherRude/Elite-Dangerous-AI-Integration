@@ -12,22 +12,27 @@ class ActionManager:
     def __init__(self):
         pass
 
-    def getToolsList(self, active_mode: str):
+    def getToolsList(self, active_mode: str, uses_actions:bool, uses_web_actions: bool):
         """return list of functions as passed to gpt"""
 
         actions = self.actions.values()
         valid_actions = []
         for action in actions:
-            # enable correct actions for game mode
-            if action.get("type") == active_mode:
-                valid_actions.append(action.get("tool"))
-            # enable correct actions for extended game mode
-            elif active_mode == 'mainship' or active_mode == 'fighter':
-                if action.get("type") == 'ship':
+            if uses_actions:
+                # enable correct actions for game mode
+                if action.get("type") == active_mode:
                     valid_actions.append(action.get("tool"))
-            # enable web tools and vision capabilities (always)
-            if action.get("type") == 'global':
-                valid_actions.append(action.get("tool"))
+                # enable correct actions for extended game mode
+                elif active_mode == 'mainship' or active_mode == 'fighter':
+                    if action.get("type") == 'ship':
+                        valid_actions.append(action.get("tool"))
+                # enable vision capabilities
+                if action.get("type") == 'global':
+                    valid_actions.append(action.get("tool"))
+            if uses_web_actions:
+                # enable web tools
+                if action.get("type") == 'web':
+                    valid_actions.append(action.get("tool"))
 
         return valid_actions
 
