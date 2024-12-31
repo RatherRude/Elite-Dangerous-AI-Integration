@@ -534,7 +534,7 @@ class App:
         # Toggle Section Button
         self.toggle_behavior_section_button = tk.Button(self.main_frame, text="Behavior",
                                                            command=self.toggle_behavior_section)
-        self.toggle_behavior_section_button.grid(row=get_next(), column=0, columnspan=2, pady=10, padx=(0, 110), sticky="")
+        self.toggle_behavior_section_button.grid(row=get_next(), column=0, columnspan=2, pady=10, padx=(0, 90), sticky="")
 
         # Toggle Section Button
         self.toggle_third_party_section_button = tk.Button(self.main_frame, text="Third-Party Apps",
