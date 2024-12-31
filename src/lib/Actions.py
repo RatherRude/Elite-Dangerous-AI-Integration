@@ -295,12 +295,12 @@ def select_target_buggy(args):
 
 def increase_engines_power_buggy(args):
     setGameWindowActive()
-    keys.send('IncreaseEnginesPower_Buggy')
+    keys.send('IncreaseEnginesPower_Buggy', None, args['pips'])
     return "Buggy engine power increased."
 
 def increase_weapons_power_buggy(args):
     setGameWindowActive()
-    keys.send('IncreaseWeaponsPower_Buggy')
+    keys.send('IncreaseWeaponsPower_Buggy', None, args['pips'])
     return "Buggy weapons power increased."
 
 def increase_systems_power_buggy(args):
@@ -310,12 +310,12 @@ def increase_systems_power_buggy(args):
 
 def reset_power_distribution_buggy(args):
     setGameWindowActive()
-    keys.send('ResetPowerDistribution_Buggy', None, args['pips'])
+    keys.send('ResetPowerDistribution_Buggy')
     return "Buggy power distribution reset."
 
 def toggle_cargo_scoop_buggy(args):
     setGameWindowActive()
-    keys.send('ToggleCargoScoop_Buggy', None, args['pips'])
+    keys.send('ToggleCargoScoop_Buggy')
     return "Buggy cargo scoop toggled."
 
 def eject_all_cargo_buggy(args):
