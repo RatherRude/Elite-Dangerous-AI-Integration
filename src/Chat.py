@@ -102,7 +102,7 @@ def reply(client, events: list[Event], new_events: list[Event], projected_states
             action_result = action_manager.runAction(action)
             action_results.append(action_result)
 
-        event_manager.add_tool_call([tool_call.dict() for tool_call in response_actions], action_results)
+        event_manager.add_tool_call([tool_call.model_dump() for tool_call in response_actions], action_results)
 
 
 useTools = False
