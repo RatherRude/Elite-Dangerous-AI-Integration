@@ -49,7 +49,7 @@ def load_config() -> Config:
 is_thinking = False
 
 def reply(client, events: list[Event], new_events: list[Event], projected_states: dict[str, dict], prompt_generator: PromptGenerator,
-          event_manager: EventManager, tts: TTS, copilot: EDCoPilot):
+          event_manager: EventManager, tts: TTS, copilot: EDCoPilot, config: Config):
     global is_thinking
     is_thinking = True
     prompt = prompt_generator.generate_prompt(events=events, projected_states=projected_states, pending_events=new_events)
@@ -73,10 +73,13 @@ def reply(client, events: list[Event], new_events: list[Event], projected_states
         if flags2["OnFoot"]:
             active_mode = "humanoid"
 
+    uses_actions = config["game_actions_var"]
+    uses_web_actions = config["web_search_actions_var"]
+    tool_list = action_manager.getToolsList(active_mode, uses_actions, uses_web_actions)
     completion = client.chat.completions.create(
         model=llm_model_name,
         messages=prompt,
-        tools=action_manager.getToolsList(active_mode) if use_tools else None
+        tools= tool_list if use_tools and tool_list else None
     )
 
     if hasattr(completion, 'error'):
@@ -99,7 +102,7 @@ def reply(client, events: list[Event], new_events: list[Event], projected_states
             action_result = action_manager.runAction(action)
             action_results.append(action_result)
 
-        event_manager.add_tool_call([tool_call.dict() for tool_call in response_actions], action_results)
+        event_manager.add_tool_call([tool_call.model_dump() for tool_call in response_actions], action_results)
 
 
 useTools = False
@@ -189,17 +192,18 @@ def main():
 
 
     enabled_game_events: list[str] = []
-    for category in config["game_events"].values():
-        for event, state in category.items():
-            if state:
-                enabled_game_events.append(event)
+    if config["event_reaction_enabled_var"]:
+        for category in config["game_events"].values():
+            for event, state in category.items():
+                if state:
+                    enabled_game_events.append(event)
 
     ed_keys = EDKeys(get_ed_appdata_path(config))
     status_parser = StatusParser(get_ed_journals_path(config))
     prompt_generator = PromptGenerator(config["commander_name"], config["character"], important_game_events=enabled_game_events)
     event_manager = EventManager(
         on_reply_request=lambda events, new_events, states: reply(llmClient, events, new_events, states, prompt_generator, event_manager,
-                                                          tts, copilot),
+                                                          tts, copilot, config),
         game_events=enabled_game_events,
         continue_conversation=config["continue_conversation_var"]
     )

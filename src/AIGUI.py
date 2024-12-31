@@ -14,6 +14,8 @@ from threading import Thread
 from tkinter import messagebox
 from typing import Dict
 import typing
+
+from click import style
 from wrapt import synchronized
 
 import pyaudio
@@ -45,7 +47,7 @@ class VerticalScrolledFrame(tk.Frame):
         self.canvas = tk.Canvas(self, yscrollcommand=scrollbar.set, width=inner_width)
         self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-        self.inner_frame = tk.Frame(self.canvas, width=inner_width, *args, **kw)
+        self.inner_frame = tk.Frame(self.canvas, width=inner_width, borderwidth=2, relief="ridge", *args, **kw)
         # self.inner_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         scrollbar.config(command=self.canvas.yview)
@@ -492,83 +494,139 @@ class App:
         self.api_key.grid(row=get_same(), column=1, padx=10, pady=5, sticky=tk.W)
 
         # Push-to-talk
-        tk.Label(self.main_frame, text="Push-to-talk:", font=('Arial', 10)).grid(row=get_next(), column=0, sticky=tk.W)
+        tk.Label(self.main_frame, text="Push-to-talk:", font=('Helvetica', 10)).grid(row=get_next(), column=0, sticky=tk.W)
         # PTT (Checkbox)
         self.ptt_var = tk.BooleanVar()
         self.ptt_var.set(False)  # Default value
         self.ptt_checkbox = tk.Checkbutton(self.main_frame, text="Enabled", variable=self.ptt_var,
                                            command=self.toggle_ptt)
         self.ptt_checkbox.grid(row=get_same(), column=1, sticky=tk.W, padx=5, pady=5)
-        tk.Label(self.main_frame, text="Uses automatic voice detection if not enabled", font="Arial 10 italic").grid(
+        tk.Label(self.main_frame, text="Uses automatic voice detection if not enabled", font="Helvetica 10 italic").grid(
             row=get_same(), column=1, sticky=tk.W, padx=80, pady=5)
 
-        self.pptButton = tk.Button(self.main_frame, text="Key Binding: Press any key", font=('Arial', 10))
+        self.pptButton = tk.Button(self.main_frame, text="Key Binding: Press any key", font=('Helvetica', 10))
         self.pptButton.grid(row=get_same(), column=1, sticky=tk.W, padx=(360, 10), pady=5)
         self.pptButton.bind("<Button-1>", self.on_label_click)
 
         # Continue Conversation
-        tk.Label(self.main_frame, text="Resume Chat:", font=('Arial', 10)).grid(row=get_next(), column=0, sticky=tk.W)
+        tk.Label(self.main_frame, text="Resume Chat:", font=('Helvetica', 10)).grid(row=get_next(), column=0, sticky=tk.W)
         # Conversation (Checkbox)
         self.continue_conversation_var = tk.BooleanVar()
         self.continue_conversation_var.set(True)  # Default value
         self.continue_conversation_checkbox = tk.Checkbutton(self.main_frame, text="Enabled",
                                                              variable=self.continue_conversation_var)
         self.continue_conversation_checkbox.grid(row=get_same(), column=1, sticky=tk.W, padx=5, pady=5)
-        tk.Label(self.main_frame, text="Resumes previous conversation if enabled", font="Arial 10 italic").grid(row=get_same(),
+        tk.Label(self.main_frame, text="Resumes previous conversation if enabled", font="Helvetica 10 italic").grid(row=get_same(),
                                                                                                                 column=1,
                                                                                                                 sticky=tk.W,
                                                                                                                 padx=80,
                                                                                                                 pady=5)
 
-        tk.Label(self.main_frame, text="Input Device:", font=('Arial', 10)).grid(row=get_next(), column=0, sticky=tk.W)
+        tk.Label(self.main_frame, text="Input Device:", font=('Helvetica', 10)).grid(row=get_next(), column=0, sticky=tk.W)
         input_device_names = self.get_input_device_names()
         self.input_device_name_var = tk.StringVar()
         self.input_device_name_var.set(input_device_names[0])
         self.input_device_name = tk.OptionMenu(self.main_frame, self.input_device_name_var, *input_device_names)
         self.input_device_name.grid(row=get_same(), column=1, padx=10, pady=5, sticky=tk.W)
 
-        
+
+
+        # Toggle Section Button
+        self.toggle_behavior_section_button = tk.Button(self.main_frame, text="AI Behavior",
+                                                           command=self.toggle_behavior_section)
+        self.toggle_behavior_section_button.grid(row=get_next(), column=0, columnspan=2, pady=10, padx=(0, 110), sticky="")
+
         # Toggle Section Button
         self.toggle_third_party_section_button = tk.Button(self.main_frame, text="Third-Party Apps",
                                                         command=self.toggle_third_party_section)
-        self.toggle_third_party_section_button.grid(row=get_next(), column=0, columnspan=2, pady=10, padx=(420, 0), sticky="")
+        self.toggle_third_party_section_button.grid(row=get_same(), column=0, columnspan=2, pady=10, padx=(335, 0), sticky="")
 
         # Toggle Section Button
-        self.toggle_ai_geeks_section_button = tk.Button(self.main_frame, text="Show AI Settings",
+        self.toggle_ai_geeks_section_button = tk.Button(self.main_frame, text="AI Settings",
                                                         command=self.toggle_ai_geeks_section)
         self.toggle_ai_geeks_section_button.grid(row=get_same(), column=0, columnspan=2, pady=10, padx=(100, 0), sticky="")
 
         # Toggle Section Button
-        self.toggle_game_events_section_button = tk.Button(self.main_frame, text="Show Events Triggers",
-                                                           command=self.toggle_game_events_section)
-        self.toggle_game_events_section_button.grid(row=get_same(), column=0, columnspan=2, pady=10, padx=(0, 243), sticky="")
+        # self.toggle_game_events_section_button = tk.Button(self.main_frame, text=" Events Triggers",
+        #                                                    command=self.toggle_game_events_section)
+        # self.toggle_game_events_section_button.grid(row=get_same(), column=0, columnspan=2, pady=10, padx=(0, 205), sticky="")
 
         # Game Events (Initially hidden)
         self.game_events_frame = VerticalScrolledFrame(self.main_frame, width=600)
         self.game_events_frame.grid(row=get_next(), column=0, columnspan=2, sticky="")
+
         self.game_events_save_cb = self.populate_game_events_frame(self.game_events_frame.inner_frame,
                                                                    self.data['game_events'])
         self.game_events_frame.update()  # update scrollable area
         self.game_events_frame.grid_remove()  # Initially hide
 
+        # Behavior (Initially hidden)
+        self.behavior_frame = VerticalScrolledFrame(self.main_frame, width=600)
+        self.behavior_frame.grid(row=get_next(), column=0, columnspan=2, sticky="")
+
+        tk.Label(self.behavior_frame.inner_frame, text="Game Event Reactions", font=('Helvetica', 10)).grid(row=1, column=0,
+                                                                                    sticky=tk.W)
+        self.event_reaction_enabled_var = tk.BooleanVar()
+        self.behavior_reactions_checkbox = tk.Checkbutton(self.behavior_frame.inner_frame, text="Enabled",
+                                                 variable=self.event_reaction_enabled_var)
+        self.behavior_reactions_checkbox.grid(row=1, column=1, sticky=tk.W, padx=5, pady=5)
+        tk.Label(self.behavior_frame.inner_frame, text="Allow reactions to the game", font="Helvetica 10 italic").grid(
+            row=1,
+            column=1,
+            sticky=tk.W,
+            padx=80,
+            pady=5)
+        self.behavior_customize_reactions_button = tk.Button(self.behavior_frame.inner_frame, text="Customize",
+                                                           command=self.toggle_game_events_section)
+        self.behavior_customize_reactions_button.grid(row=1, column=1, pady=5, padx=248, sticky="")
+
+        tk.Label(self.behavior_frame.inner_frame, text="Game Actions", font=('Helvetica', 10)).grid(row=2, column=0, sticky=tk.W)
+        self.game_actions_var = tk.BooleanVar()
+        self.behavior_game_actions_checkbox = tk.Checkbutton(self.behavior_frame.inner_frame, text="Enabled",
+                                                 variable=self.game_actions_var)
+        self.behavior_game_actions_checkbox.grid(row=2, column=1, sticky=tk.W, padx=5, pady=5)
+        tk.Label(self.behavior_frame.inner_frame, text="Allow controlling the game (Ship/SRV/Suit)", font="Helvetica 10 italic").grid(
+            row=2,
+            column=1,
+            sticky=tk.W,
+            padx=80,
+            pady=5)
+
+        tk.Label(self.behavior_frame.inner_frame, text="Web Search Actions", font=('Helvetica', 10)).grid(row=3,
+                                                                                                            column=0,
+                                                                                                            sticky=tk.W)
+
+        self.web_search_actions_var = tk.BooleanVar()
+        self.behavior_web_actions_checkbox = tk.Checkbutton(self.behavior_frame.inner_frame, text="Enabled",
+                                                 variable=self.web_search_actions_var)
+        self.behavior_web_actions_checkbox.grid(row=3, column=1, sticky=tk.W, padx=5, pady=5)
+        tk.Label(self.behavior_frame.inner_frame, text="Allow third-party web searches (Galnet/Spansh API)", font="Helvetica 10 italic").grid(
+            row=3,
+            column=1,
+            sticky=tk.W,
+            padx=80,
+            pady=5)
+
+        self.behavior_frame.update()
+        self.behavior_frame.grid_remove()  # Initially hide
 
 
-        # AI Settings (Initially hidden)
+        # Third Party (Initially hidden)
         self.third_party_frame = VerticalScrolledFrame(self.main_frame, width=600)
         self.third_party_frame.grid(row=get_next(), column=0, columnspan=2, sticky="")
         self.third_party_frame.grid_remove()  # Initially hide
 
         # self.incr = 0
         # EDCoPilot (Checkbox)
-        self.edcopilot_label = tk.Label(self.third_party_frame.inner_frame, text="EDCoPilot-Integration (WIP)", font=('Helvetica 12 bold'))
-        self.edcopilot_label.grid(row=0, column=0, columnspan=2, sticky="")
-        # tk.Label(self.third_party_frame.inner_frame, text="EDCoPilot:", font=('Arial', 10)).grid(row=get_next(), column=0, sticky="NW")
+        self.edcopilot_label = tk.Label(self.third_party_frame.inner_frame, text="EDCoPilot-Integration (WIP)", font=('Helvetica 11 bold'))
+        self.edcopilot_label.grid(row=0, column=0, columnspan=2, sticky="W")
+        # tk.Label(self.third_party_frame.inner_frame, text="EDCoPilot:", font=('Helvetica', 10)).grid(row=get_next(), column=0, sticky="NW")
         self.edcopilot_var = tk.BooleanVar()
         self.edcopilot_var.set(True)
         self.edcopilot_checkbox = tk.Checkbutton(self.third_party_frame.inner_frame, text="Enabled", variable=self.edcopilot_var)
         self.edcopilot_checkbox.grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
         self.edcopilot_description = tk.Label(self.third_party_frame.inner_frame, text="COVAS:NEXT sends messages to EDCoPilot.",
-                                              font=('Arial 10 italic'))
+                                              font=('Helvetica 10 italic'))
         self.edcopilot_description.grid(row=1, column=1, sticky=tk.W)
 
         if not self.edcopilot.is_installed():
@@ -604,6 +662,10 @@ class App:
         self.edcopilot_dominant_description.tag_add("bold", "1.0", "1.8")  # "WARNING:"
         self.edcopilot_dominant_description.tag_add("bold", "2.21", "3.19")  # "Only activate this..."
 
+        # Apply red color to "WARNING:"
+        self.edcopilot_dominant_description.tag_configure("red", foreground="red")
+        self.edcopilot_dominant_description.tag_add("red", "1.0", "1.8")
+
 
         # Disable text selection by binding a callback to block selection actions
         self.edcopilot_dominant_description.bind("<Button-1>", lambda e: "break")
@@ -618,7 +680,7 @@ class App:
         self.edcopilot_dominant_description.grid(row=2, column=1, sticky="W")
 
         self.edcopilot_dominant_doc_link = tk.Label(self.third_party_frame.inner_frame, text="Read more about this here", fg="blue", cursor="hand2",
-                                                    font=('Arial 10 bold'))
+                                                    font=('Helvetica 10 bold'))
         self.edcopilot_dominant_doc_link.grid(row=2, column=1, sticky="NW", pady=(49,0), padx=(0,0))
 
         self.edcopilot_dominant_doc_link.bind("<Button-1>", lambda e: webbrowser.open_new(
@@ -638,15 +700,11 @@ class App:
         self.ai_geeks_frame.grid(row=get_same(), column=0, columnspan=2)
         self.ai_geeks_frame.grid_remove()  # Initially hide
 
-        # Disclaimer
-        tk.Label(self.ai_geeks_frame.inner_frame, text="None of the AI Settings are required.",
-                 font="Helvetica 12 bold").grid(row=0, column=0, columnspan=2, sticky="")
-
         self.incr = 0
 
         # LLM
         tk.Label(self.ai_geeks_frame.inner_frame, text="Text LLM options",
-                 font="Helvetica 10 bold").grid(row=get_next(), column=0, columnspan=2, sticky="")
+                 font="Helvetica 11 bold").grid(row=get_next(), column=0, columnspan=2, sticky="W")
 
         # LLM Model Name
         tk.Label(self.ai_geeks_frame.inner_frame, text="LLM Model Name:").grid(row=get_next(), column=0, sticky=tk.W)
@@ -666,13 +724,17 @@ class App:
         # Function Calling (Checkbox)
         self.tools_var = tk.BooleanVar()
         self.tools_var.set(True)  # Default value
-        self.tools_checkbox = tk.Checkbutton(self.ai_geeks_frame.inner_frame, text="Function Calling (default: on)",
+        tk.Label(self.ai_geeks_frame.inner_frame, text="Allow AI Actions (Tool Use)", font=('Helvetica', 10)).grid(row=get_next(),
+                                                                                                            column=0,
+                                                                                                            sticky=tk.W)
+
+        self.tools_checkbox = tk.Checkbutton(self.ai_geeks_frame.inner_frame, text="Enable",
                                              variable=self.tools_var)
-        self.tools_checkbox.grid(row=get_next(), column=0, padx=10, pady=10, sticky=tk.W)
+        self.tools_checkbox.grid(row=get_same(), column=1, padx=10, pady=10, sticky=tk.W)
 
         # STT
         tk.Label(self.ai_geeks_frame.inner_frame, text="STT options",
-                 font="Helvetica 10 bold").grid(row=get_next(), column=0, columnspan=2, sticky="")
+                 font="Helvetica 11 bold").grid(row=get_next(), column=0, columnspan=2, sticky="W")
         
         ## STT Provider
         self.stt_provider_label = tk.Label(self.ai_geeks_frame.inner_frame, text="STT Provider:")
@@ -702,7 +764,7 @@ class App:
 
         # TTS
         tk.Label(self.ai_geeks_frame.inner_frame, text="TTS options",
-                 font="Helvetica 10 bold").grid(row=get_next(), column=0, columnspan=2, sticky="")
+                 font="Helvetica 11 bold").grid(row=get_next(), column=0, columnspan=2, sticky="W")
         
         ## TTS Provider
         self.tts_provider_label = tk.Label(self.ai_geeks_frame.inner_frame, text="TTS Provider:")
@@ -745,7 +807,7 @@ class App:
 
         # Vision
         tk.Label(self.ai_geeks_frame.inner_frame, text="Vision LLM options",
-                 font="Helvetica 10 bold").grid(row=get_next(), column=0, columnspan=2, sticky="")
+                 font="Helvetica 11 bold").grid(row=get_next(), column=0, columnspan=2, sticky="W")
 
         ## Vision Model
         self.vision_model_name_label = tk.Label(self.ai_geeks_frame.inner_frame, text="Vision Model Name:")
@@ -766,11 +828,15 @@ class App:
         self.vision_api_key.grid(row=get_same(), column=1, padx=10, pady=5)
 
         # Vision Capabilities (Checkbox)
+        tk.Label(self.ai_geeks_frame.inner_frame, text="Vision Capabilities", font=('Helvetica', 10)).grid(row=get_next(),
+                                                                                                            column=0,
+                                                                                                            sticky=tk.W)
+
         self.vision_var = tk.BooleanVar()
         self.vision_var.set(True)  # Default value
-        self.vision_checkbox = tk.Checkbutton(self.ai_geeks_frame.inner_frame, text="Vision Capabilities (default: on)",
+        self.vision_checkbox = tk.Checkbutton(self.ai_geeks_frame.inner_frame, text="Enable",
                                               variable=self.vision_var, command=self.toggle_vision)
-        self.vision_checkbox.grid(row=get_next(), column=0, padx=10, pady=10, sticky=tk.W)
+        self.vision_checkbox.grid(row=get_same(), column=1, padx=10, pady=10, sticky=tk.W)
 
         self.ai_geeks_frame.update()
 
@@ -804,12 +870,12 @@ class App:
         self.stop_button.pack(side=tk.LEFT, padx=5)
         self.stop_button.pack_forget()
 
-        # category_label = tk.Label(self.ai_geeks_frame, text="category", font=('Arial', 14, 'bold'))
+        # category_label = tk.Label(self.ai_geeks_frame, text="category", font=('Helvetica', 14, 'bold'))
         #        var = tk.BooleanVar(value=self.check_vars.get(event, event not in default_off_events))
         #        chk = tk.Checkbutton(self.ai_geeks_frame, text=event, variable=var)
 
         # for category, events in game_events.items():
-        #    category_label = tk.Label(self.ai_geeks_frame, text=category, font=('Arial', 14, 'bold'))
+        #    category_label = tk.Label(self.ai_geeks_frame, text=category, font=('Helvetica', 14, 'bold'))
         #    for event in events:
         #        var = tk.BooleanVar(value=self.check_vars.get(event, event not in default_off_events))
         #        chk = tk.Checkbutton(self.ai_geeks_frame, text=event, variable=var)
@@ -979,9 +1045,9 @@ class App:
 
     def populate_game_events_frame(self, frame: tk.Frame, game_events: Dict[str, Dict[str, bool]]):
         category_values: Dict[str, Dict[str, tk.BooleanVar]] = {}
-        rowCounter = 0
+        rowCounter = 1
         for category, events in game_events.items():
-            category_label = tk.Label(frame, text=category, font=('Arial', 14, 'bold'))
+            category_label = tk.Label(frame, text=category, font=('Helvetica', 14, 'bold'))
             category_label.grid(row=rowCounter, column=0, sticky=tk.W)
             category_values[category] = {}
 
@@ -1029,6 +1095,9 @@ class App:
             'vision_var': True,
             'ptt_var': False,
             'continue_conversation_var': True,
+            'event_reaction_enabled_var': True,
+            'game_actions_var': True,
+            'web_search_actions_var': True,
             'edcopilot': True,
             'edcopilot_dominant': False,
             'input_device_name': self.get_input_device_names()[0],
@@ -1161,6 +1230,9 @@ class App:
         self.data['vision_var'] = self.vision_var.get()
         self.data['ptt_var'] = self.ptt_var.get()
         self.data['continue_conversation_var'] = self.continue_conversation_var.get()
+        self.data['event_reaction_enabled_var'] = self.event_reaction_enabled_var.get()
+        self.data['game_actions_var'] = self.game_actions_var.get()
+        self.data['web_search_actions_var'] = self.web_search_actions_var.get()
         self.data['edcopilot'] = self.edcopilot_var.get()
         self.data['edcopilot_dominant'] = self.edcopilot_dominant_var.get()
         self.data['tts_voice'] = self.tts_voice.get()
@@ -1196,6 +1268,9 @@ class App:
         self.vision_var.set(self.data['vision_var'])
         self.ptt_var.set(self.data['ptt_var'])
         self.continue_conversation_var.set(self.data['continue_conversation_var'])
+        self.event_reaction_enabled_var.set(self.data['event_reaction_enabled_var'])
+        self.game_actions_var.set(self.data['game_actions_var'])
+        self.web_search_actions_var.set(self.data['web_search_actions_var'])
         self.edcopilot_var.set(self.data['edcopilot'])
         self.edcopilot_dominant_var.set(self.data['edcopilot_dominant'])
         self.tts_voice.insert(0, self.data['tts_voice'])
@@ -1212,15 +1287,12 @@ class App:
     def toggle_ai_geeks_section(self):
         if self.ai_geeks_frame.winfo_viewable():
             self.ai_geeks_frame.grid_remove()
-            self.toggle_ai_geeks_section_button.config(text="Show AI Settings")
         else:
             self.ai_geeks_frame.grid()
-            self.toggle_ai_geeks_section_button.config(text="Hide AI Settings")
 
             self.game_events_frame.grid_remove()
-            self.toggle_game_events_section_button.config(text="Show Event Triggers")
-
             self.third_party_frame.grid_remove()
+            self.behavior_frame.grid_remove()
 
     def toggle_third_party_section(self):
         if self.third_party_frame.winfo_viewable():
@@ -1229,24 +1301,27 @@ class App:
             self.third_party_frame.grid()
 
             self.ai_geeks_frame.grid_remove()
-            self.toggle_ai_geeks_section_button.config(text="Show AI Settings")
-
             self.game_events_frame.grid_remove()
-            self.toggle_game_events_section_button.config(text="Show Event Triggers")
-
-            self.game_events_frame.grid_remove()
+            self.behavior_frame.grid_remove()
 
     def toggle_game_events_section(self):
         if self.game_events_frame.winfo_viewable():
             self.game_events_frame.grid_remove()
-            self.toggle_game_events_section_button.config(text="Show Event Triggers")
         else:
             self.game_events_frame.grid()
-            self.toggle_game_events_section_button.config(text="Hide Event Triggers")
 
             self.ai_geeks_frame.grid_remove()
-            self.toggle_ai_geeks_section_button.config(text="Show AI Settings")
+            self.third_party_frame.grid_remove()
+            self.behavior_frame.grid_remove()
 
+    def toggle_behavior_section(self):
+        if self.behavior_frame.winfo_viewable():
+            self.behavior_frame.grid_remove()
+        else:
+            self.behavior_frame.grid()
+
+            self.ai_geeks_frame.grid_remove()
+            self.game_events_frame.grid_remove()
             self.third_party_frame.grid_remove()
 
     def toggle_ptt(self):
