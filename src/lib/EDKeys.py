@@ -60,6 +60,7 @@ class EDKeys:
             'UI_Right',
             'UI_Select',
             'UI_Back',
+            'UIFocus',
             'ToggleDriveAssist',
             'VerticalThrustersButton',
             'BuggyPrimaryFireButton',

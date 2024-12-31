@@ -239,6 +239,24 @@ def hyper_super_combination(args):
     keys.send('HyperSuperCombination')
     return f"Frame Shift Drive is charging for a jump"
 
+def undock(args):
+    setGameWindowActive()
+    # Early return if we're not docked
+    if not status_parser.current_status["flags"]["Docked"]:
+        raise Exception("The ship currently isn't docked.")
+
+    if status_parser.current_status["GuiFocus"] in ['InternalPanel', 'CommsPanel', 'RolePanel', 'ExternalPanel']:
+        keys.send('UIFocus')
+        sleep(1)
+    elif status_parser.current_status["GuiFocus"] == 'NoFocus':
+        pass
+    else:
+        raise Exception("The currently focused UI needs to be closed first")
+
+    keys.send('UI_Down', None, 3)
+    keys.send('UI_Up')
+    keys.send('UI_Select')
+
 
 def request_docking(args):
     screenreader = ScreenReader()
@@ -273,6 +291,7 @@ def request_docking(args):
     keys.send('UI_Right')
     sleep(0.1)
     keys.send('UI_Select')
+    keys.send('UIFocus')
 
     return f"Docking has been requested"
 
@@ -2536,10 +2555,15 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, use_shield_cell, 'mainship')
 
-    actionManager.registerAction('requestDocking', "Request docking ", {
+    actionManager.registerAction('requestDocking', "Request docking.", {
         "type": "object",
         "properties": {}
     }, request_docking, 'mainship')
+
+    actionManager.registerAction('undockShip', "", {
+        "type": "object",
+        "properties": {}
+    }, undock, 'mainship')
 
     # Register actions - Ship Launched Fighter Actions
     actionManager.registerAction('OrderRequestDock', "Request docking for Ship Launched Fighter", {
