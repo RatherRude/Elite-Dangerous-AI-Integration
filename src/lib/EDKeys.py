@@ -56,6 +56,7 @@ class EDKeys:
             'CycleNextPanel',
             'FocusLeftPanel',
             'UI_Up',
+            'UI_Down',
             'UI_Left',
             'UI_Right',
             'UI_Select',

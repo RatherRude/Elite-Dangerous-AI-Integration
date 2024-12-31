@@ -257,6 +257,7 @@ def undock(args):
     keys.send('UI_Up')
     keys.send('UI_Select')
 
+    return 'The ship is now undocking'
 
 def request_docking(args):
     screenreader = ScreenReader()
