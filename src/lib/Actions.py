@@ -1455,7 +1455,8 @@ def filter_station_response(request, response):
                             {"name": module["name"], "class": module["class"], "rating": module["rating"],
                              "price": module["price"]})
 
-            filtered_result["modules"] = filtered_modules
+            if filtered_modules:
+                filtered_result["modules"] = filtered_modules
 
         if "ships" in result:
             filtered_ships = []
@@ -1464,7 +1465,8 @@ def filter_station_response(request, response):
                     if requested_ship.lower() in ship["name"].lower():
                         filtered_ships.append(ship)
 
-            filtered_result["ships"] = filtered_ships
+            if filtered_ships:
+                filtered_result["ships"] = filtered_ships
 
         if "services" in result:
             filtered_services = []
@@ -1473,7 +1475,8 @@ def filter_station_response(request, response):
                     if requested_service.lower() in service["name"].lower():
                         filtered_services.append(service)
 
-            filtered_result["services"] = filtered_services
+            if filtered_services:
+                filtered_result["services"] = filtered_services
 
         filtered_results.append(filtered_result)
 
