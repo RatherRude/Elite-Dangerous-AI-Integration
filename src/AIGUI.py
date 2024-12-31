@@ -532,7 +532,7 @@ class App:
 
 
         # Toggle Section Button
-        self.toggle_behavior_section_button = tk.Button(self.main_frame, text="AI Behavior",
+        self.toggle_behavior_section_button = tk.Button(self.main_frame, text="Behavior",
                                                            command=self.toggle_behavior_section)
         self.toggle_behavior_section_button.grid(row=get_next(), column=0, columnspan=2, pady=10, padx=(0, 110), sticky="")
 
@@ -542,7 +542,7 @@ class App:
         self.toggle_third_party_section_button.grid(row=get_same(), column=0, columnspan=2, pady=10, padx=(335, 0), sticky="")
 
         # Toggle Section Button
-        self.toggle_ai_geeks_section_button = tk.Button(self.main_frame, text="AI Settings",
+        self.toggle_ai_geeks_section_button = tk.Button(self.main_frame, text="Advanced Settings",
                                                         command=self.toggle_ai_geeks_section)
         self.toggle_ai_geeks_section_button.grid(row=get_same(), column=0, columnspan=2, pady=10, padx=(100, 0), sticky="")
 
@@ -585,7 +585,7 @@ class App:
         self.behavior_game_actions_checkbox = tk.Checkbutton(self.behavior_frame.inner_frame, text="Enabled",
                                                  variable=self.game_actions_var)
         self.behavior_game_actions_checkbox.grid(row=2, column=1, sticky=tk.W, padx=5, pady=5)
-        tk.Label(self.behavior_frame.inner_frame, text="Allow controlling the game (Ship/SRV/Suit)", font="Helvetica 10 italic").grid(
+        tk.Label(self.behavior_frame.inner_frame, text="Allow controlling the game (Ship/SRV/Suit/Vision)", font="Helvetica 10 italic").grid(
             row=2,
             column=1,
             sticky=tk.W,
