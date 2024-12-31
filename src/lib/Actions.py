@@ -8,8 +8,7 @@ from typing import Optional
 import openai
 import requests
 
-from lib.Config import get_ed_appdata_path
-
+from .ScreenReader import ScreenReader
 from .StatusParser import StatusParser
 from .Logger import log
 from .EDKeys import EDKeys
@@ -240,6 +239,63 @@ def hyper_super_combination(args):
     keys.send('HyperSuperCombination')
     return f"Frame Shift Drive is charging for a jump"
 
+def undock(args):
+    setGameWindowActive()
+    # Early return if we're not docked
+    if not status_parser.current_status["flags"]["Docked"]:
+        raise Exception("The ship currently isn't docked.")
+
+    if status_parser.current_status["GuiFocus"] in ['InternalPanel', 'CommsPanel', 'RolePanel', 'ExternalPanel']:
+        keys.send('UIFocus')
+        sleep(1)
+    elif status_parser.current_status["GuiFocus"] == 'NoFocus':
+        pass
+    else:
+        raise Exception("The currently focused UI needs to be closed first")
+
+    keys.send('UI_Down', None, 3)
+    keys.send('UI_Up')
+    keys.send('UI_Select')
+
+    return 'The ship is now undocking'
+
+def request_docking(args):
+    screenreader = ScreenReader()
+    setGameWindowActive()
+    if status_parser.current_status["GuiFocus"] in ['NoFocus', 'InternalPanel', 'CommsPanel', 'RolePanel']:
+        keys.send('FocusLeftPanel')
+        sleep(1)
+    elif status_parser.current_status["GuiFocus"] == 'ExternalPanel':
+        pass
+    else:
+        raise Exception('Docking menu not available in current UI Mode.')
+
+    mode = None
+    for x in range(4):
+        mode = screenreader.detect_lhs_screen_tab()
+        if mode:
+            break
+        keys.send('CycleNextPanel', None, 1)
+
+    log('debug', 'Docking request screen tab', mode)
+    if not mode:
+        raise Exception('Panel not found')
+    if mode == 'system':
+        keys.send('CycleNextPanel', None, 3)
+    elif mode == 'navigation':
+        keys.send('CycleNextPanel', None, 2)
+    elif mode == 'transactions':
+        keys.send('CycleNextPanel', None, 1)
+
+    sleep(0.3)
+    keys.send('UI_Left')
+    keys.send('UI_Right')
+    sleep(0.1)
+    keys.send('UI_Select')
+    keys.send('UIFocus')
+
+    return f"Docking has been requested"
+
 
 # Ship Launched Fighter Actions
 def order_request_dock(args):
@@ -441,7 +497,7 @@ def setGameWindowActive():
         log("info", "Unable to find Elite game window")
 
 
-def screenshot():
+def screenshot(new_height: int = 720):
     if platform != "win32":
         return None
     handle = get_game_window_handle()
@@ -462,7 +518,6 @@ def screenshot():
 
         # Resize to height 720 while maintaining aspect ratio
         aspect_ratio = width / height
-        new_height = 720
         new_width = int(new_height * aspect_ratio)
         im = im.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
@@ -1400,7 +1455,8 @@ def filter_station_response(request, response):
                             {"name": module["name"], "class": module["class"], "rating": module["rating"],
                              "price": module["price"]})
 
-            filtered_result["modules"] = filtered_modules
+            if filtered_modules:
+                filtered_result["modules"] = filtered_modules
 
         if "ships" in result:
             filtered_ships = []
@@ -1409,7 +1465,8 @@ def filter_station_response(request, response):
                     if requested_ship.lower() in ship["name"].lower():
                         filtered_ships.append(ship)
 
-            filtered_result["ships"] = filtered_ships
+            if filtered_ships:
+                filtered_result["ships"] = filtered_ships
 
         if "services" in result:
             filtered_services = []
@@ -1418,7 +1475,8 @@ def filter_station_response(request, response):
                     if requested_service.lower() in service["name"].lower():
                         filtered_services.append(service)
 
-            filtered_result["services"] = filtered_services
+            if filtered_services:
+                filtered_result["services"] = filtered_services
 
         filtered_results.append(filtered_result)
 
@@ -2500,6 +2558,16 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "type": "object",
         "properties": {}
     }, use_shield_cell, 'mainship')
+
+    actionManager.registerAction('requestDocking', "Request docking.", {
+        "type": "object",
+        "properties": {}
+    }, request_docking, 'mainship')
+
+    actionManager.registerAction('undockShip', "", {
+        "type": "object",
+        "properties": {}
+    }, undock, 'mainship')
 
     # Register actions - Ship Launched Fighter Actions
     actionManager.registerAction('OrderRequestDock', "Request docking for Ship Launched Fighter", {

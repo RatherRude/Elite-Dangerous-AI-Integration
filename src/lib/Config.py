@@ -1,6 +1,8 @@
 from typing import Literal, TypedDict
 import os
-import platform
+import sys
+
+from requests.models import stream_decode_response_unicode
 
 
 class Config(TypedDict):
@@ -62,3 +64,10 @@ def get_ed_appdata_path(config: Config) -> str:
     from os import environ
     return environ['LOCALAPPDATA'] + "\\Frontier Developments\\Elite Dangerous"
     
+def get_asset_path(filename:str) -> str:
+    assets_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../assets'))
+    if hasattr(sys, 'frozen'):
+        assets_dir = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), '../assets'))
+    
+    return os.path.join(assets_dir, filename)

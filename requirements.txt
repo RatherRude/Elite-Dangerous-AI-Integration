@@ -34,6 +34,7 @@ num2words==0.5.13
 numpy==1.25.2
 onnxruntime==1.18.1
 openai==1.37.1
+opencv-python==4.10.0.84
 packaging==24.1
 pefile==2023.2.7
 pick==2.4.0

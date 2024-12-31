@@ -54,8 +54,7 @@ jobs:
 
       - name: Create Executable for Chat
         run: |
-          pyinstaller .\src\Chat.py -y --onedir --clean --console --hidden-import=comtypes.stream --add-data ${{ env.VAD_MODEL }}:.\pysilero_vad\models --add-binary ${{ env.ONNXRUNTIME_DLL }}:. --add-binary ${{ env.VEC_EXTENSION }}:.\sqlite_vec
-          cp -r .\src\* .\dist\Chat\_internal\
+          pyinstaller .\src\Chat.py -y --onedir --clean --console --hidden-import=comtypes.stream --add-data .\src:. --add-data ${{ env.VAD_MODEL }}:.\pysilero_vad\models --add-binary ${{ env.ONNXRUNTIME_DLL }}:. --add-binary ${{ env.VEC_EXTENSION }}:.\sqlite_vec
 
       - name: Get current commit ID
         id: get_commit
