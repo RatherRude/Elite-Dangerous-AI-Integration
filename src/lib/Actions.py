@@ -236,8 +236,24 @@ def toggle_cargo_scoop(args):
 
 def hyper_super_combination(args):
     setGameWindowActive()
+    if status_parser.current_status["flags"]["Docked"]:
+        raise Exception("The ship is currently docked.")
+    if status_parser.current_status["flags"]["Landed"]:
+        raise Exception("The ship is currently landed.")
+
+    return_message = ""
+    if status_parser.current_status["flags"]["LandingGearDown"]:
+        keys.send('LandingGearToggle')
+        return_message += "Landing Gear Retracted. "
+    if status_parser.current_status["flags"]["CargoScoopDeployed"]:
+        keys.send('ToggleCargoScoop')
+        return_message += "Cargo Scoop Retracted. "
+    if status_parser.current_status["flags"]["HardpointsDeployed"]:
+        keys.send('DeployHardpointToggle')
+        return_message += "Hardpoints Retracted. "
+
     keys.send('HyperSuperCombination')
-    return f"Frame Shift Drive is charging for a jump"
+    return return_message + "Frame Shift Drive is now charging for a jump"
 
 def undock(args):
     setGameWindowActive()
