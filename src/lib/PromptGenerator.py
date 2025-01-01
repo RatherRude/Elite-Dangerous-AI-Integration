@@ -110,7 +110,7 @@ stationServiceEvents = {
     "MissionAccepted": "Commander {commanderName} has accepted a mission.",
     "MissionCompleted": "Commander {commanderName} has completed a mission.",
     "MissionFailed": "Commander {commanderName} has failed a mission.",
-    "MissionRedirected": "Commander {commanderName} has redirected a mission.",
+    "MissionRedirected": "Commander {commanderName}'s mission is now completed. Rewards are now available.",
     "ModuleBuy": "Commander {commanderName} has bought a module.",
     "ModuleRetrieve": "Commander {commanderName} has retrieved a module.",
     "ModuleSell": "Commander {commanderName} has sold a module.",
