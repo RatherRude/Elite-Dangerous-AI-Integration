@@ -384,6 +384,7 @@ class StatusParser:
                     events.append({"event": "BreathableAtmosphereEntered"})
 
         # Always
+        # ToDo: filter out in danger when in mining ship
         if not new_status["flags2"] or (new_status["flags2"] and not new_status["flags2"]["OnFoot"]):
             if old_status["flags"]["InDanger"] and not new_status["flags"]["InDanger"]:
                 events.append({"event": "OutofDanger"})
