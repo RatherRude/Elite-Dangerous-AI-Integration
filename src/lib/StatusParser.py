@@ -1,6 +1,7 @@
 import json
 import os
 import time
+import traceback
 from datetime import datetime, timedelta
 import queue
 from sys import platform
@@ -260,7 +261,7 @@ class StatusParser:
             try: 
                 self._watch_file()
             except Exception as e:
-                log('error', 'An error occurred when reading status file', e)
+                log('error', 'An error occurred when reading status file', e, traceback.format_exc())
                 sleep(backoff)
                 log('info', 'Attempting to restart status file reader after failure')
                 backoff *= 2
@@ -338,10 +339,11 @@ class StatusParser:
             if not old_status["flags"]["FsdMassLocked"] and new_status["flags"]["FsdMassLocked"]:
                 events.append({"event": "FsdMassLocked"})
 
-            if old_status["flags2"]["GlideMode"] and not new_status["flags2"]["GlideMode"]:
-                events.append({"event": "GlideModeExited"})
-            if not old_status["flags2"]["GlideMode"] and new_status["flags2"]["GlideMode"]:
-                events.append({"event": "GlideModeEntered"})
+            if old_status["flags2"] and not new_status["flags2"]:
+                if old_status["flags2"]["GlideMode"] and not new_status["flags2"]["GlideMode"]:
+                    events.append({"event": "GlideModeExited"})
+                if not old_status["flags2"]["GlideMode"] and new_status["flags2"]["GlideMode"]:
+                    events.append({"event": "GlideModeEntered"})
 
             if old_status["flags"]["LowFuel"] and not new_status["flags"]["LowFuel"]:
                 events.append({"event": "LowFuelWarningCleared"})
@@ -366,22 +368,21 @@ class StatusParser:
                 events.append({"event": "SrvDriveAssistOn"})
 
         # Only Suit
-        if new_status["flags"] and new_status["flags2"]["OnFoot"]:
-            if old_status["flags2"] and new_status["flags2"]:
-                if old_status["flags2"]["LowOxygen"] and not new_status["flags2"]["LowOxygen"]:
-                    events.append({"event": "LowOxygenWarningCleared"})
-                if not old_status["flags2"]["LowOxygen"] and new_status["flags2"]["LowOxygen"]:
-                    events.append({"event": "LowOxygenWarning"})
+        if old_status["flags2"] and new_status["flags2"] and new_status["flags2"]["OnFoot"]:
+            if old_status["flags2"]["LowOxygen"] and not new_status["flags2"]["LowOxygen"]:
+                events.append({"event": "LowOxygenWarningCleared"})
+            if not old_status["flags2"]["LowOxygen"] and new_status["flags2"]["LowOxygen"]:
+                events.append({"event": "LowOxygenWarning"})
 
-                if old_status["flags2"]["LowHealth"] and not new_status["flags2"]["LowHealth"]:
-                    events.append({"event": "LowHealthWarningCleared"})
-                if not old_status["flags2"]["LowHealth"] and new_status["flags2"]["LowHealth"]:
-                    events.append({"event": "LowHealthWarning"})
+            if old_status["flags2"]["LowHealth"] and not new_status["flags2"]["LowHealth"]:
+                events.append({"event": "LowHealthWarningCleared"})
+            if not old_status["flags2"]["LowHealth"] and new_status["flags2"]["LowHealth"]:
+                events.append({"event": "LowHealthWarning"})
 
-                if old_status["flags2"]["BreathableAtmosphere"] and not new_status["flags2"]["BreathableAtmosphere"]:
-                    events.append({"event": "BreathableAtmosphereExited"})
-                if not old_status["flags2"]["BreathableAtmosphere"] and new_status["flags2"]["BreathableAtmosphere"]:
-                    events.append({"event": "BreathableAtmosphereEntered"})
+            if old_status["flags2"]["BreathableAtmosphere"] and not new_status["flags2"]["BreathableAtmosphere"]:
+                events.append({"event": "BreathableAtmosphereExited"})
+            if not old_status["flags2"]["BreathableAtmosphere"] and new_status["flags2"]["BreathableAtmosphere"]:
+                events.append({"event": "BreathableAtmosphereEntered"})
 
         # Always
         # ToDo: filter out in danger when in mining ship
