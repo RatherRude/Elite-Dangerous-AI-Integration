@@ -205,7 +205,11 @@ def main():
         on_reply_request=lambda events, new_events, states: reply(llmClient, events, new_events, states, prompt_generator, event_manager,
                                                           tts, copilot, config),
         game_events=enabled_game_events,
-        continue_conversation=config["continue_conversation_var"]
+        continue_conversation=config["continue_conversation_var"],
+        react_to_text_local=config["react_to_text_local_var"],
+        react_to_text_starsystem=config["react_to_text_starsystem_var"],
+        react_to_text_npc=config["react_to_text_npc_var"],
+        react_to_material=config["react_to_material"]
     )
     registerProjections(event_manager)
 

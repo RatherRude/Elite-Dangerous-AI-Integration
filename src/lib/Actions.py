@@ -708,6 +708,55 @@ def trade_planner(obj):
 # Region: Trade Planner End
 
 
+def send_message(obj):
+    from pyautogui import typewrite
+    setGameWindowActive()
+
+    return_message = "No message sent"
+
+    if obj:
+        chunk_size = 100
+        start = 0
+
+        in_ship = status_parser.current_status["flags"]["InMainShip"] or status_parser.current_status["flags"]["InFighter"]
+        in_buggy = status_parser.current_status["flags"]["InSRV"]
+        on_foot = status_parser.current_status["flags2"] and status_parser.current_status["flags2"]["OnFoot"]
+
+        while start < len(obj.get("message", "")):
+            return_message = "Message sent"
+            if start != 0:
+                sleep(0.25)
+            chunk = obj.get("message", "")[start:start + chunk_size]
+            start += chunk_size
+
+            if in_ship:
+                keys.send("QuickCommsPanel")
+            elif in_buggy:
+                keys.send("QuickCommsPanel_Buggy")
+            elif on_foot:
+                keys.send("QuickCommsPanel_Humanoid")
+            else:
+                raise Exception("Can not send message.")
+
+            if not obj.get("recipient") or obj.get("recipient").lower() == "local":
+                typewrite("/local ", interval=0.01)
+                return_message += " to local chat."
+            else:
+                typewrite(f"/d {obj.get('recipient')} ", interval=0.01)
+                return_message += f" to {obj.get('recipient')}."
+
+            sleep(0.05)
+            typewrite(chunk, interval=0.01)
+
+            sleep(0.05)
+            # send enter key
+            keys.send_key('Down', 28)
+            sleep(0.05)
+            keys.send_key('Up', 28)
+
+    return return_message
+
+
 def get_visuals(obj):
     image = screenshot()
     if not image: return "Unable to take screenshot."
@@ -3142,6 +3191,21 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         body_finder,
         'web'
     )
+
+    actionManager.registerAction('textMessage', "Send message to commander or local", {
+        "type": "object",
+        "properties": {
+            "message": {
+                "type": "string",
+                "description": "Message to send"
+            },
+            "recipient": {
+                "type": "string",
+                "description": "Recipient"
+            }
+        },
+        "required": ["message"]
+    }, send_message, 'global')
 
     if vision_client:
         actionManager.registerAction('getVisuals', "Describes what's currently visible to the Commander.", {

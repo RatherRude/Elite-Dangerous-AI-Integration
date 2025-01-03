@@ -30,6 +30,10 @@ class Config(TypedDict):
     event_reaction_enabled_var: bool
     game_actions_var: bool
     web_search_actions_var: bool
+    react_to_text_local_var: bool
+    react_to_text_starsystem_var: bool
+    react_to_text_npc_var: bool
+    react_to_material: str
     edcopilot: bool
     edcopilot_dominant: bool
     tts_voice: str
