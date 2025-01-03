@@ -10,7 +10,7 @@ def status_file_path(tmp_path):
     status_data = {
         "event": "Status",
         "timestamp": "2024-11-12T13:14:15Z",
-        "Flags": 0,
+        "Flags": 16777216,
         "GuiFocus": 0
     }
     file_path = tmp_path / "Status.json"
@@ -24,7 +24,7 @@ def test_statusparser_file_update(status_file_path):
     
     # Update file with new status
     new_status = {
-        "Flags": 4,
+        "Flags": 16777220,
         "GuiFocus": 1
     }
     with open(os.path.join(status_file_path, "Status.json"), "w") as f:
