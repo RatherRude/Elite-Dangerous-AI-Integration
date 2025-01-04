@@ -3,14 +3,14 @@ Actions (also called Tools, Commands, or Functions) are the actions that COVAS:N
 Primarily, these actions can be used to control various ship/srv/suit operations, such as firing weapons, adjusting speed, deploying heat sinks, and more.
 Additionally, the AI can fetch internet data if it deems it relevant for the conversation, by either your inquiry or game events happening.
 
-# Keybindings
-In order to perform actions in Elite: Dangerous, COVAS:NEXT requires keybindings to be set up in the game. These keybindings are used to emulate button presses, allowing the AI to control various ship/srv/suit operations.
+## Keyboard Bindings
+In order to perform actions in Elite: Dangerous, COVAS:NEXT requires assigned keyboard buttons to be set up in the game. These keybindings are used to emulate button presses, allowing the AI to control various ship/srv/suit operations.
 The game's keyboard bindings are automatically read on COVAS:NEXT's start-up, if you change a setting you will have to restart the integration for it to be registered.
 If there are multiple keyboard buttons assigned for one game action, COVAS:NEXT will prefer the secondary binding.
 
 *If you run out of keyboard buttons* keep in mind that you can not only assign a button as press, but also as hold. Keys are also combinable in Elite: Dangerous, so each key can be combined with one or multiple other keys.
 
-## Usage with HOTAS or other controllers
+## Usage with HOTAS or other Controllers
 A common workaround is to assign keyboard bindings alongside your controller bindings, even if you don't use a keyboard. This allows COVAS:NEXT to use these keybindings for its commands, while you continue to use your controller for the game.
 
 ## Available Game Actions
