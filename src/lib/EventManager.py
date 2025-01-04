@@ -41,11 +41,20 @@ class EventManager:
         self.is_listening = False
         self.on_reply_request = on_reply_request
         self.game_events = game_events
+        if "ScanOrganic" in game_events:
+            game_events.append("ScanOrganicFirst")
+            game_events.append("ScanOrganicSecond")
+            game_events.append("ScanOrganicThird")
+            game_events.append("ScanOrganicTooClose")
+            game_events.append("ScanOrganicFarEnough")
+            # game_events.append("ScanOrganicFinished")
         self.react_to_text_local = react_to_text_local
         self.react_to_text_starsystem = react_to_text_starsystem
         self.react_to_text_npc = react_to_text_npc
         self.react_to_text_squadron = react_to_text_squadron
         self.react_to_material = react_to_material
+
+        self.scan_in_progress = False
 
         self.event_classes: list[type[Event]] = [ConversationEvent, ToolEvent, GameEvent, StatusEvent, ExternalEvent]
         self.projections: list[Projection] = []
