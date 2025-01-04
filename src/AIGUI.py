@@ -1081,6 +1081,12 @@ class App:
                     self.react_to_material.grid(row=rowCounter, column=1, padx=(115,0), pady=5)
                     rowCounter += 1
 
+                if event == "InDanger":
+                    self.react_to_danger_mining_var = tk.BooleanVar()
+                    self.react_to_danger_mining_var.set(False)  # Default value
+                    tk.Checkbutton(frame, text='Enable while mining', variable=self.react_to_danger_mining_var).grid(
+                        row=rowCounter, column=1, sticky=tk.W, padx=(50, 0))
+                    rowCounter += 1
 
 
         return lambda: {category: {
@@ -1148,6 +1154,7 @@ class App:
             'react_to_text_squadron_var': True,
             'react_to_text_starsystem_var': True,
             'react_to_material': '',
+            'react_to_danger_mining_var': False,
             "ed_journal_path": "",
             "ed_appdata_path": ""
         }
@@ -1260,8 +1267,9 @@ class App:
         self.data['react_to_text_local_var'] = self.react_to_text_local_var.get()
         self.data['react_to_text_starsystem_var'] = self.react_to_text_starsystem_var.get()
         self.data['react_to_text_npc_var'] = self.react_to_text_npc_var.get()
-        self.data['react_to_text_squadron_var'] = self.react_to_text_npc_var.get()
+        self.data['react_to_text_squadron_var'] = self.react_to_text_squadron_var.get()
         self.data['react_to_material'] = self.react_to_material.get()
+        self.data['react_to_danger_mining_var'] = self.react_to_danger_mining_var.get()
         self.data['ptt_var'] = self.ptt_var.get()
         self.data['continue_conversation_var'] = self.continue_conversation_var.get()
         self.data['event_reaction_enabled_var'] = self.event_reaction_enabled_var.get()
@@ -1305,6 +1313,7 @@ class App:
         self.react_to_text_npc_var.set(self.data['react_to_text_npc_var'])
         self.react_to_text_squadron_var.set(self.data['react_to_text_squadron_var'])
         self.react_to_material.insert(0, self.data['react_to_material'])
+        self.react_to_danger_mining_var.set(self.data['react_to_danger_mining_var'])
         self.ptt_var.set(self.data['ptt_var'])
         self.continue_conversation_var.set(self.data['continue_conversation_var'])
         self.event_reaction_enabled_var.set(self.data['event_reaction_enabled_var'])
