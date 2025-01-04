@@ -1066,6 +1066,10 @@ class App:
                     self.react_to_text_starsystem_var.set(True)  # Default value
                     tk.Checkbutton(frame, text='React to system chat', variable=self.react_to_text_starsystem_var).grid(row=rowCounter, column=1, sticky=tk.W, padx=(50,0))
                     rowCounter += 1
+                    self.react_to_text_squadron_var = tk.BooleanVar()
+                    self.react_to_text_squadron_var.set(True)  # Default value
+                    tk.Checkbutton(frame, text='React to squadron chat', variable=self.react_to_text_squadron_var).grid(row=rowCounter, column=1, sticky=tk.W, padx=(50,0))
+                    rowCounter += 1
                     self.react_to_text_npc_var = tk.BooleanVar()
                     self.react_to_text_npc_var.set(False)  # Default value
                     tk.Checkbutton(frame, text='React to NPC chatter', variable=self.react_to_text_npc_var).grid(row=rowCounter, column=1, sticky=tk.W, padx=(50,0))
@@ -1141,6 +1145,7 @@ class App:
             'game_events': game_events,
             'react_to_text_local_var': True,
             'react_to_text_npc_var': False,
+            'react_to_text_squadron_var': True,
             'react_to_text_starsystem_var': True,
             'react_to_material': '',
             "ed_journal_path": "",
@@ -1255,6 +1260,7 @@ class App:
         self.data['react_to_text_local_var'] = self.react_to_text_local_var.get()
         self.data['react_to_text_starsystem_var'] = self.react_to_text_starsystem_var.get()
         self.data['react_to_text_npc_var'] = self.react_to_text_npc_var.get()
+        self.data['react_to_text_squadron_var'] = self.react_to_text_npc_var.get()
         self.data['react_to_material'] = self.react_to_material.get()
         self.data['ptt_var'] = self.ptt_var.get()
         self.data['continue_conversation_var'] = self.continue_conversation_var.get()
@@ -1297,6 +1303,7 @@ class App:
         self.react_to_text_local_var.set(self.data['react_to_text_local_var'])
         self.react_to_text_starsystem_var.set(self.data['react_to_text_starsystem_var'])
         self.react_to_text_npc_var.set(self.data['react_to_text_npc_var'])
+        self.react_to_text_squadron_var.set(self.data['react_to_text_squadron_var'])
         self.react_to_material.insert(0, self.data['react_to_material'])
         self.ptt_var.set(self.data['ptt_var'])
         self.continue_conversation_var.set(self.data['continue_conversation_var'])

@@ -33,7 +33,7 @@ class Projection(ABC, Generic[ProjectedState]):
 class EventManager:
     def __init__(self, on_reply_request: Callable[[list[Event], list[Event], dict[str, dict[str, Any]]], Any], game_events: list[str],
                  continue_conversation: bool = False, react_to_text_local: bool = True, react_to_text_starsystem: bool = True, react_to_text_npc: bool = False,
-                 react_to_material:str = ''):
+                 react_to_text_squadron: bool = True, react_to_material:str = ''):
         self.incoming: Queue[Event] = Queue()
         self.pending: list[Event] = []
         self.processed: list[Event] = []
@@ -44,6 +44,7 @@ class EventManager:
         self.react_to_text_local = react_to_text_local
         self.react_to_text_starsystem = react_to_text_starsystem
         self.react_to_text_npc = react_to_text_npc
+        self.react_to_text_squadron = react_to_text_squadron
         self.react_to_material = react_to_material
 
         self.event_classes: list[type[Event]] = [ConversationEvent, ToolEvent, GameEvent, StatusEvent, ExternalEvent]
@@ -186,10 +187,11 @@ class EventManager:
 
             if isinstance(event, GameEvent) and event.content.get("event") in self.game_events:
                 if event.content.get("event") == "ReceiveText":
-                    if event.content.get("Channel") not in ['wing', 'voicechat', 'friend', 'player', 'squadron'] and (
+                    if event.content.get("Channel") not in ['wing', 'voicechat', 'friend', 'player'] and (
                         (not self.react_to_text_local and event.content.get("Channel") == 'local') or
                         (not self.react_to_text_starsystem and event.content.get("Channel") == 'starsystem') or
-                        (not self.react_to_text_npc and event.content.get("Channel") == 'npc')):
+                        (not self.react_to_text_npc and event.content.get("Channel") == 'npc') or
+                        (not self.react_to_text_squadron and event.content.get("Channel") == 'squadron')):
                         continue
 
                 if event.content.get("event") == "ProspectedAsteroid":

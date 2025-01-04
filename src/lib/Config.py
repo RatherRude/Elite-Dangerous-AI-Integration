@@ -33,6 +33,7 @@ class Config(TypedDict):
     react_to_text_local_var: bool
     react_to_text_starsystem_var: bool
     react_to_text_npc_var: bool
+    react_to_text_squadron_var: bool
     react_to_material: str
     edcopilot: bool
     edcopilot_dominant: bool
