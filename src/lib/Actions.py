@@ -317,6 +317,12 @@ def request_docking(args):
 def order_request_dock(args):
     setGameWindowActive()
     keys.send('OrderRequestDock')
+    return f"Fighter has been ordered to dock"
+
+# Ship Launched Fighter Actions
+def fighter_request_dock(args):
+    setGameWindowActive()
+    keys.send('OrderRequestDock')
     return f"A request for docking has been sent"
 
 
@@ -739,14 +745,14 @@ def send_message(obj):
                 raise Exception("Can not send message.")
 
             if not obj.get("recipient") or obj.get("recipient").lower() == "local":
-                typewrite("/local ", interval=0.01)
+                typewrite("/local ", interval=0.02)
                 return_message += " to local chat."
             else:
-                typewrite(f"/d {obj.get('recipient')} ", interval=0.01)
+                typewrite(f"/d {obj.get('recipient')} ", interval=0.02)
                 return_message += f" to {obj.get('recipient')}."
 
             sleep(0.05)
-            typewrite(chunk, interval=0.01)
+            typewrite(chunk, interval=0.02)
 
             sleep(0.05)
             # send enter key
@@ -2635,10 +2641,16 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     }, undock, 'mainship')
 
     # Register actions - Ship Launched Fighter Actions
-    actionManager.registerAction('OrderRequestDock', "Request docking for Ship Launched Fighter", {
+    actionManager.registerAction('OrderRequestDock', "Order fighter to dock with main ship.", {
         "type": "object",
         "properties": {}
-    }, order_request_dock, 'fighter')
+    }, order_request_dock, 'mainship')
+
+    # Register actions - Ship Launched Fighter Actions
+    actionManager.registerAction('fighterRequestDock', "Request docking for Ship Launched Fighter", {
+        "type": "object",
+        "properties": {}
+    }, fighter_request_dock, 'fighter')
 
     # Register actions - SRV Actions (Horizons)
     actionManager.registerAction('toggleDriveAssist', "Toggle drive assist", {

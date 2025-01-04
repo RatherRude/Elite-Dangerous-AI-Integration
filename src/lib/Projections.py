@@ -304,6 +304,7 @@ ShipInfoState = TypedDict('ShipInfoState', {
     "MaximumJumpRange": float,
     #"CurrentJumpRange": float,
     "LandingPadSize": Literal['S', 'M', 'L', 'Unknown'],
+    "IsMiningShip": bool,
 })
 
 ship_sizes: dict[str, Literal['S', 'M', 'L', 'Unknown']] = {
@@ -373,6 +374,7 @@ class ShipInfo(Projection[ShipInfoState]):
             "FuelReservoirCapacity": 0,
             "MaximumJumpRange": 0,
             #"CurrentJumpRange": 0,
+            "IsMiningShip": False,
             "LandingPadSize": 'Unknown',
         }
     
@@ -404,6 +406,12 @@ class ShipInfo(Projection[ShipInfoState]):
                 self.state['FuelReservoirCapacity'] = event.content['FuelCapacity'].get('Reserve', 0)
             if 'MaxJumpRange' in event.content:
                 self.state['MaximumJumpRange'] = event.content.get('MaxJumpRange', 0)
+            if 'Modules' in event.content:
+                has_refinery = any(module["Item"].startswith("int_refinery") for module in event.content["Modules"])
+                if has_refinery:
+                    self.state['IsMiningShip'] = True
+                else:
+                    self.state['IsMiningShip'] = False
         
         if self.state['Type'] != 'Unknown':
             self.state['LandingPadSize'] = ship_sizes.get(self.state['Type'], 'Unknown')
@@ -460,6 +468,7 @@ def registerProjections(event_manager: EventManager):
     event_manager.register_projection(ShipInfo())
     event_manager.register_projection(NavInfo())
 
+    # ToDo: SLF, SRV,
     for proj in [
         'Commander',
         'Materials',
