@@ -317,6 +317,12 @@ def request_docking(args):
 def order_request_dock(args):
     setGameWindowActive()
     keys.send('OrderRequestDock')
+    return f"Fighter has been ordered to dock"
+
+# Ship Launched Fighter Actions
+def fighter_request_dock(args):
+    setGameWindowActive()
+    keys.send('OrderRequestDock')
     return f"A request for docking has been sent"
 
 
@@ -2635,10 +2641,16 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     }, undock, 'mainship')
 
     # Register actions - Ship Launched Fighter Actions
-    actionManager.registerAction('OrderRequestDock', "Request docking for Ship Launched Fighter", {
+    actionManager.registerAction('OrderRequestDock', "Order fighter to dock with main ship.", {
         "type": "object",
         "properties": {}
-    }, order_request_dock, 'fighter')
+    }, order_request_dock, 'mainship')
+
+    # Register actions - Ship Launched Fighter Actions
+    actionManager.registerAction('fighterRequestDock', "Request docking for Ship Launched Fighter", {
+        "type": "object",
+        "properties": {}
+    }, fighter_request_dock, 'fighter')
 
     # Register actions - SRV Actions (Horizons)
     actionManager.registerAction('toggleDriveAssist', "Toggle drive assist", {
