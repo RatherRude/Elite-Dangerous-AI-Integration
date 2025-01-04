@@ -121,27 +121,27 @@ controller_manager = ControllerManager()
 
 def bio_scan(content: dict[str, Any], scans:list[dict[str, Any]], scan_in_progress:bool, scan_radius:int):
     colony_size = {
-        "Codex_Ent_Aleoida_Genus_Name": 150,
-        "Codex_Ent_Amphora_Plant_Genus_Name": 100,
-        "Codex_Ent_Anemone_Genus_Name": 100,
-        "Codex_Ent_Bacterium_Genus_Name": 500,
-        "Codex_Ent_Bark_Mound_Genus_Name": 100,
-        "Codex_Ent_Brain_Tree_Genus_Name": 100,
-        "Codex_Ent_Cactoida_Genus_Name": 300,
-        "Codex_Ent_Clypeus_Genus_Name": 150,
-        "Codex_Ent_Concha_Genus_Name": 150,
-        "Codex_Ent_Crystalline_Shard_Genus_Name": 100,
-        "Codex_Ent_Electricae_Genus_Name": 1000,
-        "Codex_Ent_Fonticulua_Genus_Name": 500,
-        "Codex_Ent_Frutexa_Genus_Name": 150,
-        "Codex_Ent_Fumerola_Genus_Name": 100,
-        "Codex_Ent_Fungoida_Genus_Name": 300,
-        "Codex_Ent_Osseus_Genus_Name": 800,
-        "Codex_Ent_Recepta_Genus_Name": 150,
-        "Codex_Ent_Sinuous_Tuber_Genus_Name": 100,
-        "Codex_Ent_Stratum_Genus_Name": 500,
-        "Codex_Ent_Tubus_Genus_Name": 800,
-        "Codex_Ent_Tussocks_Genus_Name": 200
+        "Aleoida": 150,
+        "Amphora_Plant": 100,
+        "Anemone": 100,
+        "Bacterium": 500,
+        "Bark_Mound": 100,
+        "Brain_Tree": 100,
+        "Cactoida": 300,
+        "Clypeus": 150,
+        "Concha": 150,
+        "Crystalline_Shard": 100,
+        "Electricae": 1000,
+        "Fonticulua": 500,
+        "Frutexa": 150,
+        "Fumerola": 100,
+        "Fungoida": 300,
+        "Osseus": 800,
+        "Recepta": 150,
+        "Sinuous_Tuber": 100,
+        "Stratum": 500,
+        "Tubus": 800,
+        "Tussocks": 200
     }
     status = status_parser.current_status
 
@@ -149,7 +149,7 @@ def bio_scan(content: dict[str, Any], scans:list[dict[str, Any]], scan_in_progre
         content["event"] = "ScanOrganicFirst"
         scans.clear()
         scans.append({'lat': status['Latitude'], 'long': status['Longitude']})
-        scan_radius = colony_size[content['Genus'][1:-1]]
+        scan_radius = colony_size[content['Genus'][11:-12]]
         scan_in_progress = False
     elif content["ScanType"] == "Sample":
         if not scan_in_progress:
