@@ -745,14 +745,14 @@ def send_message(obj):
                 raise Exception("Can not send message.")
 
             if not obj.get("recipient") or obj.get("recipient").lower() == "local":
-                typewrite("/local ", interval=0.01)
+                typewrite("/local ", interval=0.02)
                 return_message += " to local chat."
             else:
-                typewrite(f"/d {obj.get('recipient')} ", interval=0.01)
+                typewrite(f"/d {obj.get('recipient')} ", interval=0.02)
                 return_message += f" to {obj.get('recipient')}."
 
             sleep(0.05)
-            typewrite(chunk, interval=0.01)
+            typewrite(chunk, interval=0.02)
 
             sleep(0.05)
             # send enter key
