@@ -307,6 +307,8 @@ ShipInfoState = TypedDict('ShipInfoState', {
     #"CurrentJumpRange": float,
     "LandingPadSize": Literal['S', 'M', 'L', 'Unknown'],
     "IsMiningShip": bool,
+    "SLFs": NotRequired[dict],
+    "SRVs": NotRequired[dict],
 })
 
 ship_sizes: dict[str, Literal['S', 'M', 'L', 'Unknown']] = {
@@ -414,7 +416,22 @@ class ShipInfo(Projection[ShipInfoState]):
                     self.state['IsMiningShip'] = True
                 else:
                     self.state['IsMiningShip'] = False
-        
+
+                slf5 = any(module["Item"].startswith("int_fighterbay_size5") for module in event.content["Modules"])
+                slf6 = any(module["Item"].startswith("int_fighterbay_size6") for module in event.content["Modules"])
+                slf7 = any(module["Item"].startswith("int_fighterbay_size7") for module in event.content["Modules"])
+                slfsum = 1 if slf5 else 0 + 2 if slf6 else 0 + 2 if slf7 else 0
+                if slfsum:
+                    self.state['SLFs'] = {'docked': slfsum, 'launched': 0, 'destroyed': 0}
+
+                buggy2 = sum(module["Item"].startswith("int_buggybay_size2") for module in event.content["Modules"])
+                buggy4 = sum(module["Item"].startswith("int_buggybay_size4") for module in event.content["Modules"])
+                buggy6 = sum(module["Item"].startswith("int_buggybay_size6") for module in event.content["Modules"])
+                buggysum = buggy2 * 1 + buggy4 * 2 + buggy6 * 4
+                if buggysum:
+                    self.state['SRVs'] = {'docked': buggysum, 'launched': 0, 'destroyed': 0}
+
+
         if self.state['Type'] != 'Unknown':
             self.state['LandingPadSize'] = ship_sizes.get(self.state['Type'], 'Unknown')
             
