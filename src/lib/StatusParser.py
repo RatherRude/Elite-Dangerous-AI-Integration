@@ -384,8 +384,10 @@ class StatusParser:
             if not old_status["flags2"]["BreathableAtmosphere"] and new_status["flags2"]["BreathableAtmosphere"]:
                 events.append({"event": "BreathableAtmosphereEntered"})
 
+            if old_status["SelectedWeapon"] and old_status["SelectedWeapon"] != new_status["SelectedWeapon"]:
+                events.append({"event": "WeaponSelected", "SelectedWeapon": new_status["SelectedWeapon"]})
+
         # Always
-        # ToDo: filter out in danger when in mining ship
         if not new_status["flags2"] or (new_status["flags2"] and not new_status["flags2"]["OnFoot"]):
             if old_status["flags"]["InDanger"] and not new_status["flags"]["InDanger"]:
                 events.append({"event": "OutofDanger"})
@@ -398,7 +400,7 @@ class StatusParser:
             events.append({"event": "NightVisionOn"})
 
         if (
-            old_status["LegalState"]
+            old_status["LegalState"] and new_status["LegalState"]
             and old_status["LegalState"] != new_status["LegalState"]
             and (
                 old_status["LegalState"] not in ["Clean", "Speeding", "Allied"]
@@ -407,8 +409,7 @@ class StatusParser:
         ):
             events.append({"event": "LegalStateChanged", "LegalState": new_status["LegalState"]})
         
-        if old_status["SelectedWeapon"] and old_status["SelectedWeapon"] != new_status["SelectedWeapon"]:
-            events.append({"event": "WeaponSelected", "SelectedWeapon": new_status["SelectedWeapon"]})
+
 
         return events
 

@@ -1,17 +1,13 @@
-from abc import ABC, abstractmethod
-from datetime import timezone, datetime
 import hashlib
 import inspect
-import json
-from typing import Any, Generic, Literal, Callable, Optional, TypeVar, final
-import sqlite3
-import sqlite_vec
+from abc import ABC, abstractmethod
+from datetime import timezone, datetime
+from typing import Any, Generic, Literal, Callable, TypeVar, final
 
 from .Database import EventStore, KeyValueStore
 from .EDJournal import *
-from .Event import Event, GameEvent, ConversationEvent, StatusEvent, ToolEvent, ExternalEvent
+from .Event import Event, GameEvent, ConversationEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent
 from .Logger import log
-
 
 ProjectedState = TypeVar("ProjectedState")
 
@@ -26,7 +22,7 @@ class Projection(ABC, Generic[ProjectedState]):
         pass
 
     @abstractmethod
-    def process(self, event: Event) -> None:
+    def process(self, event: Event) -> None | list[ProjectedEvent]:
         pass
 
 @final
@@ -65,7 +61,8 @@ class EventManager:
     def add_game_event(self, content: dict[str, Any]):
         event = GameEvent(content=content, historic=False)
         self.incoming.put(event)
-        log('Event', event)
+        log('Event', event.content['event'])
+        log('debug', 'Event', event)
 
     def add_historic_game_event(self, content: dict[str, Any]):
         max_event_id = max([event.content.get('id') for event in self.processed if isinstance(event, GameEvent)], default='') # TODO: this is not efficient
@@ -78,13 +75,15 @@ class EventManager:
     def add_external_event(self, content: dict[str, Any]):
         event = ExternalEvent(content=content)
         self.incoming.put(event)
-        log('Event', event)
+        log('Event', event.content['event'])
+        log('debug', 'Event', event)
 
     def add_status_event(self, status: dict[str, Any]):
         event = StatusEvent(status=status)
         self.incoming.put(event)
         if status.get("event") != 'Status':
-            log('Event', event)
+            log('Event', event.status['event'])
+            log('debug', 'Event', event)
 
     def add_conversation_event(self, role: Literal['user', 'assistant'], content: str):
         event = ConversationEvent(kind=role, content=content)
@@ -100,6 +99,13 @@ class EventManager:
         self.is_replying = False
         # log('debug', event)
 
+    def add_projected_event(self, event: ProjectedEvent, source: Event):
+        event.processed_at = source.processed_at
+        if not isinstance(source, GameEvent) or not source.historic:
+            self.pending.append(event)
+            log('Event', 'projected', event.content['event'])
+            log('debug', 'Event', event)
+
     def add_tool_call(self, request: list[dict[str, Any]], results: list[dict[str, Any]]):
         event = ToolEvent(request=request, results=results)
         self.incoming.put(event)
@@ -110,8 +116,8 @@ class EventManager:
             event = self.incoming.get()
             timestamp = datetime.now(timezone.utc).timestamp()
             event.processed_at = timestamp
+            self.event_store.insert_event(event, timestamp)
             self.update_projections(event, save_later=True)
-            self.event_store.insert_event(event, timestamp)  
             
             if isinstance(event, GameEvent) and event.historic:
                 #self.processed.append(event)
@@ -143,7 +149,11 @@ class EventManager:
     
     def update_projection(self, projection: Projection, event: Event, save_later: bool = False):
         try:
-            projection.process(event)
+            projected_events = projection.process(event)
+            if projected_events:
+                for e in projected_events:
+                    self.add_projected_event(e, event)
+                    self.event_store.insert_event(event, datetime.now(timezone.utc).timestamp())
         except Exception as e:
             log('error', 'Error processing event', event, 'with projection', projection, e, traceback.format_exc())
             return
@@ -208,6 +218,9 @@ class EventManager:
                     if not contains_material:
                         continue
 
+                if event.content.get("event") == "ScanOrganic":
+                    continue
+
                 return True
 
             if isinstance(event, StatusEvent) and event.status.get("event") in self.game_events:
@@ -217,6 +230,12 @@ class EventManager:
                 return True
 
             if isinstance(event, ExternalEvent):
+                return True
+
+            if isinstance(event, ProjectedEvent):
+                if event.content.get("event").startswith('ScanOrganic'):
+                    if not 'ScanOrganic' in self.game_events:
+                        continue
                 return True
 
         return False

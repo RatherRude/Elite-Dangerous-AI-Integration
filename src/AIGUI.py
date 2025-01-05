@@ -265,7 +265,7 @@ game_events = {
         'CarrierJumpCancelled': True
     },
     'Odyssey Events': {
-        'Backpack': False,
+        # 'Backpack': False,
         'BackpackChange': False,
         'BookDropship': True,
         'BookTaxi': True,

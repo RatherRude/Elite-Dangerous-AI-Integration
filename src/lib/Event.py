@@ -4,7 +4,7 @@ from typing import Dict, List, Literal
 
 
 class Event:
-    kind: Literal['game', 'user', 'assistant', 'assistant_completed', 'tool', 'status']
+    kind: Literal['game', 'user', 'assistant', 'assistant_completed', 'tool', 'status', 'projected']
     timestamp: str
     processed_at: float
 
@@ -24,6 +24,12 @@ class StatusEvent(Event):
     kind: Literal['status'] = field(default='status')
     processed_at: float = field(default=0.0)
 
+@dataclass
+class ProjectedEvent(Event):
+    content: Dict
+    timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
+    kind: Literal['projected'] = field(default='projected')
+    processed_at: float = field(default=0.0)
 
 @dataclass
 class ExternalEvent(Event):

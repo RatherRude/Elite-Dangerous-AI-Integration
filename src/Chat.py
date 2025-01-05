@@ -1,8 +1,10 @@
 import io
 import json
+import math
 import sys
 from pathlib import Path
 import traceback
+from typing import Any
 
 from openai import OpenAI
 
@@ -116,9 +118,8 @@ event_manager: EventManager | None = None
 
 controller_manager = ControllerManager()
 
-
 def main():
-    global llmClient, sttClient, ttsClient, tts, aiModel, useTools, jn, event_manager, prompt_generator, llm_model_name
+    global llmClient, sttClient, ttsClient, tts, aiModel, useTools, jn, event_manager, prompt_generator, llm_model_name, status_parser
 
     # Load configuration
     config = load_config()
@@ -229,11 +230,15 @@ def main():
     # Cue the user that we're ready to go.
     log('info', "System Ready.")
 
+    within_scan_radius = True
+    scan_radius = 0
+    scan_in_progress = False
+    scans = []
     counter = 0
     while True:
         try:
             counter += 1
-
+            status = None
             # check status file for updates
             while not status_parser.status_queue.empty():
                 status = status_parser.status_queue.get()
