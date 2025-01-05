@@ -224,7 +224,7 @@ class EventManager:
                 return True
 
             if isinstance(event, StatusEvent) and event.status.get("event") in self.game_events:
-                if not self.react_to_danger_mining and event.status.get("event") == "InDanger":
+                if not self.react_to_danger_mining and (event.status.get("event") in ["InDanger", "OutOfDanger"]):
                     if states.get('ShipInfo', {}).get('IsMiningShip', False) and states.get('Location', {}).get('PlanetaryRing', False):
                         continue
                 return True
