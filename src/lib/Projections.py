@@ -1,9 +1,10 @@
-from typing import Any, Generic, Literal, TypeVar, TypedDict, final
+from typing import Any, Literal, TypedDict, final
+
 from typing_extensions import NotRequired, override
-from .StatusParser import parse_status_flags, parse_status_json, Status
-from .Event import Event, StatusEvent, GameEvent
-from .Logger import log
+
+from .Event import Event, StatusEvent, GameEvent, ProjectedEvent
 from .EventManager import EventManager, Projection
+from .StatusParser import parse_status_flags, parse_status_json, Status
 
 
 def latest_event_projection_factory(projectionName: str, gameEvent: str):
@@ -458,6 +459,93 @@ class NavInfo(Projection[NavInfoState]):
         
         # TODO: when do we clear the route? if 'FSDJump' 'StarSystem' = 'NavRouteTarget'? or if remaining jumps = 0? what if the user clears?
 
+class ExobiologyScanStateScan(TypedDict):
+    lat: float
+    long: float
+
+ExobiologyScanState = TypedDict('ExobiologyScanState', {
+    "within_scan_radius": NotRequired[bool],
+    "scan_radius": NotRequired[int],
+    "scans": list[ExobiologyScanStateScan],
+    "lat": NotRequired[float],
+    "long": NotRequired[float]
+})
+
+@final
+class ExobiologyScan(Projection[ExobiologyScanState]):
+    colony_size = {
+        "Aleoida": 150,
+        "Amphora_Plant": 100,
+        "Anemone": 100,
+        "Bacterium": 500,
+        "Bark_Mound": 100,
+        "Brain_Tree": 100,
+        "Cactoid": 300,
+        "Clypeus": 150,
+        "Concha": 150,
+        "Crystalline_Shard": 100,
+        "Electricae": 1000,
+        "Fonticulua": 500,
+        "Frutexa": 150,
+        "Fumerola": 100,
+        "Fungoida": 300,
+        "Osseus": 800,
+        "Recepta": 150,
+        "Sinuous_Tuber": 100,
+        "Stratum": 500,
+        "Tubus": 800,
+        "Tussocks": 200
+    }
+
+    @override
+    def get_default_state(self) -> ExobiologyScanState:
+        return {
+            "within_scan_radius": True,
+            "scans": [],
+        }
+
+    @override
+    def process(self, event: Event) -> list[ProjectedEvent]:
+        projected_events: list[ProjectedEvent] = []
+
+        if isinstance(event, StatusEvent) and event.status.get("event") == "Status":
+            self.state["lat"] = event.status.get("Latitude")
+            self.state["long"] = event.status.get("Longitude")
+
+            # TODO check current lat long with scan locations
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'ScanOrganic':
+            content = event.content
+
+            if content["ScanType"] == "Log":
+                self.state['scans'].clear()
+                self.state['scans'].append({'lat': self.state["lat"], 'long': self.state["long"]})
+                self.state['scan_radius'] = self.colony_size[content['Genus'][11:-12]]
+                self.state['within_scan_radius'] = True
+                projected_events.append(ProjectedEvent({
+                    **content,
+                    "event": "ScanOrganicFirst",
+                }))
+
+            elif content["ScanType"] == "Sample":
+                if len(self.state['scans']) == 1:
+                    self.state['scans'].append({'lat': self.state["lat"], 'long': self.state["long"]})
+                    projected_events.append(ProjectedEvent({
+                        **content,
+                        "event": "ScanOrganicSecond",
+                    }))
+                else:
+                    projected_events.append(ProjectedEvent({
+                        **content,
+                        "event": "ScanOrganicThird",
+                    }))
+                    self.state['scans'].clear()
+
+            elif content["ScanType"] == "Analyse":
+                pass
+
+        return projected_events
+
 
 
 def registerProjections(event_manager: EventManager):
@@ -467,6 +555,7 @@ def registerProjections(event_manager: EventManager):
     event_manager.register_projection(Missions())
     event_manager.register_projection(ShipInfo())
     event_manager.register_projection(NavInfo())
+    event_manager.register_projection(ExobiologyScan())
 
     # ToDo: SLF, SRV,
     for proj in [

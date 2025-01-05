@@ -1,17 +1,13 @@
-from abc import ABC, abstractmethod
-from datetime import timezone, datetime
 import hashlib
 import inspect
-import json
-from typing import Any, Generic, Literal, Callable, Optional, TypeVar, final
-import sqlite3
-import sqlite_vec
+from abc import ABC, abstractmethod
+from datetime import timezone, datetime
+from typing import Any, Generic, Literal, Callable, TypeVar, final
 
 from .Database import EventStore, KeyValueStore
 from .EDJournal import *
-from .Event import Event, GameEvent, ConversationEvent, StatusEvent, ToolEvent, ExternalEvent
+from .Event import Event, GameEvent, ConversationEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent
 from .Logger import log
-
 
 ProjectedState = TypeVar("ProjectedState")
 
@@ -26,7 +22,7 @@ class Projection(ABC, Generic[ProjectedState]):
         pass
 
     @abstractmethod
-    def process(self, event: Event) -> None:
+    def process(self, event: Event) -> None | list[ProjectedEvent]:
         pass
 
 @final
@@ -41,21 +37,12 @@ class EventManager:
         self.is_listening = False
         self.on_reply_request = on_reply_request
         self.game_events = game_events
-        if "ScanOrganic" in game_events:
-            game_events.append("ScanOrganicFirst")
-            game_events.append("ScanOrganicSecond")
-            game_events.append("ScanOrganicThird")
-            game_events.append("ScanOrganicTooClose")
-            game_events.append("ScanOrganicFarEnough")
-            # game_events.append("ScanOrganicFinished")
         self.react_to_text_local = react_to_text_local
         self.react_to_text_starsystem = react_to_text_starsystem
         self.react_to_text_npc = react_to_text_npc
         self.react_to_text_squadron = react_to_text_squadron
         self.react_to_material = react_to_material
         self.react_to_danger_mining = react_to_danger_mining
-
-        self.scan_in_progress = False
 
         self.event_classes: list[type[Event]] = [ConversationEvent, ToolEvent, GameEvent, StatusEvent, ExternalEvent]
         self.projections: list[Projection] = []
@@ -109,6 +96,11 @@ class EventManager:
         self.is_replying = False
         # log('debug', event)
 
+    def add_projected_event(self, event: ProjectedEvent, source: Event):
+        event.processed_at = source.processed_at
+        self.pending.append(event)
+        log('Event', 'projected', event)
+
     def add_tool_call(self, request: list[dict[str, Any]], results: list[dict[str, Any]]):
         event = ToolEvent(request=request, results=results)
         self.incoming.put(event)
@@ -119,8 +111,8 @@ class EventManager:
             event = self.incoming.get()
             timestamp = datetime.now(timezone.utc).timestamp()
             event.processed_at = timestamp
+            self.event_store.insert_event(event, timestamp)
             self.update_projections(event, save_later=True)
-            self.event_store.insert_event(event, timestamp)  
             
             if isinstance(event, GameEvent) and event.historic:
                 #self.processed.append(event)
@@ -152,7 +144,11 @@ class EventManager:
     
     def update_projection(self, projection: Projection, event: Event, save_later: bool = False):
         try:
-            projection.process(event)
+            projected_events = projection.process(event)
+            if projected_events:
+                for e in projected_events:
+                    self.add_projected_event(e, event)
+                    self.event_store.insert_event(event, datetime.now(timezone.utc).timestamp())
         except Exception as e:
             log('error', 'Error processing event', event, 'with projection', projection, e, traceback.format_exc())
             return
@@ -217,6 +213,9 @@ class EventManager:
                     if not contains_material:
                         continue
 
+                if event.content.get("event") == "ScanOrganic":
+                    continue
+
                 return True
 
             if isinstance(event, StatusEvent) and event.status.get("event") in self.game_events:
@@ -226,6 +225,12 @@ class EventManager:
                 return True
 
             if isinstance(event, ExternalEvent):
+                return True
+
+            if isinstance(event, ProjectedEvent):
+                if event.content.get("event").startswith('ScanOrganic'):
+                    if not 'ScanOrganic' in self.game_events:
+                        continue
                 return True
 
         return False

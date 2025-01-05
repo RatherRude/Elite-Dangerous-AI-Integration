@@ -127,7 +127,7 @@ def bio_scan(content: dict[str, Any], scans:list[dict[str, Any]], scan_in_progre
         "Bacterium": 500,
         "Bark_Mound": 100,
         "Brain_Tree": 100,
-        "Cactoida": 300,
+        "Cactoid": 300,
         "Clypeus": 150,
         "Concha": 150,
         "Crystalline_Shard": 100,
@@ -334,34 +334,34 @@ def main():
                 event = jn.events.get()
                 # log('info', 'main loop event', event)
 
-                if event["event"] == "ScanOrganic":
-                    event, scans, scan_in_progress, scan_radius = bio_scan(event, scans, scan_in_progress, scan_radius)
-                if event["event"] in ['SupercruiseEntry','FSDJump','Died','Shutdown','JoinACrew']:
-                    scans.clear()
+                # if event["event"] == "ScanOrganic":
+                #     event, scans, scan_in_progress, scan_radius = bio_scan(event, scans, scan_in_progress, scan_radius)
+                # if event["event"] in ['SupercruiseEntry','FSDJump','Died','Shutdown','JoinACrew']:
+                #     scans.clear()
 
                 event_manager.add_game_event(event)
 
-            if len(scans) > 0 and status:
-                in_scan_radius = False
-                if (status_parser.current_status.get('Latitude', False) and
-                    status_parser.current_status.get('Longitude', False) and
-                    status_parser.current_status.get('PlanetRadius', False)):
-                    distance_obj = {'lat': status_parser.current_status['Latitude'], 'long': status_parser.current_status['Longitude']}
-                    for scan in scans:
-                        distance = haversine_distance(scan, distance_obj, status_parser.current_status['PlanetRadius'])
-                        log('info', 'distance', distance)
-                        if distance < scan_radius:
-                            in_scan_radius = True
-                    if in_scan_radius:
-                        if not within_scan_radius:
-                            event_manager.add_game_event({'event':'ScanOrganicTooClose','id':'0'})
-                            within_scan_radius = in_scan_radius
-                    else:
-                        if within_scan_radius:
-                            event_manager.add_game_event({'event': 'ScanOrganicFarEnough','id':'0'})
-                            within_scan_radius = in_scan_radius
-                else:
-                    scans.clear()
+            # if len(scans) > 0 and status:
+            #     in_scan_radius = False
+            #     if (status_parser.current_status.get('Latitude', False) and
+            #         status_parser.current_status.get('Longitude', False) and
+            #         status_parser.current_status.get('PlanetRadius', False)):
+            #         distance_obj = {'lat': status_parser.current_status['Latitude'], 'long': status_parser.current_status['Longitude']}
+            #         for scan in scans:
+            #             distance = haversine_distance(scan, distance_obj, status_parser.current_status['PlanetRadius'])
+            #             log('info', 'distance', distance)
+            #             if distance < scan_radius:
+            #                 in_scan_radius = True
+            #         if in_scan_radius:
+            #             if not within_scan_radius:
+            #                 event_manager.add_game_event({'event':'ScanOrganicTooClose','id':'0'})
+            #                 within_scan_radius = in_scan_radius
+            #         else:
+            #             if within_scan_radius:
+            #                 event_manager.add_game_event({'event': 'ScanOrganicFarEnough','id':'0'})
+            #                 within_scan_radius = in_scan_radius
+            #     else:
+            #         scans.clear()
 
             event_manager.process()
 
