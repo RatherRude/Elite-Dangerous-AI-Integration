@@ -61,7 +61,8 @@ class EventManager:
     def add_game_event(self, content: dict[str, Any]):
         event = GameEvent(content=content, historic=False)
         self.incoming.put(event)
-        log('Event', event)
+        log('Event', event.content['event'])
+        log('debug', 'Event', event)
 
     def add_historic_game_event(self, content: dict[str, Any]):
         max_event_id = max([event.content.get('id') for event in self.processed if isinstance(event, GameEvent)], default='') # TODO: this is not efficient
@@ -74,13 +75,15 @@ class EventManager:
     def add_external_event(self, content: dict[str, Any]):
         event = ExternalEvent(content=content)
         self.incoming.put(event)
-        log('Event', event)
+        log('Event', event.content['event'])
+        log('debug', 'Event', event)
 
     def add_status_event(self, status: dict[str, Any]):
         event = StatusEvent(status=status)
         self.incoming.put(event)
         if status.get("event") != 'Status':
-            log('Event', event)
+            log('Event', event.status['event'])
+            log('debug', 'Event', event)
 
     def add_conversation_event(self, role: Literal['user', 'assistant'], content: str):
         event = ConversationEvent(kind=role, content=content)
@@ -98,8 +101,10 @@ class EventManager:
 
     def add_projected_event(self, event: ProjectedEvent, source: Event):
         event.processed_at = source.processed_at
-        self.pending.append(event)
-        log('Event', 'projected', event)
+        if not isinstance(source, GameEvent) or not source.historic:
+            self.pending.append(event)
+            log('Event', 'projected', event.content['event'])
+            log('debug', 'Event', event)
 
     def add_tool_call(self, request: list[dict[str, Any]], results: list[dict[str, Any]]):
         event = ToolEvent(request=request, results=results)

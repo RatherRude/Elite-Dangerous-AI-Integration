@@ -1,3 +1,4 @@
+import math
 from typing import Any, Literal, TypedDict, final
 
 from typing_extensions import NotRequired, override
@@ -477,7 +478,7 @@ class ExobiologyScan(Projection[ExobiologyScanState]):
         "Aleoida": 150,
         "Amphora_Plant": 100,
         "Anemone": 100,
-        "Bacterium": 500,
+        "Bacterial": 500,
         "Bark_Mound": 100,
         "Brain_Tree": 100,
         "Cactoid": 300,
@@ -486,7 +487,7 @@ class ExobiologyScan(Projection[ExobiologyScanState]):
         "Crystalline_Shard": 100,
         "Electricae": 1000,
         "Fonticulua": 500,
-        "Frutexa": 150,
+        "Shrubs": 150,
         "Fumerola": 100,
         "Fungoida": 300,
         "Osseus": 800,
@@ -496,6 +497,20 @@ class ExobiologyScan(Projection[ExobiologyScanState]):
         "Tubus": 800,
         "Tussocks": 200
     }
+
+    def haversine_distance(self, new_value:dict[str,float], old_value:dict[str,float], radius:int):
+        lat1, lon1 = math.radians(new_value['lat']), math.radians(new_value['long'])
+        lat2, lon2 = math.radians(old_value['lat']), math.radians(old_value['long'])
+
+        dlat = lat2 - lat1
+        dlon = lon2 - lon1
+
+        # Haversine formula
+        a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+        distance = radius * c
+        return distance
 
     @override
     def get_default_state(self) -> ExobiologyScanState:
@@ -512,37 +527,60 @@ class ExobiologyScan(Projection[ExobiologyScanState]):
             self.state["lat"] = event.status.get("Latitude")
             self.state["long"] = event.status.get("Longitude")
 
-            # TODO check current lat long with scan locations
+            if self.state["scans"] and self.state.get('scan_radius', False):
+                in_scan_radius = False
+                if (event.status.get('Latitude', False) and
+                    event.status.get('Longitude', False) and
+                    event.status.get('PlanetRadius', False)):
+                    distance_obj = {'lat': self.state["lat"], 'long': self.state["long"]}
+                    for scan in self.state["scans"]:
+                        distance = self.haversine_distance(scan, distance_obj, event.status['PlanetRadius'])
+                        # log('info', 'distance', distance)
+                        if distance < self.state['scan_radius']:
+                            in_scan_radius = True
+                            break
+                    if in_scan_radius:
+                        if not self.state['within_scan_radius']:
+                            projected_events.append(ProjectedEvent({"event": "ScanOrganicTooClose"}))
+                            self.state['within_scan_radius'] = in_scan_radius
+                    else:
+                        if self.state['within_scan_radius']:
+                            projected_events.append(ProjectedEvent({"event": "ScanOrganicFarEnough"}))
+                            self.state['within_scan_radius'] = in_scan_radius
+                else:
+                    # log('info', 'status missing')
+                    if self.state['scans']:
+                        self.state["scans"].clear()
+                        self.state.pop("scan_radius")
+
 
         if isinstance(event, GameEvent) and event.content.get('event') == 'ScanOrganic':
             content = event.content
-
             if content["ScanType"] == "Log":
                 self.state['scans'].clear()
-                self.state['scans'].append({'lat': self.state["lat"], 'long': self.state["long"]})
+                self.state['scans'].append({'lat': self.state.get('lat', 0), 'long': self.state.get('long', 0)})
                 self.state['scan_radius'] = self.colony_size[content['Genus'][11:-12]]
                 self.state['within_scan_radius'] = True
-                projected_events.append(ProjectedEvent({
-                    **content,
-                    "event": "ScanOrganicFirst",
-                }))
+                projected_events.append(ProjectedEvent({**content, "event": "ScanOrganicFirst", "NewSampleDistance":self.state['scan_radius']}))
 
             elif content["ScanType"] == "Sample":
                 if len(self.state['scans']) == 1:
-                    self.state['scans'].append({'lat': self.state["lat"], 'long': self.state["long"]})
-                    projected_events.append(ProjectedEvent({
-                        **content,
-                        "event": "ScanOrganicSecond",
-                    }))
+                    self.state['scans'].append({'lat': self.state.get('lat', 0), 'long': self.state.get('long', 0)})
+                    projected_events.append(ProjectedEvent({**content, "event": "ScanOrganicSecond"}))
+                elif len(self.state['scans']) == 2:
+                    projected_events.append(ProjectedEvent({**content, "event": "ScanOrganicThird"}))
+                    if self.state['scans']:
+                        self.state["scans"].clear()
+                        self.state.pop('scan_radius', None)
                 else:
-                    projected_events.append(ProjectedEvent({
-                        **content,
-                        "event": "ScanOrganicThird",
-                    }))
-                    self.state['scans'].clear()
+                    projected_events.append(ProjectedEvent({**content, "event": "ScanOrganic"}))
 
             elif content["ScanType"] == "Analyse":
                 pass
+
+        if isinstance(event, GameEvent) and event.content.get('event') in ['SupercruiseEntry','FSDJump','Died','Shutdown','JoinACrew']:
+            self.state["scans"].clear()
+            self.state.pop('scan_radius', None)
 
         return projected_events
 

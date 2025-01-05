@@ -118,70 +118,6 @@ event_manager: EventManager | None = None
 
 controller_manager = ControllerManager()
 
-
-def bio_scan(content: dict[str, Any], scans:list[dict[str, Any]], scan_in_progress:bool, scan_radius:int):
-    colony_size = {
-        "Aleoida": 150,
-        "Amphora_Plant": 100,
-        "Anemone": 100,
-        "Bacterium": 500,
-        "Bark_Mound": 100,
-        "Brain_Tree": 100,
-        "Cactoid": 300,
-        "Clypeus": 150,
-        "Concha": 150,
-        "Crystalline_Shard": 100,
-        "Electricae": 1000,
-        "Fonticulua": 500,
-        "Frutexa": 150,
-        "Fumerola": 100,
-        "Fungoida": 300,
-        "Osseus": 800,
-        "Recepta": 150,
-        "Sinuous_Tuber": 100,
-        "Stratum": 500,
-        "Tubus": 800,
-        "Tussocks": 200
-    }
-    status = status_parser.current_status
-
-    if content["ScanType"] == "Log":
-        content["event"] = "ScanOrganicFirst"
-        scans.clear()
-        scans.append({'lat': status['Latitude'], 'long': status['Longitude']})
-        scan_radius = colony_size[content['Genus'][11:-12]]
-        scan_in_progress = False
-    elif content["ScanType"] == "Sample":
-        if not scan_in_progress:
-            content["event"] = "ScanOrganicSecond"
-            scans.append({'lat': status['Latitude'], 'long': status['Longitude']})
-            scan_in_progress = True
-        else:
-            content["event"] = "ScanOrganicThird"
-            scan_in_progress = False
-    elif content["ScanType"] == "Analyse":
-        content["event"] = "ScanOrganicFinished"
-
-    return content, scans, scan_in_progress, scan_radius
-
-
-def haversine_distance(new_value, old_value, radius):
-    # Convert latitude and longitude from degrees to radians
-    lat1, lon1 = math.radians(new_value['lat']), math.radians(new_value['long'])
-    lat2, lon2 = math.radians(old_value['lat']), math.radians(old_value['long'])
-
-    # Calculate differences
-    dlat = lat2 - lat1
-    dlon = lon2 - lon1
-
-    # Haversine formula
-    a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-
-    # Distance in meters
-    distance = radius * c
-    return distance
-
 def main():
     global llmClient, sttClient, ttsClient, tts, aiModel, useTools, jn, event_manager, prompt_generator, llm_model_name, status_parser
 
@@ -332,36 +268,7 @@ def main():
             # check EDJournal files for updates
             while not jn.events.empty():
                 event = jn.events.get()
-                # log('info', 'main loop event', event)
-
-                # if event["event"] == "ScanOrganic":
-                #     event, scans, scan_in_progress, scan_radius = bio_scan(event, scans, scan_in_progress, scan_radius)
-                # if event["event"] in ['SupercruiseEntry','FSDJump','Died','Shutdown','JoinACrew']:
-                #     scans.clear()
-
                 event_manager.add_game_event(event)
-
-            # if len(scans) > 0 and status:
-            #     in_scan_radius = False
-            #     if (status_parser.current_status.get('Latitude', False) and
-            #         status_parser.current_status.get('Longitude', False) and
-            #         status_parser.current_status.get('PlanetRadius', False)):
-            #         distance_obj = {'lat': status_parser.current_status['Latitude'], 'long': status_parser.current_status['Longitude']}
-            #         for scan in scans:
-            #             distance = haversine_distance(scan, distance_obj, status_parser.current_status['PlanetRadius'])
-            #             log('info', 'distance', distance)
-            #             if distance < scan_radius:
-            #                 in_scan_radius = True
-            #         if in_scan_radius:
-            #             if not within_scan_radius:
-            #                 event_manager.add_game_event({'event':'ScanOrganicTooClose','id':'0'})
-            #                 within_scan_radius = in_scan_radius
-            #         else:
-            #             if within_scan_radius:
-            #                 event_manager.add_game_event({'event': 'ScanOrganicFarEnough','id':'0'})
-            #                 within_scan_radius = in_scan_radius
-            #     else:
-            #         scans.clear()
 
             event_manager.process()
 

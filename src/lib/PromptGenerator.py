@@ -158,7 +158,7 @@ carrierEvents = {
     "CarrierJumpCancelled": "Commander {commanderName} has canceled a jump request for carrier.",
 }
 odysseyEvents = {
-    'Backpack': "Commander {commanderName} has interacted with their backpack.",
+    # 'Backpack': "Commander {commanderName} has interacted with their backpack.",
     'BackpackChange': "Commander {commanderName} has changed items in their backpack.",
     'BookDropship': "Commander {commanderName} has booked a dropship.",
     'BookTaxi': "Commander {commanderName} has booked a taxi.",
@@ -290,7 +290,7 @@ otherEvents = {
 projectedEvents = {
     'ScanOrganicTooClose': "Commander {commanderName} is now too close to take another sample. Distance must be increased.",
     'ScanOrganicFarEnough': "Commander {commanderName} is now far enough away to take another sample.",
-    'ScanOrganicFirst': "Commander {commanderName} took the first of three biological samples.",
+    'ScanOrganicFirst': "Commander {commanderName} took the first of three biological samples. New sample distance acquired.",
     'ScanOrganicSecond': "Commander {commanderName} took the second of three biological samples.",
     'ScanOrganicThird': "Commander {commanderName} took the third and final biological samples.",
 }
