@@ -212,7 +212,10 @@ class EventManager:
                     contains_material = False
                     for chunk in chunks:
                         for material in event.content.get("Materials"):
-                            if chunk in material["Name"]:
+                            if chunk.lower() in material["Name_Localised"].lower():
+                                contains_material = True
+                        if event.content.get("MotherlodeMaterial_Localised", False):
+                            if chunk.lower() in event.content['MotherlodeMaterial_Localised'].lower():
                                 contains_material = True
 
                     if not contains_material:

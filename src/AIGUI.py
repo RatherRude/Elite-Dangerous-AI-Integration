@@ -330,7 +330,7 @@ game_events = {
         # 'NpcCrewPaidWage': False,
         'NpcCrewRank': False,
         'Promotion': True,
-        'ProspectedAsteroid': False,
+        'ProspectedAsteroid': True,
         'QuitACrew': True,
         'RebootRepair': True,
         'ReceiveText': False,
@@ -1076,7 +1076,7 @@ class App:
                     rowCounter += 1
 
                 if event == "ProspectedAsteroid":
-                    tk.Label(frame, text="React to Materials:").grid(row=rowCounter, column=1, sticky=tk.W)
+                    tk.Label(frame, text="Name must include:").grid(row=rowCounter, column=1, sticky=tk.W)
                     self.react_to_material = tk.Entry(frame, width=35)
                     self.react_to_material.grid(row=rowCounter, column=1, padx=(115,0), pady=5)
                     rowCounter += 1
@@ -1153,7 +1153,7 @@ class App:
             'react_to_text_npc_var': False,
             'react_to_text_squadron_var': True,
             'react_to_text_starsystem_var': True,
-            'react_to_material': '',
+            'react_to_material': 'opal, diamond, alexandrite',
             'react_to_danger_mining_var': False,
             "ed_journal_path": "",
             "ed_appdata_path": ""
