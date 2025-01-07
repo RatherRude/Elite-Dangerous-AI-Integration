@@ -475,27 +475,27 @@ ExobiologyScanState = TypedDict('ExobiologyScanState', {
 @final
 class ExobiologyScan(Projection[ExobiologyScanState]):
     colony_size = {
-        "Aleoids": 150,
-        "Vents": 100,
-        "Sphere": 100,
-        "Bacterial": 500,
-        "Cone": 100,
-        "Seed": 100,
-        "Cactoid": 300,
-        "Clypeus": 150,
-        "Conchas": 150,
-        "Shards": 100,
-        "Electricae": 1000,
-        "Fonticulus": 500,
-        "Shrubs": 150,
-        "Fumerolas": 100,
-        "Fungoids": 300,
-        "Osseus": 800,
-        "Recepta": 150,
-        "Tube": 100,
-        "Stratum": 500,
-        "Tubus": 800,
-        "Tussocks": 200
+        "Aleoids_Genus_Name": 150,      # Aleoida
+        "Vents_Genus_Name": 100,        # Amphora Plant
+        "Sphere_Genus_Name": 100,       # Anemone
+        "Bacterial_Genus_Name": 500,    # Bacterium
+        "Cone_Genus_Name": 100,         # Bark Mound
+        "Brancae_Name": 100,         # Brain Tree
+        "Cactoid_Genus_Name": 300,      # Cactoida
+        "Clypeus_Genus_Name": 150,      # Clypeus
+        "Conchas_Genus_Name": 150,      # Concha
+        "Shards_Genus_Name": 100,       # Crystalline Shard
+        "Electricae_Genus_Name": 1000,  # Electricae
+        "Fonticulus_Genus_Name": 500,   # Fonticulua
+        "Shrubs_Genus_Name": 150,       # Frutexa
+        "Fumerolas_Genus_Name": 100,    # Fumerola
+        "Fungoids_Genus_Name": 300,     # Fungoida
+        "Osseus_Genus_Name": 800,       # Osseus
+        "Recepta_Genus_Name": 150,      # Recepta
+        "Tube_Genus_Name": 100,         # Sinuous Tuber
+        "Stratum_Genus_Name": 500,      # Stratum
+        "Tubus_Genus_Name": 800,        # Tubus
+        "Tussocks_Genus_Name": 200      # Tussock
     }
 
     def haversine_distance(self, new_value:dict[str,float], old_value:dict[str,float], radius:int):
@@ -559,7 +559,7 @@ class ExobiologyScan(Projection[ExobiologyScanState]):
             if content["ScanType"] == "Log":
                 self.state['scans'].clear()
                 self.state['scans'].append({'lat': self.state.get('lat', 0), 'long': self.state.get('long', 0)})
-                self.state['scan_radius'] = self.colony_size[content['Genus'][11:-12]]
+                self.state['scan_radius'] = self.colony_size[content['Genus'][11:-1]]
                 self.state['within_scan_radius'] = True
                 projected_events.append(ProjectedEvent({**content, "event": "ScanOrganicFirst", "NewSampleDistance":self.state['scan_radius']}))
 
