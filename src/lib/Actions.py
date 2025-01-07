@@ -160,7 +160,7 @@ def galaxy_map_open(args):
         sleep(.05)
 
         # type in the System name
-        typewrite(args['system_name'], interval=0)
+        typewrite(args['system_name'], interval=0.02)
         sleep(0.05)
 
         # send enter key
