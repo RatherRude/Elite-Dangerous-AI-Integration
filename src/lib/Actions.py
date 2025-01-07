@@ -174,16 +174,14 @@ def galaxy_map_open(args):
         keys.send('UI_Select')
 
         if 'start_navigation' in args and args['start_navigation']:
-            sleep(0.25)
-            keys.send('UI_Right')
-            sleep(0.25)
-            keys.send('UI_Back')
-            sleep(0.25)
-            keys.send('UI_Back')
-            sleep(3.5)
-            keys.send('UI_Select', hold=1)
+            sleep(0.05)
+            keys.send('UI_Right', hold=0, repeat=2, repeat_delay=0)
+            sleep(0.05)
+            keys.send('UI_Down', hold=0, repeat=7, repeat_delay=0)
+            sleep(0.05)
+            keys.send('UI_Select')
 
-            sleep(.2)
+            sleep(0.05)
             keys.send('GalaxyMapOpen')
 
             return f"A route to {args['system_name']} has been plotted."
