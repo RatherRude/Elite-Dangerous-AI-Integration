@@ -480,7 +480,7 @@ class ExobiologyScan(Projection[ExobiologyScanState]):
         "Sphere_Genus_Name": 100,       # Anemone
         "Bacterial_Genus_Name": 500,    # Bacterium
         "Cone_Genus_Name": 100,         # Bark Mound
-        "Brancae_Name": 100,         # Brain Tree
+        "Brancae_Name": 100,            # Brain Tree
         "Cactoid_Genus_Name": 300,      # Cactoida
         "Clypeus_Genus_Name": 150,      # Clypeus
         "Conchas_Genus_Name": 150,      # Concha
