@@ -184,7 +184,8 @@ def galaxy_map_open(args):
             sleep(0.05)
             keys.send('GalaxyMapOpen')
 
-            return f"A route to {args['system_name']} has been plotted."
+            return ((f"Best location found: {json.dumps(args['details'])}. " if 'details' in args else '') +
+                    f"Plotting a route to {args['system_name']} has been attempted. Check history to see if it was successful")
 
         return f"The galaxy map has opened. It is now zoomed in on \"{args['system_name']}\". No route was plotted yet, only the commander can do that."
 
@@ -1469,15 +1470,19 @@ def prepare_station_request(obj):
         filters["name"] = {
             "value": obj["name"]
         }
+
+    sort_object = { "distance": { "direction": "asc" } }
+    if filters["market"] and len(filters["market"]) > 0:
+        if filters["market"][0]["demand"]:
+            sort_object = {"market_sell_price":[{"name":filters["market"][0]["name"],"direction":"desc"}]}
+        elif filters["market"][0]["supply"] :
+            sort_object = {"market_buy_price":[{"name":filters["market"][0]["name"],"direction":"asc"}]}
+
     # Build the request body
     request_body = {
         "filters": filters,
         "sort": [
-            {
-                "distance": {
-                    "direction": "asc"
-                }
-            }
+            sort_object
         ],
         "size": 3,
         "page": 0,
@@ -1559,6 +1564,7 @@ def filter_station_response(request, response):
 def station_finder(obj):
     # Initialize the filters
     request_body = prepare_station_request(obj)
+    log('info', 'obj', obj)
 
     url = "https://spansh.co.uk/api/stations/search"
     try:
@@ -1568,6 +1574,16 @@ def station_finder(obj):
         data = response.json()
 
         filtered_data = filter_station_response(request_body, data)
+        # tech broker, material trader
+        if obj.get("technology_broker") or obj.get("material_trader"):
+            if len(filtered_data["results"]) > 0:
+                return galaxy_map_open({
+                    "system_name":filtered_data["results"][0]["system"],
+                    "start_navigation":True,
+                    "details": filtered_data["results"][0]
+                })
+            else:
+                return 'No stations were found, so no route was plotted.'
 
         return f'Here is a list of stations: {json.dumps(filtered_data)}'
     except Exception as e:
@@ -3003,7 +3019,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     )
     actionManager.registerAction(
         'station_finder',
-        "Find a station to buy or sell a commodity, to buy an outfitting module, with a Material Trader or Technology Broker. Ask for unknown values and make sure they are known.",
+        "Find or a station for commodities, modules and ships. Ask for unknown values and make sure they are known.",
         {
             "type": "object",
             "properties": {
@@ -3023,7 +3039,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "distance": {
                     "type": "number",
                     "description": "The maximum distance to search",
-                    "example": 50000.0
+                    "default": 50000.0
                 },
                 "material_trader": {
                     "type": "array",
@@ -3211,7 +3227,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             },
             "recipient": {
                 "type": "string",
-                "description": "Recipient"
+                "description": "Only use if recipient is another Commander. Uses local chat if not set."
             }
         },
         "required": ["message"]
