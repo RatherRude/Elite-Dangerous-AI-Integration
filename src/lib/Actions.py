@@ -185,7 +185,7 @@ def galaxy_map_open(args):
             keys.send('GalaxyMapOpen')
 
             return ((f"Best location found: {json.dumps(args['details'])}. " if 'details' in args else '') +
-                    f"Plotting a route to {args['system_name']} has been attempted. Check history to see if it was successful")
+                    f"Plotting a route to {args['system_name']} has been attempted. Check event history to see if it was successful, if you see no event it has failed.")
 
         return f"The galaxy map has opened. It is now zoomed in on \"{args['system_name']}\". No route was plotted yet, only the commander can do that."
 
