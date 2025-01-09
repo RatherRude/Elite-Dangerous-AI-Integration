@@ -78,7 +78,7 @@ jobs:
           & "C:\Program Files\Windows Defender\MpCmdRun.exe" -Scan -ScanType 3 -File $PWD\dist
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: COVAS_NEXT_v${{ env.COMMIT_ID }}
           path: ./dist
