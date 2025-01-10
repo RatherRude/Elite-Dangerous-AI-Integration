@@ -212,7 +212,8 @@ def main():
         react_to_text_npc=config["react_to_text_npc_var"],
         react_to_text_squadron=config["react_to_text_squadron_var"],
         react_to_material=config["react_to_material"],
-        react_to_danger_mining=config["react_to_danger_mining_var"]
+        react_to_danger_mining=config["react_to_danger_mining_var"],
+        react_to_danger_onfoot=config["react_to_danger_onfoot_var"]
     )
     registerProjections(event_manager)
 

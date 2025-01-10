@@ -388,11 +388,10 @@ class StatusParser:
                 events.append({"event": "WeaponSelected", "SelectedWeapon": new_status["SelectedWeapon"]})
 
         # Always
-        if not new_status["flags2"] or (new_status["flags2"] and not new_status["flags2"]["OnFoot"]):
-            if old_status["flags"]["InDanger"] and not new_status["flags"]["InDanger"]:
-                events.append({"event": "OutofDanger"})
-            if not old_status["flags"]["InDanger"] and new_status["flags"]["InDanger"]:
-                events.append({"event": "InDanger"})
+        if old_status["flags"]["InDanger"] and not new_status["flags"]["InDanger"]:
+            events.append({"event": "OutofDanger"})
+        if not old_status["flags"]["InDanger"] and new_status["flags"]["InDanger"]:
+            events.append({"event": "InDanger"})
 
         if old_status["flags"]["NightVision"] and not new_status["flags"]["NightVision"]:
             events.append({"event": "NightVisionOff"})

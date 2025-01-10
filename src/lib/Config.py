@@ -36,6 +36,7 @@ class Config(TypedDict):
     react_to_text_squadron_var: bool
     react_to_material: str
     react_to_danger_mining_var: bool
+    react_to_danger_onfoot_var: bool
     edcopilot: bool
     edcopilot_dominant: bool
     tts_voice: str
