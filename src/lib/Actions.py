@@ -175,14 +175,15 @@ def galaxy_map_open(args):
 
         if 'start_navigation' in args and args['start_navigation']:
             sleep(0.05)
-            keys.send('UI_Right', hold=0, repeat=2, repeat_delay=0)
+            keys.send('UI_Right', hold=0, repeat=4, repeat_delay=0)
             sleep(0.05)
             keys.send('UI_Down', hold=0, repeat=7, repeat_delay=0)
             sleep(0.05)
             keys.send('UI_Select')
 
             sleep(0.05)
-            keys.send('GalaxyMapOpen')
+            if status_parser.current_status["GuiFocus"] == 'GalaxyMap':
+                keys.send('GalaxyMapOpen')
 
             return ((f"Best location found: {json.dumps(args['details'])}. " if 'details' in args else '') +
                     f"Plotting a route to {args['system_name']} has been attempted. Check event history to see if it was successful, if you see no event it has failed.")
@@ -1472,10 +1473,10 @@ def prepare_station_request(obj):
         }
 
     sort_object = { "distance": { "direction": "asc" } }
-    if filters["market"] and len(filters["market"]) > 0:
-        if filters["market"][0]["demand"]:
+    if filters.get("market") and len(filters["market"]) > 0:
+        if filters.get("market")[0].get("demand"):
             sort_object = {"market_sell_price":[{"name":filters["market"][0]["name"],"direction":"desc"}]}
-        elif filters["market"][0]["supply"] :
+        elif filters["market"][0].get("demand"):
             sort_object = {"market_buy_price":[{"name":filters["market"][0]["name"],"direction":"asc"}]}
 
     # Build the request body
@@ -3019,7 +3020,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     )
     actionManager.registerAction(
         'station_finder',
-        "Find or a station for commodities, modules and ships. Ask for unknown values and make sure they are known.",
+        "Find a station for commodities, modules and ships. Ask for unknown values and make sure they are known.",
         {
             "type": "object",
             "properties": {
