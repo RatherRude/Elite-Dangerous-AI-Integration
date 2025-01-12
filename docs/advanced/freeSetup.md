@@ -31,8 +31,9 @@ Once you have an account and an API key, you can check the website for the avail
 ```
 LLM Provider: Custom
 LLM Model Name: meta-llama/llama-3.1-70b-instruct:free
-LLM Endpoint URL: https://openrouter.ai/v1
+LLM Endpoint URL: https://openrouter.ai/api/v1
 LLM API Key: <your API key>
+Allow AI Actions: Disable (Unless you use a paid model that supports actions)
 ```
 
 ### 1.2 Using Ollama (local)

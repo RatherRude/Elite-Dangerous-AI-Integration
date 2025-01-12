@@ -7,6 +7,7 @@ import traceback
 from typing import Any
 
 from openai import OpenAI
+from openai.types.chat import ChatCompletion
 
 from lib.Config import Config, get_ed_appdata_path, get_ed_journals_path
 from lib.ActionManager import ActionManager
@@ -50,7 +51,7 @@ def load_config() -> Config:
 
 is_thinking = False
 
-def reply(client, events: list[Event], new_events: list[Event], projected_states: dict[str, dict], prompt_generator: PromptGenerator,
+def reply(client: OpenAI, events: list[Event], new_events: list[Event], projected_states: dict[str, dict], prompt_generator: PromptGenerator,
           event_manager: EventManager, tts: TTS, copilot: EDCoPilot, config: Config):
     global is_thinking
     is_thinking = True
@@ -84,11 +85,12 @@ def reply(client, events: list[Event], new_events: list[Event], projected_states
         tools= tool_list if use_tools and tool_list else None
     )
 
-    if hasattr(completion, 'error'):
+    if not isinstance(completion, ChatCompletion) or hasattr(completion, 'error'):
         log("error", "completion with error:", completion)
         is_thinking = False
         return
-    log("Debug", f'Prompt: {completion.usage.prompt_tokens}, Completion: {completion.usage.completion_tokens}')
+    if hasattr(completion, 'usage'):
+        log("Debug", f'Prompt: {completion.usage.prompt_tokens}, Completion: {completion.usage.completion_tokens}')
 
     response_text = completion.choices[0].message.content
     if response_text:

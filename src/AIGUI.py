@@ -1253,7 +1253,7 @@ class App:
     def save_settings(self):
         self.data['commander_name'] = self.commander_name.get()
         self.data['character'] = self.character.get("1.0", tk.END).strip()
-        self.data['api_key'] = self.api_key.get()
+        self.data['api_key'] = self.api_key.get().strip()
         self.data['llm_model_name'] = self.llm_model_name.get()
         self.data['llm_endpoint'] = self.llm_endpoint.get()
         self.data['llm_api_key'] = self.llm_api_key.get()

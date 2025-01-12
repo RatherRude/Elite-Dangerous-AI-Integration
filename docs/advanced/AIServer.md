@@ -3,9 +3,7 @@
 **WARNING: This setup is highly experimental and is potentially difficult to set up.**
 
 The AIServer can serve as a local STT, TTS and LLM provider.
-It is included in the download of our software and can be found in the `aiserver` folder. You can run it by double-clicking the `AIServer.exe` file.
-
-LLM support is currently in beta and currently only supports CPU acceleration. Please contact us on Discord if you would like to test GPU acceleration.
+It can be download [here](https://github.com/lucaelin/covas-next-aiserver/releases/). Once you have extracted the Zip, you can run it by double-clicking the `AIServer.exe` file.
 
 *Upsides:*
 - Can be used offline
@@ -17,7 +15,7 @@ LLM support is currently in beta and currently only supports CPU acceleration. P
 - May struggle with multilingual input/output
 - Higher latency than cloud services
 
-Upon starting the AIServer, need to configure it using the window that pops up. 
+Upon starting the AIServer, need to configure it using the window that pops up. You can select the "None" option for the different modalities you don't want to use (e.g. if you only want STT and use the LLM via OpenRouter and TTS via EdgeTTS).
 
 1) Select a TTS Model. At the time of writing we recommend using `vits-piper-en_US-libritts-high.tar.bz2`. 
 
@@ -29,7 +27,7 @@ Upon starting the AIServer, need to configure it using the window that pops up.
 
 5) Configure the network access. Confirm the defaults as 127.0.0.0 and port 8080 if you are unsure.
 
-The AIServer window will then download the selected models and show a message when done: `* Running on http://127.0.0.1:8080`.
+The AIServer window will then download the selected models and show a message when done: `running on http://127.0.0.1:8080`.
 
 Lastly, you will need to configure the AI Integration itself. 
 
@@ -43,6 +41,7 @@ STT API Key: <empty>
 TTS Provider: Custom
 TTS Model Name: tts-1
 TTS Endpoint URL: http://localhost:8080/v1
+TTS Voice name: nova
 TTS API Key: <empty>
 ```
 ```
