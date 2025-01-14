@@ -1,21 +1,4 @@
 # Available Voices
-## Kokoro
-| Name | Gender | Locale |
-| - |--------|--------|
-|  af | female | en-US  | 
-|  af_bella | female   | en-US  | 
-|  af_nicole | female   | en-US  | 
-|  af_sarah | female   | en-US  | 
-|  af_sky | female   | en-US  | 
-|  am_adam | male   | en-US  | 
-|  am_michael | male   | en-US  | 
-|  bf_emma | female   | en-GB  | 
-|  bf_isabella | female   | en-GB  | 
-|  bm_george | male   | en-GB  | 
-|  bm_lewis | male   | en-GB  | 
-
-See [Kokoro on Huggingface](https://huggingface.co/hexgrad/Kokoro-82M) for more information.
-
 ## Edge TTS
 | Name | Gender | Locale | Content | Personality |
 | - | - | - | - | - |
@@ -331,3 +314,20 @@ All voices support the following languages:
 Afrikaans, Arabic, Armenian, Azerbaijani, Belarusian, Bosnian, Bulgarian, Catalan, Chinese, Croatian, Czech, Danish, Dutch, English, Estonian, Finnish, French, Galician, German, Greek, Hebrew, Hindi, Hungarian, Icelandic, Indonesian, Italian, Japanese, Kannada, Kazakh, Korean, Latvian, Lithuanian, Macedonian, Malay, Marathi, Maori, Nepali, Norwegian, Persian, Polish, Portuguese, Romanian, Russian, Serbian, Slovak, Slovenian, Spanish, Swahili, Swedish, Tagalog, Tamil, Thai, Turkish, Ukrainian, Urdu, Vietnamese, and Welsh.
 
 See [OpenAI's documentation](https://platform.openai.com/docs/guides/text-to-speech) for more information.
+
+## Kokoro
+| Name | Gender | Locale |
+| - |--------|--------|
+|  af | female | en-US  | 
+|  af_bella | female   | en-US  | 
+|  af_nicole | female   | en-US  | 
+|  af_sarah | female   | en-US  | 
+|  af_sky | female   | en-US  | 
+|  am_adam | male   | en-US  | 
+|  am_michael | male   | en-US  | 
+|  bf_emma | female   | en-GB  | 
+|  bf_isabella | female   | en-GB  | 
+|  bm_george | male   | en-GB  | 
+|  bm_lewis | male   | en-GB  | 
+
+See [Kokoro on Huggingface](https://huggingface.co/hexgrad/Kokoro-82M) for more information.
