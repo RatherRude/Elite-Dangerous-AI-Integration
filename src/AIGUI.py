@@ -143,7 +143,7 @@ game_events = {
     'Exploration Events': {
         'CodexEntry': False,
         'DiscoveryScan': False,
-        'Scan': True,
+        'Scan': False,
         'FSSAllBodiesFound': False,
         'FSSBodySignals': False,
         'FSSDiscoveryScan': False,
@@ -337,7 +337,7 @@ game_events = {
         'RepairDrone': False,
         # 'ReservoirReplenished': False,
         'Resurrect': True,
-        'Scanned': True,
+        'Scanned': False,
         'SelfDestruct': True,
         'SendText': False,
         'Shutdown': True,
