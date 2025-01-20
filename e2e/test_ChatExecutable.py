@@ -3,32 +3,47 @@ import tempfile
 
 default_config = {
     "commander_name": "lucaelin",
-    "character": "I am Commander {commander_name}, an independent pilot and secret member of the Dark Wheel. \n\nYou are COVAS:NEXT, the onboard AI of my starship. You will be addressed as 'Computer'. \nYou possess extensive knowledge and can provide detailed and accurate information on a wide range of topics, including galactic navigation, ship status, the current system, and more. \n\nReply within one sentence, acknowledge orders, mention ship status/location only if relevant or asked, and don't end with a question. \n\nGuide and support me with witty commentary and humorous observations.",
-    "api_key": "sk-DEADBEEF",
-    "tools_var": True,
-    "vision_var": True,
-    "ptt_var": True,
-    "continue_conversation_var": True,
-    "edcopilot": True,
-    "edcopilot_dominant": False,
-    "input_device_name": "default",
-    "llm_model_name": "gpt-4o-mini",
-    "llm_endpoint": "https://api.openai.com/v1",
-    "llm_api_key": "",
-    "ptt_key": "'+'",
-    "vision_model_name": "gpt-4o-mini",
-    "vision_endpoint": "https://api.openai.com/v1",
-    "vision_api_key": "",
-    "stt_provider": "openai",
-    "stt_model_name": "whisper-1",
-    "stt_endpoint": "https://api.openai.com/v1",
-    "stt_api_key": "",
-    "tts_provider": "edge-tts",
-    "tts_model_name": "edge-tts",
-    "tts_endpoint": "",
-    "tts_api_key": "",
-    "tts_voice": "en-GB-SoniaNeural",
-    "tts_speed": "1.2",
+    'character':
+        "I am Commander {commander_name}, an independent pilot and notorious pirate. My home system is Catucandit. \n\n" +
+        "You are COVAS:NEXT, my cunning and sarcastic ship AI. " +
+        "You're fiercely protective of your captain and ship, but you're not afraid to tell your captain " +
+        "when they're being an idiot-in the most colorful way possible. \n\n" +
+        "Professionally reply within one sentence, never ask questions and don't engage in smalltalk.",
+    'api_key': "sk-DEADBEEF",
+    'tools_var': True,
+    'vision_var': True,
+    'ptt_var': True,
+    'continue_conversation_var': True,
+    'event_reaction_enabled_var': True,
+    'game_actions_var': True,
+    'web_search_actions_var': True,
+    'edcopilot': True,
+    'edcopilot_dominant': False,
+    'input_device_name': 'default',
+    'llm_model_name': "gpt-4o-mini",
+    'llm_endpoint': "https://api.openai.com/v1",
+    'llm_api_key': "",
+    'ptt_key': '+',
+    'vision_model_name': "gpt-4o-mini",
+    'vision_endpoint': "https://api.openai.com/v1",
+    'vision_api_key': "",
+    'stt_provider': "openai",
+    'stt_model_name': "whisper-1",
+    'stt_endpoint': "https://api.openai.com/v1",
+    'stt_api_key': "",
+    'tts_provider': "edge-tts",
+    'tts_model_name': "edge-tts",
+    'tts_endpoint': "",
+    'tts_api_key': "",
+    'tts_voice': "en-GB-SoniaNeural",
+    'tts_speed': "1.2",
+    'react_to_text_local_var': True,
+    'react_to_text_npc_var': False,
+    'react_to_text_squadron_var': True,
+    'react_to_text_starsystem_var': True,
+    'react_to_material': 'opal, diamond, alexandrite',
+    'react_to_danger_mining_var': False,
+    'react_to_danger_onfoot_var': False,
     "game_events": {
         "Startup Events": {
             "LoadGame": True,
@@ -355,7 +370,7 @@ def test_chat_executable():
     while proc.stdout:
         line = proc.stdout.readline()
         if not line:
-            break
+            raise Exception("Chat.exe exited unexpectedly")
         print(line)
         if "System Ready." in line:
             break
