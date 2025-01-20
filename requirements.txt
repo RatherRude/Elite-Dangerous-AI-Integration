@@ -34,7 +34,7 @@ num2words==0.5.13
 numpy==1.25.2
 onnxruntime==1.18.1
 openai==1.37.1
-opencv-python==4.10.0.84
+opencv-python-headless==4.10.0.82
 packaging==24.1
 pefile==2023.2.7
 pick==2.4.0
@@ -48,7 +48,7 @@ pydantic-core==2.23.3
 pygame==2.6.0
 PyGetWindow==0.0.9
 pyinstaller==6.11.1
-pyinstaller-hooks-contrib==2024.10
+pyinstaller-hooks-contrib==2025.0
 PyMsgBox==1.0.9
 pynput==1.7.7
 pyperclip==1.9.0
