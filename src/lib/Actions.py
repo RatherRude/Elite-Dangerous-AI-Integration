@@ -174,14 +174,16 @@ def galaxy_map_open(args):
         keys.send('UI_Select')
 
         if 'start_navigation' in args and args['start_navigation']:
-            sleep(0.05)
-            keys.send('UI_Right', hold=0, repeat=4, repeat_delay=0)
-            sleep(0.05)
-            keys.send('UI_Down', hold=0, repeat=7, repeat_delay=0)
-            sleep(0.05)
-            keys.send('UI_Select')
+            sleep(0.25)
+            keys.send('UI_Right')
+            sleep(0.25)
+            keys.send('UI_Back')
+            sleep(0.25)
+            keys.send('UI_Back')
+            sleep(3.5)
+            keys.send('UI_Select', hold=1)
 
-            sleep(0.05)
+            sleep(.05)
             if status_parser.current_status["GuiFocus"] == 'GalaxyMap':
                 keys.send('GalaxyMapOpen')
 
@@ -305,6 +307,8 @@ def request_docking(args):
 
     sleep(0.3)
     keys.send('UI_Left')
+    keys.send('UI_Down')
+    keys.send('UI_Up', hold=1)
     keys.send('UI_Right')
     sleep(0.1)
     keys.send('UI_Select')
