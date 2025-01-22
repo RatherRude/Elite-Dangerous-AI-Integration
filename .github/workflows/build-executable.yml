@@ -97,7 +97,7 @@ jobs:
           name: COVAS_NEXT_v${{ github.sha }}
 
       - name: Unzip artifact
-        run: Expand-Archive -Path dist-artifact\COVAS_NEXT_v*.zip -DestinationPath dist
+        run: Expand-Archive -Path dist-artifact\COVAS_NEXT_v${{ github.sha }}.zip -DestinationPath dist
 
       - name: List contents (debug)
         run: dir dist
