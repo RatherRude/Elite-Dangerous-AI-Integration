@@ -95,14 +95,15 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: COVAS_NEXT_v${{ github.sha }}
+          path: dist
 
       - name: List contents (debug)
-        run: dir
+        run: dir dist
 
       - name: Windows Defender Scan
         run: |
           & "C:\Program Files\Windows Defender\MpCmdRun.exe" -SignatureUpdate
-          & "C:\Program Files\Windows Defender\MpCmdRun.exe" -Scan -ScanType 3 -File $PWD
+          & "C:\Program Files\Windows Defender\MpCmdRun.exe" -Scan -ScanType 3 -File $PWD\dist
 
       - name: Run e2e tests
         run: |
