@@ -91,10 +91,10 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v2
 
-      - name: Download build artifact from output url
-        run: |
-          $artifactUrl = "${{ needs.pyinstaller-build.outputs.upload-artifact.artifact-url }}"
-          Invoke-WebRequest -Uri $artifactUrl -OutFile dist-artifact.zip
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: COVAS_NEXT_v${{ github.sha }}
 
       - name: Unzip artifact
         run: Expand-Archive -Path dist-artifact\COVAS_NEXT_v*.zip -DestinationPath dist
