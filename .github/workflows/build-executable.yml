@@ -96,16 +96,13 @@ jobs:
         with:
           name: COVAS_NEXT_v${{ github.sha }}
 
-      - name: Unzip artifact
-        run: Expand-Archive -Path COVAS_NEXT_v${{ github.sha }}.zip -DestinationPath dist
-
       - name: List contents (debug)
-        run: dir dist
+        run: dir
 
       - name: Windows Defender Scan
         run: |
           & "C:\Program Files\Windows Defender\MpCmdRun.exe" -SignatureUpdate
-          & "C:\Program Files\Windows Defender\MpCmdRun.exe" -Scan -ScanType 3 -File $PWD\dist
+          & "C:\Program Files\Windows Defender\MpCmdRun.exe" -Scan -ScanType 3 -File $PWD
 
       - name: Run e2e tests
         run: |
