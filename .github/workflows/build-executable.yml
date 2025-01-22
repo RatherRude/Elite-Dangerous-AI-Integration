@@ -80,6 +80,8 @@ jobs:
         with:
           name: COVAS_NEXT_v${{ github.sha }}
           path: ./dist
+        # output the upload URL for later use
+        id: upload-artifact
 
   e2e-and-scan:
     name: E2E Tests & Defender Scan in Fresh VM
@@ -89,17 +91,16 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v2
 
-      - name: Download build artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: COVAS_NEXT_v${{ github.sha }}
-          path: dist-artifact
-
-      - name: List contents (debug)
-        run: dir dist-artifact
+      - name: Download build artifact from output url
+        run: |
+          $artifactUrl = "${{ needs.pyinstaller-build.outputs.upload-artifact.artifact-url }}"
+          Invoke-WebRequest -Uri $artifactUrl -OutFile dist-artifact.zip
 
       - name: Unzip artifact
         run: Expand-Archive -Path dist-artifact\COVAS_NEXT_v*.zip -DestinationPath dist
+
+      - name: List contents (debug)
+        run: dir dist
 
       - name: Windows Defender Scan
         run: |
