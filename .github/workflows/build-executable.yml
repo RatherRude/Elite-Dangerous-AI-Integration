@@ -97,13 +97,26 @@ jobs:
           name: COVAS_NEXT_v${{ github.sha }}
           path: dist
 
-      - name: List contents (debug)
-        run: dir dist
-
-      - name: Windows Defender Scan
+      - name: Configure Windows Defender
         run: |
-          & "C:\Program Files\Windows Defender\MpCmdRun.exe" -SignatureUpdate
-          & "C:\Program Files\Windows Defender\MpCmdRun.exe" -Scan -ScanType 3 -File $PWD\dist
+          Remove-MpPreference -ExclusionPath (Get-MpPreference).ExclusionPath
+        shell: powershell
+
+      - name: Update Defender signatures
+        # Failed with hr = 0x80070002 means that a virus was detected (which is a bit counterintuitive)
+        run: |
+          "C:\Program Files\Windows Defender\MpCmdRun.exe" -SignatureUpdate
+          "C:\Program Files\Windows Defender\MpCmdRun.exe" -Scan -ScanType 3 -File $PWD
+        shell: cmd
+
+      - name: Output scan results
+        # This is an additional step to check the MpThreatDetection, which in our tests did not work, but it's worth a try
+        run: |
+          Get-Content $env:TEMP\MpCmdRun.log
+          Get-MpThreatDetection
+          $count = (Get-MpThreatDetection).Count
+
+          exit $count
 
       - name: Run e2e tests
         run: |
