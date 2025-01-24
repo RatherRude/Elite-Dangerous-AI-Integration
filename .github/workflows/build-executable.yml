@@ -1,11 +1,11 @@
-name: Build Executable
+name: Build and Test Executable
 
 on: [push, pull_request]
 
 jobs:
   pyinstaller-build:
+    name: Build Executable
     runs-on: windows-latest
-
     steps:
       - name: Check out the repository
         uses: actions/checkout@v2
@@ -27,7 +27,8 @@ jobs:
       - name: Install pyinstaller
         run: |
           $Env:PYINSTALLER_COMPILE_BOOTLOADER = "true"
-          pip install --user --force-reinstall --ignore-installed --no-binary :all: pyinstaller==6.10.0
+          pip install --user --force-reinstall --ignore-installed --no-binary :all: pyinstaller==6.11.1
+          pip install --user --force-reinstall --ignore-installed numpy==2.2.2
 
       - name: Determine paths for dependencies
         id: determine_paths
@@ -35,9 +36,11 @@ jobs:
           $ONNXRUNTIME_DLL = python -c 'import os, onnxruntime; print(os.path.join(os.path.dirname(onnxruntime.__file__), "capi", "onnxruntime_providers_shared.dll"))'
           $VAD_MODEL = python -c 'import os, pysilero_vad; print(os.path.join(os.path.dirname(pysilero_vad.__file__), "models", "silero_vad.onnx"))'
           $VEC_EXTENSION = python -c 'import os, sqlite_vec; print(os.path.join(os.path.dirname(sqlite_vec.__file__), "vec0.dll"))'
+
           echo "ONNXRUNTIME_DLL=$ONNXRUNTIME_DLL" >> $env:GITHUB_ENV
           echo "VAD_MODEL=$VAD_MODEL" >> $env:GITHUB_ENV
           echo "VEC_EXTENSION=$VEC_EXTENSION" >> $env:GITHUB_ENV
+
           python -c 'import onnxruntime; print("onnxruntime path:", onnxruntime.__file__)'
           python -c 'import pysilero_vad; print("pysilero_vad path:", pysilero_vad.__file__)'
           python -c 'import sqlite_vec; print("sqlite_vec path:", sqlite_vec.__file__)'
@@ -54,7 +57,11 @@ jobs:
 
       - name: Create Executable for Chat
         run: |
-          pyinstaller .\src\Chat.py -y --onedir --clean --console --hidden-import=comtypes.stream --add-data .\src:. --add-data ${{ env.VAD_MODEL }}:.\pysilero_vad\models --add-binary ${{ env.ONNXRUNTIME_DLL }}:. --add-binary ${{ env.VEC_EXTENSION }}:.\sqlite_vec
+          pyinstaller .\src\Chat.py -y --onedir --clean --console --hidden-import=comtypes.stream `
+            --add-data .\src:. `
+            --add-data ${{ env.VAD_MODEL }}:.\pysilero_vad\models `
+            --add-binary ${{ env.ONNXRUNTIME_DLL }}:. `
+            --add-binary ${{ env.VEC_EXTENSION }}:.\sqlite_vec
 
       - name: Get current commit ID
         id: get_commit
@@ -64,21 +71,103 @@ jobs:
 
       - name: Create start.bat script
         run: |
-          $commitId = "${{ env.COMMIT_ID }}"
+          $commitId = "${{ github.sha }}"
           $start = "@echo off`r`nstart """" .\\AIGUI\\AIGUI.exe --chat=Chat\\Chat.exe --release=$commitId`r`nexit"
           $start | Out-File -Encoding ASCII .\\dist\\start.bat
-
-      - name: Run e2e tests
-        run: |
-          python e2e/test_ChatExecutable.py
-
-      - name: Run windows defender scan
-        run: |
-          & "C:\Program Files\Windows Defender\MpCmdRun.exe" -SignatureUpdate
-          & "C:\Program Files\Windows Defender\MpCmdRun.exe" -Scan -ScanType 3 -File $PWD\dist
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: COVAS_NEXT_v${{ env.COMMIT_ID }}
+          name: COVAS_NEXT_v${{ github.sha }}
           path: ./dist
+        # output the upload URL for later use
+        id: upload-artifact
+
+  e2e-and-scan:
+    name: E2E Tests & Defender Scan
+    # This is required to run in a fresh VM to check if all python deps are bundled in the exe
+    # and to ensure Windows Defender considers the executable as downloaded from the internet
+    runs-on: windows-latest
+    needs: pyinstaller-build
+    steps:
+      - name: Prepare Windows Defender
+        # https://github.com/actions/runner-images/issues/855#issuecomment-626692949 may help to understand
+        run: |
+          & "C:\Program Files\Windows Defender\MpCmdRun.exe" -ListAllDynamicSignatures
+
+          # https://github.com/actions/runner-images/blob/61df9288f9be9f6aeaaaa4ad52a7332432913fc3/images/windows/scripts/build/Configure-WindowsDefender.ps1#L38-L44
+          Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Advanced Threat Protection' -Name 'ForceDefenderPassiveMode' -Value '0' -Type 'DWORD'
+          Start-Service -DisplayName *Defend* -WhatIf
+          Start-Service -Name WinDefend
+
+          # Get-Item -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender"
+          # Get-Item -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender\SpyNet"
+          # I can't find any resource of this key in web also GitHub, but Copilot said... So testing in action runner may be interest :)
+          # Set-ItemProperty -Force -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender\SpyNet" -Name JoinMicrosoftSpyNet -Value 1
+          # Get-Item -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender\SpyNet"
+
+          # Remove cache: https://news.mynavi.jp/article/win10tips-410/
+          # & "C:\Program Files\Windows Defender\MpCmdRun.exe" -RemoveDefinitions -DynamicSignatures
+
+          # Enable cloud-based protection
+          Set-MpPreference -MAPSReporting Advanced
+          # Enable automatic sample submission
+          Set-MpPreference -SubmitSamplesConsent SendSafeSamples
+          # Enable behavior monitoring
+          Set-MpPreference -DisableBehaviorMonitoring $false
+          # Restart-Service -Name WinDefend
+
+          Set-Service -Name wuauserv -StartupType Manual -Status Running
+          & "C:\Program Files\Windows Defender\MpCmdRun.exe" -SignatureUpdate
+          Update-MpSignature
+          # Restart-Service -Name WinDefend
+          & "C:\Program Files\Windows Defender\MpCmdRun.exe" -ListAllDynamicSignatures
+
+          # Remove all exclusions
+          Remove-MpPreference -ExclusionPath (Get-MpPreference).ExclusionPath
+
+      - name: Make sure dynamic signatures are enabled ... or not
+        run: |
+          Get-MpComputerStatus
+
+          # Remove this to raise error if you REALIZED to enable Dynamic Signature scans
+          # if (!((& "C:\Program Files\Windows Defender\MpCmdRun.exe" -ListAllDynamicSignatures) | Select-String -Pattern "SignatureSet ID:")) {
+          #   Exit 42
+          # }
+          & "C:\Program Files\Windows Defender\MpCmdRun.exe" -ListAllDynamicSignatures
+
+      - name: Check out the repository
+        uses: actions/checkout@v2
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: COVAS_NEXT_v${{ github.sha }}
+          path: dist
+
+      - name: List contents (debug)
+        run: dir dist\AIGUI
+
+      - name: Run Windows Defender
+        run: |
+          & "C:\Program Files\Windows Defender\MpCmdRun.exe" -Scan -ScanType 3 -Trace -File "$(pwd)\dist"
+          # & "C:\Program Files\Windows Defender\MpCmdRun.exe" -Scan -ScanType 3 -Trace -File "$(pwd)\dist\AIGUI\AIGUI.exe"
+          # & "C:\Program Files\Windows Defender\MpCmdRun.exe" -Scan -ScanType 3 -Trace -File "$(pwd)\dist\Chat\Chat.exe"
+
+          # Do not enable this as possible, too slow ... Scanning all folders with this option? :<
+          # Start-MpScan -ScanPath "$pwd\dist"
+
+          Get-MpThreat
+          Get-MpThreatDetection
+
+      - name: Output scan results
+        run: |
+          Get-MpThreatDetection
+          $count = (Get-MpThreatDetection).Count
+
+          exit $count
+
+      - name: Run e2e tests
+        run: |
+          python --version
+          python e2e/test_ChatExecutable.py
