@@ -84,10 +84,58 @@ jobs:
         id: upload-artifact
 
   e2e-and-scan:
-    name: E2E Tests & Defender Scan in Fresh VM
+    name: E2E Tests & Defender Scan
+    # This is required to run in a fresh VM to check if all python deps are bundled in the exe
+    # and to ensure Windows Defender considers the executable as downloaded from the internet
     runs-on: windows-latest
-    needs: pyinstaller-build # This ensures the build job finishes first
+    needs: pyinstaller-build
     steps:
+      - name: Prepare Windows Defender
+        # https://github.com/actions/runner-images/issues/855#issuecomment-626692949 may help to understand
+        run: |
+          & "C:\Program Files\Windows Defender\MpCmdRun.exe" -ListAllDynamicSignatures
+
+          # https://github.com/actions/runner-images/blob/61df9288f9be9f6aeaaaa4ad52a7332432913fc3/images/windows/scripts/build/Configure-WindowsDefender.ps1#L38-L44
+          Set-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows Advanced Threat Protection' -Name 'ForceDefenderPassiveMode' -Value '0' -Type 'DWORD'
+          Start-Service -DisplayName *Defend* -WhatIf
+          Start-Service -Name WinDefend
+
+          # Get-Item -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender"
+          # Get-Item -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender\SpyNet"
+          # I can't find any resource of this key in web also GitHub, but Copilot said... So testing in action runner may be interest :)
+          # Set-ItemProperty -Force -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender\SpyNet" -Name JoinMicrosoftSpyNet -Value 1
+          # Get-Item -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows Defender\SpyNet"
+
+          # Remove cache: https://news.mynavi.jp/article/win10tips-410/
+          # & "C:\Program Files\Windows Defender\MpCmdRun.exe" -RemoveDefinitions -DynamicSignatures
+
+          # Enable cloud-based protection
+          Set-MpPreference -MAPSReporting Advanced
+          # Enable automatic sample submission
+          Set-MpPreference -SubmitSamplesConsent SendSafeSamples
+          # Enable behavior monitoring
+          Set-MpPreference -DisableBehaviorMonitoring $false
+          # Restart-Service -Name WinDefend
+
+          Set-Service -Name wuauserv -StartupType Manual -Status Running
+          & "C:\Program Files\Windows Defender\MpCmdRun.exe" -SignatureUpdate
+          Update-MpSignature
+          # Restart-Service -Name WinDefend
+          & "C:\Program Files\Windows Defender\MpCmdRun.exe" -ListAllDynamicSignatures
+
+          # Remove all exclusions
+          Remove-MpPreference -ExclusionPath (Get-MpPreference).ExclusionPath
+
+      - name: Make sure dynamic signatures are enabled ... or not
+        run: |
+          Get-MpComputerStatus
+
+          # Remove this to raise error if you REALIZED to enable Dynamic Signature scans
+          # if (!((& "C:\Program Files\Windows Defender\MpCmdRun.exe" -ListAllDynamicSignatures) | Select-String -Pattern "SignatureSet ID:")) {
+          #   Exit 42
+          # }
+          & "C:\Program Files\Windows Defender\MpCmdRun.exe" -ListAllDynamicSignatures
+
       - name: Check out the repository
         uses: actions/checkout@v2
 
@@ -97,22 +145,23 @@ jobs:
           name: COVAS_NEXT_v${{ github.sha }}
           path: dist
 
-      - name: Configure Windows Defender
-        run: |
-          Remove-MpPreference -ExclusionPath (Get-MpPreference).ExclusionPath
-        shell: powershell
+      - name: List contents (debug)
+        run: dir dist\AIGUI
 
-      - name: Update Defender signatures
-        # Failed with hr = 0x80070002 means that a virus was detected (which is a bit counterintuitive)
+      - name: Run Windows Defender
         run: |
-          "C:\Program Files\Windows Defender\MpCmdRun.exe" -SignatureUpdate
-          "C:\Program Files\Windows Defender\MpCmdRun.exe" -Scan -ScanType 3 -File $PWD
-        shell: cmd
+          & "C:\Program Files\Windows Defender\MpCmdRun.exe" -Scan -ScanType 3 -Trace -File "$(pwd)\dist"
+          # & "C:\Program Files\Windows Defender\MpCmdRun.exe" -Scan -ScanType 3 -Trace -File "$(pwd)\dist\AIGUI\AIGUI.exe"
+          # & "C:\Program Files\Windows Defender\MpCmdRun.exe" -Scan -ScanType 3 -Trace -File "$(pwd)\dist\Chat\Chat.exe"
+
+          # Do not enable this as possible, too slow ... Scanning all folders with this option? :<
+          # Start-MpScan -ScanPath "$pwd\dist"
+
+          Get-MpThreat
+          Get-MpThreatDetection
 
       - name: Output scan results
-        # This is an additional step to check the MpThreatDetection, which in our tests did not work, but it's worth a try
         run: |
-          Get-Content $env:TEMP\MpCmdRun.log
           Get-MpThreatDetection
           $count = (Get-MpThreatDetection).Count
 
