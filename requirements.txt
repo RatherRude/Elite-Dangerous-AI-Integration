@@ -5,6 +5,7 @@ av==12.3.0
 cached_path==1.6.3
 certifi==2024.7.4
 charset-normalizer==3.3.2
+click==8.1.8 
 colorama==0.4.6
 coloredlogs==15.0.1
 colorlog==6.8.2
