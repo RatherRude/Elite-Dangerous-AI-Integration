@@ -55,7 +55,7 @@ pyreadline3==3.4.1
 PyRect==0.2.0
 PyScreeze==0.1.30
 pysilero-vad==2.0.1
-pysqlite3-binary==0.5.4
+pysqlite3==0.5.4
 pytest==8.3.3
 pyttsx3==2.90
 pytweening==1.2.0
