@@ -1,32 +1,39 @@
+import threading
 import time
 
-from EDMesg.EDMesgClient import EDMesgClient
-
-from .Logger import log
-from typing import Optional
-import os
-from EDMesg.EDCoPilot import create_edcopilot_client
 from EDMesg.CovasNext import (
     create_covasnext_provider,
     create_covasnext_client,
     CommanderSpoke,
     CovasReplied,
+    ConfigurationUpdated
 )
+from EDMesg.EDCoPilot import create_edcopilot_client
+from EDMesg.base import EDMesgWelcomeAction
 
 
 class EDCoPilot:
-    def __init__(self, is_enabled: bool, is_edcopilot_dominant: bool):
+    def __init__(self, is_enabled: bool, is_edcopilot_dominant: bool=False, enabled_game_events: list[str]=[]):
         self.install_path = self.get_install_path()
         self.proc_id = self.get_process_id()
         self.is_enabled = is_enabled and self.is_installed()
         self.client = create_edcopilot_client() if self.is_enabled else None
         self.provider = create_covasnext_provider() if self.is_enabled else None
         self.is_edcopilot_dominant = is_edcopilot_dominant
+        self.enabled_game_events = enabled_game_events
 
-        log("info", f"EDCoPilot is installed: {self.is_installed()}")
-        log("info", f"EDCoPilot is running: {self.is_running()}")
-        log("info", f"EDCoPilot is enabled: {self.is_enabled}")
-        log("info", f"EDCoPilot is dominant: {self.is_edcopilot_dominant}")
+        if self.is_enabled:
+            thread = threading.Thread(target=self.listen_actions)
+            thread.daemon = True
+            thread.start()
+
+    def listen_actions(self):
+        while True:
+            if not self.provider.pending_actions.empty():
+                action = self.provider.pending_actions.get()
+                if isinstance(action, EDMesgWelcomeAction):
+                    self.share_config()
+            time.sleep(0.1)
 
     def is_installed(self) -> bool:
         """Check if EDCoPilot is installed"""
@@ -66,6 +73,13 @@ class EDCoPilot:
             return None
         except Exception:
             return None
+
+    def share_config(self):
+        """send Config"""
+        if self.provider:
+            return self.provider.publish(
+                ConfigurationUpdated(is_dominant=not self.is_edcopilot_dominant ,enabled_game_events=self.enabled_game_events)
+            )
 
     def output_commander(self, message: str):
         """send PrintThis: "message" request"""

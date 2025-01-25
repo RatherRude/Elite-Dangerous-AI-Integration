@@ -444,7 +444,7 @@ class App:
         self.ptt_key = None
 
         self.controller_manager = ControllerManager()
-        self.edcopilot = EDCoPilot(False, is_edcopilot_dominant=False) # this is only for the GUI, the actual EDCoPilot client is created in the Chat
+        self.edcopilot = EDCoPilot(False) # this is only for the GUI, the actual EDCoPilot client is created in the Chat
 
         self.process = None
         self.output_queue = Queue()
