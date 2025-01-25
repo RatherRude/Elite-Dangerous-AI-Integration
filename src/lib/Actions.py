@@ -60,25 +60,17 @@ def hold_fire_secondary_weapon(args):
     return f"successfully stopped firing with secondary weapons."
 
 
-def set_speed_zero(args):
+def set_speed(args):
     checkStatus(args['projected_states'], {'Docked':True,'Landed':True})
     setGameWindowActive()
-    keys.send('SetSpeedZero')
-    return f"Speed set to 0%"
 
+    if 'speed' in args:
+        if args['speed'] in ["Minus100","Minus75","Minus50","Minus25","Zero","25","50","75","100"]:
+            keys.send(f"SetSpeed{args['speed']}")
+        else:
+            raise Exception(f"Invalid speed {args['speed']}")
 
-def set_speed_50(args):
-    checkStatus(args['projected_states'], {'Docked':True,'Landed':True})
-    setGameWindowActive()
-    keys.send('SetSpeed50')
-    return f"Speed set to 50%"
-
-
-def set_speed_100(args):
-    checkStatus(args['projected_states'], {'Docked':True,'Landed':True})
-    setGameWindowActive()
-    keys.send('SetSpeed100')
-    return f"Speed set to 100%"
+    return f"Speed set to {args['speed']}%."
 
 
 def deploy_heat_sink(args):
@@ -122,6 +114,7 @@ def cycle_next_target(args):
 def cycle_fire_group_next(args):
     setGameWindowActive()
     keys.send('CycleFireGroupNext')
+    # return f"New active fire group {args.get('projected_states').get('CurrentStatus').get('Firegroup')}" @ToDo: Firegoup not set in status projection?
     return f"Fire group cycled"
 
 def ship_spot_light_toggle(args):
@@ -162,7 +155,7 @@ def galaxy_map_open(args):
     setGameWindowActive()
 
     # Galaxy map already open, so we close it
-    if args.get('projected_states').get('CurrentStatus').get('GuiFocus'):
+    if args.get('projected_states').get('CurrentStatus').get('GuiFocus') == 'GalaxyMap':
         keys.send('GalaxyMapOpen')
         sleep(1)
 
@@ -2515,20 +2508,26 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, hold_fire_secondary_weapon, 'ship')
 
-    actionManager.registerAction('setSpeedZero', "Set speed to 0%", {
+    actionManager.registerAction('setSpeed', "Change flight thrust", {
         "type": "object",
-        "properties": {}
-    }, set_speed_zero, 'ship')
-
-    actionManager.registerAction('setSpeed50', "Set speed to 50%", {
-        "type": "object",
-        "properties": {}
-    }, set_speed_50, 'ship')
-
-    actionManager.registerAction('setSpeed100', "Set speed to 100%", {
-        "type": "object",
-        "properties": {}
-    }, set_speed_100, 'ship')
+        "properties": {
+            "speed": {
+                "type": "string",
+                "description": "New speed value",
+                "enum": [
+                    "Minus100",
+                    "Minus75",
+                    "Minus50",
+                    "Minus25",
+                    "Zero",
+                    "25",
+                    "50",
+                    "75",
+                    "100"
+                ]
+            }
+        }
+    }, set_speed, 'ship')
 
     actionManager.registerAction('deployHeatSink', "Deploy heat sink", {
         "type": "object",
