@@ -103,7 +103,7 @@ def reply(client: OpenAI, events: list[Event], new_events: list[Event], projecte
     if response_actions:
         action_results = []
         for action in response_actions:
-            action_result = action_manager.runAction(action)
+            action_result = action_manager.runAction(action, projected_states)
             action_results.append(action_result)
 
         event_manager.add_tool_call([tool_call.model_dump() for tool_call in response_actions], action_results)
@@ -229,7 +229,7 @@ def main():
     registerProjections(event_manager)
 
     if useTools:
-        register_actions(action_manager, event_manager, llmClient, llm_model_name, visionClient, config["vision_model_name"], status_parser, ed_keys)
+        register_actions(action_manager, event_manager, llmClient, llm_model_name, visionClient, config["vision_model_name"], ed_keys)
         log('info', "Actions ready.")
         
     log('info', 'Initializing states...')
