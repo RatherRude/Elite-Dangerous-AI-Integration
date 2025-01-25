@@ -5,6 +5,7 @@ av==12.3.0
 cached_path==1.6.3
 certifi==2024.7.4
 charset-normalizer==3.3.2
+click==8.1.8 
 colorama==0.4.6
 coloredlogs==15.0.1
 colorlog==6.8.2
@@ -16,7 +17,6 @@ exceptiongroup==1.2.2
 faster-whisper==1.0.3
 filelock==3.13.4
 flatbuffers==24.3.25
-flask==3.0.3
 fsspec==2024.6.1
 h11==0.14.0
 httpcore==1.0.5
@@ -24,21 +24,20 @@ httpx==0.27.0
 huggingface-hub==0.23.5
 humanfriendly==10.0
 idna==3.7
-importlib-metadata==8.2.0
 keyboard==0.13.5
 kthread==0.2.3
 miniaudio==1.61
 MouseInfo==0.1.3
 mpmath==1.3.0
 num2words==0.5.13
-numpy==1.25.2
-onnxruntime==1.18.1
+numpy==1.26.4
+onnxruntime==1.20.1 
 openai==1.37.1
+opencv-python==4.11.0.86
 packaging==24.1
 pefile==2023.2.7
 pick==2.4.0
 pillow==10.4.0
-protobuf==5.27.3
 psutil==6.0.0
 PyAudio==0.2.14
 PyAutoGUI==0.9.54
@@ -55,7 +54,8 @@ pypiwin32==223 ; sys_platform == "win32"
 pyreadline3==3.4.1
 PyRect==0.2.0
 PyScreeze==0.1.30
-pysilero-vad==1.0.0
+pysilero-vad==2.0.1
+sqlean.py==3.47.0
 pytest==8.3.3
 pyttsx3==2.90
 pytweening==1.2.0
@@ -70,9 +70,10 @@ soundfile==0.12.1
 SpeechRecognition==3.10.4
 sqlite-vec==0.1.3
 strip_markdown==1.3
+-f https://k2-fsa.github.io/sherpa/onnx/cpu.html
 sherpa-onnx==1.10.29
 sympy==1.13.1
-tokenizers==0.19.1
+tokenizers==0.20.3
 tqdm==4.66.4
 typing-extensions==4.12.2
 urllib3==2.2.2

@@ -1,17 +1,13 @@
-from abc import ABC, abstractmethod
-from datetime import timezone, datetime
 import hashlib
 import inspect
-import json
-from typing import Any, Generic, Literal, Callable, Optional, TypeVar, final
-import sqlite3
-import sqlite_vec
+from abc import ABC, abstractmethod
+from datetime import timezone, datetime
+from typing import Any, Generic, Literal, Callable, TypeVar, final
 
 from .Database import EventStore, KeyValueStore
 from .EDJournal import *
-from .Event import Event, GameEvent, ConversationEvent, StatusEvent, ToolEvent, ExternalEvent
+from .Event import Event, GameEvent, ConversationEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent
 from .Logger import log
-
 
 ProjectedState = TypeVar("ProjectedState")
 
@@ -26,13 +22,15 @@ class Projection(ABC, Generic[ProjectedState]):
         pass
 
     @abstractmethod
-    def process(self, event: Event) -> None:
+    def process(self, event: Event) -> None | list[ProjectedEvent]:
         pass
 
 @final
 class EventManager:
     def __init__(self, on_reply_request: Callable[[list[Event], list[Event], dict[str, dict[str, Any]]], Any], game_events: list[str],
-                 continue_conversation: bool = False):
+                 continue_conversation: bool = False, react_to_text_local: bool = True, react_to_text_starsystem: bool = True, react_to_text_npc: bool = False,
+                 react_to_text_squadron: bool = True, react_to_material:str = '', react_to_danger_mining:bool = False,
+                 react_to_danger_onfoot:bool = False):
         self.incoming: Queue[Event] = Queue()
         self.pending: list[Event] = []
         self.processed: list[Event] = []
@@ -40,7 +38,14 @@ class EventManager:
         self.is_listening = False
         self.on_reply_request = on_reply_request
         self.game_events = game_events
-        
+        self.react_to_text_local = react_to_text_local
+        self.react_to_text_starsystem = react_to_text_starsystem
+        self.react_to_text_npc = react_to_text_npc
+        self.react_to_text_squadron = react_to_text_squadron
+        self.react_to_material = react_to_material
+        self.react_to_danger_mining = react_to_danger_mining
+        self.react_to_danger_onfoot = react_to_danger_onfoot
+
         self.event_classes: list[type[Event]] = [ConversationEvent, ToolEvent, GameEvent, StatusEvent, ExternalEvent]
         self.projections: list[Projection] = []
         
@@ -58,7 +63,8 @@ class EventManager:
     def add_game_event(self, content: dict[str, Any]):
         event = GameEvent(content=content, historic=False)
         self.incoming.put(event)
-        log('Event', event)
+        log('Event', event.content['event'])
+        log('debug', 'Event', event)
 
     def add_historic_game_event(self, content: dict[str, Any]):
         max_event_id = max([event.content.get('id') for event in self.processed if isinstance(event, GameEvent)], default='') # TODO: this is not efficient
@@ -71,13 +77,15 @@ class EventManager:
     def add_external_event(self, content: dict[str, Any]):
         event = ExternalEvent(content=content)
         self.incoming.put(event)
-        log('Event', event)
+        log('Event', event.content['event'])
+        log('debug', 'Event', event)
 
     def add_status_event(self, status: dict[str, Any]):
         event = StatusEvent(status=status)
         self.incoming.put(event)
         if status.get("event") != 'Status':
-            log('Event', event)
+            log('Event', event.status['event'])
+            log('debug', 'Event', event)
 
     def add_conversation_event(self, role: Literal['user', 'assistant'], content: str):
         event = ConversationEvent(kind=role, content=content)
@@ -93,6 +101,13 @@ class EventManager:
         self.is_replying = False
         # log('debug', event)
 
+    def add_projected_event(self, event: ProjectedEvent, source: Event):
+        event.processed_at = source.processed_at
+        if not isinstance(source, GameEvent) or not source.historic:
+            self.pending.append(event)
+            log('Event', 'projected', event.content['event'])
+            log('debug', 'Event', event)
+
     def add_tool_call(self, request: list[dict[str, Any]], results: list[dict[str, Any]]):
         event = ToolEvent(request=request, results=results)
         self.incoming.put(event)
@@ -103,8 +118,8 @@ class EventManager:
             event = self.incoming.get()
             timestamp = datetime.now(timezone.utc).timestamp()
             event.processed_at = timestamp
+            self.event_store.insert_event(event, timestamp)
             self.update_projections(event, save_later=True)
-            self.event_store.insert_event(event, timestamp)  
             
             if isinstance(event, GameEvent) and event.historic:
                 #self.processed.append(event)
@@ -113,16 +128,18 @@ class EventManager:
                 self.pending.append(event)
         
         self.save_projections()
-        
-        if not self.is_replying and not self.is_listening and self.should_reply():
+
+        projected_states: dict[str, Any] = {}
+        for projection in self.projections:
+            projected_states[projection.__class__.__name__] = projection.state.copy()
+
+        if not self.is_replying and not self.is_listening and self.should_reply(projected_states):
             self.is_replying = True
             new_events = self.pending
             self.processed += self.pending
             self.pending = []
             log('debug', 'eventmanager requesting reply')
-            projected_states: dict[str, Any] = {}
-            for projection in self.projections:
-                projected_states[projection.__class__.__name__] = projection.state.copy()
+
             self.on_reply_request(self.processed, new_events, projected_states)
             return True
 
@@ -134,7 +151,11 @@ class EventManager:
     
     def update_projection(self, projection: Projection, event: Event, save_later: bool = False):
         try:
-            projection.process(event)
+            projected_events = projection.process(event)
+            if projected_events:
+                for e in projected_events:
+                    self.add_projected_event(e, event)
+                    self.event_store.insert_event(event, datetime.now(timezone.utc).timestamp())
         except Exception as e:
             log('error', 'Error processing event', event, 'with projection', projection, e, traceback.format_exc())
             return
@@ -167,7 +188,7 @@ class EventManager:
         self.projections.append(projection)
         self.save_projections()
 
-    def should_reply(self):
+    def should_reply(self, states:dict[str, Any]):
         if len(self.pending) == 0:
             return False
 
@@ -180,16 +201,50 @@ class EventManager:
                 return True
 
             if isinstance(event, GameEvent) and event.content.get("event") in self.game_events:
+                if event.content.get("event") == "ReceiveText":
+                    if event.content.get("Channel") not in ['wing', 'voicechat', 'friend', 'player'] and (
+                        (not self.react_to_text_local and event.content.get("Channel") == 'local') or
+                        (not self.react_to_text_starsystem and event.content.get("Channel") == 'starsystem') or
+                        (not self.react_to_text_npc and event.content.get("Channel") == 'npc') or
+                        (not self.react_to_text_squadron and event.content.get("Channel") == 'squadron')):
+                        continue
+
+                if event.content.get("event") == "ProspectedAsteroid":
+                    chunks = [chunk.strip() for chunk in self.react_to_material.split(",")]
+                    contains_material = False
+                    for chunk in chunks:
+                        for material in event.content.get("Materials"):
+                            if chunk.lower() in material["Name"].lower():
+                                contains_material = True
+                        if event.content.get("MotherlodeMaterial_Localised", False):
+                            if chunk.lower() in event.content['MotherlodeMaterial_Localised'].lower():
+                                contains_material = True
+
+                    if not contains_material:
+                        continue
+
+                if event.content.get("event") == "ScanOrganic":
+                    continue
+
                 return True
 
             if isinstance(event, StatusEvent) and event.status.get("event") in self.game_events:
+                if not self.react_to_danger_mining and (event.status.get("event") in ["InDanger", "OutOfDanger"]):
+                    if states.get('ShipInfo', {}).get('IsMiningShip', False) and states.get('Location', {}).get('PlanetaryRing', False):
+                        continue
+                if not self.react_to_danger_onfoot and (event.status.get("event") in ["InDanger", "OutOfDanger"]):
+                    if states.get('CurrentStatus', {}).get('flags2').get('OnFoot'):
+                        continue
                 return True
-            
+
             if isinstance(event, ExternalEvent):
                 return True
 
-            # if isinstance(event, GameEvent) and event.content.get("event") == 'ProspectedAsteroid' and any([material['Name'] == 'LowTemperatureDiamond' for material in event.content.get("Materials")]) and event.content.get("Remaining") != 0:
-            #     return True
+            if isinstance(event, ProjectedEvent):
+                if event.content.get("event").startswith('ScanOrganic'):
+                    if not 'ScanOrganic' in self.game_events:
+                        continue
+                return True
 
         return False
 

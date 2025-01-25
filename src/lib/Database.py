@@ -1,7 +1,6 @@
-from datetime import datetime
 import json
 import os
-import sqlite3
+import sqlean as sqlite3
 from typing import Any, final
 import sqlite_vec
 

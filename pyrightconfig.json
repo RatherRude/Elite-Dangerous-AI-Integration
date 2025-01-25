@@ -14,7 +14,6 @@
     "defineConstant": {
         "DEBUG": true
     },
-    "stubPath": "src/stubs",
     "reportMissingImports": "error",
     "reportMissingTypeStubs": false,
     "reportUnusedCallResult": false,
@@ -22,19 +21,19 @@
     "reportUnknownVariableType": false,
     "reportUnknownArgumentType": false,
     "reportMissingTypeArgument": "warning",
-    "pythonVersion": "3.10",
+    "pythonVersion": "3.12",
     "pythonPlatform": "Windows",
     "executionEnvironments": [
         {
             "root": "src/AIGUI",
-            "pythonVersion": "3.10",
+            "pythonVersion": "3.12",
             "pythonPlatform": "Windows",
             "extraPaths": [],
             "reportMissingImports": "warning"
         },
         {
             "root": "src/AIServer",
-            "pythonVersion": "3.10",
+            "pythonVersion": "3.12",
             "pythonPlatform": "Windows",
             "extraPaths": []
         },

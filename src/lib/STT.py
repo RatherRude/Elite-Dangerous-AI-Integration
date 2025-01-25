@@ -42,7 +42,7 @@ class STT:
         self.language = language
 
         self.rate=16000
-        self.frames_per_buffer=1600
+        self.frames_per_buffer=self.vad.chunk_bytes() // pyaudio.get_sample_size(pyaudio.paInt16)
 
         self.vad_threshold = 0.2
         self.phrase_end_pause = 1.0
@@ -101,19 +101,23 @@ class STT:
         source: pyaudio.Stream = self._get_microphone()
         timestamp = time()
         frames = []
+        activity = []
         while self.listening:
             buffer = source.read(self.frames_per_buffer)
             if len(buffer) == 0: break  # reached end of the stream
             frames.append(buffer)
             frames_duration = len(frames) * self.frames_per_buffer / self.rate
+            activity.append(self.vad(buffer))
             if frames_duration > 0.5:
                 #log('debug','checking for voice activity in', frames_duration, 'seconds of audio')
                 audio_raw = b''.join(frames)
-                if self.vad(audio_raw) < self.vad_threshold:
+                if all([v < self.vad_threshold for v in activity]):
                     # no voice detected in the recording so far, so clear the buffer
                     # and keep only last 0.1 seconds of audio for the next iteration
                     #log('debug','no voice detected, clearing buffer')
-                    frames = frames[-int(0.1 * self.rate / self.frames_per_buffer):]
+                    keep = int(0.1 * self.rate / self.frames_per_buffer)
+                    frames = frames[-keep:]
+                    activity = activity[-keep:]
                     timestamp = time()
                     continue
                 else:
@@ -121,14 +125,16 @@ class STT:
                     # we have voice activity in current recording
                     # check if there is voice in the last phrase_end_pause seconds
                     #log('debug','voice detected, checking for pause in the last phrase_end_pause seconds')
-                    audio_end_slice = b''.join(frames[-int(self.phrase_end_pause * self.rate / self.frames_per_buffer):])
-                    if self.vad(audio_end_slice) < self.vad_threshold:
+                    end_slice = int(self.phrase_end_pause * self.rate / self.frames_per_buffer)
+                    activity_end_slice = activity[-end_slice:]
+                    if all([v < self.vad_threshold for v in activity_end_slice]):
                         # no voice in the last 0.5 seconds, so we know the user has stopped speaking
                         # so we can transcribe the audio
                         #log('debug','no voice detected in the last 0.5 seconds, transcribing')
                         audio_data = sr.AudioData(audio_raw, self.rate, pyaudio.get_sample_size(pyaudio.paInt16))
                         text = self._transcribe(audio_data)
                         frames = []
+                        activity = []
                         if text:
                             self.resultQueue.put(STTResult(text, audio_data, timestamp))
                         self.recording = False
@@ -173,7 +179,7 @@ class STT:
         if audio_length < 0.2:
             # print('skipping short audio')
             return ''
-        if self.vad(audio_raw) <= self.vad_threshold:
+        if all([a < self.vad_threshold for a in self.vad.process_chunks(audio_raw)]):
             # print('skipping audio without voice')
             return ''
 

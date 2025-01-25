@@ -1,10 +1,13 @@
 import io
 import json
+import math
 import sys
 from pathlib import Path
 import traceback
+from typing import Any
 
 from openai import OpenAI
+from openai.types.chat import ChatCompletion
 
 from lib.Config import Config, get_ed_appdata_path, get_ed_journals_path
 from lib.ActionManager import ActionManager
@@ -48,8 +51,8 @@ def load_config() -> Config:
 
 is_thinking = False
 
-def reply(client, events: list[Event], new_events: list[Event], projected_states: dict[str, dict], prompt_generator: PromptGenerator,
-          event_manager: EventManager, tts: TTS, copilot: EDCoPilot):
+def reply(client: OpenAI, events: list[Event], new_events: list[Event], projected_states: dict[str, dict], prompt_generator: PromptGenerator,
+          event_manager: EventManager, tts: TTS, copilot: EDCoPilot, config: Config):
     global is_thinking
     is_thinking = True
     prompt = prompt_generator.generate_prompt(events=events, projected_states=projected_states, pending_events=new_events)
@@ -73,17 +76,21 @@ def reply(client, events: list[Event], new_events: list[Event], projected_states
         if flags2["OnFoot"]:
             active_mode = "humanoid"
 
+    uses_actions = config["game_actions_var"]
+    uses_web_actions = config["web_search_actions_var"]
+    tool_list = action_manager.getToolsList(active_mode, uses_actions, uses_web_actions)
     completion = client.chat.completions.create(
         model=llm_model_name,
         messages=prompt,
-        tools=action_manager.getToolsList(active_mode) if use_tools else None
+        tools= tool_list if use_tools and tool_list else None
     )
 
-    if hasattr(completion, 'error'):
+    if not isinstance(completion, ChatCompletion) or hasattr(completion, 'error'):
         log("error", "completion with error:", completion)
         is_thinking = False
         return
-    log("Debug", f'Prompt: {completion.usage.prompt_tokens}, Completion: {completion.usage.completion_tokens}')
+    if hasattr(completion, 'usage'):
+        log("Debug", f'Prompt: {completion.usage.prompt_tokens}, Completion: {completion.usage.completion_tokens}')
 
     response_text = completion.choices[0].message.content
     if response_text:
@@ -99,7 +106,7 @@ def reply(client, events: list[Event], new_events: list[Event], projected_states
             action_result = action_manager.runAction(action)
             action_results.append(action_result)
 
-        event_manager.add_tool_call([tool_call.dict() for tool_call in response_actions], action_results)
+        event_manager.add_tool_call([tool_call.model_dump() for tool_call in response_actions], action_results)
 
 
 useTools = False
@@ -113,9 +120,8 @@ event_manager: EventManager | None = None
 
 controller_manager = ControllerManager()
 
-
 def main():
-    global llmClient, sttClient, ttsClient, tts, aiModel, useTools, jn, event_manager, prompt_generator, llm_model_name
+    global llmClient, sttClient, ttsClient, tts, aiModel, useTools, jn, event_manager, prompt_generator, llm_model_name, status_parser
 
     # Load configuration
     config = load_config()
@@ -196,14 +202,29 @@ def main():
         stt.listen_continuous()
     log('info', "Voice interface ready.")
 
+
+    enabled_game_events: list[str] = []
+    if config["event_reaction_enabled_var"]:
+        for category in config["game_events"].values():
+            for event, state in category.items():
+                if state:
+                    enabled_game_events.append(event)
+
     ed_keys = EDKeys(get_ed_appdata_path(config))
     status_parser = StatusParser(get_ed_journals_path(config))
     prompt_generator = PromptGenerator(config["commander_name"], config["character"], important_game_events=enabled_game_events)
     event_manager = EventManager(
         on_reply_request=lambda events, new_events, states: reply(llmClient, events, new_events, states, prompt_generator, event_manager,
-                                                          tts, copilot),
+                                                          tts, copilot, config),
         game_events=enabled_game_events,
-        continue_conversation=config["continue_conversation_var"]
+        continue_conversation=config["continue_conversation_var"],
+        react_to_text_local=config["react_to_text_local_var"],
+        react_to_text_starsystem=config["react_to_text_starsystem_var"],
+        react_to_text_npc=config["react_to_text_npc_var"],
+        react_to_text_squadron=config["react_to_text_squadron_var"],
+        react_to_material=config["react_to_material"],
+        react_to_danger_mining=config["react_to_danger_mining_var"],
+        react_to_danger_onfoot=config["react_to_danger_onfoot_var"]
     )
     registerProjections(event_manager)
 
@@ -221,11 +242,15 @@ def main():
     # Cue the user that we're ready to go.
     log('info', "System Ready.")
 
+    within_scan_radius = True
+    scan_radius = 0
+    scan_in_progress = False
+    scans = []
     counter = 0
     while True:
         try:
             counter += 1
-
+            status = None
             # check status file for updates
             while not status_parser.status_queue.empty():
                 status = status_parser.status_queue.get()

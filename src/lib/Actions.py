@@ -8,8 +8,7 @@ from typing import Optional
 import openai
 import requests
 
-from lib.Config import get_ed_appdata_path
-
+from .ScreenReader import ScreenReader
 from .StatusParser import StatusParser
 from .Logger import log
 from .EDKeys import EDKeys
@@ -161,7 +160,7 @@ def galaxy_map_open(args):
         sleep(.05)
 
         # type in the System name
-        typewrite(args['system_name'], interval=0)
+        typewrite(args['system_name'], interval=0.02)
         sleep(0.05)
 
         # send enter key
@@ -184,10 +183,12 @@ def galaxy_map_open(args):
             sleep(3.5)
             keys.send('UI_Select', hold=1)
 
-            sleep(.2)
-            keys.send('GalaxyMapOpen')
+            sleep(.05)
+            if status_parser.current_status["GuiFocus"] == 'GalaxyMap':
+                keys.send('GalaxyMapOpen')
 
-            return f"A route to {args['system_name']} has been plotted."
+            return ((f"Best location found: {json.dumps(args['details'])}. " if 'details' in args else '') +
+                    f"Plotting a route to {args['system_name']} has been attempted. Check event history to see if it was successful, if you see no event it has failed.")
 
         return f"The galaxy map has opened. It is now zoomed in on \"{args['system_name']}\". No route was plotted yet, only the commander can do that."
 
@@ -237,12 +238,93 @@ def toggle_cargo_scoop(args):
 
 def hyper_super_combination(args):
     setGameWindowActive()
+    if status_parser.current_status["flags"]["Docked"]:
+        raise Exception("The ship is currently docked.")
+    if status_parser.current_status["flags"]["Landed"]:
+        raise Exception("The ship is currently landed.")
+
+    return_message = ""
+    if status_parser.current_status["flags"]["LandingGearDown"]:
+        keys.send('LandingGearToggle')
+        return_message += "Landing Gear Retracted. "
+    if status_parser.current_status["flags"]["CargoScoopDeployed"]:
+        keys.send('ToggleCargoScoop')
+        return_message += "Cargo Scoop Retracted. "
+    if status_parser.current_status["flags"]["HardpointsDeployed"]:
+        keys.send('DeployHardpointToggle')
+        return_message += "Hardpoints Retracted. "
+
     keys.send('HyperSuperCombination')
-    return f"Frame Shift Drive is charging for a jump"
+    return return_message + "Frame Shift Drive is now charging for a jump"
+
+def undock(args):
+    setGameWindowActive()
+    # Early return if we're not docked
+    if not status_parser.current_status["flags"]["Docked"]:
+        raise Exception("The ship currently isn't docked.")
+
+    if status_parser.current_status["GuiFocus"] in ['InternalPanel', 'CommsPanel', 'RolePanel', 'ExternalPanel']:
+        keys.send('UIFocus')
+        sleep(1)
+    elif status_parser.current_status["GuiFocus"] == 'NoFocus':
+        pass
+    else:
+        raise Exception("The currently focused UI needs to be closed first")
+
+    keys.send('UI_Down', None, 3)
+    keys.send('UI_Up')
+    keys.send('UI_Select')
+
+    return 'The ship is now undocking'
+
+def request_docking(args):
+    screenreader = ScreenReader()
+    setGameWindowActive()
+    if status_parser.current_status["GuiFocus"] in ['NoFocus', 'InternalPanel', 'CommsPanel', 'RolePanel']:
+        keys.send('FocusLeftPanel')
+        sleep(1)
+    elif status_parser.current_status["GuiFocus"] == 'ExternalPanel':
+        pass
+    else:
+        raise Exception('Docking menu not available in current UI Mode.')
+
+    mode = None
+    for x in range(4):
+        mode = screenreader.detect_lhs_screen_tab()
+        if mode:
+            break
+        keys.send('CycleNextPanel', None, 1)
+
+    log('debug', 'Docking request screen tab', mode)
+    if not mode:
+        raise Exception('Panel not found')
+    if mode == 'system':
+        keys.send('CycleNextPanel', None, 3)
+    elif mode == 'navigation':
+        keys.send('CycleNextPanel', None, 2)
+    elif mode == 'transactions':
+        keys.send('CycleNextPanel', None, 1)
+
+    sleep(0.3)
+    keys.send('UI_Left')
+    keys.send('UI_Down')
+    keys.send('UI_Up', hold=1)
+    keys.send('UI_Right')
+    sleep(0.1)
+    keys.send('UI_Select')
+    keys.send('UIFocus')
+
+    return f"Docking has been requested"
 
 
 # Ship Launched Fighter Actions
 def order_request_dock(args):
+    setGameWindowActive()
+    keys.send('OrderRequestDock')
+    return f"Fighter has been ordered to dock"
+
+# Ship Launched Fighter Actions
+def fighter_request_dock(args):
     setGameWindowActive()
     keys.send('OrderRequestDock')
     return f"A request for docking has been sent"
@@ -295,12 +377,12 @@ def select_target_buggy(args):
 
 def increase_engines_power_buggy(args):
     setGameWindowActive()
-    keys.send('IncreaseEnginesPower_Buggy')
+    keys.send('IncreaseEnginesPower_Buggy', None, args['pips'])
     return "Buggy engine power increased."
 
 def increase_weapons_power_buggy(args):
     setGameWindowActive()
-    keys.send('IncreaseWeaponsPower_Buggy')
+    keys.send('IncreaseWeaponsPower_Buggy', None, args['pips'])
     return "Buggy weapons power increased."
 
 def increase_systems_power_buggy(args):
@@ -310,12 +392,12 @@ def increase_systems_power_buggy(args):
 
 def reset_power_distribution_buggy(args):
     setGameWindowActive()
-    keys.send('ResetPowerDistribution_Buggy', None, args['pips'])
+    keys.send('ResetPowerDistribution_Buggy')
     return "Buggy power distribution reset."
 
 def toggle_cargo_scoop_buggy(args):
     setGameWindowActive()
-    keys.send('ToggleCargoScoop_Buggy', None, args['pips'])
+    keys.send('ToggleCargoScoop_Buggy')
     return "Buggy cargo scoop toggled."
 
 def eject_all_cargo_buggy(args):
@@ -441,7 +523,7 @@ def setGameWindowActive():
         log("info", "Unable to find Elite game window")
 
 
-def screenshot():
+def screenshot(new_height: int = 720):
     if platform != "win32":
         return None
     handle = get_game_window_handle()
@@ -462,7 +544,6 @@ def screenshot():
 
         # Resize to height 720 while maintaining aspect ratio
         aspect_ratio = width / height
-        new_height = 720
         new_width = int(new_height * aspect_ratio)
         im = im.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
@@ -635,6 +716,55 @@ def trade_planner(obj):
 
 
 # Region: Trade Planner End
+
+
+def send_message(obj):
+    from pyautogui import typewrite
+    setGameWindowActive()
+
+    return_message = "No message sent"
+
+    if obj:
+        chunk_size = 100
+        start = 0
+
+        in_ship = status_parser.current_status["flags"]["InMainShip"] or status_parser.current_status["flags"]["InFighter"]
+        in_buggy = status_parser.current_status["flags"]["InSRV"]
+        on_foot = status_parser.current_status["flags2"] and status_parser.current_status["flags2"]["OnFoot"]
+
+        while start < len(obj.get("message", "")):
+            return_message = "Message sent"
+            if start != 0:
+                sleep(0.25)
+            chunk = obj.get("message", "")[start:start + chunk_size]
+            start += chunk_size
+
+            if in_ship:
+                keys.send("QuickCommsPanel")
+            elif in_buggy:
+                keys.send("QuickCommsPanel_Buggy")
+            elif on_foot:
+                keys.send("QuickCommsPanel_Humanoid")
+            else:
+                raise Exception("Can not send message.")
+
+            if not obj.get("recipient") or obj.get("recipient").lower() == "local":
+                typewrite("/local ", interval=0.02)
+                return_message += " to local chat."
+            else:
+                typewrite(f"/d {obj.get('recipient')} ", interval=0.02)
+                return_message += f" to {obj.get('recipient')}."
+
+            sleep(0.05)
+            typewrite(chunk, interval=0.02)
+
+            sleep(0.05)
+            # send enter key
+            keys.send_key('Down', 28)
+            sleep(0.05)
+            keys.send_key('Up', 28)
+
+    return return_message
 
 
 def get_visuals(obj):
@@ -1345,15 +1475,19 @@ def prepare_station_request(obj):
         filters["name"] = {
             "value": obj["name"]
         }
+
+    sort_object = { "distance": { "direction": "asc" } }
+    if filters.get("market") and len(filters["market"]) > 0:
+        if filters.get("market")[0].get("demand"):
+            sort_object = {"market_sell_price":[{"name":filters["market"][0]["name"],"direction":"desc"}]}
+        elif filters["market"][0].get("demand"):
+            sort_object = {"market_buy_price":[{"name":filters["market"][0]["name"],"direction":"asc"}]}
+
     # Build the request body
     request_body = {
         "filters": filters,
         "sort": [
-            {
-                "distance": {
-                    "direction": "asc"
-                }
-            }
+            sort_object
         ],
         "size": 3,
         "page": 0,
@@ -1400,7 +1534,8 @@ def filter_station_response(request, response):
                             {"name": module["name"], "class": module["class"], "rating": module["rating"],
                              "price": module["price"]})
 
-            filtered_result["modules"] = filtered_modules
+            if filtered_modules:
+                filtered_result["modules"] = filtered_modules
 
         if "ships" in result:
             filtered_ships = []
@@ -1409,7 +1544,8 @@ def filter_station_response(request, response):
                     if requested_ship.lower() in ship["name"].lower():
                         filtered_ships.append(ship)
 
-            filtered_result["ships"] = filtered_ships
+            if filtered_ships:
+                filtered_result["ships"] = filtered_ships
 
         if "services" in result:
             filtered_services = []
@@ -1418,7 +1554,8 @@ def filter_station_response(request, response):
                     if requested_service.lower() in service["name"].lower():
                         filtered_services.append(service)
 
-            filtered_result["services"] = filtered_services
+            if filtered_services:
+                filtered_result["services"] = filtered_services
 
         filtered_results.append(filtered_result)
 
@@ -1432,6 +1569,7 @@ def filter_station_response(request, response):
 def station_finder(obj):
     # Initialize the filters
     request_body = prepare_station_request(obj)
+    log('info', 'obj', obj)
 
     url = "https://spansh.co.uk/api/stations/search"
     try:
@@ -1441,6 +1579,16 @@ def station_finder(obj):
         data = response.json()
 
         filtered_data = filter_station_response(request_body, data)
+        # tech broker, material trader
+        if obj.get("technology_broker") or obj.get("material_trader"):
+            if len(filtered_data["results"]) > 0:
+                return galaxy_map_open({
+                    "system_name":filtered_data["results"][0]["system"],
+                    "start_navigation":True,
+                    "details": filtered_data["results"][0]
+                })
+            else:
+                return 'No stations were found, so no route was plotted.'
 
         return f'Here is a list of stations: {json.dumps(filtered_data)}'
     except Exception as e:
@@ -2501,11 +2649,27 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, use_shield_cell, 'mainship')
 
-    # Register actions - Ship Launched Fighter Actions
-    actionManager.registerAction('OrderRequestDock', "Request docking for Ship Launched Fighter", {
+    actionManager.registerAction('requestDocking', "Request docking.", {
         "type": "object",
         "properties": {}
-    }, order_request_dock, 'fighter')
+    }, request_docking, 'mainship')
+
+    actionManager.registerAction('undockShip', "", {
+        "type": "object",
+        "properties": {}
+    }, undock, 'mainship')
+
+    # Register actions - Ship Launched Fighter Actions
+    actionManager.registerAction('OrderRequestDock', "Order fighter to dock with main ship.", {
+        "type": "object",
+        "properties": {}
+    }, order_request_dock, 'mainship')
+
+    # Register actions - Ship Launched Fighter Actions
+    actionManager.registerAction('fighterRequestDock', "Request docking for Ship Launched Fighter", {
+        "type": "object",
+        "properties": {}
+    }, fighter_request_dock, 'fighter')
 
     # Register actions - SRV Actions (Horizons)
     actionManager.registerAction('toggleDriveAssist', "Toggle drive assist", {
@@ -2705,7 +2869,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             "required": ["query"]
         },
         get_galnet_news,
-        'global'
+        'web'
     )
 
     # if ARC:
@@ -2755,7 +2919,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             ]
         },
         trade_planner,
-        'global'
+        'web'
     )
 
     # Register AI action for system finder
@@ -2856,11 +3020,11 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             "required": ["reference_system"]
         },
         system_finder,
-        'global'
+        'web'
     )
     actionManager.registerAction(
         'station_finder',
-        "Find a station to buy or sell a commodity, to buy an outfitting module, with a Material Trader or Technology Broker. Ask for unknown values and make sure they are known.",
+        "Find a station for commodities, modules and ships. Ask for unknown values and make sure they are known.",
         {
             "type": "object",
             "properties": {
@@ -2880,7 +3044,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "distance": {
                     "type": "number",
                     "description": "The maximum distance to search",
-                    "example": 50000.0
+                    "default": 50000.0
                 },
                 "material_trader": {
                     "type": "array",
@@ -3014,7 +3178,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             ]
         },
         station_finder,
-        'global'
+        'web'
     )
     actionManager.registerAction(
         'body_finder',
@@ -3056,8 +3220,23 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             ]
         },
         body_finder,
-        'global'
+        'web'
     )
+
+    actionManager.registerAction('textMessage', "Send message to commander or local", {
+        "type": "object",
+        "properties": {
+            "message": {
+                "type": "string",
+                "description": "Message to send"
+            },
+            "recipient": {
+                "type": "string",
+                "description": "Only use if recipient is another Commander. Uses local chat if not set."
+            }
+        },
+        "required": ["message"]
+    }, send_message, 'global')
 
     if vision_client:
         actionManager.registerAction('getVisuals', "Describes what's currently visible to the Commander.", {

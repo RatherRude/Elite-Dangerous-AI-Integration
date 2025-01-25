@@ -1,6 +1,8 @@
 from typing import Literal, TypedDict
 import os
-import platform
+import sys
+
+from requests.models import stream_decode_response_unicode
 
 
 class Config(TypedDict):
@@ -25,6 +27,16 @@ class Config(TypedDict):
     vision_var: bool
     ptt_var: bool
     continue_conversation_var: bool
+    event_reaction_enabled_var: bool
+    game_actions_var: bool
+    web_search_actions_var: bool
+    react_to_text_local_var: bool
+    react_to_text_starsystem_var: bool
+    react_to_text_npc_var: bool
+    react_to_text_squadron_var: bool
+    react_to_material: str
+    react_to_danger_mining_var: bool
+    react_to_danger_onfoot_var: bool
     edcopilot: bool
     edcopilot_dominant: bool
     tts_voice: str
@@ -59,3 +71,10 @@ def get_ed_appdata_path(config: Config) -> str:
     from os import environ
     return environ['LOCALAPPDATA'] + "\\Frontier Developments\\Elite Dangerous"
     
+def get_asset_path(filename:str) -> str:
+    assets_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../assets'))
+    if hasattr(sys, 'frozen'):
+        assets_dir = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), '../assets'))
+    
+    return os.path.join(assets_dir, filename)

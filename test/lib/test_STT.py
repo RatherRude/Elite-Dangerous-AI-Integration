@@ -70,6 +70,8 @@ def mock_vad_detector(mock_vad):
     """Mock SileroVAD detector class"""
     mock_detector = MagicMock()
     mock_detector.return_value = mock_vad
+    # also mock the process_chunks method
+    mock_vad.process_chunks.side_effect = lambda bytes: [bytes[0] / 0xff] * len(bytes)
     return mock_detector
 
 @pytest.fixture
@@ -90,7 +92,7 @@ def test_get_microphone_device_selection(mock_pyaudio, stt):
         channels=1,
         rate=16000,
         input=True,
-        frames_per_buffer=1600
+        frames_per_buffer=512
     )
     assert stream == mock_pyaudio['stream']
 
@@ -108,7 +110,7 @@ def test_get_microphone_fallback(mock_pyaudio, stt):
         channels=1,
         rate=16000,
         input=True,
-        frames_per_buffer=1600
+        frames_per_buffer=512
     )
 
 def test_continuous_listening(stt, mock_pyaudio: dict[str, MagicMock], mock_vad: MagicMock, mock_openai, monkeypatch):

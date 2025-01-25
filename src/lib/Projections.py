@@ -1,9 +1,11 @@
-from typing import Any, Generic, Literal, TypeVar, TypedDict, final
+import math
+from typing import Any, Literal, TypedDict, final
+
 from typing_extensions import NotRequired, override
-from .StatusParser import parse_status_flags, parse_status_json, Status
-from .Event import Event, StatusEvent, GameEvent
-from .Logger import log
+
+from .Event import Event, StatusEvent, GameEvent, ProjectedEvent
 from .EventManager import EventManager, Projection
+from .StatusParser import parse_status_flags, parse_status_json, Status
 
 
 def latest_event_projection_factory(projectionName: str, gameEvent: str):
@@ -304,6 +306,7 @@ ShipInfoState = TypedDict('ShipInfoState', {
     "MaximumJumpRange": float,
     #"CurrentJumpRange": float,
     "LandingPadSize": Literal['S', 'M', 'L', 'Unknown'],
+    "IsMiningShip": bool,
 })
 
 ship_sizes: dict[str, Literal['S', 'M', 'L', 'Unknown']] = {
@@ -373,6 +376,7 @@ class ShipInfo(Projection[ShipInfoState]):
             "FuelReservoirCapacity": 0,
             "MaximumJumpRange": 0,
             #"CurrentJumpRange": 0,
+            "IsMiningShip": False,
             "LandingPadSize": 'Unknown',
         }
     
@@ -404,6 +408,12 @@ class ShipInfo(Projection[ShipInfoState]):
                 self.state['FuelReservoirCapacity'] = event.content['FuelCapacity'].get('Reserve', 0)
             if 'MaxJumpRange' in event.content:
                 self.state['MaximumJumpRange'] = event.content.get('MaxJumpRange', 0)
+            if 'Modules' in event.content:
+                has_refinery = any(module["Item"].startswith("int_refinery") for module in event.content["Modules"])
+                if has_refinery:
+                    self.state['IsMiningShip'] = True
+                else:
+                    self.state['IsMiningShip'] = False
         
         if self.state['Type'] != 'Unknown':
             self.state['LandingPadSize'] = ship_sizes.get(self.state['Type'], 'Unknown')
@@ -450,6 +460,130 @@ class NavInfo(Projection[NavInfoState]):
         
         # TODO: when do we clear the route? if 'FSDJump' 'StarSystem' = 'NavRouteTarget'? or if remaining jumps = 0? what if the user clears?
 
+class ExobiologyScanStateScan(TypedDict):
+    lat: float
+    long: float
+
+ExobiologyScanState = TypedDict('ExobiologyScanState', {
+    "within_scan_radius": NotRequired[bool],
+    "scan_radius": NotRequired[int],
+    "scans": list[ExobiologyScanStateScan],
+    "lat": NotRequired[float],
+    "long": NotRequired[float]
+})
+
+@final
+class ExobiologyScan(Projection[ExobiologyScanState]):
+    colony_size = {
+        "Aleoids_Genus_Name": 150,      # Aleoida
+        "Vents_Genus_Name": 100,        # Amphora Plant
+        "Sphere_Genus_Name": 100,       # Anemone
+        "Bacterial_Genus_Name": 500,    # Bacterium
+        "Cone_Genus_Name": 100,         # Bark Mound
+        "Brancae_Name": 100,            # Brain Tree
+        "Cactoid_Genus_Name": 300,      # Cactoida
+        "Clypeus_Genus_Name": 150,      # Clypeus
+        "Conchas_Genus_Name": 150,      # Concha
+        "Shards_Genus_Name": 100,       # Crystalline Shard
+        "Electricae_Genus_Name": 1000,  # Electricae
+        "Fonticulus_Genus_Name": 500,   # Fonticulua
+        "Shrubs_Genus_Name": 150,       # Frutexa
+        "Fumerolas_Genus_Name": 100,    # Fumerola
+        "Fungoids_Genus_Name": 300,     # Fungoida
+        "Osseus_Genus_Name": 800,       # Osseus
+        "Recepta_Genus_Name": 150,      # Recepta
+        "Tube_Genus_Name": 100,         # Sinuous Tuber
+        "Stratum_Genus_Name": 500,      # Stratum
+        "Tubus_Genus_Name": 800,        # Tubus
+        "Tussocks_Genus_Name": 200      # Tussock
+    }
+
+    def haversine_distance(self, new_value:dict[str,float], old_value:dict[str,float], radius:int):
+        lat1, lon1 = math.radians(new_value['lat']), math.radians(new_value['long'])
+        lat2, lon2 = math.radians(old_value['lat']), math.radians(old_value['long'])
+
+        dlat = lat2 - lat1
+        dlon = lon2 - lon1
+
+        # Haversine formula
+        a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+        distance = radius * c
+        return distance
+
+    @override
+    def get_default_state(self) -> ExobiologyScanState:
+        return {
+            "within_scan_radius": True,
+            "scans": [],
+        }
+
+    @override
+    def process(self, event: Event) -> list[ProjectedEvent]:
+        projected_events: list[ProjectedEvent] = []
+
+        if isinstance(event, StatusEvent) and event.status.get("event") == "Status":
+            self.state["lat"] = event.status.get("Latitude")
+            self.state["long"] = event.status.get("Longitude")
+
+            if self.state["scans"] and self.state.get('scan_radius', False):
+                in_scan_radius = False
+                if (event.status.get('Latitude', False) and
+                    event.status.get('Longitude', False) and
+                    event.status.get('PlanetRadius', False)):
+                    distance_obj = {'lat': self.state["lat"], 'long': self.state["long"]}
+                    for scan in self.state["scans"]:
+                        distance = self.haversine_distance(scan, distance_obj, event.status['PlanetRadius'])
+                        # log('info', 'distance', distance)
+                        if distance < self.state['scan_radius']:
+                            in_scan_radius = True
+                            break
+                    if in_scan_radius:
+                        if not self.state['within_scan_radius']:
+                            projected_events.append(ProjectedEvent({"event": "ScanOrganicTooClose"}))
+                            self.state['within_scan_radius'] = in_scan_radius
+                    else:
+                        if self.state['within_scan_radius']:
+                            projected_events.append(ProjectedEvent({"event": "ScanOrganicFarEnough"}))
+                            self.state['within_scan_radius'] = in_scan_radius
+                else:
+                    # log('info', 'status missing')
+                    if self.state['scans']:
+                        self.state["scans"].clear()
+                        self.state.pop("scan_radius")
+
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'ScanOrganic':
+            content = event.content
+            if content["ScanType"] == "Log":
+                self.state['scans'].clear()
+                self.state['scans'].append({'lat': self.state.get('lat', 0), 'long': self.state.get('long', 0)})
+                self.state['scan_radius'] = self.colony_size[content['Genus'][11:-1]]
+                self.state['within_scan_radius'] = True
+                projected_events.append(ProjectedEvent({**content, "event": "ScanOrganicFirst", "NewSampleDistance":self.state['scan_radius']}))
+
+            elif content["ScanType"] == "Sample":
+                if len(self.state['scans']) == 1:
+                    self.state['scans'].append({'lat': self.state.get('lat', 0), 'long': self.state.get('long', 0)})
+                    projected_events.append(ProjectedEvent({**content, "event": "ScanOrganicSecond"}))
+                elif len(self.state['scans']) == 2:
+                    projected_events.append(ProjectedEvent({**content, "event": "ScanOrganicThird"}))
+                    if self.state['scans']:
+                        self.state["scans"].clear()
+                        self.state.pop('scan_radius', None)
+                else:
+                    projected_events.append(ProjectedEvent({**content, "event": "ScanOrganic"}))
+
+            elif content["ScanType"] == "Analyse":
+                pass
+
+        if isinstance(event, GameEvent) and event.content.get('event') in ['SupercruiseEntry','FSDJump','Died','Shutdown','JoinACrew']:
+            self.state["scans"].clear()
+            self.state.pop('scan_radius', None)
+
+        return projected_events
+
 
 
 def registerProjections(event_manager: EventManager):
@@ -459,7 +593,9 @@ def registerProjections(event_manager: EventManager):
     event_manager.register_projection(Missions())
     event_manager.register_projection(ShipInfo())
     event_manager.register_projection(NavInfo())
+    event_manager.register_projection(ExobiologyScan())
 
+    # ToDo: SLF, SRV,
     for proj in [
         'Commander',
         'Materials',

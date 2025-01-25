@@ -15,6 +15,7 @@ from .Event import (
     StatusEvent,
     ToolEvent,
     ExternalEvent,
+    ProjectedEvent,
 )
 from .Logger import log
 
@@ -110,7 +111,7 @@ stationServiceEvents = {
     "MissionAccepted": "Commander {commanderName} has accepted a mission.",
     "MissionCompleted": "Commander {commanderName} has completed a mission.",
     "MissionFailed": "Commander {commanderName} has failed a mission.",
-    "MissionRedirected": "Commander {commanderName} has redirected a mission.",
+    "MissionRedirected": "Commander {commanderName}'s mission is now completed. Rewards are now available.",
     "ModuleBuy": "Commander {commanderName} has bought a module.",
     "ModuleRetrieve": "Commander {commanderName} has retrieved a module.",
     "ModuleSell": "Commander {commanderName} has sold a module.",
@@ -157,7 +158,7 @@ carrierEvents = {
     "CarrierJumpCancelled": "Commander {commanderName} has canceled a jump request for carrier.",
 }
 odysseyEvents = {
-    'Backpack': "Commander {commanderName} has interacted with their backpack.",
+    # 'Backpack': "Commander {commanderName} has interacted with their backpack.",
     'BackpackChange': "Commander {commanderName} has changed items in their backpack.",
     'BookDropship': "Commander {commanderName} has booked a dropship.",
     'BookTaxi': "Commander {commanderName} has booked a taxi.",
@@ -177,7 +178,7 @@ odysseyEvents = {
     'LoadoutEquipModule': "Commander {commanderName} has equipped a module in suit loadout.",
     'LoadoutRemoveModule': "Commander {commanderName} has removed a module from suit loadout.",
     'RenameSuitLoadout': "Commander {commanderName} has renamed a suit loadout.",
-    'ScanOrganic': "Commander {commanderName} has scanned organic life.",
+    # 'ScanOrganic': "Commander {commanderName} has scanned organic life.",
     'SellMicroResources': "Commander {commanderName} has sold micro resources.",
     'SellOrganicData': "Commander {commanderName} has sold organic data.",
     'SellWeapon': "Commander {commanderName} has sold a weapon.",
@@ -286,6 +287,14 @@ otherEvents = {
     "SupercruiseDestinationDrop": "Commander {commanderName} has dropped out at a supercruise destination.",
 }
 
+projectedEvents = {
+    'ScanOrganicTooClose': "Commander {commanderName} is now too close to take another sample. Distance must be increased.",
+    'ScanOrganicFarEnough': "Commander {commanderName} is now far enough away to take another sample.",
+    'ScanOrganicFirst': "Commander {commanderName} took the first of three biological samples. New sample distance acquired.",
+    'ScanOrganicSecond': "Commander {commanderName} took the second of three biological samples.",
+    'ScanOrganicThird': "Commander {commanderName} took the third and final biological samples.",
+}
+
 allGameEvents = {
     **startupEvents,
     **travelEvents,
@@ -298,6 +307,7 @@ allGameEvents = {
     **carrierEvents,
     **odysseyEvents,
     **otherEvents,
+    **projectedEvents,
 }
 
 externalEvents = {
@@ -328,13 +338,13 @@ class PromptGenerator:
     #
     #     return days, hours, minutes
 
-    def full_event_message(self, event: GameEvent, is_important: bool):
+    def full_event_message(self, event: GameEvent|ProjectedEvent, is_important: bool):
         return {
             "role": "user",
             "content": f"({'IMPORTANT: ' if is_important else ''}{allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)} Details: {json.dumps(event.content)})",
         }
 
-    def simple_event_message(self, event: GameEvent):
+    def simple_event_message(self, event: GameEvent|ProjectedEvent):
         return {
             "role": "user",
             "content": f"({allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)})",
@@ -448,7 +458,7 @@ class PromptGenerator:
 
             is_pending = event in pending_events
 
-            if isinstance(event, GameEvent):
+            if isinstance(event, GameEvent) or isinstance(event, ProjectedEvent):
                 if event.content.get('event') in allGameEvents:
                     if len(conversational_pieces) < 5 or is_pending:
                         is_important = is_pending and event.content.get('event') in self.important_game_events
@@ -549,15 +559,19 @@ class PromptGenerator:
         conversational_pieces.append(
             {"role": "user", "content": f"(Current{active_mode} status: {json.dumps(status_info)})"}
         )
-        conversational_pieces.append(
-            {
-                "role": "system",
-                "content": "Let's roleplay in the universe of Elite: Dangerous. "
-                + "I will provide game events in parentheses; do not create new ones. "
-                + "Do not hallucinate any information that is not given to you. Do not use markdown in your responses. "
-                + self.character_prompt.format(commander_name=self.commander_name),
-            }
-        )
+        try:
+            conversational_pieces.append(
+                {
+                    "role": "system",
+                    "content": "Let's roleplay in the universe of Elite: Dangerous. "
+                    + "I will provide game events in parentheses; do not create new ones. "
+                    + "Do not hallucinate any information that is not given to you. Do not use markdown in your responses. "
+                    + self.character_prompt.format(commander_name=self.commander_name),
+                }
+            )
+        except Exception as e:
+            log('error', e, traceback.format_exc())
+            log('error', 'Invalid character prompt, please keep the {commander_name} placeholder in the prompt.')
 
         conversational_pieces.reverse()  # Restore the original order
 

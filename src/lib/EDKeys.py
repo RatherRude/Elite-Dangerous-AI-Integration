@@ -1,3 +1,4 @@
+import json
 from os import listdir
 import os
 from os.path import getmtime, isfile, join
@@ -5,7 +6,8 @@ from time import sleep
 from typing import Any, final
 from xml.etree.ElementTree import parse
 
-from .directinput import PressKey, ReleaseKey, SCANCODE
+from .Config import get_asset_path
+from .directinput import PressKey, ReleaseKey
 
 """
 Description:  Pulls the keybindings for specific controls from the ED Key Bindings file, this class also
@@ -22,6 +24,9 @@ class EDKeys:
         self.key_mod_delay = 0.010
         self.key_default_delay = 0.200
         self.key_repeat_delay = 0.100
+        
+        self.keymap: dict[str, int] = json.load(open(get_asset_path('keymap.json')))
+        
         self.keys_to_obtain = [
             'PrimaryFire',
             'SecondaryFire',
@@ -48,12 +53,18 @@ class EDKeys:
             'SelectHighestThreat',
             'ToggleCargoScoop',
             'ChargeECM',
-            #'CycleNextPanel',
+            'CycleNextPanel',
+            'FocusLeftPanel',
             'UI_Up',
+            'UI_Down',
             'UI_Left',
             'UI_Right',
             'UI_Select',
             'UI_Back',
+            'UIFocus',
+            'QuickCommsPanel',
+            'QuickCommsPanel_Buggy',
+            'QuickCommsPanel_Humanoid',
             'ToggleDriveAssist',
             'VerticalThrustersButton',
             'BuggyPrimaryFireButton',
@@ -100,7 +111,7 @@ class EDKeys:
             'SystemMapOpen_Humanoid',
             'HumanoidOpenAccessPanelButton',
         ]
-        self.keys = self.get_bindings(self.keys_to_obtain)
+        self.keys = self.get_bindings()
 
         self.missing_keys = []
         # dump config to log
@@ -108,20 +119,9 @@ class EDKeys:
             if not key in self.keys:
                 self.missing_keys.append(key)
 
-    def get_bindings(self, keys_to_obtain) -> dict[str, Any]:
+    def get_bindings(self) -> dict[str, Any]:
         """Returns a dict struct with the direct input equivalent of the necessary elite keybindings"""
         direct_input_keys = {}
-        convert_to_direct_keys = {
-            'Key_LeftShift': 'LShift',
-            'Key_RightShift': 'RShift',
-            'Key_LeftAlt': 'LAlt',
-            'Key_RightAlt': 'RAlt',
-            'Key_LeftControl': 'LControl',
-            'Key_RightControl': 'RControl',
-            'Key_LeftBracket': 'LBracket',
-            'Key_RightBracket': 'RBracket'
-        }
-
         latest_bindings = self.get_latest_keybinds()
         if not latest_bindings:
             return {}
@@ -131,50 +131,39 @@ class EDKeys:
         for item in bindings_root:
             if item.tag in self.keys_to_obtain:
                 key = None
-                mod = None
+                mods = []
                 hold = None
                 # Check primary
                 if item[0].attrib['Device'].strip() == "Keyboard":
                     key = item[0].attrib['Key']
-                    if len(item[0]) > 0:
-                        if item[0][0].tag == "Modifier":
-                            mod = item[0][0].attrib['Key']
-                        elif item[0][0].tag == "Hold":
+                    for modifier in item[0]:
+                        if modifier.tag == "Modifier":
+                            mods.append(modifier.attrib['Key'])
+                        elif modifier.tag == "Hold":
                             hold = True
                 # Check secondary (and prefer secondary)
                 if item[1].attrib['Device'].strip() == "Keyboard":
                     key = item[1].attrib['Key']
-                    mod = None
+                    mods = []
                     hold = None
-                    if len(item[1]) > 0:
-                        if item[1][0].tag == "Modifier":
-                            mod = item[1][0].attrib['Key']
-                        elif item[1][0].tag == "Hold":
+                    for modifier in item[1]:
+                        if modifier.tag == "Modifier":
+                            mods.append(modifier.attrib['Key'])
+                        elif modifier.tag == "Hold":
                             hold = True
-                # Adequate key to SCANCODE dict standard
-                if key in convert_to_direct_keys:
-                    key = convert_to_direct_keys[key]
-                elif key is not None:
-                    key = key[4:]
-                # Adequate mod to SCANCODE dict standard
-                if mod in convert_to_direct_keys:
-                    mod = convert_to_direct_keys[mod]
-                elif mod is not None:
-                    mod = mod[4:]
                 # Prepare final binding
                 binding: None | dict[str, Any] = None
                 try:
                     if key is not None:
                         binding = {}
-                        binding['pre_key'] = 'DIK_' + key.upper()
-                        binding['key'] = SCANCODE[binding['pre_key']]
-                        if mod is not None:
-                            binding['pre_mod'] = 'DIK_' + mod.upper()
-                            binding['mod'] = SCANCODE[binding['pre_mod']]
+                        binding['key'] = self.keymap[key]
+                        binding['mods'] = []
+                        for mod in mods:
+                            binding['mods'].append(self.keymap[mod])
                         if hold is not None:
                             binding['hold'] = True
                 except KeyError:
-                    print("Unrecognised key '" + (binding['pre_key'] if binding else '?')  + "' for bind '" + item.tag + "'")
+                    print("Unrecognised key '" + (json.dumps(binding) if binding else '?')  + "' for bind '" + item.tag + "'")
                 if binding is not None:
                     direct_input_keys[item.tag] = binding
 
@@ -213,8 +202,8 @@ class EDKeys:
         for i in range(repeat):
 
             if state is None or state == 1:
-                if 'mod' in key:
-                    PressKey(key['mod'])
+                for mod in key['mods']:
+                    PressKey(mod)
                     sleep(self.key_mod_delay)
 
                 PressKey(key['key'])
@@ -231,9 +220,9 @@ class EDKeys:
             if state is None or state == 0:
                 ReleaseKey(key['key'])
 
-                if 'mod' in key:
+                for mod in key['mods']:
                     sleep(self.key_mod_delay)
-                    ReleaseKey(key['mod'])
+                    ReleaseKey(mod)
 
             if repeat_delay:
                 sleep(repeat_delay)
