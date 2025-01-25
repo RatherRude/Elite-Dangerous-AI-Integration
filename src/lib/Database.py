@@ -1,6 +1,6 @@
 import json
 import os
-from pysqlite3 import dbapi2 as sqlite3
+import sqlean as sqlite3
 from typing import Any, final
 import sqlite_vec
 
