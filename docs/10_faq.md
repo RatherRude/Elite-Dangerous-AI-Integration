@@ -14,6 +14,10 @@ Some antivirus software may flag the application as a virus due to **a false pos
 Please also report this to your antivirus software vendor as a false-positive, to hopefully get this resolved in the future.
 After you have added an exception, you may need to re-download and re-extract the application, as the antivirus software might have quarantined or deleted important files.
 
+## How do I keep my configuration settings and conversations when upgrading the application?
+
+To keep you configuration settings, you can copy the `config.json` file from the old folder to the new folder. To keep your previous conversations, you can do the same with the `covas.db` file.
+
 ## Do you support other languages than English?
 
 Generally yes, but there are a few places that are currently english-only. The AI can understand and speak multiple languages, but due to some additionally process for numbers they might not be read correctly. Additionally, the AI tends to fall back to english sometimes, due to most of the game-events being in english. This can usually be fixed by reminding the AI of the language you want to use.
