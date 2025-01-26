@@ -26,6 +26,7 @@ class Config(TypedDict):
     tools_var: bool
     vision_var: bool
     ptt_var: bool
+    mute_during_response_var: bool
     continue_conversation_var: bool
     event_reaction_enabled_var: bool
     game_actions_var: bool
