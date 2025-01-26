@@ -40,6 +40,7 @@ class STT:
         self.input_device_name = input_device_name
         self.model = model
         self.language = language
+        self.continuous_listening_paused = False
 
         self.rate=16000
         self.frames_per_buffer=self.vad.chunk_bytes() // pyaudio.get_sample_size(pyaudio.paInt16)
@@ -104,6 +105,8 @@ class STT:
         activity = []
         while self.listening:
             buffer = source.read(self.frames_per_buffer)
+            if self.continuous_listening_paused:
+                continue
             if len(buffer) == 0: break  # reached end of the stream
             frames.append(buffer)
             frames_duration = len(frames) * self.frames_per_buffer / self.rate
@@ -203,6 +206,9 @@ class STT:
 
         # print("transcription received", text)
         return text
+
+    def pause_continuous_listening(self, pause: bool):
+        self.continuous_listening_paused = pause
 
 if __name__ == "__main__":
     openai_audio = openai.OpenAI()
