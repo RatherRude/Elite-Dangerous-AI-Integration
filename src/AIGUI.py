@@ -1147,6 +1147,8 @@ class App:
             'stt_model_name': "whisper-1",
             'stt_endpoint': "https://api.openai.com/v1",
             'stt_api_key': "",
+            'stt_custom_prompt': '',
+            'stt_required_word': '',
             'tts_provider': "edge-tts",
             'tts_model_name': "edge-tts",
             'tts_endpoint': "",

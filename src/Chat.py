@@ -192,7 +192,7 @@ def main():
         log('info', "EDCoPilot is dominant, voice output will be handled by EDCoPilot.")
     tts_provider = 'none' if config["edcopilot_dominant"] else config["tts_provider"]
     tts = TTS(openai_client=ttsClient, provider=tts_provider, model=config["tts_model_name"], voice=config["tts_voice"], speed=config["tts_speed"])
-    stt = STT(openai_client=sttClient, input_device_name=config["input_device_name"], model=config["stt_model_name"])
+    stt = STT(openai_client=sttClient, input_device_name=config["input_device_name"], model=config["stt_model_name"], custom_prompt=config["stt_custom_prompt"], required_word=config["stt_required_word"])
 
     if config['ptt_var'] and config['ptt_key']:
         log('info', f"Setting push-to-talk hotkey {config['ptt_key']}.")
