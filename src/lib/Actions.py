@@ -9,7 +9,6 @@ import openai
 import requests
 
 from .ScreenReader import ScreenReader
-from .StatusParser import StatusParser
 from .Logger import log
 from .EDKeys import EDKeys
 from .EventManager import EventManager
@@ -21,12 +20,22 @@ llm_client: openai.OpenAI = None
 llm_model_name: str = None
 vision_model_name: str | None = None
 event_manager: EventManager = None
-status_parser: StatusParser = None
 
+#Checking status projection to exit game actions early if not applicable
+def checkStatus(projected_states: dict[str, dict], blocked_status_dict: dict[str, bool]):
+    current_status = projected_states.get("CurrentStatus")
+
+    if current_status:
+        for blocked_status, expected_value in blocked_status_dict.items():
+            for flag_group in ['flags', 'flags2']:
+                if flag_group in current_status and blocked_status in current_status[flag_group]:
+                    if current_status[flag_group][blocked_status] == expected_value:
+                        raise Exception(f"Action not possible due to {'not ' if not expected_value else ''}being in a state of {blocked_status}!")
 
 # Define functions for each action
 # General Ship Actions
 def fire_primary_weapon(args):
+    checkStatus(args['projected_states'], {'Docked':True,'Landed':True,'HudInAnalysisMode':True})
     setGameWindowActive()
     keys.send('PrimaryFire', state=1)
     return f"successfully opened fire with primary weapons."
@@ -39,6 +48,7 @@ def hold_fire_primary_weapon(args):
 
 
 def fire_secondary_weapon(args):
+    checkStatus(args['projected_states'], {'Docked':True,'Landed':True,'HudInAnalysisMode':True})
     setGameWindowActive()
     keys.send('SecondaryFire', state=1)
     return f"successfully opened fire with secondary weapons."
@@ -50,34 +60,31 @@ def hold_fire_secondary_weapon(args):
     return f"successfully stopped firing with secondary weapons."
 
 
-def set_speed_zero(args):
+def set_speed(args):
+    checkStatus(args['projected_states'], {'Docked':True,'Landed':True})
     setGameWindowActive()
-    keys.send('SetSpeedZero')
-    return f"Speed set to 0%"
 
+    if 'speed' in args:
+        if args['speed'] in ["Minus100","Minus75","Minus50","Minus25","Zero","25","50","75","100"]:
+            keys.send(f"SetSpeed{args['speed']}")
+        else:
+            raise Exception(f"Invalid speed {args['speed']}")
 
-def set_speed_50(args):
-    setGameWindowActive()
-    keys.send('SetSpeed50')
-    return f"Speed set to 50%"
-
-
-def set_speed_100(args):
-    setGameWindowActive()
-    keys.send('SetSpeed100')
-    return f"Speed set to 100%"
+    return f"Speed set to {args['speed']}%."
 
 
 def deploy_heat_sink(args):
+    checkStatus(args['projected_states'], {'Docked':True,'Landed':True})
     setGameWindowActive()
     keys.send('DeployHeatSink')
     return f"Heat sink deployed"
 
 
 def deploy_hardpoint_toggle(args):
+    checkStatus(args['projected_states'], {'Docked':True,'Landed':True})
     setGameWindowActive()
     keys.send('DeployHardpointToggle')
-    return f"Hardpoints deployed/retracted"
+    return f"Hardpoints {'deployed ' if not args.get('projected_states').get('CurrentStatus').get('flags').get('HardpointsDeployed') else 'retracted'}"
 
 
 def increase_engines_power(args):
@@ -107,16 +114,17 @@ def cycle_next_target(args):
 def cycle_fire_group_next(args):
     setGameWindowActive()
     keys.send('CycleFireGroupNext')
+    # return f"New active fire group {args.get('projected_states').get('CurrentStatus').get('Firegroup')}" @ToDo: Firegoup not set in status projection?
     return f"Fire group cycled"
-
 
 def ship_spot_light_toggle(args):
     setGameWindowActive()
     keys.send('ShipSpotLightToggle')
-    return f"Ship spotlight toggled"
+    return f"Ship spotlight {'activated ' if not args.get('projected_states').get('CurrentStatus').get('flags').get('LightsOn') else 'deactivated'}"
 
 
 def fire_chaff_launcher(args):
+    checkStatus(args['projected_states'], {'Docked':True,'Landed':True,'Supercruise':True})
     setGameWindowActive()
     keys.send('FireChaffLauncher')
     return f"Chaff launcher fired"
@@ -125,7 +133,7 @@ def fire_chaff_launcher(args):
 def night_vision_toggle(args):
     setGameWindowActive()
     keys.send('NightVisionToggle')
-    return f"Night vision toggled"
+    return f"Night vision {'activated ' if not args.get('projected_states').get('CurrentStatus').get('flags').get('NightVision') else 'deactivated'}"
 
 
 def select_highest_threat(args):
@@ -135,6 +143,7 @@ def select_highest_threat(args):
 
 
 def charge_ecm(args):
+    checkStatus(args['projected_states'], {'Docked':True,'Landed':True,'Supercruise':True})
     setGameWindowActive()
     keys.send('ChargeECM')
     return "ECM is attempting to charge"
@@ -146,7 +155,7 @@ def galaxy_map_open(args):
     setGameWindowActive()
 
     # Galaxy map already open, so we close it
-    if status_parser.current_status["GuiFocus"] == 'GalaxyMap':
+    if args.get('projected_states').get('CurrentStatus').get('GuiFocus') == 'GalaxyMap':
         keys.send('GalaxyMapOpen')
         sleep(1)
 
@@ -184,7 +193,7 @@ def galaxy_map_open(args):
             keys.send('UI_Select', hold=1)
 
             sleep(.05)
-            if status_parser.current_status["GuiFocus"] == 'GalaxyMap':
+            if args.get('projected_states').get('CurrentStatus').get('GuiFocus') == 'GalaxyMap':
                 keys.send('GalaxyMapOpen')
 
             return ((f"Best location found: {json.dumps(args['details'])}. " if 'details' in args else '') +
@@ -198,7 +207,7 @@ def galaxy_map_open(args):
 def galaxy_map_close(args):
     setGameWindowActive()
 
-    if status_parser.current_status["GuiFocus"] == 'GalaxyMap':
+    if args.get('projected_states').get('CurrentStatus').get('GuiFocus') == 'GalaxyMap':
         keys.send('GalaxyMapOpen')
 
     return f"Galaxy map closed"
@@ -219,9 +228,10 @@ def eject_all_cargo(args):
 
 
 def landing_gear_toggle(args):
+    checkStatus(args['projected_states'], {'Docked':True,'Landed':True,'Supercruise':True})
     setGameWindowActive()
     keys.send('LandingGearToggle')
-    return f"Landing gear toggled"
+    return f"Landing gear {'deployed ' if not args.get('projected_states').get('CurrentStatus').get('flags').get('HardpointsDeployed') else 'retracted'}"
 
 
 def use_shield_cell(args):
@@ -231,26 +241,25 @@ def use_shield_cell(args):
 
 
 def toggle_cargo_scoop(args):
+    checkStatus(args['projected_states'], {'Docked':True,'Landed':True,'Supercruise':True})
     setGameWindowActive()
     keys.send('ToggleCargoScoop')
-    return "Cargo scoop toggled"
+    return f"Cargo scoop {'deployed ' if not args.get('projected_states').get('CurrentStatus').get('flags').get('CargoScoopDeployed') else 'retracted'}"
 
 
 def hyper_super_combination(args):
+    checkStatus(args['projected_states'], {'Docked':True,'Landed':True,'FsdMassLocked':True,'FsdCooldown':True,'FsdCharging':True})
     setGameWindowActive()
-    if status_parser.current_status["flags"]["Docked"]:
-        raise Exception("The ship is currently docked.")
-    if status_parser.current_status["flags"]["Landed"]:
-        raise Exception("The ship is currently landed.")
 
     return_message = ""
-    if status_parser.current_status["flags"]["LandingGearDown"]:
+
+    if args.get('projected_states').get('CurrentStatus').get('flags').get('LandingGearDown'):
         keys.send('LandingGearToggle')
         return_message += "Landing Gear Retracted. "
-    if status_parser.current_status["flags"]["CargoScoopDeployed"]:
+    if args.get('projected_states').get('CurrentStatus').get('flags').get('CargoScoopDeployed'):
         keys.send('ToggleCargoScoop')
         return_message += "Cargo Scoop Retracted. "
-    if status_parser.current_status["flags"]["HardpointsDeployed"]:
+    if args.get('projected_states').get('CurrentStatus').get('flags').get('HardpointsDeployed'):
         keys.send('DeployHardpointToggle')
         return_message += "Hardpoints Retracted. "
 
@@ -260,13 +269,14 @@ def hyper_super_combination(args):
 def undock(args):
     setGameWindowActive()
     # Early return if we're not docked
-    if not status_parser.current_status["flags"]["Docked"]:
+    if not args.get('projected_states').get('CurrentStatus').get('flags').get('Docked'):
         raise Exception("The ship currently isn't docked.")
 
-    if status_parser.current_status["GuiFocus"] in ['InternalPanel', 'CommsPanel', 'RolePanel', 'ExternalPanel']:
+
+    if args.get('projected_states').get('CurrentStatus').get('GuiFocus') in ['InternalPanel', 'CommsPanel', 'RolePanel', 'ExternalPanel']:
         keys.send('UIFocus')
         sleep(1)
-    elif status_parser.current_status["GuiFocus"] == 'NoFocus':
+    elif args.get('projected_states').get('CurrentStatus').get('GuiFocus') == 'NoFocus':
         pass
     else:
         raise Exception("The currently focused UI needs to be closed first")
@@ -278,12 +288,13 @@ def undock(args):
     return 'The ship is now undocking'
 
 def request_docking(args):
+    checkStatus(args['projected_states'], {'Supercruise':True})
     screenreader = ScreenReader()
     setGameWindowActive()
-    if status_parser.current_status["GuiFocus"] in ['NoFocus', 'InternalPanel', 'CommsPanel', 'RolePanel']:
+    if args.get('projected_states').get('CurrentStatus').get('GuiFocus') in ['NoFocus', 'InternalPanel', 'CommsPanel', 'RolePanel']:
         keys.send('FocusLeftPanel')
         sleep(1)
-    elif status_parser.current_status["GuiFocus"] == 'ExternalPanel':
+    elif args.get('projected_states').get('CurrentStatus').get('GuiFocus') == 'ExternalPanel':
         pass
     else:
         raise Exception('Docking menu not available in current UI Mode.')
@@ -332,6 +343,7 @@ def fighter_request_dock(args):
 
 # NPC Crew Order Actions
 def npc_order(args):
+    checkStatus(args['projected_states'], {'Docked':True,'Landed':True,'Supercruise':True})
     setGameWindowActive()
     if 'orders' in args:
         for order in args['orders']:
@@ -343,14 +355,18 @@ def npc_order(args):
 def toggle_drive_assist(args):
     setGameWindowActive()
     keys.send('ToggleDriveAssist')
-    return "Drive assist has been toggled."
+
+    # return f"Landing gear {'deployed ' if not args.get('projected_states').get('CurrentStatus').get('flags').get('HardpointsDeployed') else 'retracted'}"
+    return f"Drive assist has been {'activated ' if not args.get('projected_states').get('CurrentStatus').get('flags').get('SrvDriveAssist') else 'deactivated'}."
 
 def buggy_primary_fire(args):
+    checkStatus(args['projected_states'], {'SrvTurretRetracted':True})
     setGameWindowActive()
     keys.send('BuggyPrimaryFireButton')
     return "Buggy primary fire triggered."
 
 def buggy_secondary_fire(args):
+    checkStatus(args['projected_states'], {'SrvTurretRetracted':True})
     setGameWindowActive()
     keys.send('BuggySecondaryFireButton')
     return "Buggy secondary fire triggered."
@@ -358,17 +374,19 @@ def buggy_secondary_fire(args):
 def auto_break_buggy(args):
     setGameWindowActive()
     keys.send('AutoBreakBuggyButton')
-    return "Auto-brake for buggy toggled."
+    return "Auto-brake for buggy  {'activated ' if not args.get('projected_states').get('CurrentStatus').get('flags').get('SrvHandbrake') else 'deactivated'}."
 
 def headlights_buggy(args):
     setGameWindowActive()
     keys.send('HeadlightsBuggyButton')
-    return "Buggy headlights toggled."
+    return ("Buggy headlights {'activated ' if not args.get('projected_states').get('CurrentStatus').get('flags').get('LightsOn') else 'deactivated'} ."
+            +"Buggy high beam headlights {'activated ' if not args.get('projected_states').get('CurrentStatus').get('flags').get('SrvHighBeam') else 'deactivated'}")
 
 def toggle_buggy_turret(args):
+    checkStatus(args['projected_states'], {'SrvTurretRetracted':True})
     setGameWindowActive()
     keys.send('ToggleBuggyTurretButton')
-    return "Buggy turret mode toggled."
+    return f"Buggy turret mode  {'activated ' if not args.get('projected_states').get('CurrentStatus').get('flags').get('SrvUsingTurretView') else 'deactivated'}."
 
 def select_target_buggy(args):
     setGameWindowActive()
@@ -398,7 +416,7 @@ def reset_power_distribution_buggy(args):
 def toggle_cargo_scoop_buggy(args):
     setGameWindowActive()
     keys.send('ToggleCargoScoop_Buggy')
-    return "Buggy cargo scoop toggled."
+    return f"Buggy cargo scoop {'deployed ' if not args.get('projected_states').get('CurrentStatus').get('flags').get('CargoScoopDeployed') else 'retracted'}"
 
 def eject_all_cargo_buggy(args):
     setGameWindowActive()
@@ -432,6 +450,7 @@ def secondary_interact_humanoid(args):
     return "Secondary interaction initiated."
 
 def equip_humanoid(args):
+    checkStatus(args['projected_states'], {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
     if 'equipment' in args:
         keys.send(args['equipment'])
     return f"{args['equipment']} has been triggered."
@@ -444,24 +463,29 @@ def toggle_flashlight_humanoid(args):
 def toggle_night_vision_humanoid(args):
     setGameWindowActive()
     keys.send('HumanoidToggleNightVisionButton')
-    return "Night vision toggled."
+    return f"Night vision {'activated ' if not args.get('projected_states').get('CurrentStatus').get('flags').get('NightVision') else 'deactivated'}"
 
 def toggle_shields_humanoid(args):
+    checkStatus(args['projected_states'], {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
     setGameWindowActive()
     keys.send('HumanoidToggleShieldsButton')
-    return "Shields toggled."
+
+    return f"Shields {'activated ' if not args.get('projected_states').get('CurrentStatus').get('flags').get('ShieldsUp') else 'deactivated'}."
 
 def clear_authority_level_humanoid(args):
+    checkStatus(args['projected_states'], {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
     setGameWindowActive()
     keys.send('HumanoidClearAuthorityLevel')
     return "Authority level cleared."
 
 def health_pack_humanoid(args):
+    checkStatus(args['projected_states'], {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
     setGameWindowActive()
     keys.send('HumanoidHealthPack')
     return "Health pack used."
 
 def battery_humanoid(args):
+    checkStatus(args['projected_states'], {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
     setGameWindowActive()
     keys.send('HumanoidBattery')
     return "Battery used."
@@ -477,6 +501,7 @@ def system_map_open_humanoid(args):
     return "System map opened."
 
 def recall_dismiss_ship_humanoid(args):
+    checkStatus(args['projected_states'], {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
     setGameWindowActive()
     keys.send('HumanoidOpenAccessPanelButton', state=1)
     sleep(.3)
@@ -728,9 +753,10 @@ def send_message(obj):
         chunk_size = 100
         start = 0
 
-        in_ship = status_parser.current_status["flags"]["InMainShip"] or status_parser.current_status["flags"]["InFighter"]
-        in_buggy = status_parser.current_status["flags"]["InSRV"]
-        on_foot = status_parser.current_status["flags2"] and status_parser.current_status["flags2"]["OnFoot"]
+
+        in_ship = obj.get('projected_states').get('CurrentStatus').get('flags').get('InMainShip') or obj.get('projected_states').get('CurrentStatus').get('flags').get('InFighter')
+        in_buggy = obj.get('projected_states').get('CurrentStatus').get('flags').get('InSRV')
+        on_foot = obj.get('projected_states').get('CurrentStatus').get('flags2').get('OnFoot')
 
         while start < len(obj.get("message", "")):
             return_message = "Message sent"
@@ -2450,15 +2476,14 @@ def body_finder(obj):
 
 def register_actions(actionManager: ActionManager, eventManager: EventManager, llmClient: openai.OpenAI,
                      llmModelName: str, visionClient: Optional[openai.OpenAI], visionModelName: Optional[str],
-                     statusParser: StatusParser, edKeys: EDKeys):
-    global event_manager, vision_client, llm_client, llm_model_name, vision_model_name, status_parser, keys
+                     edKeys: EDKeys):
+    global event_manager, vision_client, llm_client, llm_model_name, vision_model_name, keys
     keys = edKeys
     event_manager = eventManager
     llm_client = llmClient
     llm_model_name = llmModelName
     vision_client = visionClient
     vision_model_name = visionModelName
-    status_parser = statusParser
 
     setGameWindowActive()
 
@@ -2483,20 +2508,26 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, hold_fire_secondary_weapon, 'ship')
 
-    actionManager.registerAction('setSpeedZero', "Set speed to 0%", {
+    actionManager.registerAction('setSpeed', "Change flight thrust", {
         "type": "object",
-        "properties": {}
-    }, set_speed_zero, 'ship')
-
-    actionManager.registerAction('setSpeed50', "Set speed to 50%", {
-        "type": "object",
-        "properties": {}
-    }, set_speed_50, 'ship')
-
-    actionManager.registerAction('setSpeed100', "Set speed to 100%", {
-        "type": "object",
-        "properties": {}
-    }, set_speed_100, 'ship')
+        "properties": {
+            "speed": {
+                "type": "string",
+                "description": "New speed value",
+                "enum": [
+                    "Minus100",
+                    "Minus75",
+                    "Minus50",
+                    "Minus25",
+                    "Zero",
+                    "25",
+                    "50",
+                    "75",
+                    "100"
+                ]
+            }
+        }
+    }, set_speed, 'ship')
 
     actionManager.registerAction('deployHeatSink', "Deploy heat sink", {
         "type": "object",
