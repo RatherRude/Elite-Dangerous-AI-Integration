@@ -24,6 +24,7 @@ default_config = {
     'llm_endpoint': "https://api.openai.com/v1",
     'llm_api_key': "",
     'ptt_key': '+',
+    'mute_during_response_var': False,
     'vision_model_name': "gpt-4o-mini",
     'vision_endpoint': "https://api.openai.com/v1",
     'vision_api_key': "",

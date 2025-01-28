@@ -255,6 +255,13 @@ def main():
             while not status_parser.status_queue.empty():
                 status = status_parser.status_queue.get()
                 event_manager.add_status_event(status)
+                
+            # mute continuous listening during response
+            if config["mute_during_response_var"]:
+                if tts.get_is_playing():
+                    stt.pause_continuous_listening(True)
+                else:
+                    stt.pause_continuous_listening(False)
 
             # check STT recording
             if stt.recording:

@@ -508,6 +508,13 @@ class App:
         self.pptButton.grid(row=get_same(), column=1, sticky=tk.W, padx=(360, 10), pady=5)
         self.pptButton.bind("<Button-1>", self.on_label_click)
 
+        self.mute_during_response_var = tk.BooleanVar()
+        self.mute_during_response_var.set(False)  # Default value
+        self.muteResponseCheckbox = tk.Checkbutton(self.main_frame, text="Mute during response", variable=self.mute_during_response_var)
+        self.muteResponseCheckbox.grid(row=get_same(), column=1, sticky=tk.W, padx=(360, 10), pady=5)
+        tk.Label(self.main_frame, text="Mutes the game audio during AI response", font="Helvetica 10 italic").grid(
+            row=get_same(), column=1, sticky=tk.W, padx=80, pady=5)
+
         # Continue Conversation
         tk.Label(self.main_frame, text="Resume Chat:", font=('Helvetica', 10)).grid(row=get_next(), column=0, sticky=tk.W)
         # Conversation (Checkbox)
@@ -1129,6 +1136,7 @@ class App:
             'tools_var': True,
             'vision_var': True,
             'ptt_var': False,
+            'mute_during_response_var': False,
             'continue_conversation_var': True,
             'event_reaction_enabled_var': True,
             'game_actions_var': True,
@@ -1278,6 +1286,7 @@ class App:
         self.data['react_to_danger_mining_var'] = self.react_to_danger_mining_var.get()
         self.data['react_to_danger_onfoot_var'] = self.react_to_danger_onfoot_var.get()
         self.data['ptt_var'] = self.ptt_var.get()
+        self.data['mute_during_response_var'] = self.mute_during_response_var.get()
         self.data['continue_conversation_var'] = self.continue_conversation_var.get()
         self.data['event_reaction_enabled_var'] = self.event_reaction_enabled_var.get()
         self.data['game_actions_var'] = self.game_actions_var.get()
@@ -1323,6 +1332,7 @@ class App:
         self.react_to_danger_mining_var.set(self.data['react_to_danger_mining_var'])
         self.react_to_danger_onfoot_var.set(self.data['react_to_danger_onfoot_var'])
         self.ptt_var.set(self.data['ptt_var'])
+        self.mute_during_response_var.set(self.data['mute_during_response_var'])
         self.continue_conversation_var.set(self.data['continue_conversation_var'])
         self.event_reaction_enabled_var.set(self.data['event_reaction_enabled_var'])
         self.game_actions_var.set(self.data['game_actions_var'])
@@ -1383,8 +1393,10 @@ class App:
     def toggle_ptt(self):
         if self.ptt_var.get():
             self.pptButton.grid()
+            self.muteResponseCheckbox.grid_remove()
         else:
             self.pptButton.grid_remove()
+            self.muteResponseCheckbox.grid()
 
     def toggle_vision(self):
         if self.vision_var.get():
