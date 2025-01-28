@@ -36,7 +36,7 @@ class ActionManager:
 
         return valid_actions
 
-    def runAction(self, tool_call):
+    def runAction(self, tool_call, projected_states: dict[str, dict]):
         """get function response and fetch matching python function, then call function using arguments provided"""
         function_result = None
 
@@ -45,6 +45,8 @@ class ActionManager:
         if function_descriptor:
             function_to_call = function_descriptor.get("method")
             function_args = json.loads(tool_call.function.arguments if tool_call.function.arguments else "null")
+            if isinstance(function_args, dict):
+                function_args['projected_states'] = projected_states
 
             try:
                 function_result = function_to_call(function_args)

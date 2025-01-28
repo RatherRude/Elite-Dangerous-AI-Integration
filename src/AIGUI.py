@@ -1,4 +1,5 @@
 import argparse
+import datetime
 import json
 import os
 import time
@@ -15,7 +16,6 @@ from tkinter import messagebox
 from typing import Dict
 import typing
 
-from click import style
 from wrapt import synchronized
 
 import pyaudio
@@ -507,6 +507,13 @@ class App:
         self.pptButton = tk.Button(self.main_frame, text="Key Binding: Press any key", font=('Helvetica', 10))
         self.pptButton.grid(row=get_same(), column=1, sticky=tk.W, padx=(360, 10), pady=5)
         self.pptButton.bind("<Button-1>", self.on_label_click)
+
+        self.mute_during_response_var = tk.BooleanVar()
+        self.mute_during_response_var.set(False)  # Default value
+        self.muteResponseCheckbox = tk.Checkbutton(self.main_frame, text="Mute during response", variable=self.mute_during_response_var)
+        self.muteResponseCheckbox.grid(row=get_same(), column=1, sticky=tk.W, padx=(360, 10), pady=5)
+        tk.Label(self.main_frame, text="Mutes the game audio during AI response", font="Helvetica 10 italic").grid(
+            row=get_same(), column=1, sticky=tk.W, padx=80, pady=5)
 
         # Continue Conversation
         tk.Label(self.main_frame, text="Resume Chat:", font=('Helvetica', 10)).grid(row=get_next(), column=0, sticky=tk.W)
@@ -1129,6 +1136,7 @@ class App:
             'tools_var': True,
             'vision_var': True,
             'ptt_var': False,
+            'mute_during_response_var': False,
             'continue_conversation_var': True,
             'event_reaction_enabled_var': True,
             'game_actions_var': True,
@@ -1280,6 +1288,7 @@ class App:
         self.data['react_to_danger_mining_var'] = self.react_to_danger_mining_var.get()
         self.data['react_to_danger_onfoot_var'] = self.react_to_danger_onfoot_var.get()
         self.data['ptt_var'] = self.ptt_var.get()
+        self.data['mute_during_response_var'] = self.mute_during_response_var.get()
         self.data['continue_conversation_var'] = self.continue_conversation_var.get()
         self.data['event_reaction_enabled_var'] = self.event_reaction_enabled_var.get()
         self.data['game_actions_var'] = self.game_actions_var.get()
@@ -1325,6 +1334,7 @@ class App:
         self.react_to_danger_mining_var.set(self.data['react_to_danger_mining_var'])
         self.react_to_danger_onfoot_var.set(self.data['react_to_danger_onfoot_var'])
         self.ptt_var.set(self.data['ptt_var'])
+        self.mute_during_response_var.set(self.data['mute_during_response_var'])
         self.continue_conversation_var.set(self.data['continue_conversation_var'])
         self.event_reaction_enabled_var.set(self.data['event_reaction_enabled_var'])
         self.game_actions_var.set(self.data['game_actions_var'])
@@ -1385,8 +1395,10 @@ class App:
     def toggle_ptt(self):
         if self.ptt_var.get():
             self.pptButton.grid()
+            self.muteResponseCheckbox.grid_remove()
         else:
             self.pptButton.grid_remove()
+            self.muteResponseCheckbox.grid()
 
     def toggle_vision(self):
         if self.vision_var.get():
@@ -1493,17 +1505,24 @@ class App:
             stdout_line = self.strip_ansi_codes(stdout_line)
             outlog_file.write(stdout_line)
             outlog_file.flush()
+            
             if stdout_line:
-                self.print_to_debug(stdout_line)
+                try:
+                    content = json.loads(stdout_line)
+                    if content.get('type') == 'log':
+                        self.print_to_debug(content['prefix'] +': '+ content['message'])
+                except json.JSONDecodeError:
+                    self.print_to_debug(stdout_line)
 
     def read_process_error(self, process: subprocess.Popen, outlog_file: typing.TextIO):
         while process and process.poll() is None:
             stderr_line = process.stderr.readline()
             stderr_line = self.strip_ansi_codes(stderr_line)
-            outlog_file.write("Error: "+stderr_line)
-            outlog_file.flush()
+                
             if stderr_line:
-                self.print_to_debug('error:'+stderr_line)
+                outlog_file.write(json.dumps({"type": "error", "timestamp": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"), "message": stderr_line})+'\n')
+                outlog_file.flush()
+                self.print_to_debug('error: '+stderr_line)
 
     def stop_external_script(self):
         if self.process:
@@ -1545,7 +1564,18 @@ class App:
 
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = App(root)
-    root.mainloop()
-    app.shutdown()
+    try:
+        root = tk.Tk()
+        app = App(root)
+        root.mainloop()
+        app.shutdown()
+    except Exception as e:
+        print(e, traceback.format_exc())
+        try:
+            with open(f'crashlog{int(time.time())}.log', 'w') as file:
+                file.write(str(e))
+                file.write(traceback.format_exc())
+            messagebox.showerror("Error", "An unexpected error occurred. Please check the crashlog for more information.")
+        except:
+            print("Failed to write crash log")
+            messagebox.showerror("Error", "An unexpected error occurred. Unable to write crash log.")
