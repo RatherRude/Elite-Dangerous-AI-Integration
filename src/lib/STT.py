@@ -32,14 +32,14 @@ class STT:
     recording = False
     resultQueue = queue.Queue()
 
-    prompt = "COVAS, give me a status update... and throw in something inspiring, would you?"
-
-    def __init__(self, openai_client: openai.OpenAI, input_device_name, model='whisper-1', language=None):
+    def __init__(self, openai_client: openai.OpenAI, input_device_name, model='whisper-1', language=None, custom_prompt=None, required_word=None):
         self.openai_client = openai_client
         self.vad = SileroVoiceActivityDetector()
         self.input_device_name = input_device_name
         self.model = model
         self.language = language
+        self.prompt = custom_prompt if custom_prompt else "COVAS, give me a status update... and throw in something inspiring, would you?"
+        self.required_word = required_word
         self.continuous_listening_paused = False
 
         self.rate=16000
@@ -202,6 +202,9 @@ class STT:
 
         filter = ['', 'COVAS, give me a status update... and throw in something inspiring, would you?']
         if not text or text.strip() in filter:
+            return ''
+        
+        if self.required_word and self.required_word.lower() not in text.lower():
             return ''
 
         # print("transcription received", text)

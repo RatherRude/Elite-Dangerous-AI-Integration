@@ -19,6 +19,8 @@ class Config(TypedDict):
     stt_model_name: str
     stt_api_key: str
     stt_endpoint: str
+    stt_custom_prompt: str
+    stt_required_word: str
     tts_provider: Literal['openai', 'edge-tts', 'custom', 'none']
     tts_model_name: str
     tts_api_key: str

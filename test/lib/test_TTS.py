@@ -1,14 +1,8 @@
 from math import ceil
-import time
-from typing import Mapping
 from httpx import Response
 import pytest
-from unittest.mock import MagicMock, patch, ANY
-import pyaudio
-import io
-import queue
+from unittest.mock import MagicMock
 from time import sleep
-import openai
 from src.lib.TTS import TTS
 import numpy as np
 
@@ -33,6 +27,7 @@ def mock_pyaudio(monkeypatch):
     mock_audio.open.return_value = mock_stream
     
     monkeypatch.setattr('pyaudio.PyAudio', lambda: mock_audio)
+    monkeypatch.setattr('src.lib.TTS.pyaudio.PyAudio', lambda: mock_audio)
     return {
         'audio': mock_audio,
         'stream': mock_stream
@@ -86,6 +81,9 @@ def test_openai_tts_playback(mock_pyaudio, mock_openai):
     while not mock_openai.audio.speech.with_streaming_response.create.called:
         sleep(0.1)
     
+    while not mock_pyaudio['stream'].write.call_count == ceil(2*24_000/1024):
+        sleep(0.1)
+        
     assert mock_pyaudio['stream'].write.call_count == ceil(2*24_000/1024)
     
 def test_edge_tts_playback(mock_pyaudio, mock_miniaudio, mock_openai):
