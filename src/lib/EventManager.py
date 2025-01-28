@@ -182,7 +182,7 @@ class EventManager:
         for event in self.processed + self.pending:
             if event.processed_at <= projection.last_processed:
                 continue
-            log('debug', 'updating', projection_class_name, 'with', event, 'after starting from', projection.last_processed)
+            #log('debug', 'updating', projection_class_name, 'with', event, 'after starting from', projection.last_processed)
             self.update_projection(projection, event, save_later=True)
         
         self.projections.append(projection)

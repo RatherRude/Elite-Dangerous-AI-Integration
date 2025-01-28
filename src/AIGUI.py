@@ -1,4 +1,5 @@
 import argparse
+import datetime
 import json
 import os
 import time
@@ -15,7 +16,6 @@ from tkinter import messagebox
 from typing import Dict
 import typing
 
-from click import style
 from wrapt import synchronized
 
 import pyaudio
@@ -1491,17 +1491,24 @@ class App:
             stdout_line = self.strip_ansi_codes(stdout_line)
             outlog_file.write(stdout_line)
             outlog_file.flush()
+            
             if stdout_line:
-                self.print_to_debug(stdout_line)
+                try:
+                    content = json.loads(stdout_line)
+                    if content.get('type') == 'log':
+                        self.print_to_debug(content['prefix'] +': '+ content['message'])
+                except json.JSONDecodeError:
+                    self.print_to_debug(stdout_line)
 
     def read_process_error(self, process: subprocess.Popen, outlog_file: typing.TextIO):
         while process and process.poll() is None:
             stderr_line = process.stderr.readline()
             stderr_line = self.strip_ansi_codes(stderr_line)
-            outlog_file.write("Error: "+stderr_line)
-            outlog_file.flush()
+                
             if stderr_line:
-                self.print_to_debug('error:'+stderr_line)
+                outlog_file.write(json.dumps({"type": "error", "timestamp": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"), "message": stderr_line})+'\n')
+                outlog_file.flush()
+                self.print_to_debug('error: '+stderr_line)
 
     def stop_external_script(self):
         if self.process:
