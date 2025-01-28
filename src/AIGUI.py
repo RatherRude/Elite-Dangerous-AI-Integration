@@ -1543,7 +1543,18 @@ class App:
 
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    app = App(root)
-    root.mainloop()
-    app.shutdown()
+    try:
+        root = tk.Tk()
+        app = App(root)
+        root.mainloop()
+        app.shutdown()
+    except Exception as e:
+        print(e, traceback.format_exc())
+        try:
+            with open(f'crashlog{int(time.time())}.log', 'w') as file:
+                file.write(str(e))
+                file.write(traceback.format_exc())
+            messagebox.showerror("Error", "An unexpected error occurred. Please check the crashlog for more information.")
+        except:
+            print("Failed to write crash log")
+            messagebox.showerror("Error", "An unexpected error occurred. Unable to write crash log.")
