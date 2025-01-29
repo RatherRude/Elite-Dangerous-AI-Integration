@@ -316,18 +316,33 @@ Afrikaans, Arabic, Armenian, Azerbaijani, Belarusian, Bosnian, Bulgarian, Catala
 See [OpenAI's documentation](https://platform.openai.com/docs/guides/text-to-speech) for more information.
 
 ## Kokoro
-| Name | Gender | Locale |
-| - |--------|--------|
-|  af | female | en-US  | 
-|  af_bella | female   | en-US  | 
-|  af_nicole | female   | en-US  | 
-|  af_sarah | female   | en-US  | 
-|  af_sky | female   | en-US  | 
-|  am_adam | male   | en-US  | 
-|  am_michael | male   | en-US  | 
-|  bf_emma | female   | en-GB  | 
-|  bf_isabella | female   | en-GB  | 
-|  bm_george | male   | en-GB  | 
-|  bm_lewis | male   | en-GB  | 
+| Name        | Gender | Locale |
+| ----------- |--------|--------|
+| af_alloy    | female | en-US  |
+| af_aoede    | female | en-US  |
+| af_bella    | female | en-US  |
+| af_jessica  | female | en-US  |
+| af_kore     | female | en-US  |
+| af_nicole   | female | en-US  |
+| af_nova     | female | en-US  |
+| af_river    | female | en-US  |
+| af_sarah    | female | en-US  |
+| af_sky      | female | en-US  |
+| am_adam     | male   | en-US  |
+| am_echo     | male   | en-US  |
+| am_eric     | male   | en-US  |
+| am_fenrir   | male   | en-US  |
+| am_liam     | male   | en-US  |
+| am_michael  | male   | en-US  |
+| am_onyx     | male   | en-US  |
+| am_puck     | male   | en-US  |
+| bf_alice    | female | en-GB  |
+| bf_emma     | female | en-GB  |
+| bf_isabella | female | en-GB  |
+| bf_lily     | female | en-GB  |
+| bm_daniel   | male   | en-GB  |
+| bm_fable    | male   | en-GB  |
+| bm_george   | male   | en-GB  |
+| bm_lew      | male   | en-GB  |
 
 See [Kokoro on Huggingface](https://huggingface.co/hexgrad/Kokoro-82M) for more information.
