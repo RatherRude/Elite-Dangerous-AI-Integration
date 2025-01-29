@@ -316,33 +316,35 @@ Afrikaans, Arabic, Armenian, Azerbaijani, Belarusian, Bosnian, Bulgarian, Catala
 See [OpenAI's documentation](https://platform.openai.com/docs/guides/text-to-speech) for more information.
 
 ## Kokoro
-| Name        | Gender | Locale |
-| ----------- |--------|--------|
-| af_alloy    | female | en-US  |
-| af_aoede    | female | en-US  |
-| af_bella    | female | en-US  |
-| af_jessica  | female | en-US  |
-| af_kore     | female | en-US  |
-| af_nicole   | female | en-US  |
-| af_nova     | female | en-US  |
-| af_river    | female | en-US  |
-| af_sarah    | female | en-US  |
-| af_sky      | female | en-US  |
-| am_adam     | male   | en-US  |
-| am_echo     | male   | en-US  |
-| am_eric     | male   | en-US  |
-| am_fenrir   | male   | en-US  |
-| am_liam     | male   | en-US  |
-| am_michael  | male   | en-US  |
-| am_onyx     | male   | en-US  |
-| am_puck     | male   | en-US  |
-| bf_alice    | female | en-GB  |
-| bf_emma     | female | en-GB  |
-| bf_isabella | female | en-GB  |
-| bf_lily     | female | en-GB  |
-| bm_daniel   | male   | en-GB  |
-| bm_fable    | male   | en-GB  |
-| bm_george   | male   | en-GB  |
-| bm_lew      | male   | en-GB  |
+Kokoro is available when using AIServer. Due to technical limitations only en-US and en-GB are available for now, additional languages are on the roadmap.
 
-See [Kokoro on Huggingface](https://huggingface.co/hexgrad/Kokoro-82M) for more information.
+You can find a detailed list of all Kokoro voices [here](https://huggingface.co/hexgrad/Kokoro-82M/blob/main/VOICES.md), here is a summary:
+
+| Name | Locale | Traits | Target Quality | Training Duration | Overall Grade |
+| ---- | ------ | ------ | -------------- | ----------------- | ------------- |
+| af_alloy | 🇺🇸 | 🚺 | B | MM minutes | C |
+| af_aoede | 🇺🇸 | 🚺 | B | H hours | C+ |
+| af_bella | 🇺🇸 | 🚺🔥 | **A** | **HH hours** | **A-** |
+| af_jessica | 🇺🇸 | 🚺 | C | MM minutes | D |
+| af_kore | 🇺🇸 | 🚺 | B | H hours | C+ |
+| af_nicole | 🇺🇸 | 🚺🎧 | B | **HH hours** | B- |
+| af_nova | 🇺🇸 | 🚺 | B | MM minutes | C |
+| af_river | 🇺🇸 | 🚺 | C | MM minutes | D |
+| af_sarah | 🇺🇸 | 🚺 | B | H hours | C+ |
+| af_sky | 🇺🇸 | 🚺 | B | M minutes | C- |
+| am_adam | 🇺🇸 | 🚹 | D | H hours | F+ |
+| am_echo | 🇺🇸 | 🚹 | C | MM minutes | D |
+| am_eric | 🇺🇸 | 🚹 | C | MM minutes | D |
+| am_fenrir | 🇺🇸 | 🚹 | B | H hours | C+ |
+| am_liam | 🇺🇸 | 🚹 | C | MM minutes | D |
+| am_michael | 🇺🇸 | 🚹 | B | H hours | C+ |
+| am_onyx | 🇺🇸 | 🚹 | C | MM minutes | D |
+| am_puck | 🇺🇸 | 🚹 | B | H hours | C+ |
+| bf_alice | 🇬🇧 | 🚺 | C | MM minutes | D |
+| bf_emma | 🇬🇧 | 🚺 | B | **HH hours** | B- |
+| bf_isabella | 🇬🇧 | 🚺 | B | MM minutes | C |
+| bf_lily | 🇬🇧 | 🚺 | C | MM minutes | D |
+| bm_daniel | 🇬🇧 | 🚹 | C | MM minutes | D |
+| bm_fable | 🇬🇧 | 🚹 | B | MM minutes | C |
+| bm_george | 🇬🇧 | 🚹 | B | MM minutes | C |
+| bm_lewis | 🇬🇧 | 🚹 | C | H hours | D+ |
