@@ -193,8 +193,7 @@ def galaxy_map_open(args):
             keys.send('UI_Select', hold=1)
 
             sleep(.05)
-            if args.get('projected_states').get('CurrentStatus').get('GuiFocus') == 'GalaxyMap':
-                keys.send('GalaxyMapOpen')
+            keys.send('GalaxyMapOpen')
 
             return ((f"Best location found: {json.dumps(args['details'])}. " if 'details' in args else '') +
                     f"Plotting a route to {args['system_name']} has been attempted. Check event history to see if it was successful, if you see no event it has failed.")
