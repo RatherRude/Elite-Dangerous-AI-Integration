@@ -1,4 +1,6 @@
 import math
+
+from .EDKeys import EDKeys
 from .Logger import log
 from typing import Any, Literal, TypedDict, final
 
@@ -8,6 +10,7 @@ from .Event import Event, StatusEvent, GameEvent, ProjectedEvent
 from .EventManager import EventManager, Projection
 from .StatusParser import parse_status_flags, parse_status_json, Status
 
+keys: EDKeys = None
 
 def latest_event_projection_factory(projectionName: str, gameEvent: str):
     class LatestEvent(Projection[dict[str, Any]]):
@@ -418,7 +421,54 @@ class ShipInfo(Projection[ShipInfoState]):
         
         if self.state['Type'] != 'Unknown':
             self.state['LandingPadSize'] = ship_sizes.get(self.state['Type'], 'Unknown')
-            
+
+TargetState = TypedDict('TargetState', {
+    "Ship":NotRequired[str],
+    "Scanned":NotRequired[bool],
+
+    "PilotName":NotRequired[str],
+    "PilotRank":NotRequired[str],
+    "Faction":NotRequired[str],
+    "LegalStatus":NotRequired[str],
+
+    "Subsystem":NotRequired[str],
+    "SubsystemToTarget":NotRequired[str],
+})
+
+
+@final
+class Target(Projection[TargetState]):
+    @override
+    def get_default_state(self) -> TargetState|None:
+        return {}
+
+    @override
+    def process(self, event: Event) -> None:
+        global keys
+        if isinstance(event, GameEvent) and event.content.get('event') == 'ShipTargeted':
+            log('info', )
+            if not event.content.get('TargetLocked', False):
+                self.state = self.get_default_state()
+            else:
+                # self.state['SubsystemToTarget'] = 'Drive'
+                self.state['Ship'] = event.content.get('Ship', '')
+                if event.content.get('ScanStage', 0) < 3:
+                    self.state['Scanned'] = False
+                else:
+                    self.state['Scanned'] = True
+                    self.state["PilotName"] = event.content.get('PilotName_Localised', '')
+                    self.state["PilotRank"] = event.content.get('PilotRank', '')
+                    self.state["Faction"] = event.content.get('Faction', '')
+                    self.state["LegalStatus"] = event.content.get('LegalStatus', '')
+                if event.content.get('Subsystem_Localised', False):
+                    self.state["Subsystem"] = event.content.get('Subsystem_Localised', '')
+                    if self.state.get('SubsystemToTarget', False):
+                        if self.state.get('SubsystemToTarget', '') == self.state.get('Subsystem', ''):
+                            pass
+                        else:
+                            keys.send('CycleNextSubsystem')
+
+
 NavRouteItem = TypedDict('NavRouteItem', {
     "StarSystem": str,
     "Scoopable": bool
@@ -586,12 +636,16 @@ class ExobiologyScan(Projection[ExobiologyScanState]):
 
 
 
-def registerProjections(event_manager: EventManager):
+def registerProjections(event_manager: EventManager, ed_keys: EDKeys):
+    global keys
+    keys = ed_keys
+
     event_manager.register_projection(EventCounter())
     event_manager.register_projection(CurrentStatus())
     event_manager.register_projection(Location())
     event_manager.register_projection(Missions())
     event_manager.register_projection(ShipInfo())
+    event_manager.register_projection(Target())
     event_manager.register_projection(NavInfo())
     event_manager.register_projection(ExobiologyScan())
 

@@ -2472,6 +2472,17 @@ def body_finder(obj):
         log('error', f"Error: {e}")
         return 'An error occurred. The system finder seems to be currently unavailable.'
 
+def target_subsystem(args):
+    current_target = args.get('projected_states').get('Target')
+
+    if not current_target.get('Ship', False):
+        raise Exception('No ship is currently targeted')
+    if not current_target.get('Scanned', False):
+        raise Exception('Targeted ship isn\'t scanned yet')
+    if 'subsystem' in args:
+        args['projected_states'].update({})
+        return f"The submodule {args['subsystem']} is being targeted."
+    raise Exception('Something went wrong!')
 
 def register_actions(actionManager: ActionManager, eventManager: EventManager, llmClient: openai.OpenAI,
                      llmModelName: str, visionClient: Optional[openai.OpenAI], visionModelName: Optional[str],
@@ -2525,7 +2536,8 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                     "100"
                 ]
             }
-        }
+        },
+        "required": ["speed"]
     }, set_speed, 'ship')
 
     actionManager.registerAction('deployHeatSink', "Deploy heat sink", {
@@ -2624,6 +2636,25 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "type": "object",
         "properties": {}
     }, select_highest_threat, 'ship')
+
+    actionManager.registerAction('targetSubmodule', "Target a subsystem on locked ship", {
+        "type": "object",
+        "properties": {
+            "subsystem": {
+                "type": "string",
+                "description": "subsystem/module to target",
+                "enum": [
+                    "Drive",
+                    "Shield Generator",
+                    "Power Distributor",
+                    "Life Support",
+                    "FSD",
+                    "Power Plant"
+                ],
+                "required": ["subsystem"]
+            },
+        }
+    }, target_subsystem, 'ship')
 
     actionManager.registerAction('chargeECM', "Charge ECM", {
         "type": "object",
