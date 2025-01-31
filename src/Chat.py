@@ -226,7 +226,7 @@ def main():
         react_to_danger_mining=config["react_to_danger_mining_var"],
         react_to_danger_onfoot=config["react_to_danger_onfoot_var"]
     )
-    registerProjections(event_manager, ed_keys)
+    registerProjections(event_manager)
 
     if useTools:
         register_actions(action_manager, event_manager, llmClient, llm_model_name, visionClient, config["vision_model_name"], ed_keys)

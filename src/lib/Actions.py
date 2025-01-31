@@ -2472,6 +2472,29 @@ def body_finder(obj):
         log('error', f"Error: {e}")
         return 'An error occurred. The system finder seems to be currently unavailable.'
 
+def check_target_subsystem():
+
+    pass
+
+def target_subsystem_thread(current_subsystem: str, desired_subsystem: str):
+    if not current_subsystem:
+        keys.send('CycleNextSubsystem')
+        log('info', 'CycleNextSubsystem key sent first time')
+        new_state = event_manager.wait_for_condition('Target', lambda s: s.get('Subsystem'))
+        current_subsystem = new_state.get('Subsystem')
+
+    while current_subsystem != desired_subsystem:
+        keys.send('CycleNextSubsystem')
+        log('info', 'CycleNextSubsystem key sent')
+        new_state = event_manager.wait_for_condition('Target', lambda s: 'Subsystem' in s and s.get('Subsystem')!=current_subsystem or 'Subsystem' not in s)
+        if 'Subsystem' not in new_state:
+            log('info', 'target lost, abort cycle')
+            return
+
+        log('info', 'new subsystem targeted', new_state.get('Subsystem'))
+        current_subsystem = new_state.get('Subsystem')
+    log('info', 'desired subsystem targeted', current_subsystem)
+
 def target_subsystem(args):
     current_target = args.get('projected_states').get('Target')
 
@@ -2479,10 +2502,13 @@ def target_subsystem(args):
         raise Exception('No ship is currently targeted')
     if not current_target.get('Scanned', False):
         raise Exception('Targeted ship isn\'t scanned yet')
-    if 'subsystem' in args:
-        args['projected_states'].update({})
-        return f"The submodule {args['subsystem']} is being targeted."
-    raise Exception('Something went wrong!')
+
+    if 'subsystem' not in args:
+        raise Exception('Something went wrong!')
+
+    threading.Thread(target=target_subsystem_thread, args=(current_target.get('Subsystem'), args['subsystem'],), daemon=True).start()
+    
+    return f"The submodule {args['subsystem']} is being targeted."
 
 def register_actions(actionManager: ActionManager, eventManager: EventManager, llmClient: openai.OpenAI,
                      llmModelName: str, visionClient: Optional[openai.OpenAI], visionModelName: Optional[str],

@@ -1,6 +1,5 @@
 import math
 
-from .EDKeys import EDKeys
 from .Logger import log
 from typing import Any, Literal, TypedDict, final
 
@@ -9,8 +8,6 @@ from typing_extensions import NotRequired, override
 from .Event import Event, StatusEvent, GameEvent, ProjectedEvent
 from .EventManager import EventManager, Projection
 from .StatusParser import parse_status_flags, parse_status_json, Status
-
-keys: EDKeys = None
 
 def latest_event_projection_factory(projectionName: str, gameEvent: str):
     class LatestEvent(Projection[dict[str, Any]]):
@@ -432,7 +429,6 @@ TargetState = TypedDict('TargetState', {
     "LegalStatus":NotRequired[str],
 
     "Subsystem":NotRequired[str],
-    "SubsystemToTarget":NotRequired[str],
 })
 
 
@@ -446,7 +442,7 @@ class Target(Projection[TargetState]):
     def process(self, event: Event) -> None:
         global keys
         if isinstance(event, GameEvent) and event.content.get('event') == 'ShipTargeted':
-            log('info', )
+            log('info', 'target projection update')
             if not event.content.get('TargetLocked', False):
                 self.state = self.get_default_state()
             else:
@@ -462,11 +458,7 @@ class Target(Projection[TargetState]):
                     self.state["LegalStatus"] = event.content.get('LegalStatus', '')
                 if event.content.get('Subsystem_Localised', False):
                     self.state["Subsystem"] = event.content.get('Subsystem_Localised', '')
-                    if self.state.get('SubsystemToTarget', False):
-                        if self.state.get('SubsystemToTarget', '') == self.state.get('Subsystem', ''):
-                            pass
-                        else:
-                            keys.send('CycleNextSubsystem')
+            log('info', 'target projection update', self.state)
 
 
 NavRouteItem = TypedDict('NavRouteItem', {
@@ -636,9 +628,7 @@ class ExobiologyScan(Projection[ExobiologyScanState]):
 
 
 
-def registerProjections(event_manager: EventManager, ed_keys: EDKeys):
-    global keys
-    keys = ed_keys
+def registerProjections(event_manager: EventManager):
 
     event_manager.register_projection(EventCounter())
     event_manager.register_projection(CurrentStatus())
