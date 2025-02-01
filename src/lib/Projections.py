@@ -420,6 +420,7 @@ class ShipInfo(Projection[ShipInfoState]):
             self.state['LandingPadSize'] = ship_sizes.get(self.state['Type'], 'Unknown')
 
 TargetState = TypedDict('TargetState', {
+    "EventID": NotRequired[str],
     "Ship":NotRequired[str],
     "Scanned":NotRequired[bool],
 
@@ -441,6 +442,8 @@ class Target(Projection[TargetState]):
     @override
     def process(self, event: Event) -> None:
         global keys
+        if isinstance(event, GameEvent) and event.content.get('event') == 'LoadGame':
+            self.state = self.get_default_state()
         if isinstance(event, GameEvent) and event.content.get('event') == 'ShipTargeted':
             log('info', 'target projection update')
             if not event.content.get('TargetLocked', False):
@@ -458,6 +461,8 @@ class Target(Projection[TargetState]):
                     self.state["LegalStatus"] = event.content.get('LegalStatus', '')
                 if event.content.get('Subsystem_Localised', False):
                     self.state["Subsystem"] = event.content.get('Subsystem_Localised', '')
+            self.state['EventID'] = event.content.get('id')
+
             log('info', 'target projection update', self.state)
 
 

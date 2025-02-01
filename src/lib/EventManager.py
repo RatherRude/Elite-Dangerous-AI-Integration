@@ -214,11 +214,16 @@ class EventManager:
 
         # First, check if the projection already satisfies the condition
         with self._registry_lock:
+            # Check for early return
+            for projection in self.projections:
+                if projection.__class__.__name__ == projection_name:
+                    if condition_fn(projection.state):
+                        log('info', 'condition early return')
+                        return projection.state
+
             # Otherwise, register our (condition, event, placeholder) so that
             # future state updates can unblock us
             self._conditions_registry[projection_name].append((condition_fn, event, satisfying_state))
-
-            # self.check_conditions() @ToDo: Denken.
 
         # Block until event is set or we time out
         is_met_in_time = event.wait(timeout=timeout)

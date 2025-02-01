@@ -2472,27 +2472,25 @@ def body_finder(obj):
         log('error', f"Error: {e}")
         return 'An error occurred. The system finder seems to be currently unavailable.'
 
-def check_target_subsystem():
-
-    pass
-
-def target_subsystem_thread(current_subsystem: str, desired_subsystem: str):
+def target_subsystem_thread(current_subsystem: str, current_event_id: str, desired_subsystem: str):
     if not current_subsystem:
         keys.send('CycleNextSubsystem')
         log('info', 'CycleNextSubsystem key sent first time')
         new_state = event_manager.wait_for_condition('Target', lambda s: s.get('Subsystem'))
         current_subsystem = new_state.get('Subsystem')
+        current_event_id = new_state.get('EventID')
 
     while current_subsystem != desired_subsystem:
         keys.send('CycleNextSubsystem')
         log('info', 'CycleNextSubsystem key sent')
-        new_state = event_manager.wait_for_condition('Target', lambda s: 'Subsystem' in s and s.get('Subsystem')!=current_subsystem or 'Subsystem' not in s)
+        new_state = event_manager.wait_for_condition('Target', lambda s: s.get('EventID') != current_event_id)
         if 'Subsystem' not in new_state:
             log('info', 'target lost, abort cycle')
             return
 
         log('info', 'new subsystem targeted', new_state.get('Subsystem'))
         current_subsystem = new_state.get('Subsystem')
+        current_event_id = new_state.get('EventID')
     log('info', 'desired subsystem targeted', current_subsystem)
 
 def target_subsystem(args):
@@ -2506,7 +2504,7 @@ def target_subsystem(args):
     if 'subsystem' not in args:
         raise Exception('Something went wrong!')
 
-    threading.Thread(target=target_subsystem_thread, args=(current_target.get('Subsystem'), args['subsystem'],), daemon=True).start()
+    threading.Thread(target=target_subsystem_thread, args=(current_target.get('Subsystem'), current_target.get('EventID'), args['subsystem'],), daemon=True).start()
     
     return f"The submodule {args['subsystem']} is being targeted."
 
