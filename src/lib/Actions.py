@@ -2491,7 +2491,7 @@ def target_subsystem_thread(current_subsystem: str, current_event_id: str, desir
         new_state = event_manager.wait_for_condition('Target', lambda s: s.get('Subsystem'))
         current_subsystem = new_state.get('Subsystem')
         current_event_id = new_state.get('EventID')
-
+    subsystem_loop = False
     while current_subsystem != desired_subsystem:
         keys.send('CycleNextSubsystem')
         log('debug', 'CycleNextSubsystem key sent')
@@ -2499,6 +2499,10 @@ def target_subsystem_thread(current_subsystem: str, current_event_id: str, desir
         if 'Subsystem' not in new_state:
             log('info', 'target lost, abort cycle')
             return
+        if new_state.get('Subsystem') == 'Power Plant':
+            if subsystem_loop:
+                break
+            subsystem_loop = True
 
         log('debug', 'new subsystem targeted', new_state.get('Subsystem'))
         current_subsystem = new_state.get('Subsystem')
@@ -2685,6 +2689,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                     "Power Distributor",
                     "Life Support",
                     "FSD",
+                    "Point Defence Turret"
                     "Power Plant"
                 ],
                 "required": ["subsystem"]
