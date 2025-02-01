@@ -5,7 +5,7 @@ import traceback
 
 import requests
 
-from .Projections import LocationState, MissionsState, ShipInfoState, NavInfo
+from .Projections import LocationState, MissionsState, ShipInfoState, NavInfo, TargetState
 
 from .EDJournal import *
 from .Event import (
@@ -486,7 +486,15 @@ class PromptGenerator:
             if isinstance(event, ExternalEvent):
                 if event.content.get('event') in externalEvents:
                     conversational_pieces.append(self.external_event_message(event))
-        
+
+        target_info: TargetState = projected_states.get('Target', {}) # pyright: ignore[reportAssignmentType]
+        if target_info.get('Ship', False):
+            conversational_pieces.append(
+                {
+                    "role": "user",
+                    "content": f"(Current targeted ship: {json.dumps(target_info.pop('EventID', None))})",
+                }
+            )
 
         missions_info: MissionsState = projected_states.get('Missions', {}) # pyright: ignore[reportAssignmentType]
         
