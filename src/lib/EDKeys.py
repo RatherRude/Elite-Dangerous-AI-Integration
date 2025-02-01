@@ -197,6 +197,14 @@ class EDKeys:
             ReleaseKey(key)
         else:
             PressKey(key)
+    
+    def get_collisions(self, key_name: str) -> list[str]:
+        key = self.keys.get(key_name)
+        collisions = []
+        for k, v in self.keys.items():
+            if key == v:
+                collisions.append(k)
+        return collisions
 
     def send(self, key_name, hold=None, repeat=1, repeat_delay=None, state=None):
         key = self.keys.get(key_name)
