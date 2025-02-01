@@ -2,10 +2,12 @@ import json
 from os import listdir
 import os
 from os.path import getmtime, isfile, join
+import platform
 from time import sleep
-from typing import Any, final
+from typing import Any, Literal, final
 from xml.etree.ElementTree import parse
 
+from .Logger import log
 from .Config import get_asset_path
 from .directinput import PressKey, ReleaseKey
 
@@ -25,7 +27,10 @@ class EDKeys:
         self.key_default_delay = 0.200
         self.key_repeat_delay = 0.100
         
-        self.keymap: dict[str, int] = json.load(open(get_asset_path('keymap.json')))
+        if platform.system() == 'Windows':
+            self.keymap: dict[str, int] = json.load(open(get_asset_path('keymap.json')))
+        else:
+            self.keymap: dict[str, int] = json.load(open(get_asset_path('keymap_pynput.json')))
         
         self.keys_to_obtain = [
             'PrimaryFire',
@@ -192,7 +197,10 @@ class EDKeys:
         latest_bindings = max(list_of_bindings, key=getmtime)
         return latest_bindings
 
-    def send_key(self, type, key):
+    def send_key(self, type: Literal['Up', 'Down'], key_name:str):
+        key = self.keymap.get(key_name)
+        if key is None:
+            raise Exception(f"Unsupported key {key_name}.")
         if type == 'Up':
             ReleaseKey(key)
         else:
@@ -207,20 +215,21 @@ class EDKeys:
         return collisions
 
     def send(self, key_name, hold=None, repeat=1, repeat_delay=None, state=None):
-        key = self.keys.get(key_name)
-        if key is None:
-            # logger.warning('SEND=NONE !!!!!!!!')
+        binding = self.keys.get(key_name)
+        if binding is None:
             raise Exception(
                 f"Unable to retrieve keybinding for {key_name}. Advise user to check game settings for keyboard bindings.")
+        if not binding['key']:
+            raise Exception(f"Unsupported key {key_name}.")
 
         for i in range(repeat):
 
             if state is None or state == 1:
-                for mod in key['mods']:
+                for mod in binding['mods']:
                     PressKey(mod)
                     sleep(self.key_mod_delay)
 
-                PressKey(key['key'])
+                PressKey(binding['key'])
 
             if state is None:
                 if hold:
@@ -228,13 +237,13 @@ class EDKeys:
                 else:
                     sleep(self.key_default_delay)
 
-            if 'hold' in key:
+            if 'hold' in binding:
                 sleep(0.1)
 
             if state is None or state == 0:
-                ReleaseKey(key['key'])
+                ReleaseKey(binding['key'])
 
-                for mod in key['mods']:
+                for mod in binding['mods']:
                     sleep(self.key_mod_delay)
                     ReleaseKey(mod)
 
