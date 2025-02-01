@@ -445,7 +445,6 @@ class Target(Projection[TargetState]):
         if isinstance(event, GameEvent) and event.content.get('event') == 'LoadGame':
             self.state = self.get_default_state()
         if isinstance(event, GameEvent) and event.content.get('event') == 'ShipTargeted':
-            log('info', 'target projection update')
             if not event.content.get('TargetLocked', False):
                 self.state = self.get_default_state()
             else:
@@ -462,8 +461,6 @@ class Target(Projection[TargetState]):
                 if event.content.get('Subsystem_Localised', False):
                     self.state["Subsystem"] = event.content.get('Subsystem_Localised', '')
             self.state['EventID'] = event.content.get('id')
-
-            log('info', 'target projection update', self.state)
 
 
 NavRouteItem = TypedDict('NavRouteItem', {

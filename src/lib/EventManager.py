@@ -218,7 +218,6 @@ class EventManager:
             for projection in self.projections:
                 if projection.__class__.__name__ == projection_name:
                     if condition_fn(projection.state):
-                        log('info', 'condition early return')
                         return projection.state
 
             # Otherwise, register our (condition, event, placeholder) so that
@@ -234,7 +233,6 @@ class EventManager:
                 if (condition_fn, event, satisfying_state) in waiting_list:
                     waiting_list.remove((condition_fn, event, satisfying_state))
             raise TimeoutError(f"Condition not met within {timeout} seconds.")
-        log('info', 'condition satisfied', satisfying_state[0])
         return satisfying_state[0]
 
     def check_conditions(self, projection_name: str, new_state: dict):

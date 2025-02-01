@@ -2475,23 +2475,23 @@ def body_finder(obj):
 def target_subsystem_thread(current_subsystem: str, current_event_id: str, desired_subsystem: str):
     if not current_subsystem:
         keys.send('CycleNextSubsystem')
-        log('info', 'CycleNextSubsystem key sent first time')
+        log('debug', 'CycleNextSubsystem key sent first time')
         new_state = event_manager.wait_for_condition('Target', lambda s: s.get('Subsystem'))
         current_subsystem = new_state.get('Subsystem')
         current_event_id = new_state.get('EventID')
 
     while current_subsystem != desired_subsystem:
         keys.send('CycleNextSubsystem')
-        log('info', 'CycleNextSubsystem key sent')
+        log('debug', 'CycleNextSubsystem key sent')
         new_state = event_manager.wait_for_condition('Target', lambda s: s.get('EventID') != current_event_id)
         if 'Subsystem' not in new_state:
             log('info', 'target lost, abort cycle')
             return
 
-        log('info', 'new subsystem targeted', new_state.get('Subsystem'))
+        log('debug', 'new subsystem targeted', new_state.get('Subsystem'))
         current_subsystem = new_state.get('Subsystem')
         current_event_id = new_state.get('EventID')
-    log('info', 'desired subsystem targeted', current_subsystem)
+    log('debug', 'desired subsystem targeted', current_subsystem)
 
 def target_subsystem(args):
     current_target = args.get('projected_states').get('Target')
