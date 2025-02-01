@@ -1424,7 +1424,7 @@ class App:
         self.debug_text.config(state=tk.NORMAL) # Make the text widget read-write
         self.debug_text.delete("1.0", tk.END)
         self.debug_text.focus_set()  # Give focus to the text widget
-        self.print_to_debug("Starting COVAS:NEXT...\n")
+        self.print_to_debug('', "Starting COVAS:NEXT...\n")
 
         try:
             # create log file
@@ -1465,8 +1465,10 @@ class App:
         return re.sub(r'\x1b\[([0-9,A-Z]{1,2}(;[0-9]{1,2})?(;[0-9]{3})?)?[m|K]?', '', s)
     
     @synchronized  # TODO useful but still not enough, segfaults on large amounts of text... probably needs to run in the main thread
-    def print_to_debug(self, line: str):
+    def print_to_debug(self, prefix: str, line: str):
+        prefix = prefix.lower()
         prefixes = {
+            "": "",
             "cmdr": "CMDR",
             "covas": "COVAS",
             "event": "Event",
@@ -1484,17 +1486,16 @@ class App:
             "debug": "debug",
             "error": "error",
         }
+
+        if prefix == "debug": # Debug is hidden in the UI, but can be found in the log file
+            return
+        
         # set the debug widget to read-write
         self.debug_text.config(state=tk.NORMAL)
-
-        for prefix, label in prefixes.items():
-            if prefix == "debug": # Debug is hidden in the UI, but can be found in the log file
-                continue
-            if line.startswith(prefix):
-                self.debug_text.insert(tk.END, label, colors[prefix])
-                self.debug_text.insert(tk.END, line[len(prefix):], "normal")
-        if not any(line.startswith(prefix) for prefix in prefixes): 
-            self.debug_text.insert(tk.END, line, "normal")
+        
+        if prefix in prefixes and prefix in colors:
+            self.debug_text.insert(tk.END, prefixes[prefix]+' ', colors[prefix])
+        self.debug_text.insert(tk.END, line, "normal")
         
         self.debug_text.config(state=tk.DISABLED) # Make the text widget read-only
         self.debug_text.see(tk.END)  # Scroll to the end of the text widget
@@ -1510,9 +1511,9 @@ class App:
                 try:
                     content = json.loads(stdout_line)
                     if content.get('type') == 'log':
-                        self.print_to_debug(content['prefix'] +': '+ content['message'])
+                        self.print_to_debug(content['prefix'], content['message'])
                 except json.JSONDecodeError:
-                    self.print_to_debug(stdout_line)
+                    self.print_to_debug('', stdout_line)
 
     def read_process_error(self, process: subprocess.Popen, outlog_file: typing.TextIO):
         while process and process.poll() is None:
@@ -1522,7 +1523,7 @@ class App:
             if stderr_line:
                 outlog_file.write(json.dumps({"type": "error", "timestamp": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"), "message": stderr_line})+'\n')
                 outlog_file.flush()
-                self.print_to_debug('error: '+stderr_line)
+                self.print_to_debug('error', stderr_line)
 
     def stop_external_script(self):
         if self.process:
@@ -1539,7 +1540,7 @@ class App:
             if self.thread_process_stderr.is_alive():
                 self.thread_process_stderr.join(timeout=1)  # Wait for the thread to complete
             self.thread_process_stderr = None
-        self.print_to_debug("COVAS:NEXT stopped.\n")
+        self.print_to_debug('', "COVAS:NEXT stopped.\n")
         self.stop_button.pack_forget()
         self.debug_frame.pack_forget()
         self.main_frame.pack(padx=20, pady=20)

@@ -12,7 +12,7 @@ def log(prefix: str, message: Any, *args: Any):
     print(json.dumps({
         'type': 'log',
         'timestamp': datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        'prefix': prefix,
+        'prefix': prefix.lower(),
         'message': contents,
     }))
     if sys.stdout:
