@@ -37,6 +37,8 @@ jobs:
         run: |
           $VAD_MODEL = python -c 'import os, pysilero_vad; print(os.path.join(os.path.dirname(pysilero_vad.__file__), "models", "silero_vad.onnx"))'
           $VEC_EXTENSION = python -c 'import os, sqlite_vec; print(os.path.join(os.path.dirname(sqlite_vec.__file__), "vec0.dll"))'
+          echo "VAD_MODEL=$VAD_MODEL" >> $env:GITHUB_ENV
+          echo "VEC_EXTENSION=$VEC_EXTENSION" >> $env:GITHUB_ENV
 
       - name: Create Executable for AIGUI
         run: |
