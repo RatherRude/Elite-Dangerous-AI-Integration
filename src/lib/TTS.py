@@ -93,18 +93,24 @@ class TTS:
             for _ in range(int(audio_duration * 24_000 / 1024)):
                 yield b"\x00" * 1024
         elif self.provider == "edge-tts":
-            rate = f"+{int((float(self.speed) - 1) * 100)}%" if float(self.speed) > 1 else f"-{int((1 - float(self.speed)) * 100)}%"
-            response = edge_tts.Communicate(text, voice=self.voice, rate=rate)
-            chunks = []
-            for chunk in response.stream_sync():
-                if chunk["type"] == "audio":
-                    chunks.append(chunk["data"])
-            audio_mp3 = b"".join(chunks)
-            audio = miniaudio.decode(audio_mp3, output_format=miniaudio.SampleFormat.SIGNED16, nchannels=1, sample_rate=24000)
-            data = audio.samples.tobytes()
-            # iterate over the data in chunks of 1024 bytes
-            for i in range(0, len(data), 1024):
-                yield data[i:i + 1024]
+            # find the first occurrence of a sentence .?! followed by whitespace or a newline
+            first_sentence_end = re.search(r"([.?!]\s+|\n)", text)
+            first_sentence = text[:first_sentence_end.end()] if first_sentence_end else text
+            remaining_sentences = text[first_sentence_end.end():] if first_sentence_end else ""
+            for sentence in [first_sentence, remaining_sentences]:
+                log('info', f'Synthesizing sentence: {sentence}')
+                rate = f"+{int((float(self.speed) - 1) * 100)}%" if float(self.speed) > 1 else f"-{int((1 - float(self.speed)) * 100)}%"
+                response = edge_tts.Communicate(sentence, voice=self.voice, rate=rate)
+                chunks = []
+                for chunk in response.stream_sync():
+                    if chunk["type"] == "audio":
+                        chunks.append(chunk["data"])
+                audio_mp3 = b"".join(chunks)
+                audio = miniaudio.decode(audio_mp3, output_format=miniaudio.SampleFormat.SIGNED16, nchannels=1, sample_rate=24000)
+                data = audio.samples.tobytes()
+                # iterate over the data in chunks of 1024 bytes
+                for i in range(0, len(data), 1024):
+                    yield data[i:i + 1024]
         elif self.openai_client:
             with self.openai_client.audio.speech.with_streaming_response.create(
                     model=self.model,
