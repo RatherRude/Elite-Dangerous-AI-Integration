@@ -488,11 +488,12 @@ class PromptGenerator:
                     conversational_pieces.append(self.external_event_message(event))
 
         target_info: TargetState = projected_states.get('Target', {}) # pyright: ignore[reportAssignmentType]
+        target_info.pop('EventID', None)
         if target_info.get('Ship', False):
             conversational_pieces.append(
                 {
                     "role": "user",
-                    "content": f"(Current targeted ship: {json.dumps(target_info.pop('EventID', None))})",
+                    "content": f"(Current targeted ship: {json.dumps(target_info)})",
                 }
             )
 
