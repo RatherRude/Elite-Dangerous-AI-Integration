@@ -25,3 +25,7 @@ Generally yes, but there are a few places that are currently english-only. The A
 ## I paid money for the OpenAI API, but the AI is still not working. What should I do?
 
 OpenAI sometimes needs a few minutes to process your payment. If you are still having issues after a few minutes, please check your OpenAI account for any issues. If you are still having issues, please get in touch with us.
+
+## Does it work on Linux, Steam Deck, Proton, Wine?
+
+We have a native Linux version available, but it requires some special setup. Please contact us on discord and we will help you get it running.

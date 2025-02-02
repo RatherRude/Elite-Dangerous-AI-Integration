@@ -1,4 +1,5 @@
 import json
+import platform
 import tempfile
 
 default_config = {
@@ -356,13 +357,15 @@ def test_chat_executable():
     with open(f"{temp_dir}/config.json", "w") as f:
         f.write(json.dumps(default_config))
     # write config.json to temp dir
-    with open(f"{temp_dir}/status.json", "w") as f:
+    with open(f"{temp_dir}/Status.json", "w") as f:
         f.write(json.dumps({"event": "Status", "timestamp": "2024-10-08T18:19:57Z"}))
     with open(f"{temp_dir}/Journal.2024-11-24T100000.01.log", "w") as f:
         f.write('')
+    
+    print('Temp dir:', temp_dir)
         
     # run ../../dist/Chat/Chat.exe relative to this file, with temp dir as working directory
-    chat_location = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../dist/Chat/Chat.exe")
+    chat_location = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../dist/Chat/Chat.exe" if platform.system() == "Windows" else "../dist/Chat/Chat")
     proc = subprocess.Popen(
         [chat_location],
         cwd=temp_dir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1,

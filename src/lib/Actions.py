@@ -185,9 +185,9 @@ def galaxy_map_open(args):
         sleep(0.05)
 
         # send enter key
-        keys.send_key('Down', 28)
+        keys.send_key('Down', 'Key_Enter')
         sleep(0.05)
-        keys.send_key('Up', 28)
+        keys.send_key('Up', 'Key_Enter')
 
         sleep(.15)
         keys.send('UI_Right')
@@ -797,9 +797,9 @@ def send_message(obj):
 
             sleep(0.05)
             # send enter key
-            keys.send_key('Down', 28)
+            keys.send_key('Down', 'Key_Enter')
             sleep(0.05)
-            keys.send_key('Up', 28)
+            keys.send_key('Up', 'Key_Enter')
 
     return return_message
 

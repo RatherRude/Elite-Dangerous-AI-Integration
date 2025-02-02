@@ -1,10 +1,7 @@
 import pytest
-from unittest.mock import MagicMock, patch
-from pathlib import Path
+from unittest.mock import MagicMock
 import os
 from src.lib.EDKeys import EDKeys
-
-import xml.etree.ElementTree as ET
 
 # Mock for directinput module
 @pytest.fixture
@@ -15,6 +12,8 @@ def mock_directinput(monkeypatch):
     
     monkeypatch.setattr('src.lib.EDKeys.PressKey', mock_press)
     monkeypatch.setattr('src.lib.EDKeys.ReleaseKey', mock_release)
+    
+    monkeypatch.setattr('platform.system', lambda: 'Windows')
     
     return {
         'PressKey': mock_press,

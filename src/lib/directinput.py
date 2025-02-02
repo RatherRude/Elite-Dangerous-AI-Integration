@@ -5,8 +5,11 @@
 
 import ctypes
 import time
+import platform
+from pynput.keyboard import Key, Controller, KeyCode
 
 SendInput = ctypes.windll.user32.SendInput if 'windll' in dir(ctypes) else None
+pynput_keyboard = Controller()
 
 # C struct redefinitions
 
@@ -43,19 +46,25 @@ class Input(ctypes.Structure):
 
 # Actual Functions
 
-def PressKey(hexKeyCode):
-    extra = ctypes.c_ulong(0)
-    ii_ = Input_I()
-    ii_.ki = KeyBdInput(0, hexKeyCode, 0x0008, 0, ctypes.pointer(extra))
-    x = Input(ctypes.c_ulong(1), ii_)
-    SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
+def PressKey(keyCode):
+    if platform == 'win32':
+        extra = ctypes.c_ulong(0)
+        ii_ = Input_I()
+        ii_.ki = KeyBdInput(0, keyCode, 0x0008, 0, ctypes.pointer(extra))
+        x = Input(ctypes.c_ulong(1), ii_)
+        SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
+    else:
+        pynput_keyboard.press(KeyCode.from_vk(keyCode) if isinstance(keyCode, int) else KeyCode.from_char(keyCode))
 
-def ReleaseKey(hexKeyCode):
-    extra = ctypes.c_ulong(0)
-    ii_ = Input_I()
-    ii_.ki = KeyBdInput(0, hexKeyCode, 0x0008 | 0x0002, 0, ctypes.pointer(extra))
-    x = Input(ctypes.c_ulong(1), ii_)
-    SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
+def ReleaseKey(keyCode):
+    if platform == 'win32':
+        extra = ctypes.c_ulong(0)
+        ii_ = Input_I()
+        ii_.ki = KeyBdInput(0, keyCode, 0x0008 | 0x0002, 0, ctypes.pointer(extra))
+        x = Input(ctypes.c_ulong(1), ii_)
+        SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
+    else:
+        pynput_keyboard.release(KeyCode.from_vk(keyCode) if isinstance(keyCode, int) else KeyCode.from_char(keyCode))
 
 def PressAndReleaseKey(hexKeyCode):
     PressKey(hexKeyCode)

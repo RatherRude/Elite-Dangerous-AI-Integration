@@ -2,8 +2,7 @@ from typing import Literal, TypedDict
 import os
 import sys
 
-from requests.models import stream_decode_response_unicode
-
+from .Logger import log
 
 class Config(TypedDict):
     api_key: str
@@ -58,7 +57,8 @@ def get_cn_appdata_path() -> str:
 def get_ed_journals_path(config: Config) -> str:
     """Returns the path of the Elite Dangerous journal and state files"""
     if config.get('ed_journal_path'):
-        return config['ed_journal_path']
+        path= os.path.abspath(config['ed_journal_path'])
+        return path
         
     from . import WindowsKnownPaths as winpaths
     saved_games = winpaths.get_path(winpaths.FOLDERID.SavedGames, winpaths.UserHandle.current) 
@@ -69,7 +69,8 @@ def get_ed_journals_path(config: Config) -> str:
 def get_ed_appdata_path(config: Config) -> str:
     """Returns the path of the Elite Dangerous appdata folder"""
     if config.get('ed_appdata_path'):
-        return config['ed_appdata_path']
+        path= os.path.abspath(config['ed_appdata_path'])
+        return path
         
     from os import environ
     return environ['LOCALAPPDATA'] + "\\Frontier Developments\\Elite Dangerous"
