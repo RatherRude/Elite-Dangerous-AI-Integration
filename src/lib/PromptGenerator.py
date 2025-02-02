@@ -5,7 +5,7 @@ import traceback
 
 import requests
 
-from .Projections import LocationState, MissionsState, ShipInfoState
+from .Projections import LocationState, MissionsState, ShipInfoState, NavInfo, TargetState
 
 from .EDJournal import *
 from .Event import (
@@ -486,7 +486,16 @@ class PromptGenerator:
             if isinstance(event, ExternalEvent):
                 if event.content.get('event') in externalEvents:
                     conversational_pieces.append(self.external_event_message(event))
-        
+
+        target_info: TargetState = projected_states.get('Target', {}) # pyright: ignore[reportAssignmentType]
+        target_info.pop('EventID', None)
+        if target_info.get('Ship', False):
+            conversational_pieces.append(
+                {
+                    "role": "user",
+                    "content": f"(Current targeted ship: {json.dumps(target_info)})",
+                }
+            )
 
         missions_info: MissionsState = projected_states.get('Missions', {}) # pyright: ignore[reportAssignmentType]
         
@@ -500,6 +509,7 @@ class PromptGenerator:
 
 
         location_info: LocationState = projected_states.get('Location', {}) # pyright: ignore[reportAssignmentType]
+        nav_info: NavInfo = projected_states.get('NavInfo', {}) # pyright: ignore[reportAssignmentType]
 
         if "StarSystem" in location_info and location_info["StarSystem"] != "Unknown":
             conversational_pieces.append(
@@ -518,6 +528,10 @@ class PromptGenerator:
         
         conversational_pieces.append(
             {"role": "user", "content": f"(Current location: {json.dumps(location_info)})"}
+        )
+
+        conversational_pieces.append(
+            {"role": "user", "content": f"(Current route: {json.dumps(nav_info)})"}
         )
 
         ship_info: ShipInfoState = projected_states.get('ShipInfo', {})  # pyright: ignore[reportAssignmentType]

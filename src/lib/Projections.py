@@ -1,4 +1,6 @@
 import math
+
+from .Logger import log
 from typing import Any, Literal, TypedDict, final
 
 from typing_extensions import NotRequired, override
@@ -6,7 +8,6 @@ from typing_extensions import NotRequired, override
 from .Event import Event, StatusEvent, GameEvent, ProjectedEvent
 from .EventManager import EventManager, Projection
 from .StatusParser import parse_status_flags, parse_status_json, Status
-
 
 def latest_event_projection_factory(projectionName: str, gameEvent: str):
     class LatestEvent(Projection[dict[str, Any]]):
@@ -417,13 +418,59 @@ class ShipInfo(Projection[ShipInfoState]):
         
         if self.state['Type'] != 'Unknown':
             self.state['LandingPadSize'] = ship_sizes.get(self.state['Type'], 'Unknown')
-            
+
+TargetState = TypedDict('TargetState', {
+    "EventID": NotRequired[str],
+    "Ship":NotRequired[str],
+    "Scanned":NotRequired[bool],
+
+    "PilotName":NotRequired[str],
+    "PilotRank":NotRequired[str],
+    "Faction":NotRequired[str],
+    "LegalStatus":NotRequired[str],
+
+    "Subsystem":NotRequired[str],
+})
+
+
+@final
+class Target(Projection[TargetState]):
+    @override
+    def get_default_state(self) -> TargetState|None:
+        return {}
+
+    @override
+    def process(self, event: Event) -> None:
+        global keys
+        if isinstance(event, GameEvent) and event.content.get('event') == 'LoadGame':
+            self.state = self.get_default_state()
+        if isinstance(event, GameEvent) and event.content.get('event') == 'ShipTargeted':
+            if not event.content.get('TargetLocked', False):
+                self.state = self.get_default_state()
+            else:
+                # self.state['SubsystemToTarget'] = 'Drive'
+                self.state['Ship'] = event.content.get('Ship', '')
+                if event.content.get('ScanStage', 0) < 3:
+                    self.state['Scanned'] = False
+                else:
+                    self.state['Scanned'] = True
+                    self.state["PilotName"] = event.content.get('PilotName_Localised', '')
+                    self.state["PilotRank"] = event.content.get('PilotRank', '')
+                    self.state["Faction"] = event.content.get('Faction', '')
+                    self.state["LegalStatus"] = event.content.get('LegalStatus', '')
+                if event.content.get('Subsystem_Localised', False):
+                    self.state["Subsystem"] = event.content.get('Subsystem_Localised', '')
+            self.state['EventID'] = event.content.get('id')
+
+
+NavRouteItem = TypedDict('NavRouteItem', {
+    "StarSystem": str,
+    "Scoopable": bool
+})
 
 NavInfoState = TypedDict('NavInfoState', {
     "NextJumpTarget": NotRequired[str],
-    #"NavRouteTarget": NotRequired[str],  # TODO: use the navroute.json to set this
-    "JumpsRemaining": NotRequired[int],
-    "InJump": NotRequired[bool],
+    "NavRoute": list[NavRouteItem],
     # TODO: System local targets? (planet, station, etc)
 })
 
@@ -433,32 +480,29 @@ class NavInfo(Projection[NavInfoState]):
     def get_default_state(self) -> NavInfoState:
         return {
             "NextJumpTarget": 'Unknown',
-            #"NavRouteTarget": 'Unknown',
-            "JumpsRemaining": 0,
+            "NavRoute": [],
         }
     
     @override
     def process(self, event: Event) -> None:
-        #if isinstance(event, StatusEvent) and event.status.get('event') == 'Status':
-        #    status: Status = event.status  # pyright: ignore[reportAssignmentType]
-        #    if 'Destination' in status and status['Destination']:
-        #        self.state['Destination'] = status['Destination'].get('Name', 'Unknown')  # TODO: this could be used for system local target, like planets or stations
-        
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'NavRoute':
+            if event.content.get('Route', []):
+                self.state['NavRoute'] = []
+                for entry in event.content.get('Route', [])[1:]:
+                    self.state['NavRoute'].append({"StarSystem": entry["StarSystem"], "Scoopable": entry["StarClass"] in ['K','G','B','F','O','A','M']})
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'NavRouteClear':
+            self.state['NavRoute'] = []
+        if isinstance(event, GameEvent) and event.content.get('event') == 'FSDJump':
+            for index, entry in enumerate(self.state['NavRoute']):
+                if entry['StarSystem'] == event.content.get('StarSystem'):
+                    self.state['NavRoute'] = self.state['NavRoute'][index+1:]
+
         if isinstance(event, GameEvent) and event.content.get('event') == 'FSDTarget':
-            if 'RemainingJumpsInRoute' in event.content:
-                self.state['JumpsRemaining'] = event.content.get('RemainingJumpsInRoute', 0)  # TODO: according to comments in the old journal code, this number is wrong when < 3 jumps remain
             if 'Name' in event.content:
                 self.state['NextJumpTarget'] = event.content.get('Name', 'Unknown')
-            self.state.pop('InJump', None)
-        
-        if isinstance(event, GameEvent) and event.content.get('event') == 'StartJump':
-            self.state['InJump'] = True
-            
-        if isinstance(event, GameEvent) and event.content.get('event') == 'FSDJump':
-            if self.state.get('InJump', False):
-                self.state = {} # we ended the jump with no new target, so we arrived
-        
-        # TODO: when do we clear the route? if 'FSDJump' 'StarSystem' = 'NavRouteTarget'? or if remaining jumps = 0? what if the user clears?
+
 
 class ExobiologyScanStateScan(TypedDict):
     lat: float
@@ -587,11 +631,13 @@ class ExobiologyScan(Projection[ExobiologyScanState]):
 
 
 def registerProjections(event_manager: EventManager):
+
     event_manager.register_projection(EventCounter())
     event_manager.register_projection(CurrentStatus())
     event_manager.register_projection(Location())
     event_manager.register_projection(Missions())
     event_manager.register_projection(ShipInfo())
+    event_manager.register_projection(Target())
     event_manager.register_projection(NavInfo())
     event_manager.register_projection(ExobiologyScan())
 

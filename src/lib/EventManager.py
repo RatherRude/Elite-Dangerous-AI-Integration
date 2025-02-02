@@ -9,6 +9,9 @@ from .EDJournal import *
 from .Event import Event, GameEvent, ConversationEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent
 from .Logger import log
 
+import threading
+from collections import defaultdict
+
 ProjectedState = TypeVar("ProjectedState")
 
 class Projection(ABC, Generic[ProjectedState]):
@@ -45,6 +48,8 @@ class EventManager:
         self.react_to_material = react_to_material
         self.react_to_danger_mining = react_to_danger_mining
         self.react_to_danger_onfoot = react_to_danger_onfoot
+        self._conditions_registry = defaultdict(list)
+        self._registry_lock = threading.Lock()
 
         self.event_classes: list[type[Event]] = [ConversationEvent, ToolEvent, GameEvent, StatusEvent, ExternalEvent]
         self.projections: list[Projection] = []
@@ -150,8 +155,10 @@ class EventManager:
             self.update_projection(projection, event, save_later=save_later)
     
     def update_projection(self, projection: Projection, event: Event, save_later: bool = False):
+        projection_name = projection.__class__.__name__
         try:
             projected_events = projection.process(event)
+            self.check_conditions(projection_name, projection.state)
             if projected_events:
                 for e in projected_events:
                     self.add_projected_event(e, event)
@@ -160,10 +167,10 @@ class EventManager:
             log('error', 'Error processing event', event, 'with projection', projection, e, traceback.format_exc())
             return
         if event.processed_at < projection.last_processed:
-            log('warn', 'Projection', projection.__class__.__name__, 'is running backwards in time!', 'Event:', event.processed_at, 'Projection:', projection.last_processed)
+            log('warn', 'Projection', projection_name, 'is running backwards in time!', 'Event:', event.processed_at, 'Projection:', projection.last_processed)
         projection.last_processed = event.processed_at
         if not save_later:
-            self.projection_store.set(projection.__class__.__name__, {"state": projection.state, "last_processed": projection.last_processed})
+            self.projection_store.set(projection_name, {"state": projection.state, "last_processed": projection.last_processed})
     
     def save_projections(self):
         for projection in self.projections:
@@ -187,6 +194,71 @@ class EventManager:
         
         self.projections.append(projection)
         self.save_projections()
+
+    def wait_for_condition(self, projection_name: str, condition_fn, timeout=None):
+        """
+        Block until `condition_fn` is satisfied by the current or future
+        state of the specified projection.
+
+        :param projection_name: Name/identifier of the projection to watch.
+        :param condition_fn: A callable that takes a dict (the current projection state)
+                             and returns True/False.
+        :param timeout: Optional timeout (seconds).
+        :return: The state dict that satisfied the condition.
+        :raises TimeoutError: If the condition isn't met within `timeout`.
+        """
+        event = threading.Event()
+        # We'll store the state that satisfies the condition once it occurs.
+        # A single-element list is a convenient way to mutate from an inner function.
+        satisfying_state = [None]
+
+        # First, check if the projection already satisfies the condition
+        with self._registry_lock:
+            # Check for early return
+            for projection in self.projections:
+                if projection.__class__.__name__ == projection_name:
+                    if condition_fn(projection.state):
+                        return projection.state
+
+            # Otherwise, register our (condition, event, placeholder) so that
+            # future state updates can unblock us
+            self._conditions_registry[projection_name].append((condition_fn, event, satisfying_state))
+
+        # Block until event is set or we time out
+        is_met_in_time = event.wait(timeout=timeout)
+        if not is_met_in_time:
+            # Clean up the registry, so we don't leave a stale condition around
+            with self._registry_lock:
+                waiting_list = self._conditions_registry[projection_name]
+                if (condition_fn, event, satisfying_state) in waiting_list:
+                    waiting_list.remove((condition_fn, event, satisfying_state))
+            raise TimeoutError(f"Condition not met within {timeout} seconds.")
+        return satisfying_state[0]
+
+    def check_conditions(self, projection_name: str, new_state: dict):
+        """
+        Call this after updating the state of `projections[projection_name]`.
+        Checks if any registered conditions are satisfied by the latest state.
+        Any that are satisfied will be signaled (their events set),
+        so their waiting threads can continue.
+        """
+        with self._registry_lock:
+            if projection_name not in self._conditions_registry:
+                return  # No conditions are waiting for this projection
+
+            # new_state = self.projections[projection_name].state
+            still_waiting = []
+
+            for (condition_fn, event, state_container) in self._conditions_registry[projection_name]:
+                if condition_fn(new_state):
+                    # Condition met, set state and trigger the event
+                    state_container[0] = new_state
+                    event.set()
+                else:
+                    still_waiting.append((condition_fn, event, state_container))
+
+            # Only keep conditions that are still not satisfied
+            self._conditions_registry[projection_name] = still_waiting
 
     def should_reply(self, states:dict[str, Any]):
         if len(self.pending) == 0:

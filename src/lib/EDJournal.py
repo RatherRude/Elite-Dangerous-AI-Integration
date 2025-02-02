@@ -45,9 +45,28 @@ class EDJournal:
                 try:
                     entry: JournalEntry = json.loads(line)
                     entry['id'] = self.get_event_id(latest_log, file_index)
+                    if entry.get('event') == "NavRoute":
+                        entry = self.augmentNavRouteEvent(entry)
+
                     self.historic_events.append(entry)
                 except json.JSONDecodeError:
                     continue
+
+    def augmentNavRouteEvent (self, entry: JournalEntry) -> JournalEntry:
+        file_path = join(self.logs_path, "NavRoute.json")
+
+        try:
+            with open(file_path, 'r', encoding='utf-8') as file:
+                data = json.load(file)
+        except json.JSONDecodeError:
+            sleep(0.1)
+            with open(file_path, 'r', encoding='utf-8') as file:
+                data = json.load(file)
+
+        if data.get("timestamp") == entry.get("timestamp"):
+            return {**entry, **data}
+
+        return entry
 
     def _reading_thread(self):
         backoff = 1
@@ -80,6 +99,8 @@ class EDJournal:
                     try:
                         entry: JournalEntry = json.loads(line)
                         entry['id'] = self.get_event_id(latest_log, file_index)
+                        if entry.get('event') == "NavRoute":
+                            entry=self.augmentNavRouteEvent(entry)
                         if self.historic_events and self.historic_events[-1].get('id') >= entry.get('id'):
                             continue
                         self.events.put(entry)

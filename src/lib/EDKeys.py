@@ -48,6 +48,7 @@ class EDKeys:
             'GalaxyMapOpen',
             'SystemMapOpen',
             'CycleNextTarget',
+            'CycleNextSubsystem',
             'CycleFireGroupNext',
             'ShipSpotLightToggle',
             'EjectAllCargo',

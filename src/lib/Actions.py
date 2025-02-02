@@ -205,8 +205,7 @@ def galaxy_map_open(args):
             keys.send('UI_Select', hold=1)
 
             sleep(.05)
-            if args.get('projected_states').get('CurrentStatus').get('GuiFocus') == 'GalaxyMap':
-                keys.send('GalaxyMapOpen')
+            keys.send('GalaxyMapOpen')
 
             return ((f"Best location found: {json.dumps(args['details'])}. " if 'details' in args else '') +
                     f"Plotting a route to {args['system_name']} has been attempted. Check event history to see if it was successful, if you see no event it has failed.")
@@ -2485,6 +2484,45 @@ def body_finder(obj):
         log('error', f"Error: {e}")
         return 'An error occurred. The system finder seems to be currently unavailable.'
 
+def target_subsystem_thread(current_subsystem: str, current_event_id: str, desired_subsystem: str):
+    if not current_subsystem:
+        keys.send('CycleNextSubsystem')
+        log('debug', 'CycleNextSubsystem key sent first time')
+        new_state = event_manager.wait_for_condition('Target', lambda s: s.get('Subsystem'))
+        current_subsystem = new_state.get('Subsystem')
+        current_event_id = new_state.get('EventID')
+    subsystem_loop = False
+    while current_subsystem != desired_subsystem:
+        keys.send('CycleNextSubsystem')
+        log('debug', 'CycleNextSubsystem key sent')
+        new_state = event_manager.wait_for_condition('Target', lambda s: s.get('EventID') != current_event_id)
+        if 'Subsystem' not in new_state:
+            log('info', 'target lost, abort cycle')
+            return
+        if new_state.get('Subsystem') == 'Power Plant':
+            if subsystem_loop:
+                break
+            subsystem_loop = True
+
+        log('debug', 'new subsystem targeted', new_state.get('Subsystem'))
+        current_subsystem = new_state.get('Subsystem')
+        current_event_id = new_state.get('EventID')
+    log('debug', 'desired subsystem targeted', current_subsystem)
+
+def target_subsystem(args):
+    current_target = args.get('projected_states').get('Target')
+
+    if not current_target.get('Ship', False):
+        raise Exception('No ship is currently targeted')
+    if not current_target.get('Scanned', False):
+        raise Exception('Targeted ship isn\'t scanned yet')
+
+    if 'subsystem' not in args:
+        raise Exception('Something went wrong!')
+
+    threading.Thread(target=target_subsystem_thread, args=(current_target.get('Subsystem'), current_target.get('EventID'), args['subsystem'],), daemon=True).start()
+    
+    return f"The submodule {args['subsystem']} is being targeted."
 
 def register_actions(actionManager: ActionManager, eventManager: EventManager, llmClient: openai.OpenAI,
                      llmModelName: str, visionClient: Optional[openai.OpenAI], visionModelName: Optional[str],
@@ -2538,7 +2576,8 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                     "100"
                 ]
             }
-        }
+        },
+        "required": ["speed"]
     }, set_speed, 'ship')
 
     actionManager.registerAction('deployHeatSink', "Deploy heat sink", {
@@ -2637,6 +2676,26 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "type": "object",
         "properties": {}
     }, select_highest_threat, 'ship')
+
+    actionManager.registerAction('targetSubmodule', "Target a subsystem on locked ship", {
+        "type": "object",
+        "properties": {
+            "subsystem": {
+                "type": "string",
+                "description": "subsystem/module to target",
+                "enum": [
+                    "Drive",
+                    "Shield Generator",
+                    "Power Distributor",
+                    "Life Support",
+                    "FSD",
+                    "Point Defence Turret"
+                    "Power Plant"
+                ],
+                "required": ["subsystem"]
+            },
+        }
+    }, target_subsystem, 'ship')
 
     actionManager.registerAction('chargeECM', "Charge ECM", {
         "type": "object",
