@@ -23,8 +23,10 @@ jobs:
           python -m pip install --force-reinstall numpy==2.2.2 opencv-python==4.10.0.84
 
       - name: Run tests
-        run: |
-          python -m pytest test -v
+        uses: GabrielBB/xvfb-action@v1
+        with:
+          run: |
+            python -m pytest test -v
 
       - name: Install pyinstaller
         run: |
@@ -79,6 +81,8 @@ jobs:
           path: dist
 
       - name: Run e2e tests
-        run: |
-          python --version
-          python e2e/test_ChatExecutable.py
+        uses: GabrielBB/xvfb-action@v1
+        with:
+          run: |
+            python --version
+            python e2e/test_ChatExecutable.py
