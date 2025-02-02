@@ -1,12 +1,10 @@
-from math import e
 import queue
 import re
 from sys import platform
 import threading
 from time import sleep
 import traceback
-from turtle import done
-from typing import Literal, Optional, Union, final
+from typing import Generator, Literal, Optional, Union, final
 
 from num2words import num2words
 import strip_markdown
@@ -17,8 +15,9 @@ import miniaudio
 
 from .Logger import log
 
+@final
 class Mp3Stream(miniaudio.StreamableSource):
-    def __init__(self, gen) -> None:
+    def __init__(self, gen: Generator) -> None:
         super().__init__()
         self.gen = gen
         self.data = b""
@@ -113,7 +112,6 @@ class TTS:
             for _ in range(int(audio_duration * 24_000 / 1024)):
                 yield b"\x00" * 1024
         elif self.provider == "edge-tts":
-            log('info', f'Synthesizing sentence: {text}')
             rate = f"+{int((float(self.speed) - 1) * 100)}%" if float(self.speed) > 1 else f"-{int((1 - float(self.speed)) * 100)}%"
             response = edge_tts.Communicate(text, voice=self.voice, rate=rate)
             pcm_stream = miniaudio.stream_any(
