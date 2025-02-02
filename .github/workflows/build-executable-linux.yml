@@ -49,11 +49,8 @@ jobs:
       - name: Create Executable for Chat
         uses: GabrielBB/xvfb-action@v1
         with:
-          run: >
-            pyinstaller ./src/Chat.py -y --onedir --clean --console --hidden-import=comtypes.stream
-              --add-data ./src:.
-              --add-binary ${{ env.VAD_MODEL }}:./pysilero_vad/models
-              --add-binary ${{ env.VEC_EXTENSION }}:./sqlite_vec
+          run: >-
+            pyinstaller ./src/Chat.py -y --onedir --clean --console --add-data ./src:. --add-binary ${{ env.VAD_MODEL }}:./pysilero_vad/models --add-binary ${{ env.VEC_EXTENSION }}:./sqlite_vec
 
       - name: Create start.sh script
         run: |
