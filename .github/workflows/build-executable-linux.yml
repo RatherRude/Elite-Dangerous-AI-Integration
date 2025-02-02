@@ -41,15 +41,19 @@ jobs:
           echo "VEC_EXTENSION=$VEC_EXTENSION" >> $GITHUB_ENV
 
       - name: Create Executable for AIGUI
-        run: |
-          pyinstaller ./src/AIGUI.py -y --onedir --clean --noconsole --add-data ./docs/screen/EDAI_logo.png:./screen
+        uses: GabrielBB/xvfb-action@v1
+        with:
+          run: |
+            pyinstaller ./src/AIGUI.py -y --onedir --clean --noconsole --add-data ./docs/screen/EDAI_logo.png:./screen
 
       - name: Create Executable for Chat
-        run: |
-          pyinstaller ./src/Chat.py -y --onedir --clean --console --hidden-import=comtypes.stream `
-            --add-data ./src:. `
-            --add-binary ${{ env.VAD_MODEL }}:./pysilero_vad/models `
-            --add-binary ${{ env.VEC_EXTENSION }}:./sqlite_vec
+        uses: GabrielBB/xvfb-action@v1
+        with:
+          run: |
+            pyinstaller ./src/Chat.py -y --onedir --clean --console --hidden-import=comtypes.stream `
+              --add-data ./src:. `
+              --add-binary ${{ env.VAD_MODEL }}:./pysilero_vad/models `
+              --add-binary ${{ env.VEC_EXTENSION }}:./sqlite_vec
 
       - name: Create start.sh script
         run: |
