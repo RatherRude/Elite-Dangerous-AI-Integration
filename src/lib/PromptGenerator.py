@@ -486,6 +486,32 @@ class PromptGenerator:
             if isinstance(event, ExternalEvent):
                 if event.content.get('event') in externalEvents:
                     conversational_pieces.append(self.external_event_message(event))
+        
+        current_station = projected_states.get('Location', {}).get('Station')
+        market = projected_states.get('Market', {}) 
+        outfitting = projected_states.get('Outfitting', {}) 
+        shipyard = projected_states.get('Shipyard', {}) 
+        if current_station == market.get('StationName'):
+            conversational_pieces.append(
+                {
+                    "role": "user",
+                    "content": f"(Current stations market information: {json.dumps(market)})",
+                }
+            )
+        if current_station == outfitting.get('StationName'):
+            conversational_pieces.append(
+                {
+                    "role": "user",
+                    "content": f"(Current stations outfitting information: {json.dumps(outfitting)})",
+                }
+            )
+        if current_station == shipyard.get('StationName'):
+            conversational_pieces.append(
+                {
+                    "role": "user",
+                    "content": f"(Current stations shipyard information: {json.dumps(shipyard)})",
+                }
+            )
 
         target_info: TargetState = projected_states.get('Target', {}) # pyright: ignore[reportAssignmentType]
         target_info.pop('EventID', None)

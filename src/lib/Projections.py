@@ -657,6 +657,11 @@ def registerProjections(event_manager: EventManager):
         'Loadout',
         'Shipyard',
         'StoredShips',
+        'Market',
+        'Outfitting',
+        'Shipyard',
+        'Cargo',
+        'Backpack',
     ]:
         p = latest_event_projection_factory(proj, proj)
         event_manager.register_projection(p())
