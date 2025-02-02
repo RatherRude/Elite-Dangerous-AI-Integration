@@ -1,6 +1,7 @@
 import json
-from logging import debug
-from typing import Any
+from typing import Any, Callable
+
+from openai.types.chat import ChatCompletionMessageToolCall
 
 from .Logger import log
 import traceback
@@ -35,8 +36,22 @@ class ActionManager:
                     valid_actions.append(action.get("tool"))
 
         return valid_actions
+    
+    def getActionDesc(self, tool_call: ChatCompletionMessageToolCall, projected_states: dict[str, dict]):
+        """ summarize functions input as text """
+        if tool_call.function.name in self.actions:
+            action_descriptor = self.actions.get(tool_call.function.name)
+            function_args = json.loads(tool_call.function.arguments if tool_call.function.arguments else "null")
+            input_template = action_descriptor.get("input_template")
+            if input_template:
+                input_desc = input_template(function_args, projected_states)
+                # filter all duplicate whitespaces
+                input_desc = ' '.join(input_desc.split())
+                return input_desc
+        return None
+    
 
-    def runAction(self, tool_call, projected_states: dict[str, dict]):
+    def runAction(self, tool_call: ChatCompletionMessageToolCall, projected_states: dict[str, dict]):
         """get function response and fetch matching python function, then call function using arguments provided"""
         function_result = None
 
@@ -64,10 +79,11 @@ class ActionManager:
         }
 
     # register function
-    def registerAction(self, name, description, parameters, method, action_type="ship"):
+    def registerAction(self, name, description, parameters, method, action_type="ship", input_template: Callable[[dict, dict], str]|None=None):
         self.actions[name] = {
             "method": method,
             "type": action_type,
+            "input_template": input_template,
             "tool": {
                 "type": "function",
                 "function": {

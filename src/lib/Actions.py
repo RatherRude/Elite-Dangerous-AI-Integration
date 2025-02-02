@@ -1606,7 +1606,7 @@ def filter_station_response(request, response):
 def station_finder(obj):
     # Initialize the filters
     request_body = prepare_station_request(obj)
-    log('info', 'obj', obj)
+    log('debug', 'station search input', obj)
 
     url = "https://spansh.co.uk/api/stations/search"
     try:
@@ -3028,7 +3028,19 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction(
         'system_finder',
         "Find a star system based on allegiance, government, state, power, primary economy, and more. Ask for unknown values and ensure they are filled out.",
-        {
+        input_template=lambda i, s: f"""Searching for systems
+            {'called ' + i.get('name', '') if i.get('name', '') else ''}
+            {'with allegiance to ' + ' and '.join(i.get('allegiance', [])) if i.get('allegiance', []) else ''}
+            {'in state ' + ' and '.join(i.get('state', [])) if i.get('state', []) else ''}
+            {'with government type ' + ' and '.join(i.get('government', [])) if i.get('government', []) else ''}
+            {'controlled by ' + ' and '.join(i.get('power', [])) if i.get('power', []) else ''}
+            {'with primary economy type ' + ' and '.join(i.get('primary_economy', [])) if i.get('primary_economy', []) else ''}
+            {'with security level ' + ' and '.join(i.get('security', [])) if i.get('security', []) else ''}
+            {'in Thargoid war state ' + ' and '.join(i.get('thargoid_war_state', [])) if i.get('thargoid_war_state', []) else ''}
+            {'with a population over ' + i.get('population', {}).get('comparison', '') + ' ' + str(i.get('population', {}).get('value', '')) if i.get('population', {}) else ''}
+            near {i.get('reference_system', 'Sol')}.
+        """, 
+        parameters={
             "type": "object",
             "properties": {
                 "reference_system": {
@@ -3121,13 +3133,25 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             },
             "required": ["reference_system"]
         },
-        system_finder,
-        'web'
+        method=system_finder,
+        action_type='web'
     )
     actionManager.registerAction(
         'station_finder',
         "Find a station for commodities, modules and ships. Ask for unknown values and make sure they are known.",
-        {
+        input_template=lambda i, s: f"""Searching for stations
+            {'called ' + i.get('name', '') if i.get('name', '') else ''}
+            {'with large pad' if i.get('has_large_pad', False) else ''}
+            {'with material traders for ' + ' and '.join(i.get('material_trader', [])) + ' Materials' if i.get('material_trader', []) else ''}
+            {'with technology brokers for ' + ' and '.join(i.get('technology_broker', [])) + ' Technology' if i.get('technology_broker', []) else ''}
+            {'selling a ' + ' and a '.join([f"{module['name']} module class {module.get('class', 'any')} {module.get('class', '')} " for module in i.get('modules', [])]) if i.get('modules', []) else ''}
+            {'selling a ' + ' and a '.join([f"{ship['name']}" for ship in i.get('ships', [])]) if i.get('ships', []) else ''}
+            {' and '.join([f"where we can {market.get('transaction')} {market.get('amount', 'some')} {market.get('name')}" for market in i.get('market', [])])}
+            {'with a ' + ' and '.join([service['name'] for service in i.get('services', [])]) if i.get('services', []) else ''}
+            near {i.get('reference_system', 'Sol')}
+            {'within ' + str(i.get('distance', 50000)) + ' light years' if i.get('distance', 50000) else ''}.
+        """, 
+        parameters={
             "type": "object",
             "properties": {
                 "reference_system": {
@@ -3279,13 +3303,20 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "has_large_pad"
             ]
         },
-        station_finder,
-        'web'
+        method=station_finder,
+        action_type='web'
     )
     actionManager.registerAction(
         'body_finder',
         "Find a planet or star of a certain type or with a landmark. Ask for unknown values and make sure they are known.",
-        {
+        input_template=lambda i, s: f"""Searching for bodies 
+            {'called ' + i.get('name', '') if i.get('name', '') else ''}
+            {'of subtype ' + ', '.join(i.get('subtype', [])) if i.get('subtype', []) else ''}
+            {'with a landmark of subtype ' + ', '.join(i.get('landmark_subtype', [])) if i.get('landmark_subtype', []) else ''}
+            near {i.get('reference_system', 'Sol')}
+            {'within ' + str(i.get('distance', 50000)) + ' light years.' if i.get('distance', 50000) else ''}.
+        """, 
+        parameters={
             "type": "object",
             "properties": {
                 "reference_system": {
@@ -3321,8 +3352,8 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "has_large_pad"
             ]
         },
-        body_finder,
-        'web'
+        method=body_finder,
+        action_type='web'
     )
 
     actionManager.registerAction('textMessage', "Send message to commander or local", {
