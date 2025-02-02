@@ -505,15 +505,13 @@ class App:
             row=get_same(), column=1, sticky=tk.W, padx=80, pady=5)
 
         self.pptButton = tk.Button(self.main_frame, text="Key Binding: Press any key", font=('Helvetica', 10))
-        self.pptButton.grid(row=get_same(), column=1, sticky=tk.W, padx=(360, 10), pady=5)
+        self.pptButton.grid(row=get_same(), column=1, sticky=tk.W, padx=(370, 10), pady=5)
         self.pptButton.bind("<Button-1>", self.on_label_click)
 
         self.mute_during_response_var = tk.BooleanVar()
         self.mute_during_response_var.set(False)  # Default value
-        self.muteResponseCheckbox = tk.Checkbutton(self.main_frame, text="Mute during response", variable=self.mute_during_response_var)
-        self.muteResponseCheckbox.grid(row=get_same(), column=1, sticky=tk.W, padx=(360, 10), pady=5)
-        tk.Label(self.main_frame, text="Mutes the game audio during AI response", font="Helvetica 10 italic").grid(
-            row=get_same(), column=1, sticky=tk.W, padx=80, pady=5)
+        self.muteResponseCheckbox = tk.Checkbutton(self.main_frame, text="Mute microphone during AI response", variable=self.mute_during_response_var)
+        self.muteResponseCheckbox.grid(row=get_same(), column=1, sticky=tk.W, padx=(370, 10), pady=5)
 
         # Continue Conversation
         tk.Label(self.main_frame, text="Resume Chat:", font=('Helvetica', 10)).grid(row=get_next(), column=0, sticky=tk.W)
