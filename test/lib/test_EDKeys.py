@@ -13,6 +13,8 @@ def mock_directinput(monkeypatch):
     monkeypatch.setattr('src.lib.EDKeys.PressKey', mock_press)
     monkeypatch.setattr('src.lib.EDKeys.ReleaseKey', mock_release)
     
+    monkeypatch.setattr('platform.system', lambda: 'Windows')
+    
     return {
         'PressKey': mock_press,
         'ReleaseKey': mock_release
