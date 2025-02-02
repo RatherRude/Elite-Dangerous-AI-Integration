@@ -86,4 +86,7 @@ jobs:
         with:
           run: |
             python --version
+            chmod +x ./dist/start.sh
+            chmod +x ./dist/Chat/Chat
+            chmod +x ./dist/AIGUI/AIGUI
             python e2e/test_ChatExecutable.py
