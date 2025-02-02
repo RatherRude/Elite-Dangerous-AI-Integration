@@ -1,10 +1,11 @@
-from io import BytesIO
+from math import e
 import queue
 import re
 from sys import platform
 import threading
 from time import sleep
 import traceback
+from turtle import done
 from typing import Literal, Optional, Union, final
 
 from num2words import num2words
@@ -16,7 +17,26 @@ import miniaudio
 
 from .Logger import log
 
-
+class Mp3Stream(miniaudio.StreamableSource):
+    def __init__(self, gen) -> None:
+        super().__init__()
+        self.gen = gen
+        self.data = b""
+        self.offset = 0
+    
+    def read(self, num_bytes: int) -> bytes:
+        data = b""
+        try:
+            while True:
+                chunk = self.gen.__next__()
+                if isinstance(chunk, dict) and chunk["type"] == "audio":
+                    data += chunk["data"]
+                if len(data) >= 2*720: # TODO: Find a good value here
+                    return data
+        except StopIteration:
+            self.close()
+        return data
+    
 @final
 class TTS:
     def __init__(self, openai_client: Optional[openai.OpenAI] = None, provider: Literal["none", "edge-tts", "openai"]='openai', model='tts-1', voice="nova", speed: Union[str,float]=1):
@@ -93,24 +113,21 @@ class TTS:
             for _ in range(int(audio_duration * 24_000 / 1024)):
                 yield b"\x00" * 1024
         elif self.provider == "edge-tts":
-            # find the first occurrence of a sentence .?! followed by whitespace or a newline
-            first_sentence_end = re.search(r"([.?!]\s+|\n)", text)
-            first_sentence = text[:first_sentence_end.end()] if first_sentence_end else text
-            remaining_sentences = text[first_sentence_end.end():] if first_sentence_end else ""
-            for sentence in [first_sentence, remaining_sentences]:
-                log('info', f'Synthesizing sentence: {sentence}')
-                rate = f"+{int((float(self.speed) - 1) * 100)}%" if float(self.speed) > 1 else f"-{int((1 - float(self.speed)) * 100)}%"
-                response = edge_tts.Communicate(sentence, voice=self.voice, rate=rate)
-                chunks = []
-                for chunk in response.stream_sync():
-                    if chunk["type"] == "audio":
-                        chunks.append(chunk["data"])
-                audio_mp3 = b"".join(chunks)
-                audio = miniaudio.decode(audio_mp3, output_format=miniaudio.SampleFormat.SIGNED16, nchannels=1, sample_rate=24000)
-                data = audio.samples.tobytes()
-                # iterate over the data in chunks of 1024 bytes
-                for i in range(0, len(data), 1024):
-                    yield data[i:i + 1024]
+            log('info', f'Synthesizing sentence: {text}')
+            rate = f"+{int((float(self.speed) - 1) * 100)}%" if float(self.speed) > 1 else f"-{int((1 - float(self.speed)) * 100)}%"
+            response = edge_tts.Communicate(text, voice=self.voice, rate=rate)
+            pcm_stream = miniaudio.stream_any(
+                source = Mp3Stream(response.stream_sync()), 
+                source_format = miniaudio.FileFormat.MP3, 
+                output_format = miniaudio.SampleFormat.SIGNED16, 
+                nchannels = 1, 
+                sample_rate = 24000,
+                frames_to_read=1024 // self.p.get_sample_size(pyaudio.paInt16) # 1024 bytes
+            )
+        
+            for i in pcm_stream:
+                yield i.tobytes()
+                
         elif self.openai_client:
             with self.openai_client.audio.speech.with_streaming_response.create(
                     model=self.model,
