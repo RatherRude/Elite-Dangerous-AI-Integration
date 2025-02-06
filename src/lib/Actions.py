@@ -242,7 +242,7 @@ def landing_gear_toggle(args):
     checkStatus(args['projected_states'], {'Docked':True,'Landed':True,'Supercruise':True})
     setGameWindowActive()
     keys.send('LandingGearToggle')
-    return f"Landing gear {'deployed ' if not args.get('projected_states').get('CurrentStatus').get('flags').get('HardpointsDeployed') else 'retracted'}"
+    return f"Landing gear {'deployed ' if not args.get('projected_states').get('CurrentStatus').get('flags').get('LandingGearDown') else 'retracted'}"
 
 
 def use_shield_cell(args):
@@ -787,10 +787,10 @@ def send_message(obj):
 
             if not obj.get("recipient") or obj.get("recipient").lower() == "local":
                 typewrite("/local ", interval=0.02)
-                return_message += " to local chat."
+                return_message += " to local chat"
             else:
                 typewrite(f"/d {obj.get('recipient')} ", interval=0.02)
-                return_message += f" to {obj.get('recipient')}."
+                return_message += f" to {obj.get('recipient')}"
 
             sleep(0.05)
             typewrite(chunk, interval=0.02)
@@ -801,7 +801,7 @@ def send_message(obj):
             sleep(0.05)
             keys.send_key('Up', 'Key_Enter')
 
-    return return_message
+    return return_message + '.'
 
 
 def get_visuals(obj):
