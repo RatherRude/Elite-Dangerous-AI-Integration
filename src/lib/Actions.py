@@ -712,12 +712,14 @@ def check_trade_planner_job(job_id):
 
 
 def trade_planner_create_thread(obj):
+    requires_large_pad = obj.get('projected_states').get('ShipInfo').get('state').get('LandingPadSize') == 'L'
     dict = {'max_system_distance': 10000000,
             'allow_prohibited': False,
             'allow_planetary': False,
             'allow_player_owned': False,
             'unique': False,
-            'permit': False}
+            'permit': False,
+            'requires_large_pad': requires_large_pad}
 
     dict.update(obj)
 
@@ -1452,7 +1454,8 @@ def prepare_station_request(obj):
         }
     }
     # Add optional filters if they exist
-    if obj.get("has_large_pad", True):
+    requires_large_pad = obj.get('projected_states').get('ShipInfo').get('state').get('LandingPadSize') == 'L'
+    if requires_large_pad:
         filters["has_large_pad"] = {"value": True}
     if "material_trader" in obj and obj["material_trader"]:
         filters["material_trader"] = {"value": obj["material_trader"]}
@@ -1551,7 +1554,6 @@ def filter_station_response(request, response):
             "system": result["system_name"],
             "distance": result["distance"],
             "orbit": result["distance_to_arrival"],
-            "has_large_pad": result["has_large_pad"],
             "is_planetary": result["is_planetary"]
         }
 
@@ -3005,10 +3007,6 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                     "type": "integer",
                     "description": "Maximum cargo capacity in tons."
                 },
-                "requires_large_pad": {
-                    "type": "boolean",
-                    "description": "Whether the station must have a large landing pad."
-                },
             },
             "required": [
                 "system",
@@ -3017,7 +3015,6 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "max_hop_distance",
                 "starting_capital",
                 "max_cargo",
-                "requires_large_pad",
             ]
         },
         trade_planner,
@@ -3137,11 +3134,6 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "name": {
                     "type": "string",
                     "description": "Required string in station name"
-                },
-                "has_large_pad": {
-                    "type": "boolean",
-                    "description": "If the ship requires a large landing pad",
-                    "example": False
                 },
                 "distance": {
                     "type": "number",
@@ -3275,8 +3267,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 }
             },
             "required": [
-                "reference_system",
-                "has_large_pad"
+                "reference_system"
             ]
         },
         station_finder,
@@ -3317,8 +3308,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 },
             },
             "required": [
-                "reference_system",
-                "has_large_pad"
+                "reference_system"
             ]
         },
         body_finder,
@@ -3354,6 +3344,6 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
 
 
 if __name__ == "__main__":
-    req = prepare_station_request({'reference_system': 'Muang', 'has_large_pad': False,
+    req = prepare_station_request({'reference_system': 'Muang',
                                    'market': [{'name': 'gold', 'amount': 10, 'transaction': 'Buy'}]})
     print(json.dumps(req))
