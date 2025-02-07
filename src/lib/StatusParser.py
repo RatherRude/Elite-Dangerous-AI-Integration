@@ -1,15 +1,15 @@
 import json
 import os
+import queue
+import threading
 import time
 import traceback
-from datetime import datetime, timedelta
-import queue
-from sys import platform
-import threading
 from time import sleep
-from typing import Any, Literal, Optional, Union
-from .Logger import log
+from typing import Any, Literal, Optional
 from typing import TypedDict
+
+from .Logger import log
+
 
 class BaseFlags(TypedDict):
     Docked: bool

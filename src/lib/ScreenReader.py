@@ -1,4 +1,4 @@
-from sys import platform
+import platform
 from time import sleep
 from typing import final
 
@@ -213,7 +213,7 @@ class ScreenReader:
             return None
 
         def get_game_window_handle(self):
-            if platform != "win32":
+            if platform.system() != 'Windows':
                 return None
             import win32gui
 
@@ -221,7 +221,7 @@ class ScreenReader:
             return handle
 
         def setGameWindowActive(self):
-            if platform != "win32":
+            if platform.system() != 'Windows':
                 return None
             handle = self.get_game_window_handle()
             import win32gui
@@ -237,7 +237,7 @@ class ScreenReader:
                 log("info", "Unable to find Elite game window")
 
         def screenshot(self, new_height: int = 720):
-            if platform != "win32":
+            if platform.system() != 'Windows':
                 return None
             handle = self.get_game_window_handle()
             import win32gui

@@ -1,5 +1,5 @@
 import json
-from sys import platform
+import platform
 import threading
 from time import sleep
 import traceback
@@ -154,6 +154,8 @@ def galaxy_map_open(args):
 
     setGameWindowActive()
 
+    if args.get('projected_states').get('CurrentStatus').get('GuiFocus') in ['SAA','FSS','Codex','Orrery','SystemMap','StationServices']:
+        raise Exception('Galaxy map can not be opened currently, the active GUI needs to be closed first')
     # Galaxy map already open, so we close it
     if args.get('projected_states').get('CurrentStatus').get('GuiFocus') == 'GalaxyMap':
         keys.send('GalaxyMapOpen')
@@ -533,7 +535,7 @@ handle = None
 
 def get_game_window_handle():
     global handle
-    if platform != "win32":
+    if platform.system() != 'Windows':
         return None
     import win32gui
 
@@ -543,7 +545,7 @@ def get_game_window_handle():
 
 
 def setGameWindowActive():
-    if platform != "win32":
+    if platform.system() != 'Windows':
         return None
     handle = get_game_window_handle()
     import win32gui
@@ -560,7 +562,7 @@ def setGameWindowActive():
 
 
 def screenshot(new_height: int = 720):
-    if platform != "win32":
+    if platform.system() != 'Windows':
         return None
     handle = get_game_window_handle()
     import win32gui
@@ -712,7 +714,7 @@ def check_trade_planner_job(job_id):
 
 
 def trade_planner_create_thread(obj):
-    requires_large_pad = obj.get('projected_states').get('ShipInfo').get('state').get('LandingPadSize') == 'L'
+    requires_large_pad = obj.get('projected_states').get('ShipInfo').get('LandingPadSize') == 'L'
     dict = {'max_system_distance': 10000000,
             'allow_prohibited': False,
             'allow_planetary': False,
@@ -1454,7 +1456,7 @@ def prepare_station_request(obj):
         }
     }
     # Add optional filters if they exist
-    requires_large_pad = obj.get('projected_states').get('ShipInfo').get('state').get('LandingPadSize') == 'L'
+    requires_large_pad = obj.get('projected_states').get('ShipInfo').get('LandingPadSize') == 'L'
     if requires_large_pad:
         filters["has_large_pad"] = {"value": True}
     if "material_trader" in obj and obj["material_trader"]:
