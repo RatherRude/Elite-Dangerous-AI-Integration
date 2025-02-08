@@ -154,7 +154,8 @@ def galaxy_map_open(args):
 
     setGameWindowActive()
 
-    if args.get('projected_states').get('CurrentStatus').get('GuiFocus') in ['SAA','FSS','Codex','Orrery','SystemMap','StationServices']:
+
+    if args.get('projected_states', {}).get('CurrentStatus', {}).get('GuiFocus', '') in ['SAA','FSS','Codex','Orrery','SystemMap','StationServices']:
         raise Exception('Galaxy map can not be opened currently, the active GUI needs to be closed first')
     # Galaxy map already open, so we close it
     if args.get('projected_states').get('CurrentStatus').get('GuiFocus') == 'GalaxyMap':
@@ -790,8 +791,11 @@ def send_message(obj):
                 raise Exception("Can not send message.")
 
             if not obj.get("recipient") or obj.get("recipient").lower() == "local":
-                typewrite("/local ", interval=0.02)
+                typewrite("/l ", interval=0.02)
                 return_message += " to local chat"
+            elif obj.get("recipient").lower() == "wing":
+                typewrite("/w ", interval=0.02)
+                return_message += " to wing chat"
             else:
                 typewrite(f"/d {obj.get('recipient')} ", interval=0.02)
                 return_message += f" to {obj.get('recipient')}"
@@ -3326,8 +3330,10 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             },
             "recipient": {
                 "type": "string",
-                "description": "Only use if recipient is another Commander. Uses local chat if not set."
-            }
+                "description": "local, wing or Commander name.",
+                "example": "wing",
+                "enum": ['local', 'wing', 'commander_name']
+            },
         },
         "required": ["message"]
     }, send_message, 'global')
