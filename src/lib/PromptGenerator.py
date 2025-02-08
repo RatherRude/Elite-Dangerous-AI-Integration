@@ -603,8 +603,10 @@ class PromptGenerator:
             conversational_pieces.append(
                 {
                     "role": "system",
-                    "content": "The video game Elite: Dangerous is your reality. "
-                    + "I will provide game events in parentheses; do not create new ones. "
+                    "content": "This universe is your reality. "
+                    + "You do not ask questions. You do not initiate conversations. You respond only when addressed. "
+                    + "Your purpose is to provide information, status updates, and execute commands as required. Only respond in a single sentence. "
+                    + "I will provide game events in parentheses; do not create new ones. Stay consistent with the lived experience. "
                     + "Do not hallucinate any information that is not given to you. Do not use markdown in your responses. "
                     + self.character_prompt.format(commander_name=self.commander_name),
                 }
