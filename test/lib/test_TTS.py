@@ -67,11 +67,11 @@ def mock_edge_tts(monkeypatch):
 @pytest.fixture
 def mock_miniaudio(monkeypatch):
     """Mock miniaudio"""
-    mock_audio = MagicMock()
-    mock_audio.decode.return_value = MagicMock(samples=np.array(b'\x00\x00' * 24_000))
+    mock_stream = MagicMock()
+    mock_stream.stream_any.return_value = [np.int16([0,0]), np.int16([0,0])]
     
-    monkeypatch.setattr('miniaudio.decode', mock_audio.decode)
-    return mock_audio
+    monkeypatch.setattr('miniaudio.stream_any', mock_stream.stream_any)
+    return mock_stream
 
 def test_openai_tts_playback(mock_pyaudio, mock_openai):
     """Test OpenAI TTS playback"""
@@ -91,8 +91,8 @@ def test_edge_tts_playback(mock_pyaudio, mock_miniaudio, mock_openai):
     tts =  TTS(None, provider="edge-tts", model="edge-tts", voice="en-GB-SoniaNeural", speed=1)
     tts.say("Hello world")
     
-    while not mock_pyaudio['stream'].write.call_count >= 10:
+    while not mock_pyaudio['stream'].write.call_count >= 2:
         sleep(0.1)
     
-    assert mock_miniaudio.decode.call_count == 1
-    assert mock_pyaudio['stream'].write.call_count >= 10
+    assert mock_miniaudio.stream_any.call_count == 1
+    assert mock_pyaudio['stream'].write.call_count == 2

@@ -57,6 +57,7 @@ PyScreeze==0.1.30
 pysilero-vad==2.0.1
 sqlean.py==3.47.0
 pytest==8.3.3
+pytest-timeout==2.3.1
 pyttsx3==2.90
 pytweening==1.2.0
 pywin32==306 ; sys_platform == "win32"

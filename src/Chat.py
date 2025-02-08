@@ -101,12 +101,17 @@ def reply(client: OpenAI, events: list[Event], new_events: list[Event], projecte
 
     response_actions = completion.choices[0].message.tool_calls
     if response_actions:
-        action_results = []
+        action_descriptions: list[str | None] = []
+        action_results: list[Any] = []
         for action in response_actions:
+            action_input_desc =  action_manager.getActionDesc(action, projected_states)
+            action_descriptions.append(action_input_desc)
+            if action_input_desc:
+                tts.say(action_input_desc)
+                event_manager.add_conversation_event('assistant', action_input_desc)
             action_result = action_manager.runAction(action, projected_states)
             action_results.append(action_result)
-
-        event_manager.add_tool_call([tool_call.model_dump() for tool_call in response_actions], action_results)
+            event_manager.add_tool_call([action.model_dump()], [action_result])
 
 
 useTools = False

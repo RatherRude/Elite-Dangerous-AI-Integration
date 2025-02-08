@@ -23,7 +23,7 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m pytest test -v
+          python -m pytest --timeout 10 test -v
 
       - name: Install pyinstaller
         run: |
