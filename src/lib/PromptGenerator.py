@@ -342,7 +342,7 @@ class PromptGenerator:
         content = event.content
         event_name = content.get('event')
         if event_name == 'ReceiveText':
-            return f"Message received from {content.get('From')} on channel {content.get('Channel')}: {content.get('Message_Localized', content.get('Message'))}"
+            return f'Message received from {content.get('From_Localised',content.get('From'))} on channel {content.get('Channel')}: "{content.get('Message_Localised', content.get('Message'))}"'
         if event_name == 'FSDJump':
             return f"{self.commander_name} jumped into {content.get('StarSystem')}"
         if event_name == 'ShipTargeted':
@@ -365,7 +365,7 @@ class PromptGenerator:
         if event_name == 'Market':
             return f"{self.commander_name} is accessing the stations market."
         if event_name == 'Outfitting':
-            return f"{self.commander_name} is accessing the stations Outfitting."
+            return f"{self.commander_name} is accessing the stations outfitting."
         if event_name == 'Docked':
             return f"Now docked at {content.get('StationType')} {content.get('StationName')}"
 
@@ -374,30 +374,30 @@ class PromptGenerator:
         if message:
             return {
                 "role": "user",
-                "content": f"({timeoffset}{', IMPORTANT' if is_important else ''}: {message}\n)",
+                "content": f"[{'IMPORTANT ' if is_important else ''}Game Event, {timeoffset}] {message}",
             }
 
         return {
             "role": "user",
-            "content": f"({timeoffset}{', IMPORTANT' if is_important else ''}: {allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)}\nDetails:\n{yaml.dump(event.content)}\n)",
+            "content": f"[{'IMPORTANT ' if is_important else ''}Game Event, {timeoffset}] {allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)}\n{yaml.dump(event.content)}",
         }
 
     def simple_event_message(self, event: GameEvent, timeoffset: str):
         return {
             "role": "user",
-            "content": f"({timeoffset}: {allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)})",
+            "content": f"[Game Event, {timeoffset}] {allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)}",
         }
 
-    def full_projectedevent_message(self, event: ProjectedEvent, is_important: bool):
+    def full_projectedevent_message(self, event: ProjectedEvent, timeoffset: str, is_important: bool):
         return {
             "role": "user",
-            "content": f"({'IMPORTANT: ' if is_important else ''}{allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)}\nDetails:\n{yaml.dump(event.content)}\n)",
+            "content": f"[{'IMPORTANT ' if is_important else ''}Game Event, {timeoffset}] {allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)}\n{yaml.dump(event.content)}",
         }
 
-    def simple_projectedevent_message(self, event: ProjectedEvent):
+    def simple_projectedevent_message(self, event: ProjectedEvent, timeoffset: str):
         return {
             "role": "user",
-            "content": f"({allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)})",
+            "content": f"[Game Event, {timeoffset}] {allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)}",
         }
 
     def status_messages(self, event: StatusEvent):
@@ -532,8 +532,6 @@ class PromptGenerator:
     def generate_status_message(self, projected_states: dict[str, dict]):
         status_entries: list[tuple[str, Any]] = []
 
-        log('info', projected_states.get('CurrentStatus', {}))
-
         active_mode, vehicle_status = self.generate_vehicle_status(projected_states.get('CurrentStatus', {}))
         status_entries.append((active_mode+" status", vehicle_status))
 
@@ -594,8 +592,9 @@ class PromptGenerator:
     def generate_prompt(self, events: list[Event], projected_states: dict[str, dict], pending_events: list[Event]):
         # Fine the most recent event
         last_event = events[-1]
-        # TODO game event are Z all other times are realtive... fix somehow
         reference_time = datetime.fromisoformat(last_event.content.get('timestamp') if isinstance(last_event, GameEvent) else last_event.timestamp)
+        if not reference_time.tzinfo:
+            reference_time = reference_time.astimezone()
 
         # Collect the last 50 conversational pieces
         conversational_pieces: list = list()
@@ -607,8 +606,8 @@ class PromptGenerator:
             is_pending = event in pending_events
             event_time = datetime.fromisoformat(
                 event.content.get('timestamp') if isinstance(event, GameEvent) else event.timestamp)
-
-            log('info', reference_time,event_time, event.timestamp)
+            if not event_time.tzinfo:
+                event_time = event_time.astimezone()
 
             time_offset = humanize.naturaltime(reference_time - event_time)
 
@@ -628,9 +627,9 @@ class PromptGenerator:
                 if event.content.get('event') in allGameEvents:
                     if len(conversational_pieces) < 5 or is_pending:
                         is_important = is_pending and event.content.get('event') in self.important_game_events
-                        conversational_pieces.append(self.full_projectedevent_message(event, is_important))
+                        conversational_pieces.append(self.full_projectedevent_message(event, time_offset, is_important))
                     elif len(conversational_pieces) < 20:
-                        conversational_pieces.append(self.simple_projectedevent_message(event))
+                        conversational_pieces.append(self.simple_projectedevent_message(event, time_offset))
                     else:
                         pass
                 else:

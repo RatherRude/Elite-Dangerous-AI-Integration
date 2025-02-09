@@ -60,11 +60,9 @@ class ActionManager:
         if function_descriptor:
             function_to_call = function_descriptor.get("method")
             function_args = json.loads(tool_call.function.arguments if tool_call.function.arguments else "null")
-            if isinstance(function_args, dict):
-                function_args['projected_states'] = projected_states
 
             try:
-                function_result = function_to_call(function_args)
+                function_result = function_to_call(function_args, projected_states)
             except Exception as e:
                 log("debug", "An error occurred during function:", e, traceback.format_exc())
                 function_result = "ERROR: " + repr(e)
@@ -79,7 +77,7 @@ class ActionManager:
         }
 
     # register function
-    def registerAction(self, name, description, parameters, method, action_type="ship", input_template: Callable[[dict, dict], str]|None=None):
+    def registerAction(self, name, description, parameters, method: Callable[[dict, dict], str], action_type="ship", input_template: Callable[[dict, dict], str]|None=None):
         self.actions[name] = {
             "method": method,
             "type": action_type,

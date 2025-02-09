@@ -34,34 +34,34 @@ def checkStatus(projected_states: dict[str, dict], blocked_status_dict: dict[str
 
 # Define functions for each action
 # General Ship Actions
-def fire_primary_weapon(args):
-    checkStatus(args['projected_states'], {'Docked':True,'Landed':True,'HudInAnalysisMode':True})
+def fire_primary_weapon(args, projected_states):
+    checkStatus(projected_states, {'Docked':True,'Landed':True,'HudInAnalysisMode':True})
     setGameWindowActive()
     keys.send('PrimaryFire', state=1)
     return f"successfully opened fire with primary weapons."
 
 
-def hold_fire_primary_weapon(args):
+def hold_fire_primary_weapon(args, projected_states):
     setGameWindowActive()
     keys.send('PrimaryFire', state=0)
     return f"successfully stopped firing with primary weapons."
 
 
-def fire_secondary_weapon(args):
-    checkStatus(args['projected_states'], {'Docked':True,'Landed':True,'HudInAnalysisMode':True})
+def fire_secondary_weapon(args, projected_states):
+    checkStatus(projected_states, {'Docked':True,'Landed':True,'HudInAnalysisMode':True})
     setGameWindowActive()
     keys.send('SecondaryFire', state=1)
     return f"successfully opened fire with secondary weapons."
 
 
-def hold_fire_secondary_weapon(args):
+def hold_fire_secondary_weapon(args, projected_states):
     setGameWindowActive()
     keys.send('SecondaryFire', state=0)
     return f"successfully stopped firing with secondary weapons."
 
 
-def set_speed(args):
-    checkStatus(args['projected_states'], {'Docked':True,'Landed':True})
+def set_speed(args, projected_states):
+    checkStatus(projected_states, {'Docked':True,'Landed':True})
     setGameWindowActive()
 
     if 'speed' in args:
@@ -73,92 +73,92 @@ def set_speed(args):
     return f"Speed set to {args['speed']}%."
 
 
-def deploy_heat_sink(args):
-    checkStatus(args['projected_states'], {'Docked':True,'Landed':True})
+def deploy_heat_sink(args, projected_states):
+    checkStatus(projected_states, {'Docked':True,'Landed':True})
     setGameWindowActive()
     keys.send('DeployHeatSink')
     return f"Heat sink deployed"
 
 
-def deploy_hardpoint_toggle(args):
-    checkStatus(args['projected_states'], {'Docked':True,'Landed':True})
+def deploy_hardpoint_toggle(args, projected_states):
+    checkStatus(projected_states, {'Docked':True,'Landed':True})
     setGameWindowActive()
     keys.send('DeployHardpointToggle')
-    return f"Hardpoints {'deployed ' if not args.get('projected_states').get('CurrentStatus').get('flags').get('HardpointsDeployed') else 'retracted'}"
+    return f"Hardpoints {'deployed ' if not projected_states.get('CurrentStatus').get('flags').get('HardpointsDeployed') else 'retracted'}"
 
 
-def increase_engines_power(args):
+def increase_engines_power(args, projected_states):
     setGameWindowActive()
     keys.send('IncreaseEnginesPower', None, args['pips'])
     return f"Engine power increased"
 
 
-def increase_weapons_power(args):
+def increase_weapons_power(args, projected_states):
     setGameWindowActive()
     keys.send('IncreaseWeaponsPower', None, args['pips'])
     return f"Weapon power increased"
 
 
-def increase_systems_power(args):
+def increase_systems_power(args, projected_states):
     setGameWindowActive()
     keys.send('IncreaseSystemsPower', None, args['pips'])
     return f"Systems power increased"
 
 
-def cycle_next_target(args):
+def cycle_next_target(args, projected_states):
     setGameWindowActive()
     keys.send('CycleNextTarget')
     return f"Next target cycled"
 
 
-def cycle_fire_group_next(args):
+def cycle_fire_group_next(args, projected_states):
     setGameWindowActive()
     keys.send('CycleFireGroupNext')
-    # return f"New active fire group {args.get('projected_states').get('CurrentStatus').get('Firegroup')}" @ToDo: Firegoup not set in status projection?
+    # return f"New active fire group {projected_states.get('CurrentStatus').get('Firegroup')}" @ToDo: Firegoup not set in status projection?
     return f"Fire group cycled"
 
-def ship_spot_light_toggle(args):
+def ship_spot_light_toggle(args, projected_states):
     setGameWindowActive()
     keys.send('ShipSpotLightToggle')
-    return f"Ship spotlight {'activated ' if not args.get('projected_states').get('CurrentStatus').get('flags').get('LightsOn') else 'deactivated'}"
+    return f"Ship spotlight {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('LightsOn') else 'deactivated'}"
 
 
-def fire_chaff_launcher(args):
-    checkStatus(args['projected_states'], {'Docked':True,'Landed':True,'Supercruise':True})
+def fire_chaff_launcher(args, projected_states):
+    checkStatus(projected_states, {'Docked':True,'Landed':True,'Supercruise':True})
     setGameWindowActive()
     keys.send('FireChaffLauncher')
     return f"Chaff launcher fired"
 
 
-def night_vision_toggle(args):
+def night_vision_toggle(args, projected_states):
     setGameWindowActive()
     keys.send('NightVisionToggle')
-    return f"Night vision {'activated ' if not args.get('projected_states').get('CurrentStatus').get('flags').get('NightVision') else 'deactivated'}"
+    return f"Night vision {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('NightVision') else 'deactivated'}"
 
 
-def select_highest_threat(args):
+def select_highest_threat(args, projected_states):
     setGameWindowActive()
     keys.send('SelectHighestThreat')
     return f"Highest threat (if one exists) is now target locked"
 
 
-def charge_ecm(args):
-    checkStatus(args['projected_states'], {'Docked':True,'Landed':True,'Supercruise':True})
+def charge_ecm(args, projected_states):
+    checkStatus(projected_states, {'Docked':True,'Landed':True,'Supercruise':True})
     setGameWindowActive()
     keys.send('ChargeECM')
     return "ECM is attempting to charge"
 
 
-def galaxy_map_open(args):
+def galaxy_map_open(args, projected_states):
     from pyautogui import typewrite
 
     setGameWindowActive()
 
 
-    if args.get('projected_states', {}).get('CurrentStatus', {}).get('GuiFocus', '') in ['SAA','FSS','Codex','Orrery','SystemMap','StationServices']:
+    if projected_states.get('CurrentStatus', {}).get('GuiFocus', '') in ['SAA','FSS','Codex','Orrery','SystemMap','StationServices']:
         raise Exception('Galaxy map can not be opened currently, the active GUI needs to be closed first')
     # Galaxy map already open, so we close it
-    if args.get('projected_states').get('CurrentStatus').get('GuiFocus') == 'GalaxyMap':
+    if projected_states.get('CurrentStatus').get('GuiFocus') == 'GalaxyMap':
         keys.send('GalaxyMapOpen')
         sleep(1)
 
@@ -218,16 +218,16 @@ def galaxy_map_open(args):
     return f"Galaxy map opened/closed"
 
 
-def galaxy_map_close(args):
+def galaxy_map_close(args, projected_states):
     setGameWindowActive()
 
-    if args.get('projected_states').get('CurrentStatus').get('GuiFocus') == 'GalaxyMap':
+    if projected_states.get('CurrentStatus').get('GuiFocus') == 'GalaxyMap':
         keys.send('GalaxyMapOpen')
 
     return f"Galaxy map closed"
 
 
-def system_map_open(args):
+def system_map_open(args, projected_states):
     setGameWindowActive()
     keys.send('SystemMapOpen')
     return f"System map opened/closed"
@@ -235,62 +235,62 @@ def system_map_open(args):
 
 # Mainship Actions
 
-def eject_all_cargo(args):
+def eject_all_cargo(args, projected_states):
     setGameWindowActive()
     keys.send('EjectAllCargo')
     return f"All cargo ejected"
 
 
-def landing_gear_toggle(args):
-    checkStatus(args['projected_states'], {'Docked':True,'Landed':True,'Supercruise':True})
+def landing_gear_toggle(args, projected_states):
+    checkStatus(projected_states, {'Docked':True,'Landed':True,'Supercruise':True})
     setGameWindowActive()
     keys.send('LandingGearToggle')
-    return f"Landing gear {'deployed ' if not args.get('projected_states').get('CurrentStatus').get('flags').get('LandingGearDown') else 'retracted'}"
+    return f"Landing gear {'deployed ' if not projected_states.get('CurrentStatus').get('flags').get('LandingGearDown') else 'retracted'}"
 
 
-def use_shield_cell(args):
+def use_shield_cell(args, projected_states):
     setGameWindowActive()
     keys.send('UseShieldCell')
     return f"Shield cell used"
 
 
-def toggle_cargo_scoop(args):
-    checkStatus(args['projected_states'], {'Docked':True,'Landed':True,'Supercruise':True})
+def toggle_cargo_scoop(args, projected_states):
+    checkStatus(projected_states, {'Docked':True,'Landed':True,'Supercruise':True})
     setGameWindowActive()
     keys.send('ToggleCargoScoop')
-    return f"Cargo scoop {'deployed ' if not args.get('projected_states').get('CurrentStatus').get('flags').get('CargoScoopDeployed') else 'retracted'}"
+    return f"Cargo scoop {'deployed ' if not projected_states.get('CurrentStatus').get('flags').get('CargoScoopDeployed') else 'retracted'}"
 
 
-def hyper_super_combination(args):
-    checkStatus(args['projected_states'], {'Docked':True,'Landed':True,'FsdMassLocked':True,'FsdCooldown':True,'FsdCharging':True})
+def hyper_super_combination(args, projected_states):
+    checkStatus(projected_states, {'Docked':True,'Landed':True,'FsdMassLocked':True,'FsdCooldown':True,'FsdCharging':True})
     setGameWindowActive()
 
     return_message = ""
 
-    if args.get('projected_states').get('CurrentStatus').get('flags').get('LandingGearDown'):
+    if projected_states.get('CurrentStatus').get('flags').get('LandingGearDown'):
         keys.send('LandingGearToggle')
         return_message += "Landing Gear Retracted. "
-    if args.get('projected_states').get('CurrentStatus').get('flags').get('CargoScoopDeployed'):
+    if projected_states.get('CurrentStatus').get('flags').get('CargoScoopDeployed'):
         keys.send('ToggleCargoScoop')
         return_message += "Cargo Scoop Retracted. "
-    if args.get('projected_states').get('CurrentStatus').get('flags').get('HardpointsDeployed'):
+    if projected_states.get('CurrentStatus').get('flags').get('HardpointsDeployed'):
         keys.send('DeployHardpointToggle')
         return_message += "Hardpoints Retracted. "
 
     keys.send('HyperSuperCombination')
     return return_message + "Frame Shift Drive is now charging for a jump"
 
-def undock(args):
+def undock(args, projected_states):
     setGameWindowActive()
     # Early return if we're not docked
-    if not args.get('projected_states').get('CurrentStatus').get('flags').get('Docked'):
+    if not projected_states.get('CurrentStatus').get('flags').get('Docked'):
         raise Exception("The ship currently isn't docked.")
 
 
-    if args.get('projected_states').get('CurrentStatus').get('GuiFocus') in ['InternalPanel', 'CommsPanel', 'RolePanel', 'ExternalPanel']:
+    if projected_states.get('CurrentStatus').get('GuiFocus') in ['InternalPanel', 'CommsPanel', 'RolePanel', 'ExternalPanel']:
         keys.send('UIFocus')
         sleep(1)
-    elif args.get('projected_states').get('CurrentStatus').get('GuiFocus') == 'NoFocus':
+    elif projected_states.get('CurrentStatus').get('GuiFocus') == 'NoFocus':
         pass
     else:
         raise Exception("The currently focused UI needs to be closed first")
@@ -301,14 +301,14 @@ def undock(args):
 
     return 'The ship is now undocking'
 
-def request_docking(args):
-    checkStatus(args['projected_states'], {'Supercruise':True})
+def request_docking(args, projected_states):
+    checkStatus(projected_states, {'Supercruise':True})
     screenreader = ScreenReader()
     setGameWindowActive()
-    if args.get('projected_states').get('CurrentStatus').get('GuiFocus') in ['NoFocus', 'InternalPanel', 'CommsPanel', 'RolePanel']:
+    if projected_states.get('CurrentStatus').get('GuiFocus') in ['NoFocus', 'InternalPanel', 'CommsPanel', 'RolePanel']:
         keys.send('FocusLeftPanel')
         sleep(1)
-    elif args.get('projected_states').get('CurrentStatus').get('GuiFocus') == 'ExternalPanel':
+    elif projected_states.get('CurrentStatus').get('GuiFocus') == 'ExternalPanel':
         pass
     else:
         raise Exception('Docking menu not available in current UI Mode.')
@@ -343,21 +343,21 @@ def request_docking(args):
 
 
 # Ship Launched Fighter Actions
-def order_request_dock(args):
+def order_request_dock(args, projected_states):
     setGameWindowActive()
     keys.send('OrderRequestDock')
     return f"Fighter has been ordered to dock"
 
 # Ship Launched Fighter Actions
-def fighter_request_dock(args):
+def fighter_request_dock(args, projected_states):
     setGameWindowActive()
     keys.send('OrderRequestDock')
     return f"A request for docking has been sent"
 
 
 # NPC Crew Order Actions
-def npc_order(args):
-    checkStatus(args['projected_states'], {'Docked':True,'Landed':True,'Supercruise':True})
+def npc_order(args, projected_states):
+    checkStatus(projected_states, {'Docked':True,'Landed':True,'Supercruise':True})
     setGameWindowActive()
     if 'orders' in args:
         for order in args['orders']:
@@ -366,156 +366,156 @@ def npc_order(args):
 
 
 # SRV Actions (Horizons)
-def toggle_drive_assist(args):
+def toggle_drive_assist(args, projected_states):
     setGameWindowActive()
     keys.send('ToggleDriveAssist')
 
-    # return f"Landing gear {'deployed ' if not args.get('projected_states').get('CurrentStatus').get('flags').get('HardpointsDeployed') else 'retracted'}"
-    return f"Drive assist has been {'activated ' if not args.get('projected_states').get('CurrentStatus').get('flags').get('SrvDriveAssist') else 'deactivated'}."
+    # return f"Landing gear {'deployed ' if not projected_states.get('CurrentStatus').get('flags').get('HardpointsDeployed') else 'retracted'}"
+    return f"Drive assist has been {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('SrvDriveAssist') else 'deactivated'}."
 
-def buggy_primary_fire(args):
-    checkStatus(args['projected_states'], {'SrvTurretRetracted':True})
+def buggy_primary_fire(args, projected_states):
+    checkStatus(projected_states, {'SrvTurretRetracted':True})
     setGameWindowActive()
     keys.send('BuggyPrimaryFireButton')
     return "Buggy primary fire triggered."
 
-def buggy_secondary_fire(args):
-    checkStatus(args['projected_states'], {'SrvTurretRetracted':True})
+def buggy_secondary_fire(args, projected_states):
+    checkStatus(projected_states, {'SrvTurretRetracted':True})
     setGameWindowActive()
     keys.send('BuggySecondaryFireButton')
     return "Buggy secondary fire triggered."
 
-def auto_break_buggy(args):
+def auto_break_buggy(args, projected_states):
     setGameWindowActive()
     keys.send('AutoBreakBuggyButton')
-    return "Auto-brake for buggy  {'activated ' if not args.get('projected_states').get('CurrentStatus').get('flags').get('SrvHandbrake') else 'deactivated'}."
+    return "Auto-brake for buggy  {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('SrvHandbrake') else 'deactivated'}."
 
-def headlights_buggy(args):
+def headlights_buggy(args, projected_states):
     setGameWindowActive()
     keys.send('HeadlightsBuggyButton')
-    return ("Buggy headlights {'activated ' if not args.get('projected_states').get('CurrentStatus').get('flags').get('LightsOn') else 'deactivated'} ."
-            +"Buggy high beam headlights {'activated ' if not args.get('projected_states').get('CurrentStatus').get('flags').get('SrvHighBeam') else 'deactivated'}")
+    return ("Buggy headlights {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('LightsOn') else 'deactivated'} ."
+            +"Buggy high beam headlights {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('SrvHighBeam') else 'deactivated'}")
 
-def toggle_buggy_turret(args):
-    checkStatus(args['projected_states'], {'SrvTurretRetracted':True})
+def toggle_buggy_turret(args, projected_states):
+    checkStatus(projected_states, {'SrvTurretRetracted':True})
     setGameWindowActive()
     keys.send('ToggleBuggyTurretButton')
-    return f"Buggy turret mode  {'activated ' if not args.get('projected_states').get('CurrentStatus').get('flags').get('SrvUsingTurretView') else 'deactivated'}."
+    return f"Buggy turret mode  {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('SrvUsingTurretView') else 'deactivated'}."
 
-def select_target_buggy(args):
+def select_target_buggy(args, projected_states):
     setGameWindowActive()
     keys.send('SelectTarget_Buggy')
     return "Buggy target selection activated."
 
-def increase_engines_power_buggy(args):
+def increase_engines_power_buggy(args, projected_states):
     setGameWindowActive()
     keys.send('IncreaseEnginesPower_Buggy', None, args['pips'])
     return "Buggy engine power increased."
 
-def increase_weapons_power_buggy(args):
+def increase_weapons_power_buggy(args, projected_states):
     setGameWindowActive()
     keys.send('IncreaseWeaponsPower_Buggy', None, args['pips'])
     return "Buggy weapons power increased."
 
-def increase_systems_power_buggy(args):
+def increase_systems_power_buggy(args, projected_states):
     setGameWindowActive()
     keys.send('IncreaseSystemsPower_Buggy', None, args['pips'])
     return "Buggy systems power increased."
 
-def reset_power_distribution_buggy(args):
+def reset_power_distribution_buggy(args, projected_states):
     setGameWindowActive()
     keys.send('ResetPowerDistribution_Buggy')
     return "Buggy power distribution reset."
 
-def toggle_cargo_scoop_buggy(args):
+def toggle_cargo_scoop_buggy(args, projected_states):
     setGameWindowActive()
     keys.send('ToggleCargoScoop_Buggy')
-    return f"Buggy cargo scoop {'deployed ' if not args.get('projected_states').get('CurrentStatus').get('flags').get('CargoScoopDeployed') else 'retracted'}"
+    return f"Buggy cargo scoop {'deployed ' if not projected_states.get('CurrentStatus').get('flags').get('CargoScoopDeployed') else 'retracted'}"
 
-def eject_all_cargo_buggy(args):
+def eject_all_cargo_buggy(args, projected_states):
     setGameWindowActive()
     keys.send('EjectAllCargo_Buggy')
     return "All cargo ejected from buggy."
 
-def recall_dismiss_ship_buggy(args):
+def recall_dismiss_ship_buggy(args, projected_states):
     setGameWindowActive()
     keys.send('RecallDismissShip')
     return "Remote ship has been recalled or dismissed."
 
-def galaxy_map_open_buggy(args):
+def galaxy_map_open_buggy(args, projected_states):
     setGameWindowActive()
     keys.send('GalaxyMapOpen_Buggy')
     return "Galaxy map opened."
 
-def system_map_open_buggy(args):
+def system_map_open_buggy(args, projected_states):
     setGameWindowActive()
     keys.send('SystemMapOpen_Buggy')
     return "System map opened."
 
 # On-Foot Actions (Odyssey)
-def primary_interact_humanoid(args):
+def primary_interact_humanoid(args, projected_states):
     setGameWindowActive()
     keys.send('HumanoidPrimaryInteractButton')
     return "Primary interaction initiated."
 
-def secondary_interact_humanoid(args):
+def secondary_interact_humanoid(args, projected_states):
     setGameWindowActive()
     keys.send('HumanoidSecondaryInteractButton')
     return "Secondary interaction initiated."
 
-def equip_humanoid(args):
-    checkStatus(args['projected_states'], {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
+def equip_humanoid(args, projected_states):
+    checkStatus(projected_states, {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
     if 'equipment' in args:
         keys.send(args['equipment'])
     return f"{args['equipment']} has been triggered."
 
-def toggle_flashlight_humanoid(args):
+def toggle_flashlight_humanoid(args, projected_states):
     setGameWindowActive()
     keys.send('HumanoidToggleFlashlightButton')
     return "Flashlight toggled."
 
-def toggle_night_vision_humanoid(args):
+def toggle_night_vision_humanoid(args, projected_states):
     setGameWindowActive()
     keys.send('HumanoidToggleNightVisionButton')
-    return f"Night vision {'activated ' if not args.get('projected_states').get('CurrentStatus').get('flags').get('NightVision') else 'deactivated'}"
+    return f"Night vision {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('NightVision') else 'deactivated'}"
 
-def toggle_shields_humanoid(args):
-    checkStatus(args['projected_states'], {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
+def toggle_shields_humanoid(args, projected_states):
+    checkStatus(projected_states, {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
     setGameWindowActive()
     keys.send('HumanoidToggleShieldsButton')
 
-    return f"Shields {'activated ' if not args.get('projected_states').get('CurrentStatus').get('flags').get('ShieldsUp') else 'deactivated'}."
+    return f"Shields {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('ShieldsUp') else 'deactivated'}."
 
-def clear_authority_level_humanoid(args):
-    checkStatus(args['projected_states'], {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
+def clear_authority_level_humanoid(args, projected_states):
+    checkStatus(projected_states, {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
     setGameWindowActive()
     keys.send('HumanoidClearAuthorityLevel')
     return "Authority level cleared."
 
-def health_pack_humanoid(args):
-    checkStatus(args['projected_states'], {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
+def health_pack_humanoid(args, projected_states):
+    checkStatus(projected_states, {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
     setGameWindowActive()
     keys.send('HumanoidHealthPack')
     return "Health pack used."
 
-def battery_humanoid(args):
-    checkStatus(args['projected_states'], {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
+def battery_humanoid(args, projected_states):
+    checkStatus(projected_states, {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
     setGameWindowActive()
     keys.send('HumanoidBattery')
     return "Battery used."
 
-def galaxy_map_open_humanoid(args):
+def galaxy_map_open_humanoid(args, projected_states):
     setGameWindowActive()
     keys.send('GalaxyMapOpen_Humanoid')
     return "Galaxy map opened."
 
-def system_map_open_humanoid(args):
+def system_map_open_humanoid(args, projected_states):
     setGameWindowActive()
     keys.send('SystemMapOpen_Humanoid')
     return "System map opened."
 
-def recall_dismiss_ship_humanoid(args):
-    checkStatus(args['projected_states'], {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
+def recall_dismiss_ship_humanoid(args, projected_states):
+    checkStatus(projected_states, {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
     setGameWindowActive()
     keys.send('HumanoidOpenAccessPanelButton', state=1)
     sleep(.3)
@@ -633,7 +633,7 @@ def format_image(image, query=""):
 
 
 # returns summary of galnet news
-def get_galnet_news(obj):
+def get_galnet_news(obj, projected_states):
     url = "https://cms.zaonce.net/en-GB/jsonapi/node/galnet_article?&sort=-published_at&page[offset]=0&page[limit]=10"
 
     try:
@@ -714,8 +714,8 @@ def check_trade_planner_job(job_id):
                                       'reason': 'The Spansh API took longer than 5 minutes to find a trade route. That should not happen, try again at a later point in time!'})
 
 
-def trade_planner_create_thread(obj):
-    requires_large_pad = obj.get('projected_states').get('ShipInfo').get('LandingPadSize') == 'L'
+def trade_planner_create_thread(obj, projected_states):
+    requires_large_pad = projected_states.get('ShipInfo').get('LandingPadSize') == 'L'
     dict = {'max_system_distance': 10000000,
             'allow_prohibited': False,
             'allow_planetary': False,
@@ -749,9 +749,9 @@ def trade_planner_create_thread(obj):
                                           'error': f'{e}'})
 
 
-def trade_planner(obj):
+def trade_planner(obj, projected_states):
     # start thread with first request
-    threading.Thread(target=trade_planner_create_thread, args=(obj,), daemon=True).start()
+    threading.Thread(target=trade_planner_create_thread, args=(obj,projected_states), daemon=True).start()
 
     return 'The information has been requested from the Spansh API. An answer will be provided once available. Please be patient.'
 
@@ -759,7 +759,7 @@ def trade_planner(obj):
 # Region: Trade Planner End
 
 
-def send_message(obj):
+def send_message(obj, projected_states):
     from pyautogui import typewrite
     setGameWindowActive()
 
@@ -770,9 +770,9 @@ def send_message(obj):
         start = 0
 
 
-        in_ship = obj.get('projected_states').get('CurrentStatus').get('flags').get('InMainShip') or obj.get('projected_states').get('CurrentStatus').get('flags').get('InFighter')
-        in_buggy = obj.get('projected_states').get('CurrentStatus').get('flags').get('InSRV')
-        on_foot = obj.get('projected_states').get('CurrentStatus').get('flags2').get('OnFoot')
+        in_ship = projected_states.get('CurrentStatus').get('flags').get('InMainShip') or projected_states.get('CurrentStatus').get('flags').get('InFighter')
+        in_buggy = projected_states.get('CurrentStatus').get('flags').get('InSRV')
+        on_foot = projected_states.get('CurrentStatus').get('flags2').get('OnFoot')
 
         while start < len(obj.get("message", "")):
             return_message = "Message sent"
@@ -812,7 +812,7 @@ def send_message(obj):
     return return_message + '.'
 
 
-def get_visuals(obj):
+def get_visuals(obj, projected_states):
     image = screenshot()
     if not image: return "Unable to take screenshot."
     if not vision_client: return "Vision not enabled."
@@ -852,7 +852,7 @@ def educated_guesses_message(search_query, valid_list):
 
 
 # Prepare a request for the spansh station finder
-def prepare_station_request(obj):
+def prepare_station_request(obj, projected_states):
     known_modules = [
         "AX Missile Rack",
         "AX Multi-Cannon",
@@ -1460,7 +1460,7 @@ def prepare_station_request(obj):
         }
     }
     # Add optional filters if they exist
-    requires_large_pad = obj.get('projected_states').get('ShipInfo').get('LandingPadSize') == 'L'
+    requires_large_pad = projected_states.get('ShipInfo').get('LandingPadSize') == 'L'
     if requires_large_pad:
         filters["has_large_pad"] = {"value": True}
     if "material_trader" in obj and obj["material_trader"]:
@@ -1611,9 +1611,9 @@ def filter_station_response(request, response):
     }
 
 
-def station_finder(obj):
+def station_finder(obj,projected_states):
     # Initialize the filters
-    request_body = prepare_station_request(obj)
+    request_body = prepare_station_request(obj, projected_states)
     log('debug', 'station search input', obj)
 
     url = "https://spansh.co.uk/api/stations/search"
@@ -1631,7 +1631,7 @@ def station_finder(obj):
                     "system_name":filtered_data["results"][0]["system"],
                     "start_navigation":True,
                     "details": filtered_data["results"][0]
-                })
+                }, projected_states)
             else:
                 return 'No stations were found, so no route was plotted.'
 
@@ -1641,7 +1641,7 @@ def station_finder(obj):
         return 'An error has occurred. The station finder seems currently not available.'
 
 
-def prepare_system_request(obj):
+def prepare_system_request(obj, projected_states):
     known_allegiances = [
         "Alliance", "Empire", "Federation", "Guardian",
         "Independent", "Pilots Federation", "Player Pilots", "Thargoid"
@@ -1812,9 +1812,9 @@ def filter_system_response(request, response):
 
 
 # System finder function that sends the request to the Spansh API
-def system_finder(obj):
+def system_finder(obj, projected_states):
     # Build the request body
-    request_body = prepare_system_request(obj)
+    request_body = prepare_system_request(obj,projected_states)
 
     url = "https://spansh.co.uk/api/systems/search"
 
@@ -1833,7 +1833,7 @@ def system_finder(obj):
         return 'An error occurred. The system finder seems to be currently unavailable.'
 
 
-def prepare_body_request(obj):
+def prepare_body_request(obj, projected_states):
     known_planet_types_obj = {
         "Planet": [
             "Ammonia world",
@@ -2472,9 +2472,9 @@ def filter_body_response(request, response):
 
 
 # System finder function that sends the request to the Spansh API
-def body_finder(obj):
+def body_finder(obj,projected_states):
     # Build the request body
-    request_body = prepare_body_request(obj)
+    request_body = prepare_body_request(obj,projected_states)
 
     url = "https://spansh.co.uk/api/bodies/search"
 
@@ -2517,8 +2517,8 @@ def target_subsystem_thread(current_subsystem: str, current_event_id: str, desir
         current_event_id = new_state.get('EventID')
     log('debug', 'desired subsystem targeted', current_subsystem)
 
-def target_subsystem(args):
-    current_target = args.get('projected_states').get('Target')
+def target_subsystem(args, projected_states):
+    current_target = projected_states.get('Target')
 
     if not current_target.get('Ship', False):
         raise Exception('No ship is currently targeted')
