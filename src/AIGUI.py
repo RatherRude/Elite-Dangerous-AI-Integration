@@ -10,7 +10,7 @@ import tkinter as tk
 import traceback
 import webbrowser
 from queue import Queue
-from sys import platform
+import platform
 from threading import Thread
 from tkinter import messagebox
 from typing import Dict
@@ -1432,7 +1432,7 @@ class App:
 
             # Script execution
             startupinfo = None
-            if platform == "win32":
+            if platform.system() == 'Windows':
                 startupinfo = subprocess.STARTUPINFO()
                 startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
             self.process = subprocess.Popen(self.chat_command_arg.split(' ')+['--microphone', self.input_device_name_var.get()], startupinfo=startupinfo,

@@ -1,19 +1,19 @@
 import queue
 import re
-from sys import platform
 import threading
-from time import sleep
 import traceback
+from time import sleep
 from typing import Generator, Literal, Optional, Union, final
 
-from num2words import num2words
-import strip_markdown
-import openai
 import edge_tts
-import pyaudio
 import miniaudio
+import openai
+import pyaudio
+import strip_markdown
+from num2words import num2words
 
 from .Logger import log
+
 
 @final
 class Mp3Stream(miniaudio.StreamableSource):
@@ -92,12 +92,7 @@ class TTS:
                         self.read_queue.put(text)
                         raise e
                 
-                if platform == "win32":
-                    if stream.is_active() and not stream.get_read_available() > 0:
-                        self._is_playing = False
-                else:
-                    # Ubuntu was throwing a segfault on stream.get_read_available, but stream.write was blocking the thread, so this should be fine
-                    self._is_playing = False
+                self._is_playing = False
 
                 sleep(0.1)
             self._is_playing = False

@@ -93,20 +93,25 @@ def reply(client: OpenAI, events: list[Event], new_events: list[Event], projecte
         log("Debug", f'Prompt: {completion.usage.prompt_tokens}, Completion: {completion.usage.completion_tokens}')
 
     response_text = completion.choices[0].message.content
-    if response_text:
+    response_actions = completion.choices[0].message.tool_calls
+
+    if response_text and not response_actions:
         tts.say(response_text)
         event_manager.add_conversation_event('assistant', completion.choices[0].message.content)
         copilot.output_covas(response_text, reasons)
     is_thinking = False
 
-    response_actions = completion.choices[0].message.tool_calls
     if response_actions:
-        action_results = []
+        action_descriptions: list[str | None] = []
+        action_results: list[Any] = []
         for action in response_actions:
+            action_input_desc =  action_manager.getActionDesc(action, projected_states)
+            action_descriptions.append(action_input_desc)
+            if action_input_desc:
+                tts.say(action_input_desc)
             action_result = action_manager.runAction(action, projected_states)
             action_results.append(action_result)
-
-        event_manager.add_tool_call([tool_call.model_dump() for tool_call in response_actions], action_results)
+            event_manager.add_tool_call([action.model_dump()], [action_result], [action_input_desc] if action_input_desc else None)
 
 
 useTools = False

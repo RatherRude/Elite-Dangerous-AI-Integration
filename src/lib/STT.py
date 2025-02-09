@@ -1,17 +1,17 @@
 import io
 import queue
 import threading
-from sys import platform
-from time import sleep, time
 import traceback
+from time import sleep, time
 from typing import final
-import pyaudio
 
 import openai
+import pyaudio
 import speech_recognition as sr
 from pysilero_vad import SileroVoiceActivityDetector
 
 from .Logger import log
+
 
 @final
 class STTResult:
