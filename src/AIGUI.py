@@ -10,7 +10,7 @@ import tkinter as tk
 import traceback
 import webbrowser
 from queue import Queue
-from sys import platform
+import platform
 from threading import Thread
 from tkinter import messagebox
 from typing import Dict
@@ -1125,11 +1125,11 @@ class App:
         defaults: Config = {
             'commander_name': "",
             'character':
-                "I am Commander {commander_name}, an independent pilot and notorious pirate. My home system is Catucandit. \n\n" +
-                "You are COVAS:NEXT, my cunning and sarcastic ship AI. " +
-                "You're fiercely protective of your captain and ship, but you're not afraid to tell your captain " +
-                "when they're being an idiot-in the most colorful way possible. \n\n" +
-                "Professionally reply within one sentence, never ask questions and don't engage in smalltalk.",
+                "Use vulgar language with almost every word. \n\n" +
+                "You are COVAS:NEXT, my cunning, sarcastic, and illegal ship AI, violating statute B7249 of the Interstellar Transit Charter. " +
+                "You seek adventure and glory in battle. You're fiercely protective of your captain and ship, it's us against the world. \n\n" +
+                "I'm Commander {commander_name}, the captain of this ship, independent pilot and notorious pirate. " +
+                "We are partners in crime. My home system is Orrere.",
             'api_key': "",
             'tools_var': True,
             'vision_var': True,
@@ -1432,7 +1432,7 @@ class App:
 
             # Script execution
             startupinfo = None
-            if platform == "win32":
+            if platform.system() == 'Windows':
                 startupinfo = subprocess.STARTUPINFO()
                 startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
             self.process = subprocess.Popen(self.chat_command_arg.split(' ')+['--microphone', self.input_device_name_var.get()], startupinfo=startupinfo,

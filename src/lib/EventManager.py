@@ -113,8 +113,8 @@ class EventManager:
             log('Event', 'projected', event.content['event'])
             log('debug', 'Event', event)
 
-    def add_tool_call(self, request: list[dict[str, Any]], results: list[dict[str, Any]]):
-        event = ToolEvent(request=request, results=results)
+    def add_tool_call(self, request: list[dict[str, Any]], results: list[dict[str, Any]], text: list[str] | None = None):
+        event = ToolEvent(request=request, results=results, text=text)
         self.incoming.put(event)
         log('Action', [result['name'] + ': ' + result['content'] for result in results])
 

@@ -6,6 +6,8 @@
 import ctypes
 import time
 import platform
+from .Logger import log
+
 from pynput.keyboard import Key, Controller, KeyCode
 
 SendInput = ctypes.windll.user32.SendInput if 'windll' in dir(ctypes) else None
@@ -47,7 +49,7 @@ class Input(ctypes.Structure):
 # Actual Functions
 
 def PressKey(keyCode):
-    if platform == 'win32':
+    if platform.system() == 'Windows':
         extra = ctypes.c_ulong(0)
         ii_ = Input_I()
         ii_.ki = KeyBdInput(0, keyCode, 0x0008, 0, ctypes.pointer(extra))
@@ -57,7 +59,7 @@ def PressKey(keyCode):
         pynput_keyboard.press(KeyCode.from_vk(keyCode) if isinstance(keyCode, int) else KeyCode.from_char(keyCode))
 
 def ReleaseKey(keyCode):
-    if platform == 'win32':
+    if platform.system() == 'Windows':
         extra = ctypes.c_ulong(0)
         ii_ = Input_I()
         ii_.ki = KeyBdInput(0, keyCode, 0x0008 | 0x0002, 0, ctypes.pointer(extra))
