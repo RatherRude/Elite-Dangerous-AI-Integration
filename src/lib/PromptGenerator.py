@@ -1,11 +1,12 @@
 from datetime import timedelta, datetime
-import json
 from functools import lru_cache
-import traceback
+from typing import Any
 
+import yaml
 import requests
+import humanize
 
-from .Projections import LocationState, MissionsState, ShipInfoState, NavInfo, TargetState
+from .Projections import LocationState, MissionsState, ShipInfoState, NavInfo, TargetState, CurrentStatus
 
 from .EDJournal import *
 from .Event import (
@@ -59,11 +60,11 @@ squadronEvents = {
 explorationEvents = {
     "CodexEntry": "Commander {commanderName} has logged a Codex entry.",
     "DiscoveryScan": "Commander {commanderName} has performed a discovery scan.",
-    "Scan": "Commander {commanderName} has conducted a scan.",
+    #"Scan": "Commander {commanderName} has conducted a scan.",
     "FSSAllBodiesFound": "Commander {commanderName} has identified all bodies in the system.",
     "FSSBodySignals": "Commander {commanderName} has completed a full spectrum scan of the systems, detecting signals.",
     "FSSDiscoveryScan": "Commander {commanderName} has performed a full system scan.",
-    "FSSSignalDiscovered": "Commander {commanderName} has discovered a signal using the FSS scanner.",
+    #"FSSSignalDiscovered": "Commander {commanderName} has discovered a signal using the FSS scanner.",
     "MaterialCollected": "Commander {commanderName} has collected materials.",
     "MaterialDiscarded": "Commander {commanderName} has discarded materials.",
     "MaterialDiscovered": "Commander {commanderName} has discovered a new material.",
@@ -221,7 +222,7 @@ travelEvents = {
     "FSDTarget": "Commander {commanderName} has selected a star system to jump to.",
     "LeaveBody": "Commander {commanderName} is exiting an orbit.",
     "Liftoff": "Commander {commanderName}'s ship has lifted off.",
-    "Location": "Commander {commanderName} has changed location.",
+    #"Location": "Commander {commanderName} has changed location.",
     "StartJump": "Commander {commanderName} starts the hyperjump.",
     "SupercruiseEntry": "Commander {commanderName} has entered supercruise from normal space.",
     "SupercruiseExit": "Commander {commanderName} has exited supercruise and returned to normal space.",
@@ -337,14 +338,63 @@ class PromptGenerator:
     #     minutes = (time_diff.seconds % 3600) // 60
     #
     #     return days, hours, minutes
+    def get_event_template(self, event: GameEvent):
+        content = event.content
+        event_name = content.get('event')
+        if event_name == 'ReceiveText':
+            return f"Message received from {content.get('From')} on channel {content.get('Channel')}: {content.get('Message_Localized', content.get('Message'))}"
+        if event_name == 'FSDJump':
+            return f"{self.commander_name} jumped into {content.get('StarSystem')}"
+        if event_name == 'ShipTargeted':
+            if content.get('TargetLocked'):
+                if content.get('Subsystem_Localised'):
+                    return f"Weapons now targeting {content.get('LegalState', '')} pilot {content.get('PilotName_Localised')}'s {content.get('Subsystem_Localised')}"
+                if content.get('PilotName_Localised'):
+                    return f"Weapons now targeting {content.get('LegalState', '')} pilot {content.get('PilotName_Localised')}'s {content.get('Ship','ship').capitalize()}"
+                else:
+                    return f"Weapons now targeting the {content.get('Ship','ship').capitalize()}"
+            else:
+                return f"Weapons' target lock lost."
+        if event_name == 'UnderAttack':
+            if content.get('Target') == 'You':
+                return f"{self.commander_name} is under attack."
+            else:
+                return f"{self.commander_name}'s {content.get('Target')} is under attack."
+        if event_name == 'Shipyard':
+            return f"{self.commander_name} is accessing the stations shipyard."
+        if event_name == 'Market':
+            return f"{self.commander_name} is accessing the stations market."
+        if event_name == 'Outfitting':
+            return f"{self.commander_name} is accessing the stations Outfitting."
+        if event_name == 'Docked':
+            return f"Now docked at {content.get('StationType')} {content.get('StationName')}"
 
-    def full_event_message(self, event: GameEvent|ProjectedEvent, is_important: bool):
+    def full_event_message(self, event: GameEvent, timeoffset: str, is_important: bool):
+        message = self.get_event_template(event)
+        if message:
+            return {
+                "role": "user",
+                "content": f"({timeoffset}{', IMPORTANT' if is_important else ''}: {message}\n)",
+            }
+
         return {
             "role": "user",
-            "content": f"({'IMPORTANT: ' if is_important else ''}{allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)} Details: {json.dumps(event.content)})",
+            "content": f"({timeoffset}{', IMPORTANT' if is_important else ''}: {allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)}\nDetails:\n{yaml.dump(event.content)}\n)",
         }
 
-    def simple_event_message(self, event: GameEvent|ProjectedEvent):
+    def simple_event_message(self, event: GameEvent, timeoffset: str):
+        return {
+            "role": "user",
+            "content": f"({timeoffset}: {allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)})",
+        }
+
+    def full_projectedevent_message(self, event: ProjectedEvent, is_important: bool):
+        return {
+            "role": "user",
+            "content": f"({'IMPORTANT: ' if is_important else ''}{allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)}\nDetails:\n{yaml.dump(event.content)}\n)",
+        }
+
+    def simple_projectedevent_message(self, event: ProjectedEvent):
         return {
             "role": "user",
             "content": f"({allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)})",
@@ -381,7 +431,7 @@ class PromptGenerator:
 
     # fetch system info from EDSM
     @lru_cache(maxsize=1, typed=False)
-    def get_system_info(self, system_name: str):
+    def get_system_info(self, system_name: str) -> dict:
         url = "https://www.edsm.net/api-v1/system"
         params = {
             "systemName": system_name,
@@ -393,7 +443,7 @@ class PromptGenerator:
             response = requests.get(url, params=params)
             response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
 
-            return response.text
+            return response.json()
 
         except Exception as e:
             log('error', e, traceback.format_exc())
@@ -401,7 +451,7 @@ class PromptGenerator:
 
     # fetch station info from EDSM
     @lru_cache(maxsize=1, typed=False)
-    def get_station_info(self, system_name: str, fleet_carrier=False):
+    def get_station_info(self, system_name: str, fleet_carrier=False) -> list:
         url = "https://www.edsm.net/api-system-v1/stations"
         params = {
             "systemName": system_name,
@@ -448,7 +498,105 @@ class PromptGenerator:
             log("error", f"Error: {e}")
             return "Currently no information on system available"
 
+    def generate_vehicle_status(self, current_status:dict):
+        flags = [key for key, value in current_status["flags"].items() if value]
+        if current_status.get("flags2"):
+            flags += [key for key, value in current_status["flags2"].items() if value]
+
+        status_info = {
+            "status": flags,
+            "balance": current_status.get("Balance", None),
+            "pips": current_status.get("Pips", None),
+            "cargo": current_status.get("Cargo", None),
+            "player_time": (datetime.now()).isoformat(),
+            "elite_time": str(datetime.now().year + 1286) + (datetime.now()).isoformat()[4:],
+        }
+
+        flags = current_status["flags"]
+        flags2 = current_status["flags2"]
+
+        active_mode = 'Unknown vehicle'
+        if flags:
+            if flags["InMainShip"]:
+                active_mode = "Main ship"
+            elif flags["InFighter"]:
+                active_mode = "Ship launched fighter"
+            elif flags["InSRV"]:
+                active_mode = "SRV"
+        if flags2:
+            if flags2["OnFoot"]:
+                active_mode = "Suit"
+
+        return active_mode, status_info
+
+    def generate_status_message(self, projected_states: dict[str, dict]):
+        status_entries: list[tuple[str, Any]] = []
+
+        log('info', projected_states.get('CurrentStatus', {}))
+
+        active_mode, vehicle_status = self.generate_vehicle_status(projected_states.get('CurrentStatus', {}))
+        status_entries.append((active_mode+" status", vehicle_status))
+
+        ship_info: ShipInfoState = projected_states.get('ShipInfo', {})  # pyright: ignore[reportAssignmentType]
+        status_entries.append(("Main Ship", ship_info))
+
+        location_info: LocationState = projected_states.get('Location', {})  # pyright: ignore[reportAssignmentType]
+        nav_info: NavInfo = projected_states.get('NavInfo', {})  # pyright: ignore[reportAssignmentType]
+
+        if "StarSystem" in location_info and location_info["StarSystem"] != "Unknown":
+            status_entries.append(("Local system", self.get_system_info(location_info['StarSystem'])))
+
+            status_entries.append(("Stations in local system", self.get_station_info(location_info['StarSystem'])))
+
+        status_entries.append(("Location", location_info))
+
+        status_entries.append(("Navigation route", nav_info))
+
+        missions_info: MissionsState = projected_states.get('Missions', {})  # pyright: ignore[reportAssignmentType]
+        if missions_info and 'Active' in missions_info:
+            status_entries.append(("Active missions", missions_info))
+
+
+        target_info: TargetState = projected_states.get('Target', {})  # pyright: ignore[reportAssignmentType]
+        target_info.pop('EventID', None)
+        if target_info.get('Ship', False):
+            status_entries.append(("Weapons' target", target_info))
+
+        current_station = projected_states.get('Location', {}).get('Station')
+        market = projected_states.get('Market', {})
+        outfitting = projected_states.get('Outfitting', {})
+        storedShips = projected_states.get('StoredShips', {})
+        if current_station and current_station == market.get('StationName'):
+            status_entries.append(("Local market information", {
+                item.get('Name_Localised'): {
+                    'Category': item.get('Category_Localised'),
+                    'BuyPrice': item.get('BuyPrice'),
+                    'MeanPrice': item.get('MeanPrice'),
+                    'Stock': item.get('Stock'),
+                } if item.get('Stock') > item.get('Demand') else {
+                    'Category': item.get('Category_Localised'),
+                    'SellPrice': item.get('SellPrice'),
+                    'MeanPrice': item.get('MeanPrice'),
+                    'Demand': item.get('Demand'),
+                }
+                for item in market.get('Items',[]) if item.get('Stock') or item.get('Demand')
+            }))
+        if current_station and current_station == outfitting.get('StationName'):
+            status_entries.append(("Local outfitting information", [
+                {"Name": item.get('Name'), "BuyPrice": item.get('BuyPrice')}
+                for item in outfitting.get('Items', [])
+            ]))
+        if current_station and current_station == storedShips.get('StationName'):
+            status_entries.append(("Local, stored ships", storedShips.get('ShipsHere', [])))
+
+        return "\n\n".join(['# '+entry[0]+'\n' + yaml.dump(entry[1]) for entry in status_entries])
+
     def generate_prompt(self, events: list[Event], projected_states: dict[str, dict], pending_events: list[Event]):
+        # Fine the most recent event
+        last_event = events[-1]
+        # TODO game event are Z all other times are realtive... fix somehow
+        reference_time = datetime.fromisoformat(last_event.content.get('timestamp') if isinstance(last_event, GameEvent) else last_event.timestamp)
+
         # Collect the last 50 conversational pieces
         conversational_pieces: list = list()
 
@@ -457,17 +605,35 @@ class PromptGenerator:
                 break
 
             is_pending = event in pending_events
+            event_time = datetime.fromisoformat(
+                event.content.get('timestamp') if isinstance(event, GameEvent) else event.timestamp)
 
-            if isinstance(event, GameEvent) or isinstance(event, ProjectedEvent):
+            log('info', reference_time,event_time, event.timestamp)
+
+            time_offset = humanize.naturaltime(reference_time - event_time)
+
+            if isinstance(event, GameEvent):
                 if event.content.get('event') in allGameEvents:
                     if len(conversational_pieces) < 5 or is_pending:
                         is_important = is_pending and event.content.get('event') in self.important_game_events
-                        conversational_pieces.append(self.full_event_message(event, is_important))
+                        conversational_pieces.append(self.full_event_message(event, time_offset, is_important))
                     elif len(conversational_pieces) < 20:
-                        conversational_pieces.append(self.simple_event_message(event))
+                        conversational_pieces.append(self.simple_event_message(event, time_offset))
                     else:
                         pass
                 else: 
+                    log('debug', "PromptGenerator ignoring event", event.content.get('event'))
+
+            if isinstance(event, ProjectedEvent):
+                if event.content.get('event') in allGameEvents:
+                    if len(conversational_pieces) < 5 or is_pending:
+                        is_important = is_pending and event.content.get('event') in self.important_game_events
+                        conversational_pieces.append(self.full_projectedevent_message(event, is_important))
+                    elif len(conversational_pieces) < 20:
+                        conversational_pieces.append(self.simple_projectedevent_message(event))
+                    else:
+                        pass
+                else:
                     log('debug', "PromptGenerator ignoring event", event.content.get('event'))
             
             if isinstance(event, StatusEvent):
@@ -486,119 +652,14 @@ class PromptGenerator:
             if isinstance(event, ExternalEvent):
                 if event.content.get('event') in externalEvents:
                     conversational_pieces.append(self.external_event_message(event))
-        
-        current_station = projected_states.get('Location', {}).get('Station')
-        market = projected_states.get('Market', {}) 
-        outfitting = projected_states.get('Outfitting', {}) 
-        shipyard = projected_states.get('Shipyard', {}) 
-        if current_station == market.get('StationName'):
-            conversational_pieces.append(
-                {
-                    "role": "user",
-                    "content": f"(Current stations market information: {json.dumps(market)})",
-                }
-            )
-        if current_station == outfitting.get('StationName'):
-            conversational_pieces.append(
-                {
-                    "role": "user",
-                    "content": f"(Current stations outfitting information: {json.dumps(outfitting)})",
-                }
-            )
-        if current_station == shipyard.get('StationName'):
-            conversational_pieces.append(
-                {
-                    "role": "user",
-                    "content": f"(Current stations shipyard information: {json.dumps(shipyard)})",
-                }
-            )
-
-        target_info: TargetState = projected_states.get('Target', {}) # pyright: ignore[reportAssignmentType]
-        target_info.pop('EventID', None)
-        if target_info.get('Ship', False):
-            conversational_pieces.append(
-                {
-                    "role": "user",
-                    "content": f"(Current targeted ship: {json.dumps(target_info)})",
-                }
-            )
-
-        missions_info: MissionsState = projected_states.get('Missions', {}) # pyright: ignore[reportAssignmentType]
-        
-        if missions_info and 'Active' in missions_info:
-            conversational_pieces.append(
-                {
-                    "role": "user",
-                    "content": f"(Current missions: {json.dumps(missions_info)})",
-                }
-            )
-
-
-        location_info: LocationState = projected_states.get('Location', {}) # pyright: ignore[reportAssignmentType]
-        nav_info: NavInfo = projected_states.get('NavInfo', {}) # pyright: ignore[reportAssignmentType]
-
-        if "StarSystem" in location_info and location_info["StarSystem"] != "Unknown":
-            conversational_pieces.append(
-                {
-                    "role": "user",
-                    "content": f"(Current system: {self.get_system_info(location_info['StarSystem'])})",
-                }
-            )
-
-            conversational_pieces.append(
-                {
-                    "role": "user",
-                    "content": f"(Stations in current system: {self.get_station_info(location_info['StarSystem'])})",
-                }
-            )
-        
-        conversational_pieces.append(
-            {"role": "user", "content": f"(Current location: {json.dumps(location_info)})"}
-        )
 
         conversational_pieces.append(
-            {"role": "user", "content": f"(Current route: {json.dumps(nav_info)})"}
+            {
+                "role": "user",
+                "content": self.generate_status_message(projected_states),
+            }
         )
 
-        ship_info: ShipInfoState = projected_states.get('ShipInfo', {})  # pyright: ignore[reportAssignmentType]
-
-        conversational_pieces.append(
-            {"role": "user", "content": f"(Current ship: {json.dumps(ship_info)})"}
-        )
-
-        status = projected_states.get('CurrentStatus', {})
-        flags = [key for key, value in status["flags"].items() if value]
-        if status.get("flags2"):
-            flags += [key for key, value in status["flags2"].items() if value]
-
-        status_info = {
-            "status": flags,
-            "balance": status.get("Balance", None),
-            "pips": status.get("Pips", None),
-            "cargo": status.get("Cargo", None),
-            "player_time": (datetime.now()).isoformat(),
-            "elite_time": str(datetime.now().year + 1286) + (datetime.now()).isoformat()[4:],
-        }
-
-        current_status = projected_states.get("CurrentStatus")
-        flags = current_status["flags"]
-        flags2 = current_status["flags2"]
-
-        active_mode = " "
-        if flags:
-            if flags["InMainShip"]:
-                active_mode += "main ship"
-            elif flags["InFighter"]:
-                active_mode += "ship launched fighter"
-            elif flags["InSRV"]:
-                active_mode += "SRV"
-        if flags2:
-            if flags2["OnFoot"]:
-                active_mode += "suit"
-
-        conversational_pieces.append(
-            {"role": "user", "content": f"(Current{active_mode} status: {json.dumps(status_info)})"}
-        )
         try:
             conversational_pieces.append(
                 {

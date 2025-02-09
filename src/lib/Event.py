@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import Dict, List, Literal
 
+from .EventModels import AnyEvent
 
 class Event:
     kind: Literal['game', 'user', 'assistant', 'assistant_completed', 'tool', 'status', 'projected']
@@ -11,7 +12,7 @@ class Event:
 
 @dataclass
 class GameEvent(Event):
-    content: Dict
+    content: AnyEvent
     historic: bool
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
     kind: Literal['game'] = field(default='game')

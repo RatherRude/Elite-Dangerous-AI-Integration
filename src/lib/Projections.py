@@ -74,12 +74,15 @@ class Location(Projection[LocationState]):
             star_system = event.content.get('StarSystem', 'Unknown')
             body_type = event.content.get('BodyType', 'Null')
             body = event.content.get('Body', 'Unknown')
+            station = event.content.get('StationName')
             docked = event.content.get('Docked', False)
             
             self.state = {
                 "StarSystem": star_system,
-                "Docked": docked,
             }
+            if station:
+                self.state["Station"] = station
+                self.state["Docked"] = docked
             if body_type and body_type != 'Null':
                 self.state[body_type] = body
                 
@@ -428,6 +431,7 @@ TargetState = TypedDict('TargetState', {
     "PilotRank":NotRequired[str],
     "Faction":NotRequired[str],
     "LegalStatus":NotRequired[str],
+    "Bounty": NotRequired[int],
 
     "Subsystem":NotRequired[str],
 })
@@ -458,6 +462,7 @@ class Target(Projection[TargetState]):
                     self.state["PilotRank"] = event.content.get('PilotRank', '')
                     self.state["Faction"] = event.content.get('Faction', '')
                     self.state["LegalStatus"] = event.content.get('LegalStatus', '')
+                    self.state["Bounty"] = event.content.get('Bounty', '')
                 if event.content.get('Subsystem_Localised', False):
                     self.state["Subsystem"] = event.content.get('Subsystem_Localised', '')
             self.state['EventID'] = event.content.get('id')
