@@ -1,19 +1,19 @@
 import queue
 import re
+from sys import platform
 import threading
-import traceback
 from time import sleep
+import traceback
 from typing import Generator, Literal, Optional, Union, final
 
-import edge_tts
-import miniaudio
-import openai
-import pyaudio
-import strip_markdown
 from num2words import num2words
+import strip_markdown
+import openai
+import edge_tts
+import pyaudio
+import miniaudio
 
 from .Logger import log
-
 
 @final
 class Mp3Stream(miniaudio.StreamableSource):
@@ -79,7 +79,7 @@ class TTS:
                 if not self.read_queue.empty():
                     self._is_playing = True
                     text = self.read_queue.get()
-                    # Remove commas from numbers to fix OpenAI TTS
+                    # Fix numberformatting for different providers
                     text = re.sub(r"\d+(,\d{3})*(\.\d+)?", self._number_to_text, text)
                     text = strip_markdown.strip_markdown(text)
                     # print('reading:', text)
@@ -92,7 +92,12 @@ class TTS:
                         self.read_queue.put(text)
                         raise e
                 
-                self._is_playing = False
+                if platform == "win32":
+                    if stream.is_active() and not stream.get_read_available() > 0:
+                        self._is_playing = False
+                else:
+                    # Ubuntu was throwing a segfault on stream.get_read_available, but stream.write was blocking the thread, so this should be fine
+                    self._is_playing = False
 
                 sleep(0.1)
             self._is_playing = False
@@ -139,7 +144,11 @@ class TTS:
         """Converts numbers like 100,203.12 to one hundred thousand two hundred three point one two"""
         if len(match.group()) <= 2:
             return match.group()
-        return num2words(match.group().replace(",", ""))
+        if self.provider == "openai":
+            # OpenAI TTS doesn't read large numbers correctly, so we convert them to words
+            return num2words(match.group().replace(",", ""))
+        else:
+            return match.group()
 
     def say(self, text: str):
         self.read_queue.put(text)
@@ -160,14 +169,9 @@ class TTS:
 if __name__ == "__main__":
     openai_audio = openai.OpenAI(base_url="http://localhost:8080/v1")
 
-    tts = TTS(openai_client=openai_audio)
+    tts = TTS(openai_client=None, provider="edge-tts", voice="de-DE-SeraphinaMultilingualNeural")
 
-    text = """
-The missile knows where it is at all times. It knows this because it knows where it isn't. By subtracting where it is from where it isn't, or where it isn't from where it is (whichever is greater), it obtains a difference, or deviation. The guidance subsystem uses deviations to generate corrective commands to drive the missile from a position where it is to a position where it isn't, and arriving at a position where it wasn't, it now is. Consequently, the position where it is, is now the position that it wasn't, and it follows that the position that it was, is now the position that it isn't.
-In the event that the position that it is in is not the position that it wasn't, the system has acquired a variation, the variation being the difference between where the missile is, and where it wasn't. If variation is considered to be a significant factor, it too may be corrected by the GEA. However, the missile must also know where it was.
-The missile guidance computer scenario works as follows. Because a variation has modified some of the information the missile has obtained, it is not sure just where it is. However, it is sure where it isn't, within reason, and it knows where it was. It now subtracts where it should be from where it wasn't, or vice-versa, and by differentiating this from the algebraic sum of where it shouldn't be, and where it was, it is able to obtain the deviation and its variation, which is called error.
-
-    """
+    text = """ 2 plus 2 ist 100.203,12 insgesamt."""
 
     for line in text.split("\n"):
         if not line or line.isspace():
