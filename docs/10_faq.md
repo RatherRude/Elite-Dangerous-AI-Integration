@@ -32,4 +32,4 @@ We have a native Linux version available, but it requires some special setup. Pl
 
 ## Can I use Deepseek or other reasoning models?
 
-While technically possible, reasoning models have a response time of many seconds to minutes, which is not suitable for real-time interaction. The advange of these models in coding and mathemathics is not useful in the context of creative writing and storytelling and due to the long reasoning chains, these models are far more expensive than our recommended configuration.
+While technically possible, reasoning models have a response time of many seconds to minutes, which is not suitable for real-time interaction. The advantage of these models in coding and mathematics is not useful in the context of creative writing and storytelling and due to the long reasoning chains, these models are far more expensive than our recommended configuration.
