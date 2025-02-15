@@ -29,3 +29,7 @@ OpenAI sometimes needs a few minutes to process your payment. If you are still h
 ## Does it work on Linux, Steam Deck, Proton, Wine?
 
 We have a native Linux version available, but it requires some special setup. Please contact us on discord and we will help you get it running.
+
+## Can I use Deepseek or other reasoning models?
+
+While technically possible, reasoning models have a response time of many seconds to minutes, which is not suitable for real-time interaction. The advange of these models in coding and mathemathics is not useful in the context of creative writing and storytelling and due to the long reasoning chains, these models are far more expensive than our recommended configuration.
