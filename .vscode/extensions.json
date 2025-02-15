@@ -2,6 +2,9 @@
     "recommendations": [
         "ms-python.black-formatter",
         "ms-python.python",
-        "detachhead.basedpyright"
+        "detachhead.basedpyright",
+        "tauri-apps.tauri-vscode",
+        "rust-lang.rust-analyzer",
+        "angular.ng-template"
     ]
 }

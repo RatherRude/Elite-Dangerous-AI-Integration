@@ -1,3 +1,5 @@
+import json
+from pathlib import Path
 from typing import Literal, TypedDict
 import os
 import sys
@@ -84,3 +86,17 @@ def get_asset_path(filename:str) -> str:
             os.path.join(os.path.dirname(__file__), '../assets'))
     
     return os.path.join(assets_dir, filename)
+
+
+def load_config() -> Config:
+    config_file = Path("config.json")
+    if config_file.exists():
+        with open(config_file, 'r') as f:
+            return json.load(f)  # pyright: ignore[reportAny]
+    raise FileNotFoundError("config.json not found")
+
+
+def save_config(config: Config):
+    config_file = Path("config.json")
+    with open(config_file, 'w') as f:
+        json.dump(config, f)

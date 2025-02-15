@@ -1461,6 +1461,7 @@ class App:
                 startupinfo = subprocess.STARTUPINFO()
                 startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
             self.process = subprocess.Popen(self.chat_command_arg.split(' ')+['--microphone', self.input_device_name_var.get()], startupinfo=startupinfo,
+                                            stdin=subprocess.PIPE,
                                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1,
                                             universal_newlines=True, encoding='utf-8', shell=False, close_fds=True)
 
@@ -1474,6 +1475,9 @@ class App:
             self.thread_process_stdout.start()
             self.thread_process_stderr = Thread(target=self.read_process_error, args=[self.process, self.outlog_file], daemon=True)
             self.thread_process_stderr.start()
+            
+            # Send start signal to chat
+            print(json.dumps({"type": "start"}), file=self.process.stdin)
 
         except FileNotFoundError as e:
             print(e)
