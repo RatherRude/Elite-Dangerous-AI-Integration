@@ -51,13 +51,48 @@ def load_config() -> Config:
 
 is_thinking = False
 
+def execute_actions(actions: list[dict[str, Any]], projected_states: dict[str, dict], event_manager: EventManager, tts: TTS):
+    action_descriptions: list[str | None] = []
+    action_results: list[Any] = []
+    for action in actions:
+        action_input_desc = action_manager.getActionDesc(action, projected_states)
+        action_descriptions.append(action_input_desc)
+        if action_input_desc:
+            tts.say(action_input_desc)
+        action_result = action_manager.runAction(action, projected_states)
+        action_results.append(action_result)
+        event_manager.add_tool_call([action.model_dump()], [action_result], [action_input_desc] if action_input_desc else None)
+
+
+def verify_action(client: OpenAI, user_input: list[str], action: dict[str, Any], prompt: list, tools: list):
+    """ Verify the action prediction by sending the user input without any context to the model and check if the action is still predicted """
+    global llm_model_name, action_manager
+    action_manager.save_prediction(user_input, action, tools)
+    completion = client.chat.completions.create(
+        model=llm_model_name,
+        messages=[prompt[0]] + [{"role": "user", "content": user} for user in user_input],
+        tools=tools
+    )
+    
+    if not isinstance(completion, ChatCompletion) or hasattr(completion, 'error'):
+        log("debug", "error during action verification:", completion)
+        return
+
+    if completion.choices[0].message.tool_calls:
+        action_manager.validate_prediction(user_input, completion.choices[0].message.tool_calls, tools)
+    else:
+        log("debug", "action prediction invalidated", completion)
+
+
 def reply(client: OpenAI, events: list[Event], new_events: list[Event], projected_states: dict[str, dict], prompt_generator: PromptGenerator,
           event_manager: EventManager, tts: TTS, copilot: EDCoPilot, config: Config):
-    global is_thinking
+    global is_thinking, llm_model_name, useTools, action_manager
     is_thinking = True
+    #log('info', 'Replying...')
     prompt = prompt_generator.generate_prompt(events=events, projected_states=projected_states, pending_events=new_events)
 
-    use_tools = useTools and any([event.kind == 'user' for event in new_events])
+    user_input: list[str] = [event.content for event in new_events if event.kind == 'user']
+    use_tools = useTools and len(user_input)
     reasons = [event.content.get('event', event.kind) if event.kind=='game' else event.kind for event in new_events if event.kind in ['user', 'game', 'tool', 'status']]
 
     current_status = projected_states.get("CurrentStatus")
@@ -78,41 +113,44 @@ def reply(client: OpenAI, events: list[Event], new_events: list[Event], projecte
 
     uses_actions = config["game_actions_var"]
     uses_web_actions = config["web_search_actions_var"]
-    tool_list = action_manager.getToolsList(active_mode, uses_actions, uses_web_actions)
-    completion = client.chat.completions.create(
-        model=llm_model_name,
-        messages=prompt,
-        tools= tool_list if use_tools and tool_list else None
-    )
+    tool_list = action_manager.getToolsList(active_mode, uses_actions, uses_web_actions) if use_tools else None
+    predicted_actions = None
+    if tool_list and user_input:
+        predicted_actions = action_manager.predict_action(user_input, tool_list)
+        
+    if predicted_actions:
+        #log('info', 'predicted_actions', predicted_actions)
+        response_text = None
+        response_actions = predicted_actions
+    else:
+        completion = client.chat.completions.create(
+            model=llm_model_name,
+            messages=prompt,
+            tools=tool_list
+        )
 
-    if not isinstance(completion, ChatCompletion) or hasattr(completion, 'error'):
-        log("error", "completion with error:", completion)
-        is_thinking = False
-        return
-    if hasattr(completion, 'usage'):
-        log("Debug", f'Prompt: {completion.usage.prompt_tokens}, Completion: {completion.usage.completion_tokens}')
+        if not isinstance(completion, ChatCompletion) or hasattr(completion, 'error'):
+            log("error", "completion with error:", completion)
+            is_thinking = False
+            return
+        if hasattr(completion, 'usage') and completion.usage:
+            log("Debug", f'Prompt: {completion.usage.prompt_tokens}, Completion: {completion.usage.completion_tokens}')
 
-    response_text = completion.choices[0].message.content
-    response_actions = completion.choices[0].message.tool_calls
+        response_text = completion.choices[0].message.content
+        response_actions = completion.choices[0].message.tool_calls
 
     if response_text and not response_actions:
         tts.say(response_text)
         event_manager.add_conversation_event('assistant', completion.choices[0].message.content)
         copilot.output_covas(response_text, reasons)
+
     is_thinking = False
 
     if response_actions:
-        action_descriptions: list[str | None] = []
-        action_results: list[Any] = []
-        for action in response_actions:
-            action_input_desc =  action_manager.getActionDesc(action, projected_states)
-            action_descriptions.append(action_input_desc)
-            if action_input_desc:
-                tts.say(action_input_desc)
-            action_result = action_manager.runAction(action, projected_states)
-            action_results.append(action_result)
-            event_manager.add_tool_call([action.model_dump()], [action_result], [action_input_desc] if action_input_desc else None)
+        execute_actions(response_actions, projected_states, event_manager, tts)
 
+        if not predicted_actions:
+            verify_action(client, user_input, response_actions, prompt, tool_list)
 
 useTools = False
 
