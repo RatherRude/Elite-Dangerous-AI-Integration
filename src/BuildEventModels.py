@@ -1,6 +1,7 @@
 import os
 import json
 from collections import defaultdict
+from types import NoneType
 from typing import TypedDict
 
 
@@ -12,18 +13,53 @@ def process(data, stats):
     stats[event_type].append(data)
 
 
-def derive_typeddict(name, data_list):
+def derive_typeddict(name, data_list) -> tuple[str, str]:
     """
     Generate a TypedDict model from a list of dictionaries.
     """
     if not data_list:
-        return None
-    fields = {key: type(value).__name__ for key, value in data_list[0].items()}
+        return 'Any', ''
+    types = list(set([type(e) for e in data_list]))
+    
+    if None in data_list:
+        t, model = derive_typeddict(name, [e for e in data_list if e is not None])
+        return 'NotRequired[' + t + ']', model
+    
+    if len(types) > 1:
+        return 'Any', ''
+    
+    if types[0] in (int, float, str, bool):
+        if len(set(data_list)) == 1 and types[0] in (int, str):
+            return 'Literal[' + json.dumps(data_list[0]) + ']', ''
+        return types[0].__name__, ''
+    
+    if types[0] == list:
+        elements = []
+        for e in data_list:
+            elements.extend(e)
+        t, model = derive_typeddict(name+'Item', elements)
+        return 'list[' + t + ']', model
+    
+    if types[0] == dict:
+        keys = set()
+        for e in data_list:
+            keys.update(list(e.keys()))
+        
+        model_def = ''
+            
+        fields = {}
+        for key in keys:
+            values = [e.get(key, None) for e in data_list]
+            t, model = derive_typeddict(name+key.capitalize(), values)
+            model_def += model
+            fields[key] = t
 
-    model_def = f"class {name}(TypedDict):\n"
-    for field, field_type in fields.items():
-        model_def += f"    {field}: {field_type}\n"
-    return model_def
+        model_def += f"class {name}(TypedDict):\n"
+        for field, field_type in fields.items():
+            model_def += f"    {field}: {field_type}\n"
+        return (name, model_def)
+    
+    return 'Any', ''
 
 
 def process_journal_files(directory):
@@ -55,10 +91,10 @@ def process_journal_files(directory):
         f.write("# THIS FILE IS AUTO-GENERATED\n")
         f.write("# DO NOT EDIT\n")
         f.write("# USE BuildEventModels.py TO UPDATE\n\n")
-        f.write("from typing import TypedDict\n\n")
+        f.write("from typing import TypedDict, NotRequired, Literal, Any\n\n")
         for event_type, events in sorted_stats:
             class_name = event_type + "Event"
-            model = derive_typeddict(class_name, events)
+            name, model = derive_typeddict(class_name, events)
             if model:
                 f.write(f"# {event_type}: {len(json.dumps(events))} characters, {len(events)} entries\n")
                 f.write(model + "\n\n")
