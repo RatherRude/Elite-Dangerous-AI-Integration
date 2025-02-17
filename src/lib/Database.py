@@ -46,14 +46,18 @@ class EventStore():
         if 'conn' in self.__dict__:
             self.conn.close()
     
-    def insert_event(self, event: Any, processed_at: float) -> None:
+    def commit(self) -> None:
+        self.conn.commit()
+    
+    def insert_event(self, event: Any, processed_at: float, commit: bool = True) -> None:
         event_data = json.dumps(event.__dict__)
         event_class = event.__class__.__name__
         _ = self.cursor.execute(f'''
             INSERT INTO {self.table_name} (class, data, processed_at)
             VALUES (?, ?, ?)
         ''', (event_class, event_data, processed_at))
-        self.conn.commit()
+        if commit:
+            self.conn.commit()
     
     def get_latest(self, limit: int = 100) -> list[Any]:
         self.cursor.execute(f'''
