@@ -79,7 +79,7 @@ class TTS:
                 if not self.read_queue.empty():
                     self._is_playing = True
                     text = self.read_queue.get()
-                    # Remove commas from numbers to fix OpenAI TTS
+                    # Fix numberformatting for different providers
                     text = re.sub(r"\d+(,\d{3})*(\.\d+)?", self._number_to_text, text)
                     text = strip_markdown.strip_markdown(text)
                     # print('reading:', text)
@@ -139,7 +139,11 @@ class TTS:
         """Converts numbers like 100,203.12 to one hundred thousand two hundred three point one two"""
         if len(match.group()) <= 2:
             return match.group()
-        return num2words(match.group().replace(",", ""))
+        if self.provider == "openai":
+            # OpenAI TTS doesn't read large numbers correctly, so we convert them to words
+            return num2words(match.group().replace(",", ""))
+        else:
+            return match.group()
 
     def say(self, text: str):
         self.read_queue.put(text)

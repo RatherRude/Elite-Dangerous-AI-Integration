@@ -1,18 +1,19 @@
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Literal, NotRequired
-
-from .EventModels import AnyEvent
+from typing import Dict, List, Literal, NotRequired, TypedDict
 
 class Event:
     kind: Literal['game', 'user', 'assistant', 'assistant_completed', 'tool', 'status', 'projected']
     timestamp: str
     processed_at: float
 
+class GameEventContent(TypedDict):
+    event: str
+    timestamp: str
 
 @dataclass
 class GameEvent(Event):
-    content: AnyEvent
+    content: GameEventContent
     historic: bool
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     kind: Literal['game'] = field(default='game')

@@ -33,7 +33,7 @@ class EventManager:
     def __init__(self, on_reply_request: Callable[[list[Event], list[Event], dict[str, dict[str, Any]]], Any], game_events: list[str],
                  continue_conversation: bool = False, react_to_text_local: bool = True, react_to_text_starsystem: bool = True, react_to_text_npc: bool = False,
                  react_to_text_squadron: bool = True, react_to_material:str = '', react_to_danger_mining:bool = False,
-                 react_to_danger_onfoot:bool = False):
+                 react_to_danger_onfoot:bool = False, react_to_danger_supercruise:bool = False):
         self.incoming: Queue[Event] = Queue()
         self.pending: list[Event] = []
         self.processed: list[Event] = []
@@ -48,6 +48,7 @@ class EventManager:
         self.react_to_material = react_to_material
         self.react_to_danger_mining = react_to_danger_mining
         self.react_to_danger_onfoot = react_to_danger_onfoot
+        self.react_to_danger_supercruise = react_to_danger_supercruise
         self._conditions_registry = defaultdict(list)
         self._registry_lock = threading.Lock()
 
@@ -301,12 +302,16 @@ class EventManager:
                 return True
 
             if isinstance(event, StatusEvent) and event.status.get("event") in self.game_events:
-                if not self.react_to_danger_mining and (event.status.get("event") in ["InDanger", "OutOfDanger"]):
-                    if states.get('ShipInfo', {}).get('IsMiningShip', False) and states.get('Location', {}).get('PlanetaryRing', False):
-                        continue
-                if not self.react_to_danger_onfoot and (event.status.get("event") in ["InDanger", "OutOfDanger"]):
-                    if states.get('CurrentStatus', {}).get('flags2').get('OnFoot'):
-                        continue
+                if event.status.get("event") in ["InDanger", "OutOfDanger"]:
+                    if not self.react_to_danger_mining:
+                        if states.get('ShipInfo', {}).get('IsMiningShip', False) and states.get('Location', {}).get('PlanetaryRing', False):
+                            continue
+                    if not self.react_to_danger_onfoot:
+                        if states.get('CurrentStatus', {}).get('flags2').get('OnFoot'):
+                            continue
+                    if not self.react_to_danger_supercruise:
+                        if states.get('CurrentStatus', {}).get('flags').get('Supercruise') and len(states.get('NavInfo', {"NavRoute": []}).get('NavRoute', [])):
+                            continue
                 return True
 
             if isinstance(event, ExternalEvent):

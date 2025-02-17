@@ -39,6 +39,7 @@ class Config(TypedDict):
     react_to_material: str
     react_to_danger_mining_var: bool
     react_to_danger_onfoot_var: bool
+    react_to_danger_supercruise_var: bool
     edcopilot: bool
     edcopilot_dominant: bool
     tts_voice: str
