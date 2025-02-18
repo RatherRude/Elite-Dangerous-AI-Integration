@@ -2,6 +2,7 @@ import hashlib
 import inspect
 from abc import ABC, abstractmethod
 from datetime import timezone, datetime
+import time
 from typing import Any, Generic, Literal, Callable, TypeVar, final
 
 from .Database import EventStore, KeyValueStore
@@ -124,7 +125,7 @@ class EventManager:
             event = self.incoming.get()
             timestamp = datetime.now(timezone.utc).timestamp()
             event.processed_at = timestamp
-            self.event_store.insert_event(event, timestamp)
+            self.event_store.insert_event(event, timestamp, commit=False)
             self.update_projections(event, save_later=True)
             
             if isinstance(event, GameEvent) and event.historic:
@@ -132,7 +133,7 @@ class EventManager:
                 pass
             else:
                 self.pending.append(event)
-        
+        self.event_store.commit()
         self.save_projections()
 
         projected_states: dict[str, Any] = {}
