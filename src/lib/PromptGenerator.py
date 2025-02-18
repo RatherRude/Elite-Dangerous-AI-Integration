@@ -1,10 +1,12 @@
 from datetime import timedelta, datetime
 from functools import lru_cache
-from typing import Any
+from typing import Any, cast
 
 import yaml
 import requests
 import humanize
+
+from lib.EventModels import DockedEvent, FSDJumpEvent, FSDTargetEvent, OutfittingEvent, ReceiveTextEvent, ShipTargetedEvent, StartJumpEvent, UnderAttackEvent
 
 from .Projections import LocationState, MissionsState, ShipInfoState, NavInfo, TargetState, CurrentStatus
 
@@ -339,35 +341,49 @@ class PromptGenerator:
     #
     #     return days, hours, minutes
     def get_event_template(self, event: GameEvent):
-        content = event.content
+        content: Any = event.content
         event_name = content.get('event')
+        
         if event_name == 'ReceiveText':
-            return f'Message received from {content.get('From_Localised',content.get('From'))} on channel {content.get('Channel')}: "{content.get('Message_Localised', content.get('Message'))}"'
+            receive_text_event = cast(ReceiveTextEvent, content)
+            return f'Message received from {receive_text_event.get('From_Localised',receive_text_event.get('From'))} on channel {receive_text_event.get('Channel')}: "{receive_text_event.get('Message_Localised', receive_text_event.get('Message'))}"'
+        if event_name == 'StartJump':
+            start_jump_event = cast(StartJumpEvent, content)
+            return f"{self.commander_name} is starting a jump to {start_jump_event.get('StarSystem')}"
         if event_name == 'FSDJump':
-            return f"{self.commander_name} jumped into {content.get('StarSystem')}"
+            fsd_jump_event = cast(FSDJumpEvent, content)
+            return f"{self.commander_name} is arriving at {fsd_jump_event.get('StarSystem')}"
+        if event_name == 'FSDTarget':  # TODO is scoopable and should scoop?
+            fsd_target_event = cast(FSDTargetEvent, content)
+            return f"{self.commander_name} is targeting the next jump to go to {fsd_target_event.get('Name')}"
+        if event_name == 'Docked':
+            docked_event = cast(DockedEvent, content)
+            return f"Now docked at {docked_event.get('StationType')} {docked_event.get('StationName')}"
+        
         if event_name == 'ShipTargeted':
-            if content.get('TargetLocked'):
-                if content.get('Subsystem_Localised'):
-                    return f"Weapons now targeting {content.get('LegalState', '')} pilot {content.get('PilotName_Localised')}'s {content.get('Subsystem_Localised')}"
-                if content.get('PilotName_Localised'):
-                    return f"Weapons now targeting {content.get('LegalState', '')} pilot {content.get('PilotName_Localised')}'s {content.get('Ship','ship').capitalize()}"
+            ship_targeted_event = cast(ShipTargetedEvent, content)
+            if ship_targeted_event.get('TargetLocked'):
+                if ship_targeted_event.get('Subsystem_Localised'):
+                    return f"Weapons now targeting {ship_targeted_event.get('LegalState', '')} pilot {ship_targeted_event.get('PilotName_Localised')}'s {ship_targeted_event.get('Subsystem_Localised')}"
+                if ship_targeted_event.get('PilotName_Localised'):
+                    return f"Weapons now targeting {ship_targeted_event.get('LegalState', '')} pilot {ship_targeted_event.get('PilotName_Localised')}'s {ship_targeted_event.get('Ship','ship').capitalize()}"
                 else:
-                    return f"Weapons now targeting the {content.get('Ship','ship').capitalize()}"
+                    return f"Weapons now targeting the {ship_targeted_event.get('Ship','ship').capitalize()}"
             else:
                 return f"Weapons' target lock lost."
         if event_name == 'UnderAttack':
-            if content.get('Target') == 'You':
+            under_attack_event = cast(UnderAttackEvent, content)
+            if under_attack_event.get('Target') == 'You':
                 return f"{self.commander_name} is under attack."
             else:
-                return f"{self.commander_name}'s {content.get('Target')} is under attack."
+                return f"{self.commander_name}'s {under_attack_event.get('Target')} is under attack."
+            
         if event_name == 'Shipyard':
             return f"{self.commander_name} is accessing the stations shipyard."
         if event_name == 'Market':
             return f"{self.commander_name} is accessing the stations market."
         if event_name == 'Outfitting':
             return f"{self.commander_name} is accessing the stations outfitting."
-        if event_name == 'Docked':
-            return f"Now docked at {content.get('StationType')} {content.get('StationName')}"
 
     def full_event_message(self, event: GameEvent, timeoffset: str, is_important: bool):
         message = self.get_event_template(event)
