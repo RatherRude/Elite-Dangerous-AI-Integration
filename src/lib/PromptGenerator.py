@@ -355,7 +355,7 @@ class PromptGenerator:
             return f"{self.commander_name} is arriving at {fsd_jump_event.get('StarSystem')}"
         if event_name == 'FSDTarget':  # TODO is scoopable and should scoop?
             fsd_target_event = cast(FSDTargetEvent, content)
-            return f"{self.commander_name} is targeting the next jump to go to {fsd_target_event.get('StarSystem')}"
+            return f"{self.commander_name} is targeting the next jump to go to {fsd_target_event.get('Name')}"
         if event_name == 'Docked':
             docked_event = cast(DockedEvent, content)
             return f"Now docked at {docked_event.get('StationType')} {docked_event.get('StationName')}"
