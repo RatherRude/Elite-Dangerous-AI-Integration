@@ -1,5 +1,6 @@
 from hashlib import md5
 import json
+from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall
 import random
 from typing import Any, Callable
 
@@ -95,6 +96,9 @@ class ActionManager:
                 },
             }
         }
+        
+    def reset_action_cache(self):
+        self.action_cache.delete_all()
     
     def clean_user_input(self, user_input: list[str]) -> str:
         """
@@ -104,12 +108,12 @@ class ActionManager:
         user_input = [''.join(e for e in input if e.isalnum()) for input in user_input]
         return user_input
 
-    def hash_user_input(self, user_input: list[str]) -> str:
+    def hash_action_input(self, user_input: list[str], tool_list: list) -> str:
         """
             hash user input
         """
         user_input = self.clean_user_input(user_input)
-        return md5(json.dumps(user_input).encode()).hexdigest()
+        return md5(json.dumps([user_input, tool_list]).encode()).hexdigest()
 
     def predict_action(self, user_input: list[str], tool_list) -> list[ChatCompletionMessageToolCall] | None:
         """
@@ -120,7 +124,7 @@ class ActionManager:
             if yes and is confirmed, return actual
         """
         #log('info', 'Predicting action for:', user_input)
-        input_hash = self.hash_user_input(user_input)
+        input_hash = self.hash_action_input(user_input, tool_list)
         predicted_actions = self.action_cache.get(input_hash)
         if predicted_actions and predicted_actions.get("status") == "confirmed":
             actions = predicted_actions.get("actions")
@@ -128,71 +132,87 @@ class ActionManager:
             log('debug', 'Predicted action:', user_input, actions)
             return [ChatCompletionMessageToolCall(id=id, function=action, type="function") for action in actions]
         return None
+    
+    def has_prediction_draft(self, user_input: list[str], tool_list: list) -> bool:
+        """
+            get draft prediction
+        """
+        input_hash = self.hash_action_input(user_input, tool_list)
+        predicted_actions = self.action_cache.get(input_hash)
+        return True if predicted_actions and predicted_actions.get("status") == "draft" else False
+    
+    def save_prediction_draft(self, user_input: list[str], contextual_actions: list[ChatCompletionMessageToolCall], tool_list):
+        """
+            save draft prediction
+        """
+        input_hash = self.hash_action_input(user_input, tool_list)
+        contextual_actions: list[ChatCompletionMessageToolCall] = [action.function.model_dump() for action in contextual_actions]
 
-    def save_prediction(self, user_input: list[str], actual_actions: list[ChatCompletionMessageToolCall], tool_list):
-        """
-            save prediction to database,
-            if first seen, add as draft and queue for validation
-            if already seen and same as actual, keep unchanged
-            otherwise remove
-        """
-        input_hash = self.hash_user_input(user_input)
-        actual_actions = [action.function.model_dump() for action in actual_actions]
-        #log('info', 'Saving prediction for:', user_input, actual_actions)
-        cached = self.action_cache.get(input_hash)
-        if cached:
-            if cached.get("status") == "confirmed":
-                # if same as actual, keep unchanged
-                if cached.get("actions") == actual_actions:
-                    #log('info', 'Prediction already confirmed:', user_input)
-                    return
-                # otherwise remove
-                log('debug', 'Prediction mismatch:', user_input)
-                self.action_cache.delete(input_hash)
-                return
-            if cached.get("status") == "draft" and cached.get("actions") == actual_actions:
-                #log('info', 'Prediction still in draft:', user_input)
-                return
+        existing = self.action_cache.get(input_hash)
+        if existing and existing.get("status") == "confirmed":
+            log("debug", "Prediction already confirmed:", user_input, existing)
+            return False
+        if existing and existing.get("status") == "invalid":
+            log("debug", "Prediction already invalid:", user_input, existing)
+            return False
         
-        # add as draft
-        log('debug', 'Prediction added as draft:', user_input)
-        self.action_cache.init(input_hash, "1", {
+        log("debug", "Saving prediction draft:", user_input, contextual_actions)
+        self.action_cache.init(input_hash, "0", {
             "status": "draft",
-            "actions": actual_actions,
+            "actions": contextual_actions,
+            "user_input": user_input,
         })
-                
+        return True
 
-    def validate_prediction(self, user_input: list[str], actual_actions: list[ChatCompletionMessageToolCall], tool_list):
+    def save_prediction_verification(self, user_input: list[str], contextual_actions: list[ChatCompletionMessageToolCall], isolated_actions: list[ChatCompletionMessageToolCall], tool_list):
         """
             validate prediction
             if first seen, add as draft
             if already seen and same as actual, confirm
             otherwise remove
         """
-        input_hash = self.hash_user_input(user_input)
-        actual_actions = [action.function.model_dump() for action in actual_actions]
+        input_hash = self.hash_action_input(user_input, tool_list)
+        contextual_actions: list[ChatCompletionMessageToolCall] = [action.function.model_dump() for action in contextual_actions] if contextual_actions else []
+        isolated_actions = [action.function.model_dump() for action in isolated_actions] if isolated_actions else []
+        
+        if contextual_actions != isolated_actions:
+            #log('debug', 'Invalidating prediction for:', user_input, contextual_actions, isolated_actions)
+            self.action_cache.set(input_hash, {
+                "status": "invalid",
+                "actions": contextual_actions,
+                "user_input": user_input,
+            })
+            return False
+        
         #log('info', 'Validating prediction for:', user_input, actual_actions)
         cached = self.action_cache.get(input_hash)
-        if cached:
-            #log('info', 'Prediction already seen:', user_input, cached.get("actions"))
-            if cached.get("status") == "confirmed":
-                # if same as actual, keep unchanged
-                if cached.get("actions") == actual_actions:
-                    #log('info', 'Prediction already confirmed:', user_input)
-                    return
-                # otherwise remove
-                log('debug', 'Prediction mismatch:', user_input, cached, actual_actions)
-                self.action_cache.delete(input_hash)
-                return
-            if cached.get("status") == "draft" and cached.get("actions") == actual_actions:
-                log('debug', 'Prediction confirmed:', user_input, cached)
-                cached["status"] = "confirmed"
-                self.action_cache.set(input_hash, cached)
-                return
+        if not cached:
+            #log('debug', 'Adding prediction as draft:', user_input, contextual_actions)
+            self.action_cache.init(input_hash, "0", {
+                "status": "draft",
+                "actions": contextual_actions,
+                "user_input": user_input,
+            })
+            return False
         
-        # add as draft
-        log('info', 'Prediction added as draft:', user_input)
-        self.action_cache.set(input_hash, {
-            "status": "draft",
-            "actions": actual_actions,
-        })
+        if cached.get("actions") != contextual_actions:
+            #log('debug', 'Invalidating prediction for:', user_input, cached.get("actions"), contextual_actions)
+            self.action_cache.set(input_hash, {
+                "status": "invalid",
+                "actions": contextual_actions,
+                "user_input": user_input,
+            })
+            return False
+        
+        #log('info', 'Prediction already seen:', user_input, cached.get("actions"))
+        if cached.get("status") == "confirmed":
+            #log('debug', 'Prediction already confirmed:', user_input, cached)
+            return False
+        
+        if cached.get("status") == "draft":
+            log('debug', 'Prediction confirmed:', user_input, cached)
+            cached["status"] = "confirmed"
+            self.action_cache.set(input_hash, cached)
+            return True
+        
+        return False

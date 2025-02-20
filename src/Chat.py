@@ -67,7 +67,14 @@ def execute_actions(actions: list[dict[str, Any]], projected_states: dict[str, d
 def verify_action(client: OpenAI, user_input: list[str], action: dict[str, Any], prompt: list, tools: list):
     """ Verify the action prediction by sending the user input without any context to the model and check if the action is still predicted """
     global llm_model_name, action_manager
-    action_manager.save_prediction(user_input, action, tools)
+    
+    log("debug", "Verifying action:", user_input, action)
+    
+    draft_action = action_manager.has_prediction_draft(user_input, tools)
+    if not draft_action:
+        action_manager.save_prediction_draft(user_input, action, tools)
+        return
+    
     completion = client.chat.completions.create(
         model=llm_model_name,
         messages=[prompt[0]] + [{"role": "user", "content": user} for user in user_input],
@@ -78,10 +85,8 @@ def verify_action(client: OpenAI, user_input: list[str], action: dict[str, Any],
         log("debug", "error during action verification:", completion)
         return
 
-    if completion.choices[0].message.tool_calls:
-        action_manager.validate_prediction(user_input, completion.choices[0].message.tool_calls, tools)
-    else:
-        log("debug", "action prediction invalidated", completion)
+    action_manager.save_prediction_verification(user_input, action, completion.choices[0].message.tool_calls, tools)
+    
 
 
 def reply(client: OpenAI, events: list[Event], new_events: list[Event], projected_states: dict[str, dict], prompt_generator: PromptGenerator,
@@ -115,11 +120,11 @@ def reply(client: OpenAI, events: list[Event], new_events: list[Event], projecte
     uses_web_actions = config["web_search_actions_var"]
     tool_list = action_manager.getToolsList(active_mode, uses_actions, uses_web_actions) if use_tools else None
     predicted_actions = None
-    if tool_list and user_input:
+    if config["use_action_cache_var"] and tool_list and user_input:
         predicted_actions = action_manager.predict_action(user_input, tool_list)
         
     if predicted_actions:
-        #log('info', 'predicted_actions', predicted_actions)
+        log('info', 'Using action cache')
         response_text = None
         response_actions = predicted_actions
     else:
@@ -149,7 +154,7 @@ def reply(client: OpenAI, events: list[Event], new_events: list[Event], projecte
     if response_actions:
         execute_actions(response_actions, projected_states, event_manager, tts)
 
-        if not predicted_actions:
+        if not predicted_actions and config["use_action_cache_var"]:
             verify_action(client, user_input, response_actions, prompt, tool_list)
 
 useTools = False
@@ -271,6 +276,9 @@ def main():
     )
     registerProjections(event_manager)
 
+    if not config["continue_conversation_var"]:
+        action_manager.reset_action_cache()
+        
     if useTools:
         register_actions(action_manager, event_manager, llmClient, llm_model_name, visionClient, config["vision_model_name"], ed_keys)
         log('info', "Actions ready.")
