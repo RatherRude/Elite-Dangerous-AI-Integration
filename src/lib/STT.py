@@ -200,6 +200,7 @@ class STT:
         audio_ogg.name = "audio.ogg"  # OpenAI needs a filename
 
         text = None
+        start_time = time()
         transcription = self.openai_client.audio.transcriptions.create(
             model=self.model,
             file=audio_ogg,
@@ -207,6 +208,8 @@ class STT:
             prompt=self.prompt
         )
         text = transcription.text
+        end_time = time()
+        log('debug', f'Response time STT', end_time - start_time)
 
         filter = ['', 'COVAS, give me a status update... and throw in something inspiring, would you?']
         if not text or text.strip() in filter:
