@@ -8,6 +8,8 @@ from typing import final
 import openai
 import pyaudio
 import speech_recognition as sr
+import soundfile as sf
+import numpy as np
 from pysilero_vad import SileroVoiceActivityDetector
 
 from .Logger import log
@@ -186,15 +188,21 @@ class STT:
             # print('skipping audio without voice')
             return ''
 
-        # Grab the wav bytes and convert it into a valid file format for openai.
-        audio_wav = audio.get_wav_data(convert_rate=16000, convert_width=2)
-        audio_wav = io.BytesIO(audio_wav)
-        audio_wav.name = "audio.wav"
+        # Convert raw PCM data to numpy array
+        audio_np = np.frombuffer(audio_raw, dtype=np.int16).astype(np.float32) / 32768.0
+        
+        # Create a BytesIO buffer for the Ogg file
+        audio_ogg = io.BytesIO()
+        
+        # Write as Ogg Vorbis
+        sf.write(audio_ogg, audio_np, 16000, format='OGG', subtype='VORBIS')
+        audio_ogg.seek(0)
+        audio_ogg.name = "audio.ogg"  # OpenAI needs a filename
 
         text = None
         transcription = self.openai_client.audio.transcriptions.create(
             model=self.model,
-            file=audio_wav,
+            file=audio_ogg,
             language=self.language,
             prompt=self.prompt
         )
