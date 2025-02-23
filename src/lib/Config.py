@@ -483,10 +483,9 @@ def save_config(config: Config):
         json.dump(config, f)
         
 
-def assign_ptt(controller_manager: ControllerManager):
+def assign_ptt(config: Config, controller_manager: ControllerManager):
     def on_hotkey_detected(key: str):
-        config = load_config()
-        print(f"Received key: {key}")
+        #print(f"Received key: {key}")
         config["ptt_key"] = key
         print(json.dumps({"type": "config", "config": config})+'\n')
     controller_manager.listen_hotkey(on_hotkey_detected)

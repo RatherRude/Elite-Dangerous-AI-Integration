@@ -331,10 +331,9 @@ if __name__ == "__main__":
                 if data.get("type") == "start":
                     break
                 if data.get("type") == "assign_ptt":
-                    assign_ptt(ControllerManager())
+                    assign_ptt(config, ControllerManager())
                 if data.get("type") == "config":
                     config = data["config"]
-                    # TODO save_config(config)
                     print(json.dumps({"type": "config", "config": config})+'\n')
                 
             except json.JSONDecodeError:

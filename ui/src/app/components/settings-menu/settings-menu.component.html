@@ -69,7 +69,7 @@
                 @if (config.ptt_var) {
                   <mat-form-field (click)="onAssignPTT()">
                     <mat-label>Push-to-Talk Key</mat-label>
-                    <input matInput [value]="config.ptt_key" readonly>
+                    <input required matInput [value]="config.ptt_key" readonly>
                     <button matSuffix mat-icon-button>
                       <mat-icon>keyboard</mat-icon>
                     </button>
