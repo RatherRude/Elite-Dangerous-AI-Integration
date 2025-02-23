@@ -4,7 +4,7 @@ from typing import Literal, TypedDict
 import os
 import sys
 
-from lib.ControllerManager import ControllerManager
+from .ControllerManager import ControllerManager
 
 from .Logger import log
 
