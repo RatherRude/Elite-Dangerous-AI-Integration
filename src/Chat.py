@@ -7,7 +7,7 @@ from typing import Any, final
 from openai import OpenAI
 from openai.types.chat import ChatCompletion
 
-from lib.Config import Config, get_ed_appdata_path, get_ed_journals_path, load_config
+from lib.Config import Config, assign_ptt, get_ed_appdata_path, get_ed_journals_path, get_input_device_names, load_config, save_config
 from lib.ActionManager import ActionManager
 from lib.Actions import register_actions
 from lib.ControllerManager import ControllerManager
@@ -48,13 +48,6 @@ class Chat:
                     enabled_game_events.append(event)
 
         self.jn = EDJournal(self.config["game_events"], get_ed_journals_path(config))
-
-        if not self.config["continue_conversation_var"]:
-            self.action_manager.reset_action_cache()
-            
-        if self.config["tools_var"]:
-            register_actions(self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.ed_keys)
-            log('info', "Actions ready.")
             
         self.copilot = EDCoPilot(self.config["edcopilot"], is_edcopilot_dominant=self.config["edcopilot_dominant"],
                             enabled_game_events=enabled_game_events)
@@ -212,10 +205,10 @@ class Chat:
 
 
         if response_actions:
-            execute_actions(response_actions, projected_states, event_manager, tts)
+            self.execute_actions(response_actions, projected_states)
 
             if not predicted_actions and config["use_action_cache_var"]:
-                verify_action(client, user_input, response_actions, prompt, tool_list)
+                self.verify_action(user_input, response_actions, prompt, tool_list)
 
     def run(self):
         log('info', f"Initializing CMDR {self.config['commander_name']}'s personal AI...\n")
@@ -249,6 +242,9 @@ class Chat:
         if self.config['tools_var']:
             register_actions(self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.ed_keys)
             log('info', "Actions ready.")
+        
+        if not self.config["continue_conversation_var"]:
+            self.action_manager.reset_action_cache()
             
         log('info', 'Initializing states...')
         while self.jn.historic_events:
@@ -315,30 +311,6 @@ class Chat:
         self.tts.quit()
 
 
-def assign_ptt():
-    controller_manager = ControllerManager()
-    def on_hotkey_detected(key: str):
-        config = load_config()
-        print(f"Received key: {key}")
-        config["ptt_key"] = key
-        # TODO save config
-        print(json.dumps({"type": "config", "config": config})+'\n')
-    controller_manager.listen_hotkey(on_hotkey_detected)
-
-def get_input_device_names() -> str:
-    import pyaudio
-    p = pyaudio.PyAudio()
-    default_name = p.get_default_input_device_info()["name"]
-    mic_names = [default_name]
-    host_api = p.get_default_host_api_info()
-    for i in range(host_api.get('deviceCount')):
-        device = p.get_device_info_by_host_api_device_index(host_api.get('index'), i)
-        if device['maxInputChannels'] > 0:
-            name = device['name']
-            mic_names.append(name)
-    p.terminate()
-    return sorted(set(mic_names), key=mic_names.index)
-
 if __name__ == "__main__":
     try:
         print(json.dumps({"type": "ready"})+'\n')
@@ -359,7 +331,7 @@ if __name__ == "__main__":
                 if data.get("type") == "start":
                     break
                 if data.get("type") == "assign_ptt":
-                    assign_ptt()
+                    assign_ptt(ControllerManager())
                 if data.get("type") == "config":
                     config = data["config"]
                     # TODO save_config(config)
@@ -369,6 +341,7 @@ if __name__ == "__main__":
                 continue
         
         # Once start signal received, initialize and run chat
+        save_config(config)
         Chat(config).run()
     except Exception as e:
         log("error", e, traceback.format_exc())
