@@ -3,6 +3,7 @@ import json
 import math
 import sys
 from pathlib import Path
+from time import time
 import traceback
 from typing import Any
 
@@ -128,11 +129,14 @@ def reply(client: OpenAI, events: list[Event], new_events: list[Event], projecte
         response_text = None
         response_actions = predicted_actions
     else:
+        start_time = time()
         completion = client.chat.completions.create(
             model=llm_model_name,
             messages=prompt,
             tools=tool_list
         )
+        end_time = time()
+        log('debug', f'Response time LLM', end_time - start_time)
 
         if not isinstance(completion, ChatCompletion) or hasattr(completion, 'error'):
             log("error", "completion with error:", completion)
