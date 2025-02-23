@@ -13,7 +13,7 @@ from queue import Queue
 import platform
 from threading import Thread
 from tkinter import messagebox
-from typing import Dict
+from typing import Dict, final
 import typing
 
 from wrapt import synchronized
@@ -424,7 +424,7 @@ def check_for_updates(current_commit):
             if tag_data['object']['sha'] != current_commit:
                 ask_for_update(release_name, release_url)
 
-
+@final
 class App:
     def __init__(self, root):
         self.root = root
@@ -612,8 +612,22 @@ class App:
             padx=80,
             pady=5)
 
+        tk.Label(self.behavior_frame.inner_frame, text="Action Cache", font=('Helvetica', 10)).grid(row=4, column=0, sticky=tk.W)
+        
+        self.use_action_cache_var = tk.BooleanVar()
+        self.use_action_cache_checkbox = tk.Checkbutton(self.behavior_frame.inner_frame, text="Enabled",
+                                                        variable=self.use_action_cache_var)
+        self.use_action_cache_checkbox.grid(row=4, column=1, sticky=tk.W, padx=5, pady=5)
+        tk.Label(self.behavior_frame.inner_frame, text="Learn actions from previous interactions", font="Helvetica 10 italic").grid(
+            row=4,
+            column=1,
+            sticky=tk.W,
+            padx=80,
+            pady=5)
+        
+
         self.behavior_frame.update()
-        self.behavior_frame.grid_remove()  # Initially hide
+        self.behavior_frame.grid_remove()  # Initially hide        
 
 
         # Third Party (Initially hidden)
@@ -1144,6 +1158,7 @@ class App:
             'event_reaction_enabled_var': True,
             'game_actions_var': True,
             'web_search_actions_var': True,
+            'use_action_cache_var': True,
             'edcopilot': True,
             'edcopilot_dominant': False,
             'input_device_name': self.get_input_device_names()[0],
@@ -1298,6 +1313,7 @@ class App:
         self.data['event_reaction_enabled_var'] = self.event_reaction_enabled_var.get()
         self.data['game_actions_var'] = self.game_actions_var.get()
         self.data['web_search_actions_var'] = self.web_search_actions_var.get()
+        self.data['use_action_cache_var'] = self.use_action_cache_var.get()
         self.data['edcopilot'] = self.edcopilot_var.get()
         self.data['edcopilot_dominant'] = self.edcopilot_dominant_var.get()
         self.data['tts_voice'] = self.tts_voice.get()
@@ -1345,6 +1361,7 @@ class App:
         self.event_reaction_enabled_var.set(self.data['event_reaction_enabled_var'])
         self.game_actions_var.set(self.data['game_actions_var'])
         self.web_search_actions_var.set(self.data['web_search_actions_var'])
+        self.use_action_cache_var.set(self.data['use_action_cache_var'])
         self.edcopilot_var.set(self.data['edcopilot'])
         self.edcopilot_dominant_var.set(self.data['edcopilot_dominant'])
         self.tts_voice.insert(0, self.data['tts_voice'])
