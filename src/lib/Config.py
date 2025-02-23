@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import traceback
 from typing import Literal, TypedDict
 import os
 import sys
@@ -492,14 +493,18 @@ def assign_ptt(config: Config, controller_manager: ControllerManager):
 
 def get_input_device_names() -> str:
     import pyaudio
-    p = pyaudio.PyAudio()
-    default_name = p.get_default_input_device_info()["name"]
-    mic_names = [default_name]
-    host_api = p.get_default_host_api_info()
-    for i in range(host_api.get('deviceCount')):
-        device = p.get_device_info_by_host_api_device_index(host_api.get('index'), i)
-        if device['maxInputChannels'] > 0:
-            name = device['name']
-            mic_names.append(name)
-    p.terminate()
-    return sorted(set(mic_names), key=mic_names.index)
+    try:
+        p = pyaudio.PyAudio()
+        default_name = p.get_default_input_device_info()["name"]
+        mic_names = [default_name]
+        host_api = p.get_default_host_api_info()
+        for i in range(host_api.get('deviceCount')):
+            device = p.get_device_info_by_host_api_device_index(host_api.get('index'), i)
+            if device['maxInputChannels'] > 0:
+                name = device['name']
+                mic_names.append(name)
+        p.terminate()
+        return sorted(set(mic_names), key=mic_names.index)
+    except Exception as e:
+        log('error', 'Error getting input device names', e, traceback.format_exc())
+        return []
