@@ -21,6 +21,7 @@ default_config = {
     'edcopilot': True,
     'edcopilot_dominant': False,
     'input_device_name': 'default',
+    'output_device_name': 'default',
     'llm_model_name': "gpt-4o-mini",
     'llm_endpoint': "https://api.openai.com/v1",
     'llm_api_key': "",

@@ -533,7 +533,13 @@ class App:
         self.input_device_name_var.set(input_device_names[0])
         self.input_device_name = tk.OptionMenu(self.main_frame, self.input_device_name_var, *input_device_names)
         self.input_device_name.grid(row=get_same(), column=1, padx=10, pady=5, sticky=tk.W)
-
+        
+        tk.Label(self.main_frame, text="Output Device:", font=('Helvetica', 10)).grid(row=get_next(), column=0, sticky=tk.W)
+        output_device_names = self.get_output_device_names()
+        self.output_device_name_var = tk.StringVar()
+        self.output_device_name_var.set(output_device_names[0])
+        self.output_device_name = tk.OptionMenu(self.main_frame, self.output_device_name_var, *output_device_names)
+        self.output_device_name.grid(row=get_same(), column=1, padx=10, pady=5, sticky=tk.W)
 
 
         # Toggle Section Button
@@ -1162,6 +1168,7 @@ class App:
             'edcopilot': True,
             'edcopilot_dominant': False,
             'input_device_name': self.get_input_device_names()[0],
+            'output_device_name': self.get_output_device_names()[0],
             'llm_model_name': "gpt-4o-mini",
             'llm_endpoint': "https://api.openai.com/v1",
             'llm_api_key': "",
@@ -1320,6 +1327,7 @@ class App:
         self.data['tts_speed'] = self.tts_speed.get()
         self.data['ptt_key'] = self.ptt_key
         self.data['input_device_name'] = self.input_device_name_var.get()
+        self.data['output_device_name'] = self.output_device_name_var.get()
         self.data['game_events'] = self.game_events_save_cb()
 
         with open('config.json', 'w') as file:
@@ -1368,6 +1376,7 @@ class App:
         self.tts_speed.insert(0, self.data['tts_speed'])
         self.ptt_key = self.data['ptt_key']
         self.input_device_name_var.set(self.data['input_device_name'] if self.data['input_device_name'] in self.get_input_device_names() else self.get_input_device_names()[0])
+        self.output_device_name_var.set(self.data['output_device_name'] if self.data['output_device_name'] in self.get_output_device_names() else self.get_output_device_names()[0])
 
         self.update_label_text()
         self.toggle_ptt()
@@ -1461,6 +1470,10 @@ class App:
                 startupinfo = subprocess.STARTUPINFO()
                 startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
             self.process = subprocess.Popen(self.chat_command_arg.split(' ')+['--microphone', self.input_device_name_var.get()], startupinfo=startupinfo,
+                                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1,
+                                            universal_newlines=True, encoding='utf-8', shell=False, close_fds=True)
+
+            self.process = subprocess.Popen(self.chat_command_arg.split(' ')+['--speaker', self.output_device_name_var.get()], startupinfo=startupinfo,
                                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1,
                                             universal_newlines=True, encoding='utf-8', shell=False, close_fds=True)
 
@@ -1571,8 +1584,8 @@ class App:
 
     def get_input_device_names(self) -> str:
         p = pyaudio.PyAudio()
-        default_name = p.get_default_input_device_info()["name"]
-        mic_names = [default_name]
+        default_mic_name = p.get_default_input_device_info()["name"]
+        mic_names = [default_mic_name]
         host_api = p.get_default_host_api_info()
         for i in range(host_api.get('deviceCount')):
             device = p.get_device_info_by_host_api_device_index(host_api.get('index'), i)
@@ -1581,6 +1594,19 @@ class App:
                 mic_names.append(name)
         p.terminate()
         return sorted(set(mic_names), key=mic_names.index)
+        
+    def get_output_device_names(self) -> str:
+        p = pyaudio.PyAudio()
+        default_speaker_name = p.get_default_output_device_info()["name"]
+        speaker_names = [default_speaker_name]
+        host_api = p.get_default_host_api_info()
+        for i in range(host_api.get('deviceCount')):
+            output_device = p.get_device_info_by_host_api_device_index(host_api.get('index'), i)
+            if output_device['maxOutputChannels'] > 0:
+                name = output_device['name']
+                speaker_names.append(name)
+        p.terminate()
+        return sorted(set(speaker_names), key=speaker_names.index)
 
     def shutdown(self):
         if self.process:
