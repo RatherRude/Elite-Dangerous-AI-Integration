@@ -222,6 +222,8 @@ def main():
     log('info', f"Initializing CMDR {config['commander_name']}'s personal AI...\n")
     log('info', "API Key: Loaded")
     log('info', f"Using Push-to-Talk: {config['ptt_var']}")
+    log('info', f"Input Device: {config['input_device_name']}")
+    log('info', f"Output Device: {config['output_device_name']}")
     log('info', f"Using Function Calling: {useTools}")
     log('info', f"Current model: {llm_model_name}")
     log('info', f"Current TTS voice: {config['tts_voice']}")
@@ -234,7 +236,7 @@ def main():
     if config["edcopilot_dominant"]:
         log('info', "EDCoPilot is dominant, voice output will be handled by EDCoPilot.")
     tts_provider = 'none' if config["edcopilot_dominant"] else config["tts_provider"]
-    tts = TTS(openai_client=ttsClient, provider=tts_provider, model=config["tts_model_name"], voice=config["tts_voice"], speed=config["tts_speed"])
+    tts = TTS(openai_client=ttsClient, provider=tts_provider, model=config["tts_model_name"], voice=config["tts_voice"], speed=config["tts_speed"], output_device=config["output_device_name"])
     stt = STT(openai_client=sttClient, input_device_name=config["input_device_name"], model=config["stt_model_name"], custom_prompt=config["stt_custom_prompt"], required_word=config["stt_required_word"])
 
     if config['ptt_var'] and config['ptt_key']:

@@ -46,6 +46,7 @@ class Config(TypedDict):
     tts_speed: str
     ptt_key: str
     input_device_name: str
+    output_device_name: str
     game_events: dict[str, dict[str, bool]]
     ed_journal_path: str
     ed_appdata_path: str

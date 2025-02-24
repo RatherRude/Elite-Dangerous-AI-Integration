@@ -14,7 +14,6 @@ from num2words import num2words
 
 from .Logger import log
 
-
 @final
 class Mp3Stream(miniaudio.StreamableSource):
     def __init__(self, gen: Generator) -> None:
@@ -22,7 +21,7 @@ class Mp3Stream(miniaudio.StreamableSource):
         self.gen = gen
         self.data = b""
         self.offset = 0
-    
+
     def read(self, num_bytes: int) -> bytes:
         data = b""
         try:
@@ -35,17 +34,20 @@ class Mp3Stream(miniaudio.StreamableSource):
         except StopIteration:
             self.close()
         return data
-    
+
 @final
 class TTS:
-    def __init__(self, openai_client: Optional[openai.OpenAI] = None, provider: Literal["none", "edge-tts", "openai"]='openai', model='tts-1', voice="nova", speed: Union[str,float]=1):
+    def __init__(self, openai_client: Optional[openai.OpenAI] = None, provider: Literal["none", "edge-tts", "openai"]='openai', voice="nova", model='tts-1', speed: Union[str,float]=1, output_device: Optional[str] = None):
         self.openai_client = openai_client
         self.provider = provider
         self.model = model
         self.voice = voice
         self.speed = speed
         
+       
+
         self.p = pyaudio.PyAudio()
+        self.output_device = output_device
         self.read_queue = queue.Queue()
         self.is_aborted = False
         self._is_playing = False
@@ -54,23 +56,33 @@ class TTS:
         thread.daemon = True
         thread.start()
 
+    def _get_output_device_index(self) -> Optional[int]: #Rewert from String to Index 
+        for i in range(self.p.get_device_count()):
+            dev_info = self.p.get_device_info_by_index(i)
+            if self.output_device in dev_info.get('name', ''):
+                return i
+        return None
+
     def _playback_thread(self):
         backoff = 1
         while True:
-            try: 
+            try:
                 self._playback_loop()
             except Exception as e:
                 log('error', 'An error occurred during speech synthesis', e, traceback.format_exc())
                 sleep(backoff)
                 log('info', 'Attempting to restart audio playback after failure')
                 backoff *= 2
-    
+
     def _playback_loop(self):
+        output_index = self._get_output_device_index()
         stream = self.p.open(
+           
             format=pyaudio.paInt16,
             channels=1,
             rate=24_000,
-            output=True,
+            output=True, #send output signal true
+            output_device_index=output_index  
         )
         while True:
             self.is_aborted = False
@@ -83,7 +95,7 @@ class TTS:
                     text = re.sub(r"\d+(,\d{3})*(\.\d+)?", self._number_to_text, text)
                     text = strip_markdown.strip_markdown(text)
                     # print('reading:', text)
-                    try:                            
+                    try:
                         for chunk in self._stream_audio(text):
                             if self.is_aborted:
                                 break
@@ -91,48 +103,45 @@ class TTS:
                     except Exception as e:
                         self.read_queue.put(text)
                         raise e
-                
-                self._is_playing = False
+                else:
+                    self._is_playing = False
 
                 sleep(0.1)
             self._is_playing = False
             stream.stop_stream()
-    
+
     def _stream_audio(self, text):
         if self.provider == 'none':
             word_count = len(text.split())
             words_per_minute = 150 * float(self.speed)
             audio_duration = word_count / words_per_minute * 60
-            # generate silent audio for 
+            # generate silent audio for the duration of the text
             for _ in range(int(audio_duration * 24_000 / 1024)):
                 yield b"\x00" * 1024
         elif self.provider == "edge-tts":
             rate = f"+{int((float(self.speed) - 1) * 100)}%" if float(self.speed) > 1 else f"-{int((1 - float(self.speed)) * 100)}%"
             response = edge_tts.Communicate(text, voice=self.voice, rate=rate)
             pcm_stream = miniaudio.stream_any(
-                source = Mp3Stream(response.stream_sync()), 
-                source_format = miniaudio.FileFormat.MP3, 
-                output_format = miniaudio.SampleFormat.SIGNED16, 
-                nchannels = 1, 
-                sample_rate = 24000,
+                source=Mp3Stream(response.stream_sync()),
+                source_format=miniaudio.FileFormat.MP3,
+                output_format=miniaudio.SampleFormat.SIGNED16,
+                nchannels=1,
+                sample_rate=24000,
                 frames_to_read=1024 // self.p.get_sample_size(pyaudio.paInt16) # 1024 bytes
             )
-        
+
             for i in pcm_stream:
                 yield i.tobytes()
-                
         elif self.openai_client:
             with self.openai_client.audio.speech.with_streaming_response.create(
                     model=self.model,
-                    voice=self.voice, # pyright: ignore[reportArgumentType]
+                    voice=self.voice, # pyright: ignore[reportGeneralTypeIssues]
                     input=text,
-                    response_format="pcm",
-                    # raw samples in 24kHz (16-bit signed, low-endian), without the header.
-                    speed=float(self.speed)
+                    response_format="pcm"  # raw samples in 24kHz (16-bit signed, low-endian), without the header
             ) as response:
                 for chunk in response.iter_bytes(1024):
                     yield chunk
-        else: 
+        else:
             raise ValueError('No TTS client provided')
 
     def _number_to_text(self, match: re.Match[str]):
@@ -159,8 +168,7 @@ class TTS:
 
     def quit(self):
         pass
-
-
+       
 if __name__ == "__main__":
     openai_audio = openai.OpenAI(base_url="http://localhost:8080/v1")
 
@@ -170,8 +178,7 @@ if __name__ == "__main__":
 The missile knows where it is at all times. It knows this because it knows where it isn't. By subtracting where it is from where it isn't, or where it isn't from where it is (whichever is greater), it obtains a difference, or deviation. The guidance subsystem uses deviations to generate corrective commands to drive the missile from a position where it is to a position where it isn't, and arriving at a position where it wasn't, it now is. Consequently, the position where it is, is now the position that it wasn't, and it follows that the position that it was, is now the position that it isn't.
 In the event that the position that it is in is not the position that it wasn't, the system has acquired a variation, the variation being the difference between where the missile is, and where it wasn't. If variation is considered to be a significant factor, it too may be corrected by the GEA. However, the missile must also know where it was.
 The missile guidance computer scenario works as follows. Because a variation has modified some of the information the missile has obtained, it is not sure just where it is. However, it is sure where it isn't, within reason, and it knows where it was. It now subtracts where it should be from where it wasn't, or vice-versa, and by differentiating this from the algebraic sum of where it shouldn't be, and where it was, it is able to obtain the deviation and its variation, which is called error.
-
-    """
+"""
 
     for line in text.split("\n"):
         if not line or line.isspace():
