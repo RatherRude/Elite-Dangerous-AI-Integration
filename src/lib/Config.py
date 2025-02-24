@@ -422,7 +422,7 @@ def load_config() -> Config:
         'use_action_cache_var': True,
         'edcopilot': True,
         'edcopilot_dominant': False,
-        'input_device_name': get_input_device_names()[0],
+        'input_device_name': get_default_input_device_name(),
         'llm_model_name': "gpt-4o-mini",
         'llm_endpoint': "https://api.openai.com/v1",
         'llm_api_key': "",
@@ -508,3 +508,7 @@ def get_input_device_names() -> str:
     except Exception as e:
         log('error', 'Error getting input device names', e, traceback.format_exc())
         return []
+
+def get_default_input_device_name() -> str:
+    devices = get_input_device_names()
+    return devices[0] if devices else ""
