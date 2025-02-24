@@ -67,6 +67,54 @@ jobs:
         # output the upload URL for later use
         id: upload-artifact
 
+  tauri-build:
+    name: Build Tauri App
+    needs: pyinstaller-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v2
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: COVAS_NEXT_v${{ github.sha }}_linux
+          path: dist
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: "npm"
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install system libraries
+        run: |
+          sudo apt update
+          sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Install frontend dependencies
+        working-directory: ui
+        run: npm install
+
+      - name: Build tauri app
+        working-directory: ui
+        run: npm run tauri build
+
+      - name: Upload tauri app
+        uses: actions/upload-artifact@v4
+        with:
+          name: COVAS_NEXT_TAURI_v${{ github.sha }}_linux
+          path: ui/src-tauri/target/release/
+
   e2e-and-scan:
     name: E2E Tests & Defender Scan
     runs-on: ubuntu-latest
