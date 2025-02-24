@@ -44,8 +44,6 @@ class TTS:
         self.voice = voice
         self.speed = speed
         
-       
-
         self.p = pyaudio.PyAudio()
         self.output_device = output_device
         self.read_queue = queue.Queue()
