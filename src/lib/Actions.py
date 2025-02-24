@@ -796,6 +796,9 @@ def send_message(obj, projected_states):
             elif obj.get("recipient").lower() == "wing":
                 typewrite("/w ", interval=0.02)
                 return_message += " to wing chat"
+            elif obj.get("recipient").lower() == "squadron":
+                typewrite("/s ", interval=0.02)
+                return_message += " to squadron chat"
             else:
                 typewrite(f"/d {obj.get('recipient')} ", interval=0.02)
                 return_message += f" to {obj.get('recipient')}"
@@ -3363,7 +3366,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "type": "string",
                 "description": "local, wing or Commander name.",
                 "example": "wing",
-                "enum": ['local', 'wing', 'commander_name']
+                "enum": ['local', 'wing', 'squadron', 'commander_name']
             },
         },
         "required": ["message"]
