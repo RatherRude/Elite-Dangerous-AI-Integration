@@ -2,6 +2,7 @@ config.json
 *.config.json
 config*.json
 covas*.db
+covas*.db-jurnal
 EDAI.log
 /build
 /dist
@@ -12,7 +13,6 @@ conversation.json
 .env
 .cache
 Elite-Dangerous-AI-Integration/
-Flammly_Thingi.txt
 venv/bin/onnxruntime.dll
 venv/bin/sherpa-onnx-c-api.dll
 venv/bin/sherpa-onnx-cxx-api.dll
