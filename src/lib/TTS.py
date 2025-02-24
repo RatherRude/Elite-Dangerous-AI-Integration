@@ -14,6 +14,7 @@ from num2words import num2words
 
 from .Logger import log
 
+
 @final
 class Mp3Stream(miniaudio.StreamableSource):
     def __init__(self, gen: Generator) -> None:
@@ -75,11 +76,10 @@ class TTS:
     def _playback_loop(self):
         output_index = self._get_output_device_index()
         stream = self.p.open(
-           
             format=pyaudio.paInt16,
             channels=1,
             rate=24_000,
-            output=True, #send output signal true
+            output=True,
             output_device_index=output_index  
         )
         while True:
@@ -93,7 +93,7 @@ class TTS:
                     text = re.sub(r"\d+(,\d{3})*(\.\d+)?", self._number_to_text, text)
                     text = strip_markdown.strip_markdown(text)
                     # print('reading:', text)
-                    try:              
+                    try:
                         start_time = time()
                         end_time = None
                         for chunk in self._stream_audio(text):
@@ -106,8 +106,8 @@ class TTS:
                     except Exception as e:
                         self.read_queue.put(text)
                         raise e
-                else:
-                    self._is_playing = False
+
+                self._is_playing = False
 
                 sleep(0.1)
             self._is_playing = False
@@ -138,9 +138,11 @@ class TTS:
         elif self.openai_client:
             with self.openai_client.audio.speech.with_streaming_response.create(
                     model=self.model,
-                    voice=self.voice, # pyright: ignore[reportGeneralTypeIssues]
+                    voice=self.voice, # pyright: ignore[reportArgumentType]
                     input=text,
-                    response_format="pcm"  # raw samples in 24kHz (16-bit signed, low-endian), without the header
+                    response_format="pcm",
+                    # raw samples in 24kHz (16-bit signed, low-endian), without the header.
+                    speed=float(self.speed)
             ) as response:
                 for chunk in response.iter_bytes(1024):
                     yield chunk
@@ -171,7 +173,8 @@ class TTS:
 
     def quit(self):
         pass
-       
+
+
 if __name__ == "__main__":
     openai_audio = openai.OpenAI(base_url="http://localhost:8080/v1")
 
