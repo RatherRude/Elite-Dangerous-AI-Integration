@@ -2,7 +2,7 @@ import queue
 import re
 import threading
 import traceback
-from time import sleep
+from time import sleep, time
 from typing import Generator, Literal, Optional, Union, final
 
 import edge_tts
@@ -95,8 +95,13 @@ class TTS:
                     text = re.sub(r"\d+(,\d{3})*(\.\d+)?", self._number_to_text, text)
                     text = strip_markdown.strip_markdown(text)
                     # print('reading:', text)
-                    try:
+                    try:              
+                        start_time = time()
+                        end_time = None
                         for chunk in self._stream_audio(text):
+                            if not end_time:
+                                end_time = time()
+                                log('debug', f'Response time TTS', end_time - start_time)
                             if self.is_aborted:
                                 break
                             stream.write(chunk) # this may throw for various system reasons
