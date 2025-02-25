@@ -86,6 +86,15 @@
                   }
                 </mat-select>
               </mat-form-field>
+              <mat-form-field>
+                <mat-label>Output Device</mat-label>
+                <mat-select [(ngModel)]="config.output_device_name"
+                          (ngModelChange)="onConfigChange({output_device_name: $event})">
+                  @for (device of system?.output_device_names; track device) {
+                    <mat-option [value]="device">{{device}}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
             </div>
           }
         </div>
