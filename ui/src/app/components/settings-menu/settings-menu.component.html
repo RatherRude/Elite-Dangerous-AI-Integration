@@ -145,6 +145,45 @@
                                         (ngModelChange)="onEventConfigChange(section.key, e.key, $event)">
                           {{e.key}}
                         </mat-slide-toggle>
+                        @if (e.key === "ProspectedAsteroid") {
+                          <mat-form-field>
+                            <mat-label>React to material</mat-label>
+                            <input matInput [(ngModel)]="config.react_to_material"
+                                   (ngModelChange)="onConfigChange({react_to_material: $event})">
+                          </mat-form-field>
+                        }
+                        @if (e.key === "InDanger") {
+                          <mat-slide-toggle [(ngModel)]="config.react_to_danger_mining_var"
+                                          (ngModelChange)="onConfigChange({react_to_danger_mining_var: $event})">
+                            React while mining
+                          </mat-slide-toggle>
+                          <mat-slide-toggle [(ngModel)]="config.react_to_danger_onfoot_var"
+                                          (ngModelChange)="onConfigChange({react_to_danger_onfoot_var: $event})">
+                            React while on-foot
+                          </mat-slide-toggle>
+                          <mat-slide-toggle [(ngModel)]="config.react_to_danger_supercruise_var"
+                                          (ngModelChange)="onConfigChange({react_to_danger_supercruise_var: $event})">
+                            React while in supercruise
+                          </mat-slide-toggle>
+                        }
+                        @if (e.key === "ReceiveText") {
+                          <mat-slide-toggle [(ngModel)]="config.react_to_text_local_var"
+                                          (ngModelChange)="onConfigChange({react_to_text_local_var: $event})">
+                            React to local text
+                          </mat-slide-toggle>
+                          <mat-slide-toggle [(ngModel)]="config.react_to_text_starsystem_var"
+                                          (ngModelChange)="onConfigChange({react_to_text_starsystem_var: $event})">
+                            React to starsystem text
+                          </mat-slide-toggle>
+                          <mat-slide-toggle [(ngModel)]="config.react_to_text_squadron_var"
+                                          (ngModelChange)="onConfigChange({react_to_text_squadron_var: $event})">
+                            React to squadron text
+                          </mat-slide-toggle>
+                          <mat-slide-toggle [(ngModel)]="config.react_to_text_npc_var"
+                                          (ngModelChange)="onConfigChange({react_to_text_npc_var: $event})">
+                            React to NPC text
+                          </mat-slide-toggle>
+                        }
                         <br/>
                       }
                     </mat-expansion-panel>
