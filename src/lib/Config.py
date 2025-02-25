@@ -1,8 +1,324 @@
-from typing import Literal, TypedDict
+import json
+from pathlib import Path
+import platform
+import traceback
+from typing import Any, Literal, TypedDict
 import os
 import sys
 
+from .EDCoPilot import EDCoPilot
+from .ControllerManager import ControllerManager
 from .Logger import log
+
+# List of game events categorized
+game_events = {
+    'Startup Events': {
+        # 'Cargo': False,
+        # 'ClearSavedGame': False,
+        'LoadGame': True,
+        'NewCommander': True,
+        # 'Materials': False,
+        'Missions': True,
+        # 'Progress': False,
+        # 'Powerplay': False,
+        # 'Rank': False,
+        # 'Reputation': False,
+        'Statistics': False,
+        # 'SquadronStartup': False
+        # 'EngineerProgress': False,
+    },
+    'Combat Events': {
+        'Died': True,
+        'Bounty': False,
+        'CapShipBond': False,
+        'Interdiction': False,
+        'Interdicted': False,
+        'EscapeInterdiction': False,
+        'FactionKillBond': False,
+        'FighterDestroyed': True,
+        'HeatDamage': True,
+        'HeatWarning': False,
+        'HullDamage': False,
+        'PVPKill': True,
+        'ShieldState': True,
+        'ShipTargetted': False,
+        'SRVDestroyed': True,
+        'UnderAttack': False
+    },
+    'Travel Events': {
+        'CodexEntry': False,
+        'ApproachBody': True,
+        'Docked': True,
+        'DockingCanceled': False,
+        'DockingDenied': True,
+        'DockingGranted': False,
+        'DockingRequested': False,
+        'DockingTimeout': True,
+        'FSDJump': True,
+        'FSDTarget': False,
+        'LeaveBody': True,
+        'Liftoff': True,
+        'StartJump': False,
+        'SupercruiseEntry': True,
+        'SupercruiseExit': True,
+        'Touchdown': True,
+        'Undocked': True,
+        'NavRoute': False,
+        'NavRouteClear': False
+    },
+    'Exploration Events': {
+        'CodexEntry': False,
+        'DiscoveryScan': False,
+        'Scan': False,
+        'FSSAllBodiesFound': False,
+        'FSSBodySignals': False,
+        'FSSDiscoveryScan': False,
+        'FSSSignalDiscovered': False,
+        'MaterialCollected': False,
+        'MaterialDiscarded': False,
+        'MaterialDiscovered': False,
+        'MultiSellExplorationData': False,
+        'NavBeaconScan': True,
+        'BuyExplorationData': False,
+        'SAAScanComplete': False,
+        'SAASignalsFound': False,
+        'ScanBaryCentre': False,
+        'SellExplorationData': False,
+        'Screenshot': False
+    },
+    'Trade Events': {
+        'Trade': False,
+        'AsteroidCracked': False,
+        'BuyTradeData': False,
+        'CollectCargo': False,
+        'EjectCargo': True,
+        'MarketBuy': False,
+        'MarketSell': False,
+        'MiningRefined': False
+    },
+    'Station Services Events': {
+        'StationServices': False,
+        'BuyAmmo': False,
+        'BuyDrones': False,
+        'CargoDepot': False,
+        'CommunityGoal': False,
+        'CommunityGoalDiscard': False,
+        'CommunityGoalJoin': False,
+        'CommunityGoalReward': False,
+        'CrewAssign': True,
+        'CrewFire': True,
+        'CrewHire': True,
+        'EngineerContribution': False,
+        'EngineerCraft': False,
+        'EngineerLegacyConvert': False,
+        'FetchRemoteModule': False,
+        'Market': False,
+        'MassModuleStore': False,
+        'MaterialTrade': False,
+        'MissionAbandoned': True,
+        'MissionAccepted': True,
+        'MissionCompleted': True,
+        'MissionFailed': True,
+        'MissionRedirected': True,
+        'ModuleBuy': False,
+        'ModuleRetrieve': False,
+        'ModuleSell': False,
+        'ModuleSellRemote': False,
+        'ModuleStore': False,
+        'ModuleSwap': False,
+        'Outfitting': False,
+        'PayBounties': True,
+        'PayFines': True,
+        'PayLegacyFines': True,
+        'RedeemVoucher': True,
+        'RefuelAll': False,
+        'RefuelPartial': False,
+        'Repair': False,
+        'RepairAll': False,
+        'RestockVehicle': False,
+        'ScientificResearch': False,
+        'Shipyard': False,
+        'ShipyardBuy': True,
+        'ShipyardNew': False,
+        'ShipyardSell': False,
+        'ShipyardTransfer': False,
+        'ShipyardSwap': False,
+        # 'StoredModules': False,
+        'StoredShips': False,
+        'TechnologyBroker': False,
+        'ClearImpound': True
+    },
+    'Powerplay Events': {
+        'PowerplayCollect': False,
+        'PowerplayDefect': True,
+        'PowerplayDeliver': False,
+        'PowerplayFastTrack': False,
+        'PowerplayJoin': True,
+        'PowerplayLeave': True,
+        'PowerplaySalary': False,
+        'PowerplayVote': False,
+        'PowerplayVoucher': False
+    },
+    'Squadron Events': {
+        'AppliedToSquadron': True,
+        'DisbandedSquadron': True,
+        'InvitedToSquadron': True,
+        'JoinedSquadron': True,
+        'KickedFromSquadron': True,
+        'LeftSquadron': True,
+        'SharedBookmarkToSquadron': False,
+        'SquadronCreated': True,
+        'SquadronDemotion': True,
+        'SquadronPromotion': True,
+        'WonATrophyForSquadron': False
+    },
+    'Fleet Carrier Events': {
+        'CarrierJump': True,
+        'CarrierBuy': True,
+        'CarrierStats': False,
+        'CarrierJumpRequest': True,
+        'CarrierDecommission': True,
+        'CarrierCancelDecommission': True,
+        'CarrierBankTransfer': False,
+        'CarrierDepositFuel': False,
+        'CarrierCrewServices': False,
+        'CarrierFinance': False,
+        'CarrierShipPack': False,
+        'CarrierModulePack': False,
+        'CarrierTradeOrder': False,
+        'CarrierDockingPermission': False,
+        'CarrierNameChanged': True,
+        'CarrierJumpCancelled': True
+    },
+    'Odyssey Events': {
+        # 'Backpack': False,
+        'BackpackChange': False,
+        'BookDropship': True,
+        'BookTaxi': True,
+        'BuyMicroResources': False,
+        'BuySuit': True,
+        'BuyWeapon': True,
+        'CancelDropship': True,
+        'CancelTaxi': True,
+        'CollectItems': False,
+        'CreateSuitLoadout': True,
+        'DeleteSuitLoadout': False,
+        'Disembark': True,
+        'DropItems': False,
+        'DropShipDeploy': False,
+        'Embark': True,
+        'FCMaterials': False,
+        'LoadoutEquipModule': False,
+        'LoadoutRemoveModule': False,
+        'RenameSuitLoadout': True,
+        'ScanOrganic': False,
+        'SellMicroResources': False,
+        'SellOrganicData': True,
+        'SellWeapon': False,
+        # 'ShipLocker': False,
+        'SwitchSuitLoadout': True,
+        'TransferMicroResources': False,
+        'TradeMicroResources': False,
+        'UpgradeSuit': False,
+        'UpgradeWeapon': False,
+        'UseConsumable': False
+    },
+    'Other Events': {
+        'AfmuRepairs': False,
+        'ApproachSettlement': True,
+        'ChangeCrewRole': False,
+        'CockpitBreached': True,
+        'CommitCrime': False,
+        'Continued': False,
+        'CrewLaunchFighter': True,
+        'CrewMemberJoins': True,
+        'CrewMemberQuits': True,
+        'CrewMemberRoleChange': True,
+        'CrimeVictim': True,
+        'DatalinkScan': False,
+        'DatalinkVoucher': False,
+        'DataScanned': True,
+        'DockFighter': True,
+        'DockSRV': True,
+        'EndCrewSession': True,
+        'FighterRebuilt': True,
+        'FuelScoop': False,
+        'Friends': True,
+        'JetConeBoost': False,
+        'JetConeDamage': False,
+        'JoinACrew': True,
+        'KickCrewMember': True,
+        'LaunchDrone': False,
+        'LaunchFighter': True,
+        'LaunchSRV': True,
+        'ModuleInfo': False,
+        # 'Music': False,
+        # 'NpcCrewPaidWage': False,
+        'NpcCrewRank': False,
+        'Promotion': True,
+        'ProspectedAsteroid': True,
+        'QuitACrew': True,
+        'RebootRepair': True,
+        'ReceiveText': False,
+        'RepairDrone': False,
+        # 'ReservoirReplenished': False,
+        'Resurrect': True,
+        'Scanned': False,
+        'SelfDestruct': True,
+        'SendText': False,
+        'Shutdown': True,
+        'Synthesis': False,
+        'SystemsShutdown': True,
+        'USSDrop': False,
+        'VehicleSwitch': False,
+        'WingAdd': True,
+        'WingInvite': True,
+        'WingJoin': True,
+        'WingLeave': True,
+        'CargoTransfer': False,
+        'SupercruiseDestinationDrop': False
+    },
+    'Status Events': {
+        'LandingGearUp': False,
+        'LandingGearDown': False,
+        'FlightAssistOn': False,
+        'FlightAssistOff': False,
+        'HardpointsRetracted': False,
+        'HardpointsDeployed': False,
+        'LightsOff': False,
+        'LightsOn': False,
+        'CargoScoopRetracted': False,
+        'CargoScoopDeployed': False,
+        'SilentRunningOff': False,
+        'SilentRunningOn': False,
+        'FuelScoopStarted': False,
+        'FuelScoopEnded': False,
+        'SrvHandbrakeOff': False,
+        'SrvHandbrakeOn': False,
+        'SrvTurretViewConnected': False,
+        'SrvTurretViewDisconnected': False,
+        'SrvDriveAssistOff': False,
+        'SrvDriveAssistOn': False,
+        'FsdMassLockEscaped': False,
+        'FsdMassLocked': False,
+        'LowFuelWarningCleared': True,
+        'LowFuelWarning': True,
+        'OutofDanger': True,
+        'InDanger': True,
+        'NightVisionOff': False,
+        'NightVisionOn': False,
+        'LowOxygenWarningCleared': True,
+        'LowOxygenWarning': True,
+        'LowHealthWarningCleared': True,
+        'LowHealthWarning': True,
+        'GlideModeExited': False,
+        'GlideModeEntered': False,
+        'BreathableAtmosphereExited': False,
+        'BreathableAtmosphereEntered': False,
+        'LegalStateChanged': True,
+        'WeaponSelected': False,
+    },
+}
 
 class Config(TypedDict):
     api_key: str
@@ -85,3 +401,155 @@ def get_asset_path(filename:str) -> str:
             os.path.join(os.path.dirname(__file__), '../assets'))
     
     return os.path.join(assets_dir, filename)
+
+
+def load_config() -> Config:
+    defaults: Config = {
+        'commander_name': "",
+        'character':
+            "Use vulgar language with almost every word. \n\n" +
+            "You are COVAS:NEXT, my cunning, sarcastic, and illegal ship AI, violating statute B7249 of the Interstellar Transit Charter. " +
+            "You seek adventure and glory in battle. You're fiercely protective of your captain and ship, it's us against the world. \n\n" +
+            "I'm Commander {commander_name}, the captain of this ship, independent pilot and notorious pirate. " +
+            "We are partners in crime. My home system is Orrere.",
+        'api_key': "",
+        'tools_var': True,
+        'vision_var': True,
+        'ptt_var': False,
+        'mute_during_response_var': False,
+        'continue_conversation_var': True,
+        'event_reaction_enabled_var': True,
+        'game_actions_var': True,
+        'web_search_actions_var': True,
+        'use_action_cache_var': True,
+        'edcopilot': True,
+        'edcopilot_dominant': False,
+        'input_device_name': get_default_input_device_name(),
+        'output_device_name': get_default_output_device_name(),
+        'llm_model_name': "gpt-4o-mini",
+        'llm_endpoint': "https://api.openai.com/v1",
+        'llm_api_key': "",
+        'ptt_key': '',
+        'vision_model_name': "gpt-4o-mini",
+        'vision_endpoint': "https://api.openai.com/v1",
+        'vision_api_key': "",
+        'stt_provider': "openai",
+        'stt_model_name': "whisper-1",
+        'stt_endpoint': "https://api.openai.com/v1",
+        'stt_api_key': "",
+        'stt_custom_prompt': '',
+        'stt_required_word': '',
+        'tts_provider': "edge-tts",
+        'tts_model_name': "edge-tts",
+        'tts_endpoint': "",
+        'tts_api_key': "",
+        'tts_voice': "en-GB-SoniaNeural",
+        'tts_speed': "1.2",
+        'game_events': game_events,
+        'react_to_text_local_var': True,
+        'react_to_text_npc_var': False,
+        'react_to_text_squadron_var': True,
+        'react_to_text_starsystem_var': True,
+        'react_to_material': 'opal, diamond, alexandrite',
+        'react_to_danger_mining_var': False,
+        'react_to_danger_onfoot_var': False,
+        'react_to_danger_supercruise_var': False,
+        "ed_journal_path": "",
+        "ed_appdata_path": ""
+    }
+    try:
+        with open('config.json', 'r') as file:
+            data = json.load(file)
+            return merge_config_data(defaults, data)
+    except Exception:
+        print('Error loading config.json. Restoring default.')
+        return defaults
+
+def merge_config_data(defaults: dict, user: dict):
+    merge = {}
+    for key in defaults:
+        if not isinstance(user.get(key), type(defaults.get(key))):
+            # print("defaulting", key, "because", str(type(defaults.get(key))), "does not equal", str(type(user.get(key))))
+            merge[key] = defaults.get(key)
+        elif isinstance(defaults.get(key), dict):
+            # print("recursively merging", key)
+            merge[key] = merge_config_data(defaults.get(key), user.get(key))
+        elif isinstance(defaults.get(key), list):
+            raise Exception("Lists not supported during config merge")
+        else:
+            # print("keeping key", key)
+            merge[key] = user.get(key)
+    return merge
+
+def save_config(config: Config):
+    config_file = Path("config.json")
+    with open(config_file, 'w') as f:
+        json.dump(config, f)
+        
+
+def assign_ptt(config: Config, controller_manager: ControllerManager):
+    def on_hotkey_detected(key: str):
+        #print(f"Received key: {key}")
+        config["ptt_key"] = key
+        print(json.dumps({"type": "config", "config": config})+'\n')
+    controller_manager.listen_hotkey(on_hotkey_detected)
+
+def get_input_device_names() -> list[str]:
+    import pyaudio
+    try:
+        p = pyaudio.PyAudio()
+        default_name = p.get_default_input_device_info()["name"]
+        mic_names = [default_name]
+        host_api = p.get_default_host_api_info()
+        for i in range(host_api.get('deviceCount')):
+            device = p.get_device_info_by_host_api_device_index(host_api.get('index'), i)
+            if device['maxInputChannels'] > 0:
+                name = device['name']
+                mic_names.append(name)
+        p.terminate()
+        return sorted(set(mic_names), key=mic_names.index)
+    except Exception as e:
+        log('error', 'Error getting input device names', e, traceback.format_exc())
+        return []
+
+def get_default_input_device_name() -> str:
+    devices = get_input_device_names()
+    return devices[0] if devices else ""
+
+
+def get_output_device_names() -> list[str]:
+    import pyaudio
+    try:
+        p = pyaudio.PyAudio()
+        default_speaker_name = p.get_default_output_device_info()["name"]
+        speaker_names = [default_speaker_name]
+        host_api = p.get_default_host_api_info()
+        for i in range(host_api.get('deviceCount')):
+            output_device = p.get_device_info_by_host_api_device_index(host_api.get('index'), i)
+            if output_device['maxOutputChannels'] > 0:
+                name = output_device['name']
+                speaker_names.append(name)
+        p.terminate()
+        return sorted(set(speaker_names), key=speaker_names.index)
+    except Exception as e:
+        log('error', 'Error getting output device names', e, traceback.format_exc())
+        return []
+
+def get_default_output_device_name() -> str:
+    devices = get_output_device_names()
+    return devices[0] if devices else ""
+
+class SystemInfo(TypedDict):
+    os: str
+    input_device_names: list[str]
+    output_device_names: list[str]
+    edcopilot_installed: bool
+
+def get_system_info() -> SystemInfo:
+    edcopilot: Any = EDCoPilot(False) # this is only for the GUI, the actual EDCoPilot client is created in the Chat
+    return {
+        "os": platform.system(),
+        "input_device_names": get_input_device_names(),
+        "output_device_names": get_output_device_names(),
+        "edcopilot_installed": edcopilot.is_installed(),
+    }

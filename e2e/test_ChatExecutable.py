@@ -369,7 +369,7 @@ def test_chat_executable():
     chat_location = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../dist/Chat/Chat.exe" if platform.system() == "Windows" else "../dist/Chat/Chat")
     proc = subprocess.Popen(
         [chat_location],
-        cwd=temp_dir, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1,
+        cwd=temp_dir, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, bufsize=1,
         universal_newlines=True, encoding='utf-8', shell=False, close_fds=True
     )
     
@@ -379,9 +379,26 @@ def test_chat_executable():
         if not line:
             raise Exception("Chat.exe exited unexpectedly")
         print(line)
-        if "System Ready." in line:
+        if '{"type": "ready"}' in line:
             break
 
+    # assert that Chat.exe is running
+    assert proc.poll() is None
+    
+    # write start message to stdin
+    if proc.stdin:
+        proc.stdin.write('{"type": "start"}\n')
+        proc.stdin.flush()
+    
+    # read stdout until Chat.exe outputs a response
+    while proc.stdout:
+        line = proc.stdout.readline()
+        if not line:
+            raise Exception("Chat.exe exited unexpectedly")
+        print(line)
+        if '"prefix": "info", "message": "System Ready.\\n"' in line:
+            break
+    
     # assert that Chat.exe is running
     assert proc.poll() is None
     

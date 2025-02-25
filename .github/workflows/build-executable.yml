@@ -71,6 +71,49 @@ jobs:
         # output the upload URL for later use
         id: upload-artifact
 
+  tauri-build:
+    name: Build Tauri App
+    needs: pyinstaller-build
+    runs-on: windows-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v2
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: COVAS_NEXT_v${{ github.sha }}
+          path: dist
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: "npm"
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Install frontend dependencies
+        working-directory: ui
+        run: npm install
+
+      - name: Build tauri app
+        working-directory: ui
+        run: npm run tauri build
+
+      - name: Upload tauri app
+        uses: actions/upload-artifact@v4
+        with:
+          name: COVAS_NEXT_TAURI_v${{ github.sha }}
+          path: ui/src-tauri/target/release/
+
   e2e-and-scan:
     name: E2E Tests & Defender Scan
     # This is required to run in a fresh VM to check if all python deps are bundled in the exe

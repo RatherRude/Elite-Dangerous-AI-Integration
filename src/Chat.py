@@ -1,16 +1,13 @@
 import io
 import json
-import math
 import sys
-from pathlib import Path
-from time import time
 import traceback
-from typing import Any
+from typing import Any, final
 
 from openai import OpenAI
 from openai.types.chat import ChatCompletion
 
-from lib.Config import Config, get_ed_appdata_path, get_ed_journals_path
+from lib.Config import Config, assign_ptt, get_ed_appdata_path, get_ed_journals_path, get_system_info, load_config, save_config
 from lib.ActionManager import ActionManager
 from lib.Actions import register_actions
 from lib.ControllerManager import ControllerManager
@@ -21,348 +18,333 @@ from lib.Projections import registerProjections
 from lib.PromptGenerator import PromptGenerator
 from lib.STT import STT
 from lib.TTS import TTS
-from lib.StatusParser import StatusParser
-
-# from MousePt import MousePoint
-
-# Add the parent directory to sys.path
-parent_dir = Path(__file__).resolve().parent.parent
-sys.path.append(str(parent_dir))
-
+from lib.StatusParser import Status, StatusParser
 from lib.EDJournal import *
 from lib.EventManager import EventManager
 
-llm_model_name = None
-llmClient = None
-sttClient = None
-ttsClient = None
-visionClient = None
-
-action_manager = ActionManager()
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 
-def load_config() -> Config:
-    config_file = Path("config.json")
-    if config_file.exists():
-        with open(config_file, 'r') as f:
-            return json.load(f)
-    raise FileNotFoundError("config.json not found")
-
-is_thinking = False
-
-def execute_actions(actions: list[dict[str, Any]], projected_states: dict[str, dict], event_manager: EventManager, tts: TTS):
-    action_descriptions: list[str | None] = []
-    action_results: list[Any] = []
-    for action in actions:
-        action_input_desc = action_manager.getActionDesc(action, projected_states)
-        action_descriptions.append(action_input_desc)
-        if action_input_desc:
-            tts.say(action_input_desc)
-        action_result = action_manager.runAction(action, projected_states)
-        action_results.append(action_result)
-        event_manager.add_tool_call([action.model_dump()], [action_result], [action_input_desc] if action_input_desc else None)
-
-
-def verify_action(client: OpenAI, user_input: list[str], action: dict[str, Any], prompt: list, tools: list):
-    """ Verify the action prediction by sending the user input without any context to the model and check if the action is still predicted """
-    global llm_model_name, action_manager
-    
-    log("debug", "Verifying action:", user_input, action)
-    
-    draft_action = action_manager.has_prediction_draft(user_input, tools)
-    if not draft_action:
-        action_manager.save_prediction_draft(user_input, action, tools)
-        return
-    
-    completion = client.chat.completions.create(
-        model=llm_model_name,
-        messages=[prompt[0]] + [{"role": "user", "content": user} for user in user_input],
-        tools=tools
-    )
-    
-    if not isinstance(completion, ChatCompletion) or hasattr(completion, 'error'):
-        log("debug", "error during action verification:", completion)
-        return
-
-    action_manager.save_prediction_verification(user_input, action, completion.choices[0].message.tool_calls, tools)
-    
-
-
-def reply(client: OpenAI, events: list[Event], new_events: list[Event], projected_states: dict[str, dict], prompt_generator: PromptGenerator,
-          event_manager: EventManager, tts: TTS, copilot: EDCoPilot, config: Config):
-    global is_thinking, llm_model_name, useTools, action_manager
-    is_thinking = True
-    #log('info', 'Replying...')
-    prompt = prompt_generator.generate_prompt(events=events, projected_states=projected_states, pending_events=new_events)
-
-    user_input: list[str] = [event.content for event in new_events if event.kind == 'user']
-    use_tools = useTools and len(user_input)
-    reasons = [event.content.get('event', event.kind) if event.kind=='game' else event.kind for event in new_events if event.kind in ['user', 'game', 'tool', 'status']]
-
-    current_status = projected_states.get("CurrentStatus")
-    flags = current_status["flags"]
-    flags2 = current_status["flags2"]
-
-    active_mode = None
-    if flags:
-        if flags["InMainShip"]:
-            active_mode = "mainship"
-        elif flags["InFighter"]:
-            active_mode = "fighter"
-        elif flags["InSRV"]:
-            active_mode = "buggy"
-    if flags2:
-        if flags2["OnFoot"]:
-            active_mode = "humanoid"
-
-    uses_actions = config["game_actions_var"]
-    uses_web_actions = config["web_search_actions_var"]
-    tool_list = action_manager.getToolsList(active_mode, uses_actions, uses_web_actions) if use_tools else None
-    predicted_actions = None
-    if config["use_action_cache_var"] and tool_list and user_input:
-        predicted_actions = action_manager.predict_action(user_input, tool_list)
+@final
+class Chat:
+    def __init__(self, config: Config):
+        self.config = config # todo: remove
+        if self.config["api_key"] == '':
+            self.config["api_key"] = '-'
         
-    if predicted_actions:
-        log('info', 'Using action cache')
-        response_text = None
-        response_actions = predicted_actions
-    else:
-        start_time = time()
-        completion = client.chat.completions.create(
-            model=llm_model_name,
-            messages=prompt,
-            tools=tool_list
-        )
-        end_time = time()
-        log('debug', f'Response time LLM', end_time - start_time)
+        self.backstory = self.config["character"].replace("{commander_name}", self.config['commander_name'])
+            
+        self.is_thinking = False
+        
+        self.controller_manager = ControllerManager()
+        self.action_manager = ActionManager()
 
-        if not isinstance(completion, ChatCompletion) or hasattr(completion, 'error'):
-            log("error", "completion with error:", completion)
-            is_thinking = False
-            return
-        if hasattr(completion, 'usage') and completion.usage:
-            log("Debug", f'Prompt: {completion.usage.prompt_tokens}, Completion: {completion.usage.completion_tokens}')
+        enabled_game_events: list[str] = []
+        for category in self.config["game_events"].values():
 
-        response_text = completion.choices[0].message.content
-        response_actions = completion.choices[0].message.tool_calls
-
-    if response_text and not response_actions:
-        tts.say(response_text)
-        event_manager.add_conversation_event('assistant', completion.choices[0].message.content)
-        copilot.output_covas(response_text, reasons)
-
-    is_thinking = False
-
-    if response_actions:
-        execute_actions(response_actions, projected_states, event_manager, tts)
-
-        if not predicted_actions and config["use_action_cache_var"]:
-            verify_action(client, user_input, response_actions, prompt, tool_list)
-
-useTools = False
-
-
-jn: EDJournal | None = None
-tts: TTS | None = None
-prompt_generator: PromptGenerator | None = None
-status_parser: StatusParser | None = None
-event_manager: EventManager | None = None
-
-controller_manager = ControllerManager()
-
-def main():
-    global llmClient, sttClient, ttsClient, tts, aiModel, useTools, jn, event_manager, prompt_generator, llm_model_name, status_parser
-
-    # Load configuration
-    config = load_config()
-    if config["api_key"] == '':
-        config["api_key"] = '-'
-    llm_model_name = config["llm_model_name"]
-
-
-    enabled_game_events: list[str] = []
-    for category in config["game_events"].values():
-        for event, state in category.items():
-            if state:
-                enabled_game_events.append(event)
-
-    jn = EDJournal(config["game_events"], get_ed_journals_path(config))
-
-    copilot = EDCoPilot(config["edcopilot"], is_edcopilot_dominant=config["edcopilot_dominant"],
-                        enabled_game_events=enabled_game_events)
-
-    # gets API Key from config.json
-    llmClient = OpenAI(
-        base_url="https://api.openai.com/v1" if config["llm_endpoint"] == '' else config["llm_endpoint"],
-        api_key=config["api_key"] if config["llm_api_key"] == '' else config["llm_api_key"],
-    )
-
-    # tool usage
-    if config["tools_var"]:
-        useTools = True
-    # alternative models
-    if llm_model_name != '':
-        aiModel = llm_model_name
-    # character prompt
-    backstory = config["character"]
-    # vision
-    if config["vision_var"]:
-        visionClient = OpenAI(
-            base_url="https://api.openai.com/v1" if config["vision_endpoint"] == '' else config["vision_endpoint"],
-            api_key=config["api_key"] if config["vision_api_key"] == '' else config["vision_api_key"],
-        )
-    else:
-        visionClient = None
-
-
-    sttClient = OpenAI(
-        base_url=config["stt_endpoint"],
-        api_key=config["api_key"] if config["stt_api_key"] == '' else config["stt_api_key"],
-    )
-
-    if config["tts_provider"] in ['openai', 'custom']:
-        ttsClient = OpenAI(
-            base_url=config["tts_endpoint"],
-            api_key=config["api_key"] if config["tts_api_key"] == '' else config["tts_api_key"],
-        )
-
-    log('info', f"Initializing CMDR {config['commander_name']}'s personal AI...\n")
-    log('info', "API Key: Loaded")
-    log('info', f"Using Push-to-Talk: {config['ptt_var']}")
-    log('info', f"Input Device: {config['input_device_name']}")
-    log('info', f"Output Device: {config['output_device_name']}")
-    log('info', f"Using Function Calling: {useTools}")
-    log('info', f"Current model: {llm_model_name}")
-    log('info', f"Current TTS voice: {config['tts_voice']}")
-    log('info', f"Current TTS Speed: {config['tts_speed']}")
-    log('info', "Current backstory: " + backstory.replace("{commander_name}", config['commander_name']))
-
-    # TTS Setup
-    log('info', "Basic configuration complete.")
-    log('info', "Loading voice output...")
-    if config["edcopilot_dominant"]:
-        log('info', "EDCoPilot is dominant, voice output will be handled by EDCoPilot.")
-    tts_provider = 'none' if config["edcopilot_dominant"] else config["tts_provider"]
-    tts = TTS(openai_client=ttsClient, provider=tts_provider, model=config["tts_model_name"], voice=config["tts_voice"], speed=config["tts_speed"], output_device=config["output_device_name"])
-    stt = STT(openai_client=sttClient, input_device_name=config["input_device_name"], model=config["stt_model_name"], custom_prompt=config["stt_custom_prompt"], required_word=config["stt_required_word"])
-
-    if config['ptt_var'] and config['ptt_key']:
-        log('info', f"Setting push-to-talk hotkey {config['ptt_key']}.")
-        controller_manager.register_hotkey(config["ptt_key"], lambda _: stt.listen_once_start(),
-                                           lambda _: stt.listen_once_end())
-    else:
-        stt.listen_continuous()
-    log('info', "Voice interface ready.")
-
-
-    enabled_game_events: list[str] = []
-    if config["event_reaction_enabled_var"]:
-        for category in config["game_events"].values():
             for event, state in category.items():
                 if state:
                     enabled_game_events.append(event)
 
-    ed_keys = EDKeys(get_ed_appdata_path(config))
-    status_parser = StatusParser(get_ed_journals_path(config))
-    prompt_generator = PromptGenerator(config["commander_name"], config["character"], important_game_events=enabled_game_events)
-    event_manager = EventManager(
-        on_reply_request=lambda events, new_events, states: reply(llmClient, events, new_events, states, prompt_generator, event_manager,
-                                                          tts, copilot, config),
-        game_events=enabled_game_events,
-        continue_conversation=config["continue_conversation_var"],
-        react_to_text_local=config["react_to_text_local_var"],
-        react_to_text_starsystem=config["react_to_text_starsystem_var"],
-        react_to_text_npc=config["react_to_text_npc_var"],
-        react_to_text_squadron=config["react_to_text_squadron_var"],
-        react_to_material=config["react_to_material"],
-        react_to_danger_mining=config["react_to_danger_mining_var"],
-        react_to_danger_onfoot=config["react_to_danger_onfoot_var"]
-    )
-    registerProjections(event_manager)
+        self.jn = EDJournal(self.config["game_events"], get_ed_journals_path(config))
+            
+        self.copilot = EDCoPilot(self.config["edcopilot"], is_edcopilot_dominant=self.config["edcopilot_dominant"],
+                            enabled_game_events=enabled_game_events)
 
-    if not config["continue_conversation_var"]:
-        action_manager.reset_action_cache()
+        # gets API Key from config.json
+        self.llmClient = OpenAI(
+            base_url="https://api.openai.com/v1" if self.config["llm_endpoint"] == '' else self.config["llm_endpoint"],
+            api_key=self.config["api_key"] if self.config["llm_api_key"] == '' else self.config["llm_api_key"],
+        )
         
-    if useTools:
-        register_actions(action_manager, event_manager, llmClient, llm_model_name, visionClient, config["vision_model_name"], ed_keys)
-        log('info', "Actions ready.")
-        
-    log('info', 'Initializing states...')
-    while jn.historic_events:
-        event_manager.add_historic_game_event(jn.historic_events.pop(0))
-        
-    event_manager.add_status_event(status_parser.current_status)
-    event_manager.process()
+        # vision
+        self.visionClient: OpenAI | None = None
+        if self.config["vision_var"]:
+            self.visionClient = OpenAI(
+                base_url="https://api.openai.com/v1" if self.config["vision_endpoint"] == '' else self.config["vision_endpoint"],
+                api_key=self.config["api_key"] if self.config["vision_api_key"] == '' else self.config["vision_api_key"],
+            )
+            
 
-    # Cue the user that we're ready to go.
-    log('info', "System Ready.")
+        self.sttClient = OpenAI(
+            base_url=self.config["stt_endpoint"],
+            api_key=self.config["api_key"] if self.config["stt_api_key"] == '' else self.config["stt_api_key"],
+        )
 
-    within_scan_radius = True
-    scan_radius = 0
-    scan_in_progress = False
-    scans = []
-    counter = 0
-    while True:
-        try:
-            counter += 1
-            status = None
-            # check status file for updates
-            while not status_parser.status_queue.empty():
-                status = status_parser.status_queue.get()
-                event_manager.add_status_event(status)
-                
-            # mute continuous listening during response
-            if config["mute_during_response_var"]:
-                if tts.get_is_playing():
-                    stt.pause_continuous_listening(True)
+        self.ttsClient: OpenAI | None = None
+        if self.config["tts_provider"] in ['openai', 'custom']:
+            self.ttsClient = OpenAI(
+                base_url=self.config["tts_endpoint"],
+                api_key=self.config["api_key"] if self.config["tts_api_key"] == '' else self.config["tts_api_key"],
+            )
+            
+        tts_provider = 'none' if self.config["edcopilot_dominant"] else self.config["tts_provider"]
+        self.tts = TTS(openai_client=self.ttsClient, provider=tts_provider, model=self.config["tts_model_name"], voice=self.config["tts_voice"], speed=self.config["tts_speed"])
+        self.stt = STT(openai_client=self.sttClient, input_device_name=self.config["input_device_name"], model=self.config["stt_model_name"], custom_prompt=self.config["stt_custom_prompt"], required_word=self.config["stt_required_word"])
+
+        self.enabled_game_events: list[str] = []
+        if self.config["event_reaction_enabled_var"]:
+            for category in self.config["game_events"].values():
+                for event, state in category.items():
+                    if state:
+                        self.enabled_game_events.append(event)
+
+        self.ed_keys = EDKeys(get_ed_appdata_path(config))
+        self.status_parser = StatusParser(get_ed_journals_path(config))
+        self.prompt_generator = PromptGenerator(self.config["commander_name"], self.config["character"], important_game_events=enabled_game_events)
+        self.event_manager = EventManager(
+            on_reply_request=lambda events, new_events, states: self.reply(events, new_events, states),
+            game_events=enabled_game_events,
+            continue_conversation=self.config["continue_conversation_var"],
+            react_to_text_local=self.config["react_to_text_local_var"],
+            react_to_text_starsystem=self.config["react_to_text_starsystem_var"],
+            react_to_text_npc=self.config["react_to_text_npc_var"],
+            react_to_text_squadron=self.config["react_to_text_squadron_var"],
+            react_to_material=self.config["react_to_material"],
+            react_to_danger_mining=self.config["react_to_danger_mining_var"],
+            react_to_danger_onfoot=self.config["react_to_danger_onfoot_var"]
+        )
+        
+    def execute_actions(self, actions: list[dict[str, Any]], projected_states: dict[str, dict]):
+        action_descriptions: list[str | None] = []
+        action_results: list[Any] = []
+        for action in actions:
+            action_input_desc = self.action_manager.getActionDesc(action, projected_states)
+            action_descriptions.append(action_input_desc)
+            if action_input_desc:
+                self.tts.say(action_input_desc)
+            action_result = self.action_manager.runAction(action, projected_states)
+            action_results.append(action_result)
+            self.event_manager.add_tool_call([action.model_dump()], [action_result], [action_input_desc] if action_input_desc else None)
+
+
+
+    def verify_action(self, user_input: list[str], action: dict[str, Any], prompt: list, tools: list):
+        """ Verify the action prediction by sending the user input without any context to the model and check if the action is still predicted """
+        log("debug", "Verifying action:", user_input, action)
+        
+        draft_action = self.action_manager.has_prediction_draft(user_input, tools)
+        if not draft_action:
+            self.action_manager.save_prediction_draft(user_input, action, tools)
+            return
+        
+        completion = self.llmClient.chat.completions.create(
+            model=self.config["llm_model_name"],
+            messages=[prompt[0]] + [{"role": "user", "content": user} for user in user_input],
+            tools=tools
+        )
+        
+        if not isinstance(completion, ChatCompletion) or hasattr(completion, 'error'):
+            log("debug", "error during action verification:", completion)
+            return
+
+        self.action_manager.save_prediction_verification(user_input, action, completion.choices[0].message.tool_calls, tools)
+    
+
+
+    def reply(self, events: list[Event], new_events: list[Event], projected_states: dict[str, dict]):
+        self.is_thinking = True
+        log('debug', 'Starting reply...')
+        prompt = self.prompt_generator.generate_prompt(events=events, projected_states=projected_states, pending_events=new_events)
+
+        user_input: list[str] = [event.content for event in new_events if event.kind == 'user']
+        use_tools = self.config["tools_var"] and len(user_input)
+        reasons = [event.content.get('event', event.kind) if event.kind=='game' else event.kind for event in new_events if event.kind in ['user', 'game', 'tool', 'status']]
+
+        current_status = projected_states.get("CurrentStatus")
+        flags = current_status["flags"]
+        flags2 = current_status["flags2"]
+
+        active_mode = None
+        if flags:
+            if flags["InMainShip"]:
+                active_mode = "mainship"
+            elif flags["InFighter"]:
+                active_mode = "fighter"
+            elif flags["InSRV"]:
+                active_mode = "buggy"
+        if flags2:
+            if flags2["OnFoot"]:
+                active_mode = "humanoid"
+
+        uses_actions = self.config["game_actions_var"]
+        uses_web_actions = self.config["web_search_actions_var"]
+        tool_list = self.action_manager.getToolsList(active_mode, uses_actions, uses_web_actions) if use_tools else None
+        predicted_actions = None
+        if tool_list and user_input:
+            predicted_actions = self.action_manager.predict_action(user_input, tool_list)
+            
+        if predicted_actions:
+            #log('info', 'predicted_actions', predicted_actions)
+            response_text = None
+            response_actions = predicted_actions
+        else:
+            completion = self.llmClient.chat.completions.create(
+                model=self.config["llm_model_name"],
+                messages=prompt,
+                tools=tool_list
+            )
+
+            if not isinstance(completion, ChatCompletion) or hasattr(completion, 'error'):
+                log("error", "completion with error:", completion)
+                is_thinking = False
+                return
+            if hasattr(completion, 'usage') and completion.usage:
+                log("Debug", f'Prompt: {completion.usage.prompt_tokens}, Completion: {completion.usage.completion_tokens}')
+
+            response_text = completion.choices[0].message.content
+            response_actions = completion.choices[0].message.tool_calls
+
+        if response_text and not response_actions:
+            self.tts.say(response_text)
+            self.event_manager.add_conversation_event('assistant', completion.choices[0].message.content)
+            self.copilot.output_covas(response_text, reasons)
+
+        self.is_thinking = False
+
+
+        if response_actions:
+            self.execute_actions(response_actions, projected_states)
+
+            if not predicted_actions and config["use_action_cache_var"]:
+                self.verify_action(user_input, response_actions, prompt, tool_list)
+
+    def run(self):
+        log('info', f"Initializing CMDR {self.config['commander_name']}'s personal AI...\n")
+        log('info', "API Key: Loaded")
+        log('info', f"Using Push-to-Talk: {self.config['ptt_var']}")
+        log('info', f"Using Function Calling: {self.config['tools_var']}")
+        log('info', f"Current model: {self.config['llm_model_name']}")
+        log('info', f"Current TTS voice: {self.config['tts_voice']}")
+        log('info', f"Current TTS Speed: {self.config['tts_speed']}")
+        log('info', "Current backstory: " + self.backstory)
+
+        # TTS Setup
+        log('info', "Basic configuration complete.")
+        log('info', "Loading voice output...")
+        if self.config["edcopilot_dominant"]:
+            log('info', "EDCoPilot is dominant, voice output will be handled by EDCoPilot.")
+
+        if self.config['ptt_var'] and self.config['ptt_key']:
+            log('info', f"Setting push-to-talk hotkey {self.config['ptt_key']}.")
+            self.controller_manager.register_hotkey(
+                self.config["ptt_key"], 
+                lambda _: self.stt.listen_once_start(),
+                lambda _: self.stt.listen_once_end()
+            )
+        else:
+            self.stt.listen_continuous()
+        log('info', "Voice interface ready.")
+
+        registerProjections(self.event_manager)
+
+        if self.config['tools_var']:
+            register_actions(self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.ed_keys)
+            log('info', "Actions ready.")
+        
+        if not self.config["continue_conversation_var"]:
+            self.action_manager.reset_action_cache()
+            
+        log('info', 'Initializing states...')
+        while self.jn.historic_events:
+            self.event_manager.add_historic_game_event(self.jn.historic_events.pop(0))
+            
+        self.event_manager.add_status_event(self.status_parser.current_status)
+        self.event_manager.process()
+
+        # Cue the user that we're ready to go.
+        log('info', "System Ready.")
+
+        while True:
+            try:
+                status = None
+                # check status file for updates
+                while not self.status_parser.status_queue.empty():
+                    status = self.status_parser.status_queue.get()
+                    self.event_manager.add_status_event(status)
+                    
+                # mute continuous listening during response
+                if self.config["mute_during_response_var"]:
+                    if self.tts.get_is_playing():
+                        self.stt.pause_continuous_listening(True)
+                    else:
+                        self.stt.pause_continuous_listening(False)
+
+                # check STT recording
+                if self.stt.recording:
+                    if self.tts.get_is_playing():
+                        log('debug', 'interrupting TTS')
+                        self.tts.abort()
+                    if not self.event_manager.is_listening:
+                        self.event_manager.is_listening = True
                 else:
-                    stt.pause_continuous_listening(False)
+                    if self.event_manager.is_listening:
+                        self.event_manager.is_listening = False
 
-            # check STT recording
-            if stt.recording:
-                if tts.get_is_playing():
-                    log('debug', 'interrupting TTS')
-                    tts.abort()
-                if not event_manager.is_listening:
-                    event_manager.is_listening = True
-            else:
-                if event_manager.is_listening:
-                    event_manager.is_listening = False
+                # check STT result queue
+                if not self.stt.resultQueue.empty():
+                    text = self.stt.resultQueue.get().text
+                    self.tts.abort()
+                    self.copilot.output_commander(text)
+                    self.event_manager.add_conversation_event('user', text)
 
-            # check STT result queue
-            if not stt.resultQueue.empty():
-                text = stt.resultQueue.get().text
-                tts.abort()
-                copilot.output_commander(text)
-                event_manager.add_conversation_event('user', text)
+                if not self.is_thinking and not self.tts.get_is_playing() and self.event_manager.is_replying:
+                    self.event_manager.add_assistant_complete_event()
 
-            if not is_thinking and not tts.get_is_playing() and event_manager.is_replying:
-                event_manager.add_assistant_complete_event()
+                # check EDJournal files for updates
+                while not self.jn.events.empty():
+                    event = self.jn.events.get()
+                    self.event_manager.add_game_event(event)
 
-            # check EDJournal files for updates
-            while not jn.events.empty():
-                event = jn.events.get()
-                event_manager.add_game_event(event)
+                self.event_manager.process()
 
-            event_manager.process()
+                # Infinite loops are bad for processors, must sleep.
+                sleep(0.25)
+            except KeyboardInterrupt:
+                break
+            except Exception as e:
+                log("error", e, traceback.format_exc())
+                break
 
-            # Infinite loops are bad for processors, must sleep.
-            sleep(0.25)
-        except KeyboardInterrupt:
-            break
-        except Exception as e:
-            log("error", e, traceback.format_exc())
-            break
-
-    # Teardown TTS
-    tts.quit()
+        # Teardown TTS
+        self.tts.quit()
 
 
 if __name__ == "__main__":
     try:
-        main()
+        print(json.dumps({"type": "ready"})+'\n')
+        # Wait for start signal on stdin
+        config = load_config()
+        print(json.dumps({"type": "config", "config": config})+'\n', flush=True)
+        system = get_system_info()
+        print(json.dumps({"type": "system", "system": system})+'\n', flush=True)
+        while True:
+            print(f"Waiting for command...")
+            line = sys.stdin.readline().strip()
+            print(f"Received command: {line}")
+            if not line:
+                continue
+                
+            try:
+                data = json.loads(line)
+                if data.get("type") == "start":
+                    break
+                if data.get("type") == "assign_ptt":
+                    assign_ptt(config, ControllerManager())
+                if data.get("type") == "change_config":
+                    config = {**config, **data["config"]}
+                    print(json.dumps({"type": "config", "config": config})+'\n')
+                if data.get("type") == "change_event_config":
+                    config.get("game_events", {}).get(data["section"], {})[data["event"]] = data["value"]
+                    print(json.dumps({"type": "config", "config": config})+'\n')
+                
+            except json.JSONDecodeError:
+                continue
+        
+        # Once start signal received, initialize and run chat
+        save_config(config)
+        Chat(config).run()
     except Exception as e:
         log("error", e, traceback.format_exc())
         sys.exit(1)

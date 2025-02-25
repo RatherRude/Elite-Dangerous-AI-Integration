@@ -1,0 +1,45 @@
+.tab-content {
+  padding: 20px;
+}
+
+.tab-icon {
+  margin-right: 8px;
+}
+
+::ng-deep .mat-mdc-tab-body-wrapper {
+  min-height: 400px;
+}
+
+.settings-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+  padding: 20px;
+}
+
+mat-form-field {
+  width: 100%;
+}
+
+mat-slide-toggle {
+  margin: 10px 0;
+}
+
+.ptt-container {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.ptt-container mat-form-field {
+  flex: 1;
+  margin: 0;
+}
+
+ul {
+  margin-top: 0;
+}
+
+.settings-menu {
+  min-height:100%;
+}
