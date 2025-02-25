@@ -6,8 +6,6 @@ from typing import Any, Literal, TypedDict
 import os
 import sys
 
-from .EDCoPilot import EDCoPilot
-from .ControllerManager import ControllerManager
 from .Logger import log
 
 # List of game events categorized
@@ -487,7 +485,7 @@ def save_config(config: Config):
         json.dump(config, f)
         
 
-def assign_ptt(config: Config, controller_manager: ControllerManager):
+def assign_ptt(config: Config, controller_manager):
     def on_hotkey_detected(key: str):
         #print(f"Received key: {key}")
         config["ptt_key"] = key
@@ -546,6 +544,7 @@ class SystemInfo(TypedDict):
     edcopilot_installed: bool
 
 def get_system_info() -> SystemInfo:
+    from .EDCoPilot import EDCoPilot
     edcopilot: Any = EDCoPilot(False) # this is only for the GUI, the actual EDCoPilot client is created in the Chat
     return {
         "os": platform.system(),
