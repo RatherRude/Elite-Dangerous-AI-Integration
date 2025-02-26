@@ -125,6 +125,12 @@
               </mat-slide-toggle>
               <p>Web actions are performed by the AI on your behalf and allow you to search the web for information, like searching for stations selling a specific commodity or material.</p>
               
+              <mat-slide-toggle [(ngModel)]="config.use_action_cache_var"
+                              (ngModelChange)="onConfigChange({use_action_cache_var: $event})">
+                Enable Action Cache
+              </mat-slide-toggle>
+              <p>The action cache allows the AI to learn from previous interactions and reuse actions for similar inputs, making responses faster and more consistent.</p>
+              
               <h3 #eventReactionsSection>Customize Event Reactions</h3>
               <p>This section allows you to customize the event reactions for the game and will allow you to make the AI react less or more often.</p>
 

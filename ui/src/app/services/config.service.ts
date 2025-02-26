@@ -58,6 +58,7 @@ export interface Config {
     event_reaction_enabled_var: boolean;
     game_actions_var: boolean;
     web_search_actions_var: boolean;
+    use_action_cache_var: boolean;
     react_to_text_local_var: boolean;
     react_to_text_starsystem_var: boolean;
     react_to_text_npc_var: boolean;
