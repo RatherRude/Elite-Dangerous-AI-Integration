@@ -36,6 +36,7 @@ export class TauriService {
 
     constructor(private ngZone: NgZone) {
         this.runExe();
+        this.checkForUpdates();
     }
 
     private async startReadingOutput(): Promise<void> {
@@ -109,5 +110,92 @@ export class TauriService {
         await invoke("send_json_line", {
             jsonLine: JSON.stringify(message) + "\n",
         });
+    }
+
+    // Public method to manually check for updates
+    public async checkForUpdatesManually(): Promise<void> {
+        await this.checkForUpdates();
+    }
+
+    // Update check functionality
+    private async checkForUpdates(): Promise<void> {
+        try {
+            // Get the current commit hash from the Tauri app
+            const currentCommit: string = await invoke("get_commit_hash");
+            console.log("Current commit hash:", currentCommit);
+
+            // Skip update check for development builds
+            if (currentCommit === "development") {
+                console.log("Development build, skipping update check");
+                return;
+            }
+
+            // Check for updates from GitHub API
+            console.log("Checking for updates...");
+            const response = await fetch(
+                "https://api.github.com/repos/RatherRude/Elite-Dangerous-AI-Integration/releases",
+            );
+
+            if (response.ok) {
+                const releaseData = await response.json();
+                const tagName = releaseData[0].tag_name;
+                const releaseUrl = releaseData[0].html_url;
+                const releaseName = releaseData[0].name;
+                console.log(
+                    "Latest release:",
+                    releaseName,
+                    "with tag:",
+                    tagName,
+                );
+
+                // Get the commit id for the release tag
+                const tagResponse = await fetch(
+                    `https://api.github.com/repos/RatherRude/Elite-Dangerous-AI-Integration/git/ref/tags/${tagName}`,
+                );
+
+                if (tagResponse.ok) {
+                    const tagData = await tagResponse.json();
+                    const releaseCommit = tagData.object.sha;
+                    console.log("Release commit hash:", releaseCommit);
+
+                    if (releaseCommit !== currentCommit) {
+                        console.log("Update available, showing prompt");
+                        this.askForUpdate(releaseName, releaseUrl);
+                    } else {
+                        console.log("Application is up to date");
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Error checking for updates:", error);
+        }
+    }
+
+    private askForUpdate(
+        releaseName: string = "A new release",
+        releaseUrl: string =
+            "https://github.com/RatherRude/Elite-Dangerous-AI-Integration/releases/",
+    ): void {
+        // Use the browser's confirm dialog for now
+        // We'll replace this with a custom dialog component later
+        const message = `
+Update Available: ${releaseName}
+
+A new version of COVAS:NEXT is available. Would you like to download it now?
+
+Click OK to open the download page in your browser.
+`;
+        const result = confirm(message);
+
+        if (result) {
+            // Open the release URL in a new browser window/tab
+            const a = document.createElement("a");
+            a.setAttribute("href", releaseUrl);
+            a.setAttribute("target", "_blank");
+            a.setAttribute("rel", "noopener noreferrer");
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
     }
 }

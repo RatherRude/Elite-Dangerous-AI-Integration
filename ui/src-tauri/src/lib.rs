@@ -9,6 +9,12 @@ use tokio::io::{AsyncWriteExt, BufReader};
 use tokio::process::{Child, ChildStdin, Command};
 use tokio::sync::Mutex;
 
+// Define a function to get the commit hash, which will be set at build time
+// If not set, it will default to "development"
+fn get_commit_hash_value() -> &'static str {
+    option_env!("COMMIT_HASH").unwrap_or("development")
+}
+
 const DEV_EXE_PATH: &str = "python";
 const DEV_EXE_CWD: &str = "../..";
 const DEV_EXE_ARGS: &[&str] = &["-u", "./src/Chat.py"];
@@ -152,16 +158,30 @@ async fn stop_process(state: State<'_, AppState>) -> Result<(), String> {
     Ok(())
 }
 
+#[tauri::command]
+fn get_commit_hash() -> String {
+    get_commit_hash_value().to_string()
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 #[tokio::main]
 pub async fn run() {
+    // Print the commit hash at startup for debugging
+    println!(
+        "Starting application with commit hash: {}",
+        get_commit_hash_value()
+    );
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .manage(AppState::default())
+        .manage(AppState {
+            process_handle: Arc::new(Mutex::new(None)),
+        })
         .invoke_handler(tauri::generate_handler![
             start_process,
             stop_process,
-            send_json_line
+            send_json_line,
+            get_commit_hash
         ])
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { .. } = event {
