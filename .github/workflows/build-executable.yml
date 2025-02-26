@@ -104,6 +104,13 @@ jobs:
         working-directory: ui
         run: npm install
 
+      - name: Set Tauri version
+        working-directory: ui
+        run: |
+          $SHORT_HASH = "${{ github.sha }}".Substring(0, 7)
+          npx tauri-version "0.0.0-$SHORT_HASH"
+          echo "Using version: 0.0.0-$SHORT_HASH"
+
       - name: Build tauri app
         working-directory: ui
         run: npm run tauri build
