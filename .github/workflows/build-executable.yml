@@ -117,11 +117,26 @@ jobs:
         env:
           COMMIT_HASH: ${{ github.sha }}
 
+      - name: Create simple zip with only required files
+        run: |
+          $SHORT_HASH = "${{ github.sha }}".Substring(0, 7)
+          # Create a temporary directory for the files
+          New-Item -ItemType Directory -Path .\simple-zip -Force
+          # Copy only the executable and resources folder
+          Copy-Item -Path .\ui\src-tauri\target\release\covas-next-ui.exe -Destination .\simple-zip\
+          Copy-Item -Path .\ui\src-tauri\target\release\resources -Destination .\simple-zip\ -Recurse
+
       - name: Upload tauri app
         uses: actions/upload-artifact@v4
         with:
           name: COVAS_NEXT_TAURI_v${{ github.sha }}
           path: ui/src-tauri/target/release/
+
+      - name: Upload simple zip file
+        uses: actions/upload-artifact@v4
+        with:
+          name: COVAS_NEXT_TAURI_v${{ github.sha }}
+          path: .\simple-zip
 
   e2e-and-scan:
     name: E2E Tests & Defender Scan

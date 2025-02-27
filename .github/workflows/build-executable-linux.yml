@@ -118,11 +118,30 @@ jobs:
         env:
           COMMIT_HASH: ${{ github.sha }}
 
-      - name: Upload tauri app
+      - name: Create proper directory structure for zip
+        run: |
+          mkdir -p dist-zip/bin
+          mkdir -p dist-zip/lib/covas-next-ui
+          # Copy the executable to bin directory
+          cp ui/src-tauri/target/release/covas-next-ui dist-zip/bin/
+          # Copy resources to lib directory
+          cp -r ui/src-tauri/target/release/resources dist-zip/lib/covas-next-ui/
+          # Make the executable executable
+          chmod +x dist-zip/bin/covas-next-ui
+          chmod +x dist-zip/lib/covas-next-ui/resources/Chat
+
+      - name: Create tar file
+        run: |
+          SHORT_HASH=$(echo ${{ github.sha }} | cut -c1-7)
+          cd dist-zip
+          tar -czvf ../covas-next-ui-linux-$SHORT_HASH.tar.gz ./*
+          cd ..
+
+      - name: Upload tauri app zip file
         uses: actions/upload-artifact@v4
         with:
           name: COVAS_NEXT_TAURI_v${{ github.sha }}_linux
-          path: ui/src-tauri/target/release/
+          path: covas-next-ui-linux-*.tar.gz
 
   e2e-and-scan:
     name: E2E Tests & Defender Scan
