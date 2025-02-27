@@ -10,17 +10,21 @@ import { FormsModule } from "@angular/forms";
 import {
   Config,
   ConfigService,
+  ModelValidationMessage,
   SystemInfo,
 } from "../../services/config.service";
 import { Subscription } from "rxjs";
 import { MatButtonModule } from "@angular/material/button";
 import { KeyValue, KeyValuePipe } from "@angular/common";
 import { MatExpansionModule } from "@angular/material/expansion";
+import { MatSnackBar, MatSnackBarModule } from "@angular/material/snack-bar";
+import { CommonModule } from "@angular/common";
 
 @Component({
   selector: "app-settings-menu",
   standalone: true,
   imports: [
+    CommonModule,
     MatCardModule,
     MatTabsModule,
     MatIconModule,
@@ -32,6 +36,7 @@ import { MatExpansionModule } from "@angular/material/expansion";
     FormsModule,
     KeyValuePipe,
     MatExpansionModule,
+    MatSnackBarModule,
   ],
   templateUrl: "./settings-menu.component.html",
   styleUrl: "./settings-menu.component.css",
@@ -42,11 +47,15 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   hideApiKey = true;
   private configSubscription?: Subscription;
   private systemSubscription?: Subscription;
+  private validationSubscription?: Subscription;
   expandedSection: string | null = null;
   filteredGameEvents: Record<string, Record<string, boolean>> = {};
   eventSearchQuery: string = "";
 
-  constructor(private configService: ConfigService) {}
+  constructor(
+    private configService: ConfigService,
+    private snackBar: MatSnackBar,
+  ) {}
 
   // Comparator function to ensure consistent ordering
   orderByKey = (a: KeyValue<string, any>, b: KeyValue<string, any>): number => {
@@ -77,6 +86,26 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
           this.system = system;
         },
       );
+
+    this.validationSubscription = this.configService.validation$
+      .subscribe((validation) => {
+        if (validation) {
+          // Show snackbar for validation messages
+          const snackBarDuration = 8000;
+          const snackBarClass = validation.status === "error"
+            ? "validation-error-snackbar"
+            : validation.status === "fallback"
+            ? "validation-fallback-snackbar"
+            : "validation-upgrade-snackbar";
+
+          this.snackBar.open(validation.message, "Dismiss", {
+            duration: snackBarDuration,
+            horizontalPosition: "left",
+            verticalPosition: "bottom",
+            panelClass: snackBarClass,
+          });
+        }
+      });
   }
 
   ngOnDestroy() {
@@ -85,6 +114,9 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     }
     if (this.systemSubscription) {
       this.systemSubscription.unsubscribe();
+    }
+    if (this.validationSubscription) {
+      this.validationSubscription.unsubscribe();
     }
   }
 

@@ -18,6 +18,12 @@ export interface ChangeEventConfigMessage extends BaseMessage {
     value: any;
 }
 
+export interface ModelValidationMessage extends BaseMessage {
+    type: "model_validation";
+    status: "upgrade" | "fallback" | "error";
+    message: string;
+}
+
 export interface SystemInfo {
     os: string;
     input_device_names: string[];
@@ -89,20 +95,31 @@ export class ConfigService {
     private systemSubject = new BehaviorSubject<SystemInfo | null>(null);
     public system$ = this.systemSubject.asObservable();
 
+    private validationSubject = new BehaviorSubject<
+        ModelValidationMessage | null
+    >(null);
+    public validation$ = this.validationSubject.asObservable();
+
     constructor(private tauriService: TauriService) {
         // Subscribe to config messages from the TauriService
         this.tauriService.output$.pipe(
             filter((
                 message,
-            ): message is ConfigMessage | SystemInfoMessage =>
+            ): message is
+                | ConfigMessage
+                | SystemInfoMessage
+                | ModelValidationMessage =>
                 message.type === "config" ||
-                message.type === "system"
+                message.type === "system" ||
+                message.type === "model_validation"
             ),
-        ).subscribe((configMessage) => {
-            if (configMessage.type === "config") {
-                this.configSubject.next(configMessage.config);
-            } else if (configMessage.type === "system") {
-                this.systemSubject.next(configMessage.system);
+        ).subscribe((message) => {
+            if (message.type === "config") {
+                this.configSubject.next(message.config);
+            } else if (message.type === "system") {
+                this.systemSubject.next(message.system);
+            } else if (message.type === "model_validation") {
+                this.validationSubject.next(message);
             }
         });
     }

@@ -22,7 +22,7 @@ import pyaudio
 import requests
 from openai import APIError, OpenAI
 
-from lib.Config import Config, get_input_device_names, get_output_device_names, load_config
+from lib.Config import Config, get_input_device_names, get_output_device_names, load_config, check_and_upgrade_model, ModelValidationResult
 from lib.ControllerManager import ControllerManager
 from lib.EDCoPilot import EDCoPilot
 
@@ -839,67 +839,35 @@ class App:
     def load_data(self) -> Config:
         return load_config()
 
-    def check_model_list(self, client, model_name):
-        try:
-            models = client.models.list()
-            # print('models', models)
-            if not any(model.id == model_name for model in models):
-                messagebox.showerror("Invalid model name",
-                                     f"Your model provider doesn't serve '{model_name}' to you. Please check your model name.")
-                return False
-
-            return True
-        except APIError as e:
-            if e.code == "invalid_api_key":
-                messagebox.showerror("Invalid API key",
-                                     f"The API key you have provided for '{model_name}' isn't valid. Please check your API key.")
-                return False
-            else:
-                print('APIError', e)
-        except Exception as e:
-            print(e, traceback.format_exc())
-
-        return True
-
     def check_settings(self):
-
-        llmClient = OpenAI(
-            base_url="https://api.openai.com/v1" if self.llm_endpoint.get() == '' else self.llm_endpoint.get(),
-            api_key=self.api_key.get() if self.llm_api_key.get() == '' else self.llm_api_key.get(),
-        )
-        if self.llm_model_name.get() == 'gpt-3.5-turbo' and self.check_model_list(llmClient, 'gpt-4o-mini'):
-            self.llm_model_name.delete(0, tk.END)
-            self.llm_model_name.insert(0, 'gpt-4o-mini')
-            messagebox.showinfo("Upgrade to GPT-4o-mini",
-                                "Your OpenAI account has reached the required tier to use gpt-4o-mini. It will now be used instead of GPT-3.5-Turbo.")
-
-        if not self.check_model_list(llmClient, self.llm_model_name.get()):
-            if self.llm_model_name.get() == 'gpt-4o-mini' and self.check_model_list(llmClient, 'gpt-3.5-turbo'):
+        # Save current settings to the config
+        self.save_settings()
+        
+        # Use the validation function from Config.py
+        validation_result = check_and_upgrade_model(self.data)
+        
+        if validation_result.success:
+            # Update the UI with any changes made during validation
+            if validation_result.config['llm_model_name'] != self.llm_model_name.get():
                 self.llm_model_name.delete(0, tk.END)
-                self.llm_model_name.insert(0, 'gpt-3.5-turbo')
-                messagebox.showinfo("Fallback to GPT-3.5-Turbo",
-                                    "Your OpenAI account hasn't reached the required tier to use gpt-4o-mini yet. GPT-3.5-Turbo will be used as a fallback.")
-            else:
-                return False
-
-        if self.vision_var.get():
-            visionClient = OpenAI(
-                base_url="https://api.openai.com/v1" if self.vision_endpoint.get() == '' else self.vision_endpoint.get(),
-                api_key=self.api_key.get() if self.vision_api_key.get() == '' else self.vision_api_key.get(),
-            )
-
-            if not self.check_model_list(visionClient, self.vision_model_name.get()):
-                return False
-
-        if self.tts_provider_select_var.get() == 'openai':
-            ttsClient = OpenAI(
-                base_url="https://api.openai.com/v1" if self.tts_endpoint.get() == '' else self.tts_endpoint.get(),
-                api_key=self.api_key.get() if self.tts_api_key.get() == '' else self.tts_api_key.get(),
-            )
-            if not self.check_model_list(ttsClient, self.tts_model_name.get()):
-                return False
-
-        return True
+                self.llm_model_name.insert(0, validation_result.config['llm_model_name'])
+            
+            # Show upgrade message if available
+            if validation_result.upgrade_message:
+                messagebox.showinfo("Upgrade to GPT-4o-mini", validation_result.upgrade_message)
+            
+            # Show fallback message if available
+            if validation_result.fallback_message:
+                messagebox.showinfo("Fallback to GPT-3.5-Turbo", validation_result.fallback_message)
+            
+            # Update the config with validated values
+            self.data = validation_result.config
+            return True
+        else:
+            # Show error message
+            if validation_result.error_message:
+                messagebox.showerror("Model Validation Error", validation_result.error_message)
+            return False
 
     def save_settings(self):
         self.data['commander_name'] = self.commander_name.get()
