@@ -126,12 +126,6 @@ jobs:
           Copy-Item -Path .\ui\src-tauri\target\release\covas-next-ui.exe -Destination .\simple-zip\
           Copy-Item -Path .\ui\src-tauri\target\release\resources -Destination .\simple-zip\ -Recurse
 
-      - name: Upload tauri app
-        uses: actions/upload-artifact@v4
-        with:
-          name: COVAS_NEXT_TAURI_v${{ github.sha }}
-          path: ui/src-tauri/target/release/
-
       - name: Upload simple zip file
         uses: actions/upload-artifact@v4
         with:
