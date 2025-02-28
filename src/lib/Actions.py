@@ -203,7 +203,7 @@ def galaxy_map_open(args, projected_states):
             sleep(0.05)
             keys.send('UI_Select',hold=0.75)
 
-            sleep(.05)
+            sleep(1)
             keys.send('GalaxyMapOpen')
 
             return ((f"Best location found: {json.dumps(args['details'])}. " if 'details' in args else '') +
