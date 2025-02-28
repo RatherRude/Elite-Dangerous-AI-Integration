@@ -1,5 +1,6 @@
 import threading
 import time
+from .Logger import log
 
 from EDMesg.CovasNext import (
     create_covasnext_provider,
@@ -17,10 +18,19 @@ class EDCoPilot:
         self.install_path = self.get_install_path()
         self.proc_id = self.get_process_id()
         self.is_enabled = is_enabled and self.is_installed()
-        self.client = create_edcopilot_client() if self.is_enabled else None
-        self.provider = create_covasnext_provider() if self.is_enabled else None
+        self.client = None
+        self.provider = None
         self.is_edcopilot_dominant = is_edcopilot_dominant
         self.enabled_game_events = enabled_game_events
+
+        try:
+            if self.is_enabled:
+                self.client = create_edcopilot_client()
+                self.provider = create_covasnext_provider()
+        except Exception:
+            self.is_enabled = False
+            self.is_edcopilot_dominant = False
+            log("error", "Could not connect to EDMesg, third party applications may not work.")
 
         if self.is_enabled:
             thread = threading.Thread(target=self.listen_actions)
