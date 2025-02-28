@@ -4,8 +4,10 @@ import os
 from os.path import getmtime, isfile, join
 import platform
 from time import sleep
+import traceback
 from typing import Any, Literal, final
 from xml.etree.ElementTree import parse
+import threading
 
 from .Logger import log
 from .Config import get_asset_path
@@ -124,8 +126,14 @@ class EDKeys:
             'SystemMapOpen_Humanoid',
             'HumanoidOpenAccessPanelButton',
         ]
+        
+        self.latest_bindings_file = None
+        self.latest_bindings_mtime = None
+        self.watch_thread = threading.Thread(target=self._watch_bindings_thread, daemon=True)
+        self.watch_thread.start()
+        
         self.keys = self.get_bindings()
-
+        
         self.missing_keys = []
         # dump config to log
         for key in self.keys_to_obtain:
@@ -135,7 +143,7 @@ class EDKeys:
     def get_bindings(self) -> dict[str, Any]:
         """Returns a dict struct with the direct input equivalent of the necessary elite keybindings"""
         direct_input_keys = {}
-        latest_bindings = self.get_latest_keybinds()
+        latest_bindings, _ = self.get_latest_keybinds()
         if not latest_bindings:
             return {}
         bindings_tree = parse(latest_bindings)
@@ -185,19 +193,18 @@ class EDKeys:
         else:
             return direct_input_keys
 
-    # Note:  this routine will grab the *.binds file which is the latest modified
     def get_latest_keybinds(self):
         path_bindings = os.path.join(self.appdata_path+'/', "Options", "Bindings")
         try:
             list_of_bindings = [join(path_bindings, f) for f in listdir(path_bindings) if
                                 isfile(join(path_bindings, f)) and f.endswith('.binds')]
         except FileNotFoundError as e:
-            return None
+            return None, None
 
         if not list_of_bindings:
-            return None
+            return None, None
         latest_bindings = max(list_of_bindings, key=getmtime)
-        return latest_bindings
+        return latest_bindings, getmtime(latest_bindings)
 
     def send_key(self, type: Literal['Up', 'Down'], key_name:str):
         key = self.keymap.get(key_name)
@@ -253,3 +260,31 @@ class EDKeys:
                 sleep(repeat_delay)
             else:
                 sleep(self.key_repeat_delay)
+
+    def _watch_bindings_thread(self):
+        """Thread that monitors for changes in the keybindings file"""
+        backoff = 1
+        while True:
+            try:
+                self._watch_bindings()
+            except Exception as e:
+                log('error', 'An error occurred when monitoring keybindings file', e, traceback.format_exc())
+                sleep(backoff)
+                log('info', 'Attempting to restart keybindings monitor after failure')
+                backoff *= 2
+
+    def _watch_bindings(self):
+        """Monitors the keybindings file for changes and reloads when necessary"""
+        while True:
+            latest_bindings, mtime = self.get_latest_keybinds()
+            if latest_bindings != self.latest_bindings_file or mtime != self.latest_bindings_mtime:
+                log('debug', 'Keybindings file changed, reloading bindings')
+                self.latest_bindings_file = latest_bindings
+                self.latest_bindings_mtime = mtime
+                self.keys = self.get_bindings()
+                # Update missing keys list
+                self.missing_keys = []
+                for key in self.keys_to_obtain:
+                    if not key in self.keys:
+                        self.missing_keys.append(key)
+            sleep(1)
