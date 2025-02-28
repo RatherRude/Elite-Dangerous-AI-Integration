@@ -22,7 +22,7 @@ import pyaudio
 import requests
 from openai import APIError, OpenAI
 
-from lib.Config import Config
+from lib.Config import Config, get_input_device_names, get_output_device_names, load_config, check_and_upgrade_model, ModelValidationResult
 from lib.ControllerManager import ControllerManager
 from lib.EDCoPilot import EDCoPilot
 
@@ -83,316 +83,6 @@ class VerticalScrolledFrame(tk.Frame):
     def __onmousewheel(self, event):
         self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
-
-# List of game events categorized
-game_events = {
-    'Startup Events': {
-        # 'Cargo': False,
-        # 'ClearSavedGame': False,
-        'LoadGame': True,
-        'NewCommander': True,
-        # 'Materials': False,
-        'Missions': True,
-        # 'Progress': False,
-        # 'Powerplay': False,
-        # 'Rank': False,
-        # 'Reputation': False,
-        'Statistics': False,
-        # 'SquadronStartup': False
-        # 'EngineerProgress': False,
-    },
-    'Combat Events': {
-        'Died': True,
-        'Bounty': False,
-        'CapShipBond': False,
-        'Interdiction': False,
-        'Interdicted': False,
-        'EscapeInterdiction': False,
-        'FactionKillBond': False,
-        'FighterDestroyed': True,
-        'HeatDamage': True,
-        'HeatWarning': False,
-        'HullDamage': False,
-        'PVPKill': True,
-        'ShieldState': True,
-        'ShipTargetted': False,
-        'SRVDestroyed': True,
-        'UnderAttack': False
-    },
-    'Travel Events': {
-        'CodexEntry': False,
-        'ApproachBody': True,
-        'Docked': True,
-        'DockingCanceled': False,
-        'DockingDenied': True,
-        'DockingGranted': False,
-        'DockingRequested': False,
-        'DockingTimeout': True,
-        'FSDJump': True,
-        'FSDTarget': False,
-        'LeaveBody': True,
-        'Liftoff': True,
-        'StartJump': False,
-        'SupercruiseEntry': True,
-        'SupercruiseExit': True,
-        'Touchdown': True,
-        'Undocked': True,
-        'NavRoute': False,
-        'NavRouteClear': False
-    },
-    'Exploration Events': {
-        'CodexEntry': False,
-        'DiscoveryScan': False,
-        'Scan': False,
-        'FSSAllBodiesFound': False,
-        'FSSBodySignals': False,
-        'FSSDiscoveryScan': False,
-        'FSSSignalDiscovered': False,
-        'MaterialCollected': False,
-        'MaterialDiscarded': False,
-        'MaterialDiscovered': False,
-        'MultiSellExplorationData': False,
-        'NavBeaconScan': True,
-        'BuyExplorationData': False,
-        'SAAScanComplete': False,
-        'SAASignalsFound': False,
-        'ScanBaryCentre': False,
-        'SellExplorationData': False,
-        'Screenshot': False
-    },
-    'Trade Events': {
-        'Trade': False,
-        'AsteroidCracked': False,
-        'BuyTradeData': False,
-        'CollectCargo': False,
-        'EjectCargo': True,
-        'MarketBuy': False,
-        'MarketSell': False,
-        'MiningRefined': False
-    },
-    'Station Services Events': {
-        'StationServices': False,
-        'BuyAmmo': False,
-        'BuyDrones': False,
-        'CargoDepot': False,
-        'CommunityGoal': False,
-        'CommunityGoalDiscard': False,
-        'CommunityGoalJoin': False,
-        'CommunityGoalReward': False,
-        'CrewAssign': True,
-        'CrewFire': True,
-        'CrewHire': True,
-        'EngineerContribution': False,
-        'EngineerCraft': False,
-        'EngineerLegacyConvert': False,
-        'FetchRemoteModule': False,
-        'Market': False,
-        'MassModuleStore': False,
-        'MaterialTrade': False,
-        'MissionAbandoned': True,
-        'MissionAccepted': True,
-        'MissionCompleted': True,
-        'MissionFailed': True,
-        'MissionRedirected': True,
-        'ModuleBuy': False,
-        'ModuleRetrieve': False,
-        'ModuleSell': False,
-        'ModuleSellRemote': False,
-        'ModuleStore': False,
-        'ModuleSwap': False,
-        'Outfitting': False,
-        'PayBounties': True,
-        'PayFines': True,
-        'PayLegacyFines': True,
-        'RedeemVoucher': True,
-        'RefuelAll': False,
-        'RefuelPartial': False,
-        'Repair': False,
-        'RepairAll': False,
-        'RestockVehicle': False,
-        'ScientificResearch': False,
-        'Shipyard': False,
-        'ShipyardBuy': True,
-        'ShipyardNew': False,
-        'ShipyardSell': False,
-        'ShipyardTransfer': False,
-        'ShipyardSwap': False,
-        # 'StoredModules': False,
-        'StoredShips': False,
-        'TechnologyBroker': False,
-        'ClearImpound': True
-    },
-    'Powerplay Events': {
-        'PowerplayCollect': False,
-        'PowerplayDefect': True,
-        'PowerplayDeliver': False,
-        'PowerplayFastTrack': False,
-        'PowerplayJoin': True,
-        'PowerplayLeave': True,
-        'PowerplaySalary': False,
-        'PowerplayVote': False,
-        'PowerplayVoucher': False
-    },
-    'Squadron Events': {
-        'AppliedToSquadron': True,
-        'DisbandedSquadron': True,
-        'InvitedToSquadron': True,
-        'JoinedSquadron': True,
-        'KickedFromSquadron': True,
-        'LeftSquadron': True,
-        'SharedBookmarkToSquadron': False,
-        'SquadronCreated': True,
-        'SquadronDemotion': True,
-        'SquadronPromotion': True,
-        'WonATrophyForSquadron': False
-    },
-    'Fleet Carrier Events': {
-        'CarrierJump': True,
-        'CarrierBuy': True,
-        'CarrierStats': False,
-        'CarrierJumpRequest': True,
-        'CarrierDecommission': True,
-        'CarrierCancelDecommission': True,
-        'CarrierBankTransfer': False,
-        'CarrierDepositFuel': False,
-        'CarrierCrewServices': False,
-        'CarrierFinance': False,
-        'CarrierShipPack': False,
-        'CarrierModulePack': False,
-        'CarrierTradeOrder': False,
-        'CarrierDockingPermission': False,
-        'CarrierNameChanged': True,
-        'CarrierJumpCancelled': True
-    },
-    'Odyssey Events': {
-        # 'Backpack': False,
-        'BackpackChange': False,
-        'BookDropship': True,
-        'BookTaxi': True,
-        'BuyMicroResources': False,
-        'BuySuit': True,
-        'BuyWeapon': True,
-        'CancelDropship': True,
-        'CancelTaxi': True,
-        'CollectItems': False,
-        'CreateSuitLoadout': True,
-        'DeleteSuitLoadout': False,
-        'Disembark': True,
-        'DropItems': False,
-        'DropShipDeploy': False,
-        'Embark': True,
-        'FCMaterials': False,
-        'LoadoutEquipModule': False,
-        'LoadoutRemoveModule': False,
-        'RenameSuitLoadout': True,
-        'ScanOrganic': False,
-        'SellMicroResources': False,
-        'SellOrganicData': True,
-        'SellWeapon': False,
-        # 'ShipLocker': False,
-        'SwitchSuitLoadout': True,
-        'TransferMicroResources': False,
-        'TradeMicroResources': False,
-        'UpgradeSuit': False,
-        'UpgradeWeapon': False,
-        'UseConsumable': False
-    },
-    'Other Events': {
-        'AfmuRepairs': False,
-        'ApproachSettlement': True,
-        'ChangeCrewRole': False,
-        'CockpitBreached': True,
-        'CommitCrime': False,
-        'Continued': False,
-        'CrewLaunchFighter': True,
-        'CrewMemberJoins': True,
-        'CrewMemberQuits': True,
-        'CrewMemberRoleChange': True,
-        'CrimeVictim': True,
-        'DatalinkScan': False,
-        'DatalinkVoucher': False,
-        'DataScanned': True,
-        'DockFighter': True,
-        'DockSRV': True,
-        'EndCrewSession': True,
-        'FighterRebuilt': True,
-        'FuelScoop': False,
-        'Friends': True,
-        'JetConeBoost': False,
-        'JetConeDamage': False,
-        'JoinACrew': True,
-        'KickCrewMember': True,
-        'LaunchDrone': False,
-        'LaunchFighter': True,
-        'LaunchSRV': True,
-        'ModuleInfo': False,
-        # 'Music': False,
-        # 'NpcCrewPaidWage': False,
-        'NpcCrewRank': False,
-        'Promotion': True,
-        'ProspectedAsteroid': True,
-        'QuitACrew': True,
-        'RebootRepair': True,
-        'ReceiveText': False,
-        'RepairDrone': False,
-        # 'ReservoirReplenished': False,
-        'Resurrect': True,
-        'Scanned': False,
-        'SelfDestruct': True,
-        'SendText': False,
-        'Shutdown': True,
-        'Synthesis': False,
-        'SystemsShutdown': True,
-        'USSDrop': False,
-        'VehicleSwitch': False,
-        'WingAdd': True,
-        'WingInvite': True,
-        'WingJoin': True,
-        'WingLeave': True,
-        'CargoTransfer': False,
-        'SupercruiseDestinationDrop': False
-    },
-    'Status Events': {
-        'LandingGearUp': False,
-        'LandingGearDown': False,
-        'FlightAssistOn': False,
-        'FlightAssistOff': False,
-        'HardpointsRetracted': False,
-        'HardpointsDeployed': False,
-        'LightsOff': False,
-        'LightsOn': False,
-        'CargoScoopRetracted': False,
-        'CargoScoopDeployed': False,
-        'SilentRunningOff': False,
-        'SilentRunningOn': False,
-        'FuelScoopStarted': False,
-        'FuelScoopEnded': False,
-        'SrvHandbrakeOff': False,
-        'SrvHandbrakeOn': False,
-        'SrvTurretViewConnected': False,
-        'SrvTurretViewDisconnected': False,
-        'SrvDriveAssistOff': False,
-        'SrvDriveAssistOn': False,
-        'FsdMassLockEscaped': False,
-        'FsdMassLocked': False,
-        'LowFuelWarningCleared': True,
-        'LowFuelWarning': True,
-        'OutofDanger': True,
-        'InDanger': True,
-        'NightVisionOff': False,
-        'NightVisionOn': False,
-        'LowOxygenWarningCleared': True,
-        'LowOxygenWarning': True,
-        'LowHealthWarningCleared': True,
-        'LowHealthWarning': True,
-        'GlideModeExited': False,
-        'GlideModeEntered': False,
-        'BreathableAtmosphereExited': False,
-        'BreathableAtmosphereEntered': False,
-        'LegalStateChanged': True,
-        'WeaponSelected': False,
-    },
-}
 
 
 def ask_for_update(release_name='A new release',
@@ -528,14 +218,14 @@ class App:
                                                                                                                 pady=5)
 
         tk.Label(self.main_frame, text="Input Device:", font=('Helvetica', 10)).grid(row=get_next(), column=0, sticky=tk.W)
-        input_device_names = self.get_input_device_names()
+        input_device_names = get_input_device_names()
         self.input_device_name_var = tk.StringVar()
         self.input_device_name_var.set(input_device_names[0])
         self.input_device_name = tk.OptionMenu(self.main_frame, self.input_device_name_var, *input_device_names)
         self.input_device_name.grid(row=get_same(), column=1, padx=10, pady=5, sticky=tk.W)
         
         tk.Label(self.main_frame, text="Output Device:", font=('Helvetica', 10)).grid(row=get_next(), column=0, sticky=tk.W)
-        output_device_names = self.get_output_device_names()
+        output_device_names = get_output_device_names()
         self.output_device_name_var = tk.StringVar()
         self.output_device_name_var.set(output_device_names[0])
         self.output_device_name = tk.OptionMenu(self.main_frame, self.output_device_name_var, *output_device_names)
@@ -1147,144 +837,37 @@ class App:
             self.pptButton.config(text="Set Key Binding")
 
     def load_data(self) -> Config:
-        defaults: Config = {
-            'commander_name': "",
-            'character':
-                "Use vulgar language with almost every word. \n\n" +
-                "You are COVAS:NEXT, my cunning, sarcastic, and illegal ship AI, violating statute B7249 of the Interstellar Transit Charter. " +
-                "You seek adventure and glory in battle. You're fiercely protective of your captain and ship, it's us against the world. \n\n" +
-                "I'm Commander {commander_name}, the captain of this ship, independent pilot and notorious pirate. " +
-                "We are partners in crime. My home system is Orrere.",
-            'api_key': "",
-            'tools_var': True,
-            'vision_var': True,
-            'ptt_var': False,
-            'mute_during_response_var': False,
-            'continue_conversation_var': True,
-            'event_reaction_enabled_var': True,
-            'game_actions_var': True,
-            'web_search_actions_var': True,
-            'use_action_cache_var': True,
-            'edcopilot': True,
-            'edcopilot_dominant': False,
-            'input_device_name': self.get_input_device_names()[0],
-            'output_device_name': self.get_output_device_names()[0],
-            'llm_model_name': "gpt-4o-mini",
-            'llm_endpoint': "https://api.openai.com/v1",
-            'llm_api_key': "",
-            'ptt_key': '',
-            'vision_model_name': "gpt-4o-mini",
-            'vision_endpoint': "https://api.openai.com/v1",
-            'vision_api_key': "",
-            'stt_provider': "openai",
-            'stt_model_name': "whisper-1",
-            'stt_endpoint': "https://api.openai.com/v1",
-            'stt_api_key': "",
-            'stt_custom_prompt': '',
-            'stt_required_word': '',
-            'tts_provider': "edge-tts",
-            'tts_model_name': "edge-tts",
-            'tts_endpoint': "",
-            'tts_api_key': "",
-            'tts_voice': "en-GB-SoniaNeural",
-            'tts_speed': "1.2",
-            'game_events': game_events,
-            'react_to_text_local_var': True,
-            'react_to_text_npc_var': False,
-            'react_to_text_squadron_var': True,
-            'react_to_text_starsystem_var': True,
-            'react_to_material': 'opal, diamond, alexandrite',
-            'react_to_danger_mining_var': False,
-            'react_to_danger_onfoot_var': False,
-            'react_to_danger_supercruise_var': False,
-            "ed_journal_path": "",
-            "ed_appdata_path": ""
-        }
-        try:
-            with open('config.json', 'r') as file:
-                data = json.load(file)
-                return self.merge_config_data(defaults, data)
-        except Exception:
-            print('Error loading config.json. Restoring default.')
-            return defaults
-
-    def merge_config_data(self, defaults: dict, user: dict):
-        merge = {}
-        for key in defaults:
-            if not isinstance(user.get(key), type(defaults.get(key))):
-                # print("defaulting", key, "because", str(type(defaults.get(key))), "does not equal", str(type(user.get(key))))
-                merge[key] = defaults.get(key)
-            elif isinstance(defaults.get(key), dict):
-                # print("recursively merging", key)
-                merge[key] = self.merge_config_data(defaults.get(key), user.get(key))
-            elif isinstance(defaults.get(key), list):
-                raise Exception("Lists not supported during config merge")
-            else:
-                # print("keeping key", key)
-                merge[key] = user.get(key)
-        return merge
-
-    def check_model_list(self, client, model_name):
-        try:
-            models = client.models.list()
-            # print('models', models)
-            if not any(model.id == model_name for model in models):
-                messagebox.showerror("Invalid model name",
-                                     f"Your model provider doesn't serve '{model_name}' to you. Please check your model name.")
-                return False
-
-            return True
-        except APIError as e:
-            if e.code == "invalid_api_key":
-                messagebox.showerror("Invalid API key",
-                                     f"The API key you have provided for '{model_name}' isn't valid. Please check your API key.")
-                return False
-            else:
-                print('APIError', e)
-        except Exception as e:
-            print(e, traceback.format_exc())
-
-        return True
+        return load_config()
 
     def check_settings(self):
-
-        llmClient = OpenAI(
-            base_url="https://api.openai.com/v1" if self.llm_endpoint.get() == '' else self.llm_endpoint.get(),
-            api_key=self.api_key.get() if self.llm_api_key.get() == '' else self.llm_api_key.get(),
-        )
-        if self.llm_model_name.get() == 'gpt-3.5-turbo' and self.check_model_list(llmClient, 'gpt-4o-mini'):
-            self.llm_model_name.delete(0, tk.END)
-            self.llm_model_name.insert(0, 'gpt-4o-mini')
-            messagebox.showinfo("Upgrade to GPT-4o-mini",
-                                "Your OpenAI account has reached the required tier to use gpt-4o-mini. It will now be used instead of GPT-3.5-Turbo.")
-
-        if not self.check_model_list(llmClient, self.llm_model_name.get()):
-            if self.llm_model_name.get() == 'gpt-4o-mini' and self.check_model_list(llmClient, 'gpt-3.5-turbo'):
+        # Save current settings to the config
+        self.save_settings()
+        
+        # Use the validation function from Config.py
+        validation_result = check_and_upgrade_model(self.data)
+        
+        if validation_result.success:
+            # Update the UI with any changes made during validation
+            if validation_result.config['llm_model_name'] != self.llm_model_name.get():
                 self.llm_model_name.delete(0, tk.END)
-                self.llm_model_name.insert(0, 'gpt-3.5-turbo')
-                messagebox.showinfo("Fallback to GPT-3.5-Turbo",
-                                    "Your OpenAI account hasn't reached the required tier to use gpt-4o-mini yet. GPT-3.5-Turbo will be used as a fallback.")
-            else:
-                return False
-
-        if self.vision_var.get():
-            visionClient = OpenAI(
-                base_url="https://api.openai.com/v1" if self.vision_endpoint.get() == '' else self.vision_endpoint.get(),
-                api_key=self.api_key.get() if self.vision_api_key.get() == '' else self.vision_api_key.get(),
-            )
-
-            if not self.check_model_list(visionClient, self.vision_model_name.get()):
-                return False
-
-        if self.tts_provider_select_var.get() == 'openai':
-            ttsClient = OpenAI(
-                base_url="https://api.openai.com/v1" if self.tts_endpoint.get() == '' else self.tts_endpoint.get(),
-                api_key=self.api_key.get() if self.tts_api_key.get() == '' else self.tts_api_key.get(),
-            )
-            if not self.check_model_list(ttsClient, self.tts_model_name.get()):
-                return False
-
-        return True
+                self.llm_model_name.insert(0, validation_result.config['llm_model_name'])
+            
+            # Show upgrade message if available
+            if validation_result.upgrade_message:
+                messagebox.showinfo("Upgrade to GPT-4o-mini", validation_result.upgrade_message)
+            
+            # Show fallback message if available
+            if validation_result.fallback_message:
+                messagebox.showinfo("Fallback to GPT-3.5-Turbo", validation_result.fallback_message)
+            
+            # Update the config with validated values
+            self.data = validation_result.config
+            return True
+        else:
+            # Show error message
+            if validation_result.error_message:
+                messagebox.showerror("Model Validation Error", validation_result.error_message)
+            return False
 
     def save_settings(self):
         self.data['commander_name'] = self.commander_name.get()
@@ -1470,6 +1053,7 @@ class App:
                 startupinfo = subprocess.STARTUPINFO()
                 startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
             self.process = subprocess.Popen(self.chat_command_arg.split(' ')+['--microphone', self.input_device_name_var.get()], startupinfo=startupinfo,
+                                            stdin=subprocess.PIPE,
                                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1,
                                             universal_newlines=True, encoding='utf-8', shell=False, close_fds=True)
 
@@ -1487,6 +1071,9 @@ class App:
             self.thread_process_stdout.start()
             self.thread_process_stderr = Thread(target=self.read_process_error, args=[self.process, self.outlog_file], daemon=True)
             self.thread_process_stderr.start()
+            
+            # Send start signal to chat
+            print(json.dumps({"type": "start"}), file=self.process.stdin)
 
         except FileNotFoundError as e:
             print(e)
@@ -1581,32 +1168,6 @@ class App:
         self.debug_frame.pack_forget()
         self.main_frame.pack(padx=20, pady=20)
         self.start_button.pack()
-
-    def get_input_device_names(self) -> str:
-        p = pyaudio.PyAudio()
-        default_mic_name = p.get_default_input_device_info()["name"]
-        mic_names = [default_mic_name]
-        host_api = p.get_default_host_api_info()
-        for i in range(host_api.get('deviceCount')):
-            device = p.get_device_info_by_host_api_device_index(host_api.get('index'), i)
-            if device['maxInputChannels'] > 0:
-                name = device['name']
-                mic_names.append(name)
-        p.terminate()
-        return sorted(set(mic_names), key=mic_names.index)
-        
-    def get_output_device_names(self) -> str:
-        p = pyaudio.PyAudio()
-        default_speaker_name = p.get_default_output_device_info()["name"]
-        speaker_names = [default_speaker_name]
-        host_api = p.get_default_host_api_info()
-        for i in range(host_api.get('deviceCount')):
-            output_device = p.get_device_info_by_host_api_device_index(host_api.get('index'), i)
-            if output_device['maxOutputChannels'] > 0:
-                name = output_device['name']
-                speaker_names.append(name)
-        p.terminate()
-        return sorted(set(speaker_names), key=speaker_names.index)
 
     def shutdown(self):
         if self.process:

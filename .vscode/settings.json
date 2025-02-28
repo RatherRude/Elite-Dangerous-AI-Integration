@@ -9,5 +9,11 @@
     "test"
   ],
   "python.testing.unittestEnabled": false,
-  "python.testing.pytestEnabled": true
+  "python.testing.pytestEnabled": true,
+
+  "terminal.integrated.env.linux": {
+    "GTK_PATH": null,
+    "GIO_MODULE_DIR": null,
+  },
+  "rust-analyzer.linkedProjects": ["ui/src-tauri/Cargo.toml"]
 }

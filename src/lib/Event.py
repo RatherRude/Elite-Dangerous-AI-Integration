@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Literal, NotRequired, TypedDict
+from typing import Dict, List, Literal, TypedDict
+
 
 class Event:
     kind: Literal['game', 'user', 'assistant', 'assistant_completed', 'tool', 'status', 'projected']

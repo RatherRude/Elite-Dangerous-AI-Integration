@@ -67,6 +67,82 @@ jobs:
         # output the upload URL for later use
         id: upload-artifact
 
+  tauri-build:
+    name: Build Tauri App
+    needs: pyinstaller-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v2
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: COVAS_NEXT_v${{ github.sha }}_linux
+          path: dist
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: "npm"
+          cache-dependency-path: ui/package-lock.json
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install system libraries
+        run: |
+          sudo apt update
+          sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Install frontend dependencies
+        working-directory: ui
+        run: npm install
+
+      - name: Set Tauri version
+        working-directory: ui
+        run: |
+          SHORT_HASH=$(echo ${{ github.sha }} | cut -c1-7)
+          npx tauri-version "0.0.0-$SHORT_HASH"
+          echo "Using version: 0.0.0-$SHORT_HASH"
+
+      - name: Build tauri app
+        working-directory: ui
+        run: npm run tauri build
+        env:
+          COMMIT_HASH: ${{ github.sha }}
+
+      - name: Create proper directory structure for zip
+        run: |
+          mkdir -p dist-zip/bin
+          mkdir -p dist-zip/lib/covas-next-ui
+          # Copy the executable to bin directory
+          cp ui/src-tauri/target/release/covas-next-ui dist-zip/bin/
+          # Copy resources to lib directory
+          cp -r ui/src-tauri/target/release/resources dist-zip/lib/covas-next-ui/
+          # Make the executable executable
+          chmod +x dist-zip/bin/covas-next-ui
+          chmod +x dist-zip/lib/covas-next-ui/resources/Chat
+
+      - name: Create tar file
+        run: |
+          SHORT_HASH=$(echo ${{ github.sha }} | cut -c1-7)
+          cd dist-zip
+          tar -czvf ../covas-next-ui-linux-$SHORT_HASH.tar.gz ./*
+          cd ..
+
+      - name: Upload tauri app zip file
+        uses: actions/upload-artifact@v4
+        with:
+          name: COVAS_NEXT_TAURI_v${{ github.sha }}_linux
+          path: covas-next-ui-linux-*.tar.gz
+
   e2e-and-scan:
     name: E2E Tests & Defender Scan
     runs-on: ubuntu-latest

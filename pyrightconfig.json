@@ -3,13 +3,20 @@
         "src"
     ],
     "exclude": [
+        ".cache",
         "**/node_modules",
         "**/__pycache__",
         "src/experimental",
-        "src/typestubs"
+        "src/typestubs",
+        "linux_ed",
+        "game",
+        "logs",
+        "ui/**",
+        "ui",
+        "ui/"
     ],
     "ignore": [
-        "src/oldstuff"
+        "ui"
     ],
     "defineConstant": {
         "DEBUG": true
