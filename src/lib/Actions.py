@@ -201,7 +201,7 @@ def galaxy_map_open(args, projected_states):
         if 'start_navigation' in args and args['start_navigation']:
             keys.send('CamYawLeft')
             sleep(0.05)
-            keys.send('UI_Select',hold=1)
+            keys.send('UI_Select',hold=0.75)
 
             sleep(.05)
             keys.send('GalaxyMapOpen')
