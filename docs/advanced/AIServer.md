@@ -51,6 +51,21 @@ LLM Endpoint URL: http://localhost:8080/v1
 LLM API Key: <empty>
 ```
 
+## Saving configuration
+
+If you don't want to configure every time you start the AIServer, you can place a `aiserver.config.json` file in the same directory as the `AIServer.exe` file. The file should look like this:
+```
+{
+  "host": "127.0.0.1",
+  "port": 8080,
+  "embedding_model_name": "None",
+  "stt_model_name": "distil-medium.en",
+  "tts_model_name": "hexgrad/Kokoro-82M",
+  "llm_model_name": "None",
+  "use_disk_cache": false
+}
+```
+
 ## Troubleshooting
 
 If you encounter any issues, please contact us on Discord or open an issue on GitHub.
