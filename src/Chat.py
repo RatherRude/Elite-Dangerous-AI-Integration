@@ -320,9 +320,9 @@ if __name__ == "__main__":
         system = get_system_info()
         print(json.dumps({"type": "system", "system": system})+'\n', flush=True)
         while True:
-            print(f"Waiting for command...")
+            # print(f"Waiting for command...")
             line = sys.stdin.readline().strip()
-            print(f"Received command: {line}")
+            # print(f"Received command: {line}")
             if not line:
                 continue
                 
@@ -341,7 +341,7 @@ if __name__ == "__main__":
                 continue
         
         # Once start signal received, initialize and run chat
-        save_config(config)
+        config = load_config()
         Chat(config).run()
     except Exception as e:
         log("error", e, traceback.format_exc())

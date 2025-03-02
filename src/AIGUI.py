@@ -958,8 +958,8 @@ class App:
         self.tts_voice.insert(0, self.data['tts_voice'])
         self.tts_speed.insert(0, self.data['tts_speed'])
         self.ptt_key = self.data['ptt_key']
-        self.input_device_name_var.set(self.data['input_device_name'] if self.data['input_device_name'] in self.get_input_device_names() else self.get_input_device_names()[0])
-        self.output_device_name_var.set(self.data['output_device_name'] if self.data['output_device_name'] in self.get_output_device_names() else self.get_output_device_names()[0])
+        self.input_device_name_var.set(self.data['input_device_name'] if self.data['input_device_name'] in get_input_device_names() else get_input_device_names()[0])
+        self.output_device_name_var.set(self.data['output_device_name'] if self.data['output_device_name'] in get_output_device_names() else get_output_device_names()[0])
 
         self.update_label_text()
         self.toggle_ptt()
@@ -1057,10 +1057,6 @@ class App:
                                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1,
                                             universal_newlines=True, encoding='utf-8', shell=False, close_fds=True)
 
-            self.process = subprocess.Popen(self.chat_command_arg.split(' ')+['--speaker', self.output_device_name_var.get()], startupinfo=startupinfo,
-                                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1,
-                                            universal_newlines=True, encoding='utf-8', shell=False, close_fds=True)
-
             self.debug_frame.pack()
             self.main_frame.pack_forget()
             self.stop_button.pack()
@@ -1089,6 +1085,8 @@ class App:
     
     @synchronized  # TODO useful but still not enough, segfaults on large amounts of text... probably needs to run in the main thread
     def print_to_debug(self, prefix: str, line: str):
+        if not line.strip():
+            return
         prefix = prefix.lower()
         prefixes = {
             "": "",
