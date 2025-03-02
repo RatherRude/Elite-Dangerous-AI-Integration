@@ -1420,6 +1420,7 @@ def prepare_station_request(obj, projected_states):
         "Apex Interstellar",
         "Bartender",
         "Black Market",
+        "Colonisation Services",
         "Crew Lounge",
         "Fleet Carrier Administration",
         "Fleet Carrier Fuel",
@@ -1434,6 +1435,7 @@ def prepare_station_request(obj, projected_states):
         "Pioneer Supplies",
         "Powerplay",
         "Redemption Office",
+        "Refinery Contact",
         "Refuel",
         "Repair",
         "Restock",
@@ -1441,6 +1443,7 @@ def prepare_station_request(obj, projected_states):
         "Shipyard",
         "Shop",
         "Social Space",
+        "System Colonisation"
         "Technology Broker",
         "Universal Cartographics",
         "Vista Genomics"
