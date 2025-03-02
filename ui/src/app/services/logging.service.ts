@@ -28,7 +28,7 @@ export class LoggingService {
         this.tauriService.output$.pipe(
             filter((message): message is LogMessage => message.type === "log"),
             // Filter out debug messages
-            //filter((message) => message.prefix !== "debug"),
+            filter((message) => message.prefix !== "debug"),
         ).subscribe((logMessage) => {
             const currentLogs = this.logsSubject.getValue();
             this.logsSubject.next([...currentLogs, logMessage]);

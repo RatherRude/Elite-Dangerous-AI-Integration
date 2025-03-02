@@ -654,7 +654,7 @@ class PromptGenerator:
                 if priority == 'critical':
                     section = critical
                 elif priority == 'informative':
-                    section = informative
+                    section = background
                 elif priority == 'background':
                     section = background
 
