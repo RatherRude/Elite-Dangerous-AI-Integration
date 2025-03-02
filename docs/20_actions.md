@@ -218,4 +218,4 @@ This is a list of all currently supported actions the AI can perform. Just talk 
    - `message`: String.
    - `recipient`: String.
 
-    Send a direct message to another commander. Can also send to local, wing and squadron chat.
+    Send a direct message to another commander. Can also send to system, local, wing and squadron chat.
