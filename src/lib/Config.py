@@ -743,6 +743,7 @@ def update_config(config: Config, data: dict) -> Config:
     
     # Send updated config
     print(json.dumps({"type": "config", "config": new_config})+'\n', flush=True)
+    save_config(new_config)
     return new_config
 
 def update_event_config(config: Config, section: str, event: str, value: bool) -> Config:
