@@ -76,7 +76,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     this.configSubscription = this.configService.config$.subscribe(
       (config) => {
         this.config = config;
-        this.filteredGameEvents = this.config?.game_events || {};
+        this.filterEvents(this.eventSearchQuery);
       },
     );
 
@@ -180,6 +180,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   }
 
   filterEvents(query: string) {
+    this.eventSearchQuery = query;
     if (!query) {
       this.filteredGameEvents = this.config?.game_events || {};
       this.expandedSection = null; // Collapse all sections when search is empty

@@ -160,7 +160,7 @@
                         </mat-form-field>
 
                         <mat-accordion multi="false">
-                            @for (section of filteredGameEvents | keyvalue:orderByKey; track section) {
+                            @for (section of filteredGameEvents | keyvalue:orderByKey; track section.key) {
                                 <mat-expansion-panel [expanded]="isSectionExpanded(section.key)"
                                                      (afterExpand)="onSectionToggled(section.key)"
                                                      (afterCollapse)="onSectionToggled(null)">
@@ -169,7 +169,7 @@
                                             {{ section.key }}
                                         </mat-panel-title>
                                     </mat-expansion-panel-header>
-                                    @for (e of section.value | keyvalue:orderByKey; track e) {
+                                    @for (e of section.value | keyvalue:orderByKey; track e.key) {
                                         <mat-slide-toggle [(ngModel)]="e.value"
                                                           (ngModelChange)="onEventConfigChange(section.key, e.key, $event)">
                                             {{ e.key }}
