@@ -1,407 +1,406 @@
-<mat-card class="settings-menu">
-  <mat-card-content>
-    <mat-tab-group mat-stretch-tabs="false" mat-align-tabs="start">
-      <mat-tab>
-        <ng-template mat-tab-label>
-          <mat-icon class="tab-icon">settings</mat-icon>
-          General
-        </ng-template>
-        <div class="tab-content">
-          @if (config && (!config.commander_name || !config.api_key)) {
-            <mat-card appearance="outlined" class="welcome-message" style="margin-bottom: 20px;">
-              <mat-card-header>
-                <mat-icon mat-card-avatar color="primary">info</mat-icon>
-                <mat-card-title>Welcome to COVAS:NEXT!</mat-card-title>
-              </mat-card-header>
-              <mat-card-content>
-                <p>To get started, please follow our getting started guide <a target="_blank" rel="noopener noreferrer" href="https://ratherrude.github.io/Elite-Dangerous-AI-Integration/">here</a>.</p>
-              </mat-card-content>
-            </mat-card>
-          }
-          @if (config) {
-            <div class="settings-grid">
-              <mat-form-field>
-                <mat-label>Commander Name</mat-label>
-                <input required matInput [(ngModel)]="config.commander_name" 
-                       (ngModelChange)="onConfigChange({commander_name: $event})">
-              </mat-form-field>
-
-              <mat-form-field>
-                <mat-label>Character</mat-label>
-                <textarea matInput [(ngModel)]="config.character"
-                       (ngModelChange)="onConfigChange({character: $event})"
-                       rows="10"></textarea>
-              </mat-form-field>
-              <p>This setting controls whether the AI will continue the conversation from the last message or start a new one. If you change the character, you may want to reset the conversation history, so the AI starts with a blank slate.</p>
-              <mat-form-field>
-                <mat-label>Conversation history</mat-label>
-                <mat-select [value]="config.continue_conversation_var ? 'continue' : 'reset'" 
-                          (selectionChange)="onConfigChange({continue_conversation_var: $event.value === 'continue'})">
-                  <mat-option value="continue">Continue</mat-option>
-                  <mat-option value="reset">Reset</mat-option>
-                </mat-select>
-              </mat-form-field>
-              <p>This API key is used to authenticate with the OpenAI API. You can get it from the <a target="_blank" rel="noopener noreferrer" href="https://platform.openai.com/api-keys">OpenAI API keys page</a> after creating an account.</p>
-              <mat-form-field>
-                <mat-label>OpenAI API Key</mat-label>
-                <input required matInput [type]="hideApiKey ? 'password' : 'text'" [(ngModel)]="config.api_key"
-                       (ngModelChange)="onConfigChange({api_key: $event})"
-                       pattern="^[A-Za-z0-9_.-]+$"
-                       #apiKeyInput="ngModel">
-                <button matSuffix mat-icon-button (mousedown)="hideApiKey = false" (mouseup)="hideApiKey = true" (mouseleave)="hideApiKey = true">
-                  <mat-icon>{{hideApiKey ? 'visibility_off' : 'visibility'}}</mat-icon>
-                </button>
-                <mat-error *ngIf="apiKeyInput.errors?.['pattern']">
-                  API key can only contain letters, numbers, underscores, dots, and hyphens
-                </mat-error>
-              </mat-form-field>
-              
-              <p>This setting allows you choose when the AI will listen to you. We recommend using Push-to-Talk to avoid accidental activation. Voice activation should only be used when wearing headphones.</p>
-              <div class="ptt-container">
-                <mat-form-field>
-                  <mat-label>Voice Activation Mode</mat-label>
-                  <mat-select [value]="config.ptt_var ? 'ptt' : 'continuous'" 
-                            (selectionChange)="onConfigChange({ptt_var: $event.value === 'ptt'})">
-                    <mat-option value="continuous">Voice Activation</mat-option>
-                    <mat-option value="ptt">Push-to-Talk</mat-option>
-                  </mat-select>
-                </mat-form-field>
-                @if (config.ptt_var) {
-                  <mat-form-field (click)="onAssignPTT()">
-                    <mat-label>Push-to-Talk Key</mat-label>
-                    <input required matInput [value]="config.ptt_key" readonly>
-                    <button matSuffix mat-icon-button>
-                      <mat-icon>keyboard</mat-icon>
-                    </button>
-                  </mat-form-field>
-                }
-              </div>
-
-              <mat-form-field>
-                <mat-label>Input Device</mat-label>
-                <mat-select [(ngModel)]="config.input_device_name"
-                          (ngModelChange)="onConfigChange({input_device_name: $event})">
-                  @for (device of system?.input_device_names; track device) {
-                    <mat-option [value]="device">{{device}}</mat-option>
-                  }
-                </mat-select>
-              </mat-form-field>
-              <mat-form-field>
-                <mat-label>Output Device</mat-label>
-                <mat-select [(ngModel)]="config.output_device_name"
-                          (ngModelChange)="onConfigChange({output_device_name: $event})">
-                  @for (device of system?.output_device_names; track device) {
-                    <mat-option [value]="device">{{device}}</mat-option>
-                  }
-                </mat-select>
-              </mat-form-field>
-            </div>
-          }
-        </div>
-      </mat-tab>
-
-      <mat-tab>
-        <ng-template mat-tab-label>
-          <mat-icon class="tab-icon">psychology</mat-icon>
-          Behavior
-        </ng-template>
-        <div class="tab-content">
-          @if (config) {
-            <div class="settings-grid">
-              <h3>Enable Features</h3>
-              <mat-slide-toggle [(ngModel)]="config.event_reaction_enabled_var"
-                              (ngModelChange)="onConfigChange({event_reaction_enabled_var: $event})">
-                Enable Event Reactions
-              </mat-slide-toggle>
-              <p>Events are caused by the game and your actions within it. By default, the AI will react to those events and provide additional details or commentary. You can customize the reactions in the <a href="#" (click)="eventReactionsSection.scrollIntoView()">Customize Event Reactions</a> section below.</p>
-              <mat-slide-toggle [(ngModel)]="config.game_actions_var"
-                              (ngModelChange)="onConfigChange({game_actions_var: $event})">
-                Enable Game Actions
-              </mat-slide-toggle>
-              <p>Game actions are performed by the AI on your behalf, like deploying the landing gear or opening the galaxy map.</p>
-              <mat-slide-toggle [(ngModel)]="config.web_search_actions_var"
-                              (ngModelChange)="onConfigChange({web_search_actions_var: $event})">
-                Enable Web Actions
-              </mat-slide-toggle>
-              <p>Web actions are performed by the AI on your behalf and allow you to search the web for information, like searching for stations selling a specific commodity or material.</p>
-              
-              <mat-slide-toggle [(ngModel)]="config.use_action_cache_var"
-                              (ngModelChange)="onConfigChange({use_action_cache_var: $event})">
-                Enable Action Cache
-              </mat-slide-toggle>
-              <p>The action cache allows the AI to learn from previous interactions and reuse actions for similar inputs, making responses faster and more consistent.</p>
-              
-              <h3 #eventReactionsSection>Customize Event Reactions</h3>
-              <p>This section allows you to customize the event reactions for the game and will allow you to make the AI react less or more often.</p>
-
-              @if (config.event_reaction_enabled_var) {
-                <mat-form-field class="search-box">
-                  <mat-label>Search events</mat-label>
-                  <input matInput [(ngModel)]="eventSearchQuery" 
-                         (ngModelChange)="filterEvents($event)"
-                         placeholder="Type to search events...">
-                  <button *ngIf="eventSearchQuery" matSuffix mat-icon-button (click)="clearEventSearch()">
-                    <mat-icon>close</mat-icon>
-                  </button>
-                </mat-form-field>
-
-                <mat-accordion multi="false">
-                  @for (section of filteredGameEvents | keyvalue:orderByKey; track section) {
-                    <mat-expansion-panel [expanded]="isSectionExpanded(section.key)"
-                                       (afterExpand)="onSectionToggled(section.key)"
-                                       (afterCollapse)="onSectionToggled(null)">
-                      <mat-expansion-panel-header>
-                        <mat-panel-title>
-                          {{section.key}}
-                        </mat-panel-title>
-                      </mat-expansion-panel-header>
-                      @for (e of section.value | keyvalue:orderByKey; track e) {
-                        <mat-form-field>
-                          <mat-label>{{e.key}}</mat-label>
-                          <mat-select [(ngModel)]="config.game_events[section.key][e.key]"
-                                      (ngModelChange)="onEventConfigChange(section.key, e.key, $event)">
-                            <mat-option value="critical">Critical</mat-option>
-                            <mat-option value="informative">Informative</mat-option>
-                            <mat-option value="background">Background</mat-option>
-                            <mat-option value="disabled">Disabled</mat-option>
-                          </mat-select><br/>
-                        </mat-form-field>
-                        @if (e.key === "ProspectorFoundMaterials") {
-                          <mat-form-field>
-                            <mat-label>React to material</mat-label>
-                            <input matInput [(ngModel)]="config.react_to_material"
-                                   (ngModelChange)="onConfigChange({react_to_material: $event})">
-                          </mat-form-field>
-                        }
-                        @if (e.key === "InDanger") {
-                          <mat-slide-toggle [(ngModel)]="config.react_to_danger_mining_var"
-                                          (ngModelChange)="onConfigChange({react_to_danger_mining_var: $event})">
-                            React while mining
-                          </mat-slide-toggle><br/>
-                          <mat-slide-toggle [(ngModel)]="config.react_to_danger_onfoot_var"
-                                          (ngModelChange)="onConfigChange({react_to_danger_onfoot_var: $event})">
-                            React while on-foot
-                          </mat-slide-toggle><br/>
-                          <mat-slide-toggle [(ngModel)]="config.react_to_danger_supercruise_var"
-                                          (ngModelChange)="onConfigChange({react_to_danger_supercruise_var: $event})">
-                            React while in supercruise
-                          </mat-slide-toggle><br/>
-                        }
-                        <br/>
-                      }
-                    </mat-expansion-panel>
-                  }
-                </mat-accordion>
-              }
-            </div>
-          }
-        </div>
-      </mat-tab>
-
-      <mat-tab>
-        <ng-template mat-tab-label>
-          <mat-icon class="tab-icon">tune</mat-icon>
-          Advanced
-        </ng-template>
-        <div class="tab-content">
-          @if (config) {
-            <div class="settings-grid">
-              <p>This section allows you to customize advanced settings. It is recommended to leave these settings at their default values unless you know what you are doing.</p>
-              <h3>LLM Settings</h3>
-              
-              <mat-form-field>
-                <mat-label>LLM Endpoint</mat-label>
-                <input matInput [(ngModel)]="config.llm_endpoint"
-                       (ngModelChange)="onConfigChange({llm_endpoint: $event})">
-              </mat-form-field>
-
-              <mat-form-field>
-                <mat-label>LLM Model Name</mat-label>
-                <input matInput [(ngModel)]="config.llm_model_name"
-                       (ngModelChange)="onConfigChange({llm_model_name: $event})">
-              </mat-form-field>
-
-              <mat-form-field>
-                <mat-label>Override LLM API Key</mat-label>
-                <input matInput type="password" [(ngModel)]="config.llm_api_key"
-                       (ngModelChange)="onConfigChange({llm_api_key: $event})">
-              </mat-form-field>
-
-              <hr>
-              <h3>STT Settings</h3>
-              <mat-form-field>
-                <mat-label>STT Provider</mat-label>
-                <mat-select [(ngModel)]="config.stt_provider"
-                            (ngModelChange)="onConfigChange({stt_provider: $event})">
-                  <mat-option value="openai">OpenAI</mat-option>
-                  <mat-option value="custom">Custom</mat-option>
-                  <mat-option value="none">None</mat-option>
-                </mat-select>
-              </mat-form-field>
-              @if (config.stt_provider === "openai") {}
-              @if (config.stt_provider === "custom") {
-                <mat-form-field>
-                  <mat-label>STT Endpoint</mat-label>
-                  <input matInput [(ngModel)]="config.stt_endpoint"
-                         (ngModelChange)="onConfigChange({stt_endpoint: $event})">
-                </mat-form-field>
-                <mat-form-field>
-                  <mat-label>STT Model Name</mat-label>
-                  <input matInput [(ngModel)]="config.stt_model_name"
-                         (ngModelChange)="onConfigChange({stt_model_name: $event})">
-                </mat-form-field>
-                <mat-form-field>
-                  <mat-label>STT API Key</mat-label>
-                  <input matInput type="password" [(ngModel)]="config.stt_api_key"
-                         (ngModelChange)="onConfigChange({stt_api_key: $event})">
-                </mat-form-field>
-              }
-              @if (config.stt_provider === "none") {
-                <p>STT is disabled</p>
-              }
-              
-
-              <hr>
-              <h3>TTS Settings</h3>
-              <mat-form-field>
-                <mat-label>TTS Provider</mat-label>
-                <mat-select [(ngModel)]="config.tts_provider"
-                            (ngModelChange)="onConfigChange({tts_provider: $event})">
-                  <mat-option value="openai">OpenAI</mat-option>
-                  <mat-option value="edge-tts">Edge TTS</mat-option>
-                  <mat-option value="custom">Custom</mat-option>
-                  <mat-option value="none">None</mat-option>
-                </mat-select>
-              </mat-form-field>
-              @if (config.tts_provider === "openai") {
-                <mat-form-field>
-                  <mat-label>TTS Model Name</mat-label>
-                  <input matInput [(ngModel)]="config.tts_model_name"
-                         (ngModelChange)="onConfigChange({tts_model_name: $event})">
-                </mat-form-field>
-                <mat-form-field>
-                  <mat-label>TTS Voice</mat-label>
-                  <input matInput [(ngModel)]="config.tts_voice"
-                         (ngModelChange)="onConfigChange({tts_voice: $event})">
-                </mat-form-field>
-                <mat-form-field>
-                  <mat-label>OpenAI API Key</mat-label>
-                  <input matInput type="password" [(ngModel)]="config.tts_api_key"
-                         (ngModelChange)="onConfigChange({tts_api_key: $event})">
-                </mat-form-field>
-              } 
-              @if (config.tts_provider === "edge-tts") {
-                <mat-form-field>
-                  <mat-label>TTS Voice</mat-label>
-                  <input matInput [(ngModel)]="config.tts_voice"
-                         (ngModelChange)="onConfigChange({tts_voice: $event})">
-                </mat-form-field>
-                <mat-form-field>
-                  <mat-label>TTS Speed</mat-label>
-                  <input matInput [(ngModel)]="config.tts_speed"
-                         (ngModelChange)="onConfigChange({tts_speed: $event})">    
-                </mat-form-field>
-              } 
-              @if (config.tts_provider === "custom") {
-                <mat-form-field>
-                  <mat-label>TTS Endpoint</mat-label>
-                  <input matInput [(ngModel)]="config.tts_endpoint"
-                         (ngModelChange)="onConfigChange({tts_endpoint: $event})">
-                </mat-form-field>
-              } 
-              @if (config.tts_provider === "none") {
-                <p>TTS is disabled</p>
-              }
-
-              <hr>
-              <h3>Vision Settings</h3>
-              <mat-form-field>
-                <mat-label>Vision Endpoint</mat-label>
-                <input matInput [(ngModel)]="config.vision_endpoint"
-                       (ngModelChange)="onConfigChange({vision_endpoint: $event})">
-              </mat-form-field>
-
-              <mat-form-field>
-                <mat-label>Vision Model Name</mat-label>
-                <input matInput [(ngModel)]="config.vision_model_name"
-                       (ngModelChange)="onConfigChange({vision_model_name: $event})">
-              </mat-form-field>
-
-              <mat-form-field>
-                <mat-label>Override Vision API Key</mat-label>
-                <input matInput type="password" [(ngModel)]="config.vision_api_key"
-                       (ngModelChange)="onConfigChange({vision_api_key: $event})">
-              </mat-form-field>
-
-              @if (system?.os === 'Linux') {
-                <h3>Linux Settings</h3>
-                <p>Learn more about this setup <a target="_blank" rel="noopener noreferrer" href="https://ratherrude.github.io/Elite-Dangerous-AI-Integration/advanced/linux/">here.</a></p>
-                <mat-form-field>
-                  <mat-label>ED AppData Path</mat-label>
-                  <input matInput [(ngModel)]="config.ed_appdata_path"
-                        (ngModelChange)="onConfigChange({ed_appdata_path: $event})">
-                </mat-form-field>
-                <mat-form-field>
-                  <mat-label>ED Journal Path</mat-label>
-                  <input matInput [(ngModel)]="config.ed_journal_path"
-                        (ngModelChange)="onConfigChange({ed_journal_path: $event})">
-                </mat-form-field>
-              }
-            </div>
-          }
-        </div>
-      </mat-tab>
-      @if (system?.edcopilot_installed) {
-        <mat-tab>
-          <ng-template mat-tab-label>
-            <mat-icon class="tab-icon">extension</mat-icon>
-            Third Party
-          </ng-template>
-          <div class="tab-content">
-            <div class="settings-grid">
-              @if (config && system) {
-                @if (system.edcopilot_installed) {
-                  <mat-slide-toggle [(ngModel)]="config.edcopilot"
-                                (ngModelChange)="onConfigChange({edcopilot: $event})">
-                  Enable EDCoPilot Integration
-                  </mat-slide-toggle>
-                  @if (config.edcopilot) {
-                    <p>
-                      The EDCoPilot integration prevents both applications for talking at the same time.  There are two modes of operation. <br>
-                      Learn more about this feature <a target="_blank" rel="noopener noreferrer" href="https://ratherrude.github.io/Elite-Dangerous-AI-Integration/50_EDCoPilot/">here.</a>
-                    </p>
-                    <p>Enabled:</p>
-                    <ul>
-                      <li>EDCoPilot will show COVAS:NEXT chat history</li>
-                      <li>COVAS:NEXT will generate responses</li>
-                    </ul>
-                    <p>COVAS:NEXT Dominant:</p>
-                    <ul>
-                      <li>EDCoPilot will be silent</li>
-                      <li>COVAS:NEXT Text-to-Speech is used</li>
-                    </ul>
-                    <p>EDCoPilot Dominant:</p>
-                    <ul>
-                      <li>EDCoPilot will also generate responses</li>
-                      <li>COVAS:NEXT Text-to-Speech is disabled</li>
-                    </ul>
-
-                    <mat-form-field>
-                      <mat-label>Speech Output Application</mat-label>
-                      <mat-select [value]="config.edcopilot_dominant ? 'edcopilot' : 'covas'"
-                                  (selectionChange)="onConfigChange({edcopilot_dominant: $event.value === 'edcopilot'})">
-                        <mat-option value="covas">COVAS:NEXT Dominant</mat-option>
-                        <mat-option value="edcopilot">EDCoPilot Dominant</mat-option>
-                      </mat-select>
-                    </mat-form-field>
-                  }
-                }
-              }
-            </div>
-          
-          </div>
-        </mat-tab>
+<mat-tab-group mat-stretch-tabs="false" mat-align-tabs="start">
+  <mat-tab>
+    <ng-template mat-tab-label>
+      <mat-icon class="tab-icon">settings</mat-icon>
+      General
+    </ng-template>
+    <div class="tab-content">
+      @if (config && (!config.commander_name || !config.api_key)) {
+      <mat-card appearance="outlined" class="welcome-message" style="margin-bottom: 20px;">
+        <mat-card-header>
+          <mat-icon mat-card-avatar color="primary">info</mat-icon>
+          <mat-card-title>Welcome to COVAS:NEXT!</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <p>To get started, please follow our getting started guide <a target="_blank" rel="noopener noreferrer"
+              href="https://ratherrude.github.io/Elite-Dangerous-AI-Integration/">here</a>.</p>
+        </mat-card-content>
+      </mat-card>
       }
-    </mat-tab-group>
-  </mat-card-content>
-</mat-card>
+      @if (config) {
+      <div class="settings-grid">
+        <mat-form-field>
+          <mat-label>Commander Name</mat-label>
+          <input required matInput [(ngModel)]="config.commander_name"
+            (ngModelChange)="onConfigChange({commander_name: $event})">
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Character</mat-label>
+          <textarea matInput [(ngModel)]="config.character" (ngModelChange)="onConfigChange({character: $event})"
+            rows="10"></textarea>
+        </mat-form-field>
+        <p>This setting controls whether the AI will continue the conversation from the last message or start a new one.
+          If you change the character, you may want to reset the conversation history, so the AI starts with a blank
+          slate.</p>
+        <mat-form-field>
+          <mat-label>Conversation history</mat-label>
+          <mat-select [value]="config.continue_conversation_var ? 'continue' : 'reset'"
+            (selectionChange)="onConfigChange({continue_conversation_var: $event.value === 'continue'})">
+            <mat-option value="continue">Continue</mat-option>
+            <mat-option value="reset">Reset</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <p>This API key is used to authenticate with the OpenAI API. You can get it from the <a target="_blank"
+            rel="noopener noreferrer" href="https://platform.openai.com/api-keys">OpenAI API keys page</a> after
+          creating an account.</p>
+        <mat-form-field>
+          <mat-label>OpenAI API Key</mat-label>
+          <input required matInput [type]="hideApiKey ? 'password' : 'text'" [(ngModel)]="config.api_key"
+            (ngModelChange)="onConfigChange({api_key: $event})" pattern="^[A-Za-z0-9_.-]+$" #apiKeyInput="ngModel">
+          <button matSuffix mat-icon-button (mousedown)="hideApiKey = false" (mouseup)="hideApiKey = true"
+            (mouseleave)="hideApiKey = true">
+            <mat-icon>{{hideApiKey ? 'visibility_off' : 'visibility'}}</mat-icon>
+          </button>
+          <mat-error *ngIf="apiKeyInput.errors?.['pattern']">
+            API key can only contain letters, numbers, underscores, dots, and hyphens
+          </mat-error>
+        </mat-form-field>
+
+        <p>This setting allows you choose when the AI will listen to you. We recommend using Push-to-Talk to avoid
+          accidental activation. Voice activation should only be used when wearing headphones.</p>
+        <div class="ptt-container">
+          <mat-form-field>
+            <mat-label>Voice Activation Mode</mat-label>
+            <mat-select [value]="config.ptt_var ? 'ptt' : 'continuous'"
+              (selectionChange)="onConfigChange({ptt_var: $event.value === 'ptt'})">
+              <mat-option value="continuous">Voice Activation</mat-option>
+              <mat-option value="ptt">Push-to-Talk</mat-option>
+            </mat-select>
+          </mat-form-field>
+          @if (config.ptt_var) {
+          <mat-form-field (click)="onAssignPTT()">
+            <mat-label>Push-to-Talk Key</mat-label>
+            <input required matInput [value]="config.ptt_key" readonly>
+            <button matSuffix mat-icon-button>
+              <mat-icon>keyboard</mat-icon>
+            </button>
+          </mat-form-field>
+          }
+        </div>
+
+        <mat-form-field>
+          <mat-label>Input Device</mat-label>
+          <mat-select [(ngModel)]="config.input_device_name"
+            (ngModelChange)="onConfigChange({input_device_name: $event})">
+            @for (device of system?.input_device_names; track device) {
+            <mat-option [value]="device">{{device}}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>Output Device</mat-label>
+          <mat-select [(ngModel)]="config.output_device_name"
+            (ngModelChange)="onConfigChange({output_device_name: $event})">
+            @for (device of system?.output_device_names; track device) {
+            <mat-option [value]="device">{{device}}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+      }
+    </div>
+  </mat-tab>
+
+  <mat-tab>
+    <ng-template mat-tab-label>
+      <mat-icon class="tab-icon">psychology</mat-icon>
+      Behavior
+    </ng-template>
+    <div class="tab-content">
+      @if (config) {
+      <div class="settings-grid">
+        <h3>Enable Features</h3>
+        <mat-slide-toggle [(ngModel)]="config.event_reaction_enabled_var"
+          (ngModelChange)="onConfigChange({event_reaction_enabled_var: $event})">
+          Enable Event Reactions
+        </mat-slide-toggle>
+        <p>Events are caused by the game and your actions within it. By default, the AI will react to those events and
+          provide additional details or commentary. You can customize the reactions in the <a href="#"
+            (click)="eventReactionsSection.scrollIntoView()">Customize Event Reactions</a> section below.</p>
+        <mat-slide-toggle [(ngModel)]="config.game_actions_var"
+          (ngModelChange)="onConfigChange({game_actions_var: $event})">
+          Enable Game Actions
+        </mat-slide-toggle>
+        <p>Game actions are performed by the AI on your behalf, like deploying the landing gear or opening the galaxy
+          map.</p>
+        <mat-slide-toggle [(ngModel)]="config.web_search_actions_var"
+          (ngModelChange)="onConfigChange({web_search_actions_var: $event})">
+          Enable Web Actions
+        </mat-slide-toggle>
+        <p>Web actions are performed by the AI on your behalf and allow you to search the web for information, like
+          searching for stations selling a specific commodity or material.</p>
+
+        <mat-slide-toggle [(ngModel)]="config.use_action_cache_var"
+          (ngModelChange)="onConfigChange({use_action_cache_var: $event})">
+          Enable Action Cache
+        </mat-slide-toggle>
+        <p>The action cache allows the AI to learn from previous interactions and reuse actions for similar inputs,
+          making responses faster and more consistent.</p>
+
+        <h3 #eventReactionsSection>Customize Event Reactions</h3>
+        <p>This section allows you to customize the event reactions for the game and will allow you to make the AI react
+          less or more often.</p>
+
+        @if (config.event_reaction_enabled_var) {
+        <mat-form-field class="search-box">
+          <mat-label>Search events</mat-label>
+          <input matInput [(ngModel)]="eventSearchQuery" (ngModelChange)="filterEvents($event)"
+            placeholder="Type to search events...">
+          <button *ngIf="eventSearchQuery" matSuffix mat-icon-button (click)="clearEventSearch()">
+            <mat-icon>close</mat-icon>
+          </button>
+        </mat-form-field>
+
+        <mat-accordion multi="false">
+          @for (section of filteredGameEvents | keyvalue:orderByKey; track section) {
+          <mat-expansion-panel [expanded]="isSectionExpanded(section.key)" (afterExpand)="onSectionToggled(section.key)"
+            (afterCollapse)="onSectionToggled(null)">
+            <mat-expansion-panel-header>
+              <mat-panel-title>
+                {{section.key}}
+              </mat-panel-title>
+            </mat-expansion-panel-header>
+            @for (e of section.value | keyvalue:orderByKey; track e) {
+            <mat-form-field>
+              <mat-label>{{e.key}}</mat-label>
+              <mat-select [(ngModel)]="config.game_events[section.key][e.key]"
+                (ngModelChange)="onEventConfigChange(section.key, e.key, $event)">
+                <mat-option value="critical">Critical</mat-option>
+                <mat-option value="informative">Informative</mat-option>
+                <mat-option value="background">Background</mat-option>
+                <mat-option value="disabled">Disabled</mat-option>
+              </mat-select><br />
+            </mat-form-field>
+            @if (e.key === "ProspectorFoundMaterials") {
+            <mat-form-field>
+              <mat-label>React to material</mat-label>
+              <input matInput [(ngModel)]="config.react_to_material"
+                (ngModelChange)="onConfigChange({react_to_material: $event})">
+            </mat-form-field>
+            }
+            @if (e.key === "InDanger") {
+            <mat-slide-toggle [(ngModel)]="config.react_to_danger_mining_var"
+              (ngModelChange)="onConfigChange({react_to_danger_mining_var: $event})">
+              React while mining
+            </mat-slide-toggle><br />
+            <mat-slide-toggle [(ngModel)]="config.react_to_danger_onfoot_var"
+              (ngModelChange)="onConfigChange({react_to_danger_onfoot_var: $event})">
+              React while on-foot
+            </mat-slide-toggle><br />
+            <mat-slide-toggle [(ngModel)]="config.react_to_danger_supercruise_var"
+              (ngModelChange)="onConfigChange({react_to_danger_supercruise_var: $event})">
+              React while in supercruise
+            </mat-slide-toggle><br />
+            }
+            <br />
+            }
+          </mat-expansion-panel>
+          }
+        </mat-accordion>
+        }
+      </div>
+      }
+    </div>
+  </mat-tab>
+
+  <mat-tab>
+    <ng-template mat-tab-label>
+      <mat-icon class="tab-icon">tune</mat-icon>
+      Advanced
+    </ng-template>
+    <div class="tab-content">
+      @if (config) {
+      <div class="settings-grid">
+        <p>This section allows you to customize advanced settings. It is recommended to leave these settings at their
+          default values unless you know what you are doing.</p>
+        <h3>LLM Settings</h3>
+
+        <mat-form-field>
+          <mat-label>LLM Endpoint</mat-label>
+          <input matInput [(ngModel)]="config.llm_endpoint" (ngModelChange)="onConfigChange({llm_endpoint: $event})">
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>LLM Model Name</mat-label>
+          <input matInput [(ngModel)]="config.llm_model_name"
+            (ngModelChange)="onConfigChange({llm_model_name: $event})">
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Override LLM API Key</mat-label>
+          <input matInput type="password" [(ngModel)]="config.llm_api_key"
+            (ngModelChange)="onConfigChange({llm_api_key: $event})">
+        </mat-form-field>
+
+        <hr>
+        <h3>STT Settings</h3>
+        <mat-form-field>
+          <mat-label>STT Provider</mat-label>
+          <mat-select [(ngModel)]="config.stt_provider" (ngModelChange)="onConfigChange({stt_provider: $event})">
+            <mat-option value="openai">OpenAI</mat-option>
+            <mat-option value="custom">Custom</mat-option>
+            <mat-option value="none">None</mat-option>
+          </mat-select>
+        </mat-form-field>
+        @if (config.stt_provider === "openai") {}
+        @if (config.stt_provider === "custom") {
+        <mat-form-field>
+          <mat-label>STT Endpoint</mat-label>
+          <input matInput [(ngModel)]="config.stt_endpoint" (ngModelChange)="onConfigChange({stt_endpoint: $event})">
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>STT Model Name</mat-label>
+          <input matInput [(ngModel)]="config.stt_model_name"
+            (ngModelChange)="onConfigChange({stt_model_name: $event})">
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>STT API Key</mat-label>
+          <input matInput type="password" [(ngModel)]="config.stt_api_key"
+            (ngModelChange)="onConfigChange({stt_api_key: $event})">
+        </mat-form-field>
+        }
+        @if (config.stt_provider === "none") {
+        <p>STT is disabled</p>
+        }
+
+
+        <hr>
+        <h3>TTS Settings</h3>
+        <mat-form-field>
+          <mat-label>TTS Provider</mat-label>
+          <mat-select [(ngModel)]="config.tts_provider" (ngModelChange)="onConfigChange({tts_provider: $event})">
+            <mat-option value="openai">OpenAI</mat-option>
+            <mat-option value="edge-tts">Edge TTS</mat-option>
+            <mat-option value="custom">Custom</mat-option>
+            <mat-option value="none">None</mat-option>
+          </mat-select>
+        </mat-form-field>
+        @if (config.tts_provider === "openai") {
+        <mat-form-field>
+          <mat-label>TTS Model Name</mat-label>
+          <input matInput [(ngModel)]="config.tts_model_name"
+            (ngModelChange)="onConfigChange({tts_model_name: $event})">
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>TTS Voice</mat-label>
+          <input matInput [(ngModel)]="config.tts_voice" (ngModelChange)="onConfigChange({tts_voice: $event})">
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>OpenAI API Key</mat-label>
+          <input matInput type="password" [(ngModel)]="config.tts_api_key"
+            (ngModelChange)="onConfigChange({tts_api_key: $event})">
+        </mat-form-field>
+        }
+        @if (config.tts_provider === "edge-tts") {
+        <mat-form-field>
+          <mat-label>TTS Voice</mat-label>
+          <input matInput [(ngModel)]="config.tts_voice" (ngModelChange)="onConfigChange({tts_voice: $event})">
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>TTS Speed</mat-label>
+          <input matInput [(ngModel)]="config.tts_speed" (ngModelChange)="onConfigChange({tts_speed: $event})">
+        </mat-form-field>
+        }
+        @if (config.tts_provider === "custom") {
+        <mat-form-field>
+          <mat-label>TTS Endpoint</mat-label>
+          <input matInput [(ngModel)]="config.tts_endpoint" (ngModelChange)="onConfigChange({tts_endpoint: $event})">
+        </mat-form-field>
+        }
+        @if (config.tts_provider === "none") {
+        <p>TTS is disabled</p>
+        }
+
+        <hr>
+        <h3>Vision Settings</h3>
+        <mat-form-field>
+          <mat-label>Vision Endpoint</mat-label>
+          <input matInput [(ngModel)]="config.vision_endpoint"
+            (ngModelChange)="onConfigChange({vision_endpoint: $event})">
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Vision Model Name</mat-label>
+          <input matInput [(ngModel)]="config.vision_model_name"
+            (ngModelChange)="onConfigChange({vision_model_name: $event})">
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Override Vision API Key</mat-label>
+          <input matInput type="password" [(ngModel)]="config.vision_api_key"
+            (ngModelChange)="onConfigChange({vision_api_key: $event})">
+        </mat-form-field>
+
+        @if (system?.os === 'Linux') {
+        <h3>Linux Settings</h3>
+        <p>Learn more about this setup <a target="_blank" rel="noopener noreferrer"
+            href="https://ratherrude.github.io/Elite-Dangerous-AI-Integration/advanced/linux/">here.</a></p>
+        <mat-form-field>
+          <mat-label>ED AppData Path</mat-label>
+          <input matInput [(ngModel)]="config.ed_appdata_path"
+            (ngModelChange)="onConfigChange({ed_appdata_path: $event})">
+        </mat-form-field>
+        <mat-form-field>
+          <mat-label>ED Journal Path</mat-label>
+          <input matInput [(ngModel)]="config.ed_journal_path"
+            (ngModelChange)="onConfigChange({ed_journal_path: $event})">
+        </mat-form-field>
+        }
+      </div>
+      }
+    </div>
+  </mat-tab>
+  @if (system?.edcopilot_installed) {
+  <mat-tab>
+    <ng-template mat-tab-label>
+      <mat-icon class="tab-icon">extension</mat-icon>
+      Third Party
+    </ng-template>
+    <div class="tab-content">
+      <div class="settings-grid">
+        @if (config && system) {
+        @if (system.edcopilot_installed) {
+        <mat-slide-toggle [(ngModel)]="config.edcopilot" (ngModelChange)="onConfigChange({edcopilot: $event})">
+          Enable EDCoPilot Integration
+        </mat-slide-toggle>
+        @if (config.edcopilot) {
+        <p>
+          The EDCoPilot integration prevents both applications for talking at the same time. There are two modes of
+          operation. <br>
+          Learn more about this feature <a target="_blank" rel="noopener noreferrer"
+            href="https://ratherrude.github.io/Elite-Dangerous-AI-Integration/50_EDCoPilot/">here.</a>
+        </p>
+        <p>Enabled:</p>
+        <ul>
+          <li>EDCoPilot will show COVAS:NEXT chat history</li>
+          <li>COVAS:NEXT will generate responses</li>
+        </ul>
+        <p>COVAS:NEXT Dominant:</p>
+        <ul>
+          <li>EDCoPilot will be silent</li>
+          <li>COVAS:NEXT Text-to-Speech is used</li>
+        </ul>
+        <p>EDCoPilot Dominant:</p>
+        <ul>
+          <li>EDCoPilot will also generate responses</li>
+          <li>COVAS:NEXT Text-to-Speech is disabled</li>
+        </ul>
+
+        <mat-form-field>
+          <mat-label>Speech Output Application</mat-label>
+          <mat-select [value]="config.edcopilot_dominant ? 'edcopilot' : 'covas'"
+            (selectionChange)="onConfigChange({edcopilot_dominant: $event.value === 'edcopilot'})">
+            <mat-option value="covas">COVAS:NEXT Dominant</mat-option>
+            <mat-option value="edcopilot">EDCoPilot Dominant</mat-option>
+          </mat-select>
+        </mat-form-field>
+        }
+        }
+        }
+      </div>
+
+    </div>
+  </mat-tab>
+  }
+</mat-tab-group>

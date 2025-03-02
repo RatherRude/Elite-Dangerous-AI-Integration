@@ -1,5 +1,6 @@
 .tab-content {
   padding: 20px;
+  background: transparent;
 }
 
 .tab-icon {
@@ -8,6 +9,7 @@
 
 ::ng-deep .mat-mdc-tab-body-wrapper {
   min-height: 400px;
+  background: transparent;
 }
 
 .settings-grid {
@@ -42,6 +44,7 @@ ul {
 
 .settings-menu {
   min-height:100%;
+  background: transparent;
 }
 
 /* Validation message styling */
@@ -58,4 +61,24 @@ ul {
 ::ng-deep .validation-upgrade-snackbar {
   --mdc-snackbar-container-color: #4caf50 !important;
   color: white;
+}
+
+::ng-deep .mat-mdc-tab-body-content {
+  background: transparent;
+}
+
+::ng-deep .mat-mdc-tab-group {
+  background: transparent;
+}
+
+::ng-deep .mdc-tab-indicator__content--underline {
+  border-color: rgba(255, 255, 255, 0.7) !important;
+}
+
+::ng-deep .mat-mdc-tab:not(.mat-mdc-tab-disabled) .mdc-tab-indicator__content--underline {
+  border-color: rgba(255, 255, 255, 0.7);
+}
+
+::ng-deep .mat-mdc-tab .mdc-tab__text-label {
+  color: rgba(255, 255, 255, 0.7);
 }
