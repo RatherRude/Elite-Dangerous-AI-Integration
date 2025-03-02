@@ -191,23 +191,19 @@ def galaxy_map_open(args, projected_states):
         keys.send_key('Down', 'Key_Enter')
         sleep(0.05)
         keys.send_key('Up', 'Key_Enter')
+        sleep(0.05)
 
-        sleep(.15)
+        sleep(.05)
         keys.send('UI_Right')
-        sleep(.15)
+        sleep(.05)
         keys.send('UI_Select')
 
         if 'start_navigation' in args and args['start_navigation']:
-            sleep(0.25)
-            keys.send('UI_Right')
-            sleep(0.25)
-            keys.send('UI_Back')
-            sleep(0.25)
-            keys.send('UI_Back')
-            sleep(3.5)
-            keys.send('UI_Select', hold=1)
+            keys.send('CamYawLeft')
+            sleep(0.05)
+            keys.send('UI_Select',hold=0.75)
 
-            sleep(.05)
+            sleep(0.05)
             keys.send('GalaxyMapOpen')
 
             return ((f"Best location found: {json.dumps(args['details'])}. " if 'details' in args else '') +
@@ -796,7 +792,12 @@ def send_message(obj, projected_states):
             elif obj.get("recipient").lower() == "wing":
                 typewrite("/w ", interval=0.02)
                 return_message += " to wing chat"
-            elif obj.get("recipient").lower() == "squadron":
+            elif obj.get("recipient").lower() == "system":
+                typewrite("/sy ", interval=0.02)
+                keys.send('UI_Down',repeat=2)
+                keys.send('UI_Select')
+                return_message += " to squadron chat"
+            elif obj.get("system").lower() == "squadron":
                 typewrite("/s ", interval=0.02)
                 return_message += " to squadron chat"
             else:
@@ -1417,7 +1418,6 @@ def prepare_station_request(obj, projected_states):
         "Apex Interstellar",
         "Bartender",
         "Black Market",
-        "Colonisation Services",
         "Crew Lounge",
         "Fleet Carrier Administration",
         "Fleet Carrier Fuel",
@@ -1432,7 +1432,6 @@ def prepare_station_request(obj, projected_states):
         "Pioneer Supplies",
         "Powerplay",
         "Redemption Office",
-        "Refinery Contact",
         "Refuel",
         "Repair",
         "Restock",
@@ -1440,7 +1439,6 @@ def prepare_station_request(obj, projected_states):
         "Shipyard",
         "Shop",
         "Social Space",
-        "System Colonisation"
         "Technology Broker",
         "Universal Cartographics",
         "Vista Genomics"
@@ -3369,7 +3367,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "type": "string",
                 "description": "local, wing or Commander name.",
                 "example": "wing",
-                "enum": ['local', 'wing', 'squadron', 'commander_name']
+                "enum": ['local', 'system', 'wing', 'squadron', 'commander_name']
             },
         },
         "required": ["message"]

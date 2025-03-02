@@ -53,6 +53,7 @@ class EDKeys:
             'IncreaseWeaponsPower',
             'IncreaseSystemsPower',
             'GalaxyMapOpen',
+            'CamYawLeft',
             'SystemMapOpen',
             'CycleNextTarget',
             'CycleNextSubsystem',
