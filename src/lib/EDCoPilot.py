@@ -1,5 +1,6 @@
 import threading
 import time
+from typing import final
 from .Logger import log
 
 from EDMesg.CovasNext import (
@@ -11,17 +12,22 @@ from EDMesg.CovasNext import (
 )
 from EDMesg.EDCoPilot import create_edcopilot_client
 from EDMesg.base import EDMesgWelcomeAction
+from .Config import GameEventConfig
 
-
+@final
 class EDCoPilot:
-    def __init__(self, is_enabled: bool, is_edcopilot_dominant: bool=False, enabled_game_events: list[str]=[]):
+    def __init__(self, is_enabled: bool, is_edcopilot_dominant: bool=False, game_events: GameEventConfig = {}):
         self.install_path = self.get_install_path()
         self.proc_id = self.get_process_id()
         self.is_enabled = is_enabled and self.is_installed()
         self.client = None
         self.provider = None
         self.is_edcopilot_dominant = is_edcopilot_dominant
-        self.enabled_game_events = enabled_game_events
+        self.game_events = []
+        for section in game_events.values():
+            for event, config in section.items():
+                if config != 'disabled':
+                    self.game_events.append(event)
 
         try:
             if self.is_enabled:
@@ -88,7 +94,7 @@ class EDCoPilot:
         """send Config"""
         if self.provider:
             return self.provider.publish(
-                ConfigurationUpdated(is_dominant=not self.is_edcopilot_dominant ,enabled_game_events=self.enabled_game_events)
+                ConfigurationUpdated(is_dominant=not self.is_edcopilot_dominant ,enabled_game_events=self.game_events)
             )
 
     def output_commander(self, message: str):

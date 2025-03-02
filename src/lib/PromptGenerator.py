@@ -1,6 +1,6 @@
 from datetime import timedelta, datetime
 from functools import lru_cache
-from typing import Any, cast
+from typing import Any, Literal, cast, final
 
 import yaml
 import requests
@@ -230,7 +230,7 @@ travelEvents = {
     "SupercruiseExit": "Commander {commanderName} has exited supercruise and returned to normal space.",
     "Touchdown": "Commander {commanderName}'s ship has touched down on a planet surface.",
     "Undocked": "Commander {commanderName} has undocked from a station.",
-    "NavRoute": "Commander {commanderName} has planned a new nav route.",
+    "NavRoute": "Commander {commanderName} has planned a new nav route. Inform about number of jumps and how many jumps to the next scoopable star.",
     "NavRouteClear": "Commander {commanderName} has cleared the nav route.",
 }
 otherEvents = {
@@ -320,12 +320,15 @@ externalEvents = {
     # "SpanshRoadToRiches": "The Spansh API has suggested a Road-to-Riches route for Commander {commanderName}.",
 }
 
-
+@final
 class PromptGenerator:
-    def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str]):
+    def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str], game_events: GameEventConfig):
         self.commander_name = commander_name
         self.character_prompt = character_prompt
-        self.important_game_events = important_game_events
+        self.game_events = {}
+        for section in game_events.values():
+            for name, config in section.items():
+                self.game_events[name] = config
 
     # def time_since(self, timestamp):
     #     # Current time
@@ -344,7 +347,7 @@ class PromptGenerator:
         content: Any = event.content
         event_name = content.get('event')
         
-        if event_name == 'ReceiveText':
+        if event_name.startswith('ReceiveText'):
             receive_text_event = cast(ReceiveTextEvent, content)
             return f'Message received from {receive_text_event.get('From_Localised',receive_text_event.get('From'))} on channel {receive_text_event.get('Channel')}: "{receive_text_event.get('Message_Localised', receive_text_event.get('Message'))}"'
         if event_name == 'StartJump':
@@ -612,14 +615,16 @@ class PromptGenerator:
         if not reference_time.tzinfo:
             reference_time = reference_time.astimezone()
 
-        # Collect the last 50 conversational pieces
-        conversational_pieces: list = list()
+        history: list[tuple[Literal['user', 'assistant', 'toolcall', 'toolresult', 'event'], str]] = list()
+        critical: list[tuple[Literal['user', 'assistant', 'toolcall', 'toolresult', 'event'], str]] = list()
+        informative: list[tuple[Literal['user', 'assistant', 'toolcall', 'toolresult', 'event'], str]] = list()
+        background: list[tuple[Literal['user', 'assistant', 'toolcall', 'toolresult', 'event'], str]] = list()
 
         for event in events[::-1]:
-            if len(conversational_pieces) >= 50:
+            if len(history) >= 50:
                 break
-
             is_pending = event in pending_events
+
             event_time = datetime.fromisoformat(
                 event.content.get('timestamp') if isinstance(event, GameEvent) else event.timestamp)
             if not event_time.tzinfo:
@@ -627,46 +632,112 @@ class PromptGenerator:
 
             time_offset = humanize.naturaltime(reference_time - event_time)
 
+            priority = 'background'
+            if isinstance(event, GameEvent):
+                priority = self.game_events.get(event.content.get('event', ''), 'disabled')
+            elif isinstance(event, StatusEvent) and event.status.get('event') != "Status":
+                priority = self.game_events.get(event.status.get('event', ''), 'disabled')
+            elif isinstance(event, ProjectedEvent):
+                priority = self.game_events.get(event.content.get('event', ''), 'disabled')
+            elif isinstance(event, ConversationEvent):
+                priority = 'critical'
+            elif isinstance(event, ToolEvent):
+                priority = 'critical'
+            elif isinstance(event, ExternalEvent):
+                priority = 'critical'
+            
+            if priority == 'disabled':
+                continue
+
+            section = history
+            if is_pending and not (isinstance(event, ConversationEvent) and event.kind == 'assistant'):
+                if priority == 'critical':
+                    section = critical
+                elif priority == 'informative':
+                    section = informative
+                elif priority == 'background':
+                    section = background
+
             if isinstance(event, GameEvent):
                 if event.content.get('event') in allGameEvents:
-                    if len(conversational_pieces) < 5 or is_pending:
-                        is_important = is_pending and event.content.get('event') in self.important_game_events
-                        conversational_pieces.append(self.full_event_message(event, time_offset, is_important))
-                    elif len(conversational_pieces) < 20:
-                        conversational_pieces.append(self.simple_event_message(event, time_offset))
-                    else:
-                        pass
+                    is_important = is_pending and event.content.get('event') in self.game_events and self.game_events[event.content.get('event')] == 'critical'
+                    section.append(('event', self.full_event_message(event, time_offset, is_important)['content']))
                 else: 
-                    log('debug', "PromptGenerator ignoring event", event.content.get('event'))
+                    log('debug', "PromptGenerator ignoring event", event.content.get('event')) #TODO we probably dont want that anymore, instead have a fallback and set unwanted to disabled
 
             if isinstance(event, ProjectedEvent):
                 if event.content.get('event') in allGameEvents:
-                    if len(conversational_pieces) < 5 or is_pending:
-                        is_important = is_pending and event.content.get('event') in self.important_game_events
-                        conversational_pieces.append(self.full_projectedevent_message(event, time_offset, is_important))
-                    elif len(conversational_pieces) < 20:
-                        conversational_pieces.append(self.simple_projectedevent_message(event, time_offset))
-                    else:
-                        pass
+                    section.append(('event', self.full_projectedevent_message(event, time_offset, is_pending)['content']))
                 else:
                     log('debug', "PromptGenerator ignoring event", event.content.get('event'))
             
             if isinstance(event, StatusEvent):
-                if (
-                    len(conversational_pieces) < 20
-                    and event.status.get("event") != "Status"
-                ):
-                    conversational_pieces += self.status_messages(event)
+                if event.status.get("event") != "Status":
+                    section += [('event', sts["content"]) for sts in self.status_messages(event)]
 
             if isinstance(event, ConversationEvent) and event.kind in ['user', 'assistant']:
-                conversational_pieces.append(self.conversation_message(event))
+                section.append((event.kind, self.conversation_message(event)['content']))
 
             if isinstance(event, ToolEvent):
-                conversational_pieces += self.tool_messages(event)
+                section += [('toolcall', tool) if tool["role"] == 'assistant' else ('toolresult', tool) for tool in self.tool_messages(event)]
 
             if isinstance(event, ExternalEvent):
                 if event.content.get('event') in externalEvents:
-                    conversational_pieces.append(self.external_event_message(event))
+                    section.append(('event', self.external_event_message(event)['content']))
+        
+        log('debug', "messages", json.dumps({
+            "critical": critical,
+            "informative": informative,
+            "background": background,
+            "history": history,
+        }))
+
+        conversational_pieces = list()
+
+        for role, content in critical:
+            if role == 'toolresult':
+                conversational_pieces.append(content)
+            elif role == 'toolcall':
+                conversational_pieces.append(content)
+            else:
+                conversational_pieces.append({
+                    "role": {"user": "user", "assistant": "assistant", "event": "user"}[role],
+                    "content": content,
+                })
+
+        for role, content in informative:
+            if role == 'toolresult':
+                conversational_pieces.append(content)
+            elif role == 'toolcall':
+                conversational_pieces.append(content)
+            else:
+                conversational_pieces.append({
+                    "role": {"user": "user", "assistant": "assistant", "event": "user"}[role],
+                    "content": content,
+                })
+
+        for role, content in background:
+            if role == 'toolresult':
+                conversational_pieces.append(content)
+            elif role == 'toolcall':
+                conversational_pieces.append(content)
+            else:
+                conversational_pieces.append({
+                    "role": {"user": "user", "assistant": "assistant", "event": "user"}[role],
+                    "content": content,
+                })
+        
+        for role, content in history:
+            if role == 'toolresult':
+                conversational_pieces.append(content)
+            elif role == 'toolcall':
+                conversational_pieces.append(content)
+            else:
+                conversational_pieces.append({
+                    "role": {"user": "user", "assistant": "assistant", "event": "user"}[role],
+                    "content": content,
+                })
+        
 
         conversational_pieces.append(
             {
@@ -674,6 +745,7 @@ class PromptGenerator:
                 "content": self.generate_status_message(projected_states),
             }
         )
+
 
         try:
             conversational_pieces.append(

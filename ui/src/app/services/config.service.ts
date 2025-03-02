@@ -80,7 +80,7 @@ export interface Config {
     ptt_key: string;
     input_device_name: string;
     output_device_name: string;
-    game_events: { [key: string]: { [key: string]: boolean } };
+    game_events: { [key: string]: { [key: string]: 'critical' | 'informative' | 'background' | 'disabled' } };
     ed_journal_path: string;
     ed_appdata_path: string;
 }

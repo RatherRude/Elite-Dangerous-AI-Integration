@@ -798,9 +798,11 @@ class ProspectedAsteroidEventMaterialsItem(TypedDict):
     Name_Localised: NotRequired[str]
     Name: str
 class ProspectedAsteroidEvent(TypedDict):
-    Content: str
+    Content: NotRequired[str]
     Materials: list[ProspectedAsteroidEventMaterialsItem]
-    Content_Localised: str
+    Content_Localised: NotRequired[str]
+    MotherlodeMaterial: NotRequired[str]
+    MotherlodeMaterial_Localised: NotRequired[str]
     event: Literal["ProspectedAsteroid"]
     timestamp: str
     Remaining: float

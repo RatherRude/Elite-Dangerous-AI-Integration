@@ -49,7 +49,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   private systemSubscription?: Subscription;
   private validationSubscription?: Subscription;
   expandedSection: string | null = null;
-  filteredGameEvents: Record<string, Record<string, boolean>> = {};
+  filteredGameEvents: Record<string, Record<string, 'critical' | 'informative' | 'background' | 'disabled'>> = {};
   eventSearchQuery: string = "";
 
   constructor(
@@ -196,7 +196,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
           this.config?.game_events || {},
         )
       ) {
-        const matchingEvents: Record<string, boolean> = {};
+        const matchingEvents: typeof this.filteredGameEvents[string] = {};
         for (const [eventKey, value] of Object.entries(events)) {
           if (
             eventKey.toLowerCase().includes(searchTerm) ||

@@ -1,10 +1,10 @@
 import math
-
-from .Logger import log
-from typing import Any, Literal, TypedDict, final
-
+from typing import Any, Literal, TypedDict, cast, final
 from typing_extensions import NotRequired, override
 
+from .Config import Config
+from .Logger import log
+from .EventModels import ProspectedAsteroidEvent, ReceiveTextEvent
 from .Event import Event, StatusEvent, GameEvent, ProjectedEvent
 from .EventManager import EventManager, Projection
 from .StatusParser import parse_status_flags, parse_status_json, Status
@@ -633,9 +633,55 @@ class ExobiologyScan(Projection[ExobiologyScanState]):
 
         return projected_events
 
+@final
+class ChatEvents(Projection[dict]):
+    def get_default_state(self) -> dict:
+        return {
+        }
+
+    @override
+    def process(self, event: Event) -> list[ProjectedEvent]:
+        projected_events: list[ProjectedEvent] = []
+        if isinstance(event, GameEvent) and event.content.get('event') == "ReceiveText":
+            content = cast(ReceiveTextEvent, event.content)
+            channel = content.get('Channel', '')
+            projected_events.append(ProjectedEvent({**content, "event": "ReceiveText" + channel.capitalize()}))
+
+        return projected_events
+
+@final
+class MiningEvents(Projection[dict]):
+    def __init__(self, react_to_material: str):
+        super().__init__()
+        self.react_to_material = react_to_material
+
+    def get_default_state(self) -> dict:
+        return {
+        }
+
+    @override
+    def process(self, event: Event) -> list[ProjectedEvent]:
+        projected_events: list[ProjectedEvent] = []
+        if isinstance(event, GameEvent) and event.content.get('event') == "ProspectedAsteroid":
+            content = cast(ProspectedAsteroidEvent, event.content)
+            chunks = [chunk.strip() for chunk in self.react_to_material]
+            contains_material = []
+            for chunk in chunks:
+                for material in content.get("Materials", []):
+                    if chunk.lower() in material["Name"].lower():
+                        contains_material.append(material["Name"])
+                if 'MotherlodeMaterial_Localised' in content:
+                    if chunk.lower() in content['MotherlodeMaterial_Localised'].lower():
+                        contains_material.append(content['MotherlodeMaterial_Localised'])
+
+            if contains_material:
+                projected_events.append(ProjectedEvent({**content, "event": "ProspectorFoundMaterials", "SignificantMaterials": contains_material}))
+
+        return projected_events
 
 
-def registerProjections(event_manager: EventManager):
+
+def registerProjections(event_manager: EventManager, config: Config):
 
     event_manager.register_projection(EventCounter())
     event_manager.register_projection(CurrentStatus())
@@ -645,6 +691,8 @@ def registerProjections(event_manager: EventManager):
     event_manager.register_projection(Target())
     event_manager.register_projection(NavInfo())
     event_manager.register_projection(ExobiologyScan())
+    event_manager.register_projection(ChatEvents())
+    event_manager.register_projection(MiningEvents(config['react_to_material']))
 
     # ToDo: SLF, SRV,
     for proj in [

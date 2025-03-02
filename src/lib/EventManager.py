@@ -1,7 +1,7 @@
 import hashlib
 import inspect
 from abc import ABC, abstractmethod
-from datetime import timezone, datetime
+from datetime import timedelta, timezone, datetime
 import time
 from typing import Any, Generic, Literal, Callable, TypeVar, final
 
@@ -31,7 +31,7 @@ class Projection(ABC, Generic[ProjectedState]):
 
 @final
 class EventManager:
-    def __init__(self, on_reply_request: Callable[[list[Event], list[Event], dict[str, dict[str, Any]]], Any], game_events: list[str],
+    def __init__(self, on_reply_request: Callable[[list[Event], list[Event], dict[str, dict[str, Any]]], Any], game_events: GameEventConfig,
                  continue_conversation: bool = False, react_to_text_local: bool = True, react_to_text_starsystem: bool = True, react_to_text_npc: bool = False,
                  react_to_text_squadron: bool = True, react_to_material:str = '', react_to_danger_mining:bool = False,
                  react_to_danger_onfoot:bool = False, react_to_danger_supercruise:bool = False):
@@ -41,7 +41,10 @@ class EventManager:
         self.is_replying = False
         self.is_listening = False
         self.on_reply_request = on_reply_request
-        self.game_events = game_events
+        self.game_events: dict[str, Literal['disabled', 'informative', 'background', 'critical']] = {}
+        for section in game_events.values():
+            for event, config in section.items():
+                self.game_events[event] = config
         self.react_to_text_local = react_to_text_local
         self.react_to_text_starsystem = react_to_text_starsystem
         self.react_to_text_npc = react_to_text_npc
@@ -266,65 +269,61 @@ class EventManager:
         if len(self.pending) == 0:
             return False
 
+        priorities = {
+            'disabled': 0,
+            'background': 1,
+            'informative': 2,
+            'critical': 3,
+        }
+
+        priority = 0
+
+        # find the most recent conversational event in history
+        previous_response_time = datetime.fromisoformat(self.processed[-1].timestamp) if self.processed else datetime.fromisoformat('1998-01-01T00:00:00Z')
+        if not previous_response_time.tzinfo:
+            previous_response_time = previous_response_time.astimezone()
+        for event in self.pending[::-1]:
+            if isinstance(event, ConversationEvent):
+                previous_response_time = datetime.fromisoformat(event.timestamp)
+                if not previous_response_time.tzinfo:
+                    previous_response_time = previous_response_time.astimezone()
+                break
+        
+        new_response_time = datetime.fromisoformat(self.pending[-1].timestamp) if self.processed else datetime.fromisoformat('1999-01-01T00:00:00Z')
+        if not new_response_time.tzinfo:
+            new_response_time = new_response_time.astimezone()
+        
+
         for event in self.pending:
             # check if pending contains conversational events
             if isinstance(event, ConversationEvent) and event.kind == "user":
-                return True
+                priority = max(priority, priorities['critical'])
 
             if isinstance(event, ToolEvent):
-                return True
-
-            if isinstance(event, GameEvent) and event.content.get("event") in self.game_events:
-                if event.content.get("event") == "ReceiveText":
-                    if event.content.get("Channel") not in ['wing', 'voicechat', 'friend', 'player'] and (
-                        (not self.react_to_text_local and event.content.get("Channel") == 'local') or
-                        (not self.react_to_text_starsystem and event.content.get("Channel") == 'starsystem') or
-                        (not self.react_to_text_npc and event.content.get("Channel") == 'npc') or
-                        (not self.react_to_text_squadron and event.content.get("Channel") == 'squadron')):
-                        continue
-
-                if event.content.get("event") == "ProspectedAsteroid":
-                    chunks = [chunk.strip() for chunk in self.react_to_material.split(",")]
-                    contains_material = False
-                    for chunk in chunks:
-                        for material in event.content.get("Materials"):
-                            if chunk.lower() in material["Name"].lower():
-                                contains_material = True
-                        if event.content.get("MotherlodeMaterial_Localised", False):
-                            if chunk.lower() in event.content['MotherlodeMaterial_Localised'].lower():
-                                contains_material = True
-
-                    if not contains_material:
-                        continue
-
-                if event.content.get("event") == "ScanOrganic":
-                    continue
-
-                return True
-
-            if isinstance(event, StatusEvent) and event.status.get("event") in self.game_events:
-                if event.status.get("event") in ["InDanger", "OutOfDanger"]:
-                    if not self.react_to_danger_mining:
-                        if states.get('ShipInfo', {}).get('IsMiningShip', False) and states.get('Location', {}).get('PlanetaryRing', False):
-                            continue
-                    if not self.react_to_danger_onfoot:
-                        if states.get('CurrentStatus', {}).get('flags2').get('OnFoot'):
-                            continue
-                    if not self.react_to_danger_supercruise:
-                        if states.get('CurrentStatus', {}).get('flags').get('Supercruise') and len(states.get('NavInfo', {"NavRoute": []}).get('NavRoute', [])):
-                            continue
-                return True
+                priority = max(priority, priorities['critical'])
 
             if isinstance(event, ExternalEvent):
-                return True
+                priority = max(priority, priorities['critical'])
 
-            if isinstance(event, ProjectedEvent):
-                if event.content.get("event").startswith('ScanOrganic'):
-                    if not 'ScanOrganic' in self.game_events:
-                        continue
-                return True
+            if isinstance(event, StatusEvent):
+                if event.status.get("event") in self.game_events:
+                    priority = max(priority, priorities[self.game_events.get(event.status.get("event", ''), 'disabled')])
 
-        return False
+            if isinstance(event, GameEvent) or isinstance(event, ProjectedEvent):
+                if event.content.get("event") in self.game_events:
+                    priority = max(priority, priorities[self.game_events.get(event.content.get("event", ''), 'disabled')])
+
+        if priority > 0:
+            log('debug', 'response priority', priority)
+            log('debug', 'response age', new_response_time - previous_response_time)
+        if priority == priorities['critical']:
+            return True
+        elif priority == priorities['informative']:
+            return previous_response_time < new_response_time - timedelta(seconds=10)
+        elif priority == priorities['background']:
+            return previous_response_time < new_response_time - timedelta(minutes=1)
+        else:
+            return False
 
     def save_incoming_history(self, incoming: list[Event]):
         for event in incoming:
