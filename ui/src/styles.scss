@@ -61,17 +61,7 @@ $my-typography: mat.define-typography-config();
 // Define density config once
 $my-density: 0;
 
-// Light theme
-$my-light-theme: mat.define-light-theme((
-  color: (
-    primary: $my-primary,
-    accent: $my-accent,
-  ),
-  typography: $my-typography,
-  density: $my-density,
-));
-
-// Dark theme
+// Dark theme only
 $my-dark-theme: mat.define-dark-theme((
   color: (
     primary: $my-primary,
@@ -82,20 +72,15 @@ $my-dark-theme: mat.define-dark-theme((
 ));
 
 // Include theme styles for core and each component used in your app.
-// Alternatively, you can import and @include the theme mixins for each component
-// that you are using.
-@include mat.all-component-colors($my-light-theme);
+@include mat.all-component-colors($my-dark-theme);
 @include mat.all-component-typographies($my-typography);
 @include mat.all-component-densities($my-density);
-
-@media (prefers-color-scheme: dark) {
-  @include mat.all-component-colors($my-dark-theme);
-}
 
 html, body, app-root { 
   height: 100vh;
   width: 100vw;
   margin: 0;
   padding: 0;
-  color-scheme: dark light;
+  color-scheme: dark;
+  background-color: #000000;
 }
