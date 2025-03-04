@@ -81,8 +81,8 @@ class EventManager:
         self.incoming.put(event)
         # log('Event', event)
         
-    def add_external_event(self, content: dict[str, Any]):
-        event = ExternalEvent(content=content)
+    def add_external_event(self, application: str, content: dict[str, Any]):
+        event = ExternalEvent(content={**content, 'event': application})
         self.incoming.put(event)
         log('Event', event.content['event'])
         log('debug', 'Event', event)
