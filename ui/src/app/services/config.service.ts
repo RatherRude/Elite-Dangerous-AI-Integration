@@ -24,6 +24,10 @@ export interface ModelValidationMessage extends BaseMessage {
     message: string;
 }
 
+export interface StartMessage extends BaseMessage {
+    type: "start";
+}
+
 export interface SystemInfo {
     os: string;
     input_device_names: string[];
@@ -108,10 +112,12 @@ export class ConfigService {
             ): message is
                 | ConfigMessage
                 | SystemInfoMessage
-                | ModelValidationMessage =>
+                | ModelValidationMessage
+                | StartMessage =>
                 message.type === "config" ||
                 message.type === "system" ||
-                message.type === "model_validation"
+                message.type === "model_validation" ||
+                message.type === "start"
             ),
         ).subscribe((message) => {
             if (message.type === "config") {
@@ -120,6 +126,8 @@ export class ConfigService {
                 this.systemSubject.next(message.system);
             } else if (message.type === "model_validation") {
                 this.validationSubject.next(message);
+            } else if (message.type === "start") {
+                this.validationSubject.next(null);
             }
         });
     }
