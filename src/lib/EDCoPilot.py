@@ -46,7 +46,6 @@ class EDCoPilot:
         while True:
             if not self.provider.pending_actions.empty():
                 action = self.provider.pending_actions.get()
-                log('info', f'Received external chat notification: {action}')
                 if isinstance(action, EDMesgWelcomeAction):
                     self.share_config()
                 if isinstance(action, ExternalChatNotification):
