@@ -6,6 +6,7 @@ from .Logger import log
 
 from EDMesg.CovasNext import (
     ExternalChatNotification,
+    ExternalBackgroundChatNotification,
     create_covasnext_provider,
     create_covasnext_client,
     CommanderSpoke,
@@ -25,7 +26,7 @@ class EDCoPilot:
         self.provider = None
         self.is_edcopilot_dominant = is_edcopilot_dominant
         self.enabled_game_events = enabled_game_events
-        self.event_publication_queue: queue.Queue[ExternalChatNotification] = queue.Queue()
+        self.event_publication_queue: queue.Queue[ExternalChatNotification|ExternalBackgroundChatNotification] = queue.Queue()
 
         try:
             if self.is_enabled:
@@ -49,6 +50,8 @@ class EDCoPilot:
                 if isinstance(action, EDMesgWelcomeAction):
                     self.share_config()
                 if isinstance(action, ExternalChatNotification):
+                    self.event_publication_queue.put(action)
+                if isinstance(action, ExternalBackgroundChatNotification):
                     self.event_publication_queue.put(action)
             time.sleep(0.1)
 

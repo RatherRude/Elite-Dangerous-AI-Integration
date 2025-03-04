@@ -4,6 +4,7 @@ import sys
 import traceback
 from typing import Any, final
 
+from EDMesg.CovasNext import ExternalChatNotification, ExternalBackgroundChatNotification
 from openai import OpenAI
 from openai.types.chat import ChatCompletion
 
@@ -299,7 +300,13 @@ class Chat:
 
                 while not self.copilot.event_publication_queue.empty():
                     event = self.copilot.event_publication_queue.get()
-                    self.event_manager.add_external_event('External'+event.service.capitalize()+'Notification', event.model_dump())
+                    if isinstance(event, ExternalChatNotification):
+                        self.event_manager.add_external_event('External' + event.service.capitalize() + 'Notification',
+                                                              event.model_dump())
+                    if isinstance(event, ExternalBackgroundChatNotification):
+                        self.event_manager.add_external_event('External' + event.service.capitalize() + 'Message',
+                                                          event.model_dump())
+
 
                 self.event_manager.process()
 

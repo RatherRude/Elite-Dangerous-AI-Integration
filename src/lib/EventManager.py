@@ -316,6 +316,8 @@ class EventManager:
                 return True
 
             if isinstance(event, ExternalEvent):
+                if event.content.get("event") == "ExternalTwitchMessage":
+                    continue
                 return True
 
             if isinstance(event, ProjectedEvent):
