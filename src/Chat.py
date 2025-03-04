@@ -329,6 +329,8 @@ if __name__ == "__main__":
             try:
                 data = json.loads(line)
                 if data.get("type") == "start":
+                    if data.get('oldUi'):
+                        config = load_config()
                     break
                 if data.get("type") == "assign_ptt":
                     config = assign_ptt(config, ControllerManager())
@@ -341,7 +343,7 @@ if __name__ == "__main__":
                 continue
         
         # Once start signal received, initialize and run chat
-        config = load_config()
+        save_config(config)
         Chat(config).run()
     except Exception as e:
         log("error", e, traceback.format_exc())

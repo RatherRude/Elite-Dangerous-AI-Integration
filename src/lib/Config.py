@@ -504,6 +504,7 @@ def assign_ptt(config: Config, controller_manager):
     controller_manager.listen_hotkey(on_hotkey_detected)
     semaphore.acquire()
     print(json.dumps({"type": "config", "config": config}) + '\n')
+    save_config(config)
     return config
 
 
@@ -747,10 +748,12 @@ def update_config(config: Config, data: dict) -> Config:
 
     # Send updated config
     print(json.dumps({"type": "config", "config": new_config}) + '\n', flush=True)
+    save_config(config)
     return new_config
 
 
 def update_event_config(config: Config, section: str, event: str, value: bool) -> Config:
     config.get("game_events", {}).get(section, {})[event] = value
     print(json.dumps({"type": "config", "config": config}) + '\n', flush=True)
+    save_config(config)
     return config
