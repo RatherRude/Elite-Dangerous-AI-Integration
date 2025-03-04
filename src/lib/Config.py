@@ -704,51 +704,45 @@ def check_and_upgrade_model(config: Config) -> ModelValidationResult:
     return result
 
 
-def update_config(config: Config, data: dict) -> Config:
-    new_config = cast(Config, {**config, **data})
+def validate_config(config: Config) -> Config | None:
 
-    # Check if model-related settings are being changed
-    model_related_keys = [
-        'api_key',
-        'llm_model_name', 'llm_api_key', 'llm_endpoint',
-        'vision_model_name', 'vision_api_key', 'vision_endpoint',
-        'tts_model_name', 'tts_api_key', 'tts_endpoint',
-        'tts_provider', 'vision_var'
-    ]
+    validation_result = check_and_upgrade_model({**config})
 
-    if any(key in data for key in model_related_keys):
-        # Temporarily apply changes for validation
-        temp_config = cast(Config, {**config, **data})
-        validation_result = check_and_upgrade_model(temp_config)
-
-        # Send validation result message
-        if validation_result.success:
-            new_config = validation_result.config
-
-            if validation_result.upgrade_message:
-                print(json.dumps({
-                    "type": "model_validation",
-                    "status": "upgrade",
-                    "message": validation_result.upgrade_message
-                }) + '\n', flush=True)
-            elif validation_result.fallback_message:
-                print(json.dumps({
-                    "type": "model_validation",
-                    "status": "fallback",
-                    "message": validation_result.fallback_message
-                }) + '\n', flush=True)
-        else:
-            # Send error message but still update the config
-            # (UI will show warning to the user)
+    # Send validation result message
+    if validation_result.success:
+        if validation_result.upgrade_message:
             print(json.dumps({
                 "type": "model_validation",
-                "status": "error",
-                "message": validation_result.error_message
+                "status": "upgrade",
+                "message": validation_result.upgrade_message
             }) + '\n', flush=True)
+        elif validation_result.fallback_message:
+            print(json.dumps({
+                "type": "model_validation",
+                "status": "fallback",
+                "message": validation_result.fallback_message
+            }) + '\n', flush=True)
+            
+        new_config = validation_result.config or config
+        print(json.dumps({"type": "config", "config": new_config}) + '\n', flush=True)
+        save_config(new_config)
+        return new_config
+    else:
+        # Send error message but still update the config
+        # (UI will show warning to the user)
+        print(json.dumps({
+            "type": "model_validation",
+            "status": "error",
+            "message": validation_result.error_message
+        }) + '\n', flush=True)
+        return None
 
-    # Send updated config
-    print(json.dumps({"type": "config", "config": new_config}) + '\n', flush=True)
-    save_config(config)
+
+
+
+def update_config(config: Config, data: dict) -> Config:
+    new_config = cast(Config, {**config, **data}) # pyright: ignore[reportInvalidCast]
+    save_config(new_config)
     return new_config
 
 

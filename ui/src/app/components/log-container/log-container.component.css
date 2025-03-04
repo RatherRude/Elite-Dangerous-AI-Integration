@@ -1,22 +1,3 @@
-.log-container {
-  margin: 20px;
-  min-height: 300px;
-  flex: 1;
-  background: transparent;
-}
-
-mat-card-content {
-  height: 100%;
-  overflow-y: auto;
-  padding: 16px;
-  background: transparent;
-}
-
-::ng-deep .mat-mdc-card {
-  background: transparent !important;
-  box-shadow: none !important;
-}
-
 .log-entry {
   font-family: 'Roboto Mono', monospace;
   margin-bottom: 4px;
