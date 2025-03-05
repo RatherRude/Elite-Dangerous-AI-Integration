@@ -316,8 +316,6 @@ allGameEvents = {
 externalEvents = {
     "SpanshTradePlanner": "The Spansh API has suggested a Trade Planner route for Commander {commanderName}.",
     "SpanshTradePlannerFailed": "The Spansh API has failed to retrieve a Trade Planner route for Commander {commanderName}.",
-    "ExternalTwitchNotification": "Commander {commanderName} has received a Twitch notification.",
-    "ExternalDiscordNotification": "Commander {commanderName} has received a Discord notification.",
     # "SpanshNeutronPlotter": "The Spansh API has suggested a Neutron Plotter router for Commander {commanderName}.",
     # "SpanshRoadToRiches": "The Spansh API has suggested a Road-to-Riches route for Commander {commanderName}.",
 }

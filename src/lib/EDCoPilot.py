@@ -1,11 +1,9 @@
 import queue
 import threading
 import time
-from typing import final
 from .Logger import log
 
 from EDMesg.CovasNext import (
-    ExternalChatNotification,
     create_covasnext_provider,
     create_covasnext_client,
     CommanderSpoke,
@@ -15,7 +13,6 @@ from EDMesg.CovasNext import (
 from EDMesg.EDCoPilot import create_edcopilot_client
 from EDMesg.base import EDMesgWelcomeAction
 
-@final
 class EDCoPilot:
     def __init__(self, is_enabled: bool, is_edcopilot_dominant: bool=False, enabled_game_events: list[str]=[]):
         self.install_path = self.get_install_path()
@@ -25,8 +22,7 @@ class EDCoPilot:
         self.provider = None
         self.is_edcopilot_dominant = is_edcopilot_dominant
         self.enabled_game_events = enabled_game_events
-        self.event_publication_queue: queue.Queue[ExternalChatNotification] = queue.Queue()
-
+        
         try:
             if self.is_enabled:
                 self.client = create_edcopilot_client()
@@ -45,11 +41,8 @@ class EDCoPilot:
         while True:
             if not self.provider.pending_actions.empty():
                 action = self.provider.pending_actions.get()
-                log('info', f'Received external chat notification: {action}')
                 if isinstance(action, EDMesgWelcomeAction):
                     self.share_config()
-                if isinstance(action, ExternalChatNotification):
-                    self.event_publication_queue.put(action)
             time.sleep(0.1)
 
     def is_installed(self) -> bool:

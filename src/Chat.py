@@ -297,10 +297,6 @@ class Chat:
                     event = self.jn.events.get()
                     self.event_manager.add_game_event(event)
 
-                while not self.copilot.event_publication_queue.empty():
-                    event = self.copilot.event_publication_queue.get()
-                    self.event_manager.add_external_event('External'+event.service.capitalize()+'Notification', event.model_dump())
-
                 self.event_manager.process()
 
                 # Infinite loops are bad for processors, must sleep.
