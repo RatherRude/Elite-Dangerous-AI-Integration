@@ -14,11 +14,16 @@
       {
         "title": "covas-next-ui",
         "width": 800,
-        "height": 600
+        "height": 600,
+        "visible": true
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "capabilities": [
+        "default",
+        "overlay"
+      ]
     }
   },
   "bundle": {

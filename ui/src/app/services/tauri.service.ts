@@ -35,8 +35,11 @@ export class TauriService {
     private stopListener?: UnlistenFn;
 
     constructor(private ngZone: NgZone) {
-        this.runExe();
-        this.checkForUpdates();
+        this.startReadingOutput();
+    }
+
+    public async createOverlay(): Promise<void> {
+        invoke("create_floating_overlay", {});
     }
 
     private async startReadingOutput(): Promise<void> {
@@ -77,7 +80,7 @@ export class TauriService {
         // todo clear the replay subject somehow
     }
 
-    private async runExe(): Promise<string[]> {
+    public async runExe(): Promise<string[]> {
         this.stopExe();
         try {
             const output: string[] = await invoke("start_process", {});
@@ -120,13 +123,8 @@ export class TauriService {
         });
     }
 
-    // Public method to manually check for updates
-    public async checkForUpdatesManually(): Promise<void> {
-        await this.checkForUpdates();
-    }
-
     // Update check functionality
-    private async checkForUpdates(): Promise<void> {
+    public async checkForUpdates(): Promise<void> {
         try {
             // Get the current commit hash from the Tauri app
             const currentCommit: string = await invoke("get_commit_hash");
