@@ -191,7 +191,6 @@ def galaxy_map_open(args, projected_states):
         keys.send_key('Down', 'Key_Enter')
         sleep(0.05)
         keys.send_key('Up', 'Key_Enter')
-        sleep(0.05)
 
         sleep(.05)
         keys.send('UI_Right')
@@ -694,19 +693,19 @@ def check_trade_planner_job(job_id):
                     for item in data['result']
                 ]
                 # add conversational piece - here is your trade route!
-                event_manager.add_external_event({'event': 'SpanshTradePlanner', 'result': filtered_data})
+                event_manager.add_external_event('SpanshTradePlanner', {'result': filtered_data})
 
                 # persist route as optional piece
                 return
         except Exception as e:
             log('error', e, traceback.format_exc())
             # add conversational piece - error request
-            event_manager.add_external_event({'event': 'SpanshTradePlannerFailed',
+            event_manager.add_external_event('SpanshTradePlannerFailed', {
                                               'reason': 'The Spansh API has encountered an error! Please try at a later point in time!',
                                               'error': f'{e}'})
             return
 
-    event_manager.add_external_event({'event': 'SpanshTradePlannerFailed',
+    event_manager.add_external_event('SpanshTradePlannerFailed', {
                                       'reason': 'The Spansh API took longer than 5 minutes to find a trade route. That should not happen, try again at a later point in time!'})
 
 
@@ -740,7 +739,7 @@ def trade_planner_create_thread(obj, projected_states):
 
     except Exception as e:
         log('error', e, traceback.format_exc())
-        event_manager.add_external_event({'event': 'SpanshTradePlannerFailed',
+        event_manager.add_external_event('SpanshTradePlannerFailed', {
                                           'reason': 'The request to the Spansh API wasn\'t successful! Please try at a later point in time!',
                                           'error': f'{e}'})
 
