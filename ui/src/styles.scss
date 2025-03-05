@@ -84,3 +84,15 @@ html, body, app-root {
   color-scheme: dark;
   background-color: #000000;
 }
+
+// Styles for the overlay window
+html.overlay-window, 
+html.overlay-window body,
+html.overlay-window app-root {
+  background-color: transparent !important;
+  overflow: hidden;
+
+  .container, mat-progress-bar, main {
+    display: none !important;
+  }
+}

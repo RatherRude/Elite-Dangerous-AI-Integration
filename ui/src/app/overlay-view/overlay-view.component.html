@@ -1,0 +1,10 @@
+<div class="overlay-container">
+  <div class="overlay-content">
+    <h1>Status Overlay</h1>
+    <div class="status-indicator" [class.active]="isRunning" [class.inactive]="!isRunning">
+      <div class="status-dot"></div>
+      <p class="status-text">AI Assistant: <strong>{{ isRunning ? 'ACTIVE' : 'INACTIVE' }}</strong></p>
+    </div>
+    <p class="ready-text" *ngIf="!isReady">System preparing...</p>
+  </div>
+</div>

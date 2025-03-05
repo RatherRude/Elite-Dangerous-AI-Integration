@@ -163,6 +163,45 @@ fn get_commit_hash() -> String {
     get_commit_hash_value().to_string()
 }
 
+#[tauri::command]
+async fn create_floating_overlay(app_handle: tauri::AppHandle) -> Result<(), String> {
+    let mut window_builder = tauri::WebviewWindowBuilder::new(
+        &app_handle,
+        "overlay",
+        tauri::WebviewUrl::App("index.html#/overlay".into()),
+    );
+    // First, get a reference to the main window
+    let main_window = app_handle
+        .get_webview_window("main")
+        .ok_or_else(|| "Main window not found".to_string())?;
+
+    window_builder = window_builder
+        .title("COVAS:NEXT Overlay")
+        .inner_size(480.0, 480.0)
+        .decorations(false)
+        .transparent(true)
+        .always_on_top(true)
+        .skip_taskbar(false)
+        .maximized(true)
+        //.fullscreen(true)
+        .visible(true);
+
+    let window = window_builder
+        .parent(&main_window)
+        .map_err(|e| format!("Failed to assign parent window: {}", e))?
+        .build()
+        .map_err(|e| format!("Failed to create floating overlay window: {}", e))?;
+
+    // Make the window non-clickable (ignore cursor events)
+    window
+        .set_ignore_cursor_events(true)
+        .map_err(|e| format!("Failed to set window to ignore cursor events: {}", e))?;
+
+    println!("Created floating overlay window");
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 #[tokio::main]
 pub async fn run() {
@@ -181,7 +220,8 @@ pub async fn run() {
             start_process,
             stop_process,
             send_json_line,
-            get_commit_hash
+            get_commit_hash,
+            create_floating_overlay
         ])
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { .. } = event {
