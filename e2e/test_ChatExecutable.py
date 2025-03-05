@@ -387,7 +387,7 @@ def test_chat_executable():
     
     # write start message to stdin
     if proc.stdin:
-        proc.stdin.write('{"type": "start"}\n')
+        proc.stdin.write('{"type": "start", "oldUi": true}\n')
         proc.stdin.flush()
     
     # read stdout until Chat.exe outputs a response
