@@ -26,10 +26,10 @@ export interface LogEntry {
 export class LogContainerComponent implements AfterViewChecked {
   logs: LogMessage[] = [];
 
-  @ViewChild("logContent")
-  private logContent!: ElementRef;
+  private element!: ElementRef;
 
-  constructor(private loggingService: LoggingService) {
+  constructor(private loggingService: LoggingService, element: ElementRef) {
+    this.element = element;
     this.loggingService.logs$.subscribe((logs) => {
       console.log("Logs received", logs);
       this.logs = logs;
@@ -45,7 +45,9 @@ export class LogContainerComponent implements AfterViewChecked {
 
   private scrollToBottom(): void {
     try {
-      this.logContent.nativeElement.lastElementChild?.scrollIntoView({
+      const scrollContainer = this.element.nativeElement.parentElement;
+      scrollContainer?.scrollTo({
+        top: scrollContainer?.scrollHeight,
         behavior: "smooth",
       });
     } catch (err) {}

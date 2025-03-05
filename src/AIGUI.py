@@ -1069,7 +1069,7 @@ class App:
             self.thread_process_stderr.start()
             
             # Send start signal to chat
-            print(json.dumps({"type": "start"}), file=self.process.stdin)
+            print(json.dumps({"type": "start", "oldUi": True}), file=self.process.stdin)
 
         except FileNotFoundError as e:
             print(e)

@@ -56,6 +56,15 @@ export class TauriService {
                     console.log("Backend is ready");
                     this.isReadySubject.next(true);
                 }
+                if (message.type === "start") {
+                    this.isRunningSubject.next(true);
+                }
+                if (message.type === "model_validation") {
+                    this.isRunningSubject.next(false);
+                }
+                if (message.type === "config") {
+                    this.isRunningSubject.next(false);
+                }
                 this.messagesSubject.next(message);
             } catch (error) {
                 console.warn("Error parsing message:", error);
@@ -104,7 +113,6 @@ export class TauriService {
             type: "start",
             timestamp: new Date().toISOString(),
         });
-        this.isRunningSubject.next(true);
     }
     public async send_message(message: BaseMessage): Promise<void> {
         await invoke("send_json_line", {

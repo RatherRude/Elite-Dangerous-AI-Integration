@@ -8,7 +8,7 @@ from EDMesg.CovasNext import ExternalChatNotification, ExternalBackgroundChatNot
 from openai import OpenAI
 from openai.types.chat import ChatCompletion
 
-from lib.Config import Config, assign_ptt, get_ed_appdata_path, get_ed_journals_path, get_system_info, load_config, save_config, update_config, update_event_config
+from lib.Config import Config, assign_ptt, get_ed_appdata_path, get_ed_journals_path, get_system_info, load_config, save_config, update_config, update_event_config, validate_config
 from lib.ActionManager import ActionManager
 from lib.Actions import register_actions
 from lib.ControllerManager import ControllerManager
@@ -340,7 +340,14 @@ if __name__ == "__main__":
             try:
                 data = json.loads(line)
                 if data.get("type") == "start":
-                    break
+                    if data.get('oldUi'):
+                        config = load_config()
+                        break
+                    else: 
+                        new_config = validate_config(config)
+                        if new_config:
+                            config = new_config
+                            break
                 if data.get("type") == "assign_ptt":
                     config = assign_ptt(config, ControllerManager())
                 if data.get("type") == "change_config":
@@ -352,7 +359,8 @@ if __name__ == "__main__":
                 continue
         
         # Once start signal received, initialize and run chat
-        config = load_config()
+        save_config(config)
+        print(json.dumps({"type": "start"})+'\n', flush=True)
         Chat(config).run()
     except Exception as e:
         log("error", e, traceback.format_exc())

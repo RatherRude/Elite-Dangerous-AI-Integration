@@ -37,7 +37,10 @@ export class AppComponent {
   ) {
     // Subscribe to the running state
     this.tauri.isRunning$.subscribe(
-      (running) => this.isRunning = running,
+      (running) => {
+        this.isRunning = running;
+        this.isLoading = false;
+      },
     );
     this.tauri.isReady$.subscribe(
       (ready) => {
@@ -54,8 +57,6 @@ export class AppComponent {
       await this.tauri.send_start_signal();
     } catch (error) {
       console.error("Failed to start:", error);
-    } finally {
-      this.isLoading = false;
     }
   }
 
@@ -65,8 +66,6 @@ export class AppComponent {
       await this.tauri.restart_process();
     } catch (error) {
       console.error("Failed to stop:", error);
-    } finally {
-      this.isLoading = false;
     }
   }
 }
