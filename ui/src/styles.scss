@@ -61,16 +61,6 @@ $my-typography: mat.define-typography-config();
 // Define density config once
 $my-density: 0;
 
-// Light theme
-$my-light-theme: mat.define-light-theme((
-  color: (
-    primary: $my-primary,
-    accent: $my-accent,
-  ),
-  typography: $my-typography,
-  density: $my-density,
-));
-
 // Dark theme
 $my-dark-theme: mat.define-dark-theme((
   color: (
@@ -81,106 +71,16 @@ $my-dark-theme: mat.define-dark-theme((
   density: $my-density,
 ));
 
-// Include theme styles for core and each component used in your app.
-// Alternatively, you can import and @include the theme mixins for each component
-// that you are using.
-@include mat.all-component-colors($my-light-theme);
+// Always apply dark theme
+@include mat.all-component-colors($my-dark-theme);
 @include mat.all-component-typographies($my-typography);
 @include mat.all-component-densities($my-density);
-
-@media (prefers-color-scheme: dark) {@use '@angular/material' as mat;
-
-  @include mat.core();
-  
-  $primary-palette: (
-    50: lighten(#ffa724, 40%),
-    100: lighten(#ffa724, 30%),
-    200: lighten(#ffa724, 20%),
-    300: lighten(#ffa724, 10%),
-    400: lighten(#ffa724, 5%),
-    500: #ffa724,
-    600: darken(#ffa724, 5%),
-    700: darken(#ffa724, 10%),
-    800: darken(#ffa724, 20%),
-    900: darken(#ffa724, 30%),
-    contrast: (
-      50: rgba(black, 0.87),
-      100: rgba(black, 0.87),
-      200: rgba(black, 0.87),
-      300: rgba(black, 0.87),
-      400: black,
-      500: black,
-      600: black,
-      700: black,
-      800: black,
-      900: black,
-    )
-  );
-  
-  $secondary-palette: (
-    50: lighten(#448aff, 40%),
-    100: lighten(#448aff, 30%),
-    200: lighten(#448aff, 20%),
-    300: lighten(#448aff, 10%),
-    400: lighten(#448aff, 5%),
-    500: #448aff,
-    600: darken(#448aff, 5%),
-    700: darken(#448aff, 10%),
-    800: darken(#448aff, 20%),
-    900: darken(#448aff, 30%),
-    contrast: (
-      50: rgba(black, 0.87),
-      100: rgba(black, 0.87),
-      200: rgba(black, 0.87),
-      300: rgba(black, 0.87),
-      400: black,
-      500: black,
-      600: black,
-      700: black,
-      800: black,
-      900: black,
-    )
-  );
-  
-  $my-primary: mat.define-palette($primary-palette);
-  $my-accent: mat.define-palette($secondary-palette);
-  
-  // Define typography config once
-  $my-typography: mat.define-typography-config();
-  
-  // Define density config once
-  $my-density: 0;
-  
-  // Dark theme only
-  $my-dark-theme: mat.define-dark-theme((
-    color: (
-      primary: $my-primary,
-      accent: $my-accent,
-    ),
-    typography: $my-typography,
-    density: $my-density,
-  ));
-  
-  // Include theme styles for core and each component used in your app.
-  @include mat.all-component-colors($my-dark-theme);
-  @include mat.all-component-typographies($my-typography);
-  @include mat.all-component-densities($my-density);
-  
-  html, body, app-root { 
-    height: 100vh;
-    width: 100vw;
-    margin: 0;
-    padding: 0;
-    color-scheme: dark;
-    background-color: #000000;
-  }
-  @include mat.all-component-colors($my-dark-theme);
-}
 
 html, body, app-root { 
   height: 100vh;
   width: 100vw;
   margin: 0;
   padding: 0;
-  color-scheme: dark light;
+  color-scheme: dark;
+  background-color: #000000;
 }
