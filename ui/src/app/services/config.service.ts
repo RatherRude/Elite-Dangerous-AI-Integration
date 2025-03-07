@@ -20,7 +20,7 @@ export interface ChangeEventConfigMessage extends BaseMessage {
 
 export interface ModelValidationMessage extends BaseMessage {
     type: "model_validation";
-    status: "upgrade" | "fallback" | "error";
+    success: boolean;
     message: string;
 }
 

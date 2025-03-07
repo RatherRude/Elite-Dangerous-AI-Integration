@@ -575,56 +575,37 @@ def get_system_info() -> SystemInfo:
 
 
 def validate_model_availability(
-        model_name: str,
+        model_names: list[str],
         api_key: str,
         endpoint: str = "https://api.openai.com/v1"
-) -> tuple[bool, Optional[str]]:
-    """
-    Validates if the specified model is available with the given API key.
-
-    Args:
-        model_name: The name of the model to check
-        api_key: The API key to use for authentication
-        endpoint: The API endpoint URL
-
-    Returns:
-        A tuple containing (success, error_message)
-        - success: True if the model is available, False otherwise
-        - error_message: Error message if success is False, None otherwise
-    """
-    if not model_name or not api_key:
-        return False, "Model name or API key is empty"
-
+) -> tuple[list[bool] | None, Optional[str]]:
     try:
         client = OpenAI(
             base_url=endpoint,
+            timeout=3,
             api_key=api_key,
         )
-        models = client.models.list()
+        available_models = client.models.list()
+        available_models_names = [model.id for model in available_models]
+        
+        return [model in available_models_names for model in model_names], None
 
-        if not any(model.id == model_name for model in models):
-            return False, f"Your model provider doesn't serve '{model_name}' to you. Please check your model name."
-
-        return True, None
     except APIError as e:
         if e.code == "invalid_api_key":
-            return False, f"The API key you have provided for '{model_name}' isn't valid. Please check your API key."
+            return None, f"The API key you have provided isn't valid. Please check your API key."
         else:
-            return False, f"API Error: {str(e)}"
+            return None, f"API Error: {str(e)}"
     except Exception as e:
         print(e, traceback.format_exc())
-        return False, f"Unexpected error: {str(e)}"
+        return None, f"Unexpected error: {str(e)}"
 
 
-class ModelValidationResult:
+class ModelValidationResult(TypedDict):
     """Result of model validation with information about upgrades or fallbacks"""
-
-    def __init__(self, success: bool, config: Config, error_message: Optional[str] = None):
-        self.success = success
-        self.config = config
-        self.error_message = error_message
-        self.upgrade_message: Optional[str] = None
-        self.fallback_message: Optional[str] = None
+    skipped: bool
+    success: bool
+    config: Config|None
+    message: str|None
 
 
 def check_and_upgrade_model(config: Config) -> ModelValidationResult:
@@ -639,69 +620,64 @@ def check_and_upgrade_model(config: Config) -> ModelValidationResult:
     """
     # Make a copy of the config to avoid modifying the original
     updated_config = cast(Config, {k: v for k, v in config.items()})
-    result = ModelValidationResult(True, updated_config)
-
+    
     # Check LLM model
     llm_endpoint = config['llm_endpoint'] if config['llm_endpoint'] else "https://api.openai.com/v1"
     llm_api_key = config['llm_api_key'] if config['llm_api_key'] else config['api_key']
+    llm_model_name = config['llm_model_name']
 
-    # Try to upgrade from gpt-3.5-turbo to gpt-4o-mini if possible
-    if config['llm_model_name'] == 'gpt-3.5-turbo':
-        success, _ = validate_model_availability('gpt-4o-mini', llm_api_key, llm_endpoint)
-        if success:
+    if llm_endpoint == "https://api.openai.com/v1":
+        available_models, err = validate_model_availability([llm_model_name, 'gpt-4o-mini', 'gpt-3.5-turbo'], llm_api_key, llm_endpoint)
+        if not available_models or err:
+            return {
+                'skipped': False,
+                'success': False,
+                'config': None,
+                'message': err
+            }
+        
+        [current_model, main_model, fallback_model] = available_models
+        
+        if not current_model and not main_model and not fallback_model:
+            return {
+                'skipped': False,
+                'success': False,
+                'config': None,
+                'message': f'Your model provider doesn\'t serve any model to you. Please check your model name.'
+            }
+        
+        if llm_model_name == 'gpt-4o-mini' and not main_model and fallback_model:
+            updated_config['llm_model_name'] = 'gpt-3.5-turbo'
+            return {
+                'skipped': False,
+                'success': True,
+                'config': updated_config,
+                'message': f'Your model provider doesn\'t serve "{llm_model_name}" to you. Falling back to "gpt-3.5-turbo".'
+            }
+        
+        if llm_model_name == 'gpt-3.5-turbo' and main_model:
             updated_config['llm_model_name'] = 'gpt-4o-mini'
-            result.upgrade_message = "Your OpenAI account has reached the required tier to use gpt-4o-mini. It will now be used instead of GPT-3.5-Turbo."
+            return {
+                'skipped': False,
+                'success': True,
+                'config': updated_config,
+                'message': f'Your model provider now serves "gpt-4o-mini". Upgrading to "gpt-4o-mini".'
+            }
+        
+        if not current_model:
+            return {
+                'skipped': False,
+                'success': False,
+                'config': None,
+                'message': f'Your model provider doesn\'t serve "{llm_model_name}" to you. Please check your model name.'
+            }
 
-    # Validate the LLM model
-    success, error_message = validate_model_availability(
-        updated_config['llm_model_name'],
-        llm_api_key,
-        llm_endpoint
-    )
-
-    if not success:
-        # Try fallback to gpt-3.5-turbo if gpt-4o-mini is not available
-        if updated_config['llm_model_name'] == 'gpt-4o-mini':
-            fallback_success, _ = validate_model_availability('gpt-3.5-turbo', llm_api_key, llm_endpoint)
-            if fallback_success:
-                updated_config['llm_model_name'] = 'gpt-3.5-turbo'
-                result.fallback_message = "Your OpenAI account hasn't reached the required tier to use gpt-4o-mini yet. GPT-3.5-Turbo will be used as a fallback."
-                success = True
-            else:
-                return ModelValidationResult(False, config, f"LLM Model Validation Error: {error_message}")
-        else:
-            return ModelValidationResult(False, config, f"LLM Model Validation Error: {error_message}")
-
-    # Check Vision model if enabled
-    if config['vision_var']:
-        vision_endpoint = config['vision_endpoint'] if config['vision_endpoint'] else "https://api.openai.com/v1"
-        vision_api_key = config['vision_api_key'] if config['vision_api_key'] else config['api_key']
-
-        success, error_message = validate_model_availability(
-            config['vision_model_name'],
-            vision_api_key,
-            vision_endpoint
-        )
-
-        if not success:
-            return ModelValidationResult(False, config, f"Vision Model Validation Error: {error_message}")
-
-    # Check TTS model if using OpenAI
-    if config['tts_provider'] == 'openai':
-        tts_endpoint = config['tts_endpoint'] if config['tts_endpoint'] else "https://api.openai.com/v1"
-        tts_api_key = config['tts_api_key'] if config['tts_api_key'] else config['api_key']
-
-        success, error_message = validate_model_availability(
-            config['tts_model_name'],
-            tts_api_key,
-            tts_endpoint
-        )
-
-        if not success:
-            return ModelValidationResult(False, config, f"TTS Model Validation Error: {error_message}")
-
-    result.config = updated_config
-    return result
+    return {
+        'skipped': True,
+        'success': True,
+        'config': None,
+        'message': None
+    }
 
 
 def validate_config(config: Config) -> Config | None:
@@ -709,35 +685,20 @@ def validate_config(config: Config) -> Config | None:
     validation_result = check_and_upgrade_model({**config})
 
     # Send validation result message
-    if validation_result.success:
-        if validation_result.upgrade_message:
+    if not validation_result['skipped']:
+        if validation_result['message']:
             print(json.dumps({
                 "type": "model_validation",
-                "status": "upgrade",
-                "message": validation_result.upgrade_message
+                "success": validation_result['success'],
+                "message": validation_result['message']
             }) + '\n', flush=True)
-        elif validation_result.fallback_message:
-            print(json.dumps({
-                "type": "model_validation",
-                "status": "fallback",
-                "message": validation_result.fallback_message
-            }) + '\n', flush=True)
-            
-        new_config = validation_result.config or config
-        print(json.dumps({"type": "config", "config": new_config}) + '\n', flush=True)
-        save_config(new_config)
-        return new_config
-    else:
-        # Send error message but still update the config
-        # (UI will show warning to the user)
-        print(json.dumps({
-            "type": "model_validation",
-            "status": "error",
-            "message": validation_result.error_message
-        }) + '\n', flush=True)
-        return None
+        
+        if validation_result['success']:
+            return validation_result['config']
+        else:
+            return None
 
-
+    return config
 
 
 def update_config(config: Config, data: dict) -> Config:

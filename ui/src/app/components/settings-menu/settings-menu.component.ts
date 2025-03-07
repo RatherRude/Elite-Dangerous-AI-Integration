@@ -10,7 +10,6 @@ import { FormsModule } from "@angular/forms";
 import {
   Config,
   ConfigService,
-  ModelValidationMessage,
   SystemInfo,
 } from "../../services/config.service";
 import { Subscription } from "rxjs";
@@ -91,12 +90,10 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       .subscribe((validation) => {
         if (validation) {
           // Show snackbar for validation messages
-          const snackBarDuration = 8000;
-          const snackBarClass = validation.status === "error"
-            ? "validation-error-snackbar"
-            : validation.status === "fallback"
-            ? "validation-fallback-snackbar"
-            : "validation-upgrade-snackbar";
+          const snackBarDuration = validation.success ? 3000 : 6000;
+          const snackBarClass = validation.success
+            ? "validation-success-snackbar"
+            : "validation-error-snackbar";
 
           this.snackBar.open(validation.message, "Dismiss", {
             duration: snackBarDuration,
