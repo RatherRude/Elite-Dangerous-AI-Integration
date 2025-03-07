@@ -1,0 +1,41 @@
+@if (isLoading) {
+  <mat-progress-bar mode="indeterminate" class="toolbar-progress"></mat-progress-bar>
+}
+
+<main class="container">
+  @if (!isRunning) {
+    <div class="settings-container">
+      <app-settings-menu></app-settings-menu>
+    </div>
+    <div class="button-container">
+      @if (isLoading) {
+        <button mat-raised-button color="primary" (click)="start()" [disabled]="isLoading">
+          <mat-icon>hourglass_empty</mat-icon>
+          Starting...
+        </button>
+      } @else {
+        <button mat-raised-button color="primary" (click)="start()" [disabled]="isLoading">
+          <mat-icon>play_arrow</mat-icon>
+          Start AI Assistant
+        </button>
+      }
+    </div>
+  } @else {
+    <div class="log-container">
+      <app-log-container></app-log-container>
+    </div>
+    <div class="button-container">
+      @if (isLoading) {
+        <button mat-raised-button color="warn" (click)="stop()" [disabled]="isLoading">
+          <mat-icon>hourglass_empty</mat-icon>
+          Stopping...
+        </button>
+      } @else {
+        <button mat-raised-button color="warn" (click)="stop()" [disabled]="isLoading">
+          <mat-icon>stop</mat-icon>
+          Stop AI Assistant
+        </button>
+      }
+    </div>
+  }
+</main> 
