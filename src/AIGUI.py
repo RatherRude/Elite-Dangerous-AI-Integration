@@ -845,28 +845,28 @@ class App:
         
         # Use the validation function from Config.py
         validation_result = check_and_upgrade_model(self.data)
-        
-        if validation_result.success:
+        if validation_result["skipped"]: return True
+        if validation_result['success']:
             # Update the UI with any changes made during validation
-            if validation_result.config['llm_model_name'] != self.llm_model_name.get():
+            if validation_result['config']['llm_model_name'] != self.llm_model_name.get():
                 self.llm_model_name.delete(0, tk.END)
-                self.llm_model_name.insert(0, validation_result.config['llm_model_name'])
+                self.llm_model_name.insert(0, validation_result['config']['llm_model_name'])
             
             # Show upgrade message if available
-            if validation_result.upgrade_message:
-                messagebox.showinfo("Upgrade to GPT-4o-mini", validation_result.upgrade_message)
+            if validation_result['upgrade_message']:
+                messagebox.showinfo("Upgrade to GPT-4o-mini", validation_result['upgrade_message'])
             
             # Show fallback message if available
-            if validation_result.fallback_message:
-                messagebox.showinfo("Fallback to GPT-3.5-Turbo", validation_result.fallback_message)
+            if validation_result['fallback_message']:
+                messagebox.showinfo("Fallback to GPT-3.5-Turbo", validation_result['fallback_message'])
             
             # Update the config with validated values
-            self.data = validation_result.config
+            self.data = validation_result['config']
             return True
         else:
             # Show error message
-            if validation_result.error_message:
-                messagebox.showerror("Model Validation Error", validation_result.error_message)
+            if validation_result['error_message']:
+                messagebox.showerror("Model Validation Error", validation_result['error_message'])
             return False
 
     def save_settings(self):
