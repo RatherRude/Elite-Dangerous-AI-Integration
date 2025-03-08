@@ -12,9 +12,9 @@
   "app": {
     "windows": [
       {
-        "title": "covas-next-ui",
-        "width": 800,
-        "height": 600,
+        "title": "COVAS:NEXT",
+        "width": 1000,
+        "height": 800,
         "visible": true
       }
     ],

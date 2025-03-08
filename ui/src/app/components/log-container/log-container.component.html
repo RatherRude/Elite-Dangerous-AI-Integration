@@ -1,7 +1,7 @@
 @for (log of logs; track log.timestamp) {
-<div class="log-entry">
-  <span class="timestamp">{{ log.timestamp | date:'HH:mm:ss' }}</span>
-  <span class="prefix" [style.color]="getLogColor(log.prefix)">{{ log.prefix }}</span>
-  <span class="message">{{ log.message }}</span>
-</div>
+  <div class="log-entry">
+    <span class="timestamp">{{ log.timestamp | date:'HH:mm:ss' }}</span>
+    <span class="prefix" [style.color]="getLogColor(log.prefix)">{{ log.prefix }}</span>
+    <span class="message">{{ log.message }}</span>
+  </div>
 }

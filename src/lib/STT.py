@@ -3,7 +3,7 @@ import queue
 import threading
 import traceback
 from time import sleep, time
-from typing import final
+from typing import Literal, final
 
 import openai
 import pyaudio
@@ -34,8 +34,9 @@ class STT:
     recording = False
     resultQueue = queue.Queue()
 
-    def __init__(self, openai_client: openai.OpenAI, input_device_name, model='whisper-1', language=None, custom_prompt=None, required_word=None):
+    def __init__(self, openai_client: openai.OpenAI | None, provider: Literal['openai', 'custom', 'none'], input_device_name, model='whisper-1', language=None, custom_prompt=None, required_word=None):
         self.openai_client = openai_client
+        self.provider = provider
         self.vad = SileroVoiceActivityDetector()
         self.input_device_name = input_device_name
         self.model = model
@@ -51,6 +52,8 @@ class STT:
         self.phrase_end_pause = 1.0
 
     def listen_once_start(self):
+        if self.provider == 'none':
+            return
         if self.listening:
             return
         self.listening = True
@@ -85,7 +88,8 @@ class STT:
         self.resultQueue.put(STTResult(text, audio_data, timestamp))
 
     def listen_continuous(self):
-        # print('Running STT in continuous mode')
+        if self.provider == 'none':
+            return
         self.listening = True
         threading.Thread(target=self._listen_continuous_thread, daemon=True).start()
                         
@@ -179,6 +183,9 @@ class STT:
         return source
 
     def _transcribe(self, audio: sr.AudioData) -> str:
+        if self.openai_client is None:
+            raise ValueError('Speech recognition is disabled')
+        
         audio_raw = audio.get_raw_data(convert_rate=16000, convert_width=2)
         audio_length = len(audio_raw) / 2 / 16000
         if audio_length < 0.2:

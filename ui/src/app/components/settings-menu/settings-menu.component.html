@@ -254,6 +254,13 @@
                                (ngModelChange)="onConfigChange({llm_api_key: $event})">
                     </mat-form-field>
 
+                    <label>
+                        <mat-slide-toggle [(ngModel)]="config.tools_var"
+                                          (ngModelChange)="onConfigChange({tools_var: $event})">
+                            Allow Actions (Tool Use)
+                        </mat-slide-toggle>
+                    </label>
+
                     <hr>
                     <h3>STT Settings</h3>
                     <mat-form-field>

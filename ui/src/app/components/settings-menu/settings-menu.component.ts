@@ -10,7 +10,6 @@ import { FormsModule } from "@angular/forms";
 import {
   Config,
   ConfigService,
-  ModelValidationMessage,
   SystemInfo,
 } from "../../services/config.service";
 import { Subscription } from "rxjs";
@@ -91,12 +90,10 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       .subscribe((validation) => {
         if (validation) {
           // Show snackbar for validation messages
-          const snackBarDuration = 8000;
-          const snackBarClass = validation.status === "error"
-            ? "validation-error-snackbar"
-            : validation.status === "fallback"
-            ? "validation-fallback-snackbar"
-            : "validation-upgrade-snackbar";
+          const snackBarDuration = validation.success ? 3000 : 6000;
+          const snackBarClass = validation.success
+            ? "validation-success-snackbar"
+            : "validation-error-snackbar";
 
           this.snackBar.open(validation.message, "Dismiss", {
             duration: snackBarDuration,
@@ -121,49 +118,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   }
 
   async onConfigChange(partialConfig: Partial<Config>) {
-    if (partialConfig.stt_provider) {
-      if (partialConfig.stt_provider === "openai") {
-        partialConfig.stt_endpoint = "https://api.openai.com/v1";
-        partialConfig.stt_model_name = "whisper-1";
-        partialConfig.stt_api_key = "";
-      }
-      if (partialConfig.stt_provider === "custom") {
-        partialConfig.stt_endpoint = "https://api.openai.com/v1";
-        partialConfig.stt_model_name = "whisper-1";
-        partialConfig.stt_api_key = "";
-      }
-      if (partialConfig.stt_provider === "none") {
-        partialConfig.stt_endpoint = "";
-        partialConfig.stt_model_name = "";
-        partialConfig.stt_api_key = "";
-      }
-    }
-    if (partialConfig.tts_provider) {
-      if (partialConfig.tts_provider === "openai") {
-        partialConfig.tts_endpoint = "https://api.openai.com/v1";
-        partialConfig.tts_model_name = "tts-1";
-        partialConfig.tts_voice = "nova";
-        partialConfig.tts_api_key = "";
-      }
-      if (partialConfig.tts_provider === "edge-tts") {
-        partialConfig.tts_endpoint = "";
-        partialConfig.tts_model_name = "";
-        partialConfig.tts_voice = "en-GB-SoniaNeural";
-        partialConfig.tts_api_key = "";
-      }
-      if (partialConfig.tts_provider === "custom") {
-        partialConfig.tts_endpoint = "https://api.openai.com/v1";
-        partialConfig.tts_model_name = "tts-1";
-        partialConfig.tts_voice = "nova";
-        partialConfig.tts_api_key = "";
-      }
-      if (partialConfig.tts_provider === "none") {
-        partialConfig.tts_endpoint = "";
-        partialConfig.tts_model_name = "";
-        partialConfig.tts_voice = "";
-        partialConfig.tts_api_key = "";
-      }
-    }
     if (this.config) {
       await this.configService.changeConfig(partialConfig);
     }
@@ -180,12 +134,13 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   }
 
   filterEvents(query: string) {
-    this.eventSearchQuery = query;
-    if (!query) {
+    if (!query && this.eventSearchQuery) {
+      this.eventSearchQuery = "";
       this.filteredGameEvents = this.config?.game_events || {};
       this.expandedSection = null; // Collapse all sections when search is empty
       return;
     }
+    this.eventSearchQuery = query;
 
     // Only filter and expand if search term is 3 or more characters
     if (query.length >= 3) {

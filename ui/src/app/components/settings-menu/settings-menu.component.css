@@ -48,12 +48,7 @@ ul {
   color: white;
 }
 
-::ng-deep .validation-fallback-snackbar {
-  --mdc-snackbar-container-color: #ff9800 !important;
-  color: white;
-}
-
-::ng-deep .validation-upgrade-snackbar {
+::ng-deep .validation-success-snackbar {
   --mdc-snackbar-container-color: #4caf50 !important;
   color: white;
 }

@@ -67,10 +67,12 @@ class Chat:
             )
             
 
-        self.sttClient = OpenAI(
-            base_url=self.config["stt_endpoint"],
-            api_key=self.config["api_key"] if self.config["stt_api_key"] == '' else self.config["stt_api_key"],
-        )
+        self.sttClient: OpenAI | None = None
+        if self.config["stt_provider"] in ['openai', 'custom']: 
+            self.sttClient = OpenAI(
+                base_url=self.config["stt_endpoint"],
+                api_key=self.config["api_key"] if self.config["stt_api_key"] == '' else self.config["stt_api_key"],
+            )
 
         self.ttsClient: OpenAI | None = None
         if self.config["tts_provider"] in ['openai', 'custom']:
@@ -81,7 +83,7 @@ class Chat:
             
         tts_provider = 'none' if self.config["edcopilot_dominant"] else self.config["tts_provider"]
         self.tts = TTS(openai_client=self.ttsClient, provider=tts_provider, model=self.config["tts_model_name"], voice=self.config["tts_voice"], speed=self.config["tts_speed"], output_device=self.config["output_device_name"])
-        self.stt = STT(openai_client=self.sttClient, input_device_name=self.config["input_device_name"], model=self.config["stt_model_name"], custom_prompt=self.config["stt_custom_prompt"], required_word=self.config["stt_required_word"])
+        self.stt = STT(openai_client=self.sttClient, provider=self.config["stt_provider"], input_device_name=self.config["input_device_name"], model=self.config["stt_model_name"], custom_prompt=self.config["stt_custom_prompt"], required_word=self.config["stt_required_word"])
 
         self.enabled_game_events: list[str] = []
         if self.config["event_reaction_enabled_var"]:
@@ -210,6 +212,9 @@ class Chat:
             if not predicted_actions and config["use_action_cache_var"]:
                 self.verify_action(user_input, response_actions, prompt, tool_list)
 
+    def submit_input(self, input: str):
+        self.event_manager.add_conversation_event('user', input)
+        
     def run(self):
         log('info', f"Initializing CMDR {self.config['commander_name']}'s personal AI...\n")
         log('info', "API Key: Loaded")
@@ -311,6 +316,14 @@ class Chat:
         self.tts.quit()
 
 
+def read_stdin(chat: Chat):
+    while True:
+        line = sys.stdin.readline().strip()
+        if line:
+            data = json.loads(line)
+            if data.get("type") == "submit_input":
+                chat.submit_input(data["input"])
+
 if __name__ == "__main__":
     try:
         print(json.dumps({"type": "ready"})+'\n')
@@ -350,7 +363,13 @@ if __name__ == "__main__":
         # Once start signal received, initialize and run chat
         save_config(config)
         print(json.dumps({"type": "start"})+'\n', flush=True)
-        Chat(config).run()
+        
+        chat = Chat(config)
+        # run chat in a thread
+        stdin_thread = threading.Thread(target=read_stdin, args=(chat,), daemon=True)
+        stdin_thread.start()
+
+        chat.run()
     except Exception as e:
         log("error", e, traceback.format_exc())
         sys.exit(1)

@@ -9,6 +9,11 @@ export interface BaseMessage {
     timestamp: string;
 }
 
+export interface SubmitInputMessage extends BaseMessage {
+    type: "submit_input";
+    input: string;
+}
+
 export interface UnknownMessage extends BaseMessage {
     type: "unknown";
     message: string;

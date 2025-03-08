@@ -78,7 +78,7 @@ def mock_vad_detector(mock_vad):
 def stt(mock_openai, mock_vad, mock_vad_detector, mock_pyaudio, monkeypatch):
     """Create STT instance with mocked dependencies"""
     monkeypatch.setattr('pysilero_vad.SileroVoiceActivityDetector', mock_vad_detector)
-    stt =  STT(mock_openai, "TestDevice")
+    stt =  STT(mock_openai, "openai", "TestDevice")
     stt.vad = mock_vad
     return stt
 
