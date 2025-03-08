@@ -746,6 +746,7 @@ def update_config(config: Config, data: dict) -> Config:
       
     
     new_config = cast(Config, {**config, **data}) # pyright: ignore[reportInvalidCast]
+    print(json.dumps({"type": "config", "config": new_config}) + '\n')
     save_config(new_config)
     return new_config
 
