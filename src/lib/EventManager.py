@@ -31,30 +31,30 @@ class Projection(ABC, Generic[ProjectedState]):
 
 @final
 class EventManager:
-    def __init__(self, on_reply_request: Callable[[list[Event], list[Event], dict[str, dict[str, Any]]], Any], game_events: list[str],
-                 continue_conversation: bool = False, react_to_text_local: bool = True, react_to_text_starsystem: bool = True, react_to_text_npc: bool = False,
-                 react_to_text_squadron: bool = True, react_to_material:str = '', react_to_danger_mining:bool = False,
-                 react_to_danger_onfoot:bool = False, react_to_danger_supercruise:bool = False):
+    def __init__(self, game_events: list[str],
+                 continue_conversation: bool = False, 
+                 #react_to_text_local: bool = True, react_to_text_starsystem: bool = True, react_to_text_npc: bool = False,
+                 #react_to_text_squadron: bool = True, react_to_material:str = '', react_to_danger_mining:bool = False,
+                 #react_to_danger_onfoot:bool = False, react_to_danger_supercruise:bool = False
+                 ):
         self.incoming: Queue[Event] = Queue()
         self.pending: list[Event] = []
         self.processed: list[Event] = []
-        self.is_replying = False
-        self.is_listening = False
-        self.on_reply_request = on_reply_request
         self.game_events = game_events
-        self.react_to_text_local = react_to_text_local
-        self.react_to_text_starsystem = react_to_text_starsystem
-        self.react_to_text_npc = react_to_text_npc
-        self.react_to_text_squadron = react_to_text_squadron
-        self.react_to_material = react_to_material
-        self.react_to_danger_mining = react_to_danger_mining
-        self.react_to_danger_onfoot = react_to_danger_onfoot
-        self.react_to_danger_supercruise = react_to_danger_supercruise
+        #self.react_to_text_local = react_to_text_local
+        #self.react_to_text_starsystem = react_to_text_starsystem
+        #self.react_to_text_npc = react_to_text_npc
+        #self.react_to_text_squadron = react_to_text_squadron
+        #self.react_to_material = react_to_material
+        #self.react_to_danger_mining = react_to_danger_mining
+        #self.react_to_danger_onfoot = react_to_danger_onfoot
+        #self.react_to_danger_supercruise = react_to_danger_supercruise
         self._conditions_registry = defaultdict(list)
         self._registry_lock = threading.Lock()
 
         self.event_classes: list[type[Event]] = [ConversationEvent, ToolEvent, GameEvent, StatusEvent, ExternalEvent]
         self.projections: list[Projection] = []
+        self.sideeffects: list[Callable[[Event, dict[str, Any]], None]] = []
         
         self.event_store = EventStore('events', self.event_classes)
         self.projection_store = KeyValueStore('projections')
@@ -105,7 +105,6 @@ class EventManager:
     def add_assistant_complete_event(self):
         event = ConversationEvent(kind='assistant_completed', content='')
         self.incoming.put(event)
-        self.is_replying = False
         # log('debug', event)
 
     def add_projected_event(self, event: ProjectedEvent, source: Event):
@@ -128,29 +127,33 @@ class EventManager:
             self.event_store.insert_event(event, timestamp, commit=False)
             self.update_projections(event, save_later=True)
             
+            self.pending.append(event)
+            
             if isinstance(event, GameEvent) and event.historic:
                 #self.processed.append(event)
-                pass
-            else:
-                self.pending.append(event)
+                continue
+                
+            projected_states: dict[str, Any] = {}
+            for projection in self.projections:
+                projected_states[projection.__class__.__name__] = projection.state.copy()
+            
+            self.trigger_sideeffects(event, projected_states)
+            
         self.event_store.commit()
         self.save_projections()
-
-        projected_states: dict[str, Any] = {}
-        for projection in self.projections:
-            projected_states[projection.__class__.__name__] = projection.state.copy()
-
-        if not self.is_replying and not self.is_listening and self.should_reply(projected_states):
-            self.is_replying = True
-            new_events = self.pending
-            self.processed += self.pending
-            self.pending = []
-            log('debug', 'eventmanager requesting reply')
-
-            self.on_reply_request(self.processed, new_events, projected_states)
-            return True
-
-        return False
+        self.processed += self.pending
+        self.pending = []
+        
+    
+    def trigger_sideeffects(self, event: Event, projected_states: dict[str, Any]):
+        for sideeffect in self.sideeffects:
+            try:
+                sideeffect(event, projected_states)
+            except Exception as e:
+                log('error', 'Error triggering sideeffect', sideeffect, e, traceback.format_exc())
+    
+    def register_sideeffect(self, sideeffect: Callable[[Event, dict[str, Any]], None]):
+        self.sideeffects.append(sideeffect)
 
     def update_projections(self, event: Event, save_later: bool = False):
         for projection in self.projections:
@@ -262,72 +265,6 @@ class EventManager:
             # Only keep conditions that are still not satisfied
             self._conditions_registry[projection_name] = still_waiting
 
-    def should_reply(self, states:dict[str, Any]):
-        if len(self.pending) == 0:
-            return False
-
-        for event in self.pending:
-            # check if pending contains conversational events
-            if isinstance(event, ConversationEvent) and event.kind == "user":
-                return True
-
-            if isinstance(event, ToolEvent):
-                return True
-
-            if isinstance(event, GameEvent) and event.content.get("event") in self.game_events:
-                if event.content.get("event") == "ReceiveText":
-                    if event.content.get("Channel") not in ['wing', 'voicechat', 'friend', 'player'] and (
-                        (not self.react_to_text_local and event.content.get("Channel") == 'local') or
-                        (not self.react_to_text_starsystem and event.content.get("Channel") == 'starsystem') or
-                        (not self.react_to_text_npc and event.content.get("Channel") == 'npc') or
-                        (not self.react_to_text_squadron and event.content.get("Channel") == 'squadron')):
-                        continue
-
-                if event.content.get("event") == "ProspectedAsteroid":
-                    chunks = [chunk.strip() for chunk in self.react_to_material.split(",")]
-                    contains_material = False
-                    for chunk in chunks:
-                        for material in event.content.get("Materials"):
-                            if chunk.lower() in material["Name"].lower():
-                                contains_material = True
-                        if event.content.get("MotherlodeMaterial", False):
-                            if chunk.lower() in event.content['MotherlodeMaterial'].lower():
-                                contains_material = True
-
-                    if not contains_material:
-                        continue
-
-                if event.content.get("event") == "ScanOrganic":
-                    continue
-
-                return True
-
-            if isinstance(event, StatusEvent) and event.status.get("event") in self.game_events:
-                if event.status.get("event") in ["InDanger", "OutOfDanger"]:
-                    if not self.react_to_danger_mining:
-                        if states.get('ShipInfo', {}).get('IsMiningShip', False) and states.get('Location', {}).get('PlanetaryRing', False):
-                            continue
-                    if not self.react_to_danger_onfoot:
-                        if states.get('CurrentStatus', {}).get('flags2').get('OnFoot'):
-                            continue
-                    if not self.react_to_danger_supercruise:
-                        if states.get('CurrentStatus', {}).get('flags').get('Supercruise') and len(states.get('NavInfo', {"NavRoute": []}).get('NavRoute', [])):
-                            continue
-                return True
-
-            if isinstance(event, ExternalEvent):
-                if event.content.get("event") == "ExternalTwitchMessage":
-                    continue
-                return True
-
-            if isinstance(event, ProjectedEvent):
-                if event.content.get("event").startswith('ScanOrganic'):
-                    if not 'ScanOrganic' in self.game_events:
-                        continue
-                return True
-
-        return False
-
     def save_incoming_history(self, incoming: list[Event]):
         for event in incoming:
             self.event_store.insert_event(event, event.processed_at)
@@ -336,17 +273,6 @@ class EventManager:
         events: list[Event] = self.event_store.get_latest()
         for event in reversed(events):
             self.processed.append(event)
-    
-    def _instantiate_event(self, type_name: str, data: dict[str, Any]) -> (Event | None):
-        for event_class in self.event_classes:
-            if event_class.__name__ == type_name:
-                return event_class(**data)
-        return None
-
-    def _json_serializer(self, o):
-        if isinstance(o, datetime):
-            return o.isoformat()
-        raise TypeError(f'Object of type {type(o).__name__} is not JSON serializable')
     
     def clear_history(self):
         # TODO do we want to clear all events or just conversation?
