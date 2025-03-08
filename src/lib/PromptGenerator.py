@@ -316,8 +316,8 @@ allGameEvents = {
 externalEvents = {
     "SpanshTradePlanner": "The Spansh API has suggested a Trade Planner route for Commander {commanderName}.",
     "SpanshTradePlannerFailed": "The Spansh API has failed to retrieve a Trade Planner route for Commander {commanderName}.",
-    "ExternalTwitchNotification": "Commander {commanderName} has received a Twitch notification.",
-    "ExternalTwitchMessage": "Commander {commanderName} has received a message on Twitch.",
+    "ExternalTwitchNotification": "[Twitch Alert]",
+    "ExternalTwitchMessage": "[Twitch Message]",
     "ExternalDiscordNotification": "Commander {commanderName} has received a Discord notification.",
     # "SpanshNeutronPlotter": "The Spansh API has suggested a Neutron Plotter router for Commander {commanderName}.",
     # "SpanshRoadToRiches": "The Spansh API has suggested a Road-to-Riches route for Commander {commanderName}.",
@@ -442,7 +442,7 @@ class PromptGenerator:
     def external_event_message(self, event: ExternalEvent):
         return {
             "role": "user",
-            "content": f"({externalEvents[event.content.get('event')].format(commanderName=self.commander_name)} Details: {json.dumps(event.content)})",
+            "content": f"({externalEvents[event.content.get('event')]} {event.content.get('text')})",
         }
 
     def tool_response_message(self, event: ToolEvent):
