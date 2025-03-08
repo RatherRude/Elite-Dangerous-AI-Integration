@@ -2,7 +2,7 @@
   <mat-progress-bar mode="indeterminate" class="toolbar-progress"></mat-progress-bar>
 }
 
-<main class="container">
+<main class="app">
   @if (!isRunning) {
     <div class="settings-container">
       <app-settings-menu></app-settings-menu>
@@ -21,8 +21,11 @@
       }
     </div>
   } @else {
-    <div class="log-container">
-      <app-log-container></app-log-container>
+    <div class="runtime-container">
+      <div class="log-container">
+        <app-log-container></app-log-container>
+      </div>
+      <app-input-container class="input-container"></app-input-container>
     </div>
     <div class="button-container">
       @if (isLoading) {

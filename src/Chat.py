@@ -210,6 +210,9 @@ class Chat:
             if not predicted_actions and config["use_action_cache_var"]:
                 self.verify_action(user_input, response_actions, prompt, tool_list)
 
+    def submit_input(self, input: str):
+        self.event_manager.add_conversation_event('user', input)
+        
     def run(self):
         log('info', f"Initializing CMDR {self.config['commander_name']}'s personal AI...\n")
         log('info', "API Key: Loaded")
@@ -311,6 +314,14 @@ class Chat:
         self.tts.quit()
 
 
+def read_stdin(chat: Chat):
+    while True:
+        line = sys.stdin.readline().strip()
+        if line:
+            data = json.loads(line)
+            if data.get("type") == "submit_input":
+                chat.submit_input(data["input"])
+
 if __name__ == "__main__":
     try:
         print(json.dumps({"type": "ready"})+'\n')
@@ -350,7 +361,13 @@ if __name__ == "__main__":
         # Once start signal received, initialize and run chat
         save_config(config)
         print(json.dumps({"type": "start"})+'\n', flush=True)
-        Chat(config).run()
+        
+        chat = Chat(config)
+        # run chat in a thread
+        stdin_thread = threading.Thread(target=read_stdin, args=(chat,), daemon=True)
+        stdin_thread.start()
+
+        chat.run()
     except Exception as e:
         log("error", e, traceback.format_exc())
         sys.exit(1)

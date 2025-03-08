@@ -1,4 +1,4 @@
-.container {
+.app {
   display: flex;
   flex-direction: column;
   padding: 20px;
@@ -14,10 +14,20 @@
   background-color: rgba(0, 0, 0, 1);
 }
 
-.settings-container, .log-container {
+.settings-container, .runtime-container {
   flex: 1;
   overflow-y: auto;
-  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.log-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+.input-container {
+  flex-grow: 0;
 }
 
 .settings-container {
@@ -29,12 +39,11 @@
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.log-container {
+.runtime-container {
   background: rgba(22, 22, 22, 0.7);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-radius: 10px;
-  padding: 20px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 

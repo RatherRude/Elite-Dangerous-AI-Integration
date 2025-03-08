@@ -702,6 +702,49 @@ def validate_config(config: Config) -> Config | None:
 
 
 def update_config(config: Config, data: dict) -> Config:
+    if data.get("stt_provider"):
+      if data["stt_provider"] == "openai":
+        data["stt_endpoint"] = "https://api.openai.com/v1";
+        data["stt_model_name"] = "whisper-1";
+        data["stt_api_key"] = "";
+      
+      if data["stt_provider"] == "custom":
+        data["stt_endpoint"] = "https://api.openai.com/v1";
+        data["stt_model_name"] = "whisper-1";
+        data["stt_api_key"] = "";
+      
+      if data["stt_provider"] == "none":
+        data["stt_endpoint"] = "";
+        data["stt_model_name"] = "";
+        data["stt_api_key"] = "";
+      
+    
+    if data.get("tts_provider"):
+      if data["tts_provider"] == "openai":
+        data["tts_endpoint"] = "https://api.openai.com/v1";
+        data["tts_model_name"] = "tts-1";
+        data["tts_voice"] = "nova";
+        data["tts_api_key"] = "";
+      
+      if data["tts_provider"] == "edge-tts":
+        data["tts_endpoint"] = "";
+        data["tts_model_name"] = "";
+        data["tts_voice"] = "en-GB-SoniaNeural";
+        data["tts_api_key"] = "";
+      
+      if data["tts_provider"] == "custom":
+        data["tts_endpoint"] = "https://api.openai.com/v1";
+        data["tts_model_name"] = "tts-1";
+        data["tts_voice"] = "nova";
+        data["tts_api_key"] = "";
+      
+      if data["tts_provider"] == "none":
+        data["tts_endpoint"] = "";
+        data["tts_model_name"] = "";
+        data["tts_voice"] = "";
+        data["tts_api_key"] = "";
+      
+    
     new_config = cast(Config, {**config, **data}) # pyright: ignore[reportInvalidCast]
     save_config(new_config)
     return new_config

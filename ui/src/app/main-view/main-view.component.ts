@@ -8,6 +8,7 @@ import { LoggingService } from "../services/logging.service";
 import { LogContainerComponent } from "../components/log-container/log-container.component";
 import { SettingsMenuComponent } from "../components/settings-menu/settings-menu.component";
 import { Router } from "@angular/router";
+import { InputContainerComponent } from "../components/input-container/input-container.component";
 
 @Component({
     selector: "app-main-view",
@@ -19,6 +20,7 @@ import { Router } from "@angular/router";
         MatProgressBarModule,
         LogContainerComponent,
         SettingsMenuComponent,
+        InputContainerComponent,
     ],
     templateUrl: "./main-view.component.html",
     styleUrl: "./main-view.component.css",
