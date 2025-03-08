@@ -67,10 +67,12 @@ class Chat:
             )
             
 
-        self.sttClient = OpenAI(
-            base_url=self.config["stt_endpoint"],
-            api_key=self.config["api_key"] if self.config["stt_api_key"] == '' else self.config["stt_api_key"],
-        )
+        self.sttClient: OpenAI | None = None
+        if self.config["stt_provider"] in ['openai', 'custom']: 
+            self.sttClient = OpenAI(
+                base_url=self.config["stt_endpoint"],
+                api_key=self.config["api_key"] if self.config["stt_api_key"] == '' else self.config["stt_api_key"],
+            )
 
         self.ttsClient: OpenAI | None = None
         if self.config["tts_provider"] in ['openai', 'custom']:
@@ -81,7 +83,7 @@ class Chat:
             
         tts_provider = 'none' if self.config["edcopilot_dominant"] else self.config["tts_provider"]
         self.tts = TTS(openai_client=self.ttsClient, provider=tts_provider, model=self.config["tts_model_name"], voice=self.config["tts_voice"], speed=self.config["tts_speed"], output_device=self.config["output_device_name"])
-        self.stt = STT(openai_client=self.sttClient, input_device_name=self.config["input_device_name"], model=self.config["stt_model_name"], custom_prompt=self.config["stt_custom_prompt"], required_word=self.config["stt_required_word"])
+        self.stt = STT(openai_client=self.sttClient, provider=self.config["stt_provider"], input_device_name=self.config["input_device_name"], model=self.config["stt_model_name"], custom_prompt=self.config["stt_custom_prompt"], required_word=self.config["stt_required_word"])
 
         self.enabled_game_events: list[str] = []
         if self.config["event_reaction_enabled_var"]:
