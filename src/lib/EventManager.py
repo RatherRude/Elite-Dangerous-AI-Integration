@@ -120,6 +120,7 @@ class EventManager:
         log('Action', [result['name'] + ': ' + result['content'] for result in results])
 
     def process(self):
+        projected_states: dict[str, Any] | None = None
         while not self.incoming.empty():
             event = self.incoming.get()
             timestamp = datetime.now(timezone.utc).timestamp()
@@ -133,7 +134,7 @@ class EventManager:
                 #self.processed.append(event)
                 continue
                 
-            projected_states: dict[str, Any] = {}
+            projected_states = {}
             for projection in self.projections:
                 projected_states[projection.__class__.__name__] = projection.state.copy()
             
@@ -144,6 +145,7 @@ class EventManager:
         self.processed += self.pending
         self.pending = []
         
+        return projected_states
     
     def trigger_sideeffects(self, event: Event, projected_states: dict[str, Any]):
         for sideeffect in self.sideeffects:
