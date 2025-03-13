@@ -343,6 +343,21 @@
                             <input matInput [(ngModel)]="config.tts_endpoint"
                                    (ngModelChange)="onConfigChange({tts_endpoint: $event})">
                         </mat-form-field>
+                        <mat-form-field>
+                            <mat-label>TTS Model Name</mat-label>
+                            <input matInput [(ngModel)]="config.tts_model_name"
+                                   (ngModelChange)="onConfigChange({tts_model_name: $event})">
+                        </mat-form-field>
+                        <mat-form-field>
+                            <mat-label>TTS Voice</mat-label>
+                            <input matInput [(ngModel)]="config.tts_voice"
+                                   (ngModelChange)="onConfigChange({tts_voice: $event})">
+                        </mat-form-field>
+                        <mat-form-field>
+                            <mat-label>TTS API Key</mat-label>
+                            <input matInput type="password" [(ngModel)]="config.tts_api_key"
+                                   (ngModelChange)="onConfigChange({tts_api_key: $event})">
+                        </mat-form-field>
                     }
                     @if (config.tts_provider === "none") {
                         <p>TTS is disabled</p>
