@@ -106,16 +106,15 @@ class Chat:
             continue_conversation=self.config["continue_conversation_var"],
         )
         
+        self.is_replying = False
+        self.reply_pending = False
         self.pending: list[Event] = []
         log("debug", "Registering side effect...")
         self.event_manager.register_sideeffect(self.on_event)
         
     def on_event(self, event: Event, projected_states: dict[str, Any]):
         self.pending.append(event)
-        if self.should_reply(projected_states):
-            all_events = self.event_manager.processed + self.event_manager.pending
-            self.reply(all_events, self.pending, projected_states)
-            self.pending = []
+        self.reply_pending = self.should_reply(projected_states)
         
     def execute_actions(self, actions: list[dict[str, Any]], projected_states: dict[str, dict]):
         action_descriptions: list[str | None] = []
@@ -358,12 +357,6 @@ class Chat:
                     if self.tts.get_is_playing():
                         log('debug', 'interrupting TTS')
                         self.tts.abort()
-                    #if not self.event_manager.is_listening:
-                    #    self.event_manager.is_listening = True
-                else:
-                    pass
-                    #if self.event_manager.is_listening:
-                    #   self.event_manager.is_listening = False
 
                 # check STT result queue
                 if not self.stt.resultQueue.empty():
@@ -373,8 +366,9 @@ class Chat:
                     self.event_manager.add_conversation_event('user', text)
 
                 # todo add finished event to tts
-                #if not self.is_thinking and not self.tts.get_is_playing() and self.event_manager.is_replying:
-                #    self.event_manager.add_assistant_complete_event()
+                if self.is_replying and not self.tts.get_is_playing():
+                    self.event_manager.add_assistant_complete_event()
+                    self.is_replying = False
 
                 # check EDJournal files for updates
                 while not self.jn.events.empty():
@@ -391,7 +385,14 @@ class Chat:
                                                           event.model_dump())
 
 
-                self.event_manager.process()
+                projected_states = self.event_manager.process()
+                
+                if projected_states and self.reply_pending and not self.tts.get_is_playing() and not self.stt.recording:
+                    all_events = self.event_manager.processed + self.event_manager.pending
+                    self.is_replying = True
+                    self.reply(all_events, self.pending, projected_states)
+                    self.reply_pending = False
+                    self.pending = []
 
                 # Infinite loops are bad for processors, must sleep.
                 sleep(0.25)
