@@ -6,7 +6,23 @@ import yaml
 import requests
 import humanize
 
-from lib.EventModels import DockedEvent, FSDJumpEvent, FSDTargetEvent, OutfittingEvent, ReceiveTextEvent, ShipTargetedEvent, StartJumpEvent, UnderAttackEvent
+from lib.EventModels import (
+    ApproachBodyEvent, ApproachSettlementEvent, BookTaxiEvent, BountyEvent, CommanderEvent, CommitCrimeEvent,
+    CrewAssignEvent, CrewLaunchFighterEvent, CrewMemberJoinsEvent, CrewMemberQuitsEvent, CrewMemberRoleChangeEvent,
+    DataScannedEvent, DatalinkScanEvent, DiedEvent, DisembarkEvent, DockedEvent, DockFighterEvent,
+    DockingDeniedEvent, DockingGrantedEvent, DockingRequestedEvent, DockSRVEvent, EjectCargoEvent, EmbarkEvent,
+    EndCrewSessionEvent, FactionKillBondEvent, FighterDestroyedEvent, FighterRebuiltEvent, FriendsEvent,
+    FSSAllBodiesFoundEvent, FSSDiscoveryScanEvent, FSDJumpEvent, FSDTargetEvent, HullDamageEvent, InterdictedEvent,
+    LaunchDroneEvent, LaunchFighterEvent, LaunchSRVEvent, LeaveBodyEvent, LiftoffEvent, LoadGameEvent,
+    MissionAbandonedEvent, MissionAcceptedEvent, MissionCompletedEvent, MissionFailedEvent, MissionRedirectedEvent,
+    MiningRefinedEvent, MissionsEvent, NavBeaconScanEvent, OutfittingEvent, PayFinesEvent, PowerplayJoinEvent,
+    PromotionEvent, ProspectedAsteroidEvent, ReceiveTextEvent, RebootRepairEvent, RedeemVoucherEvent, ResurrectEvent,
+    SAAScanCompleteEvent, ScreenshotEvent, SendTextEvent, ShieldStateEvent, ShipTargetedEvent, ShipyardBuyEvent,
+    ShipyardSellEvent, ShipyardSwapEvent, ShipyardTransferEvent, SRVDestroyedEvent, StartJumpEvent,
+    SupercruiseDestinationDropEvent, SupercruiseEntryEvent, SupercruiseExitEvent, SuitLoadoutEvent,
+    SwitchSuitLoadoutEvent, TouchdownEvent, UnderAttackEvent, UndockedEvent, UseConsumableEvent, WingAddEvent,
+    WingJoinEvent, WingLeaveEvent
+)
 
 from .Projections import LocationState, MissionsState, ShipInfoState, NavInfo, TargetState, CurrentStatus
 
@@ -367,48 +383,107 @@ class PromptGenerator:
         self.character_prompt = character_prompt
         self.important_game_events = important_game_events
 
-    # def time_since(self, timestamp):
-    #     # Current time
-    #     now = datetime.now()
-    #
-    #     # Time difference
-    #     time_diff = now - timestamp
-    #
-    #     # Get the days, hours, and minutes
-    #     days = time_diff.days
-    #     hours = time_diff.seconds // 3600
-    #     minutes = (time_diff.seconds % 3600) // 60
-    #
-    #     return days, hours, minutes
     def get_event_template(self, event: GameEvent):
         content: Any = event.content
         event_name = content.get('event')
         
+        # System events
+        if event_name == 'LoadGame':
+            load_game_event = cast(LoadGameEvent, content)
+            return f"{load_game_event.get('Commander')} is logging into the game in {load_game_event.get('GameMode', 'unknown')} mode."
+        if event_name == 'Shutdown':
+            return f"{self.commander_name} is shutting down the game."
+        if event_name == 'NewCommander':
+            return f"New commander created: {content.get('Name')}"
+        if event_name == 'Missions':
+            missions_event = cast(MissionsEvent, content)
+            active_count = len(missions_event.get('Active', []))
+            complete_count = len(missions_event.get('Complete', []))
+            failed_count = len(missions_event.get('Failed', []))
+            return f"{self.commander_name} has {active_count} active missions, {complete_count} completed, and {failed_count} failed."
+        
+        # Message events
         if event_name == 'ReceiveText':
             receive_text_event = cast(ReceiveTextEvent, content)
-            return f'Message received from {receive_text_event.get('From_Localised',receive_text_event.get('From'))} on channel {receive_text_event.get('Channel')}: "{receive_text_event.get('Message_Localised', receive_text_event.get('Message'))}"'
+            return f'Message received from {receive_text_event.get("From_Localised", receive_text_event.get("From"))} on channel {receive_text_event.get("Channel")}: "{receive_text_event.get("Message_Localised", receive_text_event.get("Message"))}"'
+        if event_name == 'SendText':
+            send_text_event = cast(SendTextEvent, content)
+            return f'{self.commander_name} sent a message to {send_text_event.get("To")}: "{send_text_event.get("Message")}"'
+        
+        # Jump events
         if event_name == 'StartJump':
             start_jump_event = cast(StartJumpEvent, content)
             return f"{self.commander_name} is starting a jump to {start_jump_event.get('StarSystem')}"
         if event_name == 'FSDJump':
             fsd_jump_event = cast(FSDJumpEvent, content)
-            return f"{self.commander_name} is arriving at {fsd_jump_event.get('StarSystem')}"
-        if event_name == 'FSDTarget':  # TODO is scoopable and should scoop?
+            return f"{self.commander_name} has arrived at {fsd_jump_event.get('StarSystem')}"
+        if event_name == 'FSDTarget':
             fsd_target_event = cast(FSDTargetEvent, content)
             return f"{self.commander_name} is targeting the next jump to go to {fsd_target_event.get('Name')}"
+        if event_name == 'SupercruiseEntry':
+            supercruise_entry_event = cast(SupercruiseEntryEvent, content)
+            return f"{self.commander_name} has entered supercruise in the {supercruise_entry_event.get('StarSystem')} system."
+        if event_name == 'SupercruiseExit':
+            supercruise_exit_event = cast(SupercruiseExitEvent, content)
+            return f"{self.commander_name} has exited supercruise near {supercruise_exit_event.get('Body')}."
+        if event_name == 'SupercruiseDestinationDrop':
+            supercruise_destination_drop_event = cast(SupercruiseDestinationDropEvent, content)
+            return f"{self.commander_name} is dropping from supercruise at {supercruise_destination_drop_event.get('Type_Localised', supercruise_destination_drop_event.get('Type'))}."
+        
+        # Station events
         if event_name == 'Docked':
             docked_event = cast(DockedEvent, content)
-            return f"Now docked at {docked_event.get('StationType')} {docked_event.get('StationName')}"
+            return f"Now docked at {docked_event.get('StationType')} {docked_event.get('StationName')} in {docked_event.get('StarSystem')}"
+        if event_name == 'Undocked':
+            undocked_event = cast(UndockedEvent, content)
+            return f"{self.commander_name} has undocked from {undocked_event.get('StationName')}."
+        if event_name == 'DockingDenied':
+            docking_denied_event = cast(DockingDeniedEvent, content)
+            return f"Docking request denied at {docking_denied_event.get('StationName')}. Reason: {docking_denied_event.get('Reason')}"
+        if event_name == 'DockingGranted':
+            docking_granted_event = cast(DockingGrantedEvent, content)
+            return f"Docking request granted at {docking_granted_event.get('StationName')} on landing pad {docking_granted_event.get('LandingPad')}"
+        if event_name == 'DockingRequested':
+            docking_requested_event = cast(DockingRequestedEvent, content)
+            return f"{self.commander_name} has requested docking at {docking_requested_event.get('StationName')}."
+        if event_name == 'DockingTimeout':
+            return f"{self.commander_name}'s docking request has timed out."
+        if event_name == 'ApproachSettlement':
+            approach_settlement_event = cast(ApproachSettlementEvent, content)
+            return f"{self.commander_name} is approaching settlement {approach_settlement_event.get('Name_Localised', approach_settlement_event.get('Name'))} on {approach_settlement_event.get('BodyName')}"
         
+        # Shipyard and Outfitting events
+        if event_name == 'Shipyard':
+            return f"{self.commander_name} is accessing the station's shipyard."
+        if event_name == 'Market':
+            return f"{self.commander_name} is accessing the station's market."
+        if event_name == 'Outfitting':
+            return f"{self.commander_name} is accessing the station's outfitting."
+        if event_name == 'ShipyardBuy':
+            shipyard_buy_event = cast(ShipyardBuyEvent, content)
+            return f"{self.commander_name} has purchased a {shipyard_buy_event.get('ShipType_Localised', shipyard_buy_event.get('ShipType'))} for {shipyard_buy_event.get('ShipPrice')} credits."
+        if event_name == 'ShipyardSell':
+            shipyard_sell_event = cast(ShipyardSellEvent, content)
+            return f"{self.commander_name} has sold a {shipyard_sell_event.get('ShipType_Localised', shipyard_sell_event.get('ShipType'))} for {shipyard_sell_event.get('ShipPrice')} credits."
+        if event_name == 'ShipyardTransfer':
+            shipyard_transfer_event = cast(ShipyardTransferEvent, content)
+            return f"{self.commander_name} has requested a transfer of their {shipyard_transfer_event.get('ShipType_Localised', shipyard_transfer_event.get('ShipType'))} from {shipyard_transfer_event.get('System')}. Transfer time: {shipyard_transfer_event.get('TransferTime')} seconds."
+        if event_name == 'ShipyardSwap':
+            shipyard_swap_event = cast(ShipyardSwapEvent, content)
+            return f"{self.commander_name} has swapped to a {shipyard_swap_event.get('ShipType_Localised', shipyard_swap_event.get('ShipType'))}."
+        if event_name == 'ClearImpound':
+            return f"{self.commander_name} has cleared an impounded asset."
+        
+        # Combat events
         if event_name == 'ShipTargeted':
             ship_targeted_event = cast(ShipTargetedEvent, content)
             if ship_targeted_event.get('TargetLocked'):
                 if ship_targeted_event.get('Subsystem_Localised'):
-                    return f"Weapons now targeting {ship_targeted_event.get('LegalState', '')} pilot {ship_targeted_event.get('PilotName_Localised')}'s {ship_targeted_event.get('Subsystem_Localised')}"
-                if ship_targeted_event.get('PilotName_Localised'):
-                    return f"Weapons now targeting {ship_targeted_event.get('LegalState', '')} pilot {ship_targeted_event.get('PilotName_Localised')}'s {ship_targeted_event.get('Ship','ship').capitalize()}"
+                    return f"Weapons now targeting {ship_targeted_event.get('LegalStatus', '')} pilot {ship_targeted_event.get('PilotName_Localised', ship_targeted_event.get('PilotName'))}'s {ship_targeted_event.get('Subsystem_Localised')}"
+                if ship_targeted_event.get('PilotName_Localised', ship_targeted_event.get('PilotName')):
+                    return f"Weapons now targeting {ship_targeted_event.get('LegalStatus', '')} pilot {ship_targeted_event.get('PilotName_Localised', ship_targeted_event.get('PilotName'))}'s {ship_targeted_event.get('Ship_Localised', ship_targeted_event.get('Ship', 'ship')).capitalize()}"
                 else:
-                    return f"Weapons now targeting the {ship_targeted_event.get('Ship','ship').capitalize()}"
+                    return f"Weapons now targeting the {ship_targeted_event.get('Ship_Localised', ship_targeted_event.get('Ship', 'ship')).capitalize()}"
             else:
                 return f"Weapons' target lock lost."
         if event_name == 'UnderAttack':
@@ -417,14 +492,356 @@ class PromptGenerator:
                 return f"{self.commander_name} is under attack."
             else:
                 return f"{self.commander_name}'s {under_attack_event.get('Target')} is under attack."
-            
-        if event_name == 'Shipyard':
-            return f"{self.commander_name} is accessing the stations shipyard."
-        if event_name == 'Market':
-            return f"{self.commander_name} is accessing the stations market."
-        if event_name == 'Outfitting':
-            return f"{self.commander_name} is accessing the stations outfitting."
+        if event_name == 'Died':
+            died_event = cast(DiedEvent, content)
+            if died_event.get('KillerName'):
+                return f"{self.commander_name} was killed by {died_event.get('KillerName')} in a {died_event.get('KillerShip', 'ship')}."
+            else:
+                return f"{self.commander_name} has died."
+        if event_name == 'Resurrect':
+            resurrect_event = cast(ResurrectEvent, content)
+            return f"{self.commander_name} has been resurrected with option: {resurrect_event.get('Option')}. Cost: {resurrect_event.get('Cost')} credits."
+        if event_name == 'HeatDamage':
+            return f"{self.commander_name}'s ship is taking heat damage."
+        if event_name == 'HeatWarning':
+            return f"WARNING: {self.commander_name}'s ship is overheating."
+        if event_name == 'ShieldState':
+            shield_state_event = cast(ShieldStateEvent, content)
+            if shield_state_event.get('ShieldsUp'):
+                return f"{self.commander_name}'s shields are now online."
+            else:
+                return f"{self.commander_name}'s shields are down."
+        if event_name == 'HullDamage':
+            hull_damage_event = cast(HullDamageEvent, content)
+            return f"{self.commander_name}'s hull integrity is at {hull_damage_event.get('Health') * 100:.1f}%."
+        if event_name == 'SystemsShutdown':
+            return f"ALERT: {self.commander_name}'s ship systems are shutting down!"
+        if event_name == 'CockpitBreached':
+            return f"EMERGENCY: {self.commander_name}'s cockpit has been breached! Oxygen depleting!"
+        if event_name == 'CommitCrime':
+            commit_crime_event = cast(CommitCrimeEvent, content)
+            if commit_crime_event.get('Fine'):
+                return f"{self.commander_name} committed crime: {commit_crime_event.get('CrimeType')}. Fine issued: {commit_crime_event.get('Fine')} credits."
+            elif commit_crime_event.get('Bounty'):
+                return f"{self.commander_name} committed crime: {commit_crime_event.get('CrimeType')}. Bounty issued: {commit_crime_event.get('Bounty')} credits."
+            else:
+                return f"{self.commander_name} committed crime: {commit_crime_event.get('CrimeType')}."
+        if event_name == 'Interdicted':
+            interdicted_event = cast(InterdictedEvent, content)
+            if interdicted_event.get('IsPlayer'):
+                return f"{self.commander_name} has been interdicted by {interdicted_event.get('Interdictor_Localised', interdicted_event.get('Interdictor'))}. Submission: {interdicted_event.get('Submitted')}"
+            else:
+                return f"{self.commander_name} has been interdicted by an NPC {interdicted_event.get('Interdictor_Localised', interdicted_event.get('Interdictor'))}. Submission: {interdicted_event.get('Submitted')}"
+        if event_name == 'Bounty':
+            bounty_event = cast(BountyEvent, content)
+            return f"{self.commander_name} has earned a bounty of {bounty_event.get('TotalReward')} credits for destroying {bounty_event.get('Target_Localised', bounty_event.get('Target'))}."
+        if event_name == 'FactionKillBond':
+            faction_kill_bond_event = cast(FactionKillBondEvent, content)
+            return f"{self.commander_name} has earned a combat bond of {faction_kill_bond_event.get('Reward')} credits from {faction_kill_bond_event.get('AwardingFaction_Localised', faction_kill_bond_event.get('AwardingFaction'))}."
+        if event_name == 'PVPKill':
+            return f"{self.commander_name} has defeated another CMDR in combat."
+        if event_name == 'CrimeVictim':
+            return f"{self.commander_name} has been the victim of a crime."
+        if event_name == 'SelfDestruct':
+            return f"{self.commander_name} has initiated self-destruct sequence."
+        if event_name == 'InDanger':
+            return f"WARNING: {self.commander_name} is in danger!"
+        if event_name == 'OutofDanger':
+            return f"{self.commander_name} is no longer in danger."
+        if event_name == 'LegalStateChanged':
+            return f"{self.commander_name}'s legal status has changed."
+        
+        # Mining events
+        if event_name == 'ProspectedAsteroid':
+            prospected_asteroid_event = cast(ProspectedAsteroidEvent, content)
+            return f"{self.commander_name} has prospected an asteroid containing {prospected_asteroid_event.get('Content_Localised', prospected_asteroid_event.get('Content'))}. Remaining: {prospected_asteroid_event.get('Remaining') * 100:.1f}%."
+        if event_name == 'MiningRefined':
+            mining_refined_event = cast(MiningRefinedEvent, content)
+            return f"{self.commander_name} has refined 1 ton of {mining_refined_event.get('Type_Localised', mining_refined_event.get('Type'))}."
+        if event_name == 'LaunchDrone':
+            launch_drone_event = cast(LaunchDroneEvent, content)
+            return f"{self.commander_name} has launched a {launch_drone_event.get('Type')} drone."
+        if event_name == 'EjectCargo':
+            eject_cargo_event = cast(EjectCargoEvent, content)
+            abandoned = "abandoned" if eject_cargo_event.get('Abandoned') else "ejected"
+            return f"{self.commander_name} has {abandoned} {eject_cargo_event.get('Count')} units of {eject_cargo_event.get('Type_Localised', eject_cargo_event.get('Type'))}."
+        
+        # SRV events
+        if event_name == 'LaunchSRV':
+            launch_srv_event = cast(LaunchSRVEvent, content)
+            return f"{self.commander_name} has deployed their {launch_srv_event.get('SRVType_Localised', launch_srv_event.get('SRVType'))}."
+        if event_name == 'DockSRV':
+            dock_srv_event = cast(DockSRVEvent, content)
+            return f"{self.commander_name} has recalled their {dock_srv_event.get('SRVType_Localised', dock_srv_event.get('SRVType'))}."
+        if event_name == 'SRVDestroyed':
+            srv_destroyed_event = cast(SRVDestroyedEvent, content)
+            return f"{self.commander_name}'s {srv_destroyed_event.get('SRVType_Localised', srv_destroyed_event.get('SRVType'))} has been destroyed."
+        
+        # Fighter events
+        if event_name == 'LaunchFighter':
+            launch_fighter_event = cast(LaunchFighterEvent, content)
+            return f"{self.commander_name} has launched a fighter with loadout {launch_fighter_event.get('Loadout')}."
+        if event_name == 'DockFighter':
+            dock_fighter_event = cast(DockFighterEvent, content)
+            return f"{self.commander_name} has recalled their fighter."
+        if event_name == 'FighterDestroyed':
+            fighter_destroyed_event = cast(FighterDestroyedEvent, content)
+            return f"{self.commander_name}'s fighter has been destroyed."
+        if event_name == 'FighterRebuilt':
+            fighter_rebuilt_event = cast(FighterRebuiltEvent, content)
+            return f"{self.commander_name}'s fighter has been rebuilt with loadout {fighter_rebuilt_event.get('Loadout')}."
+        if event_name == 'CrewLaunchFighter':
+            crew_launch_fighter_event = cast(CrewLaunchFighterEvent, content)
+            return f"{self.commander_name}'s crew member {crew_launch_fighter_event.get('Crew')} has launched a fighter."
+        
+        # Ship status events
+        if event_name == 'LowFuelWarning':
+            return f"WARNING: {self.commander_name}'s ship is running low on fuel!"
+        if event_name == 'LowFuelWarningCleared':
+            return f"{self.commander_name}'s low fuel warning has been cleared."
+        if event_name == 'RebootRepair':
+            reboot_repair_event = cast(RebootRepairEvent, content)
+            if reboot_repair_event.get('Modules'):
+                modules = ", ".join(reboot_repair_event.get('Modules'))
+                return f"{self.commander_name} has initiated a reboot/repair sequence. Repaired modules: {modules}."
+            else:
+                return f"{self.commander_name} has initiated a reboot/repair sequence."
+        
+        # On-foot events
+        if event_name == 'Disembark':
+            disembark_event = cast(DisembarkEvent, content)
+            if disembark_event.get('OnStation'):
+                return f"{self.commander_name} has disembarked at {disembark_event.get('StationName')}."
+            else:
+                return f"{self.commander_name} has disembarked on {disembark_event.get('Body')}."
+        if event_name == 'Embark':
+            embark_event = cast(EmbarkEvent, content)
+            if embark_event.get('SRV'):
+                return f"{self.commander_name} has boarded their SRV."
+            elif embark_event.get('OnStation'):
+                return f"{self.commander_name} has boarded their ship at {embark_event.get('StationName')}."
+            else:
+                return f"{self.commander_name} has boarded their ship on {embark_event.get('Body')}."
+        if event_name == 'BookTaxi':
+            book_taxi_event = cast(BookTaxiEvent, content)
+            return f"{self.commander_name} has booked a taxi to {book_taxi_event.get('DestinationSystem')} - {book_taxi_event.get('DestinationLocation')} for {book_taxi_event.get('Cost')} credits."
+        if event_name == 'CancelTaxi':
+            return f"{self.commander_name} has cancelled their taxi booking."
+        if event_name == 'BookDropship':
+            return f"{self.commander_name} has booked a dropship."
+        if event_name == 'CancelDropship':
+            return f"{self.commander_name} has cancelled their dropship booking."
+        if event_name == 'BuySuit':
+            return f"{self.commander_name} has purchased a new suit."
+        if event_name == 'BuyWeapon':
+            return f"{self.commander_name} has purchased a new weapon."
+        if event_name == 'SuitLoadout':
+            suit_loadout_event = cast(SuitLoadoutEvent, content)
+            return f"{self.commander_name} has equipped the {suit_loadout_event.get('SuitName_Localised', suit_loadout_event.get('SuitName'))} suit with loadout: {suit_loadout_event.get('LoadoutName')}."
+        if event_name == 'SwitchSuitLoadout':
+            switch_suit_loadout_event = cast(SwitchSuitLoadoutEvent, content)
+            return f"{self.commander_name} has switched to the {switch_suit_loadout_event.get('SuitName_Localised', switch_suit_loadout_event.get('SuitName'))} suit with loadout: {switch_suit_loadout_event.get('LoadoutName')}."
+        if event_name == 'CreateSuitLoadout':
+            return f"{self.commander_name} has created a new suit loadout."
+        if event_name == 'RenameSuitLoadout':
+            return f"{self.commander_name} has renamed a suit loadout."
+        if event_name == 'UseConsumable':
+            use_consumable_event = cast(UseConsumableEvent, content)
+            return f"{self.commander_name} has used a {use_consumable_event.get('Name_Localised', use_consumable_event.get('Name'))}."
+        if event_name == 'SellOrganicData':
+            return f"{self.commander_name} has sold organic scan data."
+        if event_name == 'LowOxygenWarning':
+            return f"WARNING: {self.commander_name} is running low on oxygen!"
+        if event_name == 'LowOxygenWarningCleared':
+            return f"{self.commander_name}'s low oxygen warning has been cleared."
+        if event_name == 'LowHealthWarning':
+            return f"WARNING: {self.commander_name}'s health is critically low!"
+        if event_name == 'LowHealthWarningCleared':
+            return f"{self.commander_name}'s low health warning has been cleared."
+        
+        # Planetary events
+        if event_name == 'ApproachBody':
+            approach_body_event = cast(ApproachBodyEvent, content)
+            return f"{self.commander_name} is approaching {approach_body_event.get('Body')}."
+        if event_name == 'LeaveBody':
+            leave_body_event = cast(LeaveBodyEvent, content)
+            return f"{self.commander_name} is leaving the vicinity of {leave_body_event.get('Body')}."
+        if event_name == 'Touchdown':
+            touchdown_event = cast(TouchdownEvent, content)
+            if touchdown_event.get('PlayerControlled'):
+                return f"{self.commander_name} has landed on {touchdown_event.get('Body')} at coordinates {touchdown_event.get('Latitude'):.4f}, {touchdown_event.get('Longitude'):.4f}."
+            else:
+                return f"{self.commander_name}'s ship has auto-landed on {touchdown_event.get('Body')}."
+        if event_name == 'Liftoff':
+            liftoff_event = cast(LiftoffEvent, content)
+            if liftoff_event.get('PlayerControlled'):
+                return f"{self.commander_name} has lifted off from {liftoff_event.get('Body')}."
+            else:
+                return f"{self.commander_name}'s ship has auto-lifted off from {liftoff_event.get('Body')}."
+        
+        # Exploration and scanning events
+        if event_name == 'Screenshot':
+            screenshot_event = cast(ScreenshotEvent, content)
+            return f"{self.commander_name} took a screenshot of {screenshot_event.get('Body')} in the {screenshot_event.get('System')} system."
+        if event_name == 'NavBeaconScan':
+            nav_beacon_scan_event = cast(NavBeaconScanEvent, content)
+            return f"{self.commander_name} has scanned the nav beacon, revealing {nav_beacon_scan_event.get('NumBodies')} bodies in the system."
+        if event_name == 'SAAScanComplete':
+            saa_scan_complete_event = cast(SAAScanCompleteEvent, content)
+            return f"{self.commander_name} has completed surface mapping of {saa_scan_complete_event.get('BodyName')} using {saa_scan_complete_event.get('ProbesUsed')} probes."
+        if event_name == 'FSSAllBodiesFound':
+            fss_all_bodies_found_event = cast(FSSAllBodiesFoundEvent, content)
+            return f"{self.commander_name} has discovered all {fss_all_bodies_found_event.get('Count')} bodies in the {fss_all_bodies_found_event.get('SystemName')} system."
+        if event_name == 'FSSDiscoveryScan':
+            fss_discovery_scan_event = cast(FSSDiscoveryScanEvent, content)
+            return f"{self.commander_name} has performed a discovery scan in {fss_discovery_scan_event.get('SystemName')}. Progress: {fss_discovery_scan_event.get('Progress') * 100:.1f}%. Bodies detected: {fss_discovery_scan_event.get('BodyCount')}."
+        if event_name == 'DataScanned':
+            data_scanned_event = cast(DataScannedEvent, content)
+            return f"{self.commander_name} has scanned a {data_scanned_event.get('Type_Localised', data_scanned_event.get('Type'))}."
+        if event_name == 'DatalinkScan':
+            datalink_scan_event = cast(DatalinkScanEvent, content)
+            return f"{self.commander_name} has completed a datalink scan: {datalink_scan_event.get('Message_Localised', datalink_scan_event.get('Message'))}"
+        
+        # Mission events
+        if event_name == 'MissionAccepted':
+            mission_accepted_event = cast(MissionAcceptedEvent, content)
+            return f"{self.commander_name} has accepted mission: {mission_accepted_event.get('LocalisedName')} from {mission_accepted_event.get('Faction')}."
+        if event_name == 'MissionCompleted':
+            mission_completed_event = cast(MissionCompletedEvent, content)
+            if mission_completed_event.get('Reward'):
+                return f"{self.commander_name} has completed mission: {mission_completed_event.get('LocalisedName')} for {mission_completed_event.get('Faction')}. Reward: {mission_completed_event.get('Reward')} credits."
+            else:
+                return f"{self.commander_name} has completed mission: {mission_completed_event.get('LocalisedName')} for {mission_completed_event.get('Faction')}."
+        if event_name == 'MissionFailed':
+            mission_failed_event = cast(MissionFailedEvent, content)
+            return f"{self.commander_name} has failed mission: {mission_failed_event.get('LocalisedName')}."
+        if event_name == 'MissionAbandoned':
+            mission_abandoned_event = cast(MissionAbandonedEvent, content)
+            return f"{self.commander_name} has abandoned mission: {mission_abandoned_event.get('LocalisedName')}."
+        if event_name == 'MissionRedirected':
+            mission_redirected_event = cast(MissionRedirectedEvent, content)
+            return f"{self.commander_name}'s mission '{mission_redirected_event.get('LocalisedName')}' has been redirected to {mission_redirected_event.get('NewDestinationSystem')} - {mission_redirected_event.get('NewDestinationStation')}."
+        
+        # Financial events
+        if event_name == 'RedeemVoucher':
+            redeem_voucher_event = cast(RedeemVoucherEvent, content)
+            return f"{self.commander_name} has redeemed a {redeem_voucher_event.get('Type')} voucher for {redeem_voucher_event.get('Amount')} credits."
+        if event_name == 'PayFines':
+            pay_fines_event = cast(PayFinesEvent, content)
+            return f"{self.commander_name} has paid {pay_fines_event.get('Amount')} credits in fines."
+        if event_name == 'PayLegacyFines':
+            return f"{self.commander_name} has paid off legacy fines."
+        if event_name == 'PayBounties':
+            return f"{self.commander_name} has paid off their bounties."
+        
+        # Social events
+        if event_name == 'CrewAssign':
+            crew_assign_event = cast(CrewAssignEvent, content)
+            return f"{self.commander_name} has assigned {crew_assign_event.get('Name')} to {crew_assign_event.get('Role')} role."
+        if event_name == 'CrewHire':
+            return f"{self.commander_name} has hired a new crew member."
+        if event_name == 'CrewFire':
+            return f"{self.commander_name} has fired a crew member."
+        if event_name == 'CrewMemberJoins':
+            crew_member_joins_event = cast(CrewMemberJoinsEvent, content)
+            return f"{crew_member_joins_event.get('Crew')} has joined {self.commander_name}'s crew."
+        if event_name == 'CrewMemberQuits':
+            crew_member_quits_event = cast(CrewMemberQuitsEvent, content)
+            return f"{crew_member_quits_event.get('Crew')} has left {self.commander_name}'s crew."
+        if event_name == 'CrewMemberRoleChange':
+            crew_member_role_change_event = cast(CrewMemberRoleChangeEvent, content)
+            return f"{crew_member_role_change_event.get('Crew')} has changed role to {crew_member_role_change_event.get('Role')}."
+        if event_name == 'EndCrewSession':
+            end_crew_session_event = cast(EndCrewSessionEvent, content)
+            return f"{self.commander_name} has ended their crew session."
+        if event_name == 'JoinACrew':
+            return f"{self.commander_name} has joined another commander's crew."
+        if event_name == 'QuitACrew':
+            return f"{self.commander_name} has left the crew they were part of."
+        if event_name == 'KickCrewMember':
+            return f"{self.commander_name} has kicked a member from their crew."
+        if event_name == 'WingAdd':
+            wing_add_event = cast(WingAddEvent, content)
+            return f"{wing_add_event.get('Name')} has joined {self.commander_name}'s wing."
+        if event_name == 'WingJoin':
+            wing_join_event = cast(WingJoinEvent, content)
+            return f"{self.commander_name} has joined a wing."
+        if event_name == 'WingLeave':
+            wing_leave_event = cast(WingLeaveEvent, content)
+            return f"{self.commander_name} has left their wing."
+        if event_name == 'WingInvite':
+            return f"{self.commander_name} has invited someone to join their wing."
+        if event_name == 'Friends':
+            friends_event = cast(FriendsEvent, content)
+            return f"Friend status update: {friends_event.get('Name')} is now {friends_event.get('Status')}."
 
+        # Squadron events
+        if event_name == 'AppliedToSquadron':
+            return f"{self.commander_name} has applied to join a squadron."
+        if event_name == 'DisbandedSquadron':
+            return f"{self.commander_name} has disbanded their squadron."
+        if event_name == 'InvitedToSquadron':
+            return f"{self.commander_name} has been invited to join a squadron."
+        if event_name == 'JoinedSquadron':
+            return f"{self.commander_name} has joined a squadron."
+        if event_name == 'KickedFromSquadron':
+            return f"{self.commander_name} has been kicked from their squadron."
+        if event_name == 'LeftSquadron':
+            return f"{self.commander_name} has left their squadron."
+        if event_name == 'SquadronCreated':
+            return f"{self.commander_name} has created a new squadron."
+        if event_name == 'SquadronDemotion':
+            return f"{self.commander_name} has been demoted in their squadron."
+        if event_name == 'SquadronPromotion':
+            return f"{self.commander_name} has been promoted in their squadron."
+        
+        # Promotion events
+        if event_name == 'Promotion':
+            promotion_event = cast(PromotionEvent, content)
+            ranks = []
+            if promotion_event.get('Combat') is not None:
+                ranks.append(f"Combat: {promotion_event.get('Combat')}")
+            if promotion_event.get('Trade') is not None:
+                ranks.append(f"Trade: {promotion_event.get('Trade')}")
+            if promotion_event.get('Explore') is not None:
+                ranks.append(f"Exploration: {promotion_event.get('Explore')}")
+            if promotion_event.get('Soldier') is not None:
+                ranks.append(f"Mercenary: {promotion_event.get('Soldier')}")
+            if promotion_event.get('Exobiologist') is not None:
+                ranks.append(f"Exobiologist: {promotion_event.get('Exobiologist')}")
+            if promotion_event.get('Empire') is not None:
+                ranks.append(f"Empire: {promotion_event.get('Empire')}")
+            if promotion_event.get('Federation') is not None:
+                ranks.append(f"Federation: {promotion_event.get('Federation')}")
+            return f"{self.commander_name} has been promoted. New ranks: {', '.join(ranks)}"
+        
+        # Powerplay events
+        if event_name == 'PowerplayJoin':
+            powerplay_join_event = cast(PowerplayJoinEvent, content)
+            return f"{self.commander_name} has pledged allegiance to {powerplay_join_event.get('Power')}."
+        if event_name == 'PowerplayLeave':
+            return f"{self.commander_name} has withdrawn their allegiance from their Power."
+        if event_name == 'PowerplayDefect':
+            return f"{self.commander_name} has defected to another Power."
+        
+        # Carrier events
+        if event_name == 'CarrierJump':
+            return f"{self.commander_name}'s fleet carrier has completed a jump."
+        if event_name == 'CarrierJumpRequest':
+            return f"{self.commander_name} has requested their fleet carrier to prepare for a jump."
+        if event_name == 'CarrierBuy':
+            return f"{self.commander_name} has purchased a fleet carrier."
+        if event_name == 'CarrierDecommission':
+            return f"{self.commander_name} has initiated the decommissioning process for their fleet carrier."
+        if event_name == 'CarrierCancelDecommission':
+            return f"{self.commander_name} has canceled the decommissioning process for their fleet carrier."
+        if event_name == 'CarrierNameChanged':
+            return f"{self.commander_name} has changed the name of their fleet carrier."
+        if event_name == 'CarrierJumpCancelled':
+            return f"{self.commander_name} has cancelled the pending jump of their fleet carrier."
+
+        # If we don't have a specific handler for this event
+        return f"Event: {event_name} occurred."
 
     def full_event_message(self, event: GameEvent, timeoffset: str, is_important: bool):
         message = self.get_event_template(event)
@@ -480,7 +897,7 @@ class PromptGenerator:
     def external_event_message(self, event: ExternalEvent):
         return {
             "role": "user",
-            "content": f"({externalEvents[event.content.get('event')]} {event.content.get('text')})",
+            "content": f"({externalEvents[event.content.get('event')]})",
         }
 
     def tool_response_message(self, event: ToolEvent):
