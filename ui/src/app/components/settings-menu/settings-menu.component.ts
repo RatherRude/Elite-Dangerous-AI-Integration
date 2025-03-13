@@ -175,4 +175,18 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     this.filteredGameEvents = this.config?.game_events || {};
     this.expandedSection = null; // Collapse all sections when search is cleared
   }
+
+  // Convert comma-separated string to array for material multi-select
+  getMaterialsArray(materials: string | undefined): string[] {
+    if (!materials) return [];
+    return materials.split(',').map(m => m.trim()).filter(m => m.length > 0);
+  }
+
+  // Handle material selection changes
+  async onMaterialsChange(selectedMaterials: string[]) {
+    if (this.config) {
+      const materialsString = selectedMaterials.join(', ');
+      await this.onConfigChange({ react_to_material: materialsString });
+    }
+  }
 }
