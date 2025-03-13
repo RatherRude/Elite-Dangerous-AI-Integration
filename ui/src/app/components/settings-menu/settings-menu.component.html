@@ -177,8 +177,23 @@
                                         @if (e.key === "ProspectedAsteroid") {
                                             <mat-form-field>
                                                 <mat-label>React to material</mat-label>
-                                                <input matInput [(ngModel)]="config.react_to_material"
-                                                       (ngModelChange)="onConfigChange({react_to_material: $event})">
+                                                <mat-select multiple
+                                                          [value]="getMaterialsArray(config.react_to_material)"
+                                                          (selectionChange)="onMaterialsChange($event.value)">
+                                                    <mat-option value="Alexandrite">Alexandrite</mat-option>
+                                                    <mat-option value="Benitoite">Benitoite</mat-option>
+                                                    <mat-option value="Bromellite">Bromellite</mat-option>
+                                                    <mat-option value="Grandidierite">Grandidierite</mat-option>
+                                                    <mat-option value="LowTemperatureDiamond">LowTemperatureDiamond</mat-option>
+                                                    <mat-option value="Monazite">Monazite</mat-option>
+                                                    <mat-option value="Musgravite">Musgravite</mat-option>
+                                                    <mat-option value="Opal">Opal</mat-option>
+                                                    <mat-option value="Painite">Painite</mat-option>
+                                                    <mat-option value="Platinum">Platinum</mat-option>
+                                                    <mat-option value="Rhodplumsite">Rhodplumsite</mat-option>
+                                                    <mat-option value="Serendibite">Serendibite</mat-option>
+                                                    <mat-option value="Tritium">Tritium</mat-option>
+                                                </mat-select>
                                             </mat-form-field>
                                         }
                                         @if (e.key === "InDanger") {
