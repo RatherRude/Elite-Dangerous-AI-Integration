@@ -12,10 +12,11 @@ from .Logger import log
 
 # List of game events categorized
 game_events = {
-    'Startup Events': {
+    'System': {
         # 'Cargo': False,
         # 'ClearSavedGame': False,
         'LoadGame': True,
+        'Shutdown': True,
         'NewCommander': True,
         # 'Materials': False,
         'Missions': True,
@@ -29,6 +30,12 @@ game_events = {
     },
     'Combat': {
         'Died': True,
+        'Resurrect': True,
+        'WeaponSelected': False,
+        'OutofDanger': True,
+        'InDanger': True,
+        'LegalStateChanged': True,
+        'CommitCrime': False,
         'Bounty': False,
         'CapShipBond': False,
         'Interdiction': False,
@@ -48,7 +55,7 @@ game_events = {
         'SystemsShutdown': True,
         'SelfDestruct': True
     },
-    'Trade': {
+    'Trading': {
         'Trade': False,
         'BuyTradeData': False,
         'CollectCargo': False,
@@ -64,12 +71,13 @@ game_events = {
         'ProspectedAsteroid': True,
         'LaunchDrone': False
     },
-    'Ship': {
+    'Ship Updates': {
         'FSDJump': True,
         'FSDTarget': False,
         'StartJump': False,
         'SupercruiseEntry': True,
         'SupercruiseExit': True,
+        'ApproachSettlement': True,
         'Docked': True,
         'Undocked': True,
         'DockingCanceled': False,
@@ -80,6 +88,7 @@ game_events = {
         'NavRoute': False,
         'NavRouteClear': False,
         'CrewLaunchFighter': True,
+        'VehicleSwitch': False,
         'LaunchFighter': True,
         'DockFighter': True,
         'FighterRebuilt': True,
@@ -91,19 +100,6 @@ game_events = {
         'Synthesis': False,
         'JetConeBoost': False,
         'JetConeDamage': False,
-        'ShipyardBuy': True,
-        'ShipyardNew': False,
-        'ShipyardSell': False,
-        'ShipyardTransfer': False,
-        'ShipyardSwap': False,
-        'StoredShips': False,
-        'ModuleBuy': False,
-        'ModuleRetrieve': False,
-        'ModuleSell': False,
-        'ModuleSellRemote': False,
-        'ModuleStore': False,
-        'ModuleSwap': False,
-        'Outfitting': False,
         'LandingGearUp': False,
         'LandingGearDown': False,
         'FlightAssistOn': False,
@@ -126,7 +122,7 @@ game_events = {
         'NightVisionOn': False,
         'SupercruiseDestinationDrop': False
     },
-    'SRV': {
+    'SRV Updates': {
         'LaunchSRV': True,
         'DockSRV': True,
         'SRVDestroyed': True,
@@ -137,7 +133,7 @@ game_events = {
         'SrvDriveAssistOff': False,
         'SrvDriveAssistOn': False
     },
-    'On-Foot': {
+    'On-Foot Updates': {
         'Disembark': True,
         'Embark': True,
         'BookDropship': True,
@@ -162,6 +158,8 @@ game_events = {
         'SwitchSuitLoadout': True,
         'UseConsumable': False,
         'FCMaterials': False,
+        'LoadoutEquipModule': False,
+        'LoadoutRemoveModule': False,
         'ScanOrganic': False,
         'SellOrganicData': True,
         'LowOxygenWarningCleared': True,
@@ -175,7 +173,25 @@ game_events = {
         'DropShipDeploy': False
     },
     'Stations': {
+        'MissionAbandoned': True,
+        'MissionAccepted': True,
+        'MissionCompleted': True,
+        'MissionFailed': True,
+        'MissionRedirected': True,
         'StationServices': False,
+        'ShipyardBuy': True,
+        'ShipyardNew': False,
+        'ShipyardSell': False,
+        'ShipyardTransfer': False,
+        'ShipyardSwap': False,
+        'StoredShips': False,
+        'ModuleBuy': False,
+        'ModuleRetrieve': False,
+        'ModuleSell': False,
+        'ModuleSellRemote': False,
+        'ModuleStore': False,
+        'ModuleSwap': False,
+        'Outfitting': False,
         'BuyAmmo': False,
         'BuyDrones': False,
         'RefuelAll': False,
@@ -187,6 +203,10 @@ game_events = {
         'MassModuleStore': False,
         'ClearImpound': True,
         'CargoDepot': False,
+        'CommunityGoal': False,
+        'CommunityGoalDiscard': False,
+        'CommunityGoalJoin': False,
+        'CommunityGoalReward': False,
         'EngineerContribution': False,
         'EngineerCraft': False,
         'EngineerLegacyConvert': False,
@@ -197,26 +217,25 @@ game_events = {
         'PayLegacyFines': True,
         'RedeemVoucher': True,
         'ScientificResearch': False,
-        'ApproachSettlement': True,
-        'LegalStateChanged': True
-    },
-    'Powerplay': {
-        'PowerplayCollect': False,
-        'PowerplayDefect': True,
-        'PowerplayDeliver': False,
-        'PowerplayFastTrack': False,
-        'PowerplayJoin': True,
-        'PowerplayLeave': True,
-        'PowerplaySalary': False,
-        'PowerplayVote': False,
-        'PowerplayVoucher': False
+        'Shipyard': False,
+        'CarrierJump': True,
+        'CarrierBuy': True,
+        'CarrierStats': False,
+        'CarrierJumpRequest': True,
+        'CarrierDecommission': True,
+        'CarrierCancelDecommission': True,
+        'CarrierBankTransfer': False,
+        'CarrierDepositFuel': False,
+        'CarrierCrewServices': False,
+        'CarrierFinance': False,
+        'CarrierShipPack': False,
+        'CarrierModulePack': False,
+        'CarrierTradeOrder': False,
+        'CarrierDockingPermission': False,
+        'CarrierNameChanged': True,
+        'CarrierJumpCancelled': True,
     },
     'Social': {
-        'MissionAbandoned': True,
-        'MissionAccepted': True,
-        'MissionCompleted': True,
-        'MissionFailed': True,
-        'MissionRedirected': True,
         'CrewAssign': True,
         'CrewFire': True,
         'CrewHire': True,
@@ -248,7 +267,15 @@ game_events = {
         'SquadronDemotion': True,
         'SquadronPromotion': True,
         'WonATrophyForSquadron': False,
-        'CommitCrime': False
+        'PowerplayCollect': False,
+        'PowerplayDefect': True,
+        'PowerplayDeliver': False,
+        'PowerplayFastTrack': False,
+        'PowerplayJoin': True,
+        'PowerplayLeave': True,
+        'PowerplaySalary': False,
+        'PowerplayVote': False,
+        'PowerplayVoucher': False
     },
     'Exploration': {
         'CodexEntry': False,
@@ -279,33 +306,6 @@ game_events = {
         'Scanned': False,
         'USSDrop': False
     },
-    'Fleet Carriers': {
-        'CarrierJump': True,
-        'CarrierBuy': True,
-        'CarrierStats': False,
-        'CarrierJumpRequest': True,
-        'CarrierDecommission': True,
-        'CarrierCancelDecommission': True,
-        'CarrierBankTransfer': False,
-        'CarrierDepositFuel': False,
-        'CarrierCrewServices': False,
-        'CarrierFinance': False,
-        'CarrierShipPack': False,
-        'CarrierModulePack': False,
-        'CarrierTradeOrder': False,
-        'CarrierDockingPermission': False,
-        'CarrierNameChanged': True,
-        'CarrierJumpCancelled': True
-    },
-    'System': {
-        'Continued': False,
-        'Shutdown': True,
-        'VehicleSwitch': False,
-        'Resurrect': True,
-        'WeaponSelected': False,
-        'OutofDanger': True,
-        'InDanger': True
-    }
 }
 
 
