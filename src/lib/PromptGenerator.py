@@ -390,11 +390,11 @@ class PromptGenerator:
         # System events
         if event_name == 'LoadGame':
             load_game_event = cast(LoadGameEvent, content)
-            return f"{load_game_event.get('Commander')} is logging into the game in {load_game_event.get('GameMode', 'unknown')} mode."
+            return f"{self.commander_name} is logging into the game in {load_game_event.get('GameMode', 'unknown')} mode."
         if event_name == 'Shutdown':
             return f"{self.commander_name} is shutting down the game."
         if event_name == 'NewCommander':
-            return f"New commander created: {content.get('Name')}"
+            return f"{self.commander_name} is starting a new career as  {content.get('Name')}"
         if event_name == 'Missions':
             missions_event = cast(MissionsEvent, content)
             active_count = len(missions_event.get('Active', []))
@@ -458,7 +458,8 @@ class PromptGenerator:
         if event_name == 'Market':
             return f"{self.commander_name} is accessing the station's market."
         if event_name == 'Outfitting':
-            return f"{self.commander_name} is accessing the station's outfitting."
+            outfitting_event = cast(OutfittingEvent, content)
+            return f"{self.commander_name} is accessing outfitting services at {outfitting_event.get('StationName')}."
         if event_name == 'ShipyardBuy':
             shipyard_buy_event = cast(ShipyardBuyEvent, content)
             return f"{self.commander_name} has purchased a {shipyard_buy_event.get('ShipType_Localised', shipyard_buy_event.get('ShipType'))} for {shipyard_buy_event.get('ShipPrice')} credits."
@@ -478,78 +479,145 @@ class PromptGenerator:
         if event_name == 'ShipTargeted':
             ship_targeted_event = cast(ShipTargetedEvent, content)
             if ship_targeted_event.get('TargetLocked'):
-                if ship_targeted_event.get('Subsystem_Localised'):
-                    return f"Weapons now targeting {ship_targeted_event.get('LegalStatus', '')} pilot {ship_targeted_event.get('PilotName_Localised', ship_targeted_event.get('PilotName'))}'s {ship_targeted_event.get('Subsystem_Localised')}"
-                if ship_targeted_event.get('PilotName_Localised', ship_targeted_event.get('PilotName')):
-                    return f"Weapons now targeting {ship_targeted_event.get('LegalStatus', '')} pilot {ship_targeted_event.get('PilotName_Localised', ship_targeted_event.get('PilotName'))}'s {ship_targeted_event.get('Ship_Localised', ship_targeted_event.get('Ship', 'ship')).capitalize()}"
+                if ship_targeted_event.get('ScanStage') == 3:  # Full scan completed
+                    details = []
+                    if ship_targeted_event.get('PilotName_Localised', ship_targeted_event.get('PilotName')):
+                        details.append(f"pilot {ship_targeted_event.get('PilotName_Localised', ship_targeted_event.get('PilotName'))}")
+                    if ship_targeted_event.get('PilotRank'):
+                        details.append(f"rank {ship_targeted_event.get('PilotRank')}")
+                    if ship_targeted_event.get('LegalStatus'):
+                        details.append(f"status {ship_targeted_event.get('LegalStatus')}")
+                    if ship_targeted_event.get('Faction'):
+                        details.append(f"faction {ship_targeted_event.get('Faction')}")
+                    if ship_targeted_event.get('Bounty'):
+                        details.append(f"bounty {ship_targeted_event.get('Bounty')} credits")
+                    
+                    details_str = ", ".join(details)
+                    
+                    if ship_targeted_event.get('Subsystem_Localised'):
+                        return f"Weapons locked on {ship_targeted_event.get('Ship_Localised', ship_targeted_event.get('Ship', 'ship')).capitalize()}'s {ship_targeted_event.get('Subsystem_Localised')}. Target details: {details_str}."
+                    else:
+                        return f"Weapons locked on {ship_targeted_event.get('Ship_Localised', ship_targeted_event.get('Ship', 'ship')).capitalize()}. Target details: {details_str}."
                 else:
-                    return f"Weapons now targeting the {ship_targeted_event.get('Ship_Localised', ship_targeted_event.get('Ship', 'ship')).capitalize()}"
+                    if ship_targeted_event.get('Subsystem_Localised'):
+                        return f"Weapons targeting {ship_targeted_event.get('Ship_Localised', ship_targeted_event.get('Ship', 'ship')).capitalize()}'s {ship_targeted_event.get('Subsystem_Localised')}. Scan in progress."
+                    else:
+                        return f"Weapons targeting {ship_targeted_event.get('Ship_Localised', ship_targeted_event.get('Ship', 'ship')).capitalize()}. Scan in progress."
             else:
-                return f"Weapons' target lock lost."
+                return f"Target lock lost."
+                
         if event_name == 'UnderAttack':
             under_attack_event = cast(UnderAttackEvent, content)
             if under_attack_event.get('Target') == 'You':
-                return f"{self.commander_name} is under attack."
+                if under_attack_event.get('Faction'):
+                    return f"{self.commander_name} is under attack by {under_attack_event.get('Faction')}!"
+                else:
+                    return f"{self.commander_name} is under attack!"
             else:
                 return f"{self.commander_name}'s {under_attack_event.get('Target')} is under attack."
+                
         if event_name == 'Died':
             died_event = cast(DiedEvent, content)
-            if died_event.get('KillerName'):
-                return f"{self.commander_name} was killed by {died_event.get('KillerName')} in a {died_event.get('KillerShip', 'ship')}."
+            if died_event.get('KillerName') and died_event.get('KillerShip'):
+                return f"{self.commander_name} was killed by {died_event.get('KillerName')} in a {died_event.get('KillerShip')}. Rebuy cost: {died_event.get('Insurance', 0):,} credits."
+            elif died_event.get('Killers'):
+                killers = [f"{killer.get('Name')} in a {killer.get('Ship')}" for killer in died_event.get('Killers', [])]
+                return f"{self.commander_name} was killed by multiple attackers: {', '.join(killers)}. Rebuy cost: {died_event.get('Insurance', 0):,} credits."
             else:
-                return f"{self.commander_name} has died."
+                return f"{self.commander_name} has died. Rebuy cost: {died_event.get('Insurance', 0):,} credits."
+                
         if event_name == 'Resurrect':
             resurrect_event = cast(ResurrectEvent, content)
-            return f"{self.commander_name} has been resurrected with option: {resurrect_event.get('Option')}. Cost: {resurrect_event.get('Cost')} credits."
+            return f"{self.commander_name} has been resurrected with option: {resurrect_event.get('Option')}. Cost: {resurrect_event.get('Cost'):,} credits."
+            
         if event_name == 'HeatDamage':
-            return f"{self.commander_name}'s ship is taking heat damage."
+            return f"WARNING: {self.commander_name}'s ship is taking heat damage!"
+            
         if event_name == 'HeatWarning':
-            return f"WARNING: {self.commander_name}'s ship is overheating."
+            return f"CRITICAL WARNING: {self.commander_name}'s ship is overheating and sustaining damage!"
+            
         if event_name == 'ShieldState':
             shield_state_event = cast(ShieldStateEvent, content)
             if shield_state_event.get('ShieldsUp'):
-                return f"{self.commander_name}'s shields are now online."
+                return f"{self.commander_name}'s shields have been restored."
             else:
-                return f"{self.commander_name}'s shields are down."
+                return f"{self.commander_name}'s shields have collapsed!"
+                
         if event_name == 'HullDamage':
             hull_damage_event = cast(HullDamageEvent, content)
-            return f"{self.commander_name}'s hull integrity is at {hull_damage_event.get('Health') * 100:.1f}%."
+            return f"WARNING: {self.commander_name}'s hull integrity is at {hull_damage_event.get('Health') * 100:.1f}%!"
+            
         if event_name == 'SystemsShutdown':
-            return f"ALERT: {self.commander_name}'s ship systems are shutting down!"
+            return f"EMERGENCY: {self.commander_name}'s ship systems are shutting down!"
+            
         if event_name == 'CockpitBreached':
-            return f"EMERGENCY: {self.commander_name}'s cockpit has been breached! Oxygen depleting!"
+            return f"CRITICAL EMERGENCY: {self.commander_name}'s cockpit has been breached! Oxygen depleting rapidly!"
+            
         if event_name == 'CommitCrime':
             commit_crime_event = cast(CommitCrimeEvent, content)
             if commit_crime_event.get('Fine'):
-                return f"{self.commander_name} committed crime: {commit_crime_event.get('CrimeType')}. Fine issued: {commit_crime_event.get('Fine')} credits."
+                return f"{self.commander_name} committed crime: {commit_crime_event.get('CrimeType')} against {commit_crime_event.get('Faction')}. Fine issued: {commit_crime_event.get('Fine'):,} credits."
             elif commit_crime_event.get('Bounty'):
-                return f"{self.commander_name} committed crime: {commit_crime_event.get('CrimeType')}. Bounty issued: {commit_crime_event.get('Bounty')} credits."
+                return f"{self.commander_name} committed crime: {commit_crime_event.get('CrimeType')} against {commit_crime_event.get('Faction')}. Bounty issued: {commit_crime_event.get('Bounty'):,} credits."
             else:
-                return f"{self.commander_name} committed crime: {commit_crime_event.get('CrimeType')}."
+                return f"{self.commander_name} committed crime: {commit_crime_event.get('CrimeType')} against {commit_crime_event.get('Faction')}."
+                
+        if event_name == 'Interdiction':
+            return f"{self.commander_name} has initiated an interdiction attempt."
+            
         if event_name == 'Interdicted':
             interdicted_event = cast(InterdictedEvent, content)
             if interdicted_event.get('IsPlayer'):
-                return f"{self.commander_name} has been interdicted by {interdicted_event.get('Interdictor_Localised', interdicted_event.get('Interdictor'))}. Submission: {interdicted_event.get('Submitted')}"
+                submit_status = "submitted to" if interdicted_event.get('Submitted') else "is fighting"
+                return f"{self.commander_name} has been interdicted by CMDR {interdicted_event.get('Interdictor')} and {submit_status} the interdiction."
             else:
-                return f"{self.commander_name} has been interdicted by an NPC {interdicted_event.get('Interdictor_Localised', interdicted_event.get('Interdictor'))}. Submission: {interdicted_event.get('Submitted')}"
+                submit_status = "submitted to" if interdicted_event.get('Submitted') else "is fighting"
+                faction = f" ({interdicted_event.get('Faction')})" if interdicted_event.get('Faction') else ""
+                return f"{self.commander_name} has been interdicted by {interdicted_event.get('Interdictor')}{faction} and {submit_status} the interdiction."
+                
+        if event_name == 'EscapeInterdiction':
+            return f"{self.commander_name} has successfully escaped an interdiction attempt!"
+            
         if event_name == 'Bounty':
             bounty_event = cast(BountyEvent, content)
-            return f"{self.commander_name} has earned a bounty of {bounty_event.get('TotalReward')} credits for destroying {bounty_event.get('Target_Localised', bounty_event.get('Target'))}."
+            if bounty_event.get('Target'):
+                faction = f" from {bounty_event.get('VictimFaction')}" if bounty_event.get('VictimFaction') else ""
+                shared = " (shared)" if bounty_event.get('SharedWithOthers') else ""
+                return f"{self.commander_name} has earned a bounty of {bounty_event.get('TotalReward'):,} credits{shared} for eliminating {bounty_event.get('Target_Localised', bounty_event.get('Target'))}{faction}."
+            else:
+                return f"{self.commander_name} has earned a bounty of {bounty_event.get('TotalReward'):,} credits."
+                
+        if event_name == 'CapShipBond':
+            return f"{self.commander_name} has earned a capital ship combat bond worth {content.get('Reward'):,} credits from {content.get('AwardingFaction')}."
+            
         if event_name == 'FactionKillBond':
             faction_kill_bond_event = cast(FactionKillBondEvent, content)
-            return f"{self.commander_name} has earned a combat bond of {faction_kill_bond_event.get('Reward')} credits from {faction_kill_bond_event.get('AwardingFaction_Localised', faction_kill_bond_event.get('AwardingFaction'))}."
+            return f"{self.commander_name} has earned a combat bond of {faction_kill_bond_event.get('Reward'):,} credits from {faction_kill_bond_event.get('AwardingFaction_Localised', faction_kill_bond_event.get('AwardingFaction'))} for eliminating a {faction_kill_bond_event.get('VictimFaction_Localised', faction_kill_bond_event.get('VictimFaction'))} target."
+            
+        if event_name == 'FighterDestroyed':
+            fighter_destroyed_event = cast(FighterDestroyedEvent, content)
+            if fighter_destroyed_event.get('ID'):
+                return f"{self.commander_name}'s fighter {fighter_destroyed_event.get('ID')} has been destroyed in combat."
+            else:
+                return f"{self.commander_name}'s fighter has been destroyed in combat."
+                
         if event_name == 'PVPKill':
-            return f"{self.commander_name} has defeated another CMDR in combat."
+            return f"{self.commander_name} has defeated CMDR {content.get('Victim')} in combat."
+            
         if event_name == 'CrimeVictim':
-            return f"{self.commander_name} has been the victim of a crime."
+            return f"{self.commander_name} has been the victim of a {content.get('CrimeType')} committed by {content.get('Offender')}."
+            
         if event_name == 'SelfDestruct':
-            return f"{self.commander_name} has initiated self-destruct sequence."
+            return f"{self.commander_name} has initiated self-destruct sequence. Ship lost."
+            
         if event_name == 'InDanger':
             return f"WARNING: {self.commander_name} is in danger!"
+            
         if event_name == 'OutofDanger':
             return f"{self.commander_name} is no longer in danger."
+            
         if event_name == 'LegalStateChanged':
-            return f"{self.commander_name}'s legal status has changed."
+            return f"{self.commander_name}'s legal status has changed to {content.get('LegalState')}."
         
         # Mining events
         if event_name == 'ProspectedAsteroid':
@@ -576,7 +644,7 @@ class PromptGenerator:
         if event_name == 'SRVDestroyed':
             srv_destroyed_event = cast(SRVDestroyedEvent, content)
             return f"{self.commander_name}'s {srv_destroyed_event.get('SRVType_Localised', srv_destroyed_event.get('SRVType'))} has been destroyed."
-        
+            
         # Fighter events
         if event_name == 'LaunchFighter':
             launch_fighter_event = cast(LaunchFighterEvent, content)
@@ -584,9 +652,6 @@ class PromptGenerator:
         if event_name == 'DockFighter':
             dock_fighter_event = cast(DockFighterEvent, content)
             return f"{self.commander_name} has recalled their fighter."
-        if event_name == 'FighterDestroyed':
-            fighter_destroyed_event = cast(FighterDestroyedEvent, content)
-            return f"{self.commander_name}'s fighter has been destroyed."
         if event_name == 'FighterRebuilt':
             fighter_rebuilt_event = cast(FighterRebuiltEvent, content)
             return f"{self.commander_name}'s fighter has been rebuilt with loadout {fighter_rebuilt_event.get('Loadout')}."
@@ -709,7 +774,7 @@ class PromptGenerator:
         if event_name == 'MissionCompleted':
             mission_completed_event = cast(MissionCompletedEvent, content)
             if mission_completed_event.get('Reward'):
-                return f"{self.commander_name} has completed mission: {mission_completed_event.get('LocalisedName')} for {mission_completed_event.get('Faction')}. Reward: {mission_completed_event.get('Reward')} credits."
+                return f"{self.commander_name} has completed mission: {mission_completed_event.get('LocalisedName')} for {mission_completed_event.get('Faction')}. Reward: {mission_completed_event.get('Reward'):,} credits."
             else:
                 return f"{self.commander_name} has completed mission: {mission_completed_event.get('LocalisedName')} for {mission_completed_event.get('Faction')}."
         if event_name == 'MissionFailed':
@@ -725,10 +790,10 @@ class PromptGenerator:
         # Financial events
         if event_name == 'RedeemVoucher':
             redeem_voucher_event = cast(RedeemVoucherEvent, content)
-            return f"{self.commander_name} has redeemed a {redeem_voucher_event.get('Type')} voucher for {redeem_voucher_event.get('Amount')} credits."
+            return f"{self.commander_name} has redeemed a {redeem_voucher_event.get('Type')} voucher for {redeem_voucher_event.get('Amount'):,} credits."
         if event_name == 'PayFines':
             pay_fines_event = cast(PayFinesEvent, content)
-            return f"{self.commander_name} has paid {pay_fines_event.get('Amount')} credits in fines."
+            return f"{self.commander_name} has paid {pay_fines_event.get('Amount'):,} credits in fines."
         if event_name == 'PayLegacyFines':
             return f"{self.commander_name} has paid off legacy fines."
         if event_name == 'PayBounties':
