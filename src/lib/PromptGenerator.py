@@ -801,10 +801,26 @@ class PromptGenerator:
             powerplay_join_event = cast(PowerplayJoinEvent, content)
             return f"{self.commander_name} has pledged allegiance to {powerplay_join_event.get('Power')}."
         if event_name == 'PowerplayLeave':
-            return f"{self.commander_name} has withdrawn their allegiance from their Power."
+            return f"{self.commander_name} has withdrawn their allegiance from {content.get('Power')}."
         if event_name == 'PowerplayDefect':
-            return f"{self.commander_name} has defected to another Power."
-        
+            return f"{self.commander_name} has defected from {content.get('FromPower')} to {content.get('ToPower')}."
+        if event_name == 'PowerplayCollect':
+            return f"{self.commander_name} has collected {content.get('Count')} units of {content.get('Type')} for {content.get('Power')}'s powerplay efforts."
+        if event_name == 'PowerplayDeliver':
+            return f"{self.commander_name} has delivered {content.get('Count')} units of {content.get('Type')} for {content.get('Power')}'s powerplay objectives."
+        if event_name == 'PowerplayFastTrack':
+            return f"{self.commander_name} has paid {content.get('Cost'):,} credits to fast-track allocation of powerplay commodities for {content.get('Power')}."
+        if event_name == 'PowerplaySalary':
+            return f"{self.commander_name} has received a salary payment of {content.get('Amount'):,} credits from {content.get('Power')}."
+        if event_name == 'PowerplayVote':
+            return f"{self.commander_name} has cast {content.get('Votes')} votes for {content.get('Power')}'s expansion into the {content.get('System')} system."
+        if event_name == 'PowerplayVoucher':
+            if content.get('Systems'):
+                systems_list = ', '.join(content.get('Systems', []))
+                return f"{self.commander_name} has received payment from {content.get('Power')} for combat operations in {systems_list}."
+            else:
+                return f"{self.commander_name} has received payment from {content.get('Power')} for powerplay combat operations."
+
         # Carrier events
         if event_name == 'CarrierJump':
             return f"{self.commander_name}'s fleet carrier has completed a jump."
