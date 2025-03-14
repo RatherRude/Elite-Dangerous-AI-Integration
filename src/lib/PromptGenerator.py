@@ -1227,6 +1227,77 @@ class PromptGenerator:
                 return f"{self.commander_name} has renamed their {ship_type} to '{ship_name}'."
 
         # If we don't have a specific handler for this event
+        # Trade events
+        if event_name == 'AsteroidCracked':
+            asteroid_cracked_event = cast(Dict[str, Any], content)
+            body = asteroid_cracked_event.get('Body', 'an unknown body')
+            return f"{self.commander_name} has cracked a motherlode asteroid near {body} for mining."
+            
+        if event_name == 'BuyTradeData':
+            buy_trade_data_event = cast(Dict[str, Any], content)
+            system = buy_trade_data_event.get('System', 'Unknown system')
+            cost = buy_trade_data_event.get('Cost', 0)
+            return f"{self.commander_name} has purchased trade data for the {system} system for {cost:,} credits."
+            
+        if event_name == 'CollectCargo':
+            collect_cargo_event = cast(Dict[str, Any], content)
+            cargo_type = collect_cargo_event.get('Type_Localised', collect_cargo_event.get('Type', 'unknown cargo'))
+            stolen = " (stolen)" if collect_cargo_event.get('Stolen', False) else ""
+            mission_related = " for a mission" if collect_cargo_event.get('MissionID') else ""
+            return f"{self.commander_name} has collected {cargo_type}{stolen}{mission_related}."
+            
+        if event_name == 'EjectCargo':
+            eject_cargo_event = cast(Dict[str, Any], content)
+            cargo_type = eject_cargo_event.get('Type_Localised', eject_cargo_event.get('Type', 'unknown cargo'))
+            count = eject_cargo_event.get('Count', 1)
+            abandoned = "abandoned" if eject_cargo_event.get('Abandoned', False) else "ejected"
+            mission_related = " from a mission" if eject_cargo_event.get('MissionID') else ""
+            
+            powerplay_info = ""
+            if eject_cargo_event.get('PowerplayOrigin'):
+                powerplay_info = f" (from {eject_cargo_event.get('PowerplayOrigin')})"
+            
+            return f"{self.commander_name} has {abandoned} {count} units of {cargo_type}{mission_related}{powerplay_info}."
+            
+        if event_name == 'MarketBuy':
+            market_buy_event = cast(Dict[str, Any], content)
+            item_type = market_buy_event.get('Type_Localised', market_buy_event.get('Type', 'unknown goods'))
+            count = market_buy_event.get('Count', 0)
+            buy_price = market_buy_event.get('BuyPrice', 0)
+            total_cost = market_buy_event.get('TotalCost', 0)
+            
+            return f"{self.commander_name} has purchased {count} units of {item_type} for {buy_price:,} credits each (total: {total_cost:,} credits)."
+            
+        if event_name == 'MarketSell':
+            market_sell_event = cast(Dict[str, Any], content)
+            item_type = market_sell_event.get('Type_Localised', market_sell_event.get('Type', 'unknown goods'))
+            count = market_sell_event.get('Count', 0)
+            sell_price = market_sell_event.get('SellPrice', 0)
+            total_sale = market_sell_event.get('TotalSale', 0)
+            avg_price_paid = market_sell_event.get('AvgPricePaid', 0)
+            
+            special_flags = []
+            if market_sell_event.get('IllegalGoods'):
+                special_flags.append("illegal goods")
+            if market_sell_event.get('StolenGoods'):
+                special_flags.append("stolen goods")
+            if market_sell_event.get('BlackMarket'):
+                special_flags.append("using black market")
+                
+            special_info = f" ({', '.join(special_flags)})" if special_flags else ""
+            profit_info = ""
+            if avg_price_paid > 0:
+                profit = total_sale - (avg_price_paid * count)
+                profit_info = f", profit: {profit:,} credits"
+            
+            return f"{self.commander_name} has sold {count} units of {item_type} for {sell_price:,} credits each (total: {total_sale:,} credits{profit_info}){special_info}."
+            
+        if event_name == 'MiningRefined':
+            mining_refined_event = cast(Dict[str, Any], content)
+            material_type = mining_refined_event.get('Type_Localised', mining_refined_event.get('Type', 'unknown material'))
+            
+            return f"{self.commander_name} has refined mining fragments into 1 ton of {material_type}."
+
         return f"Event: {event_name} occurred."
 
     def full_event_message(self, event: GameEvent, timeoffset: str, is_important: bool):
