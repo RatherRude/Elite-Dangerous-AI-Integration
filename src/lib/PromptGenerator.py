@@ -1812,6 +1812,157 @@ class PromptGenerator:
                 return f"{self.commander_name} has performed an emergency reboot/repair. Repaired modules: {repaired}."
             else:
                 return f"{self.commander_name} has performed an emergency reboot/repair."
+                
+        if event_name == 'RepairDrone':
+            repair_drone_event = cast(Dict[str, Any], content)
+            repairs = []
+            if repair_drone_event.get('HullRepaired'):
+                repairs.append(f"hull: {repair_drone_event.get('HullRepaired')}")
+            if repair_drone_event.get('CockpitRepaired'):
+                repairs.append(f"cockpit: {repair_drone_event.get('CockpitRepaired')}")
+            if repair_drone_event.get('CorrosionRepaired'):
+                repairs.append(f"corrosion: {repair_drone_event.get('CorrosionRepaired')}")
+                
+            if repairs:
+                repair_details = ", ".join(repairs)
+                return f"{self.commander_name}'s ship has been repaired by a repair drone. Repairs: {repair_details}."
+            else:
+                return f"{self.commander_name}'s ship has been repaired by a repair drone."
+                
+        if event_name == 'ReservoirReplenished':
+            reservoir_event = cast(Dict[str, Any], content)
+            main = reservoir_event.get('FuelMain', 0)
+            reservoir = reservoir_event.get('FuelReservoir', 0)
+            return f"{self.commander_name} has replenished their fuel reservoir. Main tank: {main:.2f} tons, Reservoir: {reservoir:.2f} tons."
+            
+        if event_name == 'Resurrect':
+            resurrect_event = cast(Dict[str, Any], content)
+            option = resurrect_event.get('Option', 'unknown')
+            cost = resurrect_event.get('Cost', 0)
+            bankrupt = " and declared bankruptcy" if resurrect_event.get('Bankrupt') else ""
+            return f"{self.commander_name} has been resurrected (option: {option}) for {cost:,} credits{bankrupt}."
+            
+        if event_name == 'Scanned':
+            scan_event = cast(Dict[str, Any], content)
+            scan_type = scan_event.get('ScanType', 'Unknown')
+            return f"{self.commander_name}'s ship has been scanned for {scan_type}."
+            
+        if event_name == 'SelfDestruct':
+            return f"{self.commander_name} has initiated self-destruct sequence."
+            
+        if event_name == 'SendText':
+            send_text_event = cast(SendTextEvent, content)
+            return f'{self.commander_name} sent a message to {send_text_event.get("To")}: "{send_text_event.get("Message")}"'
+            
+        if event_name == 'Shutdown':
+            return f"{self.commander_name} is shutting down the game."
+            
+        if event_name == 'Synthesis':
+            synthesis_event = cast(Dict[str, Any], content)
+            blueprint = synthesis_event.get('Name', 'unknown synthesis')
+            
+            materials_info = ""
+            if synthesis_event.get('Materials'):
+                materials = []
+                for material in synthesis_event.get('Materials', []):
+                    name = material.get('Name_Localised', material.get('Name', 'unknown material'))
+                    count = material.get('Count', 0)
+                    materials.append(f"{name} ({count})")
+                materials_info = f" using {', '.join(materials)}"
+            
+            return f"{self.commander_name} has synthesized {blueprint}{materials_info}."
+            
+        if event_name == 'SystemsShutdown':
+            return f"{self.commander_name}'s ship systems have shut down unexpectedly."
+            
+        if event_name == 'USSDrop':
+            uss_event = cast(Dict[str, Any], content)
+            uss_type = uss_event.get('USSType', 'Unknown')
+            threat = uss_event.get('USSThreat', 0)
+            
+            threat_info = ""
+            if threat > 0:
+                threat_info = f" (Threat level: {threat})"
+                
+            return f"{self.commander_name} has dropped into an Unidentified Signal Source: {uss_type}{threat_info}."
+            
+        if event_name == 'VehicleSwitch':
+            vehicle_event = cast(Dict[str, Any], content)
+            to_vehicle = vehicle_event.get('To', 'Unknown')
+            
+            if to_vehicle == 'Mothership':
+                return f"{self.commander_name} has switched control back to their main ship."
+            elif to_vehicle == 'Fighter':
+                return f"{self.commander_name} has switched control to their fighter."
+            else:
+                return f"{self.commander_name} has switched control to: {to_vehicle}."
+                
+        if event_name == 'WingAdd':
+            wing_add_event = cast(WingAddEvent, content)
+            return f"{wing_add_event.get('Name')} has joined {self.commander_name}'s wing."
+            
+        if event_name == 'WingInvite':
+            wing_invite_event = cast(Dict[str, Any], content)
+            name = wing_invite_event.get('Name', 'Another commander')
+            return f"{self.commander_name} has been invited to join {name}'s wing."
+            
+        if event_name == 'WingJoin':
+            wing_join_event = cast(WingJoinEvent, content)
+            return f"{self.commander_name} has joined a wing."
+            
+        if event_name == 'WingLeave':
+            wing_leave_event = cast(WingLeaveEvent, content)
+            return f"{self.commander_name} has left their wing."
+            
+        if event_name == 'CargoTransfer':
+            cargo_transfer_event = cast(Dict[str, Any], content)
+            transfers = cargo_transfer_event.get('Transfers', [])
+            
+            if len(transfers) == 0:
+                return f"{self.commander_name} has transferred cargo."
+                
+            if len(transfers) == 1:
+                transfer = transfers[0]
+                item_type = transfer.get('Type_Localised', transfer.get('Type', 'unknown item'))
+                count = transfer.get('Count', 0)
+                direction = transfer.get('Direction', '')
+                
+                if direction == 'tocarrier':
+                    return f"{self.commander_name} has transferred {count} units of {item_type} to their fleet carrier."
+                elif direction == 'toship':
+                    return f"{self.commander_name} has transferred {count} units of {item_type} to their ship."
+                elif direction == 'tosrv':
+                    return f"{self.commander_name} has transferred {count} units of {item_type} to their SRV."
+                elif direction == 'fromcarrier':
+                    return f"{self.commander_name} has transferred {count} units of {item_type} from their fleet carrier."
+                else:
+                    return f"{self.commander_name} has transferred {count} units of {item_type}."
+            else:
+                to_carrier = any(t.get('Direction') == 'tocarrier' for t in transfers)
+                to_ship = any(t.get('Direction') == 'toship' for t in transfers)
+                to_srv = any(t.get('Direction') == 'tosrv' for t in transfers)
+                
+                if to_carrier:
+                    return f"{self.commander_name} has transferred multiple cargo items to their fleet carrier."
+                elif to_ship:
+                    return f"{self.commander_name} has transferred multiple cargo items to their ship."
+                elif to_srv:
+                    return f"{self.commander_name} has transferred multiple cargo items to their SRV."
+                else:
+                    return f"{self.commander_name} has transferred multiple cargo items."
+                    
+        if event_name == 'SupercruiseDestinationDrop':
+            supercruise_destination_drop_event = cast(SupercruiseDestinationDropEvent, content)
+            threat = ""
+            if supercruise_destination_drop_event.get('Threat') is not None:
+                threat_level = int(supercruise_destination_drop_event.get('Threat', 0))
+                if threat_level > 2:
+                    threat = f" WARNING: Threat level {threat_level}!"
+                elif threat_level > 0:
+                    threat = f" (Threat level: {threat_level})"
+            
+            destination = supercruise_destination_drop_event.get('Type_Localised', supercruise_destination_drop_event.get('Type'))
+            return f"{self.commander_name} is dropping from supercruise at {destination}{threat}"
 
         return f"Event: {event_name} occurred."
 
