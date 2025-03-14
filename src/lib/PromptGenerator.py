@@ -7,17 +7,17 @@ import requests
 import humanize
 
 from lib.EventModels import (
-    ApproachBodyEvent, ApproachSettlementEvent, BookTaxiEvent, BountyEvent, CommanderEvent, CommitCrimeEvent,
+    ApproachBodyEvent, ApproachSettlementEvent, BookTaxiEvent, BountyEvent, BuyExplorationDataEvent, CodexEntryEvent, CommanderEvent, CommitCrimeEvent,
     CrewAssignEvent, CrewLaunchFighterEvent, CrewMemberJoinsEvent, CrewMemberQuitsEvent, CrewMemberRoleChangeEvent,
-    DataScannedEvent, DatalinkScanEvent, DiedEvent, DisembarkEvent, DockedEvent, DockFighterEvent,
-    DockingDeniedEvent, DockingGrantedEvent, DockingRequestedEvent, DockSRVEvent, EjectCargoEvent, EmbarkEvent,
+    DataScannedEvent, DatalinkScanEvent, DiedEvent, DisembarkEvent, DiscoveryScanEvent, DockedEvent, DockFighterEvent,
+    DockingCancelledEvent, DockingDeniedEvent, DockingGrantedEvent, DockingRequestedEvent, DockingTimeoutEvent, DockSRVEvent, EjectCargoEvent, EmbarkEvent,
     EndCrewSessionEvent, FactionKillBondEvent, FighterDestroyedEvent, FighterRebuiltEvent, FriendsEvent,
-    FSSAllBodiesFoundEvent, FSSDiscoveryScanEvent, FSDJumpEvent, FSDTargetEvent, HullDamageEvent, InterdictedEvent,
-    LaunchDroneEvent, LaunchFighterEvent, LaunchSRVEvent, LeaveBodyEvent, LiftoffEvent, LoadGameEvent,
-    MissionAbandonedEvent, MissionAcceptedEvent, MissionCompletedEvent, MissionFailedEvent, MissionRedirectedEvent,
-    MiningRefinedEvent, MissionsEvent, NavBeaconScanEvent, OutfittingEvent, PayFinesEvent, PowerplayJoinEvent,
+    FSSAllBodiesFoundEvent, FSSBodySignalsEvent, FSSDiscoveryScanEvent, FSSSignalDiscoveredEvent, FSDJumpEvent, FSDTargetEvent, HullDamageEvent, InterdictedEvent,
+    LaunchDroneEvent, LaunchFighterEvent, LaunchSRVEvent, LeaveBodyEvent, LiftoffEvent, LoadGameEvent, LocationEvent,
+    MaterialCollectedEvent, MaterialDiscardedEvent, MaterialDiscoveredEvent, MissionAbandonedEvent, MissionAcceptedEvent, MissionCompletedEvent, MissionFailedEvent, MissionRedirectedEvent,
+    MiningRefinedEvent, MissionsEvent, MultiSellExplorationDataEvent, NavBeaconScanEvent, OutfittingEvent, PayFinesEvent, PowerplayJoinEvent,
     PromotionEvent, ProspectedAsteroidEvent, ReceiveTextEvent, RebootRepairEvent, RedeemVoucherEvent, ResurrectEvent,
-    SAAScanCompleteEvent, ScreenshotEvent, SendTextEvent, ShieldStateEvent, ShipTargetedEvent, ShipyardBuyEvent,
+    SAASignalsFoundEvent, SAAScanCompleteEvent, ScanBaryCentreEvent, ScanEvent, ScreenshotEvent, SellExplorationDataEvent, SendTextEvent, ShieldStateEvent, ShipTargetedEvent, ShipyardBuyEvent,
     ShipyardSellEvent, ShipyardSwapEvent, ShipyardTransferEvent, SRVDestroyedEvent, StartJumpEvent,
     SupercruiseDestinationDropEvent, SupercruiseEntryEvent, SupercruiseExitEvent, SuitLoadoutEvent,
     SwitchSuitLoadoutEvent, TouchdownEvent, UnderAttackEvent, UndockedEvent, UseConsumableEvent, WingAddEvent,
@@ -820,6 +820,185 @@ class PromptGenerator:
             return f"{self.commander_name} has changed the name of their fleet carrier."
         if event_name == 'CarrierJumpCancelled':
             return f"{self.commander_name} has cancelled the pending jump of their fleet carrier."
+
+        # Exploration events
+        if event_name == 'CodexEntry':
+            codex_entry_event = cast(CodexEntryEvent, content)
+            codex_name = codex_entry_event.get('Name_Localised', codex_entry_event.get('Name', 'Unknown Discovery'))
+            category = codex_entry_event.get('Category_Localised', codex_entry_event.get('Category', ''))
+            system = codex_entry_event.get('System', '')
+            is_new = ' - New discovery!' if codex_entry_event.get('IsNewEntry') else ''
+            return f"{self.commander_name} has discovered a new codex entry: {codex_name} ({category}) in {system}{is_new}"
+            
+        if event_name == 'DiscoveryScan':
+            discovery_scan_event = cast(DiscoveryScanEvent, content)
+            bodies_count = discovery_scan_event.get('Bodies', 0)
+            return f"{self.commander_name} performed a discovery scan and found {bodies_count} new astronomical bodies."
+            
+        if event_name == 'Scan':
+            scan_event = cast(ScanEvent, content)
+            body_name = scan_event.get('BodyName', 'Unknown body')
+            body_type = None
+            
+            if scan_event.get('StarType'):
+                star_type = scan_event.get('StarType', '')
+                luminosity = scan_event.get('Luminosity', '')
+                stellar_mass = scan_event.get('StellarMass', 0)
+                body_type = f"star (Type: {star_type}, Mass: {stellar_mass} solar masses, Luminosity: {luminosity})"
+            elif scan_event.get('PlanetClass'):
+                planet_class = scan_event.get('PlanetClass', '')
+                atmosphere = scan_event.get('Atmosphere', 'None')
+                terraform_state = scan_event.get('TerraformState', 'Not terraformable')
+                is_landable = 'Landable' if scan_event.get('Landable') else 'Not landable'
+                body_type = f"{planet_class} ({terraform_state}, Atmosphere: {atmosphere}, {is_landable})"
+            
+            scan_type = scan_event.get('ScanType', 'Unknown scan')
+            
+            if body_type:
+                return f"{self.commander_name} performed a {scan_type} scan of {body_name}: {body_type}."
+            else:
+                return f"{self.commander_name} performed a {scan_type} scan of {body_name}."
+                
+        if event_name == 'FSSAllBodiesFound':
+            fss_all_bodies_event = cast(FSSAllBodiesFoundEvent, content)
+            system_name = fss_all_bodies_event.get('SystemName', 'current system')
+            body_count = fss_all_bodies_event.get('Count', 0)
+            return f"{self.commander_name} has discovered all {body_count} bodies in the {system_name} system."
+            
+        if event_name == 'FSSDiscoveryScan':
+            fss_discovery_scan_event = cast(FSSDiscoveryScanEvent, content)
+            progress = fss_discovery_scan_event.get('Progress', 0) * 100
+            body_count = fss_discovery_scan_event.get('BodyCount', 0)
+            non_body_count = fss_discovery_scan_event.get('NonBodyCount', 0)
+            return f"{self.commander_name} performed an FSS discovery scan. Progress: {progress:.1f}%, Bodies detected: {body_count}, Non-body signals: {non_body_count}."
+            
+        if event_name == 'FSSSignalDiscovered':
+            fss_signal_event = cast(FSSSignalDiscoveredEvent, content)
+            signal_type = fss_signal_event.get('SignalName_Localised', fss_signal_event.get('SignalName', 'Unknown signal'))
+            return f"{self.commander_name} discovered a signal: {signal_type}."
+            
+        if event_name == 'FSSBodySignals':
+            fss_body_signals_event = cast(FSSBodySignalsEvent, content)
+            body_name = fss_body_signals_event.get('BodyName', 'a body')
+            signal_count = sum(signal.get('Count', 0) for signal in fss_body_signals_event.get('Signals', []))
+            return f"{self.commander_name} detected {signal_count} signals on {body_name}."
+            
+        if event_name == 'SAASignalsFound':
+            saa_signals_event = cast(SAASignalsFoundEvent, content)
+            body_name = saa_signals_event.get('BodyName', 'the current body')
+            
+            signals_info = []
+            for signal in saa_signals_event.get('Signals', []):
+                sig_type = signal.get('Type_Localised', signal.get('Type', 'Unknown'))
+                count = signal.get('Count', 0)
+                signals_info.append(f"{count} {sig_type}")
+            
+            if 'Genuses' in saa_signals_event:
+                genus_info = []
+                for genus in saa_signals_event.get('Genuses', []):
+                    genus_name = genus.get('Genus_Localised', genus.get('Genus', 'Unknown species'))
+                    genus_info.append(genus_name)
+                
+                if genus_info:
+                    return f"{self.commander_name} scanned {body_name} and found: {', '.join(signals_info)}. Biological genuses detected: {', '.join(genus_info)}."
+            
+            if signals_info:
+                return f"{self.commander_name} scanned {body_name} and found: {', '.join(signals_info)}."
+            else:
+                return f"{self.commander_name} scanned {body_name} but found no significant signals."
+            
+        if event_name == 'SAAScanComplete':
+            saa_scan_complete_event = cast(SAAScanCompleteEvent, content)
+            body_name = saa_scan_complete_event.get('BodyName', 'the current body')
+            probes_used = saa_scan_complete_event.get('ProbesUsed', 0)
+            efficiency_target = saa_scan_complete_event.get('EfficiencyTarget', 0)
+            efficiency_text = f" (Efficiency target was {efficiency_target})" if efficiency_target else ""
+            
+            return f"{self.commander_name} has completed a full surface scan of {body_name} using {probes_used} probes{efficiency_text}."
+            
+        if event_name == 'ScanBaryCentre':
+            scan_bary_event = cast(ScanBaryCentreEvent, content)
+            system_name = scan_bary_event.get('StarSystem', 'current system')
+            return f"{self.commander_name} has scanned the barycenter in the {system_name} system."
+            
+        if event_name == 'MaterialCollected':
+            material_collected_event = cast(MaterialCollectedEvent, content)
+            material_name = material_collected_event.get('Name_Localised', material_collected_event.get('Name', 'unknown material'))
+            material_count = material_collected_event.get('Count', 1)
+            material_category = material_collected_event.get('Category', '')
+            
+            return f"{self.commander_name} has collected {material_count} units of {material_name} ({material_category})."
+            
+        if event_name == 'MaterialDiscarded':
+            material_discarded_event = cast(MaterialDiscardedEvent, content)
+            material_name = material_discarded_event.get('Name_Localised', material_discarded_event.get('Name', 'unknown material'))
+            material_count = material_discarded_event.get('Count', 1)
+            
+            return f"{self.commander_name} has discarded {material_count} units of {material_name}."
+            
+        if event_name == 'MaterialDiscovered':
+            material_discovered_event = cast(MaterialDiscoveredEvent, content)
+            material_name = material_discovered_event.get('Name_Localised', material_discovered_event.get('Name', 'unknown material'))
+            category = material_discovered_event.get('Category', '')
+            discovery_number = material_discovered_event.get('DiscoveryNumber', 0)
+            
+            return f"{self.commander_name} has discovered a new material: {material_name} ({category}). This is discovery #{discovery_number}."
+            
+        if event_name == 'BuyExplorationData':
+            buy_exploration_data_event = cast(BuyExplorationDataEvent, content)
+            system_name = buy_exploration_data_event.get('System', 'Unknown system')
+            cost = buy_exploration_data_event.get('Cost', 0)
+            
+            return f"{self.commander_name} has purchased exploration data for the {system_name} system for {cost:,} credits."
+            
+        if event_name == 'SellExplorationData':
+            sell_exploration_data_event = cast(SellExplorationDataEvent, content)
+            systems = sell_exploration_data_event.get('Systems', [])
+            systems_text = ', '.join(systems[:3])
+            if len(systems) > 3:
+                systems_text += f" and {len(systems) - 3} more"
+                
+            discovered_bodies = sell_exploration_data_event.get('Discovered', [])
+            discovered_count = len(discovered_bodies)
+            
+            base_value = sell_exploration_data_event.get('BaseValue', 0)
+            bonus = sell_exploration_data_event.get('Bonus', 0)
+            total = sell_exploration_data_event.get('TotalEarnings', 0)
+            
+            return f"{self.commander_name} has sold exploration data for {systems_text} ({discovered_count} bodies) for {total:,} credits (base: {base_value:,}, bonus: {bonus:,})."
+            
+        if event_name == 'MultiSellExplorationData':
+            multi_sell_event = cast(MultiSellExplorationDataEvent, content)
+            discovered_systems = multi_sell_event.get('Discovered', [])
+            system_count = len(discovered_systems)
+            body_count = sum(system.get('NumBodies', 0) for system in discovered_systems)
+            
+            base_value = multi_sell_event.get('BaseValue', 0)
+            bonus = multi_sell_event.get('Bonus', 0)
+            total = multi_sell_event.get('TotalEarnings', 0)
+            
+            return f"{self.commander_name} has sold exploration data for {system_count} systems ({body_count} bodies) for {total:,} credits (base: {base_value:,}, bonus: {bonus:,})."
+            
+        if event_name == 'NavBeaconScan':
+            nav_beacon_scan_event = cast(NavBeaconScanEvent, content)
+            body_count = nav_beacon_scan_event.get('NumBodies', 0)
+            
+            return f"{self.commander_name} has scanned a navigation beacon, revealing data for {body_count} bodies in the system."
+            
+        if event_name == 'Screenshot':
+            screenshot_event = cast(ScreenshotEvent, content)
+            system = screenshot_event.get('System', 'current system')
+            body = screenshot_event.get('Body', '')
+            body_text = f" near {body}" if body else ""
+            
+            location_text = ""
+            if screenshot_event.get('Latitude') is not None and screenshot_event.get('Longitude') is not None:
+                lat = screenshot_event.get('Latitude')
+                lon = screenshot_event.get('Longitude')
+                alt = screenshot_event.get('Altitude')
+                location_text = f" at coordinates {lat:.4f}, {lon:.4f}, altitude: {alt:.1f}m"
+            
+            return f"{self.commander_name} took a screenshot in {system}{body_text}{location_text}."
 
         # If we don't have a specific handler for this event
         return f"Event: {event_name} occurred."
