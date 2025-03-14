@@ -869,19 +869,250 @@ class PromptGenerator:
 
         # Carrier events
         if event_name == 'CarrierJump':
-            return f"{self.commander_name}'s fleet carrier has completed a jump."
-        if event_name == 'CarrierJumpRequest':
-            return f"{self.commander_name} has requested their fleet carrier to prepare for a jump."
+            carrier_jump_event = cast(Dict[str, Any], content)
+            star_system = carrier_jump_event.get('StarSystem', 'Unknown System')
+            station_name = carrier_jump_event.get('StationName', 'Unknown Station')
+            
+            system_details = []
+            if carrier_jump_event.get('SystemAllegiance'):
+                system_details.append(f"allegiance: {carrier_jump_event.get('SystemAllegiance')}")
+            if carrier_jump_event.get('SystemEconomy'):
+                economy = carrier_jump_event.get('SystemEconomy_Localised', carrier_jump_event.get('SystemEconomy'))
+                system_details.append(f"economy: {economy}")
+            if carrier_jump_event.get('SystemGovernment'):
+                government = carrier_jump_event.get('SystemGovernment_Localised', carrier_jump_event.get('SystemGovernment'))
+                system_details.append(f"government: {government}")
+            if carrier_jump_event.get('SystemSecurity'):
+                security = carrier_jump_event.get('SystemSecurity_Localised', carrier_jump_event.get('SystemSecurity'))
+                system_details.append(f"security: {security}")
+            
+            system_details_str = ", ".join(system_details)
+            system_details_str = f" ({system_details_str})" if system_details_str else ""
+            
+            population = f", population: {carrier_jump_event.get('Population'):,}" if carrier_jump_event.get('Population') else ""
+            
+            body_info = ""
+            if carrier_jump_event.get('Body'):
+                body_type = f" ({carrier_jump_event.get('BodyType')})" if carrier_jump_event.get('BodyType') else ""
+                body_info = f" near {carrier_jump_event.get('Body')}{body_type}"
+            
+            if 'Docked' in carrier_jump_event and carrier_jump_event.get('Docked'):
+                return f"{self.commander_name} is docked at Fleet Carrier {station_name} which has jumped to the {star_system} system{body_info}{system_details_str}{population}."
+            else:
+                return f"Fleet Carrier {station_name} has jumped to the {star_system} system{body_info}{system_details_str}{population}."
+            
         if event_name == 'CarrierBuy':
-            return f"{self.commander_name} has purchased a fleet carrier."
+            carrier_buy_event = cast(Dict[str, Any], content)
+            carrier_id = carrier_buy_event.get('CarrierID', 'Unknown ID')
+            price = carrier_buy_event.get('Price', 0)
+            location = carrier_buy_event.get('Location', 'an undisclosed location')
+            variant = carrier_buy_event.get('Variant', 'Unknown Type')
+            callsign = carrier_buy_event.get('Callsign', 'Unknown Callsign')
+            return f"{self.commander_name} has purchased a Fleet Carrier with callsign {callsign} ({variant}) for {price:,} credits at {location}."
+            
+        if event_name == 'CarrierStats':
+            carrier_stats_event = cast(Dict[str, Any], content)
+            callsign = carrier_stats_event.get('Callsign', 'Unknown Callsign')
+            carrier_name = carrier_stats_event.get('Name', callsign)
+            balance = carrier_stats_event.get('Balance', 0)
+            fuel = carrier_stats_event.get('Fuel', 0)
+            reserve_percent = carrier_stats_event.get('ReservePercent', 0)
+            services = carrier_stats_event.get('Services', [])
+            
+            service_str = ""
+            if services:
+                # Show just the first few services to avoid too long a message
+                service_list = [s.get('Name', '') for s in services if s.get('Status') == 'Activated']
+                if service_list:
+                    service_str = f" Active services: {', '.join(service_list[:3])}"
+                    if len(service_list) > 3:
+                        service_str += f" and {len(service_list) - 3} more"
+                
+            return f"{self.commander_name}'s Fleet Carrier '{carrier_name}' ({callsign}) status update: {balance:,} credits balance, {fuel} tons of tritium, {reserve_percent}% reserve.{service_str}"
+            
+        if event_name == 'CarrierJumpRequest':
+            carrier_jump_request_event = cast(Dict[str, Any], content)
+            system_name = carrier_jump_request_event.get('SystemName', 'an unknown destination')
+            
+            body_info = ""
+            if carrier_jump_request_event.get('Body'):
+                body_info = f" near {carrier_jump_request_event.get('Body')}"
+            
+            departure_time = ""
+            if carrier_jump_request_event.get('DepartureTime'):
+                departure_time_str = carrier_jump_request_event.get('DepartureTime')
+                try:
+                    # Try to convert the time string to a more readable format
+                    from datetime import datetime
+                    dt = datetime.fromisoformat(departure_time_str.replace('Z', '+00:00'))
+                    departure_time = f", departing at {dt.strftime('%H:%M:%S')}"
+                except:
+                    departure_time = f", departing at {departure_time_str}"
+            
+            return f"{self.commander_name} has requested their Fleet Carrier to jump to {system_name}{body_info}{departure_time}."
+            
         if event_name == 'CarrierDecommission':
-            return f"{self.commander_name} has initiated the decommissioning process for their fleet carrier."
+            carrier_decommission_event = cast(Dict[str, Any], content)
+            refund = carrier_decommission_event.get('ScrapRefund', 0)
+            
+            scrap_time_info = ""
+            if carrier_decommission_event.get('ScrapTime'):
+                scrap_time = carrier_decommission_event.get('ScrapTime')
+                if scrap_time is not None:
+                    try:
+                        # Try to convert the timestamp to a readable time
+                        from datetime import datetime
+                        dt = datetime.fromtimestamp(float(scrap_time))
+                        scrap_time_info = f" The carrier will be decommissioned on {dt.strftime('%Y-%m-%d at %H:%M:%S')}."
+                    except (ValueError, TypeError):
+                        pass
+                
+            return f"{self.commander_name} has initiated the decommissioning process for their Fleet Carrier. Expected refund: {refund:,} credits.{scrap_time_info}"
+            
         if event_name == 'CarrierCancelDecommission':
-            return f"{self.commander_name} has canceled the decommissioning process for their fleet carrier."
+            return f"{self.commander_name} has cancelled the decommissioning process for their Fleet Carrier."
+            
+        if event_name == 'CarrierBankTransfer':
+            carrier_bank_event = cast(Dict[str, Any], content)
+            deposit = carrier_bank_event.get('Deposit', 0)
+            withdraw = carrier_bank_event.get('Withdraw', 0)
+            player_balance = carrier_bank_event.get('PlayerBalance', 0)
+            carrier_balance = carrier_bank_event.get('CarrierBalance', 0)
+            
+            if deposit > 0:
+                return f"{self.commander_name} has deposited {deposit:,} credits to their Fleet Carrier account. Carrier balance: {carrier_balance:,} credits. Commander's balance: {player_balance:,} credits."
+            else:
+                return f"{self.commander_name} has withdrawn {withdraw:,} credits from their Fleet Carrier account. Carrier balance: {carrier_balance:,} credits. Commander's balance: {player_balance:,} credits."
+            
+        if event_name == 'CarrierDepositFuel':
+            carrier_fuel_event = cast(Dict[str, Any], content)
+            amount = carrier_fuel_event.get('Amount', 0)
+            total = carrier_fuel_event.get('Total', 0)
+            return f"{self.commander_name} has deposited {amount} tons of tritium fuel to their Fleet Carrier. Total fuel: {total} tons."
+            
+        if event_name == 'CarrierCrewServices':
+            carrier_crew_event = cast(Dict[str, Any], content)
+            operation = carrier_crew_event.get('Operation', 'Unknown')
+            crew_role = carrier_crew_event.get('CrewRole', 'Unknown')
+            crew_name = carrier_crew_event.get('CrewName', 'a crew member')
+            
+            operation_str = str(operation).lower()
+            if operation_str == 'activate':
+                return f"{self.commander_name} has activated the {crew_role} service on their Fleet Carrier, hiring {crew_name}."
+            elif operation_str == 'deactivate':
+                return f"{self.commander_name} has deactivated the {crew_role} service on their Fleet Carrier, dismissing {crew_name}."
+            elif operation_str == 'pause':
+                return f"{self.commander_name} has temporarily paused the {crew_role} service on their Fleet Carrier, operated by {crew_name}."
+            elif operation_str == 'resume':
+                return f"{self.commander_name} has resumed the {crew_role} service on their Fleet Carrier, operated by {crew_name}."
+            elif operation_str == 'replace':
+                return f"{self.commander_name} has replaced the crew member for the {crew_role} service on their Fleet Carrier, hiring {crew_name}."
+            else:
+                return f"{self.commander_name} has made changes to the {crew_role} service on their Fleet Carrier, affecting {crew_name}."
+            
+        if event_name == 'CarrierFinance':
+            carrier_finance_event = cast(Dict[str, Any], content)
+            tax_rate = carrier_finance_event.get('TaxRate', 0)
+            carrier_balance = carrier_finance_event.get('CarrierBalance', 0)
+            reserve_balance = carrier_finance_event.get('ReserveBalance', 0)
+            available_balance = carrier_finance_event.get('AvailableBalance', 0)
+            reserve_percent = carrier_finance_event.get('ReservePercent', 0)
+            
+            return f"{self.commander_name} has updated their Fleet Carrier finances. Tax rate: {tax_rate}%, Available balance: {available_balance:,} credits, Reserve: {reserve_balance:,} credits ({reserve_percent}%), Total balance: {carrier_balance:,} credits."
+            
+        if event_name == 'CarrierShipPack':
+            carrier_ship_pack_event = cast(Dict[str, Any], content)
+            operation = carrier_ship_pack_event.get('Operation', 'Unknown')
+            pack_theme = carrier_ship_pack_event.get('PackTheme', 'Unknown')
+            pack_tier = carrier_ship_pack_event.get('PackTier', '')
+            
+            tier_str = f" Tier {pack_tier}" if pack_tier else ""
+            
+            operation_str = str(operation).lower()
+            if operation_str == 'buypack':
+                cost = carrier_ship_pack_event.get('Cost', 0)
+                return f"{self.commander_name} has purchased the {pack_theme}{tier_str} ship pack for their Fleet Carrier for {cost:,} credits."
+            elif operation_str == 'sellpack':
+                refund = carrier_ship_pack_event.get('Refund', 0)
+                return f"{self.commander_name} has sold the {pack_theme}{tier_str} ship pack from their Fleet Carrier for {refund:,} credits."
+            elif operation_str == 'restockpack':
+                cost = carrier_ship_pack_event.get('Cost', 0)
+                return f"{self.commander_name} has restocked the {pack_theme}{tier_str} ship pack on their Fleet Carrier for {cost:,} credits."
+            else:
+                return f"{self.commander_name} has modified the {pack_theme}{tier_str} ship pack on their Fleet Carrier."
+                
+        if event_name == 'CarrierModulePack':
+            carrier_module_pack_event = cast(Dict[str, Any], content)
+            operation = carrier_module_pack_event.get('Operation', 'Unknown')
+            pack_theme = carrier_module_pack_event.get('PackTheme', 'Unknown')
+            pack_tier = carrier_module_pack_event.get('PackTier', '')
+            
+            tier_str = f" Tier {pack_tier}" if pack_tier else ""
+            
+            operation_str = str(operation).lower()
+            if operation_str == 'buypack':
+                cost = carrier_module_pack_event.get('Cost', 0)
+                return f"{self.commander_name} has purchased the {pack_theme}{tier_str} module pack for their Fleet Carrier for {cost:,} credits."
+            elif operation_str == 'sellpack':
+                refund = carrier_module_pack_event.get('Refund', 0)
+                return f"{self.commander_name} has sold the {pack_theme}{tier_str} module pack from their Fleet Carrier for {refund:,} credits."
+            elif operation_str == 'restockpack':
+                cost = carrier_module_pack_event.get('Cost', 0)
+                return f"{self.commander_name} has restocked the {pack_theme}{tier_str} module pack on their Fleet Carrier for {cost:,} credits."
+            else:
+                return f"{self.commander_name} has modified the {pack_theme}{tier_str} module pack on their Fleet Carrier."
+            
+        if event_name == 'CarrierTradeOrder':
+            carrier_trade_event = cast(Dict[str, Any], content)
+            black_market = " on the black market" if carrier_trade_event.get('BlackMarket') else ""
+            
+            if 'CancelTrade' in carrier_trade_event and carrier_trade_event.get('CancelTrade'):
+                commodity = carrier_trade_event.get('Commodity_Localised', carrier_trade_event.get('Commodity', 'commodities'))
+                return f"{self.commander_name} has cancelled trade orders for {commodity}{black_market} on their Fleet Carrier."
+            elif 'PurchaseOrder' in carrier_trade_event:
+                commodity = carrier_trade_event.get('Commodity_Localised', carrier_trade_event.get('Commodity', 'commodities'))
+                quantity = carrier_trade_event.get('PurchaseOrder', 0)
+                price = carrier_trade_event.get('Price', 0)
+                return f"{self.commander_name} has set up a buy order for {quantity} units of {commodity}{black_market} at {price:,} credits per unit on their Fleet Carrier."
+            elif 'SaleOrder' in carrier_trade_event:
+                commodity = carrier_trade_event.get('Commodity_Localised', carrier_trade_event.get('Commodity', 'commodities'))
+                quantity = carrier_trade_event.get('SaleOrder', 0)
+                price = carrier_trade_event.get('Price', 0)
+                return f"{self.commander_name} has set up a sell order for {quantity} units of {commodity}{black_market} at {price:,} credits per unit on their Fleet Carrier."
+            else:
+                return f"{self.commander_name} has modified trade orders on their Fleet Carrier."
+            
+        if event_name == 'CarrierDockingPermission':
+            carrier_docking_event = cast(Dict[str, Any], content)
+            access = carrier_docking_event.get('DockingAccess', 'Unknown')
+            allow_notorious = carrier_docking_event.get('AllowNotorious', False)
+            
+            access_map = {
+                'all': 'all pilots',
+                'none': 'no pilots',
+                'friends': 'friends only',
+                'squadron': 'squadron members only',
+                'squadronfriends': 'squadron members and friends'
+            }
+            
+            access_str = access_map.get(str(access).lower(), access)
+            notorious_str = " including those with notorious status" if allow_notorious else ""
+            
+            return f"{self.commander_name} has updated their Fleet Carrier docking permissions to allow {access_str}{notorious_str}."
+            
         if event_name == 'CarrierNameChanged':
-            return f"{self.commander_name} has changed the name of their fleet carrier."
+            carrier_name_event = cast(Dict[str, Any], content)
+            callsign = carrier_name_event.get('Callsign', 'Unknown Callsign')
+            name = carrier_name_event.get('Name', 'Unknown Name')
+            return f"{self.commander_name} has changed their Fleet Carrier's name to '{name}' (callsign: {callsign})."
+            
         if event_name == 'CarrierJumpCancelled':
-            return f"{self.commander_name} has cancelled the pending jump of their fleet carrier."
+            return f"{self.commander_name} has cancelled the pending jump of their Fleet Carrier."
+            
+        if event_name == 'FCMaterials':
+            fc_materials_event = cast(Dict[str, Any], content)
+            carrier_name = fc_materials_event.get('CarrierName', 'their Fleet Carrier')
+            return f"{self.commander_name} has accessed the materials bartender on {carrier_name}."
 
         # Exploration events
         if event_name == 'CodexEntry':
