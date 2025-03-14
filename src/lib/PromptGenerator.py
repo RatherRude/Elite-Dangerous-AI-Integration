@@ -1298,6 +1298,337 @@ class PromptGenerator:
             
             return f"{self.commander_name} has refined mining fragments into 1 ton of {material_type}."
 
+        # Odyssey events
+        if event_name == 'Backpack':
+            # This is primarily for the backpack.json file, but we'll report it in the journal too
+            return f"{self.commander_name}'s backpack contents have been updated."
+            
+        if event_name == 'BackpackChange':
+            backpack_event = cast(Dict[str, Any], content)
+            if backpack_event.get('Added'):
+                item_list = backpack_event.get('Added', [])
+                item_names = [item.get('Name_Localised', item.get('Name', 'unknown item')) for item in item_list]
+                if len(item_names) == 1:
+                    return f"{self.commander_name} has added {item_names[0]} to their backpack."
+                else:
+                    return f"{self.commander_name} has added multiple items to their backpack: {', '.join(item_names)}."
+            elif backpack_event.get('Removed'):
+                item_list = backpack_event.get('Removed', [])
+                item_names = [item.get('Name_Localised', item.get('Name', 'unknown item')) for item in item_list]
+                if len(item_names) == 1:
+                    return f"{self.commander_name} has removed {item_names[0]} from their backpack."
+                else:
+                    return f"{self.commander_name} has removed multiple items from their backpack: {', '.join(item_names)}."
+            return f"{self.commander_name}'s backpack contents have changed."
+            
+        if event_name == 'BookDropship':
+            return f"{self.commander_name} has booked a combat dropship."
+            
+        if event_name == 'BookTaxi':
+            taxi_event = cast(Dict[str, Any], content)
+            cost = taxi_event.get('Cost', 0)
+            dest_sys = taxi_event.get('DestinationSystem', 'unknown system')
+            dest_loc = taxi_event.get('DestinationLocation', 'unknown location')
+            retreat = " to retreat from a combat zone" if taxi_event.get('Retreat') else ""
+            return f"{self.commander_name} has booked a taxi to {dest_loc} in {dest_sys} for {cost:,} credits{retreat}."
+            
+        if event_name == 'BuyMicroResources':
+            buy_event = cast(Dict[str, Any], content)
+            if buy_event.get('MicroResources'):
+                # New format with multiple items
+                total_cost = buy_event.get('Price', 0)
+                total_count = buy_event.get('TotalCount', 0)
+                resources = buy_event.get('MicroResources', [])
+                if len(resources) == 1:
+                    item = resources[0]
+                    item_name = item.get('Name_Localised', item.get('Name', 'unknown item'))
+                    count = item.get('Count', 0)
+                    return f"{self.commander_name} has purchased {count} units of {item_name} for {total_cost:,} credits."
+                else:
+                    return f"{self.commander_name} has purchased {total_count} units of various microresources for {total_cost:,} credits."
+            else:
+                # Old format with single item
+                name = buy_event.get('Name_Localised', buy_event.get('Name', 'unknown item'))
+                count = buy_event.get('Count', 0)
+                price = buy_event.get('Price', 0)
+                return f"{self.commander_name} has purchased {count} units of {name} for {price:,} credits."
+                
+        if event_name == 'BuySuit':
+            suit_event = cast(Dict[str, Any], content)
+            suit_name = suit_event.get('Name_Localised', suit_event.get('Name', 'unknown suit'))
+            price = suit_event.get('Price', 0)
+            return f"{self.commander_name} has purchased a {suit_name} for {price:,} credits."
+            
+        if event_name == 'BuyWeapon':
+            weapon_event = cast(Dict[str, Any], content)
+            weapon_name = weapon_event.get('Name_Localised', weapon_event.get('Name', 'unknown weapon'))
+            price = weapon_event.get('Price', 0)
+            return f"{self.commander_name} has purchased a {weapon_name} for {price:,} credits."
+            
+        if event_name == 'CancelDropship':
+            return f"{self.commander_name} has cancelled their combat dropship journey."
+            
+        if event_name == 'CancelTaxi':
+            taxi_event = cast(Dict[str, Any], content)
+            refund = taxi_event.get('Refund', 0)
+            return f"{self.commander_name} has cancelled their taxi journey and received a refund of {refund:,} credits."
+            
+        if event_name == 'CollectItems':
+            collect_event = cast(Dict[str, Any], content)
+            item_name = collect_event.get('Name_Localised', collect_event.get('Name', 'unknown item'))
+            count = collect_event.get('Count', 1)
+            stolen = " (stolen)" if collect_event.get('Stolen') else ""
+            if count == 1:
+                return f"{self.commander_name} has collected 1 {item_name}{stolen}."
+            else:
+                return f"{self.commander_name} has collected {count} {item_name}s{stolen}."
+            
+        if event_name == 'CreateSuitLoadout':
+            loadout_event = cast(Dict[str, Any], content)
+            loadout_name = loadout_event.get('LoadoutName', 'new loadout')
+            suit_name = loadout_event.get('SuitName_Localised', loadout_event.get('SuitName', 'unknown suit'))
+            return f"{self.commander_name} has created a new suit loadout named '{loadout_name}' for their {suit_name}."
+            
+        if event_name == 'DeleteSuitLoadout':
+            loadout_event = cast(Dict[str, Any], content)
+            loadout_name = loadout_event.get('LoadoutName', 'loadout')
+            suit_name = loadout_event.get('SuitName_Localised', loadout_event.get('SuitName', 'unknown suit'))
+            return f"{self.commander_name} has deleted the suit loadout named '{loadout_name}' for their {suit_name}."
+            
+        if event_name == 'Disembark':
+            disembark_event = cast(Dict[str, Any], content)
+            if disembark_event.get('SRV'):
+                vehicle = "SRV"
+            elif disembark_event.get('Taxi'):
+                vehicle = "taxi"
+            elif disembark_event.get('Multicrew'):
+                vehicle = "another commander's vessel"
+            else:
+                vehicle = "ship"
+            
+            if disembark_event.get('OnStation'):
+                location = f"at {disembark_event.get('StationName', 'a station')}"
+            elif disembark_event.get('OnPlanet'):
+                location = f"on {disembark_event.get('Body', 'a planet')}"
+            else:
+                location = ""
+                
+            return f"{self.commander_name} has disembarked from their {vehicle} {location}."
+            
+        if event_name == 'DropItems':
+            drop_event = cast(Dict[str, Any], content)
+            item_name = drop_event.get('Name_Localised', drop_event.get('Name', 'unknown item'))
+            count = drop_event.get('Count', 1)
+            if count == 1:
+                return f"{self.commander_name} has dropped 1 {item_name}."
+            else:
+                return f"{self.commander_name} has dropped {count} {item_name}s."
+            
+        if event_name == 'DropShipDeploy':
+            return f"{self.commander_name} has deployed from a dropship to a conflict zone."
+            
+        if event_name == 'Embark':
+            embark_event = cast(Dict[str, Any], content)
+            if embark_event.get('SRV'):
+                vehicle = "SRV"
+            elif embark_event.get('Taxi'):
+                vehicle = "taxi"
+            elif embark_event.get('Multicrew'):
+                vehicle = "another commander's vessel"
+            else:
+                vehicle = "ship"
+                
+            if embark_event.get('OnStation'):
+                location = f"at {embark_event.get('StationName', 'a station')}"
+            elif embark_event.get('OnPlanet'):
+                location = f"on {embark_event.get('Body', 'a planet')}"
+            else:
+                location = ""
+                
+            return f"{self.commander_name} has embarked into their {vehicle} {location}."
+            
+        if event_name == 'FCMaterials':
+            fc_event = cast(Dict[str, Any], content)
+            carrier_name = fc_event.get('CarrierName', 'a Fleet Carrier')
+            return f"{self.commander_name} has accessed the materials bartender on {carrier_name}."
+            
+        if event_name == 'LoadoutEquipModule':
+            equip_event = cast(Dict[str, Any], content)
+            slot = equip_event.get('SlotName', 'a slot')
+            module = equip_event.get('ModuleName_Localised', equip_event.get('ModuleName', 'an item'))
+            loadout = equip_event.get('LoadoutName', 'loadout')
+            suit = equip_event.get('SuitName_Localised', equip_event.get('SuitName', 'suit'))
+            return f"{self.commander_name} has equipped {module} to {slot} on their {suit} loadout '{loadout}'."
+            
+        if event_name == 'LoadoutRemoveModule':
+            remove_event = cast(Dict[str, Any], content)
+            slot = remove_event.get('SlotName', 'a slot')
+            module = remove_event.get('ModuleName_Localised', remove_event.get('ModuleName', 'an item'))
+            loadout = remove_event.get('LoadoutName', 'loadout')
+            suit = remove_event.get('SuitName_Localised', remove_event.get('SuitName', 'suit'))
+            return f"{self.commander_name} has removed {module} from {slot} on their {suit} loadout '{loadout}'."
+            
+        if event_name == 'RenameSuitLoadout':
+            rename_event = cast(Dict[str, Any], content)
+            loadout = rename_event.get('LoadoutName', 'loadout')
+            suit = rename_event.get('SuitName_Localised', rename_event.get('SuitName', 'suit'))
+            return f"{self.commander_name} has renamed a loadout to '{loadout}' for their {suit}."
+            
+        if event_name == 'ScanOrganic':
+            scan_event = cast(Dict[str, Any], content)
+            scan_type = scan_event.get('ScanType', 'unknown')
+            species = scan_event.get('Species_Localised', scan_event.get('Species', 'unknown species'))
+            variant = scan_event.get('Variant_Localised', scan_event.get('Variant', ''))
+            if variant and variant != species:
+                life_form = f"{variant} ({species})"
+            else:
+                life_form = species
+                
+            if scan_type == 'Log':
+                action = "logged"
+            elif scan_type == 'Sample':
+                action = "taken a sample from"
+            elif scan_type == 'Analyse':
+                action = "analyzed"
+            else:
+                action = "scanned"
+                
+            return f"{self.commander_name} has {action} a {life_form} on planet {scan_event.get('Body', 'unknown body')}."
+            
+        if event_name == 'SellMicroResources':
+            sell_event = cast(Dict[str, Any], content)
+            resources = sell_event.get('MicroResources', [])
+            price = sell_event.get('Price', 0)
+            
+            if len(resources) == 1:
+                item = resources[0]
+                item_name = item.get('Name_Localised', item.get('Name', 'unknown item'))
+                count = item.get('Count', 0)
+                return f"{self.commander_name} has sold {count} units of {item_name} for {price:,} credits."
+            else:
+                item_names = [r.get('Name_Localised', r.get('Name', 'unknown item')) for r in resources]
+                return f"{self.commander_name} has sold various microresources ({', '.join(item_names)}) for {price:,} credits."
+                
+        if event_name == 'SellOrganicData':
+            data_event = cast(Dict[str, Any], content)
+            biodata = data_event.get('BioData', [])
+            total_value = sum(data.get('Value', 0) for data in biodata)
+            total_bonus = sum(data.get('Bonus', 0) for data in biodata)
+            
+            if len(biodata) == 1:
+                species = biodata[0].get('Species_Localised', biodata[0].get('Species', 'unknown species'))
+                variant = biodata[0].get('Variant_Localised', biodata[0].get('Variant', ''))
+                if variant and variant != species:
+                    life_form = f"{variant} ({species})"
+                else:
+                    life_form = species
+                    
+                value = biodata[0].get('Value', 0)
+                bonus = biodata[0].get('Bonus', 0)
+                total = value + bonus
+                return f"{self.commander_name} has sold organic data for {life_form} for {total:,} credits (base: {value:,}, bonus: {bonus:,})."
+            else:
+                total = total_value + total_bonus
+                return f"{self.commander_name} has sold organic data for {len(biodata)} species for a total of {total:,} credits (base: {total_value:,}, bonus: {total_bonus:,})."
+                
+        if event_name == 'SellSuit':
+            suit_event = cast(Dict[str, Any], content)
+            suit_name = suit_event.get('Name_Localised', suit_event.get('Name', 'unknown suit'))
+            price = suit_event.get('Price', 0)
+            return f"{self.commander_name} has sold their {suit_name} for {price:,} credits."
+            
+        if event_name == 'SellWeapon':
+            weapon_event = cast(Dict[str, Any], content)
+            weapon_name = weapon_event.get('Name_Localised', weapon_event.get('Name', 'unknown weapon'))
+            price = weapon_event.get('Price', 0)
+            return f"{self.commander_name} has sold their {weapon_name} for {price:,} credits."
+            
+        if event_name == 'ShipLocker':
+            # This is primarily for the ShipLocker.json file, but we'll report it in the journal too
+            return f"{self.commander_name}'s ship locker inventory has been updated."
+            
+        if event_name == 'SuitLoadout':
+            loadout_event = cast(Dict[str, Any], content)
+            suit_name = loadout_event.get('SuitName_Localised', loadout_event.get('SuitName', 'unknown suit'))
+            loadout_name = loadout_event.get('LoadoutName', 'loadout')
+            return f"{self.commander_name} is using the '{loadout_name}' loadout for their {suit_name}."
+            
+        if event_name == 'SwitchSuitLoadout':
+            loadout_event = cast(Dict[str, Any], content)
+            suit_name = loadout_event.get('SuitName_Localised', loadout_event.get('SuitName', 'unknown suit'))
+            loadout_name = loadout_event.get('LoadoutName', 'loadout')
+            return f"{self.commander_name} has switched to the '{loadout_name}' loadout for their {suit_name}."
+            
+        if event_name == 'TransferMicroResources':
+            transfer_event = cast(Dict[str, Any], content)
+            transfers = transfer_event.get('Transfers', [])
+            
+            if len(transfers) == 1:
+                item = transfers[0]
+                item_name = item.get('Name_Localised', item.get('Name', 'unknown item'))
+                count = item.get('Count', 0)
+                direction = item.get('Direction', '')
+                
+                if direction == 'ToBackpack':
+                    return f"{self.commander_name} has transferred {count} units of {item_name} from their ship locker to their backpack."
+                else:
+                    return f"{self.commander_name} has transferred {count} units of {item_name} from their backpack to their ship locker."
+            else:
+                to_backpack = any(t.get('Direction') == 'ToBackpack' for t in transfers)
+                if to_backpack:
+                    return f"{self.commander_name} has transferred multiple items from their ship locker to their backpack."
+                else:
+                    return f"{self.commander_name} has transferred multiple items from their backpack to their ship locker."
+        
+        if event_name == 'TradeMicroResources':
+            trade_event = cast(Dict[str, Any], content)
+            offered = trade_event.get('Offered', [])
+            received = trade_event.get('Received_Localised', trade_event.get('Received', 'unknown resource'))
+            count_received = trade_event.get('Count', 0)
+            
+            if len(offered) == 1:
+                offered_name = offered[0].get('Name_Localised', offered[0].get('Name', 'unknown item'))
+                offered_count = offered[0].get('Count', 0)
+                return f"{self.commander_name} has traded {offered_count} units of {offered_name} for {count_received} units of {received}."
+            else:
+                offered_names = [o.get('Name_Localised', o.get('Name', 'unknown item')) for o in offered]
+                return f"{self.commander_name} has traded multiple resources ({', '.join(offered_names)}) for {count_received} units of {received}."
+        
+        if event_name == 'UpgradeSuit':
+            upgrade_event = cast(Dict[str, Any], content)
+            suit_name = upgrade_event.get('Name_Localised', upgrade_event.get('Name', 'unknown suit'))
+            class_level = upgrade_event.get('Class', 0)
+            cost = upgrade_event.get('Cost', 0)
+            resources = upgrade_event.get('Resources', [])
+            resource_names = [r.get('Name_Localised', r.get('Name', 'unknown material')) for r in resources]
+            
+            if resource_names:
+                material_info = f" using {', '.join(resource_names)}"
+            else:
+                material_info = ""
+                
+            return f"{self.commander_name} has upgraded their {suit_name} to class {class_level} for {cost:,} credits{material_info}."
+        
+        if event_name == 'UpgradeWeapon':
+            upgrade_event = cast(Dict[str, Any], content)
+            weapon_name = upgrade_event.get('Name_Localised', upgrade_event.get('Name', 'unknown weapon'))
+            class_level = upgrade_event.get('Class', 0)
+            cost = upgrade_event.get('Cost', 0)
+            resources = upgrade_event.get('Resources', [])
+            resource_names = [r.get('Name_Localised', r.get('Name', 'unknown material')) for r in resources]
+            
+            if resource_names:
+                material_info = f" using {', '.join(resource_names)}"
+            else:
+                material_info = ""
+                
+            return f"{self.commander_name} has upgraded their {weapon_name} to class {class_level} for {cost:,} credits{material_info}."
+        
+        if event_name == 'UseConsumable':
+            use_event = cast(Dict[str, Any], content)
+            item_name = use_event.get('Name_Localised', use_event.get('Name', 'unknown consumable'))
+            return f"{self.commander_name} has used a {item_name}."
+
         return f"Event: {event_name} occurred."
 
     def full_event_message(self, event: GameEvent, timeoffset: str, is_important: bool):
