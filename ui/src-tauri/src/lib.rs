@@ -1,3 +1,4 @@
+use log::{debug, error, info};
 use std::env;
 use std::sync::Arc;
 use tauri::path::BaseDirectory;
@@ -104,17 +105,17 @@ async fn start_process(window: tauri::Window, state: State<'_, AppState>) -> Res
                     Ok(0) => break, // EOF reached
                     Ok(_n) => {
                         if let Ok(text) = String::from_utf8(buffer.clone()) {
-                            println!("Process stdout: {}", text);
+                            debug!("Process stdout: {}", text);
                             if let Err(e) = window.emit("process-stdout", text) {
-                                eprintln!("Failed to emit process-stdout event: {}", e);
+                                error!("Failed to emit process-stdout event: {}", e);
                             }
                         } else {
-                            eprintln!("Received invalid UTF-8 data");
+                            error!("Received invalid UTF-8 data");
                         }
                         buffer.clear();
                     }
                     Err(e) => {
-                        eprintln!("Error reading stdout: {}", e);
+                        error!("Error reading stdout: {}", e);
                         break;
                     }
                 }
@@ -142,7 +143,7 @@ async fn send_json_line(state: State<'_, AppState>, json_line: String) -> Result
         .flush()
         .await
         .map_err(|e| format!("Failed to flush stdin: {}", e))?;
-    println!("Wrote to stdin: {}", json_line);
+    debug!("Wrote to stdin: {}", json_line);
     Ok(())
 }
 
@@ -197,7 +198,7 @@ async fn create_floating_overlay(app_handle: tauri::AppHandle) -> Result<(), Str
         .set_ignore_cursor_events(true)
         .map_err(|e| format!("Failed to set window to ignore cursor events: {}", e))?;
 
-    println!("Created floating overlay window");
+    info!("Created floating overlay window");
 
     Ok(())
 }
@@ -205,14 +206,15 @@ async fn create_floating_overlay(app_handle: tauri::AppHandle) -> Result<(), Str
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 #[tokio::main]
 pub async fn run() {
-    // Print the commit hash at startup for debugging
-    println!(
-        "Starting application with commit hash: {}",
-        get_commit_hash_value()
-    );
+    // Logging will be initialized by the plugin
 
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(
+            tauri_plugin_log::Builder::default()
+                .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepAll)
+                .build(),
+        )
         .manage(AppState {
             process_handle: Arc::new(Mutex::new(None)),
         })
@@ -232,6 +234,16 @@ pub async fn run() {
                 });
             }
         })
-        .run(tauri::generate_context!())
+        .setup(|_app| {
+            // Log startup information after the plugin is initialized
+            info!(
+                "Starting application with commit hash: {}",
+                get_commit_hash_value()
+            );
+            Ok(())
+        })
+        .build(tauri::generate_context!())
         .expect("error while running tauri application");
+
+    app.run(|_app_handle, _event| {});
 }
