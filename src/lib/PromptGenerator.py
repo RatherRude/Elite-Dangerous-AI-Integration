@@ -760,22 +760,68 @@ class PromptGenerator:
         if event_name == 'AppliedToSquadron':
             return f"{self.commander_name} has applied to join a squadron."
         if event_name == 'DisbandedSquadron':
-            return f"{self.commander_name} has disbanded their squadron."
+            if content.get('SquadronName'):
+                return f"{self.commander_name} has disbanded the squadron '{content.get('SquadronName')}'."
+            else:
+                return f"{self.commander_name} has disbanded their squadron."
         if event_name == 'InvitedToSquadron':
-            return f"{self.commander_name} has been invited to join a squadron."
+            if content.get('SquadronName'):
+                return f"{self.commander_name} has been invited to join the squadron '{content.get('SquadronName')}'."
+            else:
+                return f"{self.commander_name} has been invited to join a squadron."
         if event_name == 'JoinedSquadron':
-            return f"{self.commander_name} has joined a squadron."
+            if content.get('SquadronName'):
+                return f"{self.commander_name} has joined the squadron '{content.get('SquadronName')}' with callsign {content.get('SquadronID', 'Unknown')}."
+            else:
+                return f"{self.commander_name} has joined a squadron."
         if event_name == 'KickedFromSquadron':
-            return f"{self.commander_name} has been kicked from their squadron."
+            if content.get('SquadronName'):
+                return f"{self.commander_name} has been kicked from the squadron '{content.get('SquadronName')}'."
+            else:
+                return f"{self.commander_name} has been kicked from their squadron."
         if event_name == 'LeftSquadron':
-            return f"{self.commander_name} has left their squadron."
+            if content.get('SquadronName'):
+                return f"{self.commander_name} has left the squadron '{content.get('SquadronName')}'."
+            else:
+                return f"{self.commander_name} has left their squadron."
+        if event_name == 'SharedBookmarkToSquadron':
+            bookmark_type = content.get('BookmarkType', 'Unknown')
+            system_name = content.get('SystemName', 'Unknown system')
+            if bookmark_type and system_name:
+                return f"{self.commander_name} has shared a {bookmark_type} bookmark in {system_name} with their squadron."
+            else:
+                return f"{self.commander_name} has shared a bookmark with their squadron."
         if event_name == 'SquadronCreated':
-            return f"{self.commander_name} has created a new squadron."
+            if content.get('SquadronName'):
+                return f"{self.commander_name} has created a new squadron called '{content.get('SquadronName')}' with callsign {content.get('SquadronID', 'Unknown')}."
+            else:
+                return f"{self.commander_name} has created a new squadron."
         if event_name == 'SquadronDemotion':
-            return f"{self.commander_name} has been demoted in their squadron."
+            old_rank = content.get('OldRank', 'Unknown')
+            new_rank = content.get('NewRank', 'Unknown')
+            if content.get('SquadronName') and old_rank and new_rank:
+                return f"{self.commander_name} has been demoted from {old_rank} to {new_rank} in the squadron '{content.get('SquadronName')}'."
+            elif old_rank and new_rank:
+                return f"{self.commander_name} has been demoted from {old_rank} to {new_rank} in their squadron."
+            else:
+                return f"{self.commander_name} has been demoted in their squadron."
         if event_name == 'SquadronPromotion':
-            return f"{self.commander_name} has been promoted in their squadron."
-        
+            old_rank = content.get('OldRank', 'Unknown')
+            new_rank = content.get('NewRank', 'Unknown')
+            if content.get('SquadronName') and old_rank and new_rank:
+                return f"{self.commander_name} has been promoted from {old_rank} to {new_rank} in the squadron '{content.get('SquadronName')}'."
+            elif old_rank and new_rank:
+                return f"{self.commander_name} has been promoted from {old_rank} to {new_rank} in their squadron."
+            else:
+                return f"{self.commander_name} has been promoted in their squadron."
+        if event_name == 'WonATrophyForSquadron':
+            if content.get('SquadronName') and content.get('TrophyName'):
+                return f"{self.commander_name} has won a '{content.get('TrophyName')}' trophy for their squadron '{content.get('SquadronName')}'."
+            elif content.get('TrophyName'):
+                return f"{self.commander_name} has won a '{content.get('TrophyName')}' trophy for their squadron."
+            else:
+                return f"{self.commander_name} has won a trophy for their squadron."
+
         # Promotion events
         if event_name == 'Promotion':
             promotion_event = cast(PromotionEvent, content)
@@ -1979,6 +2025,12 @@ class PromptGenerator:
             
             destination = supercruise_destination_drop_event.get('Type_Localised', supercruise_destination_drop_event.get('Type'))
             return f"{self.commander_name} is dropping from supercruise at {destination}{threat}"
+
+        if event_name == 'SquadronStartup':
+            if content.get('SquadronName'):
+                return f"{self.commander_name} is a member of the squadron '{content.get('SquadronName')}' with callsign {content.get('SquadronID', 'Unknown')}."
+            else:
+                return f"{self.commander_name} is a member of a squadron."
 
         return f"Event: {event_name} occurred."
 
