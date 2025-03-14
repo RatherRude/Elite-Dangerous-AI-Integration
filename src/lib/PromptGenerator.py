@@ -1,6 +1,6 @@
 from datetime import timedelta, datetime
 from functools import lru_cache
-from typing import Any, cast
+from typing import Any, cast, Dict
 
 import yaml
 import requests
@@ -999,6 +999,232 @@ class PromptGenerator:
                 location_text = f" at coordinates {lat:.4f}, {lon:.4f}, altitude: {alt:.1f}m"
             
             return f"{self.commander_name} took a screenshot in {system}{body_text}{location_text}."
+
+        # Station Services events
+        if event_name == 'BuyAmmo':
+            buy_ammo_event = cast(Dict[str, Any], content)
+            return f"{self.commander_name} has purchased ammunition for {buy_ammo_event.get('Cost', 0):,} credits."
+            
+        if event_name == 'BuyDrones':
+            buy_drones_event = cast(Dict[str, Any], content)
+            drone_type = buy_drones_event.get('Type', 'drones')
+            count = buy_drones_event.get('Count', 0)
+            total_cost = buy_drones_event.get('TotalCost', 0)
+            return f"{self.commander_name} has purchased {count} {drone_type} for {total_cost:,} credits."
+            
+        if event_name == 'SellDrones':
+            sell_drones_event = cast(Dict[str, Any], content)
+            count = sell_drones_event.get('Count', 0)
+            sell_price = sell_drones_event.get('SellPrice', 0)
+            total_sale = sell_drones_event.get('TotalSale', 0)
+            return f"{self.commander_name} has sold {count} drones for {total_sale:,} credits (at {sell_price:,} each)."
+            
+        if event_name == 'CommunityGoalJoin':
+            cg_join_event = cast(Dict[str, Any], content)
+            name = cg_join_event.get('Name', 'a community goal')
+            system = f" in {cg_join_event.get('System')}" if cg_join_event.get('System') else ""
+            return f"{self.commander_name} has signed up for the community goal: {name}{system}."
+            
+        if event_name == 'CommunityGoalDiscard':
+            cg_discard_event = cast(Dict[str, Any], content)
+            name = cg_discard_event.get('Name', 'a community goal')
+            system = f" in {cg_discard_event.get('System')}" if cg_discard_event.get('System') else ""
+            return f"{self.commander_name} has opted out of the community goal: {name}{system}."
+            
+        if event_name == 'CommunityGoalReward':
+            cg_reward_event = cast(Dict[str, Any], content)
+            name = cg_reward_event.get('Name', 'a community goal')
+            system = f" in {cg_reward_event.get('System')}" if cg_reward_event.get('System') else ""
+            reward = cg_reward_event.get('Reward', 0)
+            return f"{self.commander_name} has received a reward of {reward:,} credits for participation in community goal: {name}{system}."
+            
+        if event_name == 'RefuelAll':
+            refuel_all_event = cast(Dict[str, Any], content)
+            cost = refuel_all_event.get('Cost', 0)
+            amount = refuel_all_event.get('Amount', 0)
+            return f"{self.commander_name} has refueled the ship with {amount:.2f} tons of fuel for {cost:,} credits."
+            
+        if event_name == 'RefuelPartial':
+            refuel_partial_event = cast(Dict[str, Any], content)
+            cost = refuel_partial_event.get('Cost', 0)
+            amount = refuel_partial_event.get('Amount', 0)
+            return f"{self.commander_name} has partially refueled the ship with {amount:.2f} tons of fuel for {cost:,} credits."
+            
+        if event_name == 'Repair':
+            repair_event = cast(Dict[str, Any], content)
+            item = repair_event.get('Item', 'hull')
+            cost = repair_event.get('Cost', 0)
+            return f"{self.commander_name} has repaired the ship's {item} for {cost:,} credits."
+            
+        if event_name == 'RepairAll':
+            repair_all_event = cast(Dict[str, Any], content)
+            cost = repair_all_event.get('Cost', 0)
+            return f"{self.commander_name} has repaired all ship damage for {cost:,} credits."
+            
+        if event_name == 'RestockVehicle':
+            restock_vehicle_event = cast(Dict[str, Any], content)
+            vehicle = restock_vehicle_event.get('Type', 'vehicle')
+            cost = restock_vehicle_event.get('Cost', 0)
+            count = restock_vehicle_event.get('Count', 1)
+            return f"{self.commander_name} has restocked {count} {vehicle}(s) for {cost:,} credits."
+            
+        if event_name == 'ModuleBuy':
+            module_buy_event = cast(Dict[str, Any], content)
+            slot = module_buy_event.get('Slot', 'a slot')
+            module = module_buy_event.get('BuyItem_Localised', module_buy_event.get('BuyItem', 'a module'))
+            cost = module_buy_event.get('BuyPrice', 0)
+            return f"{self.commander_name} has purchased a {module} for {slot} for {cost:,} credits."
+            
+        if event_name == 'ModuleSell':
+            module_sell_event = cast(Dict[str, Any], content)
+            slot = module_sell_event.get('Slot', 'a slot')
+            module = module_sell_event.get('SellItem_Localised', module_sell_event.get('SellItem', 'a module'))
+            price = module_sell_event.get('SellPrice', 0)
+            return f"{self.commander_name} has sold a {module} from {slot} for {price:,} credits."
+            
+        if event_name == 'ModuleStore':
+            module_store_event = cast(Dict[str, Any], content)
+            slot = module_store_event.get('Slot', 'a slot')
+            module = module_store_event.get('Module_Localised', module_store_event.get('Module', 'a module'))
+            cost = module_store_event.get('Cost', 0)
+            cost_text = f" for {cost:,} credits" if cost > 0 else ""
+            return f"{self.commander_name} has stored a {module} from {slot}{cost_text}."
+            
+        if event_name == 'ModuleRetrieve':
+            module_retrieve_event = cast(Dict[str, Any], content)
+            slot = module_retrieve_event.get('Slot', 'a slot')
+            module = module_retrieve_event.get('Module_Localised', module_retrieve_event.get('Module', 'a module'))
+            cost = module_retrieve_event.get('Cost', 0)
+            cost_text = f" for {cost:,} credits" if cost > 0 else ""
+            return f"{self.commander_name} has retrieved a {module} to {slot}{cost_text}."
+            
+        if event_name == 'ModuleSwap':
+            module_swap_event = cast(Dict[str, Any], content)
+            from_slot = module_swap_event.get('FromSlot', 'a slot')
+            to_slot = module_swap_event.get('ToSlot', 'another slot')
+            from_module = module_swap_event.get('FromItem_Localised', module_swap_event.get('FromItem', 'a module'))
+            to_module = module_swap_event.get('ToItem_Localised', module_swap_event.get('ToItem', 'another module'))
+            return f"{self.commander_name} has swapped {from_module} in {from_slot} with {to_module} in {to_slot}."
+
+        if event_name == 'ShipyardBuy':
+            shipyard_buy_event = cast(Dict[str, Any], content)
+            ship_type = shipyard_buy_event.get('ShipType_Localised', shipyard_buy_event.get('ShipType', 'a ship'))
+            price = shipyard_buy_event.get('ShipPrice', 0)
+            sold_ship = shipyard_buy_event.get('SellOldShip', '')
+            sold_price = shipyard_buy_event.get('SellPrice', 0)
+            
+            if sold_ship:
+                sold_ship_name = shipyard_buy_event.get('SellShipId', sold_ship)
+                return f"{self.commander_name} has purchased a {ship_type} for {price:,} credits and traded in their {sold_ship_name} for {sold_price:,} credits."
+            else:
+                return f"{self.commander_name} has purchased a {ship_type} for {price:,} credits."
+                
+        if event_name == 'ShipyardSell':
+            shipyard_sell_event = cast(Dict[str, Any], content)
+            ship_type = shipyard_sell_event.get('ShipType_Localised', shipyard_sell_event.get('ShipType', 'a ship'))
+            ship_id = shipyard_sell_event.get('SellShipId', '')
+            price = shipyard_sell_event.get('ShipPrice', 0)
+            return f"{self.commander_name} has sold their {ship_type} ({ship_id}) for {price:,} credits."
+            
+        if event_name == 'ShipyardTransfer':
+            shipyard_transfer_event = cast(Dict[str, Any], content)
+            ship_type = shipyard_transfer_event.get('ShipType_Localised', shipyard_transfer_event.get('ShipType', 'a ship'))
+            ship_id = shipyard_transfer_event.get('ShipID', '')
+            system = shipyard_transfer_event.get('System', 'another system')
+            transfer_price = shipyard_transfer_event.get('TransferPrice', 0)
+            transfer_time = shipyard_transfer_event.get('TransferTime', 0)
+            
+            if transfer_time > 0:
+                time_str = f", arriving in {transfer_time} seconds"
+            else:
+                time_str = ", arriving immediately"
+                
+            return f"{self.commander_name} has requested a transfer of their {ship_type} ({ship_id}) from {system} for {transfer_price:,} credits{time_str}."
+            
+        if event_name == 'ShipyardSwap':
+            shipyard_swap_event = cast(Dict[str, Any], content)
+            ship_type = shipyard_swap_event.get('ShipType_Localised', shipyard_swap_event.get('ShipType', 'a ship'))
+            ship_id = shipyard_swap_event.get('ShipID', '')
+            store_old_ship = shipyard_swap_event.get('StoreOldShip', 0)
+            store_ship_type = shipyard_swap_event.get('StoreShipType', '')
+            
+            if store_old_ship:
+                return f"{self.commander_name} has swapped to their {ship_type} ({ship_id}) and stored their previous {store_ship_type}."
+            else:
+                return f"{self.commander_name} has swapped to their {ship_type} ({ship_id})."
+                
+        if event_name == 'MaterialTrade':
+            material_trade_event = cast(Dict[str, Any], content)
+            trader_type = material_trade_event.get('TraderType', 'material trader')
+            paid_material = material_trade_event.get('Paid_Localised', material_trade_event.get('Paid', 'materials'))
+            paid_quantity = material_trade_event.get('Paid_Quantity', 0)
+            received_material = material_trade_event.get('Received_Localised', material_trade_event.get('Received', 'materials'))
+            received_quantity = material_trade_event.get('Received_Quantity', 0)
+            
+            return f"{self.commander_name} has traded {paid_quantity} {paid_material} for {received_quantity} {received_material} at a {trader_type}."
+            
+        if event_name == 'EngineerProgress':
+            engineer_progress_event = cast(Dict[str, Any], content)
+            engineer = engineer_progress_event.get('Engineer', 'an engineer')
+            progress = engineer_progress_event.get('Progress', '')
+            rank = engineer_progress_event.get('Rank')
+            
+            if progress == 'Unlocked':
+                return f"{self.commander_name} has unlocked {engineer}."
+            elif progress == 'Invited':
+                return f"{self.commander_name} has been invited to meet {engineer}."
+            elif rank is not None:
+                return f"{self.commander_name} has reached rank {rank} with {engineer}."
+            else:
+                return f"{self.commander_name} has made progress with {engineer}: {progress}."
+                
+        if event_name == 'EngineerCraft':
+            engineer_craft_event = cast(Dict[str, Any], content)
+            engineer = engineer_craft_event.get('Engineer', 'an engineer')
+            blueprint = engineer_craft_event.get('Blueprint', 'a blueprint')
+            level = engineer_craft_event.get('Level', 0)
+            quality = engineer_craft_event.get('Quality', 0)
+            
+            return f"{self.commander_name} has crafted a level {level} {blueprint} modification with {engineer} (quality: {quality:.2f})."
+            
+        if event_name == 'EngineerApply':
+            engineer_apply_event = cast(Dict[str, Any], content)
+            engineer = engineer_apply_event.get('Engineer', 'an engineer')
+            blueprint = engineer_apply_event.get('Blueprint', 'a blueprint')
+            level = engineer_apply_event.get('Level', 0)
+            
+            return f"{self.commander_name} has applied a level {level} {blueprint} experimental effect with {engineer}."
+            
+        if event_name == 'PayBounties':
+            pay_bounties_event = cast(Dict[str, Any], content)
+            amount = pay_bounties_event.get('Amount', 0)
+            faction = pay_bounties_event.get('Faction', 'a faction')
+            
+            return f"{self.commander_name} has paid off {amount:,} credits in bounties to {faction}."
+
+        if event_name == 'ClearImpound':
+            clear_impound_event = cast(Dict[str, Any], content)
+            amount = clear_impound_event.get('Cost', 0)
+            ship_type = clear_impound_event.get('ShipType_Localised', clear_impound_event.get('ShipType', 'a ship'))
+            return f"{self.commander_name} has paid {amount:,} credits to reclaim their impounded {ship_type}."
+
+        if event_name == 'SearchAndRescue':
+            sar_event = cast(Dict[str, Any], content)
+            item = sar_event.get('Name_Localised', sar_event.get('Name', 'items'))
+            count = sar_event.get('Count', 0)
+            reward = sar_event.get('Reward', 0)
+            return f"{self.commander_name} has turned in {count} {item} for search and rescue, receiving a reward of {reward:,} credits."
+
+        if event_name == 'SetUserShipName':
+            set_ship_name_event = cast(Dict[str, Any], content)
+            ship_type = set_ship_name_event.get('Ship_Localised', set_ship_name_event.get('Ship', 'a ship'))
+            ship_name = set_ship_name_event.get('UserShipName', 'a name')
+            ship_ident = set_ship_name_event.get('UserShipId', '')
+            
+            if ship_ident:
+                return f"{self.commander_name} has renamed their {ship_type} to '{ship_name}' with ID '{ship_ident}'."
+            else:
+                return f"{self.commander_name} has renamed their {ship_type} to '{ship_name}'."
 
         # If we don't have a specific handler for this event
         return f"Event: {event_name} occurred."
