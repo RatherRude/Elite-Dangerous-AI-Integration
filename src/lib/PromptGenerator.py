@@ -1629,6 +1629,190 @@ class PromptGenerator:
             item_name = use_event.get('Name_Localised', use_event.get('Name', 'unknown consumable'))
             return f"{self.commander_name} has used a {item_name}."
 
+        # Adding handlers for "Other Events" from the Journal documentation
+        if event_name == 'AfmuRepairs':
+            afmu_event = cast(Dict[str, Any], content)
+            module = afmu_event.get('Module_Localised', afmu_event.get('Module', 'a module'))
+            fully_repaired = "fully" if afmu_event.get('FullyRepaired') else "partially"
+            health = afmu_event.get('Health', 0) * 100
+            return f"{self.commander_name} has {fully_repaired} repaired {module} to {health:.1f}% health using the AFMU."
+
+        if event_name == 'ApproachSettlement':
+            approach_event = cast(Dict[str, Any], content)
+            name = approach_event.get('Name', 'a settlement')
+            body_name = approach_event.get('BodyName', '')
+            body_details = f" on {body_name}" if body_name else ""
+            return f"{self.commander_name} is approaching {name} settlement{body_details}."
+
+        if event_name == 'ChangeCrewRole':
+            crew_role_event = cast(Dict[str, Any], content)
+            role = crew_role_event.get('Role', 'Unknown')
+            telepresence = " via telepresence" if crew_role_event.get('Telepresence') else ""
+            return f"{self.commander_name} has switched to {role} crew role{telepresence}."
+
+        if event_name == 'CockpitBreached':
+            return f"{self.commander_name}'s ship cockpit has been breached! Emergency oxygen engaged."
+
+        if event_name == 'CommitCrime':
+            crime_event = cast(Dict[str, Any], content)
+            crime_type = crime_event.get('CrimeType', 'unknown crime')
+            faction = crime_event.get('Faction', 'local authorities')
+
+            details = ""
+            if crime_event.get('Victim'):
+                details += f" against {crime_event.get('Victim')}"
+
+            punishment = ""
+            if crime_event.get('Bounty'):
+                punishment = f" A bounty of {crime_event.get('Bounty'):,} credits has been issued."
+            elif crime_event.get('Fine'):
+                punishment = f" A fine of {crime_event.get('Fine'):,} credits has been issued."
+
+            return f"{self.commander_name} has committed a crime: {crime_type}{details} against {faction}.{punishment}"
+
+        if event_name == 'Continued':
+            continued_event = cast(Dict[str, Any], content)
+            part = continued_event.get('Part', '?')
+            return f"Journal file continued in part {part}."
+
+        if event_name == 'CrewLaunchFighter':
+            crew_launch_event = cast(Dict[str, Any], content)
+            crew = crew_launch_event.get('Crew', 'A crew member')
+            telepresence = " via telepresence" if crew_launch_event.get('Telepresence') else ""
+            return f"{crew} has launched a fighter from {self.commander_name}'s ship{telepresence}."
+
+        if event_name == 'DatalinkScan':
+            datalink_event = cast(Dict[str, Any], content)
+            message = datalink_event.get('Message', 'No message received')
+            return f"{self.commander_name} has scanned a datalink and received: \"{message}\""
+
+        if event_name == 'DatalinkVoucher':
+            voucher_event = cast(Dict[str, Any], content)
+            reward = voucher_event.get('Reward', 0)
+            victim = voucher_event.get('VictimFaction', 'unknown faction')
+            payee = voucher_event.get('PayeeFaction', 'unknown faction')
+            return f"{self.commander_name} has received a datalink voucher worth {reward:,} credits from {payee} for data about {victim}."
+
+        if event_name == 'DataScanned':
+            data_scan_event = cast(Dict[str, Any], content)
+            scan_type = data_scan_event.get('Type', 'unknown data')
+            return f"{self.commander_name} has scanned a {scan_type}."
+
+        if event_name == 'DockFighter':
+            return f"{self.commander_name} has docked their fighter with the mothership."
+
+        if event_name == 'DockSRV':
+            srv_event = cast(Dict[str, Any], content)
+            srv_type = srv_event.get('SRVType', 'SRV')
+            return f"{self.commander_name} has docked their {srv_type} with the ship."
+
+        if event_name == 'EndCrewSession':
+            end_crew_event = cast(Dict[str, Any], content)
+            reason = ""
+            if end_crew_event.get('OnCrime'):
+                reason = " due to criminal activity"
+            telepresence = " telepresence" if end_crew_event.get('Telepresence') else ""
+            return f"{self.commander_name} has ended the{telepresence} multicrew session{reason}."
+
+        if event_name == 'FighterRebuilt':
+            rebuild_event = cast(Dict[str, Any], content)
+            loadout = rebuild_event.get('Loadout', 'a fighter')
+            return f"{self.commander_name}'s {loadout} fighter has been rebuilt in the hangar."
+
+        if event_name == 'FuelScoop':
+            fuel_event = cast(Dict[str, Any], content)
+            scooped = fuel_event.get('Scooped', 0)
+            total = fuel_event.get('Total', 0)
+            return f"{self.commander_name} has scooped {scooped:.2f} tons of fuel. Tank now contains {total:.2f} tons."
+
+        if event_name == 'JetConeBoost':
+            boost_event = cast(Dict[str, Any], content)
+            boost = boost_event.get('BoostValue', 0)
+            return f"{self.commander_name} has received a {boost:.1f}x FSD boost from a jet cone."
+
+        if event_name == 'JetConeDamage':
+            damage_event = cast(Dict[str, Any], content)
+            module = damage_event.get('Module', 'a module')
+            return f"{self.commander_name}'s ship has suffered damage to {module} while flying through a jet cone."
+
+        if event_name == 'LaunchDrone':
+            drone_event = cast(Dict[str, Any], content)
+            drone_type = drone_event.get('Type', 'unknown drone')
+            type_map = {
+                'Prospector': 'a prospector drone',
+                'Collection': 'a collector drone',
+                'Hatchbreaker': 'a hatchbreaker drone',
+                'Recon': 'a recon limpet',
+                'Research': 'a research limpet',
+                'Decontamination': 'a decontamination limpet',
+                'Repair': 'a repair limpet',
+                'Fuel': 'a fuel transfer limpet'
+            }
+            drone_name = type_map.get(drone_type, f"a {drone_type} drone")
+            return f"{self.commander_name} has launched {drone_name}."
+
+        if event_name == 'LaunchFighter':
+            fighter_event = cast(Dict[str, Any], content)
+            player_controlled = "player-controlled" if fighter_event.get('PlayerControlled') else "AI-controlled"
+            loadout = fighter_event.get('Loadout', '')
+            loadout_info = f" ({loadout})" if loadout else ""
+            return f"{self.commander_name} has launched a {player_controlled} fighter{loadout_info}."
+
+        if event_name == 'LaunchSRV':
+            srv_event = cast(Dict[str, Any], content)
+            srv_type = srv_event.get('SRVType', 'SRV')
+            player_controlled = "player-controlled" if srv_event.get('PlayerControlled') else "AI-controlled"
+            return f"{self.commander_name} has launched a {player_controlled} {srv_type}."
+
+        if event_name == 'ModuleInfo':
+            return f"{self.commander_name} has viewed their module information."
+
+        if event_name == 'Music':
+            music_event = cast(Dict[str, Any], content)
+            track = music_event.get('MusicTrack', 'unknown track')
+            return f"Music has changed to: {track}."
+
+        if event_name == 'NpcCrewPaidWage':
+            wage_event = cast(Dict[str, Any], content)
+            name = wage_event.get('NpcCrewName', 'An NPC crew member')
+            amount = wage_event.get('Amount', 0)
+            return f"{self.commander_name} has paid {name} a wage of {amount:,} credits."
+
+        if event_name == 'NpcCrewRank':
+            rank_event = cast(Dict[str, Any], content)
+            name = rank_event.get('NpcCrewName', 'An NPC crew member')
+            rank = rank_event.get('RankCombat', 0)
+            return f"{self.commander_name}'s crew member {name} has reached combat rank {rank}."
+
+        if event_name == 'ProspectedAsteroid':
+            prospect_event = cast(Dict[str, Any], content)
+            content_level = prospect_event.get('Content', 'Unknown')
+            remaining = prospect_event.get('Remaining', 100)
+
+            materials_info = ""
+            if prospect_event.get('Materials'):
+                materials = []
+                for material in prospect_event.get('Materials', []):
+                    name = material.get('Name_Localised', material.get('Name', 'unknown material'))
+                    proportion = material.get('Proportion', 0)
+                    materials.append(f"{name} ({proportion:.1f}%)")
+                materials_info = f" Contains: {', '.join(materials)}."
+
+            motherlode = ""
+            if prospect_event.get('MotherlodeMaterial'):
+                motherlode = f" This is a motherlode asteroid with {prospect_event.get('MotherlodeMaterial')}!"
+
+            return f"{self.commander_name} has prospected an asteroid with {content_level} mineral content. {remaining}% remaining.{materials_info}{motherlode}"
+
+        if event_name == 'RebootRepair':
+            repair_event = cast(Dict[str, Any], content)
+            modules = repair_event.get('Modules', [])
+            if modules:
+                repaired = ", ".join(modules)
+                return f"{self.commander_name} has performed an emergency reboot/repair. Repaired modules: {repaired}."
+            else:
+                return f"{self.commander_name} has performed an emergency reboot/repair."
+
         return f"Event: {event_name} occurred."
 
     def full_event_message(self, event: GameEvent, timeoffset: str, is_important: bool):
