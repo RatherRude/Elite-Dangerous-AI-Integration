@@ -2509,11 +2509,9 @@ class PromptGenerator:
 
             if isinstance(event, GameEvent):
                 if event.content.get('event') in allGameEvents:
-                    if len(conversational_pieces) < 5 or is_pending:
+                    if len(conversational_pieces) < 20 or is_pending:
                         is_important = is_pending and event.content.get('event') in self.important_game_events
                         conversational_pieces.append(self.full_event_message(event, time_offset, is_important))
-                    elif len(conversational_pieces) < 20:
-                        conversational_pieces.append(self.simple_event_message(event, time_offset))
                     else:
                         pass
                 else: 
