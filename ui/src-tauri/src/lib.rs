@@ -63,6 +63,14 @@ struct AppState {
     process_handle: Arc<tokio::sync::Mutex<Option<ProcessHandle>>>,
 }
 
+// Helper function to check if a string contains sensitive information
+fn contains_sensitive_data(text: &str) -> bool {
+    false
+        || text.to_lowercase().contains("api_key")
+        || text.to_lowercase().contains("\"type\":\"config\"")
+        || text.to_lowercase().contains("\"type\":\"change_config\"")
+}
+
 #[tauri::command]
 async fn start_process(window: tauri::Window, state: State<'_, AppState>) -> Result<(), String> {
     let mut proc_handle_lock = state.process_handle.lock().await;
@@ -105,7 +113,14 @@ async fn start_process(window: tauri::Window, state: State<'_, AppState>) -> Res
                     Ok(0) => break, // EOF reached
                     Ok(_n) => {
                         if let Ok(text) = String::from_utf8(buffer.clone()) {
-                            debug!("Process stdout: {}", text);
+                            // Check if the output contains sensitive information
+                            if contains_sensitive_data(&text) {
+                                debug!("Process stdout: [REDACTED SENSITIVE DATA]");
+                            } else {
+                                debug!("Process stdout: {}", text);
+                            }
+
+                            // Always emit the actual data to the window, the redaction is only for logs
                             if let Err(e) = window.emit("process-stdout", text) {
                                 error!("Failed to emit process-stdout event: {}", e);
                             }
@@ -143,7 +158,14 @@ async fn send_json_line(state: State<'_, AppState>, json_line: String) -> Result
         .flush()
         .await
         .map_err(|e| format!("Failed to flush stdin: {}", e))?;
-    debug!("Wrote to stdin: {}", json_line);
+
+    // Check if the input contains sensitive information
+    if contains_sensitive_data(&json_line) {
+        debug!("Wrote to stdin: [REDACTED SENSITIVE DATA]");
+    } else {
+        debug!("Wrote to stdin: {}", json_line);
+    }
+
     Ok(())
 }
 

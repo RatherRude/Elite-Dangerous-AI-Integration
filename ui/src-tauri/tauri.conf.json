@@ -22,7 +22,8 @@
       "csp": null,
       "capabilities": [
         "default",
-        "overlay"
+        "overlay",
+        "logging"
       ]
     }
   },

@@ -1,24 +1,11 @@
 {
-    "$schema": "https://tauri.app/capabilities-schema.json",
+    "$schema": "../gen/schemas/desktop-schema.json",
     "identifier": "logging",
     "description": "Capability for application logging",
     "windows": [
         "main"
     ],
-    "platforms": [
-        "linux",
-        "macOS",
-        "windows"
-    ],
     "permissions": [
-        {
-            "scope": "log:default",
-            "allow": [
-                {
-                    "path": "$APPLOG"
-                }
-            ],
-            "deny": []
-        }
+        "log:default"
     ]
 }
