@@ -913,7 +913,7 @@ class App:
         self.data['output_device_name'] = self.output_device_name_var.get()
         self.data['game_events'] = self.game_events_save_cb()
 
-        with open('config.json', 'w') as file:
+        with open('config.json', 'w', encoding='utf-8') as file:
             json.dump(self.data, file, indent=4)
 
         # messagebox.showinfo("Settings Saved", "Settings have been saved successfully.")

@@ -449,7 +449,7 @@ def load_config() -> Config:
         "ed_appdata_path": ""
     }
     try:
-        with open('config.json', 'r') as file:
+        with open('config.json', 'r', encoding='utf-8') as file:
             data = json.load(file)
             return merge_config_data(defaults, data)
     except Exception:
@@ -476,7 +476,7 @@ def merge_config_data(defaults: dict, user: dict):
 
 def save_config(config: Config):
     config_file = Path("config.json")
-    with open(config_file, 'w') as f:
+    with open(config_file, 'w', encoding='utf-8') as f:
         json.dump(config, f)
 
 
