@@ -1,6 +1,9 @@
 # AIServer (beta)
 
-**WARNING: This setup is highly experimental and is potentially difficult to set up.**
+!!! danger
+
+    This setup is highly experimental and is potentially difficult to set up.
+
 
 The AIServer can serve as a local STT, TTS and LLM provider.
 It can be download [here](https://github.com/lucaelin/covas-next-aiserver/releases/). Once you have extracted the Zip, you can run it by double-clicking the `AIServer.exe` file.

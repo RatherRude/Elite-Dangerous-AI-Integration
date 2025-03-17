@@ -1,6 +1,9 @@
 # Running on Linux
 
-**WARNING: This setup is highly experimental and is potentially difficult, please contact us on discord**
+!!! danger
+
+        WARNING: This setup is highly experimental and is potentially difficult, please contact us on discord
+
 
 We have a native Linux version available, but it requires some special setup. We will provide you with a download link in our discord server, and some instructions on how to get it running, here.
 
