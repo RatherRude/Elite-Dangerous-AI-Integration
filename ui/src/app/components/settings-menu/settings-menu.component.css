@@ -25,12 +25,17 @@ mat-slide-toggle {
 .ptt-container {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 1rem;
 }
 
 .ptt-container mat-form-field {
   flex: 1;
   margin: 0;
+}
+.ptt-container mat-slide-toggle {
+  flex: 1;
+  padding-bottom: 1rem;
 }
 
 ul {

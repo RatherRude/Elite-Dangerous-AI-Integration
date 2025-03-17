@@ -82,6 +82,12 @@
                                 </button>
                             </mat-form-field>
                         }
+                        @if (!config.ptt_var) {
+                            <mat-slide-toggle [(ngModel)]="config.mute_during_response_var"
+                                                (ngModelChange)="onConfigChange({mute_during_response_var: $event})">
+                                Mute microphone during response
+                            </mat-slide-toggle>
+                        }
                     </div>
 
                     <mat-form-field>
@@ -335,6 +341,11 @@
                                    (ngModelChange)="onConfigChange({tts_voice: $event})">
                         </mat-form-field>
                         <mat-form-field>
+                            <mat-label>TTS Speed</mat-label>
+                            <input matInput [(ngModel)]="config.tts_speed"
+                                   (ngModelChange)="onConfigChange({tts_speed: $event})">
+                        </mat-form-field>
+                        <mat-form-field>
                             <mat-label>OpenAI API Key</mat-label>
                             <input matInput type="password" [(ngModel)]="config.tts_api_key"
                                    (ngModelChange)="onConfigChange({tts_api_key: $event})">
@@ -367,6 +378,11 @@
                             <mat-label>TTS Voice</mat-label>
                             <input matInput [(ngModel)]="config.tts_voice"
                                    (ngModelChange)="onConfigChange({tts_voice: $event})">
+                        </mat-form-field>
+                        <mat-form-field>
+                            <mat-label>TTS Speed</mat-label>
+                            <input matInput [(ngModel)]="config.tts_speed"
+                                   (ngModelChange)="onConfigChange({tts_speed: $event})">
                         </mat-form-field>
                         <mat-form-field>
                             <mat-label>TTS API Key</mat-label>
