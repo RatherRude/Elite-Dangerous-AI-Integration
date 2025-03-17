@@ -17,7 +17,7 @@ class JournalEntry(TypedDict):
     event: str
 
 class EDJournal:
-    def __init__(self, game_events: dict[str, dict[str, bool]], logs_path: str):
+    def __init__(self, logs_path: str):
         self.events: Queue[JournalEntry] = Queue()
         self.logs_path: str = logs_path
         
