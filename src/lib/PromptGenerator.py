@@ -473,7 +473,7 @@ class PromptGenerator:
         for result in event.results:
             responses.append(result)
         responses.append(
-            {"role": "assistant", "content": None, "tool_calls": event.request}
+            {"role": "assistant", "tool_calls": event.request}
         )
         return responses
 

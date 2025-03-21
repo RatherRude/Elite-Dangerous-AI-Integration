@@ -2708,9 +2708,9 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                     "Point Defence Turret"
                     "Power Plant"
                 ],
-                "required": ["subsystem"]
             },
-        }
+        },
+        "required": ["subsystem"],
     }, target_subsystem, 'ship')
 
     actionManager.registerAction('chargeECM', "Charge ECM", {
