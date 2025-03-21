@@ -37,19 +37,12 @@ export class MainViewComponent implements OnInit {
 
     ngOnInit(): void {
         // Subscribe to the running state
-        this.tauri.isRunning$.subscribe(
-            (running) => {
-                this.isRunning = running;
-                this.isLoading = false;
+        this.tauri.runMode$.subscribe(
+            (mode) => {
+                this.isRunning = mode === "running";
+                this.isLoading = mode === "starting";
             },
         );
-        this.tauri.isReady$.subscribe(
-            (ready) => {
-                this.isLoading = !ready;
-                console.log("main view update", this.isLoading, this.isRunning);
-            },
-        );
-
         // Initialize the main view
         this.tauri.runExe();
         this.tauri.checkForUpdates();

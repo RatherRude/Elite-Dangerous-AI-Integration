@@ -16,7 +16,7 @@ After you have added an exception, you may need to re-download and re-extract th
 
 ## How do I keep my configuration settings and conversations when upgrading the application?
 
-To keep you configuration settings, you can copy the `config.json` file from the old folder to the new folder. To keep your previous conversations, you can do the same with the `covas.db` file.
+All configuration settings and conversations are stored in the `resources` folder. To keep your configuration settings, you can copy the `config.json` file from the old folder to the new folder. To keep your previous conversations, you can do the same with the `covas.db` file.
 
 ## Do you support other languages than English?
 

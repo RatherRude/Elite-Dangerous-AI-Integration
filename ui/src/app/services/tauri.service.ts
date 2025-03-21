@@ -23,11 +23,12 @@ export interface UnknownMessage extends BaseMessage {
     providedIn: "root",
 })
 export class TauriService {
-    private isRunningSubject = new BehaviorSubject<boolean>(false);
-    public isRunning$ = this.isRunningSubject.asObservable();
-
-    private isReadySubject = new BehaviorSubject<boolean>(false);
-    public isReady$ = this.isReadySubject.asObservable();
+    private runModeSubject = new BehaviorSubject<
+        "starting" | "configuring" | "running"
+    >(
+        "starting",
+    );
+    public runMode$ = this.runModeSubject.asObservable();
 
     // ReplaySubject to expose the lines as an Observable
     private messagesSubject = new ReplaySubject<BaseMessage>();
@@ -62,16 +63,16 @@ export class TauriService {
                 const message = JSON.parse(event.payload);
                 if (message.type === "ready") {
                     console.log("Backend is ready");
-                    this.isReadySubject.next(true);
+                    this.runModeSubject.next("configuring");
                 }
                 if (message.type === "start") {
-                    this.isRunningSubject.next(true);
+                    this.runModeSubject.next("running");
                 }
                 if (message.type === "model_validation") {
-                    this.isRunningSubject.next(false);
+                    this.runModeSubject.next("configuring");
                 }
                 if (message.type === "config") {
-                    this.isRunningSubject.next(false);
+                    this.runModeSubject.next("configuring");
                 }
                 this.messagesSubject.next(message);
             } catch (error) {
@@ -103,9 +104,8 @@ export class TauriService {
     }
     private async stopExe(): Promise<void> {
         try {
-            this.isReadySubject.next(false);
-            this.isRunningSubject.next(false);
-            console.log("not running, not ready");
+            this.runModeSubject.next("starting");
+            console.log("process stopping...");
             await invoke("stop_process", {});
         } catch (error) {
             console.error("Error running exe:", error);

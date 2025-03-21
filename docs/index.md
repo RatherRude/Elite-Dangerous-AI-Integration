@@ -47,13 +47,13 @@ Also, please check our [FAQ](./10_faq.md) for additional information.
 ## Step 3: Start the Application
 
 1. Open the extracted folder.
-2. Double-click on the "start" file to launch the application. This should open the configuration UI.
+2. Double-click on the "covas-next-ui.exe" file to launch the application. This should open the configuration UI.
 
 ??? note "Common Issues"
 
     - **Problem:** I don't know how to start the application.
     
-        **Solution:** Open the extracted folder and double-click on the "start" file.
+        **Solution:** Open the extracted folder and double-click on the "covas-next-ui.exe" file.
 
     - **Problem:** A virus was detected.
     
@@ -114,22 +114,22 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 
 ---
 
-## Step 5: Open the "Debug Output" Window
+## Step 5: Start the AI Assistant
 
-1. Click the "Start AI" button to get started.
-2. Verify that a black "Debug Output" window appears.
+1. Click the "Start AI Assistant" button to get started.
+2. Verify that the chat log window appears.
 
 ??? note "Common Issues"
 
-    - **Problem:** The application is unresponsive.
+    - **Problem:** The application is unresponsive or stuck loading.
     
         **Solution:** Close the application and try again. If the issue persists, reach out to support for assistance.
 
 ---
 
-## Step 6: Check for Errors in the "Debug Output" Window
+## Step 6: Check for Errors in the Log Window
 
-1. Look for any error messages in the "Debug Output" window immediately after starting the application.
+1. Look for any error messages in the log window immediately after starting the application.
 
 ??? note "Common Issues"
 
@@ -142,7 +142,7 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 ## Step 7: Test the Application’s Voice Detection
 
 1. Start speaking into your microphone, either using Push-to-Talk (PTT) or voice detection.
-2. Verify that your speech text appears in the "Debug Output" window.
+2. Verify that your speech text appears in the log window.
 
 ??? note "Common Issues"
 
@@ -158,7 +158,7 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 
 ## Step 8: Check the Response
 
-1. After you speak, confirm that the AI generates a response, visible in the "Debug Output" window.
+1. After you speak, confirm that the AI generates a response, visible in the log window.
 2. Ensure that the application reads the response text aloud.
 
 ??? note "Common Issues"

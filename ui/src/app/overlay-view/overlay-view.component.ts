@@ -18,22 +18,16 @@ export class OverlayViewComponent implements OnInit, OnDestroy {
 
   constructor(
     private route: ActivatedRoute,
-    private tauriService: TauriService,
+    private tauri: TauriService,
   ) {}
 
   ngOnInit() {
     // Subscribe to the running state
-    this.subscriptions.push(
-      this.tauriService.isRunning$.subscribe((running) => {
-        this.isRunning = running;
-      }),
-    );
-
-    // Subscribe to the ready state
-    this.subscriptions.push(
-      this.tauriService.isReady$.subscribe((ready) => {
-        this.isReady = ready;
-      }),
+    this.tauri.runMode$.subscribe(
+      (mode) => {
+        this.isRunning = mode === "running";
+        this.isReady = mode !== "starting";
+      },
     );
 
     // Add the overlay-window class to the HTML element

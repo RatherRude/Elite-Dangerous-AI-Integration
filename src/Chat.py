@@ -25,6 +25,7 @@ from lib.EventManager import EventManager
 
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
 
 
 @final
@@ -41,17 +42,15 @@ class Chat:
         self.controller_manager = ControllerManager()
         self.action_manager = ActionManager()
 
-        enabled_game_events: list[str] = []
-        for category in self.config["game_events"].values():
+        self.enabled_game_events: list[str] = []
+        for event, state in self.config["game_events"].items():
+            if state:
+                self.enabled_game_events.append(event)
 
-            for event, state in category.items():
-                if state:
-                    enabled_game_events.append(event)
-
-        self.jn = EDJournal(self.config["game_events"], get_ed_journals_path(config))
+        self.jn = EDJournal(get_ed_journals_path(config))
             
         self.copilot = EDCoPilot(self.config["edcopilot"], is_edcopilot_dominant=self.config["edcopilot_dominant"],
-                            enabled_game_events=enabled_game_events)
+                            enabled_game_events=self.enabled_game_events)
 
         # gets API Key from config.json
         self.llmClient = OpenAI(
@@ -86,19 +85,13 @@ class Chat:
         self.tts = TTS(openai_client=self.ttsClient, provider=tts_provider, model=self.config["tts_model_name"], voice=self.config["tts_voice"], speed=self.config["tts_speed"], output_device=self.config["output_device_name"])
         self.stt = STT(openai_client=self.sttClient, provider=self.config["stt_provider"], input_device_name=self.config["input_device_name"], model=self.config["stt_model_name"], custom_prompt=self.config["stt_custom_prompt"], required_word=self.config["stt_required_word"])
 
-        self.enabled_game_events: list[str] = []
-        if self.config["event_reaction_enabled_var"]:
-            for category in self.config["game_events"].values():
-                for event, state in category.items():
-                    if state:
-                        self.enabled_game_events.append(event)
 
         self.ed_keys = EDKeys(get_ed_appdata_path(config))
         self.status_parser = StatusParser(get_ed_journals_path(config))
-        self.prompt_generator = PromptGenerator(self.config["commander_name"], self.config["character"], important_game_events=enabled_game_events)
+        self.prompt_generator = PromptGenerator(self.config["commander_name"], self.config["character"], important_game_events=self.enabled_game_events)
         self.event_manager = EventManager(
             on_reply_request=lambda events, new_events, states: self.reply(events, new_events, states),
-            game_events=enabled_game_events,
+            game_events=self.enabled_game_events,
             continue_conversation=self.config["continue_conversation_var"],
             react_to_text_local=self.config["react_to_text_local_var"],
             react_to_text_starsystem=self.config["react_to_text_starsystem_var"],

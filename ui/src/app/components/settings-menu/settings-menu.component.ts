@@ -18,6 +18,7 @@ import { KeyValue, KeyValuePipe } from "@angular/common";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatSnackBar, MatSnackBarModule } from "@angular/material/snack-bar";
 import { CommonModule } from "@angular/common";
+import { GameEventCategories } from "./game-event-categories.js";
 
 @Component({
   selector: "app-settings-menu",
@@ -51,6 +52,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   filteredGameEvents: Record<string, Record<string, boolean>> = {};
   eventSearchQuery: string = "";
 
+  gameEventCategories = GameEventCategories;
   constructor(
     private configService: ConfigService,
     private snackBar: MatSnackBar,
@@ -133,10 +135,26 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     await this.configService.assignPTT();
   }
 
+  private categorizeEvents(
+    events: Record<string, boolean>,
+  ): Record<string, Record<string, boolean>> {
+    const categorizedEvents: Record<string, Record<string, boolean>> = {};
+
+    for (const [category, list] of Object.entries(this.gameEventCategories)) {
+      categorizedEvents[category] = {};
+      for (const event of list) {
+        categorizedEvents[category][event] = events[event] || false;
+      }
+    }
+    return categorizedEvents;
+  }
+
   filterEvents(query: string) {
     if (!query && this.eventSearchQuery) {
       this.eventSearchQuery = "";
-      this.filteredGameEvents = this.config?.game_events || {};
+      this.filteredGameEvents = this.categorizeEvents(
+        this.config?.game_events || {},
+      );
       this.expandedSection = null; // Collapse all sections when search is empty
       return;
     }
@@ -145,12 +163,13 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     // Only filter and expand if search term is 3 or more characters
     if (query.length >= 3) {
       this.filteredGameEvents = {};
+      const all_game_events = this.categorizeEvents(
+        this.config?.game_events || {},
+      );
       const searchTerm = query.toLowerCase();
 
       for (
-        const [sectionKey, events] of Object.entries(
-          this.config?.game_events || {},
-        )
+        const [sectionKey, events] of Object.entries(all_game_events)
       ) {
         const matchingEvents: Record<string, boolean> = {};
         for (const [eventKey, value] of Object.entries(events)) {
@@ -166,26 +185,32 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
         }
       }
     } else {
-      this.filteredGameEvents = this.config?.game_events || {};
+      this.filteredGameEvents = this.categorizeEvents(
+        this.config?.game_events || {},
+      );
     }
   }
 
   clearEventSearch() {
     this.eventSearchQuery = "";
-    this.filteredGameEvents = this.config?.game_events || {};
+    this.filteredGameEvents = this.categorizeEvents(
+      this.config?.game_events || {},
+    );
     this.expandedSection = null; // Collapse all sections when search is cleared
   }
 
   // Convert comma-separated string to array for material multi-select
   getMaterialsArray(materials: string | undefined): string[] {
     if (!materials) return [];
-    return materials.split(',').map(m => m.trim()).filter(m => m.length > 0);
+    return materials.split(",").map((m) => m.trim()).filter((m) =>
+      m.length > 0
+    );
   }
 
   // Handle material selection changes
   async onMaterialsChange(selectedMaterials: string[]) {
     if (this.config) {
-      const materialsString = selectedMaterials.join(', ');
+      const materialsString = selectedMaterials.join(", ");
       await this.onConfigChange({ react_to_material: materialsString });
     }
   }
