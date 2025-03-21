@@ -50,7 +50,7 @@ export interface Config {
     vision_model_name: string;
     vision_endpoint: string;
     vision_api_key: string;
-    stt_provider: "openai" | "custom" | "none";
+    stt_provider: "openai" | "custom" | "custom-multi-modal" | "none";
     stt_model_name: string;
     stt_api_key: string;
     stt_endpoint: string;

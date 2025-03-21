@@ -68,7 +68,7 @@ class Chat:
             
 
         self.sttClient: OpenAI | None = None
-        if self.config["stt_provider"] in ['openai', 'custom']: 
+        if self.config["stt_provider"] in ['openai', 'custom', 'custom-multi-modal']: 
             self.sttClient = OpenAI(
                 base_url=self.config["stt_endpoint"],
                 api_key=self.config["api_key"] if self.config["stt_api_key"] == '' else self.config["stt_api_key"],

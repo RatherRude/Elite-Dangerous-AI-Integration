@@ -318,7 +318,7 @@ class Config(TypedDict):
     vision_model_name: str
     vision_endpoint: str
     vision_api_key: str
-    stt_provider: Literal['openai', 'custom', 'none']
+    stt_provider: Literal['openai', 'custom', 'custom-multi-modal', 'none']
     stt_model_name: str
     stt_api_key: str
     stt_endpoint: str
@@ -709,6 +709,11 @@ def update_config(config: Config, data: dict) -> Config:
       if data["stt_provider"] == "custom":
         data["stt_endpoint"] = "https://api.openai.com/v1";
         data["stt_model_name"] = "whisper-1";
+        data["stt_api_key"] = "";
+        
+      if data["stt_provider"] == "custom-multi-modal":
+        data["stt_endpoint"] = "https://api.openai.com/v1";
+        data["stt_model_name"] = "gpt-4o-mini-audio-preview";
         data["stt_api_key"] = "";
       
       if data["stt_provider"] == "none":
