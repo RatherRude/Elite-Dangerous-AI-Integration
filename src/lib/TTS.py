@@ -17,11 +17,12 @@ from .Logger import log
 
 @final
 class Mp3Stream(miniaudio.StreamableSource):
-    def __init__(self, gen: Generator) -> None:
+    def __init__(self, gen: Generator, prebuffer_size=4) -> None:
         super().__init__()
         self.gen = gen
         self.data = b""
         self.offset = 0
+        self.prebuffer_size = prebuffer_size
 
     def read(self, num_bytes: int) -> bytes:
         data = b""
@@ -30,7 +31,7 @@ class Mp3Stream(miniaudio.StreamableSource):
                 chunk = self.gen.__next__()
                 if isinstance(chunk, dict) and chunk["type"] == "audio":
                     data += chunk["data"]
-                if len(data) >= 2*720: # TODO: Find a good value here
+                if len(data) >= self.prebuffer_size*720: # TODO: Find a good value here
                     return data
         except StopIteration:
             self.close()
@@ -50,6 +51,10 @@ class TTS:
         self.read_queue = queue.Queue()
         self.is_aborted = False
         self._is_playing = False
+        self.prebuffer_size = 4
+        self.output_format = pyaudio.paInt16
+        self.frames_per_buffer = 1024
+        self.sample_size = self.p.get_sample_size(self.output_format)
 
         thread = threading.Thread(target=self._playback_thread)
         thread.daemon = True
@@ -76,9 +81,10 @@ class TTS:
     def _playback_loop(self):
         output_index = self._get_output_device_index()
         stream = self.p.open(
-            format=pyaudio.paInt16,
+            format=self.output_format,
             channels=1,
             rate=24_000,
+            frames_per_buffer=self.frames_per_buffer,
             output=True,
             output_device_index=output_index  
         )
@@ -96,13 +102,33 @@ class TTS:
                     try:
                         start_time = time()
                         end_time = None
+                        first_chunk = True
+                        underflow_count = 0
+                        empty_buffer_available = stream.get_write_available()
                         for chunk in self._stream_audio(text):
                             if not end_time:
                                 end_time = time()
                                 log('debug', f'Response time TTS', end_time - start_time)
                             if self.is_aborted:
                                 break
-                            stream.write(chunk) # this may throw for various system reasons
+                            try:
+                                if not first_chunk:
+                                    available = stream.get_write_available()
+                                    # log('debug', 'tts write available', available)
+                                    if available == empty_buffer_available:
+                                        raise IOError('underflow')
+                                stream.write(chunk, exception_on_underflow=False) # this may throw for various system reasons
+                                first_chunk = False
+                            except IOError as e:
+                                if not first_chunk:
+                                    underflow_count += 1
+                                    # log('debug', 'tts underflow detected', underflow_count)
+                                stream.write(chunk, exception_on_underflow=False)
+                        
+                        if underflow_count > 0:
+                            self.prebuffer_size *= 2
+                            log('debug', 'tts underflow detected, total', underflow_count, 'increasing prebuffer size to', self.prebuffer_size)
+                            
                     except Exception as e:
                         self.read_queue.put(text)
                         raise e
@@ -125,7 +151,7 @@ class TTS:
             rate = f"+{int((float(self.speed) - 1) * 100)}%" if float(self.speed) > 1 else f"-{int((1 - float(self.speed)) * 100)}%"
             response = edge_tts.Communicate(text, voice=self.voice, rate=rate)
             pcm_stream = miniaudio.stream_any(
-                source=Mp3Stream(response.stream_sync()),
+                source=Mp3Stream(response.stream_sync(), self.prebuffer_size),
                 source_format=miniaudio.FileFormat.MP3,
                 output_format=miniaudio.SampleFormat.SIGNED16,
                 nchannels=1,

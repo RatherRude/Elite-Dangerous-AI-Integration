@@ -4,6 +4,7 @@ import threading
 import traceback
 from time import sleep, time
 from typing import Literal, final
+import base64
 
 import openai
 import pyaudio
@@ -34,7 +35,7 @@ class STT:
     recording = False
     resultQueue = queue.Queue()
 
-    def __init__(self, openai_client: openai.OpenAI | None, provider: Literal['openai', 'custom', 'none'], input_device_name, model='whisper-1', language=None, custom_prompt=None, required_word=None):
+    def __init__(self, openai_client: openai.OpenAI | None, provider: Literal['openai', 'custom', 'custom-multi-modal', 'none'], input_device_name, model='whisper-1', language=None, custom_prompt=None, required_word=None):
         self.openai_client = openai_client
         self.provider = provider
         self.vad = SileroVoiceActivityDetector()
@@ -195,26 +196,15 @@ class STT:
             # print('skipping audio without voice')
             return ''
 
-        # Convert raw PCM data to numpy array
-        audio_np = np.frombuffer(audio_raw, dtype=np.int16).astype(np.float32) / 32768.0
-        
-        # Create a BytesIO buffer for the Ogg file
-        audio_ogg = io.BytesIO()
-        
-        # Write as Ogg Vorbis
-        sf.write(audio_ogg, audio_np, 16000, format='OGG', subtype='VORBIS')
-        audio_ogg.seek(0)
-        audio_ogg.name = "audio.ogg"  # OpenAI needs a filename
 
         text = None
         start_time = time()
-        transcription = self.openai_client.audio.transcriptions.create(
-            model=self.model,
-            file=audio_ogg,
-            language=self.language,
-            prompt=self.prompt
-        )
-        text = transcription.text
+        
+        if self.provider == 'openai' or self.provider == 'custom':
+            text = self._transcribe_openai_audio(audio_raw)
+        elif self.provider == 'custom-multi-modal':
+            text = self._transcribe_openai_mm(audio_raw)
+        
         end_time = time()
         log('debug', f'Response time STT', end_time - start_time)
 
@@ -226,6 +216,70 @@ class STT:
             return ''
 
         # print("transcription received", text)
+        return text
+    
+    def _transcribe_openai_mm(self, audio: bytes) -> str:
+        # Convert raw PCM data to numpy array
+        audio_np = np.frombuffer(audio, dtype=np.int16).astype(np.float32) / 32768.0
+        
+        # Create a BytesIO buffer for the Ogg file
+        audio_wav = io.BytesIO()
+        
+        # Write as Ogg Vorbis
+        sf.write(audio_wav, audio_np, 16000, format='WAV', subtype='PCM_16')
+        audio_wav.seek(0)
+        audio_wav.name = "audio.wav"  # OpenAI needs a filename
+        
+        response = self.openai_client.chat.completions.create(
+            model=self.model,
+            messages=[
+                {"role":"system", "content":
+                    "You are a high quality transcription model. You are given audio input from the user, and return the transcribed text from the input. Do NOT add any additional text in your response, only respond with the text given by the user.\n" +
+                    "The audio may be related to space sci-fi terminology like systems, equipment, and station names, specifically the game Elite Dangerous.\n" + 
+                    #"Here is an example of the type of text you should return: <example>" + self.prompt + "</example>\n" +
+                    "Always provide an exact transcription of the audio. If the user is not speaking or inaudible, return only the word 'silence'."
+                },
+                {"role": "user", "content": [{
+                    "type": "text",
+                    "text": "<input>"
+                },{
+                    "type": "input_audio",
+                    "input_audio": {
+                        "data": base64.b64encode(audio_wav.getvalue()).decode('utf-8'),
+                        "format": "wav"
+                    }
+                },{
+                    "type": "text",
+                    "text": "</input>"
+                },]}
+            ]
+        )
+        text = response.choices[0].message.content
+        if not text:
+            return ''
+        if text.strip() == 'silence' or text.strip() == '':
+            return ''
+        return text.strip()
+    
+    def _transcribe_openai_audio(self, audio: bytes) -> str:
+        # Convert raw PCM data to numpy array
+        audio_np = np.frombuffer(audio, dtype=np.int16).astype(np.float32) / 32768.0
+        
+        # Create a BytesIO buffer for the Ogg file
+        audio_ogg = io.BytesIO()
+        
+        # Write as Ogg Vorbis
+        sf.write(audio_ogg, audio_np, 16000, format='OGG', subtype='VORBIS')
+        audio_ogg.seek(0)
+        audio_ogg.name = "audio.ogg"  # OpenAI needs a filename
+        
+        transcription = self.openai_client.audio.transcriptions.create(
+            model=self.model,
+            file=audio,
+            language=self.language,
+            prompt=self.prompt
+        )
+        text = transcription.text
         return text
 
     def pause_continuous_listening(self, pause: bool):
