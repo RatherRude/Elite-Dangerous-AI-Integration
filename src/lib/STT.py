@@ -235,9 +235,9 @@ class STT:
             messages=[
                 {"role":"system", "content":
                     "You are a high quality transcription model. You are given audio input from the user, and return the transcribed text from the input. Do NOT add any additional text in your response, only respond with the text given by the user.\n" +
-                    "The text is related to the game Elite Dangerous, so focus on space sci-fi terminology like systems, equipment, and station names.\n" + 
-                    "Here is an example of the type of text you should return: '" + self.prompt + "'\n"
-                    "If the user is not speaking or inaudible, return only the word 'silence'."
+                    "The audio may be related to space sci-fi terminology like systems, equipment, and station names, specifically the game Elite Dangerous.\n" + 
+                    #"Here is an example of the type of text you should return: <example>" + self.prompt + "</example>\n" +
+                    "Always provide an exact transcription of the audio. If the user is not speaking or inaudible, return only the word 'silence'."
                 },
                 {"role": "user", "content": [{
                     
