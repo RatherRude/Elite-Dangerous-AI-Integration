@@ -77,6 +77,7 @@ class EDJournal:
             file_index = 0
             # read the file from start to finish, line by line
             for line in f:
+                #log("debug", f"Loading history from {latest_log} at line {file_index}")
                 file_index += 1
                 try:
                     entry: JournalEntry = json.loads(line)
@@ -86,6 +87,7 @@ class EDJournal:
                     self.historic_events.append(entry)
                 except json.JSONDecodeError:
                     continue
+            log("debug", f"Loaded {len(self.historic_events)} historicevents from {latest_log}")
                 
     def _reading_thread(self):
         backoff = 1
