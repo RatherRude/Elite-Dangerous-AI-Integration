@@ -240,13 +240,18 @@ class STT:
                     "Always provide an exact transcription of the audio. If the user is not speaking or inaudible, return only the word 'silence'."
                 },
                 {"role": "user", "content": [{
-                    
+                    "type": "text",
+                    "text": "<input>"
+                },{
                     "type": "input_audio",
                     "input_audio": {
                         "data": base64.b64encode(audio_wav.getvalue()).decode('utf-8'),
                         "format": "wav"
                     }
-                }]}
+                },{
+                    "type": "text",
+                    "text": "</input>"
+                },]}
             ]
         )
         text = response.choices[0].message.content

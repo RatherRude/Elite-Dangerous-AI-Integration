@@ -52,8 +52,9 @@ class TTS:
         self.is_aborted = False
         self._is_playing = False
         self.prebuffer_size = 4
+        self.output_format = pyaudio.paInt16
         self.frames_per_buffer = 1024
-        self.sample_size = self.p.get_sample_size(pyaudio.paInt16)
+        self.sample_size = self.p.get_sample_size(self.output_format)
 
         thread = threading.Thread(target=self._playback_thread)
         thread.daemon = True
@@ -80,7 +81,7 @@ class TTS:
     def _playback_loop(self):
         output_index = self._get_output_device_index()
         stream = self.p.open(
-            format=pyaudio.paInt16,
+            format=self.output_format,
             channels=1,
             rate=24_000,
             frames_per_buffer=self.frames_per_buffer,
@@ -103,6 +104,7 @@ class TTS:
                         end_time = None
                         first_chunk = True
                         underflow_count = 0
+                        empty_buffer_available = stream.get_write_available()
                         for chunk in self._stream_audio(text):
                             if not end_time:
                                 end_time = time()
@@ -112,19 +114,19 @@ class TTS:
                             try:
                                 if not first_chunk:
                                     available = stream.get_write_available()
-                                    #log('debug', 'tts write available', available)
-                                    if available == self.frames_per_buffer * self.sample_size:
+                                    log('debug', 'tts write available', available)
+                                    if available == empty_buffer_available:
                                         raise IOError('underflow')
                                 stream.write(chunk, exception_on_underflow=False) # this may throw for various system reasons
                                 first_chunk = False
                             except IOError as e:
                                 if not first_chunk:
                                     underflow_count += 1
-                                    #log('debug', 'tts underflow detected', underflow_count)
+                                    log('debug', 'tts underflow detected', underflow_count)
                                 stream.write(chunk, exception_on_underflow=False)
                         
                         if underflow_count > 0:
-                            self.prebuffer_size += 1
+                            self.prebuffer_size *= 2
                             log('debug', 'tts underflow detected, total', underflow_count, 'increasing prebuffer size to', self.prebuffer_size)
                             
                     except Exception as e:
