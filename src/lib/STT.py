@@ -200,8 +200,6 @@ class STT:
         text = None
         start_time = time()
         
-        log('debug', f'Transcribing audio with provider {self.provider}')
-        
         if self.provider == 'openai' or self.provider == 'custom':
             text = self._transcribe_openai_audio(audio_raw)
         elif self.provider == 'custom-multi-modal':
@@ -235,7 +233,12 @@ class STT:
         response = self.openai_client.chat.completions.create(
             model=self.model,
             messages=[
-                {"role":"system", "content": "You are a high quality transcription model. You are given audio input from the user, and return the transcribed text from the input. Do NOT add any additional text in your response, only respond with the text given by the user."},
+                {"role":"system", "content":
+                    "You are a high quality transcription model. You are given audio input from the user, and return the transcribed text from the input. Do NOT add any additional text in your response, only respond with the text given by the user.\n" +
+                    "The text is related to the game Elite Dangerous, so focus on space sci-fi terminology like systems, equipment, and station names.\n" + 
+                    "Here is an example of the type of text you should return: '" + self.prompt + "'\n"
+                    "If the user is not speaking or inaudible, return only the word 'silence'."
+                },
                 {"role": "user", "content": [{
                     
                     "type": "input_audio",
@@ -246,7 +249,12 @@ class STT:
                 }]}
             ]
         )
-        return response.choices[0].message.content
+        text = response.choices[0].message.content
+        if not text:
+            return ''
+        if text.strip() == 'silence' or text.strip() == '':
+            return ''
+        return text.strip()
     
     def _transcribe_openai_audio(self, audio: bytes) -> str:
         # Convert raw PCM data to numpy array
