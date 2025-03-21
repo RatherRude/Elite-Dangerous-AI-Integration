@@ -114,7 +114,7 @@ class TTS:
                             try:
                                 if not first_chunk:
                                     available = stream.get_write_available()
-                                    log('debug', 'tts write available', available)
+                                    # log('debug', 'tts write available', available)
                                     if available == empty_buffer_available:
                                         raise IOError('underflow')
                                 stream.write(chunk, exception_on_underflow=False) # this may throw for various system reasons
@@ -122,7 +122,7 @@ class TTS:
                             except IOError as e:
                                 if not first_chunk:
                                     underflow_count += 1
-                                    log('debug', 'tts underflow detected', underflow_count)
+                                    # log('debug', 'tts underflow detected', underflow_count)
                                 stream.write(chunk, exception_on_underflow=False)
                         
                         if underflow_count > 0:
