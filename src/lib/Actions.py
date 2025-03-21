@@ -194,7 +194,7 @@ def galaxy_map_open(args, projected_states):
 
         sleep(.05)
         keys.send('UI_Right')
-        sleep(.05)
+        sleep(.15)
         keys.send('UI_Select')
 
         if 'start_navigation' in args and args['start_navigation']:
@@ -2450,7 +2450,7 @@ def filter_body_response(request, response):
         # if "name" in system and system["name"]:
         filtered_body["name"] = body.get("name")
         filtered_body["subtype"] = body.get("subtype")
-        filtered_body["system_name"] = body.get("name")
+        filtered_body["system_name"] = body.get("system_name")
         # landmark_subtype
         if "landmark_subtype" in request_filters:
             if "landmark_subtype" in body and body["landmarks"]:
@@ -2708,9 +2708,9 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                     "Point Defence Turret"
                     "Power Plant"
                 ],
-                "required": ["subsystem"]
             },
-        }
+        },
+        "required": ["subsystem"],
     }, target_subsystem, 'ship')
 
     actionManager.registerAction('chargeECM', "Charge ECM", {

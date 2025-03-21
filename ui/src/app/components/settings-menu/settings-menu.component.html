@@ -290,12 +290,30 @@
                                     (ngModelChange)="onConfigChange({stt_provider: $event})">
                             <mat-option value="openai">OpenAI</mat-option>
                             <mat-option value="custom">Custom</mat-option>
+                            <mat-option value="custom-multi-modal">Custom Multi-Modal</mat-option>
                             <mat-option value="none">None</mat-option>
                         </mat-select>
                     </mat-form-field>
                     @if (config.stt_provider === "openai") {
                     }
                     @if (config.stt_provider === "custom") {
+                        <mat-form-field>
+                            <mat-label>STT Endpoint</mat-label>
+                            <input matInput [(ngModel)]="config.stt_endpoint"
+                                   (ngModelChange)="onConfigChange({stt_endpoint: $event})">
+                        </mat-form-field>
+                        <mat-form-field>
+                            <mat-label>STT Model Name</mat-label>
+                            <input matInput [(ngModel)]="config.stt_model_name"
+                                   (ngModelChange)="onConfigChange({stt_model_name: $event})">
+                        </mat-form-field>
+                        <mat-form-field>
+                            <mat-label>STT API Key</mat-label>
+                            <input matInput type="password" [(ngModel)]="config.stt_api_key"
+                                   (ngModelChange)="onConfigChange({stt_api_key: $event})">
+                        </mat-form-field>
+                    }
+                    @if (config.stt_provider === "custom-multi-modal") {
                         <mat-form-field>
                             <mat-label>STT Endpoint</mat-label>
                             <input matInput [(ngModel)]="config.stt_endpoint"
