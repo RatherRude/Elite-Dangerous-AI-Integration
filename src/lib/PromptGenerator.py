@@ -429,8 +429,6 @@ class PromptGenerator:
             jump_details = []
             if fsd_jump_event.get('JumpDist'):
                 jump_details.append(f"jump distance: {fsd_jump_event.get('JumpDist'):.2f} ly")
-            if fsd_jump_event.get('FuelUsed'):
-                jump_details.append(f"fuel used: {fsd_jump_event.get('FuelUsed'):.2f} tons")
             if fsd_jump_event.get('BoostUsed'):
                 jump_details.append(f"FSD boost used")
             
@@ -622,54 +620,54 @@ class PromptGenerator:
             else:
                 return f"{self.commander_name}'s ship has auto-lifted off from {liftoff_event.get('Body')}{station_info}."
                 
-        if event_name == 'Location':
-            location_event = cast(LocationEvent, content)
-            location_details = []
-            
-            if location_event.get('Docked'):
-                station_type = f"{location_event.get('StationType')} " if location_event.get('StationType') else ""
-                location_details.append(f"docked at {station_type}{location_event.get('StationName')}")
-            elif location_event.get('BodyName'):
-                if location_event.get('Latitude') is not None and location_event.get('Longitude') is not None:
-                    location_details.append(f"on {location_event.get('BodyName')} at coordinates {location_event.get('Latitude'):.4f}, {location_event.get('Longitude'):.4f}")
-                else:
-                    location_details.append(f"near {location_event.get('BodyName')}")
-                    if location_event.get('DistFromStarLS'):
-                        location_details.append(f"{location_event.get('DistFromStarLS'):.2f} ls from main star")
-            
-            system_details = []
-            if location_event.get('SystemAllegiance'):
-                system_details.append(f"allegiance: {location_event.get('SystemAllegiance')}")
-            if location_event.get('SystemEconomy'):
-                economy = location_event.get('SystemEconomy_Localised', location_event.get('SystemEconomy'))
-                system_details.append(f"economy: {economy}")
-            if location_event.get('SystemGovernment'):
-                government = location_event.get('SystemGovernment_Localised', location_event.get('SystemGovernment'))
-                system_details.append(f"government: {government}")
-            if location_event.get('SystemSecurity'):
-                security = location_event.get('SystemSecurity_Localised', location_event.get('SystemSecurity'))
-                system_details.append(f"security: {security}")
-            
-            population = f", population: {location_event.get('Population'):,}" if location_event.get('Population') else ""
-            
-            status_info = []
-            if location_event.get('Wanted'):
-                status_info.append("WANTED in this system")
-            if location_event.get('Taxi'):
-                status_info.append("in a taxi")
-            elif location_event.get('Multicrew'):
-                status_info.append("in multicrew session")
-            elif location_event.get('InSRV'):
-                status_info.append("in SRV")
-            elif location_event.get('OnFoot'):
-                status_info.append("on foot")
-                
-            location_str = f" {', '.join(location_details)}" if location_details else ""
-            system_details_str = f" ({', '.join(system_details)})" if system_details else ""
-            status_str = f" ({', '.join(status_info)})" if status_info else ""
-            
-            return f"{self.commander_name} is in the {location_event.get('StarSystem')} system{location_str}{system_details_str}{population}{status_str}."
-            
+        # if event_name == 'Location':
+        #     location_event = cast(LocationEvent, content)
+        #     location_details = []
+        #
+        #     if location_event.get('Docked'):
+        #         station_type = f"{location_event.get('StationType')} " if location_event.get('StationType') else ""
+        #         location_details.append(f"docked at {station_type}{location_event.get('StationName')}")
+        #     elif location_event.get('BodyName'):
+        #         if location_event.get('Latitude') is not None and location_event.get('Longitude') is not None:
+        #             location_details.append(f"on {location_event.get('BodyName')} at coordinates {location_event.get('Latitude'):.4f}, {location_event.get('Longitude'):.4f}")
+        #         else:
+        #             location_details.append(f"near {location_event.get('BodyName')}")
+        #             if location_event.get('DistFromStarLS'):
+        #                 location_details.append(f"{location_event.get('DistFromStarLS'):.2f} ls from main star")
+        #
+        #     system_details = []
+        #     if location_event.get('SystemAllegiance'):
+        #         system_details.append(f"allegiance: {location_event.get('SystemAllegiance')}")
+        #     if location_event.get('SystemEconomy'):
+        #         economy = location_event.get('SystemEconomy_Localised', location_event.get('SystemEconomy'))
+        #         system_details.append(f"economy: {economy}")
+        #     if location_event.get('SystemGovernment'):
+        #         government = location_event.get('SystemGovernment_Localised', location_event.get('SystemGovernment'))
+        #         system_details.append(f"government: {government}")
+        #     if location_event.get('SystemSecurity'):
+        #         security = location_event.get('SystemSecurity_Localised', location_event.get('SystemSecurity'))
+        #         system_details.append(f"security: {security}")
+        #
+        #     population = f", population: {location_event.get('Population'):,}" if location_event.get('Population') else ""
+        #
+        #     status_info = []
+        #     if location_event.get('Wanted'):
+        #         status_info.append("WANTED in this system")
+        #     if location_event.get('Taxi'):
+        #         status_info.append("in a taxi")
+        #     elif location_event.get('Multicrew'):
+        #         status_info.append("in multicrew session")
+        #     elif location_event.get('InSRV'):
+        #         status_info.append("in SRV")
+        #     elif location_event.get('OnFoot'):
+        #         status_info.append("on foot")
+        #
+        #     location_str = f" {', '.join(location_details)}" if location_details else ""
+        #     system_details_str = f" ({', '.join(system_details)})" if system_details else ""
+        #     status_str = f" ({', '.join(status_info)})" if status_info else ""
+        #
+        #     return f"{self.commander_name} is in the {location_event.get('StarSystem')} system{location_str}{system_details_str}{population}{status_str}."
+
         if event_name == 'NavRoute':
             nav_route_event = cast(NavRouteEvent, content)
             if nav_route_event.get('Route'):
