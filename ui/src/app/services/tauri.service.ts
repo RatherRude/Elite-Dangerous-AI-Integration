@@ -7,6 +7,7 @@ import { BehaviorSubject, Observable, ReplaySubject } from "rxjs";
 export interface BaseMessage {
     type: string;
     timestamp: string;
+    [key: string]: any;
 }
 
 export interface SubmitInputMessage extends BaseMessage {
@@ -39,6 +40,7 @@ export class TauriService {
 
     // Flag to control the polling loop
     private stopListener?: UnlistenFn;
+    private stopStderrListener?: UnlistenFn;
 
     constructor(private ngZone: NgZone) {
         this.startReadingOutput();
@@ -53,6 +55,11 @@ export class TauriService {
         this.stopListener = await listen(
             "process-stdout",
             (e) => this.processStdout(e),
+        );
+        if (this.stopStderrListener) this.stopStderrListener();
+        this.stopStderrListener = await listen(
+            "process-stderr",
+            (e) => this.processStderr(e),
         );
     }
 
@@ -78,6 +85,17 @@ export class TauriService {
             } catch (error) {
                 console.warn("Error parsing message:", error);
             }
+        });
+    }
+
+    private processStderr(event: any): void {
+        this.ngZone.run(() => {
+            this.messagesSubject.next({
+                type: "log",
+                timestamp: new Date().toISOString(),
+                message: event.payload,
+                prefix: "error",
+            });
         });
     }
 

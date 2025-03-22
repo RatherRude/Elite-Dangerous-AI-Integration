@@ -86,7 +86,8 @@ async fn start_process(window: tauri::Window, state: State<'_, AppState>) -> Res
         .current_dir(exe_cwd.clone())
         .kill_on_drop(true)
         .stdin(std::process::Stdio::piped())
-        .stdout(std::process::Stdio::piped());
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped());
 
     #[cfg(windows)]
     {
@@ -101,6 +102,7 @@ async fn start_process(window: tauri::Window, state: State<'_, AppState>) -> Res
         )
     })?;
     let stdout = child.stdout.take().ok_or("Failed to take child stdout")?;
+    let stderr = child.stderr.take().ok_or("Failed to take child stderr")?;
     let stdin = child.stdin.take().ok_or("Failed to take child stdin")?;
     let stdin = Arc::new(Mutex::new(stdin));
     tokio::spawn({
@@ -137,6 +139,42 @@ async fn start_process(window: tauri::Window, state: State<'_, AppState>) -> Res
             }
         }
     });
+    tokio::spawn({
+        let window = window.clone();
+        async move {
+            let mut reader = BufReader::new(stderr);
+            let mut buffer = Vec::new();
+            loop {
+                match reader.read_until(b'\n', &mut buffer).await {
+                    Ok(0) => break, // EOF reached
+
+                    Ok(_n) => {
+                        if let Ok(text) = String::from_utf8(buffer.clone()) {
+                            // Check if the output contains sensitive information
+                            if contains_sensitive_data(&text) {
+                                debug!("Process stderr: [REDACTED SENSITIVE DATA]");
+                            } else {
+                                debug!("Process stderr: {}", text);
+                            }
+
+                            // Always emit the actual data to the window, the redaction is only for logs
+                            if let Err(e) = window.emit("process-stderr", text) {
+                                error!("Failed to emit process-stderr event: {}", e);
+                            }
+                        } else {
+                            error!("Received invalid UTF-8 data");
+                        }
+                        buffer.clear();
+                    }
+                    Err(e) => {
+                        error!("Error reading stdout: {}", e);
+                        break;
+                    }
+                }
+            }
+        }
+    });
+
     let handle = ProcessHandle { child, stdin };
     *proc_handle_lock = Some(handle);
     Ok(())
