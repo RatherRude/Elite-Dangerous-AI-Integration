@@ -2359,4 +2359,50 @@ class JetConeBoostEvent(TypedDict):
     timestamp: Literal["2024-08-02T21:14:32Z"]
 
 
-AnyEvent = StoredModulesEvent | ShipLockerEvent | LoadoutEvent | FSSSignalDiscoveredEvent | MaterialsEvent | ScanEvent | FSDJumpEvent | StatisticsEvent | ReceiveTextEvent | MusicEvent | EngineerProgressEvent | LocationEvent | EngineerCraftEvent | UnderAttackEvent | StoredShipsEvent | DockedEvent | ShipTargetedEvent | MissionCompletedEvent | StartJumpEvent | ProspectedAsteroidEvent | FSDTargetEvent | NpcCrewPaidWageEvent | ModuleRetrieveEvent | MaterialCollectedEvent | MissionAcceptedEvent | SupercruiseExitEvent | CargoEvent | LaunchDroneEvent | LoadGameEvent | FetchRemoteModuleEvent | ApproachSettlementEvent | DockingRequestedEvent | MaterialTradeEvent | UndockedEvent | SupercruiseDestinationDropEvent | OutfittingEvent | SupercruiseEntryEvent | DockingGrantedEvent | FuelScoopEvent | PowerplayEvent | MultiSellExplorationDataEvent | SuitLoadoutEvent | ModuleBuyEvent | ReservoirReplenishedEvent | ScanBaryCentreEvent | ProgressEvent | RankEvent | ShipyardEvent | FileheaderEvent | MassModuleStoreEvent | ReputationEvent | ModuleSellRemoteEvent | FactionKillBondEvent | ModuleStoreEvent | NavRouteEvent | SquadronStartupEvent | MissionsEvent | RefuelAllEvent | CommanderEvent | ShieldStateEvent | ModuleSellEvent | NavRouteClearEvent | ShipyardSwapEvent | USSDropEvent | ModuleInfoEvent | ScannedEvent | ModuleSwapEvent | FSSDiscoveryScanEvent | ApproachBodyEvent | EmbarkEvent | DisembarkEvent | MiningRefinedEvent | CommitCrimeEvent | HullDamageEvent | BackpackEvent | ShipyardTransferEvent | DatalinkScanEvent | SAASignalsFoundEvent | FSSAllBodiesFoundEvent | DockingDeniedEvent | LiftoffEvent | TouchdownEvent | ModuleBuyAndStoreEvent | HeatWarningEvent | RepairAllEvent | ShutdownEvent | BackpackChangeEvent | BuyAmmoEvent | LeaveBodyEvent | BuyDronesEvent | EjectCargoEvent | LaunchSRVEvent | InterdictedEvent | NavBeaconScanEvent | BountyEvent | ScreenshotEvent | CodexEntryEvent | RedeemVoucherEvent | TechnologyBrokerEvent | RepairEvent | RestockVehicleEvent | RepairDroneEvent | RebootRepairEvent | DockSRVEvent | CrewMemberRoleChangeEvent | CollectCargoEvent | MarketEvent | SynthesisEvent | SwitchSuitLoadoutEvent | MissionRedirectedEvent | MaterialDiscoveredEvent | FriendsEvent | DataScannedEvent | BookTaxiEvent | CrewLaunchFighterEvent | LaunchFighterEvent | SendTextEvent | SetUserShipNameEvent | ResurrectEvent | WingAddEvent | SearchAndRescueEvent | DiedEvent | SellMicroResourcesEvent | WingJoinEvent | SystemsShutdownEvent | MarketSellEvent | CrewAssignEvent | MarketBuyEvent | HeatDamageEvent | WingLeaveEvent | SAAScanCompleteEvent | ShipyardSellEvent | PayFinesEvent | UseConsumableEvent | PromotionEvent | ShipyardRedeemEvent | EngineerContributionEvent | MissionAbandonedEvent | VehicleSwitchEvent | FighterRebuiltEvent | FighterDestroyedEvent | DockingCancelledEvent | ShipyardBuyEvent | ShipRedeemedEvent | SellDronesEvent | MissionFailedEvent | CrewMemberJoinsEvent | CockpitBreachedEvent | PowerplaySalaryEvent | EndCrewSessionEvent | ShipyardNewEvent | DockFighterEvent | BuyMicroResourcesEvent | SRVDestroyedEvent | DiscoveryScanEvent | CrewMemberQuitsEvent | PowerplayJoinEvent | JetConeBoostEvent
+# MaterialDiscarded: 744 characters, 3 entries
+class MaterialDiscardedEvent(TypedDict):
+    Category: str
+    Name_Localised: NotRequired[str]
+    Name: str
+    Count: int
+    event: Literal["MaterialDiscarded"]
+    timestamp: str
+
+
+# BuyExplorationData: 751 characters, 4 entries
+class BuyExplorationDataEvent(TypedDict):
+    System: str
+    Cost: int
+    event: Literal["BuyExplorationData"]
+    timestamp: str
+
+
+# SellExplorationData: 645 characters, 3 entries
+class SellExplorationDataEvent(TypedDict):
+    Systems: list[str]
+    Discovered: list[str]
+    BaseValue: int
+    Bonus: int
+    TotalEarnings: int
+    event: Literal["SellExplorationData"]
+    timestamp: str
+
+
+# FSSBodySignals: 635 characters, 5 entries
+class FSSBodySignalsEvent(TypedDict):
+    BodyID: int
+    BodyName: str
+    SystemAddress: int
+    Signals: list[Any]
+    event: Literal["FSSBodySignals"]
+    timestamp: str
+
+
+# DockingTimeout: 570 characters, 4 entries
+class DockingTimeoutEvent(TypedDict):
+    StationName: str
+    event: Literal["DockingTimeout"]
+    timestamp: str
+
+
+AnyEvent = StoredModulesEvent | ShipLockerEvent | LoadoutEvent | FSSSignalDiscoveredEvent | MaterialsEvent | ScanEvent | FSDJumpEvent | StatisticsEvent | ReceiveTextEvent | MusicEvent | EngineerProgressEvent | LocationEvent | EngineerCraftEvent | UnderAttackEvent | StoredShipsEvent | DockedEvent | ShipTargetedEvent | MissionCompletedEvent | StartJumpEvent | ProspectedAsteroidEvent | FSDTargetEvent | NpcCrewPaidWageEvent | ModuleRetrieveEvent | MaterialCollectedEvent | MissionAcceptedEvent | SupercruiseExitEvent | CargoEvent | LaunchDroneEvent | LoadGameEvent | FetchRemoteModuleEvent | ApproachSettlementEvent | DockingRequestedEvent | MaterialTradeEvent | UndockedEvent | SupercruiseDestinationDropEvent | OutfittingEvent | SupercruiseEntryEvent | DockingGrantedEvent | FuelScoopEvent | PowerplayEvent | MultiSellExplorationDataEvent | SuitLoadoutEvent | ModuleBuyEvent | ReservoirReplenishedEvent | ScanBaryCentreEvent | ProgressEvent | RankEvent | ShipyardEvent | FileheaderEvent | MassModuleStoreEvent | ReputationEvent | ModuleSellRemoteEvent | FactionKillBondEvent | ModuleStoreEvent | NavRouteEvent | SquadronStartupEvent | MissionsEvent | RefuelAllEvent | CommanderEvent | ShieldStateEvent | ModuleSellEvent | NavRouteClearEvent | ShipyardSwapEvent | USSDropEvent | ModuleInfoEvent | ScannedEvent | ModuleSwapEvent | FSSDiscoveryScanEvent | ApproachBodyEvent | EmbarkEvent | DisembarkEvent | MiningRefinedEvent | CommitCrimeEvent | HullDamageEvent | BackpackEvent | ShipyardTransferEvent | DatalinkScanEvent | SAASignalsFoundEvent | FSSAllBodiesFoundEvent | DockingDeniedEvent | LiftoffEvent | TouchdownEvent | ModuleBuyAndStoreEvent | HeatWarningEvent | RepairAllEvent | ShutdownEvent | BackpackChangeEvent | BuyAmmoEvent | LeaveBodyEvent | BuyDronesEvent | EjectCargoEvent | LaunchSRVEvent | InterdictedEvent | NavBeaconScanEvent | BountyEvent | ScreenshotEvent | CodexEntryEvent | RedeemVoucherEvent | TechnologyBrokerEvent | RepairEvent | RestockVehicleEvent | RepairDroneEvent | RebootRepairEvent | DockSRVEvent | CrewMemberRoleChangeEvent | CollectCargoEvent | MarketEvent | SynthesisEvent | SwitchSuitLoadoutEvent | MissionRedirectedEvent | MaterialDiscoveredEvent | FriendsEvent | DataScannedEvent | BookTaxiEvent | CrewLaunchFighterEvent | LaunchFighterEvent | SendTextEvent | SetUserShipNameEvent | ResurrectEvent | WingAddEvent | SearchAndRescueEvent | DiedEvent | SellMicroResourcesEvent | WingJoinEvent | SystemsShutdownEvent | MarketSellEvent | CrewAssignEvent | MarketBuyEvent | HeatDamageEvent | WingLeaveEvent | SAAScanCompleteEvent | ShipyardSellEvent | PayFinesEvent | UseConsumableEvent | PromotionEvent | ShipyardRedeemEvent | EngineerContributionEvent | MissionAbandonedEvent | VehicleSwitchEvent | FighterRebuiltEvent | FighterDestroyedEvent | DockingCancelledEvent | ShipyardBuyEvent | ShipRedeemedEvent | SellDronesEvent | MissionFailedEvent | CrewMemberJoinsEvent | CockpitBreachedEvent | PowerplaySalaryEvent | EndCrewSessionEvent | ShipyardNewEvent | DockFighterEvent | BuyMicroResourcesEvent | SRVDestroyedEvent | DiscoveryScanEvent | CrewMemberQuitsEvent | PowerplayJoinEvent | JetConeBoostEvent | MaterialDiscardedEvent | BuyExplorationDataEvent | SellExplorationDataEvent | FSSBodySignalsEvent | ScanBaryCentreEvent | DockingTimeoutEvent
