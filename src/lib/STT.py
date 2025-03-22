@@ -275,7 +275,7 @@ class STT:
         
         transcription = self.openai_client.audio.transcriptions.create(
             model=self.model,
-            file=audio,
+            file=audio_ogg,
             language=self.language,
             prompt=self.prompt
         )
