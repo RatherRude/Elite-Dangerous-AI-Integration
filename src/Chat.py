@@ -1,6 +1,7 @@
 import io
 import json
 import sys
+from time import time
 import traceback
 from typing import Any, final
 
@@ -176,11 +177,14 @@ class Chat:
             response_text = None
             response_actions = predicted_actions
         else:
+            start_time = time()
             completion = self.llmClient.chat.completions.create(
                 model=self.config["llm_model_name"],
                 messages=prompt,
                 tools=tool_list
             )
+            end_time = time()
+            log('debug', 'Response time LLM', end_time - start_time)
 
             if not isinstance(completion, ChatCompletion) or hasattr(completion, 'error'):
                 log("error", "completion with error:", completion)
