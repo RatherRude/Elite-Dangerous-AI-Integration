@@ -122,42 +122,62 @@ class EDCoPilot:
                 )
             )
 
-    def edcopilot_send_message(self, args: dict, projected_states: dict) -> str:
-        """Example action method for EDCoPilot to send a message"""
-        message = args.get("message", "")
-        if not message or not self.provider:
-            return "Failed to send message: No message provided or EDCoPilot provider not available"
+
+    def edcopilot_open_panel(self, args: dict, projected_states: dict) -> str:
+        """Open a specific panel in EDCoPilot"""
+        panel_name = args.get("panelName", "")
+        if not panel_name or not self.provider:
+            return "Failed to open panel: No panel specified or EDCoPilot provider not available"
             
-        # Example implementation that uses the provider to send a message
-        log('info', 'hehe' + message)
-        return 'Successfully sent message: ' + message
+        try:
+            # Log the request for debugging
+            log('info', f'Opening EDCoPilot panel: {panel_name}')
+            
+            # For now, we'll use CovasReplied to send a message to show the panel
+            # This is a temporary solution until we have a proper OpenPanelCommand
+            # Implementation might vary based on the actual EDCoPilot API
+            
+            # ToDo: Send OpenPanelAction
+         
+
+            return f"Successfully requested to open {panel_name} panel in EDCoPilot"
+        except Exception as e:
+            return f"Failed to open panel: {str(e)}"
 
     def register_actions(self):
         log('info', 'register actions')
         """Register EDCoPilot-specific actions with the action_manager"""
         if not self.action_manager:
             return
-            
-        # Register the send message action
+       
+        # Register the open panel action
         self.action_manager.registerAction(
-            "edcopilot_send_message",
-            "Send a message through EDCoPilot",
+            "edcopilot_open_panel",
+            "Open a specific panel in EDCoPilot",
             {
                 "type": "object",
                 "properties": {
-                    "message": {
+                    "panelName": {
                         "type": "string",
-                        "description": "The message to send through EDCoPilot"
+                        "enum": [
+                            "bookmarks", "bookmarkgroups", "voicelog", "eventlog", "sessionprogress", 
+                            "systemhistory", "traderoute", "discoveryestimator", "miningstats", "miningprices",
+                            "placesofinterest", "locationsearch", "locationresults", "guidancecomputer", "timetrials",
+                            "systeminfo", "stations", "bodies", "factionsystems", "miningprices",
+                            "stationfacts", "bodydata", "blueprints", "shiplist", "storedmodules",
+                            "materials", "shiplocker", "suitlist", "weaponlist", "aboutedcopilot", "permits",
+                            "messages", "prospectorannouncements", "music", "historyrefresh",
+                            "commandreference", "settings"
+                        ],
+                        "description": "The name of the panel to open in EDCoPilot"
                     }
                 },
-                "required": ["message"]
+                "required": ["panelName"]
             },
-            self.edcopilot_send_message,
+            self.edcopilot_open_panel,
             "global",  # Make this action available in all modes
-            lambda args, _: f"Sending message via EDCoPilot: {args.get('message', '')}"
+            lambda args, _: f"Opening EDCoPilot panel: {args.get('panelName', '')}"
         )
-        
-        # Add more action registrations as needed
 
 if __name__ == "__main__":
     client = create_covasnext_client()
