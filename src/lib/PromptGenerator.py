@@ -2261,6 +2261,56 @@ class PromptGenerator:
             else:
                 return f"{self.commander_name} is a member of a squadron."
 
+        if event_name == 'EscapeInterdiction':
+            escape_event = cast(Dict[str, Any], content)
+            interdictor = escape_event.get('Interdictor', 'an unknown ship')
+            is_player = escape_event.get('IsPlayer', False)
+            is_thargoid = escape_event.get('IsThargoid', False)
+            
+            if is_thargoid:
+                return f"{self.commander_name} has escaped interdiction from a Thargoid."
+            elif is_player:
+                return f"{self.commander_name} has escaped interdiction from Commander {interdictor}."
+            else:
+                return f"{self.commander_name} has escaped interdiction from {interdictor}."
+            
+        if event_name == 'FactionKillBond':
+            faction_bond_event = cast(Dict[str, Any], content)
+            reward = faction_bond_event.get('Reward', 0)
+            awarding_faction = faction_bond_event.get('AwardingFaction', 'a faction')
+            victim_faction = faction_bond_event.get('VictimFaction', 'enemy')
+            return f"{self.commander_name} has received a {reward:,} credit combat bond for killing a {victim_faction} ship on behalf of {awarding_faction}."
+            
+        if event_name == 'PVPKill':
+            pvp_kill_event = cast(Dict[str, Any], content)
+            victim = pvp_kill_event.get('Victim', 'another commander')
+            combat_rank = pvp_kill_event.get('CombatRank', -1)
+            rank_names = ["Harmless", "Mostly Harmless", "Novice", "Competent", "Expert", "Master", "Dangerous", "Deadly", "Elite"]
+            rank_text = f" (Combat Rank: {rank_names[combat_rank]})" if 0 <= combat_rank < len(rank_names) else ""
+            return f"{self.commander_name} has defeated Commander {victim}{rank_text} in combat."
+
+        # if event_name == 'Statistics':
+        #     return f"{self.commander_name}'s game statistics have been updated."
+
+        if event_name == 'ShipTargeted':
+            ship_targeted_event = cast(ShipTargetedEvent, content)
+            if ship_targeted_event.get('TargetLocked'):
+                if ship_targeted_event.get('Subsystem_Localised'):
+                    return f"Weapons now targeting {ship_targeted_event.get('LegalState', '')} pilot {ship_targeted_event.get('PilotName_Localised')}'s {ship_targeted_event.get('Subsystem_Localised')}"
+                if ship_targeted_event.get('PilotName_Localised'):
+                    return f"Weapons now targeting {ship_targeted_event.get('LegalState', '')} pilot {ship_targeted_event.get('PilotName_Localised')}'s {ship_targeted_event.get('Ship','ship').capitalize()}"
+                else:
+                    return f"Weapons now targeting the {ship_targeted_event.get('Ship','ship').capitalize()}"
+            else:
+                return f"Weapons' target lock lost."
+
+        if event_name == 'UnderAttack':
+            under_attack_event = cast(UnderAttackEvent, content)
+            if under_attack_event.get('Target') == 'You':
+                return f"{self.commander_name} is under attack."
+            else:
+                return f"{self.commander_name}'s {under_attack_event.get('Target')} is under attack."
+
         return f"Event: {event_name} occurred."
 
     def full_event_message(self, event: GameEvent, timeoffset: str, is_important: bool):
