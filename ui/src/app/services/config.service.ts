@@ -44,7 +44,7 @@ export interface Config {
     api_key: string;
     commander_name: string;
     character: string;
-    llm_provider: "openai" | "openrouter" | "gemini" | "custom-multi-modal";
+    llm_provider: "openai" | "openrouter" | "google-ai-studio" | "custom";
     llm_model_name: string;
     llm_api_key: string;
     llm_endpoint: string;
