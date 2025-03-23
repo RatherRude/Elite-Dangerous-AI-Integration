@@ -2595,6 +2595,72 @@ class PromptGenerator:
             elif backpack_summary:
                 status_entries.append(("Suit Backpack Contents", backpack_summary))
 
+        if active_mode == 'Main ship':
+            # Get the ship loadout information
+            loadout_info = projected_states.get('Loadout', {})
+            
+            if loadout_info:
+                # Create comprehensive ship loadout display focusing only on modules
+                loadout_display = {}
+                
+                # Process modules - group by slot type for better organization
+                if loadout_info.get('Modules'):
+                    modules_by_category = {}
+                    
+                    for module in loadout_info.get('Modules', []):
+                        slot = module.get('Slot', 'Unknown')
+                        item = module.get('Item', 'Unknown')
+                        
+                        # Extract category from slot name
+                        if slot.startswith('MediumHardpoint') or slot.startswith('SmallHardpoint') or slot.startswith('LargeHardpoint') or slot.startswith('HugeHardpoint') or slot.startswith('TinyHardpoint'):
+                            category = "Weapons"
+                        elif slot in ['Armour', 'PowerPlant', 'MainEngines', 'FrameShiftDrive', 'LifeSupport', 'PowerDistributor', 'Radar', 'FuelTank']:
+                            category = "Core Internals"
+                        elif slot.startswith('Slot'):
+                            category = "Optional Internals"
+                        elif slot in ['ShipCockpit', 'CargoHatch', 'PlanetaryApproachSuite']:
+                            category = "Essential Components"
+                        elif slot in ['Bobble', 'ShipKitSpoiler', 'ShipKitBumper', 'ShipKitWings', 'WeaponColour', 'EngineColour', 'VesselVoice', 'Decal1', 'Decal2', 'Decal3', 'NamePlate', 'PaintJob']:
+                            category = "Cosmetics"
+                        else:
+                            category = "Other"
+                        
+                        # Create category if it doesn't exist
+                        if category not in modules_by_category:
+                            modules_by_category[category] = []
+                        
+                        # Format module information
+                        module_info = {
+                            "Slot": slot,
+                            "Item": item
+                        }
+                        
+                        # Add simplified ammo information if available
+                        if module.get('AmmoInHopper') is not None:
+                            module_info["Max Ammo"] = module.get('AmmoInHopper')
+                        
+                        # Add simplified engineering information if available
+                        if module.get('Engineering'):
+                            eng_info = module.get('Engineering', {})
+                            engineering = {
+                                "Blueprint": eng_info.get('BlueprintName', 'Unknown'),
+                                "Level": eng_info.get('Level', 0),
+                            }
+                            
+                            # Add experimental effect if present
+                            if eng_info.get('ExperimentalEffect_Localised'):
+                                engineering["Experimental"] = eng_info.get('ExperimentalEffect_Localised')
+                            
+                            module_info["Engineering"] = engineering
+                        
+                        modules_by_category[category].append(module_info)
+                    
+                    # Add modules to the loadout display
+                    loadout_display = modules_by_category
+                
+                # Add the loadout information to status entries
+                ship_display['Loadout']=loadout_display
+
         status_entries.append(("Main Ship", ship_display))
 
         location_info: LocationState = projected_states.get('Location', {})  # pyright: ignore[reportAssignmentType]
