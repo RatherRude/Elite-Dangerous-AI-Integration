@@ -5,10 +5,11 @@ from typing import Any, cast
 import yaml
 import requests
 import humanize
+import json
 
 from lib.EventModels import DockedEvent, FSDJumpEvent, FSDTargetEvent, OutfittingEvent, ReceiveTextEvent, ShipTargetedEvent, StartJumpEvent, UnderAttackEvent
 
-from .Projections import LocationState, MissionsState, ShipInfoState, NavInfo, TargetState, CurrentStatus
+from .Projections import LocationState, MissionsState, ShipInfoState, NavInfo, TargetState, CurrentStatus, CargoState
 
 from .EDJournal import *
 from .Event import (
@@ -584,6 +585,10 @@ class PromptGenerator:
             if flags2["OnFoot"]:
                 active_mode = "Suit"
 
+        if active_mode == "Suit":
+            status_info.pop('cargo', None)
+            status_info.pop('pips', None)
+
         return active_mode, status_info
 
     def generate_status_message(self, projected_states: dict[str, dict]):
@@ -592,8 +597,118 @@ class PromptGenerator:
         active_mode, vehicle_status = self.generate_vehicle_status(projected_states.get('CurrentStatus', {}))
         status_entries.append((active_mode+" status", vehicle_status))
 
+        # Get ship and cargo info
         ship_info: ShipInfoState = projected_states.get('ShipInfo', {})  # pyright: ignore[reportAssignmentType]
-        status_entries.append(("Main Ship", ship_info))
+        cargo_info: CargoState = projected_states.get('Cargo', {})  # pyright: ignore[reportAssignmentType]
+        
+        # Create a copy of ship_info so we don't modify the original
+        ship_display = dict(ship_info)
+        
+        # Add cargo inventory in a more efficient format if available
+
+        if cargo_info and cargo_info.get('Inventory'):
+            formatted_inventory = []
+            for item in cargo_info.get('Inventory', []):
+                item_name = item.get('Name', 'Unknown')
+                count = item.get('Count', 0)
+                stolen = " (Stolen)" if item.get('Stolen', False) else ""
+                formatted_inventory.append(f"{count} X {item_name}{stolen}")
+
+            # Add the inventory to the ship display
+            ship_display['CargoContents'] = formatted_inventory
+        if active_mode == 'SRV':
+            # ToDo: Recalculate CargoCapcity when undocking SRV (scarab = 4t; scorpion = 2t)
+            ship_display.pop('CargoCapacity', None)
+
+        if active_mode == 'Suit':
+            backpack_info = projected_states.get('Backpack', {})
+            suit_loadout = projected_states.get('SuitLoadout', {})
+            
+            # Create a comprehensive suit information display
+            suit_display = {}
+            backpack_summary = {}
+            
+            # Add suit details if available
+            if suit_loadout:
+                # Get basic suit info
+                suit_display["Name"] = suit_loadout.get('SuitName_Localised', suit_loadout.get('SuitName', 'Unknown'))
+                suit_display["Loadout"] = suit_loadout.get('LoadoutName', 'Unknown')
+                
+                # Format suit modifications in a readable way
+                if suit_loadout.get('SuitMods', []):
+                    suit_mods = []
+                    for mod in suit_loadout.get('SuitMods', []):
+                        # Convert snake_case to Title Case for better readability
+                        readable_mod = ' '.join(word.capitalize() for word in mod.split('_'))
+                        suit_mods.append(readable_mod)
+                    suit_display["Modifications"] = suit_mods
+                
+                # Format equipped weapons
+                if suit_loadout.get('Modules', []):
+                    weapons = []
+                    for module in suit_loadout.get('Modules', []):
+                        weapon_info = {
+                            "Name": module.get('ModuleName_Localised', module.get('ModuleName', 'Unknown')),
+                            "Class": f"Class {module.get('Class', 0)}",
+                            "Slot": module.get('SlotName', 'Unknown')
+                        }
+                        
+                        # Format weapon modifications
+                        if module.get('WeaponMods', []):
+                            weapon_mods = []
+                            for mod in module.get('WeaponMods', []):
+                                # Convert snake_case to Title Case for better readability
+                                readable_mod = ' '.join(word.capitalize() for word in mod.split('_'))
+                                weapon_mods.append(readable_mod)
+                            weapon_info["Modifications"] = weapon_mods
+                            
+                        weapons.append(weapon_info)
+                    
+                    suit_display["Weapons"] = weapons
+            
+            # Create a natural language description of backpack contents
+            if backpack_info:
+                category_display_names = {
+                    'Items': 'Equipment',
+                    'Components': 'Engineering Components',
+                    'Consumables': 'Consumable Items',
+                    'Data': 'Data Storage'
+                }
+                
+                # Format all backpack items by category
+                for category in ['Items', 'Components', 'Consumables', 'Data']:
+                    if category in backpack_info and backpack_info[category]:
+                        items_list = []
+                        for item in backpack_info[category]:
+                            item_name = item.get('Name_Localised', item.get('Name', 'Unknown'))
+                            item_count = item.get('Count', 0)
+                            items_list.append(f"{item_count}x {item_name}")
+                        
+                        if items_list:
+                            # Use friendlier category names
+                            friendly_name = category_display_names.get(category, category)
+                            backpack_summary[friendly_name] = items_list
+            
+            # Add the comprehensive suit information to status entries
+            if suit_display or backpack_summary:
+                # Create the final display with suit info first, backpack last
+                final_suit_display = {}
+                
+                # Add suit details if available
+                if suit_display:
+                    for key, value in suit_display.items():
+                        final_suit_display[key] = value
+                
+                # Add backpack contents at the end
+                if backpack_summary:
+                    final_suit_display["Backpack"] = backpack_summary
+                
+                status_entries.append(("Suit Information", final_suit_display))
+            # If we have no suit display but do have backpack info, fall back to old format
+            elif backpack_summary:
+                status_entries.append(("Suit Backpack Contents", backpack_summary))
+
+        status_entries.append(("Main Ship", ship_display))
 
         location_info: LocationState = projected_states.get('Location', {})  # pyright: ignore[reportAssignmentType]
         nav_info: NavInfo = projected_states.get('NavInfo', {})  # pyright: ignore[reportAssignmentType]
@@ -610,7 +725,6 @@ class PromptGenerator:
         missions_info: MissionsState = projected_states.get('Missions', {})  # pyright: ignore[reportAssignmentType]
         if missions_info and 'Active' in missions_info:
             status_entries.append(("Active missions", missions_info))
-
 
         target_info: TargetState = projected_states.get('Target', {})  # pyright: ignore[reportAssignmentType]
         target_info.pop('EventID', None)
@@ -644,6 +758,21 @@ class PromptGenerator:
         if current_station and current_station == storedShips.get('StationName'):
             status_entries.append(("Local, stored ships", storedShips.get('ShipsHere', [])))
 
+        # Add friends status (always include this entry)
+        friends_info = projected_states.get('Friends', {})
+        online_friends = friends_info.get('Online', [])
+        
+        
+        # Always add the entry, with appropriate message based on online status
+        if online_friends:
+            status_entries.append(("Friends Status", {
+                "Online Count": len(online_friends),
+                "Online Friends": online_friends
+            }))
+        else:
+            status_entries.append(("Friends Status", "No friends currently online"))
+
+        # Format and return the final status message
         return "\n\n".join(['# '+entry[0]+'\n' + yaml.dump(entry[1]) for entry in status_entries])
 
     def generate_prompt(self, events: list[Event], projected_states: dict[str, dict], pending_events: list[Event]):
