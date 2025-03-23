@@ -314,7 +314,9 @@ class Config(TypedDict):
     llm_endpoint: str
     commander_name: str
     character: str
+    llm_provider: Literal['openai', 'openrouter','gemini', 'custom-multi-modal']
     llm_model_name: str
+    llm_custom: dict[str, str]
     vision_model_name: str
     vision_endpoint: str
     vision_api_key: str
@@ -416,6 +418,7 @@ def load_config() -> Config:
         'edcopilot_dominant': False,
         'input_device_name': get_default_input_device_name(),
         'output_device_name': get_default_output_device_name(),
+        'llm_provider': "openai",
         'llm_model_name': "gpt-4o-mini",
         'llm_endpoint': "https://api.openai.com/v1",
         'llm_api_key': "",
@@ -700,6 +703,29 @@ def validate_config(config: Config) -> Config | None:
 
 
 def update_config(config: Config, data: dict) -> Config:
+    
+    if data.get("llm_provider"):
+      if data["llm_provider"] == "openai":
+        data["llm_endpoint"] = "https://api.openai.com/v1";
+        data["llm_model_name"] = "whisper-1";
+        data["llm_api_key"] = "";
+        
+      elif data["llm_provider"] == "openrouter":
+        data["llm_endpoint"] = "https://openrouter.ai/api/v1/";
+        data["llm_model_name"] = "llama-3.1-70b-instruct:free";
+        data["llm_api_key"] = "";
+        
+      elif data["llm_provider"] == "gemini":
+        data["llm_endpoint"] = "https://generativelanguage.googleapis.com/v1beta";
+        data["llm_model_name"] = "gemini-2.0-flash-lite";
+        data["llm_api_key"] = "";
+        
+      elif data["llm_provider"] == "custom-multi-modal":       
+        data["llm_endpoint"] = "";
+        data["llm_model_name"] = "";
+        data["llm_api_key"] = "";
+
+
     if data.get("stt_provider"):
       if data["stt_provider"] == "openai":
         data["stt_endpoint"] = "https://api.openai.com/v1";

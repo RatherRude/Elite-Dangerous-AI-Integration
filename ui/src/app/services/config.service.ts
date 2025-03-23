@@ -42,11 +42,12 @@ export interface SystemInfoMessage extends BaseMessage {
 
 export interface Config {
     api_key: string;
-    llm_api_key: string;
-    llm_endpoint: string;
     commander_name: string;
     character: string;
+    llm_provider: "openai" | "openrouter" | "gemini" | "custom-multi-modal";
     llm_model_name: string;
+    llm_api_key: string;
+    llm_endpoint: string;
     vision_model_name: string;
     vision_endpoint: string;
     vision_api_key: string;
