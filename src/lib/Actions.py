@@ -223,6 +223,8 @@ def galaxy_map_close(args, projected_states):
 
 
 def system_map_open(args, projected_states):
+    if projected_states.get('CurrentStatus', {}).get('GuiFocus', '') in ['SAA', 'FSS', 'Codex', 'StationServices']:
+        raise Exception('System map can not be opened currently, the active GUI needs to be closed first')
     setGameWindowActive()
     keys.send('SystemMapOpen')
     return f"System map opened/closed"
