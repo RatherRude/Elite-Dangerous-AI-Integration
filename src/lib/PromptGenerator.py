@@ -621,9 +621,52 @@ class PromptGenerator:
 
         if active_mode == 'Suit':
             backpack_info = projected_states.get('Backpack', {})
+            suit_loadout = projected_states.get('SuitLoadout', {})
+            
+            # Create a comprehensive suit information display
+            suit_display = {}
+            backpack_summary = {}
+            
+            # Add suit details if available
+            if suit_loadout:
+                # Get basic suit info
+                suit_display["Name"] = suit_loadout.get('SuitName_Localised', suit_loadout.get('SuitName', 'Unknown'))
+                suit_display["Loadout"] = suit_loadout.get('LoadoutName', 'Unknown')
+                
+                # Format suit modifications in a readable way
+                if suit_loadout.get('SuitMods', []):
+                    suit_mods = []
+                    for mod in suit_loadout.get('SuitMods', []):
+                        # Convert snake_case to Title Case for better readability
+                        readable_mod = ' '.join(word.capitalize() for word in mod.split('_'))
+                        suit_mods.append(readable_mod)
+                    suit_display["Modifications"] = suit_mods
+                
+                # Format equipped weapons
+                if suit_loadout.get('Modules', []):
+                    weapons = []
+                    for module in suit_loadout.get('Modules', []):
+                        weapon_info = {
+                            "Name": module.get('ModuleName_Localised', module.get('ModuleName', 'Unknown')),
+                            "Class": f"Class {module.get('Class', 0)}",
+                            "Slot": module.get('SlotName', 'Unknown')
+                        }
+                        
+                        # Format weapon modifications
+                        if module.get('WeaponMods', []):
+                            weapon_mods = []
+                            for mod in module.get('WeaponMods', []):
+                                # Convert snake_case to Title Case for better readability
+                                readable_mod = ' '.join(word.capitalize() for word in mod.split('_'))
+                                weapon_mods.append(readable_mod)
+                            weapon_info["Modifications"] = weapon_mods
+                            
+                        weapons.append(weapon_info)
+                    
+                    suit_display["Weapons"] = weapons
+            
+            # Create a natural language description of backpack contents
             if backpack_info:
-                # Create a natural language description of backpack contents
-                backpack_summary = {}
                 category_display_names = {
                     'Items': 'Equipment',
                     'Components': 'Engineering Components',
@@ -644,10 +687,25 @@ class PromptGenerator:
                             # Use friendlier category names
                             friendly_name = category_display_names.get(category, category)
                             backpack_summary[friendly_name] = items_list
+            
+            # Add the comprehensive suit information to status entries
+            if suit_display or backpack_summary:
+                # Create the final display with suit info first, backpack last
+                final_suit_display = {}
                 
-                # Add a natural language summary if items exist
+                # Add suit details if available
+                if suit_display:
+                    for key, value in suit_display.items():
+                        final_suit_display[key] = value
+                
+                # Add backpack contents at the end
                 if backpack_summary:
-                    status_entries.append(("Suit Backpack Contents", backpack_summary))
+                    final_suit_display["Backpack"] = backpack_summary
+                
+                status_entries.append(("Suit Information", final_suit_display))
+            # If we have no suit display but do have backpack info, fall back to old format
+            elif backpack_summary:
+                status_entries.append(("Suit Backpack Contents", backpack_summary))
 
         status_entries.append(("Main Ship", ship_display))
 

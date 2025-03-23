@@ -770,6 +770,65 @@ class ExobiologyScan(Projection[ExobiologyScanState]):
         return projected_events
 
 
+# Define types for SuitLoadout Projection
+SuitWeaponModule = TypedDict('SuitWeaponModule', {
+    "SlotName": str,
+    "SuitModuleID": int,
+    "ModuleName": str,
+    "ModuleName_Localised": str,
+    "Class": int,
+    "WeaponMods": list[str]
+})
+
+SuitLoadoutState = TypedDict('SuitLoadoutState', {
+    "SuitID": int,
+    "SuitName": str,
+    "SuitName_Localised": str,
+    "SuitMods": list[str],
+    "LoadoutID": int,
+    "LoadoutName": str,
+    "Modules": list[SuitWeaponModule]
+})
+
+@final
+class SuitLoadout(Projection[SuitLoadoutState]):
+    @override
+    def get_default_state(self) -> SuitLoadoutState:
+        return {
+            "SuitID": 0,
+            "SuitName": "Unknown",
+            "SuitName_Localised": "Unknown",
+            "SuitMods": [],
+            "LoadoutID": 0,
+            "LoadoutName": "Unknown",
+            "Modules": []
+        }
+    
+    @override
+    def process(self, event: Event) -> None:
+        if isinstance(event, GameEvent) and event.content.get('event') == 'SuitLoadout':
+            # Update the entire state with the new loadout information
+            self.state["SuitID"] = event.content.get('SuitID', 0)
+            self.state["SuitName"] = event.content.get('SuitName', 'Unknown')
+            self.state["SuitName_Localised"] = event.content.get('SuitName_Localised', 'Unknown')
+            self.state["SuitMods"] = event.content.get('SuitMods', [])
+            self.state["LoadoutID"] = event.content.get('LoadoutID', 0)
+            self.state["LoadoutName"] = event.content.get('LoadoutName', 'Unknown')
+            
+            # Process weapon modules
+            modules = []
+            for module in event.content.get('Modules', []):
+                modules.append({
+                    "SlotName": module.get('SlotName', 'Unknown'),
+                    "SuitModuleID": module.get('SuitModuleID', 0),
+                    "ModuleName": module.get('ModuleName', 'Unknown'),
+                    "ModuleName_Localised": module.get('ModuleName_Localised', 'Unknown'),
+                    "Class": module.get('Class', 0),
+                    "WeaponMods": module.get('WeaponMods', [])
+                })
+            
+            self.state["Modules"] = modules
+
 
 def registerProjections(event_manager: EventManager):
 
@@ -783,6 +842,7 @@ def registerProjections(event_manager: EventManager):
     event_manager.register_projection(ExobiologyScan())
     event_manager.register_projection(Cargo())
     event_manager.register_projection(Backpack())
+    event_manager.register_projection(SuitLoadout())
 
     # ToDo: SLF, SRV,
     for proj in [
