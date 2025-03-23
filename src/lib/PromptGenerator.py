@@ -5,6 +5,7 @@ from typing import Any, cast
 import yaml
 import requests
 import humanize
+import json
 
 from lib.EventModels import DockedEvent, FSDJumpEvent, FSDTargetEvent, OutfittingEvent, ReceiveTextEvent, ShipTargetedEvent, StartJumpEvent, UnderAttackEvent
 
@@ -757,6 +758,21 @@ class PromptGenerator:
         if current_station and current_station == storedShips.get('StationName'):
             status_entries.append(("Local, stored ships", storedShips.get('ShipsHere', [])))
 
+        # Add friends status (always include this entry)
+        friends_info = projected_states.get('Friends', {})
+        online_friends = friends_info.get('Online', [])
+        
+        
+        # Always add the entry, with appropriate message based on online status
+        if online_friends:
+            status_entries.append(("Friends Status", {
+                "Online Count": len(online_friends),
+                "Online Friends": online_friends
+            }))
+        else:
+            status_entries.append(("Friends Status", "No friends currently online"))
+
+        # Format and return the final status message
         return "\n\n".join(['# '+entry[0]+'\n' + yaml.dump(entry[1]) for entry in status_entries])
 
     def generate_prompt(self, events: list[Event], projected_states: dict[str, dict], pending_events: list[Event]):

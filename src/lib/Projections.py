@@ -830,6 +830,44 @@ class SuitLoadout(Projection[SuitLoadoutState]):
             self.state["Modules"] = modules
 
 
+# Define types for Friends Projection
+OnlineFriendsState = TypedDict('OnlineFriendsState', {
+    "Online": list[str]  # List of online friend names
+})
+
+@final
+class Friends(Projection[OnlineFriendsState]):
+    @override
+    def get_default_state(self) -> OnlineFriendsState:
+        return {
+            "Online": []
+        }
+    
+    @override
+    def process(self, event: Event) -> None:
+        # Clear the list on Fileheader event (new game session)
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Fileheader':
+            self.state["Online"] = []
+        
+        # Process Friends events
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Friends':
+            friend_name = event.content.get('Name', '')
+            friend_status = event.content.get('Status', '')
+            
+            # Skip if missing crucial information
+            if not friend_name or not friend_status:
+                return
+            
+            # If the friend is coming online, add them to the list
+            if friend_status == "Online":
+                if friend_name not in self.state["Online"]:
+                    self.state["Online"].append(friend_name)
+            
+            # If the friend was previously online but now has a different status, remove them
+            elif friend_name in self.state["Online"]:
+                self.state["Online"].remove(friend_name)
+
+
 def registerProjections(event_manager: EventManager):
 
     event_manager.register_projection(EventCounter())
@@ -843,6 +881,7 @@ def registerProjections(event_manager: EventManager):
     event_manager.register_projection(Cargo())
     event_manager.register_projection(Backpack())
     event_manager.register_projection(SuitLoadout())
+    event_manager.register_projection(Friends())
 
     # ToDo: SLF, SRV,
     for proj in [
