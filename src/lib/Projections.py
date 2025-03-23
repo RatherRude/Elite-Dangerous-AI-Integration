@@ -564,6 +564,99 @@ ExobiologyScanState = TypedDict('ExobiologyScanState', {
     "long": NotRequired[float]
 })
 
+# Define types for Backpack Projection
+BackpackItem = TypedDict('BackpackItem', {
+    "Name": str,
+    "Name_Localised": NotRequired[str],
+    "OwnerID": int,
+    "Count": int
+})
+
+BackpackState = TypedDict('BackpackState', {
+    "Items": list[BackpackItem],
+    "Components": list[BackpackItem],
+    "Consumables": list[BackpackItem],
+    "Data": list[BackpackItem]
+})
+
+@final
+class Backpack(Projection[BackpackState]):
+    @override
+    def get_default_state(self) -> BackpackState:
+        return {
+            "Items": [],
+            "Components": [],
+            "Consumables": [],
+            "Data": []
+        }
+    
+    @override
+    def process(self, event: Event) -> None:
+        if isinstance(event, GameEvent):
+            # Full backpack update
+            if event.content.get('event') == 'Backpack':
+                # Reset and update all categories
+                self.state["Items"] = event.content.get("Items", [])
+                self.state["Components"] = event.content.get("Components", [])
+                self.state["Consumables"] = event.content.get("Consumables", [])
+                self.state["Data"] = event.content.get("Data", [])
+            
+            # Backpack additions
+            elif event.content.get('event') == 'BackpackChange' and 'Added' in event.content:
+                for item in event.content.get('Added', []):
+                    item_type = item.get('Type', '')
+                    # Create a copy without the Type field for storing
+                    item_copy = {k: v for k, v in item.items() if k != 'Type'}
+                    
+                    if item_type == 'Item':
+                        self._add_or_update_item("Items", item_copy)
+                    elif item_type == 'Component':
+                        self._add_or_update_item("Components", item_copy)
+                    elif item_type == 'Consumable':
+                        self._add_or_update_item("Consumables", item_copy)
+                    elif item_type == 'Data':
+                        self._add_or_update_item("Data", item_copy)
+            
+            # Backpack removals
+            elif event.content.get('event') == 'BackpackChange' and 'Removed' in event.content:
+                for item in event.content.get('Removed', []):
+                    item_type = item.get('Type', '')
+                    item_name = item.get('Name', '')
+                    item_count = item.get('Count', 0)
+                    
+                    if item_type == 'Item':
+                        self._remove_item("Items", item_name, item_count)
+                    elif item_type == 'Component':
+                        self._remove_item("Components", item_name, item_count)
+                    elif item_type == 'Consumable':
+                        self._remove_item("Consumables", item_name, item_count)
+                    elif item_type == 'Data':
+                        self._remove_item("Data", item_name, item_count)
+    
+    def _add_or_update_item(self, category: str, new_item: dict) -> None:
+        """Add a new item or update the count of an existing item in the specified category."""
+        for item in self.state[category]:
+            if item["Name"] == new_item["Name"]:
+                # Item exists, update count
+                item["Count"] += new_item["Count"]
+                return
+        
+        # Item doesn't exist, add it
+        self.state[category].append(new_item)
+    
+    def _remove_item(self, category: str, item_name: str, count: int) -> None:
+        """Remove an item or reduce its count in the specified category."""
+        for i, item in enumerate(self.state[category]):
+            if item["Name"] == item_name:
+                # Reduce count
+                item["Count"] -= count
+                
+                # Remove item if count is zero or less
+                if item["Count"] <= 0:
+                    self.state[category].pop(i)
+                
+                break
+
 @final
 class ExobiologyScan(Projection[ExobiologyScanState]):
     colony_size = {
@@ -689,6 +782,7 @@ def registerProjections(event_manager: EventManager):
     event_manager.register_projection(NavInfo())
     event_manager.register_projection(ExobiologyScan())
     event_manager.register_projection(Cargo())
+    event_manager.register_projection(Backpack())
 
     # ToDo: SLF, SRV,
     for proj in [
@@ -709,7 +803,6 @@ def registerProjections(event_manager: EventManager):
         'Market',
         'Outfitting',
         'Shipyard',
-        'Backpack',
     ]:
         p = latest_event_projection_factory(proj, proj)
         event_manager.register_projection(p())

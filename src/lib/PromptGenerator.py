@@ -616,7 +616,38 @@ class PromptGenerator:
             # Add the inventory to the ship display
             ship_display['CargoContents'] = formatted_inventory
         if active_mode == 'SRV':
+            # ToDo: Recalculate CargoCapcity when undocking SRV (scarab = 4t; scorpion = 2t)
             ship_display.pop('CargoCapacity', None)
+
+        if active_mode == 'Suit':
+            backpack_info = projected_states.get('Backpack', {})
+            if backpack_info:
+                # Create a natural language description of backpack contents
+                backpack_summary = {}
+                category_display_names = {
+                    'Items': 'Equipment',
+                    'Components': 'Engineering Components',
+                    'Consumables': 'Consumable Items',
+                    'Data': 'Data Storage'
+                }
+                
+                # Format all backpack items by category
+                for category in ['Items', 'Components', 'Consumables', 'Data']:
+                    if category in backpack_info and backpack_info[category]:
+                        items_list = []
+                        for item in backpack_info[category]:
+                            item_name = item.get('Name_Localised', item.get('Name', 'Unknown'))
+                            item_count = item.get('Count', 0)
+                            items_list.append(f"{item_count}x {item_name}")
+                        
+                        if items_list:
+                            # Use friendlier category names
+                            friendly_name = category_display_names.get(category, category)
+                            backpack_summary[friendly_name] = items_list
+                
+                # Add a natural language summary if items exist
+                if backpack_summary:
+                    status_entries.append(("Suit Backpack Contents", backpack_summary))
 
         status_entries.append(("Main Ship", ship_display))
 
