@@ -1,8 +1,9 @@
 import queue
 import threading
 import time
-from typing import final
+from typing import final, Optional
 from .Logger import log
+from .ActionManager import ActionManager
 
 from EDMesg.CovasNext import (
     ExternalChatNotification,
@@ -18,7 +19,7 @@ from EDMesg.base import EDMesgWelcomeAction
 
 @final
 class EDCoPilot:
-    def __init__(self, is_enabled: bool, is_edcopilot_dominant: bool=False, enabled_game_events: list[str]=[]):
+    def __init__(self, is_enabled: bool, is_edcopilot_dominant: bool=False, enabled_game_events: list[str]=[], action_manager: Optional[ActionManager]=None):
         self.install_path = self.get_install_path()
         self.proc_id = self.get_process_id()
         self.is_enabled = is_enabled and self.is_installed()
@@ -26,6 +27,7 @@ class EDCoPilot:
         self.provider = None
         self.is_edcopilot_dominant = is_edcopilot_dominant
         self.enabled_game_events = enabled_game_events
+        self.action_manager = action_manager
         self.event_publication_queue: queue.Queue[ExternalChatNotification|ExternalBackgroundChatNotification] = queue.Queue()
 
         try:
@@ -41,10 +43,14 @@ class EDCoPilot:
             thread = threading.Thread(target=self.listen_actions)
             thread.daemon = True
             thread.start()
+            
+        # Register EDCoPilot-specific actions if action_manager is provided
+        if self.action_manager:
+            self.register_actions()
 
     def listen_actions(self):
         while True:
-            if not self.provider.pending_actions.empty():
+            if self.provider and not self.provider.pending_actions.empty():
                 action = self.provider.pending_actions.get()
                 if isinstance(action, EDMesgWelcomeAction):
                     self.share_config()
@@ -116,6 +122,42 @@ class EDCoPilot:
                 )
             )
 
+    def edcopilot_send_message(self, args: dict, projected_states: dict) -> str:
+        """Example action method for EDCoPilot to send a message"""
+        message = args.get("message", "")
+        if not message or not self.provider:
+            return "Failed to send message: No message provided or EDCoPilot provider not available"
+            
+        # Example implementation that uses the provider to send a message
+        log('info', 'hehe' + message)
+        return 'Successfully sent message: ' + message
+
+    def register_actions(self):
+        log('info', 'register actions')
+        """Register EDCoPilot-specific actions with the action_manager"""
+        if not self.action_manager:
+            return
+            
+        # Register the send message action
+        self.action_manager.registerAction(
+            "edcopilot_send_message",
+            "Send a message through EDCoPilot",
+            {
+                "type": "object",
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "description": "The message to send through EDCoPilot"
+                    }
+                },
+                "required": ["message"]
+            },
+            self.edcopilot_send_message,
+            "global",  # Make this action available in all modes
+            lambda args, _: f"Sending message via EDCoPilot: {args.get('message', '')}"
+        )
+        
+        # Add more action registrations as needed
 
 if __name__ == "__main__":
     client = create_covasnext_client()
