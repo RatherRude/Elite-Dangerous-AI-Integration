@@ -60,6 +60,49 @@ LocationState = TypedDict('LocationState', {
     "NearestDestination": NotRequired[str], # only when landed on a planet
 })
 
+CargoState = TypedDict('CargoState', {
+    "Inventory": list[dict],
+    "TotalItems": int,
+    "Capacity": int
+})
+
+@final
+class Cargo(Projection[CargoState]):
+    @override
+    def get_default_state(self) -> CargoState:
+        return {
+            "Inventory": [],
+            "TotalItems": 0,
+            "Capacity": 0
+        }
+    
+    @override
+    def process(self, event: Event) -> None:
+        # Process Cargo event
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Cargo':
+            if 'Inventory' in event.content:
+                self.state['Inventory'] = []
+                total_items = 0
+                
+                for item in event.content.get('Inventory', []):
+                    self.state['Inventory'].append({
+                        "Name": item.get('Name_Localised', item.get('Name', 'Unknown')),
+                        "Count": item.get('Count', 0),
+                        "Stolen": item.get('Stolen', 0) > 0
+                    })
+                    total_items += item.get('Count', 0)
+                
+                self.state['TotalItems'] = total_items
+
+        # Get cargo capacity from Loadout event
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Loadout':
+            self.state['Capacity'] = event.content.get('CargoCapacity', 0)
+            
+        # Update from Status event
+        if isinstance(event, StatusEvent) and event.status.get('event') == 'Status':
+            if 'Cargo' in event.status:
+                self.state['TotalItems'] = event.status.get('Cargo', 0)
+
 @final
 class Location(Projection[LocationState]):
     @override
@@ -645,6 +688,7 @@ def registerProjections(event_manager: EventManager):
     event_manager.register_projection(Target())
     event_manager.register_projection(NavInfo())
     event_manager.register_projection(ExobiologyScan())
+    event_manager.register_projection(Cargo())
 
     # ToDo: SLF, SRV,
     for proj in [
@@ -665,7 +709,6 @@ def registerProjections(event_manager: EventManager):
         'Market',
         'Outfitting',
         'Shipyard',
-        'Cargo',
         'Backpack',
     ]:
         p = latest_event_projection_factory(proj, proj)

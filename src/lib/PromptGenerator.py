@@ -8,7 +8,7 @@ import humanize
 
 from lib.EventModels import DockedEvent, FSDJumpEvent, FSDTargetEvent, OutfittingEvent, ReceiveTextEvent, ShipTargetedEvent, StartJumpEvent, UnderAttackEvent
 
-from .Projections import LocationState, MissionsState, ShipInfoState, NavInfo, TargetState, CurrentStatus
+from .Projections import LocationState, MissionsState, ShipInfoState, NavInfo, TargetState, CurrentStatus, CargoState
 
 from .EDJournal import *
 from .Event import (
@@ -584,6 +584,10 @@ class PromptGenerator:
             if flags2["OnFoot"]:
                 active_mode = "Suit"
 
+        if active_mode == "Suit":
+            status_info.pop('cargo', None)
+            status_info.pop('pips', None)
+
         return active_mode, status_info
 
     def generate_status_message(self, projected_states: dict[str, dict]):
@@ -592,8 +596,29 @@ class PromptGenerator:
         active_mode, vehicle_status = self.generate_vehicle_status(projected_states.get('CurrentStatus', {}))
         status_entries.append((active_mode+" status", vehicle_status))
 
+        # Get ship and cargo info
         ship_info: ShipInfoState = projected_states.get('ShipInfo', {})  # pyright: ignore[reportAssignmentType]
-        status_entries.append(("Main Ship", ship_info))
+        cargo_info: CargoState = projected_states.get('Cargo', {})  # pyright: ignore[reportAssignmentType]
+        
+        # Create a copy of ship_info so we don't modify the original
+        ship_display = dict(ship_info)
+        
+        # Add cargo inventory in a more efficient format if available
+
+        if cargo_info and cargo_info.get('Inventory'):
+            formatted_inventory = []
+            for item in cargo_info.get('Inventory', []):
+                item_name = item.get('Name', 'Unknown')
+                count = item.get('Count', 0)
+                stolen = " (Stolen)" if item.get('Stolen', False) else ""
+                formatted_inventory.append(f"{count} X {item_name}{stolen}")
+
+            # Add the inventory to the ship display
+            ship_display['CargoContents'] = formatted_inventory
+        if active_mode == 'SRV':
+            ship_display.pop('CargoCapacity', None)
+
+        status_entries.append(("Main Ship", ship_display))
 
         location_info: LocationState = projected_states.get('Location', {})  # pyright: ignore[reportAssignmentType]
         nav_info: NavInfo = projected_states.get('NavInfo', {})  # pyright: ignore[reportAssignmentType]
@@ -610,7 +635,6 @@ class PromptGenerator:
         missions_info: MissionsState = projected_states.get('Missions', {})  # pyright: ignore[reportAssignmentType]
         if missions_info and 'Active' in missions_info:
             status_entries.append(("Active missions", missions_info))
-
 
         target_info: TargetState = projected_states.get('Target', {})  # pyright: ignore[reportAssignmentType]
         target_info.pop('EventID', None)
