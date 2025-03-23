@@ -155,7 +155,7 @@ def galaxy_map_open(args, projected_states):
     setGameWindowActive()
 
 
-    if projected_states.get('CurrentStatus', {}).get('GuiFocus', '') in ['SAA','FSS','Codex','Orrery','SystemMap','StationServices']:
+    if projected_states.get('CurrentStatus', {}).get('GuiFocus', '') in ['SAA','FSS','Codex','StationServices']:
         raise Exception('Galaxy map can not be opened currently, the active GUI needs to be closed first')
     # Galaxy map already open, so we close it
     if projected_states.get('CurrentStatus').get('GuiFocus') == 'GalaxyMap':
