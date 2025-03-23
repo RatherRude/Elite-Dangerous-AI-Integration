@@ -11,7 +11,27 @@ There are 3 main components that need to be configured for a free setup: LLM, ST
 The LLM is the brains of the operation. It is responsible for understanding the context of the conversation and generating the next response or dispatching actions. The LLM is a large model that requires a lot of resources to run, so it requires either using a cloud service or having a really good GPU available.
 
 
-### 1.1 Using OpenRouter.ai (cloud-based)
+### 1.1 Using Google AI Studio (cloud-based)
+The cloud service https://aistudio.google.com provides access to free models, requiring only a google account to set up.
+
+*Upsides:*
+- Daily free quota
+- Does not require a powerful GPU
+- Good response times
+
+*Downsides*
+- Requires a Google account
+
+Once logged in you can create your API key and start using it with COVAS:NEXT:
+
+```
+LLM Provider: Custom
+LLM Model Name: gemini-2.0-flash
+LLM Endpoint URL: https://generativelanguage.googleapis.com/v1beta
+LLM API Key: <your API key>
+```
+
+### 1.2 Using OpenRouter.ai (cloud-based)
 The cloud service https://openrouter.ai provides a free tier that can be used to run the LLM. 
 
 *Upsides:*
@@ -36,7 +56,7 @@ LLM API Key: <your API key>
 Allow AI Actions: Disable (Unless you use a paid model that supports actions)
 ```
 
-### 1.2 Using Ollama (local)
+### 1.3 Using Ollama (local)
 https://ollama.com is a third-party application that can run the LLM locally on your computer. 
 
 *Upsides:*
@@ -60,7 +80,7 @@ LLM Endpoint URL: http://localhost:11434/v1
 LLM API Key: <empty>
 ```
 
-### 1.3 Using LMStudio (local)
+### 1.4 Using LMStudio (local)
 https://lmstudio.ai is a third-party application that can run the LLM locally on your computer.
 
 *Upsides:*
@@ -86,7 +106,7 @@ LLM Endpoint URL: http://localhost:1234/v1
 LLM API Key: <empty>
 ```
 
-### 1.4 Using AIServer (local)
+### 1.5 Using AIServer (local)
 You can read more about the AIServer [here](./AIServer.md).
 
 *Upsides:*
@@ -116,6 +136,29 @@ You can read more about the AIServer [here](./AIServer.md).
 - Tricky to set up, as it is still highly experimental
 - May struggle with multilingual input/output
 - Higher latency than cloud services
+- 
+### 2.2 Using Google AI Studio (cloud-based)
+The cloud service https://aistudio.google.com provides access to free models, requiring only a google account to set up.
+
+These models can be multi-modal allowing for the ability to transcribe and make it function as a STT service.
+
+*Upsides:*
+- Daily free quota
+- Does not require a powerful GPU
+- Good response times
+
+*Downsides*
+- Requires a Google account
+- Never as accurate as designated STT models (like whisper-1/gpt-4o-mini-transcribe)
+
+Once logged in you can create your API key and start using it with COVAS:NEXT:
+
+```
+STT Provider: Custom Multi-Modal
+STT Model Name: gemini-2.0-flash-lite
+STT Endpoint URL: https://generativelanguage.googleapis.com/v1beta
+STT API Key: <empty>
+```
 
 ## 3. TTS Configuration
 The Text-to-Speech (TTS) component is responsible for reading out the responses of the LLM. Edge-TTS is a free cloud service and is used by default. Alternatively, you can use the AIServer to run TTS locally.
