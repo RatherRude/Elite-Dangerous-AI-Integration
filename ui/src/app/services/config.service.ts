@@ -44,7 +44,7 @@ export interface Config {
     api_key: string;
     commander_name: string;
     character: string;
-    llm_provider: "openai" | "openrouter" | "google-ai-studio" | "custom";
+    llm_provider: "openai" | "openrouter" | "google-ai-studio" | "custom" | "local AIServer";
     llm_model_name: string;
     llm_api_key: string;
     llm_endpoint: string;
@@ -52,13 +52,13 @@ export interface Config {
     vision_model_name: string;
     vision_endpoint: string;
     vision_api_key: string;
-    stt_provider: "openai" | "custom" | "custom-multi-modal" | "google-ai-studio" | "none";
+    stt_provider: "openai" | "custom" | "custom-multi-modal" | "google-ai-studio" | "none" | "local AIServer";
     stt_model_name: string;
     stt_api_key: string;
     stt_endpoint: string;
     stt_custom_prompt: string;
     stt_required_word: string;
-    tts_provider: "openai" | "edge-tts" | "custom" | "none";
+    tts_provider: "openai" | "edge-tts" | "custom" | "none" | "local AIServer";
     tts_model_name: string;
     tts_api_key: string;
     tts_endpoint: string;

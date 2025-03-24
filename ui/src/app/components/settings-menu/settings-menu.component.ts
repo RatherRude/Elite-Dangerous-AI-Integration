@@ -264,25 +264,4 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     // Update providers based on detected key type
     await this.onConfigChange(providerChanges);
   }
-
-  // Handle provider changes, particularly for vision to update vision_var
-  async onProviderChange(type: string, value: string) {
-    if (!this.config) return;
-    
-    const changes: Partial<Config> = {};
-    
-    // Set the provider value using type-safe approach
-    if (type === 'vision') {
-      changes.vision_provider = value as any;
-      changes.vision_var = value !== 'none';
-    } else if (type === 'stt') {
-      changes.stt_provider = value as any;
-    } else if (type === 'tts') {
-      changes.tts_provider = value as any;
-    } else if (type === 'llm') {
-      changes.llm_provider = value as any;
-    }
-    
-    await this.onConfigChange(changes);
-  }
 }

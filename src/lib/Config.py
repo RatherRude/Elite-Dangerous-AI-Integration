@@ -728,6 +728,11 @@ def update_config(config: Config, data: dict) -> Config:
         data["llm_model_name"] = "gemini-2.0-flash"
         data["llm_api_key"] = ""
 
+      elif data["llm_provider"] == "local AIServer":
+        data["llm_endpoint"] = "http://localhost:8080"
+        data["llm_model_name"] = "gpt-4o-mini"
+        data["llm_api_key"] = ""
+        
       elif data["llm_provider"] == "custom":
         data["llm_endpoint"] = "https://api.openai.com/v1"
         data["llm_model_name"] = "gpt-4o-mini"
@@ -745,7 +750,7 @@ def update_config(config: Config, data: dict) -> Config:
         data["vision_model_name"] = "gemini-2.0-flash"
         data["vision_api_key"] = ""
         data["vision_var"] = True
-
+        
       elif data["vision_provider"] == "custom":
         data["vision_endpoint"] = "https://api.openai.com/v1"
         data["vision_model_name"] = "gpt-4o-mini"
@@ -764,6 +769,11 @@ def update_config(config: Config, data: dict) -> Config:
         data["stt_model_name"] = "whisper-1"
         data["stt_api_key"] = ""
 
+      if data["stt_provider"] == "local AIServer":
+        data["stt_endpoint"] = "http://localhost:8080"
+        data["stt_model_name"] = "whisper-1"
+        data["stt_api_key"] = ""
+        
       if data["stt_provider"] == "custom":
         data["stt_endpoint"] = "https://api.openai.com/v1"
         data["stt_model_name"] = "whisper-1"
@@ -791,6 +801,12 @@ def update_config(config: Config, data: dict) -> Config:
         data["tts_voice"] = "nova"
         data["tts_api_key"] = ""
 
+      if data["tts_provider"] == "local AIServer":
+        data["tts_endpoint"] = "http://localhost:8080"
+        data["tts_model_name"] = "tts-1"
+        data["tts_voice"] = "nova"
+        data["tts_api_key"] = ""
+        
       if data["tts_provider"] == "edge-tts":
         data["tts_endpoint"] = ""
         data["tts_model_name"] = ""
