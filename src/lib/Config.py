@@ -729,7 +729,7 @@ def update_config(config: Config, data: dict) -> Config:
         data["llm_model_name"] = "gemini-2.0-flash"
         data["llm_api_key"] = ""
 
-      elif data["llm_provider"] == "local AIServer":
+      elif data["llm_provider"] == "local-ai-server":
         data["llm_endpoint"] = "http://localhost:8080"
         data["llm_model_name"] = "gpt-4o-mini"
         data["llm_api_key"] = ""
@@ -770,7 +770,7 @@ def update_config(config: Config, data: dict) -> Config:
         data["stt_model_name"] = "whisper-1"
         data["stt_api_key"] = ""
 
-      if data["stt_provider"] == "local AIServer":
+      if data["stt_provider"] == "local-ai-server":
         data["stt_endpoint"] = "http://localhost:8080"
         data["stt_model_name"] = "whisper-1"
         data["stt_api_key"] = ""
@@ -802,7 +802,7 @@ def update_config(config: Config, data: dict) -> Config:
         data["tts_voice"] = "nova"
         data["tts_api_key"] = ""
 
-      if data["tts_provider"] == "local AIServer":
+      if data["tts_provider"] == "local-ai-server":
         data["tts_endpoint"] = "http://localhost:8080"
         data["tts_model_name"] = "tts-1"
         data["tts_voice"] = "nova"
