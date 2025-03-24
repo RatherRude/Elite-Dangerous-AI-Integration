@@ -494,21 +494,18 @@
 
                     <hr>
                     <h3>Vision Settings</h3>
-                    <mat-slide-toggle [(ngModel)]="config.vision_var"
-                                      (ngModelChange)="onConfigChange({vision_var: $event})">
-                        Enable Vision
-                    </mat-slide-toggle>
-                    @if (config.vision_var) {
-                        <mat-form-field>
-                            <mat-label>Vision Provider</mat-label>
-                            <mat-select [(ngModel)]="config.vision_provider"
-                                        (ngModelChange)="onConfigChange({vision_provider: $event})">
-                                <mat-option value="openai">OpenAI</mat-option>
-                                <mat-option value="google-ai-studio">Google AI Studio</mat-option>
-                                <mat-option value="custom">Custom</mat-option>
-                            </mat-select>
-                        </mat-form-field>
+                    <mat-form-field>
+                        <mat-label>Vision Provider</mat-label>
+                        <mat-select [(ngModel)]="config.vision_provider"
+                                    (ngModelChange)="onProviderChange('vision', $event)">
+                            <mat-option value="openai">OpenAI</mat-option>
+                            <mat-option value="google-ai-studio">Google AI Studio</mat-option>
+                            <mat-option value="custom">Custom</mat-option>
+                            <mat-option value="none">None</mat-option>
+                        </mat-select>
+                    </mat-form-field>
 
+                    @if (config.vision_provider && config.vision_provider !== 'none') {
                         @if (config.vision_provider === "openai") {
                             <mat-form-field>
                                 <mat-label>Vision Model Name</mat-label>

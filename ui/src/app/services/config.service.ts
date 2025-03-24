@@ -48,7 +48,7 @@ export interface Config {
     llm_model_name: string;
     llm_api_key: string;
     llm_endpoint: string;
-    vision_provider: "openai" | "google-ai-studio" | "custom";
+    vision_provider: "openai" | "google-ai-studio" | "custom" | "none";
     vision_model_name: string;
     vision_endpoint: string;
     vision_api_key: string;

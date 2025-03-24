@@ -317,7 +317,7 @@ class Config(TypedDict):
     llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom']
     llm_model_name: str
     llm_custom: dict[str, str]
-    vision_provider: Literal['openai', 'google-ai-studio', 'custom']
+    vision_provider: Literal['openai', 'google-ai-studio', 'custom', 'none']
     vision_model_name: str
     vision_endpoint: str
     vision_api_key: str
@@ -407,7 +407,7 @@ def load_config() -> Config:
             "We are partners in crime. My home system is Orrere.",
         'api_key': "",
         'tools_var': True,
-        'vision_var': True,
+        'vision_var': False,
         'ptt_var': False,
         'mute_during_response_var': False,
         'continue_conversation_var': True,
@@ -425,7 +425,7 @@ def load_config() -> Config:
         'llm_api_key': "",
         'llm_custom': {},
         'ptt_key': '',
-        'vision_provider': "openai",
+        'vision_provider': "none",
         'vision_model_name': "gpt-4o-mini",
         'vision_endpoint': "https://api.openai.com/v1",
         'vision_api_key': "",
@@ -471,6 +471,11 @@ def migrate(data: dict) -> dict:
             for name,value in events[section].items():
                 enabled_events[name] = value
         data['game_events'] = enabled_events
+        
+    # Migrate vision_var to vision_provider
+    if 'vision_var' in data and not data.get('vision_var'):
+        data['vision_provider'] = 'none'
+        
     return data
 
 def merge_config_data(defaults: dict, user: dict):
@@ -733,16 +738,25 @@ def update_config(config: Config, data: dict) -> Config:
         data["vision_endpoint"] = "https://api.openai.com/v1"
         data["vision_model_name"] = "gpt-4o-mini"
         data["vision_api_key"] = ""
+        data["vision_var"] = True
 
       elif data["vision_provider"] == "google-ai-studio":
         data["vision_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
         data["vision_model_name"] = "gemini-2.0-flash"
         data["vision_api_key"] = ""
+        data["vision_var"] = True
 
       elif data["vision_provider"] == "custom":
         data["vision_endpoint"] = "https://api.openai.com/v1"
         data["vision_model_name"] = "gpt-4o-mini"
         data["vision_api_key"] = ""
+        data["vision_var"] = True
+        
+      elif data["vision_provider"] == "none":
+        data["vision_endpoint"] = ""
+        data["vision_model_name"] = ""
+        data["vision_api_key"] = ""
+        data["vision_var"] = False
 
     if data.get("stt_provider"):
       if data["stt_provider"] == "openai":
