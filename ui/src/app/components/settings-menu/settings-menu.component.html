@@ -266,7 +266,7 @@
                             <mat-option value="openai">OpenAI</mat-option>
                             <mat-option value="openrouter">OpenRouter</mat-option>
                             <mat-option value="google-ai-studio">Google AI Studio</mat-option>
-                            <mat-option value="local AIServer">Local AIServer</mat-option>
+                            <mat-option value="local-ai-server">Local AIServer</mat-option>
                             <mat-option value="custom">Custom</mat-option>
                         </mat-select>
                     </mat-form-field>
@@ -312,7 +312,7 @@
                                    (ngModelChange)="onConfigChange({llm_api_key: $event})">
                         </mat-form-field>
                     }
-                    @if (config.llm_provider === "local AIServer")
+                    @if (config.llm_provider === "local-ai-server")
                     {
                         <mat-form-field>
                             <mat-label>LLM Endpoint</mat-label>
@@ -366,7 +366,7 @@
                                     (ngModelChange)="onConfigChange({stt_provider: $event})">
                             <mat-option value="openai">OpenAI</mat-option>
                             <mat-option value="google-ai-studio">Google AI Studio (Multi-Modal)</mat-option>
-                            <mat-option value="local AIServer">Local AIServer</mat-option>
+                            <mat-option value="local-ai-server">Local AIServer</mat-option>
                             <mat-option value="custom">Custom</mat-option>
                             <mat-option value="custom-multi-modal">Custom Multi-Modal</mat-option>
                             <mat-option value="none">None</mat-option>
@@ -396,7 +396,7 @@
                                    (ngModelChange)="onConfigChange({stt_api_key: $event})">
                         </mat-form-field>
                     }
-                    @if (config.stt_provider === "local AIServer") {
+                    @if (config.stt_provider === "local-ai-server") {
                         <mat-form-field>
                             <mat-label>STT Endpoint</mat-label>
                             <input matInput [(ngModel)]="config.stt_endpoint"
@@ -450,7 +450,7 @@
                                     (ngModelChange)="onConfigChange({tts_provider: $event})">
                             <mat-option value="openai">OpenAI</mat-option>
                             <mat-option value="edge-tts">Edge TTS</mat-option>
-                            <mat-option value="local AIServer">Local AIServer</mat-option>
+                            <mat-option value="local-ai-server">Local AIServer</mat-option>
                             <mat-option value="custom">Custom</mat-option>
                             <mat-option value="none">None</mat-option>
                         </mat-select>
@@ -489,7 +489,7 @@
                                    (ngModelChange)="onConfigChange({tts_speed: $event})">
                         </mat-form-field>
                     }
-                    @if (config.tts_provider === "local AIServer") {
+                    @if (config.tts_provider === "local-ai-server") {
                         <mat-form-field>
                             <mat-label>TTS Endpoint</mat-label>
                             <input matInput [(ngModel)]="config.tts_endpoint"
