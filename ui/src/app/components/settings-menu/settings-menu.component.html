@@ -550,6 +550,9 @@
                             </mat-form-field>
                         }
                     }
+                    @if (config.vision_provider === "none") {
+                        <p>Vision is disabled</p>
+                    }
 
                     @if (system?.os === 'Linux') {
                         <h3>Linux Settings</h3>
