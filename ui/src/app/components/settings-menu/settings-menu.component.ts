@@ -45,6 +45,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   config: Config | null = null;
   system: SystemInfo | null = null;
   hideApiKey = true;
+  apiKeyType: string | null = null;
   private configSubscription?: Subscription;
   private systemSubscription?: Subscription;
   private validationSubscription?: Subscription;
@@ -213,5 +214,75 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       const materialsString = selectedMaterials.join(", ");
       await this.onConfigChange({ react_to_material: materialsString });
     }
+  }
+
+  async onApiKeyChange(apiKey: string) {
+    if (!this.config) return;
+    
+    // Update the API key in config first
+    await this.onConfigChange({ api_key: apiKey });
+    
+    // Detect API key type
+    let providerChanges: Partial<Config> = {};
+    
+    if (apiKey.startsWith('AIzaS')) {
+      // Google AI Studio
+      this.apiKeyType = 'Google AI Studio';
+      providerChanges = {
+        llm_provider: 'google-ai-studio',
+        stt_provider: 'google-ai-studio',
+        vision_provider: 'google-ai-studio',
+        tts_provider: 'edge-tts',
+        vision_var: true
+      };
+    } else if (apiKey.startsWith('sk-or-v1')) {
+      // OpenRouter
+      this.apiKeyType = 'OpenRouter';
+      providerChanges = {
+        llm_provider: 'openrouter',
+        stt_provider: 'none',
+        vision_provider: 'none',
+        tts_provider: 'edge-tts',
+        vision_var: false
+      };
+    } else if (apiKey.startsWith('sk-')) {
+      // OpenAI
+      this.apiKeyType = 'OpenAI';
+      providerChanges = {
+        llm_provider: 'openai',
+        stt_provider: 'openai',
+        vision_provider: 'openai',
+        tts_provider: 'edge-tts',
+        vision_var: true
+      };
+    } else {
+      // Unknown key type
+      this.apiKeyType = null;
+      return; // Don't update providers if key type is unknown
+    }
+    
+    // Update providers based on detected key type
+    await this.onConfigChange(providerChanges);
+  }
+
+  // Handle provider changes, particularly for vision to update vision_var
+  async onProviderChange(type: string, value: string) {
+    if (!this.config) return;
+    
+    const changes: Partial<Config> = {};
+    
+    // Set the provider value using type-safe approach
+    if (type === 'vision') {
+      changes.vision_provider = value as any;
+      changes.vision_var = value !== 'none';
+    } else if (type === 'stt') {
+      changes.stt_provider = value as any;
+    } else if (type === 'tts') {
+      changes.tts_provider = value as any;
+    } else if (type === 'llm') {
+      changes.llm_provider = value as any;
+    }
+    
+    await this.onConfigChange(changes);
   }
 }
