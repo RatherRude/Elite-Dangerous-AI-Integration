@@ -44,9 +44,11 @@
                             <mat-option value="reset">Reset</mat-option>
                         </mat-select>
                     </mat-form-field>
-                    <p>Enter your API key from OpenAI, Google AI Studio, or OpenRouter. The system will automatically detect the key type and configure advanced settings accordingly. You can get an OpenAI key from the <a
-                            target="_blank" rel="noopener noreferrer" href="https://platform.openai.com/api-keys">OpenAI
-                        API keys page</a> after creating an account.</p>
+                    <p>Enter your API key from 
+                        <a target="_blank" rel="noopener noreferrer" href="https://platform.openai.com/api-keys">OpenAI</a>, 
+                        <a target="_blank" rel="noopener noreferrer" href="https://aistudio.google.com/app/apikey">Google AI Studio</a>, or 
+                        <a target="_blank" rel="noopener noreferrer" href="https://openrouter.ai/settings/keys">OpenRouter</a>. 
+                        The system will automatically detect the key type and configure settings.</p>
                     <mat-form-field>
                         <mat-label>Main API Key (OpenAI/Openrouter/Google AI Studio)</mat-label>
                         <input required matInput [type]="hideApiKey ? 'password' : 'text'" [(ngModel)]="config.api_key"
