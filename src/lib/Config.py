@@ -75,6 +75,7 @@ game_events = {
     'FSDJump': True,
     'FSDTarget': False,
     'StartJump': False,
+    'FsdCharging': False,
     'SupercruiseEntry': True,
     'SupercruiseExit': True,
     'ApproachSettlement': True,

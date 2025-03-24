@@ -106,6 +106,7 @@ shipUpdateEvents = {
     "FSDJump": "Commander {commanderName} has initiated a hyperjump to another system.",
     "FSDTarget": "Commander {commanderName} has selected a star system to jump to.",
     "StartJump": "Commander {commanderName} starts the hyperjump.",
+    "FsdCharging": "Commander {commanderName}'s FSD is charging.",
     "SupercruiseEntry": "Commander {commanderName} has entered supercruise from normal space.",
     "SupercruiseExit": "Commander {commanderName} has exited supercruise and returned to normal space.",
     "ApproachSettlement": "Commander {commanderName} is approaching settlement.",
