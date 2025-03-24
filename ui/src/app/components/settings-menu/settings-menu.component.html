@@ -44,19 +44,20 @@
                             <mat-option value="reset">Reset</mat-option>
                         </mat-select>
                     </mat-form-field>
-                    <p>This API key is used to authenticate with the OpenAI API. You can get it from the <a
+                    <p>Enter your API key from OpenAI, Google AI Studio, or OpenRouter. The system will automatically detect the key type and configure advanced settings accordingly. You can get an OpenAI key from the <a
                             target="_blank" rel="noopener noreferrer" href="https://platform.openai.com/api-keys">OpenAI
                         API keys page</a> after creating an account.</p>
                     <mat-form-field>
-                        <mat-label>OpenAI API Key</mat-label>
+                        <mat-label>Main API Key (OpenAI/Openrouter/Google AI Studio)</mat-label>
                         <input required matInput [type]="hideApiKey ? 'password' : 'text'" [(ngModel)]="config.api_key"
-                               (ngModelChange)="onConfigChange({api_key: $event})"
+                               (ngModelChange)="onApiKeyChange($event)"
                                pattern="^[A-Za-z0-9_.-]+$"
                                #apiKeyInput="ngModel">
                         <button matSuffix mat-icon-button (mousedown)="hideApiKey = false" (mouseup)="hideApiKey = true"
                                 (mouseleave)="hideApiKey = true">
                             <mat-icon>{{ hideApiKey ? 'visibility_off' : 'visibility' }}</mat-icon>
                         </button>
+                        <mat-hint *ngIf="apiKeyType">Detected: {{ apiKeyType }} - Advanced settings have been configured automatically</mat-hint>
                         <mat-error *ngIf="apiKeyInput.errors?.['pattern']">
                             API key can only contain letters, numbers, underscores, dots, and hyphens
                         </mat-error>
