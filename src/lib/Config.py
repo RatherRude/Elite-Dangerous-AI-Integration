@@ -320,7 +320,7 @@ class Config(TypedDict):
     vision_model_name: str
     vision_endpoint: str
     vision_api_key: str
-    stt_provider: Literal['openai', 'custom', 'custom-multi-modal', 'none']
+    stt_provider: Literal['openai', 'custom', 'custom-multi-modal', 'google-ai-studio', 'none']
     stt_model_name: str
     stt_api_key: str
     stt_endpoint: str
@@ -712,7 +712,7 @@ def update_config(config: Config, data: dict) -> Config:
 
       elif data["llm_provider"] == "openrouter":
         data["llm_endpoint"] = "https://openrouter.ai/api/v1/"
-        data["llm_model_name"] = "llama-3.1-70b-instruct:free"
+        data["llm_model_name"] = "llama-3.3-70b-instruct:free"
         data["llm_api_key"] = ""
 
       elif data["llm_provider"] == "google-ai-studio":
@@ -734,6 +734,11 @@ def update_config(config: Config, data: dict) -> Config:
       if data["stt_provider"] == "custom":
         data["stt_endpoint"] = "https://api.openai.com/v1"
         data["stt_model_name"] = "whisper-1"
+        data["stt_api_key"] = ""
+
+      if data["stt_provider"] == "google-ai-studio":
+        data["stt_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
+        data["stt_model_name"] = "gemini-2.0-flash-lite"
         data["stt_api_key"] = ""
 
       if data["stt_provider"] == "custom-multi-modal":
