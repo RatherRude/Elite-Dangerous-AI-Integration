@@ -500,22 +500,58 @@
                     </mat-slide-toggle>
                     @if (config.vision_var) {
                         <mat-form-field>
-                            <mat-label>Vision Endpoint</mat-label>
-                            <input matInput [(ngModel)]="config.vision_endpoint"
-                                   (ngModelChange)="onConfigChange({vision_endpoint: $event})">
+                            <mat-label>Vision Provider</mat-label>
+                            <mat-select [(ngModel)]="config.vision_provider"
+                                        (ngModelChange)="onConfigChange({vision_provider: $event})">
+                                <mat-option value="openai">OpenAI</mat-option>
+                                <mat-option value="google-ai-studio">Google AI Studio</mat-option>
+                                <mat-option value="custom">Custom</mat-option>
+                            </mat-select>
                         </mat-form-field>
 
-                        <mat-form-field>
-                            <mat-label>Vision Model Name</mat-label>
-                            <input matInput [(ngModel)]="config.vision_model_name"
-                                   (ngModelChange)="onConfigChange({vision_model_name: $event})">
-                        </mat-form-field>
+                        @if (config.vision_provider === "openai") {
+                            <mat-form-field>
+                                <mat-label>Vision Model Name</mat-label>
+                                <input matInput [(ngModel)]="config.vision_model_name"
+                                      (ngModelChange)="onConfigChange({vision_model_name: $event})">
+                            </mat-form-field>
+                            <mat-form-field>
+                                <mat-label>Override Vision API Key</mat-label>
+                                <input matInput type="password" [(ngModel)]="config.vision_api_key"
+                                      (ngModelChange)="onConfigChange({vision_api_key: $event})">
+                            </mat-form-field>
+                        }
 
-                        <mat-form-field>
-                            <mat-label>Override Vision API Key</mat-label>
-                            <input matInput type="password" [(ngModel)]="config.vision_api_key"
-                                   (ngModelChange)="onConfigChange({vision_api_key: $event})">
-                        </mat-form-field>
+                        @if (config.vision_provider === "google-ai-studio") {
+                            <mat-form-field>
+                                <mat-label>Vision Model Name</mat-label>
+                                <input matInput [(ngModel)]="config.vision_model_name"
+                                      (ngModelChange)="onConfigChange({vision_model_name: $event})">
+                            </mat-form-field>
+                            <mat-form-field>
+                                <mat-label>Override Vision API Key</mat-label>
+                                <input matInput type="password" [(ngModel)]="config.vision_api_key"
+                                      (ngModelChange)="onConfigChange({vision_api_key: $event})">
+                            </mat-form-field>
+                        }
+
+                        @if (config.vision_provider === "custom") {
+                            <mat-form-field>
+                                <mat-label>Vision Endpoint</mat-label>
+                                <input matInput [(ngModel)]="config.vision_endpoint"
+                                      (ngModelChange)="onConfigChange({vision_endpoint: $event})">
+                            </mat-form-field>
+                            <mat-form-field>
+                                <mat-label>Vision Model Name</mat-label>
+                                <input matInput [(ngModel)]="config.vision_model_name"
+                                      (ngModelChange)="onConfigChange({vision_model_name: $event})">
+                            </mat-form-field>
+                            <mat-form-field>
+                                <mat-label>Override Vision API Key</mat-label>
+                                <input matInput type="password" [(ngModel)]="config.vision_api_key"
+                                      (ngModelChange)="onConfigChange({vision_api_key: $event})">
+                            </mat-form-field>
+                        }
                     }
 
                     @if (system?.os === 'Linux') {

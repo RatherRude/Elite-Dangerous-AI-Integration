@@ -317,6 +317,7 @@ class Config(TypedDict):
     llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom']
     llm_model_name: str
     llm_custom: dict[str, str]
+    vision_provider: Literal['openai', 'google-ai-studio', 'custom']
     vision_model_name: str
     vision_endpoint: str
     vision_api_key: str
@@ -422,7 +423,9 @@ def load_config() -> Config:
         'llm_model_name': "gpt-4o-mini",
         'llm_endpoint': "https://api.openai.com/v1",
         'llm_api_key': "",
+        'llm_custom': {},
         'ptt_key': '',
+        'vision_provider': "openai",
         'vision_model_name': "gpt-4o-mini",
         'vision_endpoint': "https://api.openai.com/v1",
         'vision_api_key': "",
@@ -724,6 +727,22 @@ def update_config(config: Config, data: dict) -> Config:
         data["llm_endpoint"] = "https://api.openai.com/v1"
         data["llm_model_name"] = "gpt-4o-mini"
         data["llm_api_key"] = ""
+
+    if data.get("vision_provider"):
+      if data["vision_provider"] == "openai":
+        data["vision_endpoint"] = "https://api.openai.com/v1"
+        data["vision_model_name"] = "gpt-4o-mini"
+        data["vision_api_key"] = ""
+
+      elif data["vision_provider"] == "google-ai-studio":
+        data["vision_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
+        data["vision_model_name"] = "gemini-2.0-flash"
+        data["vision_api_key"] = ""
+
+      elif data["vision_provider"] == "custom":
+        data["vision_endpoint"] = "https://api.openai.com/v1"
+        data["vision_model_name"] = "gpt-4o-mini"
+        data["vision_api_key"] = ""
 
     if data.get("stt_provider"):
       if data["stt_provider"] == "openai":
