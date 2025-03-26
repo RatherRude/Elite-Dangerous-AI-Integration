@@ -1624,7 +1624,7 @@ def filter_station_response(request, response):
 def station_finder(obj,projected_states):
     # Initialize the filters
     request_body = prepare_station_request(obj, projected_states)
-    log('debug', 'station search input', obj)
+    log('debug', 'station search input', request_body)
 
     url = "https://spansh.co.uk/api/stations/search"
     try:
@@ -3393,6 +3393,5 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
 
 
 if __name__ == "__main__":
-    req = prepare_station_request({'reference_system': 'Muang',
-                                   'market': [{'name': 'gold', 'amount': 10, 'transaction': 'Buy'}]})
+    req = prepare_station_request({'reference_system': 'Coelho', 'market': [{'name': 'Gold', 'amount': 8, 'transaction': 'Buy'}]})
     print(json.dumps(req))
