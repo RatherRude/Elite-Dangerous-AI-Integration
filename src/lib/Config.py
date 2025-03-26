@@ -315,7 +315,7 @@ class Config(TypedDict):
     llm_endpoint: str
     commander_name: str
     character: str
-    llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom']
+    llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom', 'local-ai-server']
     llm_model_name: str
     llm_custom: dict[str, str]
     vision_provider: Literal['openai', 'google-ai-studio', 'custom', 'none']
@@ -328,7 +328,7 @@ class Config(TypedDict):
     stt_endpoint: str
     stt_custom_prompt: str
     stt_required_word: str
-    tts_provider: Literal['openai', 'edge-tts', 'custom', 'none']
+    tts_provider: Literal['openai', 'edge-tts', 'custom', 'none', 'local-ai-server']
     tts_model_name: str
     tts_api_key: str
     tts_endpoint: str

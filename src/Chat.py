@@ -69,14 +69,14 @@ class Chat:
             
 
         self.sttClient: OpenAI | None = None
-        if self.config["stt_provider"] in ['openai', 'custom', 'custom-multi-modal', 'google-ai-studio']:
+        if self.config["stt_provider"] in ['openai', 'custom', 'custom-multi-modal', 'google-ai-studio', 'local-ai-server']:
             self.sttClient = OpenAI(
                 base_url=self.config["stt_endpoint"],
                 api_key=self.config["api_key"] if self.config["stt_api_key"] == '' else self.config["stt_api_key"],
             )
 
         self.ttsClient: OpenAI | None = None
-        if self.config["tts_provider"] in ['openai', 'custom']:
+        if self.config["tts_provider"] in ['openai', 'custom', 'local-ai-server']:
             self.ttsClient = OpenAI(
                 base_url=self.config["tts_endpoint"],
                 api_key=self.config["api_key"] if self.config["tts_api_key"] == '' else self.config["tts_api_key"],

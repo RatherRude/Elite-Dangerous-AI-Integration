@@ -200,7 +200,7 @@ class STT:
         text = None
         start_time = time()
         
-        if self.provider == 'openai' or self.provider == 'custom':
+        if self.provider == 'openai' or self.provider == 'custom' or self.provider == 'local-ai-server':
             text = self._transcribe_openai_audio(audio_raw)
         elif self.provider == 'google-ai-studio' or self.provider == 'custom-multi-modal':
             text = self._transcribe_openai_mm(audio_raw)
