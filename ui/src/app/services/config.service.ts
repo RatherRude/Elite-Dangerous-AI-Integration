@@ -42,21 +42,23 @@ export interface SystemInfoMessage extends BaseMessage {
 
 export interface Config {
     api_key: string;
-    llm_api_key: string;
-    llm_endpoint: string;
     commander_name: string;
     character: string;
+    llm_provider: "openai" | "openrouter" | "google-ai-studio" | "custom" | "local-ai-server";
     llm_model_name: string;
+    llm_api_key: string;
+    llm_endpoint: string;
+    vision_provider: "openai" | "google-ai-studio" | "custom" | "none";
     vision_model_name: string;
     vision_endpoint: string;
     vision_api_key: string;
-    stt_provider: "openai" | "custom" | "custom-multi-modal" | "none";
+    stt_provider: "openai" | "custom" | "custom-multi-modal" | "google-ai-studio" | "none" | "local-ai-server";
     stt_model_name: string;
     stt_api_key: string;
     stt_endpoint: string;
     stt_custom_prompt: string;
     stt_required_word: string;
-    tts_provider: "openai" | "edge-tts" | "custom" | "none";
+    tts_provider: "openai" | "edge-tts" | "custom" | "none" | "local-ai-server";
     tts_model_name: string;
     tts_api_key: string;
     tts_endpoint: string;

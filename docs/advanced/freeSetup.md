@@ -46,11 +46,11 @@ The cloud service https://openrouter.ai provides a free tier that can be used to
 - The available models are not as powerful as the ones available on OpenAI, they may hallucinate more and be less coherent
 
 To use OpenRouter.ai, you need to sign up for an account and create an API key.
-Once you have an account and an API key, you can check the website for the available models in the :free tier. At the time of writing we recommend using ´meta-llama/llama-3.1-70b-instruct:free`.
+Once you have an account and an API key, you can check the website for the available models in the :free tier. At the time of writing we recommend using ´meta-llama/llama-3.3-70b-instruct:free`.
 
 ```
 LLM Provider: Custom
-LLM Model Name: meta-llama/llama-3.1-70b-instruct:free
+LLM Model Name: meta-llama/llama-3.3-70b-instruct:free
 LLM Endpoint URL: https://openrouter.ai/api/v1
 LLM API Key: <your API key>
 Allow AI Actions: Disable (Unless you use a paid model that supports actions)

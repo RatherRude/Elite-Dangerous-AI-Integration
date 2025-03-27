@@ -350,6 +350,9 @@ class StatusParser:
             if not old_status["flags"]["LowFuel"] and new_status["flags"]["LowFuel"]:
                 events.append({"event": "LowFuelWarning"})
 
+            if not old_status["flags"]["FsdCharging"] and new_status["flags"]["FsdCharging"]:
+                events.append({"event": "FsdCharging"})
+
         # Only SRV
         if new_status["flags"]["InSRV"]:
             if old_status["flags"]["SrvHandbrake"] and not new_status["flags"]["SrvHandbrake"]:

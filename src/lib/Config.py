@@ -75,6 +75,7 @@ game_events = {
     'FSDJump': True,
     'FSDTarget': False,
     'StartJump': False,
+    'FsdCharging': False,
     'SupercruiseEntry': True,
     'SupercruiseExit': True,
     'ApproachSettlement': True,
@@ -314,17 +315,20 @@ class Config(TypedDict):
     llm_endpoint: str
     commander_name: str
     character: str
+    llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom', 'local-ai-server']
     llm_model_name: str
+    llm_custom: dict[str, str]
+    vision_provider: Literal['openai', 'google-ai-studio', 'custom', 'none']
     vision_model_name: str
     vision_endpoint: str
     vision_api_key: str
-    stt_provider: Literal['openai', 'custom', 'custom-multi-modal', 'none']
+    stt_provider: Literal['openai', 'custom', 'custom-multi-modal', 'google-ai-studio', 'none']
     stt_model_name: str
     stt_api_key: str
     stt_endpoint: str
     stt_custom_prompt: str
     stt_required_word: str
-    tts_provider: Literal['openai', 'edge-tts', 'custom', 'none']
+    tts_provider: Literal['openai', 'edge-tts', 'custom', 'none', 'local-ai-server']
     tts_model_name: str
     tts_api_key: str
     tts_endpoint: str
@@ -404,7 +408,7 @@ def load_config() -> Config:
             "We are partners in crime. My home system is Orrere.",
         'api_key': "",
         'tools_var': True,
-        'vision_var': True,
+        'vision_var': False,
         'ptt_var': False,
         'mute_during_response_var': False,
         'continue_conversation_var': True,
@@ -416,10 +420,13 @@ def load_config() -> Config:
         'edcopilot_dominant': False,
         'input_device_name': get_default_input_device_name(),
         'output_device_name': get_default_output_device_name(),
+        'llm_provider': "openai",
         'llm_model_name': "gpt-4o-mini",
         'llm_endpoint': "https://api.openai.com/v1",
         'llm_api_key': "",
+        'llm_custom': {},
         'ptt_key': '',
+        'vision_provider': "none",
         'vision_model_name': "gpt-4o-mini",
         'vision_endpoint': "https://api.openai.com/v1",
         'vision_api_key': "",
@@ -465,6 +472,11 @@ def migrate(data: dict) -> dict:
             for name,value in events[section].items():
                 enabled_events[name] = value
         data['game_events'] = enabled_events
+        
+    # Migrate vision_var to vision_provider
+    if 'vision_var' in data and not data.get('vision_var'):
+        data['vision_provider'] = 'none'
+        
     return data
 
 def merge_config_data(defaults: dict, user: dict):
@@ -700,54 +712,120 @@ def validate_config(config: Config) -> Config | None:
 
 
 def update_config(config: Config, data: dict) -> Config:
+    
+    if data.get("llm_provider"):
+      if data["llm_provider"] == "openai":
+        data["llm_endpoint"] = "https://api.openai.com/v1"
+        data["llm_model_name"] = "gpt-4o-mini"
+        data["llm_api_key"] = ""
+
+      elif data["llm_provider"] == "openrouter":
+        data["llm_endpoint"] = "https://openrouter.ai/api/v1/"
+        data["llm_model_name"] = "llama-3.3-70b-instruct:free"
+        data["llm_api_key"] = ""
+
+      elif data["llm_provider"] == "google-ai-studio":
+        data["llm_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
+        data["llm_model_name"] = "gemini-2.0-flash"
+        data["llm_api_key"] = ""
+
+      elif data["llm_provider"] == "local-ai-server":
+        data["llm_endpoint"] = "http://localhost:8080"
+        data["llm_model_name"] = "gpt-4o-mini"
+        data["llm_api_key"] = ""
+        
+      elif data["llm_provider"] == "custom":
+        data["llm_endpoint"] = "https://api.openai.com/v1"
+        data["llm_model_name"] = "gpt-4o-mini"
+        data["llm_api_key"] = ""
+
+    if data.get("vision_provider"):
+      if data["vision_provider"] == "openai":
+        data["vision_endpoint"] = "https://api.openai.com/v1"
+        data["vision_model_name"] = "gpt-4o-mini"
+        data["vision_api_key"] = ""
+        data["vision_var"] = True
+
+      elif data["vision_provider"] == "google-ai-studio":
+        data["vision_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
+        data["vision_model_name"] = "gemini-2.0-flash"
+        data["vision_api_key"] = ""
+        data["vision_var"] = True
+        
+      elif data["vision_provider"] == "custom":
+        data["vision_endpoint"] = "https://api.openai.com/v1"
+        data["vision_model_name"] = "gpt-4o-mini"
+        data["vision_api_key"] = ""
+        data["vision_var"] = True
+        
+      elif data["vision_provider"] == "none":
+        data["vision_endpoint"] = ""
+        data["vision_model_name"] = ""
+        data["vision_api_key"] = ""
+        data["vision_var"] = False
+
     if data.get("stt_provider"):
       if data["stt_provider"] == "openai":
-        data["stt_endpoint"] = "https://api.openai.com/v1";
-        data["stt_model_name"] = "whisper-1";
-        data["stt_api_key"] = "";
-      
-      if data["stt_provider"] == "custom":
-        data["stt_endpoint"] = "https://api.openai.com/v1";
-        data["stt_model_name"] = "whisper-1";
-        data["stt_api_key"] = "";
+        data["stt_endpoint"] = "https://api.openai.com/v1"
+        data["stt_model_name"] = "whisper-1"
+        data["stt_api_key"] = ""
+
+      if data["stt_provider"] == "local-ai-server":
+        data["stt_endpoint"] = "http://localhost:8080"
+        data["stt_model_name"] = "whisper-1"
+        data["stt_api_key"] = ""
         
+      if data["stt_provider"] == "custom":
+        data["stt_endpoint"] = "https://api.openai.com/v1"
+        data["stt_model_name"] = "whisper-1"
+        data["stt_api_key"] = ""
+
+      if data["stt_provider"] == "google-ai-studio":
+        data["stt_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
+        data["stt_model_name"] = "gemini-2.0-flash-lite"
+        data["stt_api_key"] = ""
+
       if data["stt_provider"] == "custom-multi-modal":
-        data["stt_endpoint"] = "https://api.openai.com/v1";
-        data["stt_model_name"] = "gpt-4o-mini-audio-preview";
-        data["stt_api_key"] = "";
-      
+        data["stt_endpoint"] = "https://api.openai.com/v1"
+        data["stt_model_name"] = "gpt-4o-mini-audio-preview"
+        data["stt_api_key"] = ""
+
       if data["stt_provider"] == "none":
-        data["stt_endpoint"] = "";
-        data["stt_model_name"] = "";
-        data["stt_api_key"] = "";
-      
-    
+        data["stt_endpoint"] = ""
+        data["stt_model_name"] = ""
+        data["stt_api_key"] = ""
+
     if data.get("tts_provider"):
       if data["tts_provider"] == "openai":
-        data["tts_endpoint"] = "https://api.openai.com/v1";
-        data["tts_model_name"] = "tts-1";
-        data["tts_voice"] = "nova";
-        data["tts_api_key"] = "";
-      
+        data["tts_endpoint"] = "https://api.openai.com/v1"
+        data["tts_model_name"] = "tts-1"
+        data["tts_voice"] = "nova"
+        data["tts_api_key"] = ""
+
+      if data["tts_provider"] == "local-ai-server":
+        data["tts_endpoint"] = "http://localhost:8080"
+        data["tts_model_name"] = "tts-1"
+        data["tts_voice"] = "nova"
+        data["tts_api_key"] = ""
+        
       if data["tts_provider"] == "edge-tts":
-        data["tts_endpoint"] = "";
-        data["tts_model_name"] = "";
-        data["tts_voice"] = "en-GB-SoniaNeural";
-        data["tts_api_key"] = "";
-      
+        data["tts_endpoint"] = ""
+        data["tts_model_name"] = ""
+        data["tts_voice"] = "en-GB-SoniaNeural"
+        data["tts_api_key"] = ""
+
       if data["tts_provider"] == "custom":
-        data["tts_endpoint"] = "https://api.openai.com/v1";
-        data["tts_model_name"] = "tts-1";
-        data["tts_voice"] = "nova";
-        data["tts_api_key"] = "";
-      
+        data["tts_endpoint"] = "https://api.openai.com/v1"
+        data["tts_model_name"] = "tts-1"
+        data["tts_voice"] = "nova"
+        data["tts_api_key"] = ""
+
       if data["tts_provider"] == "none":
-        data["tts_endpoint"] = "";
-        data["tts_model_name"] = "";
-        data["tts_voice"] = "";
-        data["tts_api_key"] = "";
-      
-    
+        data["tts_endpoint"] = ""
+        data["tts_model_name"] = ""
+        data["tts_voice"] = ""
+        data["tts_api_key"] = ""
+
     new_config = cast(Config, {**config, **data}) # pyright: ignore[reportInvalidCast]
     print(json.dumps({"type": "config", "config": new_config}) + '\n')
     save_config(new_config)

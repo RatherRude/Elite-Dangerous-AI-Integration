@@ -106,6 +106,7 @@ shipUpdateEvents = {
     "FSDJump": "Commander {commanderName} has initiated a hyperjump to another system.",
     "FSDTarget": "Commander {commanderName} has selected a star system to jump to.",
     "StartJump": "Commander {commanderName} starts the hyperjump.",
+    "FsdCharging": "Commander {commanderName}'s FSD is charging.",
     "SupercruiseEntry": "Commander {commanderName} has entered supercruise from normal space.",
     "SupercruiseExit": "Commander {commanderName} has exited supercruise and returned to normal space.",
     "ApproachSettlement": "Commander {commanderName} is approaching settlement.",
@@ -1962,10 +1963,10 @@ class PromptGenerator:
 
             return f"{self.commander_name} has committed a crime: {crime_type}{details} against {faction}.{punishment}"
 
-        if event_name == 'Continued':
-            continued_event = cast(Dict[str, Any], content)
-            part = continued_event.get('Part', '?')
-            return f"Journal file continued in part {part}."
+        # if event_name == 'Continued':
+        #     continued_event = cast(Dict[str, Any], content)
+        #     part = continued_event.get('Part', '?')
+        #     return f"Journal file continued in part {part}."
 
         if event_name == 'CrewLaunchFighter':
             crew_launch_event = cast(Dict[str, Any], content)
@@ -2059,10 +2060,10 @@ class PromptGenerator:
         if event_name == 'ModuleInfo':
             return f"{self.commander_name} has viewed their module information."
 
-        if event_name == 'Music':
-            music_event = cast(Dict[str, Any], content)
-            track = music_event.get('MusicTrack', 'unknown track')
-            return f"Music has changed to: {track}."
+        # if event_name == 'Music':
+        #     music_event = cast(Dict[str, Any], content)
+        #     track = music_event.get('MusicTrack', 'unknown track')
+        #     return f"Music has changed to: {track}."
 
         if event_name == 'NpcCrewPaidWage':
             wage_event = cast(Dict[str, Any], content)
@@ -2311,6 +2312,173 @@ class PromptGenerator:
                 return f"{self.commander_name} is under attack."
             else:
                 return f"{self.commander_name}'s {under_attack_event.get('Target')} is under attack."
+
+        if event_name == 'Bounty':
+            bounty_event = cast(BountyEvent, content)
+            rewards_text = ""
+            if bounty_event.get('Rewards'):
+                rewards = []
+                for reward in bounty_event.get('Rewards', []):
+                    rewards.append(f"{reward.get('Reward'):,} credits from {reward.get('Faction')}")
+                rewards_text = f" ({', '.join(rewards)})"
+            target = bounty_event.get('Target_Localised', bounty_event.get('Target', 'target'))
+            return f"{self.commander_name} has collected a {bounty_event.get('TotalReward'):,} credit bounty for eliminating {target}{rewards_text}."
+
+        if event_name == 'CapShipBond':
+            cap_ship_bond_event = cast(Dict[str, Any], content)
+            reward = cap_ship_bond_event.get('Reward', 0)
+            victim_faction = cap_ship_bond_event.get('VictimFaction', 'enemy')
+            awarding_faction = cap_ship_bond_event.get('AwardingFaction', 'allied')
+            return f"{self.commander_name} has received a {reward:,} credit capital ship combat bond from {awarding_faction} for combat against {victim_faction}."
+
+        if event_name == 'CargoDepot':
+            cargo_depot_event = cast(Dict[str, Any], content)
+            mission_id = cargo_depot_event.get('MissionID', 0)
+            operation = cargo_depot_event.get('UpdateType', 'unknown')
+            commodity = cargo_depot_event.get('CargoType', 'cargo')
+            count = cargo_depot_event.get('Count', 0)
+            total = cargo_depot_event.get('TotalCount', 0)
+            return f"{self.commander_name} has {operation} {count} units of {commodity} for mission {mission_id} (Total: {total})."
+
+        if event_name == 'CommunityGoal':
+            cg_event = cast(Dict[str, Any], content)
+            if cg_event.get('CurrentGoals'):
+                goals = []
+                for goal in cg_event.get('CurrentGoals', []):
+                    goals.append(f"{goal.get('Title')} at {goal.get('System')}")
+                return f"Community Goals available: {', '.join(goals)}."
+            return f"No active Community Goals found."
+
+        if event_name == 'CrimeVictim':
+            crime_victim_event = cast(Dict[str, Any], content)
+            offender = crime_victim_event.get('Offender', 'Unknown perpetrator')
+            crime_type = crime_victim_event.get('CrimeType', 'unknown crime')
+            return f"{self.commander_name} has been the victim of {crime_type} by {offender}."
+
+        if event_name == 'Died':
+            died_event = cast(DiedEvent, content)
+            if died_event.get('KillerName'):
+                return f"{self.commander_name} has been killed by {died_event.get('KillerName')} ({died_event.get('KillerShip', 'unknown ship')}, {died_event.get('KillerRank', 'unknown rank')})."
+            return f"{self.commander_name} has been killed."
+
+        if event_name == 'DockingCancelled':
+            docking_cancelled_event = cast(DockingCancelledEvent, content)
+            return f"{self.commander_name} has cancelled the docking request at {docking_cancelled_event.get('StationName')}."
+
+        if event_name == 'EngineerContribution':
+            engineer_contribution_event = cast(Dict[str, Any], content)
+            engineer = engineer_contribution_event.get('Engineer', 'an engineer')
+            type = engineer_contribution_event.get('Type', 'unknown')
+            commodity = engineer_contribution_event.get('Commodity', engineer_contribution_event.get('Material', 'unknown'))
+            quantity = engineer_contribution_event.get('Quantity', 0)
+            total = engineer_contribution_event.get('TotalQuantity', 0)
+            return f"{self.commander_name} has contributed {quantity} {commodity} ({type}) to {engineer}. Total: {total}."
+
+        if event_name == 'EngineerLegacyConvert':
+            legacy_convert_event = cast(Dict[str, Any], content)
+            engineer = legacy_convert_event.get('Engineer', 'an engineer')
+            return f"{self.commander_name} has converted legacy modifications with {engineer}."
+
+        if event_name == 'FetchRemoteModule':
+            fetch_module_event = cast(Dict[str, Any], content)
+            module = fetch_module_event.get('StoredItem_Localised', fetch_module_event.get('StoredItem', 'a module'))
+            cost = fetch_module_event.get('TransferCost', 0)
+            time = fetch_module_event.get('TransferTime', 0)
+            if time > 0:
+                return f"{self.commander_name} has requested transfer of {module} for {cost:,} credits, arriving in {time} seconds."
+            return f"{self.commander_name} has requested immediate transfer of {module} for {cost:,} credits."
+
+        if event_name == 'FighterDestroyed':
+            return f"{self.commander_name}'s fighter has been destroyed."
+
+        if event_name == 'HeatDamage':
+            return f"{self.commander_name}'s ship is taking heat damage!"
+
+        if event_name == 'HeatWarning':
+            return f"{self.commander_name}'s ship is overheating!"
+
+        if event_name == 'HullDamage':
+            hull_damage_event = cast(HullDamageEvent, content)
+            health = hull_damage_event.get('Health', 0) * 100
+            vehicle = "fighter" if hull_damage_event.get('Fighter') else "ship"
+            return f"{self.commander_name}'s {vehicle} hull integrity at {health:.1f}%."
+
+        if event_name == 'Interdicted':
+            interdicted_event = cast(InterdictedEvent, content)
+            if interdicted_event.get('IsThargoid'):
+                interdictor = "a Thargoid"
+            elif interdicted_event.get('Interdictor'):
+                interdictor = interdicted_event.get('Interdictor_Localised', interdicted_event.get('Interdictor'))
+            else:
+                interdictor = "an unknown ship"
+            
+            outcome = "submitted to" if interdicted_event.get('Submitted') else "was forcibly interdicted by"
+            return f"{self.commander_name} {outcome} {interdictor}."
+
+        if event_name == 'Interdiction':
+            interdiction_event = cast(Dict[str, Any], content)
+            target = interdiction_event.get('Target', 'unknown ship')
+            success = interdiction_event.get('Success', False)
+            result = "successfully interdicted" if success else "failed to interdict"
+            return f"{self.commander_name} has {result} {target}."
+
+        if event_name == 'MassModuleStore':
+            mass_store_event = cast(Dict[str, Any], content)
+            ship = mass_store_event.get('Ship', 'current ship')
+            items = mass_store_event.get('Items', [])
+            count = len(items)
+            return f"{self.commander_name} has stored {count} modules from their {ship}."
+
+        if event_name == 'ModuleSellRemote':
+            sell_remote_event = cast(Dict[str, Any], content)
+            module = sell_remote_event.get('SellItem_Localised', sell_remote_event.get('SellItem', 'a module'))
+            price = sell_remote_event.get('SellPrice', 0)
+            return f"{self.commander_name} has sold {module} from storage for {price:,} credits."
+
+        if event_name == 'Outfitting':
+            outfitting_event = cast(OutfittingEvent, content)
+            return f"{self.commander_name} is accessing outfitting services at {outfitting_event.get('StationName')} in {outfitting_event.get('StarSystem')}."
+
+        if event_name == 'ScientificResearch':
+            research_event = cast(Dict[str, Any], content)
+            name = research_event.get('Name', 'unknown')
+            category = research_event.get('Category', 'unknown category')
+            count = research_event.get('Count', 0)
+            return f"{self.commander_name} has contributed {count} {name} for scientific research in {category}."
+
+        if event_name == 'ShieldState':
+            shield_event = cast(Dict[str, Any], content)
+            state = "online" if shield_event.get('ShieldsUp') else "offline"
+            return f"{self.commander_name}'s shields are {state}."
+
+        if event_name == 'ShipyardNew':
+            new_ship_event = cast(Dict[str, Any], content)
+            ship_type = new_ship_event.get('ShipType_Localised', new_ship_event.get('ShipType', 'a new ship'))
+            return f"{self.commander_name} has purchased {ship_type}."
+
+        if event_name == 'SRVDestroyed':
+            srv_event = cast(SRVDestroyedEvent, content)
+            srv_type = srv_event.get('SRVType_Localised', srv_event.get('SRVType', 'SRV'))
+            return f"{self.commander_name}'s {srv_type} has been destroyed."
+
+        if event_name == 'Statistics':
+            return f"{self.commander_name}'s game statistics have been updated."
+
+        if event_name == 'Trade':
+            trade_event = cast(Dict[str, Any], content)
+            commodity = trade_event.get('Type_Localised', trade_event.get('Type', 'goods'))
+            count = trade_event.get('Count', 0)
+            price_per_unit = trade_event.get('Price', 0)
+            total_profit = trade_event.get('TotalProfit', 0)
+            if trade_event.get('SellPrice'):
+                return f"{self.commander_name} has sold {count} units of {commodity} at {price_per_unit:,} credits each (Total profit: {total_profit:,} credits)."
+            else:
+                return f"{self.commander_name} has purchased {count} units of {commodity} at {price_per_unit:,} credits each."
+
+        if event_name == 'WeaponSelected':
+            weapon_event = cast(Dict[str, Any], content)
+            weapon = weapon_event.get('Weapon_Localised', weapon_event.get('Weapon', 'unknown weapon'))
+            return f"{self.commander_name} has selected {weapon}."
 
         return f"Event: {event_name} occurred."
 
@@ -2594,6 +2762,72 @@ class PromptGenerator:
             # If we have no suit display but do have backpack info, fall back to old format
             elif backpack_summary:
                 status_entries.append(("Suit Backpack Contents", backpack_summary))
+
+        if active_mode == 'Main ship':
+            # Get the ship loadout information
+            loadout_info = projected_states.get('Loadout', {})
+            
+            if loadout_info:
+                # Create comprehensive ship loadout display focusing only on modules
+                loadout_display = {}
+                
+                # Process modules - group by slot type for better organization
+                if loadout_info.get('Modules'):
+                    modules_by_category = {}
+                    
+                    for module in loadout_info.get('Modules', []):
+                        slot = module.get('Slot', 'Unknown')
+                        item = module.get('Item', 'Unknown')
+                        
+                        # Extract category from slot name
+                        if slot.startswith('MediumHardpoint') or slot.startswith('SmallHardpoint') or slot.startswith('LargeHardpoint') or slot.startswith('HugeHardpoint') or slot.startswith('TinyHardpoint'):
+                            category = "Weapons"
+                        elif slot in ['Armour', 'PowerPlant', 'MainEngines', 'FrameShiftDrive', 'LifeSupport', 'PowerDistributor', 'Radar', 'FuelTank']:
+                            category = "Core Internals"
+                        elif slot.startswith('Slot'):
+                            category = "Optional Internals"
+                        elif slot in ['ShipCockpit', 'CargoHatch', 'PlanetaryApproachSuite']:
+                            category = "Essential Components"
+                        elif slot in ['Bobble', 'ShipKitSpoiler', 'ShipKitBumper', 'ShipKitWings', 'WeaponColour', 'EngineColour', 'VesselVoice', 'Decal1', 'Decal2', 'Decal3', 'NamePlate', 'PaintJob']:
+                            category = "Cosmetics"
+                        else:
+                            category = "Other"
+                        
+                        # Create category if it doesn't exist
+                        if category not in modules_by_category:
+                            modules_by_category[category] = []
+                        
+                        # Format module information
+                        module_info = {
+                            "Slot": slot,
+                            "Item": item
+                        }
+                        
+                        # Add simplified ammo information if available
+                        if module.get('AmmoInHopper') is not None:
+                            module_info["Max Ammo"] = module.get('AmmoInHopper')
+                        
+                        # Add simplified engineering information if available
+                        if module.get('Engineering'):
+                            eng_info = module.get('Engineering', {})
+                            engineering = {
+                                "Blueprint": eng_info.get('BlueprintName', 'Unknown'),
+                                "Level": eng_info.get('Level', 0),
+                            }
+                            
+                            # Add experimental effect if present
+                            if eng_info.get('ExperimentalEffect_Localised'):
+                                engineering["Experimental"] = eng_info.get('ExperimentalEffect_Localised')
+                            
+                            module_info["Engineering"] = engineering
+                        
+                        modules_by_category[category].append(module_info)
+                    
+                    # Add modules to the loadout display
+                    loadout_display = modules_by_category
+                
+                # Add the loadout information to status entries
+                ship_display['Loadout']=loadout_display
 
         status_entries.append(("Main Ship", ship_display))
 
