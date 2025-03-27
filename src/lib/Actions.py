@@ -1480,10 +1480,13 @@ def prepare_station_request(obj, projected_states):
     if "market" in obj and obj["market"]:
         market_filters = []
         for market_item in obj["market"]:
-            market_item["name"] = ' '.join(word.capitalize() for word in market_item["name"].split())
-            if not market_item["name"] in known_commodities:
+            # Find matching commodity name while preserving original capitalization
+            market_item_name_lower = market_item["name"].lower()
+            matching_commodity = next((commodity for commodity in known_commodities if commodity.lower() == market_item_name_lower), None)
+            if not matching_commodity:
                 raise Exception(
                     f"Invalid commodity name: {market_item['name']}. {educated_guesses_message(market_item['name'], known_commodities)}")
+            market_item["name"] = matching_commodity
             market_filter = {
                 "name": market_item["name"]
             }
@@ -1508,24 +1511,33 @@ def prepare_station_request(obj, projected_states):
     if "modules" in obj:
         modules_filter = {}
         for module in obj["modules"]:
-            module["name"] = ' '.join(word.capitalize() for word in module["name"].split())
-            if module["name"] not in known_modules:
+            # Find matching module name while preserving original capitalization
+            module_name_lower = module["name"].lower()
+            matching_module = next((m for m in known_modules if m.lower() == module_name_lower), None)
+            if not matching_module:
                 raise Exception(
                     f"Invalid module name: {module['name']}. {educated_guesses_message(module['name'], known_modules)}")
+            module["name"] = matching_module
         filters["modules"] = obj["modules"]
     if "ships" in obj:
         for ship in obj["ships"]:
-            ship["name"] = ' '.join(word.capitalize() for word in ship["name"].split())
-            if ship["name"] not in known_ships:
+            # Find matching ship name while preserving original capitalization
+            ship_name_lower = ship["name"].lower()
+            matching_ship = next((s for s in known_ships if s.lower() == ship_name_lower), None)
+            if not matching_ship:
                 raise Exception(
                     f"Invalid ship name: {ship['name']}. {educated_guesses_message(ship['name'], known_ships)}")
+            ship["name"] = matching_ship
         filters["ships"] = {"value": obj["ships"]}
     if "services" in obj:
         for service in obj["services"]:
-            service["name"] = ' '.join(word.capitalize() for word in service["name"].split())
-            if service["name"] not in known_services:
+            # Find matching service name while preserving original capitalization
+            service_name_lower = service["name"].lower()
+            matching_service = next((s for s in known_services if s.lower() == service_name_lower), None)
+            if not matching_service:
                 raise Exception(
                     f"Invalid service name: {service['name']}. {educated_guesses_message(service['name'], known_services)}")
+            service["name"] = matching_service
         filters["services"] = {"value": obj["services"]}
     if "name" in obj and obj["name"]:
         filters["name"] = {
@@ -1688,52 +1700,73 @@ def prepare_system_request(obj, projected_states):
     # Add optional filters if they exist
     if "allegiance" in obj and obj["allegiance"]:
         for allegiance in obj["allegiance"]:
-            if allegiance not in known_allegiances:
+            # Find matching allegiance while preserving original capitalization
+            allegiance_lower = allegiance.lower()
+            matching_allegiance = next((a for a in known_allegiances if a.lower() == allegiance_lower), None)
+            if not matching_allegiance:
                 raise Exception(
                     f"Invalid allegiance: {allegiance}. {educated_guesses_message(allegiance, known_allegiances)}")
-        filters["allegiance"] = {"value": obj["allegiance"]}
+        filters["allegiance"] = {"value": [a for a in obj["allegiance"] if next((k for k in known_allegiances if k.lower() == a.lower()), None)]}
 
     if "state" in obj and obj["state"]:
         for state in obj["state"]:
-            if state not in known_states:
+            # Find matching state while preserving original capitalization
+            state_lower = state.lower()
+            matching_state = next((s for s in known_states if s.lower() == state_lower), None)
+            if not matching_state:
                 raise Exception(
                     f"Invalid state: {state}. {educated_guesses_message(state, known_states)}")
-        filters["state"] = {"value": obj["state"]}
+        filters["state"] = {"value": [s for s in obj["state"] if next((k for k in known_states if k.lower() == s.lower()), None)]}
 
     if "government" in obj and obj["government"]:
         for government in obj["government"]:
-            if government not in known_governments:
+            # Find matching government while preserving original capitalization
+            government_lower = government.lower()
+            matching_government = next((g for g in known_governments if g.lower() == government_lower), None)
+            if not matching_government:
                 raise Exception(
                     f"Invalid government: {government}. {educated_guesses_message(government, known_governments)}")
-        filters["government"] = {"value": obj["government"]}
+        filters["government"] = {"value": [g for g in obj["government"] if next((k for k in known_governments if k.lower() == g.lower()), None)]}
 
     if "power" in obj and obj["power"]:
         for power in obj["power"]:
-            if power not in known_powers:
+            # Find matching power while preserving original capitalization
+            power_lower = power.lower()
+            matching_power = next((p for p in known_powers if p.lower() == power_lower), None)
+            if not matching_power:
                 raise Exception(
                     f"Invalid power: {power}. {educated_guesses_message(power, known_powers)}")
-        filters["controlling_power"] = {"value": obj["power"]}
+        filters["controlling_power"] = {"value": [p for p in obj["power"] if next((k for k in known_powers if k.lower() == p.lower()), None)]}
 
     if "primary_economy" in obj and obj["primary_economy"]:
         for economy in obj["primary_economy"]:
-            if economy not in known_economies:
+            # Find matching economy while preserving original capitalization
+            economy_lower = economy.lower()
+            matching_economy = next((e for e in known_economies if e.lower() == economy_lower), None)
+            if not matching_economy:
                 raise Exception(
                     f"Invalid primary economy: {economy}. {educated_guesses_message(economy, known_economies)}")
-        filters["primary_economy"] = {"value": obj["primary_economy"]}
+        filters["primary_economy"] = {"value": [e for e in obj["primary_economy"] if next((k for k in known_economies if k.lower() == e.lower()), None)]}
 
     if "security" in obj and obj["security"]:
         for security_level in obj["security"]:
-            if security_level not in known_security_levels:
+            # Find matching security level while preserving original capitalization
+            security_lower = security_level.lower()
+            matching_security = next((s for s in known_security_levels if s.lower() == security_lower), None)
+            if not matching_security:
                 raise Exception(
                     f"Invalid security level: {security_level}. {educated_guesses_message(security_level, known_security_levels)}")
-        filters["security"] = {"value": obj["security"]}
+        filters["security"] = {"value": [s for s in obj["security"] if next((k for k in known_security_levels if k.lower() == s.lower()), None)]}
 
     if "thargoid_war_state" in obj and obj["thargoid_war_state"]:
         for thargoid_war_state in obj["thargoid_war_state"]:
-            if thargoid_war_state not in known_thargoid_war_states:
+            # Find matching thargoid war state while preserving original capitalization
+            state_lower = thargoid_war_state.lower()
+            matching_state = next((s for s in known_thargoid_war_states if s.lower() == state_lower), None)
+            if not matching_state:
                 raise Exception(
                     f"Invalid thargoid war state: {thargoid_war_state}. {educated_guesses_message(thargoid_war_state, known_thargoid_war_states)}")
-        filters["thargoid_war_state"] = {"value": obj["thargoid_war_state"]}
+        filters["thargoid_war_state"] = {"value": [s for s in obj["thargoid_war_state"] if next((k for k in known_thargoid_war_states if k.lower() == s.lower()), None)]}
 
     if "population" in obj and obj["population"]:
         comparison = obj["population"].get("comparison", ">")
@@ -2404,17 +2437,23 @@ def prepare_body_request(obj, projected_states):
     # Add optional filters if they exist
     if "subtype" in obj and obj["subtype"]:
         for subtype in obj["subtype"]:
-            if subtype not in known_subtypes:
+            # Find matching subtype while preserving original capitalization
+            subtype_lower = subtype.lower()
+            matching_subtype = next((s for s in known_subtypes if s.lower() == subtype_lower), None)
+            if not matching_subtype:
                 raise Exception(
                     f"Invalid celestial body subtype: {subtype}. {educated_guesses_message(subtype, known_subtypes)}")
-        filters["subtype"] = {"value": obj["subtype"]}
+        filters["subtype"] = {"value": [s for s in obj["subtype"] if next((k for k in known_subtypes if k.lower() == s.lower()), None)]}
 
     if "landmark_subtype" in obj and obj["landmark_subtype"]:
         for landmark_subtype in obj["landmark_subtype"]:
-            if landmark_subtype not in known_landmarks:
+            # Find matching landmark subtype while preserving original capitalization
+            landmark_lower = landmark_subtype.lower()
+            matching_landmark = next((l for l in known_landmarks if l.lower() == landmark_lower), None)
+            if not matching_landmark:
                 raise Exception(
                     f"Invalid Landmark Subtype: {landmark_subtype}. {educated_guesses_message(landmark_subtype, known_landmarks)}")
-        filters["landmarks"] = [{"subtype": obj["landmark_subtype"]}]
+        filters["landmarks"] = [{"subtype": next((k for k in known_landmarks if k.lower() == obj["landmark_subtype"].lower()), None)}]
 
     if "name" in obj and obj["name"]:
         filters["name"] = {
@@ -3390,6 +3429,47 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             },
             "required": ["query"]
         }, get_visuals, 'global')
+
+
+def format_commodity_name(name: str) -> str:
+    """
+    Format a commodity name according to Elite Dangerous conventions.
+    Handles special cases like:
+    - Hyphenated words (e.g., "Agri-Medicines")
+    - Acronyms (e.g., "CMM Composite")
+    - Multiple words (e.g., "Advanced Catalysers")
+    """
+    # Handle empty or single word cases
+    if not name or ' ' not in name:
+        return name.capitalize()
+    
+    # Split by spaces and process each part
+    parts = name.split()
+    formatted_parts = []
+    
+    for part in parts:
+        # Handle acronyms (2-4 uppercase letters)
+        if len(part) <= 4 and part.isalpha() and part.isupper():
+            formatted_parts.append(part)
+            continue
+            
+        # Handle hyphenated words
+        if '-' in part:
+            hyphen_parts = part.split('-')
+            formatted_hyphen_parts = [p.capitalize() for p in hyphen_parts]
+            formatted_parts.append('-'.join(formatted_hyphen_parts))
+            continue
+            
+        # Handle regular words
+        formatted_parts.append(part.capitalize())
+    
+    return ' '.join(formatted_parts)
+
+def normalize_string(s: str) -> str:
+    """
+    Normalize a string for comparison by converting to lowercase.
+    """
+    return s.lower()
 
 
 if __name__ == "__main__":
