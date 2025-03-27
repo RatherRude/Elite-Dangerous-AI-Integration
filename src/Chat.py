@@ -51,7 +51,7 @@ class Chat:
         self.jn = EDJournal(get_ed_journals_path(config))
             
         self.copilot = EDCoPilot(self.config["edcopilot"], is_edcopilot_dominant=self.config["edcopilot_dominant"],
-                            enabled_game_events=self.enabled_game_events)
+                            enabled_game_events=self.enabled_game_events, action_manager=self.action_manager)
 
         # gets API Key from config.json
         self.llmClient = OpenAI(
