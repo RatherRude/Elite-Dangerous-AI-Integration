@@ -1,6 +1,7 @@
 import queue
 import threading
 import time
+import traceback
 from typing import final, Optional
 from .Logger import log
 from .ActionManager import ActionManager
@@ -14,7 +15,7 @@ from EDMesg.CovasNext import (
     CovasReplied,
     ConfigurationUpdated
 )
-from EDMesg.EDCoPilot import create_edcopilot_client
+from EDMesg.EDCoPilot import create_edcopilot_client, OpenPanelAction
 from EDMesg.base import EDMesgWelcomeAction
 
 @final
@@ -138,11 +139,12 @@ class EDCoPilot:
             # Implementation might vary based on the actual EDCoPilot API
             
             # ToDo: Send OpenPanelAction
+            self.client.publish(OpenPanelAction(panelName=panel_name))
          
 
             return f"Successfully requested to open {panel_name} panel in EDCoPilot"
         except Exception as e:
-            return f"Failed to open panel: {str(e)}"
+            return f"Failed to open panel: {str(e)}{traceback.format_exc()}"
 
     def register_actions(self):
         log('info', 'register actions')
@@ -160,14 +162,15 @@ class EDCoPilot:
                     "panelName": {
                         "type": "string",
                         "enum": [
-                            "bookmarks", "bookmarkgroups", "voicelog", "eventlog", "sessionprogress", 
-                            "systemhistory", "traderoute", "discoveryestimator", "miningstats", "miningprices",
-                            "placesofinterest", "locationsearch", "locationresults", "guidancecomputer", "timetrials",
-                            "systeminfo", "stations", "bodies", "factionsystems", "miningprices",
-                            "stationfacts", "bodydata", "blueprints", "shiplist", "storedmodules",
-                            "materials", "shiplocker", "suitlist", "weaponlist", "aboutedcopilot", "permits",
-                            "messages", "prospectorannouncements", "music", "historyrefresh",
-                            "commandreference", "settings"
+                            "bookmarks", "voicelog", "activity"
+                            # "bookmarks", "bookmarkgroups", "voicelog", "eventlog", "sessionprogress",
+                            # "systemhistory", "traderoute", "discoveryestimator", "miningstats", "miningprices",
+                            # "placesofinterest", "locationsearch", "locationresults", "guidancecomputer", "timetrials",
+                            # "systeminfo", "stations", "bodies", "factionsystems", "miningprices",
+                            # "stationfacts", "bodydata", "blueprints", "shiplist", "storedmodules",
+                            # "materials", "shiplocker", "suitlist", "weaponlist", "aboutedcopilot", "permits",
+                            # "messages", "prospectorannouncements", "music", "historyrefresh",
+                            # "commandreference", "settings"
                         ],
                         "description": "The name of the panel to open in EDCoPilot"
                     }
