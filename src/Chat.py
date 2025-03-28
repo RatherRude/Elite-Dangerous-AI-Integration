@@ -37,13 +37,12 @@ class Chat:
             self.config["api_key"] = '-'
         
         self.backstory = self.config["character"].replace("{commander_name}", self.config['commander_name'])
-        
+
         self.enabled_game_events: list[str] = []
         if self.config["event_reaction_enabled_var"]:
-            for category in self.config["game_events"].values():
-                for event, state in category.items():
-                    if state:
-                        self.enabled_game_events.append(event)
+            for event, state in self.config["game_events"].items():
+                if state:
+                    self.enabled_game_events.append(event)
                         
         self.is_thinking = False
         

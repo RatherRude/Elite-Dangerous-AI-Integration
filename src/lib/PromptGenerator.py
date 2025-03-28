@@ -2922,7 +2922,7 @@ class PromptGenerator:
 
                         # Format module information
                         module_info = {
-                            "Slot": slot,
+                            # "Slot": slot,
                             "Item": item
                         }
 
