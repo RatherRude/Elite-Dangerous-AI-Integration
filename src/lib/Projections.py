@@ -1,4 +1,7 @@
 import math
+import requests
+import traceback
+from functools import lru_cache
 
 from .Logger import log
 from typing import Any, Literal, TypedDict, final
@@ -835,6 +838,7 @@ OnlineFriendsState = TypedDict('OnlineFriendsState', {
     "Online": list[str]  # List of online friend names
 })
 
+
 @final
 class Friends(Projection[OnlineFriendsState]):
     @override
@@ -842,30 +846,162 @@ class Friends(Projection[OnlineFriendsState]):
         return {
             "Online": []
         }
-    
+
     @override
     def process(self, event: Event) -> None:
         # Clear the list on Fileheader event (new game session)
         if isinstance(event, GameEvent) and event.content.get('event') == 'Fileheader':
             self.state["Online"] = []
-        
+
         # Process Friends events
         if isinstance(event, GameEvent) and event.content.get('event') == 'Friends':
             friend_name = event.content.get('Name', '')
             friend_status = event.content.get('Status', '')
-            
+
             # Skip if missing crucial information
             if not friend_name or not friend_status:
                 return
-            
+
             # If the friend is coming online, add them to the list
             if friend_status == "Online":
                 if friend_name not in self.state["Online"]:
                     self.state["Online"].append(friend_name)
-            
+
             # If the friend was previously online but now has a different status, remove them
             elif friend_name in self.state["Online"]:
                 self.state["Online"].remove(friend_name)
+
+
+class SystemInfoState(TypedDict):
+    Name: str
+    SystemAddress: NotRequired[int]
+    StarClass: NotRequired[str]
+    SystemInfo: NotRequired[dict]
+    Stations: NotRequired[list]
+    LastUpdated: NotRequired[float]
+    FetchAttempted: NotRequired[bool]
+
+
+@final
+class SystemInfo(Projection[dict[str, SystemInfoState]]):
+    @override
+    def get_default_state(self) -> dict[str, SystemInfoState]:
+        return {}
+    
+    @override
+    def process(self, event: Event) -> None:
+        # Handle FSDTarget event to track target systems
+        if isinstance(event, GameEvent) and event.content.get('event') == 'FSDTarget':
+            system_name = event.content.get('Name')
+            system_address = event.content.get('SystemAddress')
+            star_class = event.content.get('StarClass')
+            
+            if system_name:
+                # If system doesn't exist in our state or has minimal info, initialize/update it
+                if system_name not in self.state or not self.state[system_name].get('SystemInfo'):
+                    if system_name not in self.state:
+                        self.state[system_name] = {
+                            'Name': system_name,
+                            'FetchAttempted': False
+                        }
+                    
+                    if system_address:
+                        self.state[system_name]['SystemAddress'] = system_address
+                    
+                    if star_class:
+                        self.state[system_name]['StarClass'] = star_class
+                    
+                    # Fetch system and station data from EDSM
+                    self._fetch_system_data(system_name)
+        
+        # Also update on location, FSDJump, and SupercruiseEntry events to ensure we have data for the current system
+        if isinstance(event, GameEvent) and event.content.get('event') in ['Location', 'FSDJump', 'SupercruiseEntry']:
+            system_name = event.content.get('StarSystem')
+            if system_name:
+                if system_name not in self.state or not self.state[system_name].get('SystemInfo'):
+                    if system_name not in self.state:
+                        self.state[system_name] = {
+                            'Name': system_name,
+                            'FetchAttempted': False
+                        }
+                    
+                    # Fetch system and station data from EDSM
+                    self._fetch_system_data(system_name)
+    
+    def _fetch_system_data(self, system_name: str) -> None:
+        """Fetch system and station data from EDSM API"""
+        import time
+        
+        # Mark that we've attempted to fetch data to avoid multiple attempts
+        self.state[system_name]['FetchAttempted'] = True
+        self.state[system_name]['LastUpdated'] = time.time()
+        
+        # Fetch system info from EDSM
+        try:
+            url = "https://www.edsm.net/api-v1/system"
+            params = {
+                "systemName": system_name,
+                "showInformation": 1,
+                "showPrimaryStar": 1,
+            }
+            
+            response = requests.get(url, params=params)
+            response.raise_for_status()
+            system_data = response.json()
+            
+            self.state[system_name]['SystemInfo'] = system_data
+            
+        except Exception as e:
+            log('error', f"Error fetching system info for {system_name}: {e}", traceback.format_exc())
+            self.state[system_name]['SystemInfo'] = {"error": str(e)}
+        
+        # Fetch station info from EDSM
+        try:
+            url = "https://www.edsm.net/api-system-v1/stations"
+            params = {
+                "systemName": system_name,
+            }
+            
+            response = requests.get(url, params=params)
+            response.raise_for_status()
+            data = response.json()
+            
+            stations = [
+                {
+                    "name": station.get("name", "Unknown"),
+                    "type": station.get("type", "Unknown"),
+                    "orbit": station.get("distanceToArrival", "Unknown"),
+                    "allegiance": station.get("allegiance", "None"),
+                    "government": station.get("government", "None"),
+                    "economy": station.get("economy", "None"),
+                    "secondEconomy": station.get("secondEconomy", "None"),
+                    "controllingFaction": station.get("controllingFaction", {}).get(
+                        "name", "Unknown"
+                    ),
+                    "services": [
+                        service
+                        for service, has_service in {
+                            "market": station.get("haveMarket", False),
+                            "shipyard": station.get("haveShipyard", False),
+                            "outfitting": station.get("haveOutfitting", False),
+                        }.items()
+                        if has_service
+                    ],
+                    **(
+                        {"body": station["body"]["name"]}
+                        if "body" in station and "name" in station["body"]
+                        else {}
+                    ),
+                }
+                for station in data.get("stations", [])
+                if station.get("type") != "Fleet Carrier"
+            ]
+            
+            self.state[system_name]['Stations'] = stations
+            
+        except Exception as e:
+            log('error', f"Error fetching station info for {system_name}: {e}", traceback.format_exc())
+            self.state[system_name]['Stations'] = []
 
 
 def registerProjections(event_manager: EventManager):
@@ -882,6 +1018,7 @@ def registerProjections(event_manager: EventManager):
     event_manager.register_projection(Backpack())
     event_manager.register_projection(SuitLoadout())
     event_manager.register_projection(Friends())
+    event_manager.register_projection(SystemInfo())
 
     # ToDo: SLF, SRV,
     for proj in [

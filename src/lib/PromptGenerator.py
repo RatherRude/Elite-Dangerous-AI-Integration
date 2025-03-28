@@ -2544,7 +2544,7 @@ class PromptGenerator:
 
     # fetch system info from EDSM
     @lru_cache(maxsize=1, typed=False)
-    def get_system_info(self, system_name: str) -> dict:
+    def get_system_info(self, system_name: str) -> dict | str:
         url = "https://www.edsm.net/api-v1/system"
         params = {
             "systemName": system_name,
@@ -2564,7 +2564,7 @@ class PromptGenerator:
 
     # fetch station info from EDSM
     @lru_cache(maxsize=1, typed=False)
-    def get_station_info(self, system_name: str, fleet_carrier=False) -> list:
+    def get_station_info(self, system_name: str, fleet_carrier=False) -> list | str:
         url = "https://www.edsm.net/api-system-v1/stations"
         params = {
             "systemName": system_name,
@@ -2835,9 +2835,31 @@ class PromptGenerator:
         nav_info: NavInfo = projected_states.get('NavInfo', {})  # pyright: ignore[reportAssignmentType]
 
         if "StarSystem" in location_info and location_info["StarSystem"] != "Unknown":
-            status_entries.append(("Local system", self.get_system_info(location_info['StarSystem'])))
-
-            status_entries.append(("Stations in local system", self.get_station_info(location_info['StarSystem'])))
+            system_name = location_info['StarSystem']
+            system_info = None
+            stations_info = None
+            
+            # First, try to get system data from SystemInfo projection
+            if projected_states.get('SystemInfo') and system_name in projected_states['SystemInfo']:
+                system_data = projected_states['SystemInfo'][system_name]
+                
+                # Check if we have full system info
+                if system_data.get('SystemInfo') and not isinstance(system_data['SystemInfo'], str):
+                    system_info = system_data['SystemInfo']
+                
+                # Check if we have stations info
+                if system_data.get('Stations'):
+                    stations_info = system_data['Stations']
+            
+            # If no data from projection, use fallback direct fetch methods
+            if system_info is None:
+                system_info = self.get_system_info(system_name)
+            
+            if stations_info is None:
+                stations_info = self.get_station_info(system_name)
+            
+            status_entries.append(("Local system", system_info))
+            status_entries.append(("Stations in local system", stations_info))
 
         status_entries.append(("Location", location_info))
 
