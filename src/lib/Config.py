@@ -718,26 +718,31 @@ def update_config(config: Config, data: dict) -> Config:
         data["llm_endpoint"] = "https://api.openai.com/v1"
         data["llm_model_name"] = "gpt-4o-mini"
         data["llm_api_key"] = ""
+        data["tools_var"] = True
 
       elif data["llm_provider"] == "openrouter":
         data["llm_endpoint"] = "https://openrouter.ai/api/v1/"
         data["llm_model_name"] = "llama-3.3-70b-instruct:free"
         data["llm_api_key"] = ""
+        data["tools_var"] = False
 
       elif data["llm_provider"] == "google-ai-studio":
         data["llm_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
         data["llm_model_name"] = "gemini-2.0-flash"
         data["llm_api_key"] = ""
+        data["tools_var"] = True
 
       elif data["llm_provider"] == "local-ai-server":
         data["llm_endpoint"] = "http://localhost:8080"
         data["llm_model_name"] = "gpt-4o-mini"
         data["llm_api_key"] = ""
+        data["tools_var"] = True
         
       elif data["llm_provider"] == "custom":
         data["llm_endpoint"] = "https://api.openai.com/v1"
         data["llm_model_name"] = "gpt-4o-mini"
         data["llm_api_key"] = ""
+        data["tools_var"] = False
 
     if data.get("vision_provider"):
       if data["vision_provider"] == "openai":

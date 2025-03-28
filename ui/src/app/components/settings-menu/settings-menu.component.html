@@ -133,21 +133,24 @@
                         events and provide additional details or commentary. You can customize the reactions in the <a
                                 href="#" (click)="eventReactionsSection.scrollIntoView()">Customize Event Reactions</a>
                         section below.</p>
-                    <mat-slide-toggle [(ngModel)]="config.game_actions_var"
-                                      (ngModelChange)="onConfigChange({game_actions_var: $event})">
+                    <mat-slide-toggle [ngModel]="config.tools_var && config.game_actions_var"
+                                      (ngModelChange)="onConfigChange({game_actions_var: $event})"
+                                      [disabled]="!config.tools_var">
                         Enable Game Actions
                     </mat-slide-toggle>
                     <p>Game actions are performed by the AI on your behalf, like deploying the landing gear or opening
                         the galaxy map.</p>
-                    <mat-slide-toggle [(ngModel)]="config.web_search_actions_var"
-                                      (ngModelChange)="onConfigChange({web_search_actions_var: $event})">
+                    <mat-slide-toggle [ngModel]="config.tools_var && config.web_search_actions_var"
+                                      (ngModelChange)="onConfigChange({web_search_actions_var: $event})"
+                                      [disabled]="!config.tools_var">
                         Enable Web Actions
                     </mat-slide-toggle>
                     <p>Web actions are performed by the AI on your behalf and allow you to search the web for
                         information, like searching for stations selling a specific commodity or material.</p>
 
-                    <mat-slide-toggle [(ngModel)]="config.use_action_cache_var"
-                                      (ngModelChange)="onConfigChange({use_action_cache_var: $event})">
+                    <mat-slide-toggle [ngModel]="config.tools_var && config.use_action_cache_var"
+                                      (ngModelChange)="onConfigChange({use_action_cache_var: $event})"
+                                      [disabled]="!config.tools_var">
                         Enable Action Cache
                     </mat-slide-toggle>
                     <p>The action cache allows the AI to learn from previous interactions and reuse actions for similar
@@ -297,6 +300,13 @@
                             <input matInput type="password" [(ngModel)]="config.llm_api_key"
                                    (ngModelChange)="onConfigChange({llm_api_key: $event})">
                         </mat-form-field>
+
+                        <label>
+                            <mat-slide-toggle [(ngModel)]="config.tools_var"
+                                              (ngModelChange)="onConfigChange({tools_var: $event})">
+                                Allow Actions (Tool Use)
+                            </mat-slide-toggle>
+                        </label>
                     }
                     @if (config.llm_provider === "google-ai-studio")
                     {
