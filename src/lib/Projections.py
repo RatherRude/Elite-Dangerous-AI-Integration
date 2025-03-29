@@ -714,13 +714,12 @@ class ExobiologyScan(Projection[ExobiologyScanState]):
         projected_events: list[ProjectedEvent] = []
 
         if isinstance(event, StatusEvent) and event.status.get("event") == "Status":
-            self.state["lat"] = event.status.get("Latitude")
-            self.state["long"] = event.status.get("Longitude")
+            self.state["lat"] = event.status.get("Latitude", 0)
+            self.state["long"] = event.status.get("Longitude", 0)
 
             if self.state["scans"] and self.state.get('scan_radius', False):
                 in_scan_radius = False
-                if (event.status.get('Latitude', False) and
-                    event.status.get('Longitude', False) and
+                if (self.state["lat"] > 0 and self.state["long"] > 0 and
                     event.status.get('PlanetRadius', False)):
                     distance_obj = {'lat': self.state["lat"], 'long': self.state["long"]}
                     for scan in self.state["scans"]:
