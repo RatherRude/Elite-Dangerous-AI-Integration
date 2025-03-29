@@ -798,7 +798,7 @@ def send_message(obj, projected_states):
                 keys.send('UI_Down',repeat=2)
                 keys.send('UI_Select')
                 return_message += " to squadron chat"
-            elif obj.get("system").lower() == "squadron":
+            elif obj.get("recipient").lower() == "squadron":
                 typewrite("/s ", interval=0.02)
                 return_message += " to squadron chat"
             else:
