@@ -10,6 +10,11 @@ use tokio::io::{AsyncWriteExt, BufReader};
 use tokio::process::{Child, ChildStdin, Command};
 use tokio::sync::Mutex;
 
+#[cfg(windows)]
+use windows::Win32::Foundation::HWND;
+#[cfg(windows)]
+use windows::Win32::UI::WindowsAndMessaging::AllowSetForegroundWindow;
+
 // Define a function to get the commit hash, which will be set at build time
 // If not set, it will default to "development"
 fn get_commit_hash_value() -> &'static str {
@@ -101,6 +106,23 @@ async fn start_process(window: tauri::Window, state: State<'_, AppState>) -> Res
             e, exe_path, exe_cwd
         )
     })?;
+
+    #[cfg(windows)]
+    {
+        // Allow the child process to set foreground window
+        let pid = child.id().expect("Failed to get process ID");
+        unsafe {
+            if let Err(e) = AllowSetForegroundWindow(pid as i32) {
+                debug!("Failed to call AllowSetForegroundWindow: {:?}", e);
+            } else {
+                debug!(
+                    "Successfully called AllowSetForegroundWindow for PID: {}",
+                    pid
+                );
+            }
+        }
+    }
+
     let stdout = child.stdout.take().ok_or("Failed to take child stdout")?;
     let stderr = child.stderr.take().ok_or("Failed to take child stderr")?;
     let stdin = child.stdin.take().ok_or("Failed to take child stdin")?;
