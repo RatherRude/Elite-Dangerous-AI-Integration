@@ -23,6 +23,7 @@ from lib.TTS import TTS
 from lib.StatusParser import Status, StatusParser
 from lib.EDJournal import *
 from lib.EventManager import EventManager
+from lib.UI import send_message
 
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
@@ -40,10 +41,9 @@ class Chat:
         
         self.enabled_game_events: list[str] = []
         if self.config["event_reaction_enabled_var"]:
-            for category in self.config["game_events"].values():
-                for event, state in category.items():
-                    if state:
-                        self.enabled_game_events.append(event)
+            for event, state in self.config["game_events"].items():
+                if state:
+                    self.enabled_game_events.append(event)
                         
         self.is_thinking = False
         
@@ -113,6 +113,21 @@ class Chat:
         self.event_manager.register_sideeffect(self.on_event)
         
     def on_event(self, event: Event, projected_states: dict[str, Any]):
+        send_message({
+            "type": "states",
+            "states": projected_states
+        })
+        send_message({
+            "type": "event",
+            "event": event,
+        })
+        if isinstance(event, ConversationEvent):
+            send_message({
+                "type": "conversation",
+                "kind": event.kind,
+                "content": event.content
+            })
+        
         self.pending.append(event)
         self.reply_pending = self.should_reply(projected_states)
         

@@ -1,0 +1,7 @@
+@for (log of conversation; track log.timestamp) {
+  <div class="log-entry">
+    <span class="timestamp">{{ log.timestamp | date:'HH:mm:ss' }}</span>
+    <span class="prefix" [style.color]="getLogColor('info')">{{ log }}</span>
+    <span class="message">{{ log }}</span>
+  </div>
+}
