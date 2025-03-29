@@ -3,73 +3,73 @@ name: Build and Test Executable
 on: [push, pull_request]
 
 jobs:
-#  pyinstaller-build:
-#    name: Build Executable
-#    runs-on: windows-latest
-#    steps:
-#      - name: Check out the repository
-#        uses: actions/checkout@v2
-#
-#      - name: Set up Python
-#        uses: actions/setup-python@v2
-#        with:
-#          python-version: "3.12"
-#
-#      - name: Install dependencies
-#        run: |
-#          python -m pip install --upgrade pip setuptools
-#          python -m pip install --force-reinstall -r requirements.txt
-#          python -m pip install --force-reinstall numpy==2.2.2 opencv-python==4.10.0.84
-#
-#      - name: Run tests
-#        run: |
-#          python -m pytest --timeout 10 test -v
-#
-#      - name: Install pyinstaller
-#        run: |
-#          $Env:CL = "/Od"
-#          $Env:PYINSTALLER_COMPILE_BOOTLOADER = "true"
-#          python -m pip install --force-reinstall --ignore-installed --no-binary :all: --no-cache pyinstaller@git+https://github.com/pyinstaller/pyinstaller.git@0d562b5
-#          $Env:CL = ""
-#
-#      - name: Determine paths for dependencies
-#        id: determine_paths
-#        run: |
-#          $VAD_MODEL = python -c 'import os, pysilero_vad; print(os.path.join(os.path.dirname(pysilero_vad.__file__), "models", "silero_vad.onnx"))'
-#          $VEC_EXTENSION = python -c 'import os, sqlite_vec; print(os.path.join(os.path.dirname(sqlite_vec.__file__), "vec0.dll"))'
-#          echo "VAD_MODEL=$VAD_MODEL" >> $env:GITHUB_ENV
-#          echo "VEC_EXTENSION=$VEC_EXTENSION" >> $env:GITHUB_ENV
-#
-#      - name: Create Executable for AIGUI
-#        run: |
-#          pyinstaller .\src\AIGUI.py -y --onedir --clean --noconsole --add-data .\docs\screen\EDAI_logo.png:.\screen
-#
-#      - name: Create Executable for Chat
-#        run: |
-#          pyinstaller .\src\Chat.py -y --onedir --clean --console --hidden-import=comtypes.stream `
-#            --add-data .\src:. `
-#            --add-binary ${{ env.VAD_MODEL }}:.\pysilero_vad\models `
-#            --add-binary ${{ env.VEC_EXTENSION }}:.\sqlite_vec
-#
-#      - name: Get current commit ID
-#        id: get_commit
-#        run: |
-#          $COMMIT_ID = git rev-parse HEAD
-#          echo "COMMIT_ID=$COMMIT_ID" >> $env:GITHUB_ENV
-#
-#      - name: Create start.bat script
-#        run: |
-#          $commitId = "${{ github.sha }}"
-#          $start = "@echo off`r`nstart """" .\\AIGUI\\AIGUI.exe --chat=Chat\\Chat.exe --release=$commitId`r`nexit"
-#          $start | Out-File -Encoding ASCII .\\dist\\start.bat
-#
-#      - name: Upload build artifact
-#        uses: actions/upload-artifact@v4
-#        with:
-#          name: COVAS_NEXT_v${{ github.sha }}
-#          path: ./dist
-#        # output the upload URL for later use
-#        id: upload-artifact
+  pyinstaller-build:
+    name: Build Executable
+    runs-on: windows-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools
+          python -m pip install --force-reinstall -r requirements.txt
+          python -m pip install --force-reinstall numpy==2.2.2 opencv-python==4.10.0.84
+
+      - name: Run tests
+        run: |
+          python -m pytest --timeout 10 test -v
+
+      - name: Install pyinstaller
+        run: |
+          $Env:CL = "/Od"
+          $Env:PYINSTALLER_COMPILE_BOOTLOADER = "true"
+          python -m pip install --force-reinstall --ignore-installed --no-binary :all: --no-cache pyinstaller@git+https://github.com/pyinstaller/pyinstaller.git@0d562b5
+          $Env:CL = ""
+
+      - name: Determine paths for dependencies
+        id: determine_paths
+        run: |
+          $VAD_MODEL = python -c 'import os, pysilero_vad; print(os.path.join(os.path.dirname(pysilero_vad.__file__), "models", "silero_vad.onnx"))'
+          $VEC_EXTENSION = python -c 'import os, sqlite_vec; print(os.path.join(os.path.dirname(sqlite_vec.__file__), "vec0.dll"))'
+          echo "VAD_MODEL=$VAD_MODEL" >> $env:GITHUB_ENV
+          echo "VEC_EXTENSION=$VEC_EXTENSION" >> $env:GITHUB_ENV
+
+      - name: Create Executable for AIGUI
+        run: |
+          pyinstaller .\src\AIGUI.py -y --onedir --clean --noconsole --add-data .\docs\screen\EDAI_logo.png:.\screen
+
+      - name: Create Executable for Chat
+        run: |
+          pyinstaller .\src\Chat.py -y --onedir --clean --console --hidden-import=comtypes.stream `
+            --add-data .\src:. `
+            --add-binary ${{ env.VAD_MODEL }}:.\pysilero_vad\models `
+            --add-binary ${{ env.VEC_EXTENSION }}:.\sqlite_vec
+
+      - name: Get current commit ID
+        id: get_commit
+        run: |
+          $COMMIT_ID = git rev-parse HEAD
+          echo "COMMIT_ID=$COMMIT_ID" >> $env:GITHUB_ENV
+
+      - name: Create start.bat script
+        run: |
+          $commitId = "${{ github.sha }}"
+          $start = "@echo off`r`nstart """" .\\AIGUI\\AIGUI.exe --chat=Chat\\Chat.exe --release=$commitId`r`nexit"
+          $start | Out-File -Encoding ASCII .\\dist\\start.bat
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: COVAS_NEXT_v${{ github.sha }}
+          path: ./dist
+        # output the upload URL for later use
+        id: upload-artifact
 
   tauri-build:
     name: Build Tauri App
