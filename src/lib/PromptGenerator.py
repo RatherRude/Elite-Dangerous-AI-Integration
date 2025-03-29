@@ -3011,7 +3011,7 @@ class PromptGenerator:
                         formatted_info = self.format_system_info(raw_system_info)
                         
                         # Add the formatted data to system_data
-                        if "information" in formatted_info and formatted_info["information"].get("government") and formatted_info["government"]:
+                        if "information" in formatted_info and formatted_info["information"].get("government") and formatted_info["information"]["government"]:
                             system_data["Government"] = formatted_info["information"]["government"]
                         
                         # Add population if present in formatted info
