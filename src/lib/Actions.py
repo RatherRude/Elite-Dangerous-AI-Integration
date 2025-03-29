@@ -167,13 +167,16 @@ def galaxy_map_open(args, projected_states):
     
     if 'system_name' in args:
         # Check if UI keys have a collition with CamTranslate
-        collitions = keys.get_collisions('UI_Up')
-        if 'CamTranslateForward' in collitions:
+        collisions = keys.get_collisions('UI_Up')
+
+        if 'CamTranslateForward' in collisions:
             raise Exception("Unable to enter system name due to a collision between the 'UI Panel Up' and 'Galaxy Cam Translate Forward' keys. "
                             +"Please change the keybinding for 'Galaxy Cam Translate' to Shift + WASD under General Controls > Galaxy Map.")
         
-        collitions = keys.get_collisions('UI_Right')
-        if 'CamTranslateRight' in collitions:
+        collisions = keys.get_collisions('UI_Right')
+
+
+        if 'CamTranslateRight' in collisions:
             raise Exception("Unable to enter system name due to a collision between the 'UI Panel Right' and 'Galaxy Cam Translate Right' keys. "
                             +"Please change the keybinding for 'Galaxy Cam Translate' to Shift + WASD under General Controls > Galaxy Map.")
         
