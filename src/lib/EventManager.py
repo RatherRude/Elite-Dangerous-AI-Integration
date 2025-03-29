@@ -70,8 +70,6 @@ class EventManager:
     def add_game_event(self, content: dict[str, Any]):
         event = GameEvent(content=content, historic=False)
         self.incoming.put(event)
-        log('Event', event.content['event'])
-        log('debug', 'Event', event)
 
     def add_historic_game_event(self, content: dict[str, Any]):
         max_event_id = max([event.content.get('id') for event in self.processed if isinstance(event, GameEvent)], default='') # TODO: this is not efficient
@@ -79,28 +77,18 @@ class EventManager:
             return
         event = GameEvent(content=content, historic=True)
         self.incoming.put(event)
-        # log('Event', event)
         
     def add_external_event(self, application: str, content: dict[str, Any]):
         event = ExternalEvent(content={**content, 'event': application})
         self.incoming.put(event)
-        log('Event', event.content['event'])
-        log('debug', 'Event', event)
 
     def add_status_event(self, status: dict[str, Any]):
         event = StatusEvent(status=status)
         self.incoming.put(event)
-        if status.get("event") != 'Status':
-            log('Event', event.status['event'])
-            log('debug', 'Event', event)
 
     def add_conversation_event(self, role: Literal['user', 'assistant'], content: str):
         event = ConversationEvent(kind=role, content=content)
         self.incoming.put(event)
-        if role == 'user':
-            log('CMDR', content)
-        elif role == 'assistant':
-            log('COVAS', content)
 
     def add_assistant_complete_event(self):
         event = ConversationEvent(kind='assistant_completed', content='')
@@ -111,13 +99,10 @@ class EventManager:
         event.processed_at = source.processed_at
         if not isinstance(source, GameEvent) or not source.historic:
             self.pending.append(event)
-            log('Event', 'projected', event.content['event'])
-            log('debug', 'Event', event)
 
     def add_tool_call(self, request: list[dict[str, Any]], results: list[dict[str, Any]], text: list[str] | None = None):
         event = ToolEvent(request=request, results=results, text=text)
         self.incoming.put(event)
-        log('Action', [result['name'] + ': ' + result['content'] for result in results])
 
     def process(self):
         projected_states: dict[str, Any] | None = None
