@@ -39,32 +39,47 @@ export class LoggingService {
             }
             if (logMessage.type === "event") {
                 const currentLogs = this.logsSubject.getValue();
-                if (logMessage.event.kind === "assistant") {
+                if (logMessage.event.kind === "assistant_completed") {
+                    return;
+                } else if (logMessage.event.kind === "assistant") {
                     this.logsSubject.next([...currentLogs, {
                         type: "log",
                         prefix: "covas",
                         timestamp: logMessage.timestamp,
                         message: logMessage.event.content,
                     } as LogMessage]);
-                }
-                if (logMessage.event.kind === "user") {
+                } else if (logMessage.event.kind === "user") {
                     this.logsSubject.next([...currentLogs, {
                         type: "log",
                         prefix: "cmdr",
                         timestamp: logMessage.timestamp,
                         message: logMessage.event.content,
                     } as LogMessage]);
-                }
-                if (logMessage.event.kind === "tool") {
+                } else if (logMessage.event.kind === "tool") {
                     this.logsSubject.next([...currentLogs, {
                         type: "log",
                         prefix: "action",
                         timestamp: logMessage.timestamp,
                         message: logMessage.event.text
                             ? logMessage.event.text.join(", ")
-                            : logMessage.event.request.map((r) =>
-                                r.function.name
+                            : logMessage.event.results.map((r) =>
+                                r.name + ": " + r.content
                             ).join(", "),
+                    } as LogMessage]);
+                } else if (logMessage.event.kind === "status") {
+                    if (logMessage.event.status.event === "Status") return;
+                    this.logsSubject.next([...currentLogs, {
+                        type: "log",
+                        prefix: "event",
+                        timestamp: logMessage.timestamp,
+                        message: logMessage.event.status.event,
+                    } as LogMessage]);
+                } else {
+                    this.logsSubject.next([...currentLogs, {
+                        type: "log",
+                        prefix: "event",
+                        timestamp: logMessage.timestamp,
+                        message: logMessage.event.content.event,
                     } as LogMessage]);
                 }
             }
