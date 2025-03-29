@@ -218,11 +218,8 @@ class EDKeys:
             PressKey(key)
     
     def get_collisions(self, key_name: str) -> list[str]:
-        log('info', 'Pustekuchen!')
         key = self.keys.get(key_name)
         collisions = []
-        # CamTranslateRight
-        # CamTranslateForward
         for k, v in self.keys.items():
             if key == v:
                 collisions.append(k)
