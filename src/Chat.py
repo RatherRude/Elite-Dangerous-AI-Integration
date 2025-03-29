@@ -121,12 +121,6 @@ class Chat:
             "type": "event",
             "event": event,
         })
-        if isinstance(event, ConversationEvent):
-            send_message({
-                "type": "conversation",
-                "kind": event.kind,
-                "content": event.content
-            })
         
         self.pending.append(event)
         self.reply_pending = self.should_reply(projected_states)
