@@ -1047,7 +1047,7 @@ class SystemInfo(Projection[dict[str, SystemInfoState]]):
         # Process systems in chunks to avoid URL length issues
         system_chunks = [system_names[i:i + chunk_size] for i in range(0, len(system_names), chunk_size)]
         
-        log('info', f"Fetching information for {len(system_names)} systems in bulk ({len(system_chunks)} chunks)")
+        log('debug', f"Fetching information for {len(system_names)} systems in bulk ({len(system_chunks)} chunks)")
         
         # Mark all systems as attempted
         current_time = time.time()
