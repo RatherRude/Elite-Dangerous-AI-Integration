@@ -112,7 +112,7 @@ async fn start_process(window: tauri::Window, state: State<'_, AppState>) -> Res
         // Allow the child process to set foreground window
         let pid = child.id().expect("Failed to get process ID");
         unsafe {
-            if let Err(e) = AllowSetForegroundWindow(pid as i32) {
+            if let Err(e) = AllowSetForegroundWindow(pid as u32) {
                 debug!("Failed to call AllowSetForegroundWindow: {:?}", e);
             } else {
                 debug!(
