@@ -1,10 +1,10 @@
 import sys
-from typing import Any
+from typing import Any, Literal
 import io
 import json
 import datetime
 
-def log(prefix: str, message: Any, *args: Any):
+def log(prefix: Literal['info', 'debug', 'warn', 'error'], message: Any, *args: Any):
     output = io.StringIO()
     print(message, *args, file=output)
     contents = output.getvalue()
