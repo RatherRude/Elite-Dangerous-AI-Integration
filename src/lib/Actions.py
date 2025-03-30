@@ -790,23 +790,25 @@ def send_message(obj, projected_states):
             else:
                 raise Exception("Can not send message.")
 
-            if not obj.get("recipient") or obj.get("recipient").lower() == "local":
+            if not obj.get("channel") or obj.get("channel").lower() == "local":
                 typewrite("/l ", interval=0.02)
                 return_message += " to local chat"
-            elif obj.get("recipient").lower() == "wing":
+            elif obj.get("channel").lower() == "wing":
                 typewrite("/w ", interval=0.02)
                 return_message += " to wing chat"
-            elif obj.get("recipient").lower() == "system":
+            elif obj.get("channel").lower() == "system":
                 typewrite("/sy ", interval=0.02)
                 keys.send('UI_Down',repeat=2)
                 keys.send('UI_Select')
                 return_message += " to squadron chat"
-            elif obj.get("recipient").lower() == "squadron":
+            elif obj.get("channel").lower() == "squadron":
                 typewrite("/s ", interval=0.02)
                 return_message += " to squadron chat"
-            else:
+            elif obj.get("channel").lower() == "commander":
                 typewrite(f"/d {obj.get('recipient')} ", interval=0.02)
                 return_message += f" to {obj.get('recipient')}"
+            else:
+                log('debug', f'invalid channel {obj.get("channel")}')
 
             sleep(0.05)
             typewrite(chunk, interval=0.02)
@@ -3411,14 +3413,19 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "type": "string",
                 "description": "Message to send"
             },
+            "channel": {
+                "type": "string",
+                "description": "Channel to send the message on.",
+                "example": "commander",
+                "enum": ['local', 'system', 'wing', 'squadron', 'commander']
+            },
             "recipient": {
                 "type": "string",
-                "description": "local, wing or Commander name.",
-                "example": "wing",
-                "enum": ['local', 'system', 'wing', 'squadron', 'commander_name']
+                "description": "Commander name to send message to. Only used if channel is commander.",
+                "example": "RatherRude.TTV",
             },
         },
-        "required": ["message"]
+        "required": ["message","channel"]
     }, send_message, 'global')
 
     if vision_client:
