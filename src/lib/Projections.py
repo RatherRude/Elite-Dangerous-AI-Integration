@@ -719,7 +719,7 @@ class ExobiologyScan(Projection[ExobiologyScanState]):
 
             if self.state["scans"] and self.state.get('scan_radius', False):
                 in_scan_radius = False
-                if (self.state["lat"] > 0 and self.state["long"] > 0 and
+                if (self.state["lat"] != 0 and self.state["long"] != 0 and
                     event.status.get('PlanetRadius', False)):
                     distance_obj = {'lat': self.state["lat"], 'long': self.state["long"]}
                     for scan in self.state["scans"]:
