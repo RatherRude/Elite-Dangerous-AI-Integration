@@ -608,7 +608,14 @@
                     @if (config.vision_provider === "none") {
                         <p>Vision is disabled</p>
                     }
-
+                    @if (config && (config.commander_name || config.api_key)) {
+                        <mat-label>COVAS:NEXT Settings</mat-label>
+                        <mat-slide-toggle [(ngModel)]="config.cn_autostart"
+                                (ngModelChange)="onConfigChange({cn_autostart: $event})">
+                                Enable COVAS:NEXT autostart
+                        </mat-slide-toggle>
+                    }
+                    
                     @if (system?.os === 'Linux') {
                         <h3>Linux Settings</h3>
                         <p>Learn more about this setup <a target="_blank" rel="noopener noreferrer"
