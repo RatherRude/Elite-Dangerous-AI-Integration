@@ -387,6 +387,7 @@ ship_sizes: dict[str, Literal['S', 'M', 'L', 'Unknown']] = {
     'krait_light':                   'M',
     'mamba':                         'M',
     'mandalay':                      'M',
+    'corsair':                       'M',
     'orca':                          'L',
     'python':                        'M',
     'python_nx':                     'M',
