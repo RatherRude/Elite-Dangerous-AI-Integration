@@ -14,12 +14,16 @@ from .EDKeys import EDKeys
 from .EventManager import EventManager
 from .ActionManager import ActionManager
 
+from . import Config
+
 keys: EDKeys = None
 vision_client: openai.OpenAI | None = None
 llm_client: openai.OpenAI = None
 llm_model_name: str = None
+lll_elevated_model_name: str = None
 vision_model_name: str | None = None
 event_manager: EventManager = None
+action_manager: ActionManager = None
 
 #Checking status projection to exit game actions early if not applicable
 def checkStatus(projected_states: dict[str, dict], blocked_status_dict: dict[str, bool]):
@@ -155,7 +159,7 @@ def galaxy_map_open(args, projected_states):
     setGameWindowActive()
 
 
-    if projected_states.get('CurrentStatus', {}).get('GuiFocus', '') in ['SAA','FSS','Codex','StationServices']:
+    if projected_states.get('CurrentStatus', {}).get('GuiFocus', '') in ['SAA', 'FSS', 'Codex', 'StationServices']:
         raise Exception('Galaxy map can not be opened currently, the active GUI needs to be closed first')
     # Galaxy map already open, so we close it
     if projected_states.get('CurrentStatus').get('GuiFocus') == 'GalaxyMap':
@@ -273,6 +277,10 @@ def hyper_super_combination(args, projected_states):
     if projected_states.get('CurrentStatus').get('flags').get('HardpointsDeployed'):
         keys.send('DeployHardpointToggle')
         return_message += "Hardpoints Retracted. "
+
+    #set speed to 100% here before jump?
+    return_message += "Setting speed to 100%. "
+    keys.send("SetSpeed100")
 
     keys.send('HyperSuperCombination')
     return return_message + "Frame Shift Drive is now charging for a jump"
@@ -628,6 +636,31 @@ def format_image(image, query=""):
         }
     ]
 
+
+def set_model_protocol(obj, projected_states):
+    protocol = obj["protocol"]
+
+    if protocol.lower() == "baseline":
+        Config.llm_elevated = False
+    elif protocol.lower() == "elevated":
+        Config.llm_elevated = True
+    else:
+        return f"Unknown protocol '{protocol}'. No override applied."
+
+    log('info', f"Protocol {protocol} engaged.")
+    return f"Protocol {protocol} engaged. Cognitive matrix aligned."
+
+def remove_facts_from_memory_bank(obj, projected_states):
+    log('debug', f"removing {obj.get('memory')}")
+    action_manager.delete_custom_memories(obj.get('memory'))
+
+    # store_fact(obj.get('query'))
+    return "That fact has been removed from the ships memory"
+
+def store_fact_to_memory_bank(obj, projected_states):
+    action_manager.store_custom_memory(obj.get('fact'))
+    # store_fact(obj.get('query'))
+    return "That fact has been preserved in the ship's central processing archive, Commander"
 
 # returns summary of galnet news
 def get_galnet_news(obj, projected_states):
@@ -2582,13 +2615,15 @@ def target_subsystem(args, projected_states):
     return f"The submodule {args['subsystem']} is being targeted."
 
 def register_actions(actionManager: ActionManager, eventManager: EventManager, llmClient: openai.OpenAI,
-                     llmModelName: str, visionClient: Optional[openai.OpenAI], visionModelName: Optional[str],
+                     llmModelName: str, llmElevatedModelame: str, visionClient: Optional[openai.OpenAI], visionModelName: Optional[str],
                      edKeys: EDKeys):
-    global event_manager, vision_client, llm_client, llm_model_name, vision_model_name, keys
+    global action_manager, event_manager, vision_client, llm_client, llm_model_name, vision_model_name, keys
     keys = edKeys
+    action_manager = actionManager
     event_manager = eventManager
     llm_client = llmClient
     llm_model_name = llmModelName
+    llm_elevated_model_name = llmElevatedModelame
     vision_client = visionClient
     vision_model_name = visionModelName
 
@@ -3029,6 +3064,68 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         },
         get_galnet_news,
         'web'
+    )
+
+    # llm elevated model name is set the same if not entered so we don't register this in that case
+    if llm_elevated_model_name != llm_model_name:
+        actionManager.registerAction(
+            "set_model_protocol",
+            "Change AI model",
+            {
+                "type": "object",
+                "properties": {
+                    "protocol": {
+                        "type": "string",
+                        "description": "The cognition protocol tier to activate",
+                        "enum": ["baseline", "elevated"],
+                    },
+                    "elevated?": {
+                        "type": "string",
+                        "description": "True if we are elevated, False if not. Currently this is " + str(Config.llm_elevated),
+                        "enum": ["baseline", "elevated"],
+                    }
+                },
+                "required": ["protocol"]
+            },
+            set_model_protocol,
+            "global"
+        )
+
+    actionManager.registerAction(
+        'remove_facts_from_memory_bank',
+        "asked directly to remove facts from memory",
+        {
+            "type": "object",
+            "properties": {
+                "memory": {
+                    "type": "string",
+                    "description": "return the fact entries that match",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            },
+            "required": ["memory"]
+        },
+        remove_facts_from_memory_bank,
+        'global'
+    )
+
+    actionManager.registerAction(
+        'remember_facts',
+        "asked directly to remember a fact or to put in custom memory bank",
+        {
+            "type": "object",
+            "properties": {
+                "fact": {
+                    "type": "string",
+                    "description": "the fact or thing you are being asked to store'"
+                },
+            },
+            "required": ["fact"]
+        },
+        store_fact_to_memory_bank,
+        'global'
     )
 
     # if ARC:

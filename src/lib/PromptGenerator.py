@@ -5,7 +5,7 @@ from typing import Any, cast, Dict
 import yaml
 import requests
 import humanize
-import json
+
 
 from lib.EventModels import (
     ApproachBodyEvent, ApproachSettlementEvent, BookTaxiEvent, BountyEvent, BuyExplorationDataEvent, CodexEntryEvent, CommanderEvent, CommitCrimeEvent,
@@ -26,6 +26,8 @@ from lib.EventModels import (
 )
 
 from .Projections import LocationState, MissionsState, ShipInfoState, NavInfo, TargetState, CurrentStatus, CargoState
+from . import ActionManager
+
 
 from .EDJournal import *
 from .Event import (
@@ -37,6 +39,7 @@ from .Event import (
     ExternalEvent,
     ProjectedEvent,
 )
+
 from .Logger import log
 
 # Game events categorized according to Config.py structure
@@ -385,10 +388,11 @@ LocationEvent = dict
 NavRouteEvent = dict
 
 class PromptGenerator:
-    def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str]):
+    def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str], action_manager: ActionManager):
         self.commander_name = commander_name
         self.character_prompt = character_prompt
         self.important_game_events = important_game_events
+        self.action_manager = action_manager
 
     def get_event_template(self, event: GameEvent):
         content: Any = event.content
@@ -463,7 +467,7 @@ class PromptGenerator:
                     faction_info = f" Controlling faction: {faction_name} ({faction_state})"
                 elif faction_name:
                     faction_info = f" Controlling faction: {faction_name}"
-            
+
             return f"{self.commander_name} has arrived at {fsd_jump_event.get('StarSystem')}{details_str}{system_details_str}{population}{faction_info}"
             
         if event_name == 'FSDTarget':
@@ -621,63 +625,64 @@ class PromptGenerator:
                 return f"{self.commander_name} has lifted off from {liftoff_event.get('Body')}{coordinates}{station_info}."
             else:
                 return f"{self.commander_name}'s ship has auto-lifted off from {liftoff_event.get('Body')}{station_info}."
-                
-        # if event_name == 'Location':
-        #     location_event = cast(LocationEvent, content)
-        #     location_details = []
-        #
-        #     if location_event.get('Docked'):
-        #         station_type = f"{location_event.get('StationType')} " if location_event.get('StationType') else ""
-        #         location_details.append(f"docked at {station_type}{location_event.get('StationName')}")
-        #     elif location_event.get('BodyName'):
-        #         if location_event.get('Latitude') is not None and location_event.get('Longitude') is not None:
-        #             location_details.append(f"on {location_event.get('BodyName')} at coordinates {location_event.get('Latitude'):.4f}, {location_event.get('Longitude'):.4f}")
-        #         else:
-        #             location_details.append(f"near {location_event.get('BodyName')}")
-        #             if location_event.get('DistFromStarLS'):
-        #                 location_details.append(f"{location_event.get('DistFromStarLS'):.2f} ls from main star")
-        #
-        #     system_details = []
-        #     if location_event.get('SystemAllegiance'):
-        #         system_details.append(f"allegiance: {location_event.get('SystemAllegiance')}")
-        #     if location_event.get('SystemEconomy'):
-        #         economy = location_event.get('SystemEconomy_Localised', location_event.get('SystemEconomy'))
-        #         system_details.append(f"economy: {economy}")
-        #     if location_event.get('SystemGovernment'):
-        #         government = location_event.get('SystemGovernment_Localised', location_event.get('SystemGovernment'))
-        #         system_details.append(f"government: {government}")
-        #     if location_event.get('SystemSecurity'):
-        #         security = location_event.get('SystemSecurity_Localised', location_event.get('SystemSecurity'))
-        #         system_details.append(f"security: {security}")
-        #
-        #     population = f", population: {location_event.get('Population'):,}" if location_event.get('Population') else ""
-        #
-        #     status_info = []
-        #     if location_event.get('Wanted'):
-        #         status_info.append("WANTED in this system")
-        #     if location_event.get('Taxi'):
-        #         status_info.append("in a taxi")
-        #     elif location_event.get('Multicrew'):
-        #         status_info.append("in multicrew session")
-        #     elif location_event.get('InSRV'):
-        #         status_info.append("in SRV")
-        #     elif location_event.get('OnFoot'):
-        #         status_info.append("on foot")
-        #
-        #     location_str = f" {', '.join(location_details)}" if location_details else ""
-        #     system_details_str = f" ({', '.join(system_details)})" if system_details else ""
-        #     status_str = f" ({', '.join(status_info)})" if status_info else ""
-        #
-        #     return f"{self.commander_name} is in the {location_event.get('StarSystem')} system{location_str}{system_details_str}{population}{status_str}."
+
+        # I find without this at least it doesn't know where we are on launch sometimes
+        if event_name == 'Location':
+            location_event = cast(LocationEvent, content)
+            location_details = []
+
+            if location_event.get('Docked'):
+                station_type = f"{location_event.get('StationType')} " if location_event.get('StationType') else ""
+                location_details.append(f"docked at {station_type}{location_event.get('StationName')}")
+            # elif location_event.get('BodyName'):
+            #     if location_event.get('Latitude') is not None and location_event.get('Longitude') is not None:
+            #         location_details.append(f"on {location_event.get('BodyName')} at coordinates {location_event.get('Latitude'):.4f}, {location_event.get('Longitude'):.4f}")
+            #     else:
+            #         location_details.append(f"near {location_event.get('BodyName')}")
+            #         if location_event.get('DistFromStarLS'):
+            #             location_details.append(f"{location_event.get('DistFromStarLS'):.2f} ls from main star")
+
+            # system_details = []
+            # if location_event.get('SystemAllegiance'):
+            #     system_details.append(f"allegiance: {location_event.get('SystemAllegiance')}")
+            # if location_event.get('SystemEconomy'):
+            #     economy = location_event.get('SystemEconomy_Localised', location_event.get('SystemEconomy'))
+            #     system_details.append(f"economy: {economy}")
+            # if location_event.get('SystemGovernment'):
+            #     government = location_event.get('SystemGovernment_Localised', location_event.get('SystemGovernment'))
+            #     system_details.append(f"government: {government}")
+            # if location_event.get('SystemSecurity'):
+            #     security = location_event.get('SystemSecurity_Localised', location_event.get('SystemSecurity'))
+            #     system_details.append(f"security: {security}")
+            #
+            # population = f", population: {location_event.get('Population'):,}" if location_event.get('Population') else ""
+            #
+            # status_info = []
+            # if location_event.get('Wanted'):
+            #     status_info.append("WANTED in this system")
+            # if location_event.get('Taxi'):
+            #     status_info.append("in a taxi")
+            # elif location_event.get('Multicrew'):
+            #     status_info.append("in multicrew session")
+            # elif location_event.get('InSRV'):
+            #     status_info.append("in SRV")
+            # elif location_event.get('OnFoot'):
+            #     status_info.append("on foot")
+            #
+            location_str = f" {', '.join(location_details)}" if location_details else ""
+            # system_details_str = f" ({', '.join(system_details)})" if system_details else ""
+            # status_str = f" ({', '.join(status_info)})" if status_info else ""
+
+            return f"You are in the {location_event.get('StarSystem')} system{location_str}"
 
         if event_name == 'NavRoute':
             nav_route_event = cast(NavRouteEvent, content)
             if nav_route_event.get('Route'):
-                route_count = len(nav_route_event.get('Route', []))
+                route_count = len(nav_route_event.get('Route', [])) - 1  # We need to subtract 1 as the route includes the station you are in
                 if route_count > 0:
                     start = nav_route_event.get('Route', [])[0].get('StarSystem', 'Unknown')
                     end = nav_route_event.get('Route', [])[-1].get('StarSystem', 'Unknown') 
-                    return f"{self.commander_name} has plotted a {route_count}-jump route from {start} to {end}."
+                    return f"{self.commander_name} has plotted a {route_count}-jump route to {end}."
             return f"{self.commander_name} has plotted a new route."
             
         if event_name == 'NavRouteClear':
@@ -2859,18 +2864,23 @@ class PromptGenerator:
         if current_station and current_station == market.get('StationName'):
             status_entries.append(("Local market information", {
                 item.get('Name_Localised'): {
+                    'Can i buy this commodity at this market?': 'yes',
                     'Category': item.get('Category_Localised'),
-                    'BuyPrice': item.get('BuyPrice'),
-                    'MeanPrice': item.get('MeanPrice'),
-                    'Stock': item.get('Stock'),
+                    'Amount in credits it will cost be to buy 1 Tonne of this commodity at this market': item.get('BuyPrice'),
+                    'Galactic Average price': item.get('MeanPrice'),
+                    'Amount of this commodity available to purchase in Tonnes from this market': item.get('Stock'),
+                    'average profit per tonne': item.get('MeanPrice') - item.get('BuyPrice')
                 } if item.get('Stock') > item.get('Demand') else {
+                    'Can i buy this commodity at this market?': 'no',
                     'Category': item.get('Category_Localised'),
-                    'SellPrice': item.get('SellPrice'),
-                    'MeanPrice': item.get('MeanPrice'),
-                    'Demand': item.get('Demand'),
+                    'Money (Credits) that I will get if i were to sell this product at this market': item.get('SellPrice'),
+                    'Galactic Average price': item.get('MeanPrice'),
+                    'demand for this commodity at this market': item.get('Demand'),
+                    'average profit per tonne': item.get('MeanPrice') - item.get('BuyPrice')
                 }
                 for item in market.get('Items',[]) if item.get('Stock') or item.get('Demand')
             }))
+
         if current_station and current_station == outfitting.get('StationName'):
             status_entries.append(("Local outfitting information", [
                 {"Name": item.get('Name'), "BuyPrice": item.get('BuyPrice')}
@@ -2892,6 +2902,8 @@ class PromptGenerator:
             }))
         else:
             status_entries.append(("Friends Status", "No friends currently online"))
+
+
 
         # Format and return the final status message
         return "\n\n".join(['# '+entry[0]+'\n' + yaml.dump(entry[1]) for entry in status_entries])
@@ -2964,6 +2976,8 @@ class PromptGenerator:
             }
         )
 
+
+
         try:
             conversational_pieces.append(
                 {
@@ -2981,6 +2995,11 @@ class PromptGenerator:
             log('error', 'Invalid character prompt, please keep the {commander_name} placeholder in the prompt.')
 
         conversational_pieces.reverse()  # Restore the original order
+
+        # load in permanent memories
+        custom_memories = self.action_manager.read_custom_memories()
+        conversational_pieces.append({"role": "system", "content": custom_memories})
+        log('debug', 'memory block', json.dumps(custom_memories))
 
         #log('debug', 'states', json.dumps(projected_states))
         log('debug', 'conversation', json.dumps(conversational_pieces))

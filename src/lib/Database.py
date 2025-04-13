@@ -72,7 +72,7 @@ class EventStore():
             instance = instantiate_class_by_name(self, self.event_classes, row[0], json.loads(row[1]))
             events.append(instance)
         return events
-    
+
     def delete_all(self) -> None:
         _ = self.cursor.execute(f'''
             DELETE FROM {self.table_name}
@@ -157,7 +157,7 @@ class KeyValueStore():
             WHERE key = ?
         ''', (key,))
         self.conn.commit()
-    
+
     def delete_all(self) -> None:
         _ = self.cursor.execute(f'''
             DELETE FROM {self.table_name}
