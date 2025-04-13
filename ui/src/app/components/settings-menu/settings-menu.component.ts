@@ -136,6 +136,13 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     await this.configService.assignPTT();
   }
 
+  async resetCharacter() {
+    if (this.config) {
+      const defaultCharacter = await this.configService.getDefaultCharacter();
+      await this.configService.changeConfig({ character: defaultCharacter });
+    }
+  }
+
   private categorizeEvents(
     events: Record<string, boolean>,
   ): Record<string, Record<string, boolean>> {
@@ -211,8 +218,9 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   // Handle material selection changes
   async onMaterialsChange(selectedMaterials: string[]) {
     if (this.config) {
-      const materialsString = selectedMaterials.join(", ");
-      await this.onConfigChange({ react_to_material: materialsString });
+      await this.configService.changeConfig({
+        react_to_material: selectedMaterials.join(", "),
+      });
     }
   }
 

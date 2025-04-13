@@ -32,6 +32,9 @@
                         <textarea matInput [(ngModel)]="config.character"
                                   (ngModelChange)="onConfigChange({character: $event})"
                                   rows="10"></textarea>
+                        <button matSuffix mat-icon-button (click)="resetCharacter()" matTooltip="Reset to default character">
+                            <mat-icon>restart_alt</mat-icon>
+                        </button>
                     </mat-form-field>
                     <p>This setting controls whether the AI will continue the conversation from the last message or
                         start a new one. If you change the character, you may want to reset the conversation history, so

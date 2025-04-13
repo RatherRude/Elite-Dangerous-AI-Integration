@@ -135,6 +135,10 @@ export class ConfigService {
         });
     }
 
+    public async getDefaultCharacter(): Promise<string> {
+        return await this.tauriService.invoke<string>("get_default_character");
+    }
+
     public async changeConfig(partialConfig: Partial<Config>): Promise<void> {
         const currentConfig = this.getCurrentConfig();
         if (!currentConfig) {
