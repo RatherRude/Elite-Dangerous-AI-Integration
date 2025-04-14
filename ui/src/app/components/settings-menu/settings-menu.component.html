@@ -153,137 +153,142 @@
 
                     <!-- Settings controls - only visible when not in custom mode -->
                     @if (config.personality_preset !== 'custom') {
-                        <!-- Character Inspiration -->
-                        <div class="trait-select">
-                            <mat-form-field appearance="fill" style="width: 100%; margin: 10px 0;">
-                                <mat-label>Character Inspiration</mat-label>
-                                <input matInput [(ngModel)]="settings.characterInspiration"
-                                    (ngModelChange)="updatePrompt()">
-                            </mat-form-field>
-                        </div>
-
-                        <div class="trait-container">
-                            <!-- Verbosity Setting -->
-                            <div class="trait-select">
-                                <mat-form-field appearance="fill" style="width: 100%; margin: 10px 0;">
-                                    <mat-label>Verbosity</mat-label>
-                                    <mat-select [(ngModel)]="settings.verbosity" (ngModelChange)="updatePrompt()">
-                                        <mat-option [value]="0">Minimal</mat-option>
-                                        <mat-option [value]="25">Brief</mat-option>
-                                        <mat-option [value]="50">Balanced</mat-option>
-                                        <mat-option [value]="75">Detailed</mat-option>
-                                        <mat-option [value]="100">Verbose</mat-option>
-                                    </mat-select>
-                                </mat-form-field>
+                        <div id="personality-settings">
+                            <div class="trait-container">
+                                <!-- Character Inspiration -->
+                                <div class="trait-select">
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Character Inspiration</mat-label>
+                                        <input matInput [(ngModel)]="settings.characterInspiration"
+                                            (ngModelChange)="updatePrompt()">
+                                    </mat-form-field>
+                                </div>
                             </div>
 
-                            <!-- Tone Setting -->
-                            <div class="trait-select">
-                                <mat-form-field appearance="fill" style="width: 100%; margin: 10px 0;">
-                                    <mat-label>Tone</mat-label>
-                                    <mat-select [(ngModel)]="settings.tone" (ngModelChange)="updatePrompt()">
-                                        <mat-option value="serious">Serious</mat-option>
-                                        <mat-option value="humorous">Humorous</mat-option>
-                                        <mat-option value="sarcastic">Sarcastic</mat-option>
-                                    </mat-select>
-                                </mat-form-field>
+
+                            <div class="trait-container">
+                                <!-- Verbosity Setting -->
+                                <div class="trait-select">
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Verbosity</mat-label>
+                                        <mat-select [(ngModel)]="settings.verbosity" (ngModelChange)="updatePrompt()">
+                                            <mat-option [value]="0">Minimal</mat-option>
+                                            <mat-option [value]="25">Brief</mat-option>
+                                            <mat-option [value]="50">Balanced</mat-option>
+                                            <mat-option [value]="75">Detailed</mat-option>
+                                            <mat-option [value]="100">Verbose</mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                </div>
+
+                                <!-- Tone Setting -->
+                                <div class="trait-select">
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Tone</mat-label>
+                                        <mat-select [(ngModel)]="settings.tone" (ngModelChange)="updatePrompt()">
+                                            <mat-option value="serious">Serious</mat-option>
+                                            <mat-option value="humorous">Humorous</mat-option>
+                                            <mat-option value="sarcastic">Sarcastic</mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                </div>
+
+                                <!-- Vulgarity Setting -->
+                                <div class="trait-select">
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Vulgarity</mat-label>
+                                        <mat-select [(ngModel)]="settings.vulgarity" (ngModelChange)="updatePrompt()">
+                                            <mat-option [value]="0">None</mat-option>
+                                            <mat-option [value]="25">Mild</mat-option>
+                                            <mat-option [value]="50">Moderate</mat-option>
+                                            <mat-option [value]="75">Strong</mat-option>
+                                            <mat-option [value]="100">Extreme</mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                </div>
                             </div>
 
-                            <!-- Vulgarity Setting -->
-                            <div class="trait-select">
-                                <mat-form-field appearance="fill" style="width: 100%; margin: 10px 0;">
-                                    <mat-label>Vulgarity</mat-label>
-                                    <mat-select [(ngModel)]="settings.vulgarity" (ngModelChange)="updatePrompt()">
-                                        <mat-option [value]="0">None</mat-option>
-                                        <mat-option [value]="25">Mild</mat-option>
-                                        <mat-option [value]="50">Moderate</mat-option>
-                                        <mat-option [value]="75">Strong</mat-option>
-                                        <mat-option [value]="100">Extreme</mat-option>
-                                    </mat-select>
-                                </mat-form-field>
-                            </div>
-                        </div>
+                            <div class="trait-container">
+                                <!-- Empathy Level -->
+                                <div class="trait-select">
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Empathy</mat-label>
+                                        <mat-select [(ngModel)]="settings.empathy" (ngModelChange)="updatePrompt()">
+                                            <mat-option [value]="0">Cold</mat-option>
+                                            <mat-option [value]="25">Detached</mat-option>
+                                            <mat-option [value]="50">Balanced</mat-option>
+                                            <mat-option [value]="75">Caring</mat-option>
+                                            <mat-option [value]="100">Highly Empathetic</mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                </div>
 
-                        <div class="trait-container">
-                            <!-- Empathy Level -->
-                            <div class="trait-select">
-                                <mat-form-field appearance="fill" style="width: 100%; margin: 10px 0;">
-                                    <mat-label>Empathy</mat-label>
-                                    <mat-select [(ngModel)]="settings.empathy" (ngModelChange)="updatePrompt()">
-                                        <mat-option [value]="0">Cold</mat-option>
-                                        <mat-option [value]="25">Detached</mat-option>
-                                        <mat-option [value]="50">Balanced</mat-option>
-                                        <mat-option [value]="75">Caring</mat-option>
-                                        <mat-option [value]="100">Highly Empathetic</mat-option>
-                                    </mat-select>
-                                </mat-form-field>
-                            </div>
+                                <!-- Formality Level -->
+                                <div class="trait-select">
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Formality</mat-label>
+                                        <mat-select [(ngModel)]="settings.formality" (ngModelChange)="updatePrompt()">
+                                            <mat-option [value]="0">Casual</mat-option>
+                                            <mat-option [value]="25">Relaxed</mat-option>
+                                            <mat-option [value]="50">Balanced</mat-option>
+                                            <mat-option [value]="75">Professional</mat-option>
+                                            <mat-option [value]="100">Formal</mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                </div>
 
-                            <!-- Formality Level -->
-                            <div class="trait-select">
-                                <mat-form-field appearance="fill" style="width: 100%; margin: 10px 0;">
-                                    <mat-label>Formality</mat-label>
-                                    <mat-select [(ngModel)]="settings.formality" (ngModelChange)="updatePrompt()">
-                                        <mat-option [value]="0">Casual</mat-option>
-                                        <mat-option [value]="25">Relaxed</mat-option>
-                                        <mat-option [value]="50">Balanced</mat-option>
-                                        <mat-option [value]="75">Professional</mat-option>
-                                        <mat-option [value]="100">Formal</mat-option>
-                                    </mat-select>
-                                </mat-form-field>
-                            </div>
-
-                            <!-- Confidence Level -->
-                            <div class="trait-select">
-                                <mat-form-field appearance="fill" style="width: 100%; margin: 10px 0;">
-                                    <mat-label>Confidence</mat-label>
-                                    <mat-select [(ngModel)]="settings.confidence" (ngModelChange)="updatePrompt()">
-                                        <mat-option [value]="0">Uncertain</mat-option>
-                                        <mat-option [value]="25">Tentative</mat-option>
-                                        <mat-option [value]="50">Balanced</mat-option>
-                                        <mat-option [value]="75">Confident</mat-option>
-                                        <mat-option [value]="100">Authoritative</mat-option>
-                                    </mat-select>
-                                </mat-form-field>
-                            </div>
-                        </div>
-
-                        <div class="trait-container">
-                            <!-- Ethical Axis (Law vs. Chaos) -->
-                            <div class="trait-select">
-                                <mat-form-field appearance="fill" style="width: 100%; margin: 10px 0;">
-                                    <mat-label>Ethical Alignment</mat-label>
-                                    <mat-select [(ngModel)]="settings.ethicalAlignment" (ngModelChange)="updatePrompt()">
-                                        <mat-option value="lawful">Lawful (Order, Rules, Structure)</mat-option>
-                                        <mat-option value="neutral">Neutral (Balance, Pragmatism)</mat-option>
-                                        <mat-option value="chaotic">Chaotic (Freedom, Flexibility, Spontaneity)</mat-option>
-                                    </mat-select>
-                                </mat-form-field>
+                                <!-- Confidence Level -->
+                                <div class="trait-select">
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Confidence</mat-label>
+                                        <mat-select [(ngModel)]="settings.confidence" (ngModelChange)="updatePrompt()">
+                                            <mat-option [value]="0">Uncertain</mat-option>
+                                            <mat-option [value]="25">Tentative</mat-option>
+                                            <mat-option [value]="50">Balanced</mat-option>
+                                            <mat-option [value]="75">Confident</mat-option>
+                                            <mat-option [value]="100">Authoritative</mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                </div>
                             </div>
 
-                            <!-- Moral Axis (Good vs. Evil) -->
-                            <div class="trait-select">
-                                <mat-form-field appearance="fill" style="width: 100%; margin: 10px 0;">
-                                    <mat-label>Moral Alignment</mat-label>
-                                    <mat-select [(ngModel)]="settings.moralAlignment" (ngModelChange)="updatePrompt()">
-                                        <mat-option value="good">Good (Altruism, Compassion)</mat-option>
-                                        <mat-option value="neutral">Neutral (Self-Interest, Balance)</mat-option>
-                                        <mat-option value="evil">Evil (Selfishness, Ruthlessness)</mat-option>
-                                    </mat-select>
-                                </mat-form-field>
-                            </div>
-                        </div>
+                            <div class="trait-container">
+                                <!-- Ethical Axis (Law vs. Chaos) -->
+                                <div class="trait-select">
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Ethical Alignment</mat-label>
+                                        <mat-select [(ngModel)]="settings.ethicalAlignment" (ngModelChange)="updatePrompt()">
+                                            <mat-option value="lawful">Lawful (Order, Rules, Structure)</mat-option>
+                                            <mat-option value="neutral">Neutral (Balance, Pragmatism)</mat-option>
+                                            <mat-option value="chaotic">Chaotic (Freedom, Flexibility, Spontaneity)</mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                </div>
 
-                        <!-- Knowledge Areas -->
-                        <div class="knowledge-areas">
-                            <label class="knowledge-label">Knowledge Areas</label>
-                            <div class="knowledge-checkboxes">
-                                <mat-checkbox [(ngModel)]="settings.knowledge.popCulture"
-                                            (ngModelChange)="updatePrompt()">Pop Culture</mat-checkbox>
-                                <mat-checkbox [(ngModel)]="settings.knowledge.scifi"
-                                            (ngModelChange)="updatePrompt()">Sci-Fi</mat-checkbox>
-                                <mat-checkbox [(ngModel)]="settings.knowledge.history"
-                                            (ngModelChange)="updatePrompt()">History</mat-checkbox>
+                                <!-- Moral Axis (Good vs. Evil) -->
+                                <div class="trait-select">
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Moral Alignment</mat-label>
+                                        <mat-select [(ngModel)]="settings.moralAlignment" (ngModelChange)="updatePrompt()">
+                                            <mat-option value="good">Good (Altruism, Compassion)</mat-option>
+                                            <mat-option value="neutral">Neutral (Self-Interest, Balance)</mat-option>
+                                            <mat-option value="evil">Evil (Selfishness, Ruthlessness)</mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                </div>
+                            </div>
+
+                            <!-- Knowledge Areas -->
+                            <div class="knowledge-areas">
+                                <label class="knowledge-label">Knowledge Areas</label>
+                                <div class="knowledge-checkboxes">
+                                    <mat-checkbox [(ngModel)]="settings.knowledge.popCulture"
+                                                (ngModelChange)="updatePrompt()">Pop Culture</mat-checkbox>
+                                    <mat-checkbox [(ngModel)]="settings.knowledge.scifi"
+                                                (ngModelChange)="updatePrompt()">Sci-Fi</mat-checkbox>
+                                    <mat-checkbox [(ngModel)]="settings.knowledge.history"
+                                                (ngModelChange)="updatePrompt()">History</mat-checkbox>
+                                </div>
                             </div>
                         </div>
                     }
@@ -297,7 +302,7 @@
                                   rows="10"></textarea>
                     </mat-form-field>
 
-                    <h3>Actions</h3>
+                    <h2>Actions</h2>
                     <mat-slide-toggle [ngModel]="config.tools_var && config.game_actions_var"
                                       (ngModelChange)="onConfigChange({game_actions_var: $event})"
                                       [disabled]="!config.tools_var">
@@ -320,7 +325,7 @@
                     </mat-slide-toggle>
                     <p>The action cache allows the AI to learn from previous interactions and reuse actions for similar
                         inputs, making responses faster and more consistent.</p>
-                    <h3>Reactions</h3>
+                    <h2>Reactions</h2>
                     <mat-slide-toggle [(ngModel)]="config.event_reaction_enabled_var"
                                       (ngModelChange)="onConfigChange({event_reaction_enabled_var: $event})">
                         Enable Event Reactions

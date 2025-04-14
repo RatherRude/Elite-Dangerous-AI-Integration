@@ -366,13 +366,13 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             verbosity: 50,
             tone: 'serious',
             knowledge: { popCulture: false, scifi: false, history: false },
-            characterInspiration: '',
+            characterInspiration: 'a Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal (COVAS:NEXT)',
             vulgarity: 0,
             empathy: 50,
             formality: 50,
-            confidence: 50,
-            ethicalAlignment: 'neutral',
-            moralAlignment: 'neutral',
+            confidence: 75,
+            ethicalAlignment: 'lawful',
+            moralAlignment: 'good',
           };
           break;
           
@@ -636,7 +636,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             verbosity: 25,
             tone: 'humorous',
             knowledge: { popCulture: true, scifi: true, history: false },
-            characterInspiration: 'Formula 1 racer',
+            characterInspiration: 'Buckyball Racer',
             vulgarity: 25,
             empathy: 25,
             formality: 25,
