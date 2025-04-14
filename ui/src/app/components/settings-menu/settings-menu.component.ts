@@ -363,7 +363,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       switch (preset) {
         case 'default':
           this.settings = {
-            verbosity: 50,
+            verbosity: 0,
             tone: 'serious',
             knowledge: { popCulture: false, scifi: false, history: false },
             characterInspiration: 'COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal)',
