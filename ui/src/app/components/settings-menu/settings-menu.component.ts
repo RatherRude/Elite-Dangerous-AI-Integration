@@ -375,7 +375,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             moralAlignment: 'good',
           };
           break;
-          
         case 'explorer':
           this.settings = {
             verbosity: 75,
@@ -390,7 +389,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             moralAlignment: 'good',
           };
           break;
-
         case 'trader':
           this.settings = {
             verbosity: 50,
@@ -405,7 +403,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             moralAlignment: 'neutral',
           };
           break;
-
         case 'miner':
           this.settings = {
             verbosity: 25,
@@ -420,7 +417,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             moralAlignment: 'neutral',
           };
           break;
-
         case 'bountyHunter':
           this.settings = {
             verbosity: 25,
@@ -435,7 +431,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             moralAlignment: 'neutral',
           };
           break;
-
         case 'pirate':
           this.settings = {
             verbosity: 25,
@@ -450,7 +445,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             moralAlignment: 'evil',
           };
           break;
-
         case 'smuggler':
           this.settings = {
             verbosity: 25,
@@ -465,7 +459,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             moralAlignment: 'neutral',
           };
           break;
-
         case 'mercenary':
           this.settings = {
             verbosity: 25,
@@ -480,7 +473,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             moralAlignment: 'neutral',
           };
           break;
-
         case 'missionRunner':
           this.settings = {
             verbosity: 50,
@@ -495,7 +487,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             moralAlignment: 'neutral',
           };
           break;
-
         case 'passengerTransporter':
           this.settings = {
             verbosity: 75,
@@ -510,7 +501,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             moralAlignment: 'good',
           };
           break;
-
         case 'powerplayAgent':
           this.settings = {
             verbosity: 75,
@@ -525,7 +515,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             moralAlignment: 'neutral',
           };
           break;
-
         case 'axCombatPilot':
           this.settings = {
             verbosity: 25,
@@ -540,7 +529,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             moralAlignment: 'good',
           };
           break;
-
         case 'salvager':
           this.settings = {
             verbosity: 50,
@@ -555,7 +543,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             moralAlignment: 'neutral',
           };
           break;
-
         case 'cannonResearcher':
           this.settings = {
             verbosity: 100,
@@ -570,7 +557,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             moralAlignment: 'good',
           };
           break;
-
         case 'fuelRat':
           this.settings = {
             verbosity: 50,
@@ -585,7 +571,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             moralAlignment: 'good',
           };
           break;
-
         case 'fleetCarrierOperator':
           this.settings = {
             verbosity: 75,
@@ -600,7 +585,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             moralAlignment: 'neutral',
           };
           break;
-
         case 'bgsPlayer':
           this.settings = {
             verbosity: 100,
@@ -615,7 +599,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             moralAlignment: 'neutral',
           };
           break;
-
         case 'roleplayer':
           this.settings = {
             verbosity: 100,
@@ -630,7 +613,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             moralAlignment: 'neutral',
           };
           break;
-
         case 'racer':
           this.settings = {
             verbosity: 25,
@@ -646,6 +628,24 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
           };
           break;
       }
+      
+      // Also update the config object if it exists
+      if (this.config) {
+        // Directly update the config object with the new values
+        this.config.personality_verbosity = this.settings.verbosity;
+        this.config.personality_tone = this.settings.tone;
+        this.config.personality_knowledge_pop_culture = this.settings.knowledge.popCulture;
+        this.config.personality_knowledge_scifi = this.settings.knowledge.scifi;
+        this.config.personality_knowledge_history = this.settings.knowledge.history;
+        this.config.personality_character_inspiration = this.settings.characterInspiration;
+        this.config.personality_vulgarity = this.settings.vulgarity;
+        this.config.personality_empathy = this.settings.empathy;
+        this.config.personality_formality = this.settings.formality;
+        this.config.personality_confidence = this.settings.confidence;
+        this.config.personality_ethical_alignment = this.settings.ethicalAlignment;
+        this.config.personality_moral_alignment = this.settings.moralAlignment;
+      }
+      
       // Don't call updatePrompt() here to avoid infinite loops
     }
   }
@@ -656,12 +656,29 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     // First update the settings in the UI
     this.applySettingsFromPreset(preset);
     
-    // Then save the preset selection to config
-    this.onConfigChange({personality_preset: preset});
-    
-    // Only generate a new prompt when explicitly changing presets (not during initialization)
-    if (preset !== 'custom'){
+    // Then save the preset selection and all the updated values to config
+    if (preset !== 'custom') {
+      this.onConfigChange({
+        personality_preset: preset,
+        personality_verbosity: this.config.personality_verbosity,
+        personality_tone: this.config.personality_tone,
+        personality_knowledge_pop_culture: this.config.personality_knowledge_pop_culture,
+        personality_knowledge_scifi: this.config.personality_knowledge_scifi,
+        personality_knowledge_history: this.config.personality_knowledge_history,
+        personality_character_inspiration: this.config.personality_character_inspiration,
+        personality_vulgarity: this.config.personality_vulgarity,
+        personality_empathy: this.config.personality_empathy,
+        personality_formality: this.config.personality_formality,
+        personality_confidence: this.config.personality_confidence,
+        personality_ethical_alignment: this.config.personality_ethical_alignment,
+        personality_moral_alignment: this.config.personality_moral_alignment
+      });
+      
+      // Generate a new prompt when explicitly changing presets
       this.updatePrompt();
+    } else {
+      // Just save the preset selection for custom mode
+      this.onConfigChange({personality_preset: preset});
     }
   }
 

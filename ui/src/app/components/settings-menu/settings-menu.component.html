@@ -159,8 +159,8 @@
                                 <div class="trait-select">
                                     <mat-form-field appearance="outline">
                                         <mat-label>Character Inspiration</mat-label>
-                                        <input matInput [(ngModel)]="settings.characterInspiration"
-                                            (ngModelChange)="updatePrompt()">
+                                        <input matInput [(ngModel)]="config.personality_character_inspiration"
+                                            (ngModelChange)="onConfigChange({personality_character_inspiration: $event}); updatePrompt()">
                                     </mat-form-field>
                                 </div>
                             </div>
@@ -171,7 +171,8 @@
                                 <div class="trait-select">
                                     <mat-form-field appearance="outline">
                                         <mat-label>Verbosity</mat-label>
-                                        <mat-select [(ngModel)]="settings.verbosity" (ngModelChange)="updatePrompt()">
+                                        <mat-select [(ngModel)]="config.personality_verbosity" 
+                                            (ngModelChange)="onConfigChange({personality_verbosity: $event}); updatePrompt()">
                                             <mat-option [value]="0">Minimal</mat-option>
                                             <mat-option [value]="25">Brief</mat-option>
                                             <mat-option [value]="50">Balanced</mat-option>
@@ -185,7 +186,8 @@
                                 <div class="trait-select">
                                     <mat-form-field appearance="outline">
                                         <mat-label>Tone</mat-label>
-                                        <mat-select [(ngModel)]="settings.tone" (ngModelChange)="updatePrompt()">
+                                        <mat-select [(ngModel)]="config.personality_tone" 
+                                            (ngModelChange)="onConfigChange({personality_tone: $event}); updatePrompt()">
                                             <mat-option value="serious">Serious</mat-option>
                                             <mat-option value="humorous">Humorous</mat-option>
                                             <mat-option value="sarcastic">Sarcastic</mat-option>
@@ -197,7 +199,8 @@
                                 <div class="trait-select">
                                     <mat-form-field appearance="outline">
                                         <mat-label>Vulgarity</mat-label>
-                                        <mat-select [(ngModel)]="settings.vulgarity" (ngModelChange)="updatePrompt()">
+                                        <mat-select [(ngModel)]="config.personality_vulgarity" 
+                                            (ngModelChange)="onConfigChange({personality_vulgarity: $event}); updatePrompt()">
                                             <mat-option [value]="0">None</mat-option>
                                             <mat-option [value]="25">Mild</mat-option>
                                             <mat-option [value]="50">Moderate</mat-option>
@@ -213,7 +216,8 @@
                                 <div class="trait-select">
                                     <mat-form-field appearance="outline">
                                         <mat-label>Empathy</mat-label>
-                                        <mat-select [(ngModel)]="settings.empathy" (ngModelChange)="updatePrompt()">
+                                        <mat-select [(ngModel)]="config.personality_empathy" 
+                                            (ngModelChange)="onConfigChange({personality_empathy: $event}); updatePrompt()">
                                             <mat-option [value]="0">Cold</mat-option>
                                             <mat-option [value]="25">Detached</mat-option>
                                             <mat-option [value]="50">Balanced</mat-option>
@@ -227,7 +231,8 @@
                                 <div class="trait-select">
                                     <mat-form-field appearance="outline">
                                         <mat-label>Formality</mat-label>
-                                        <mat-select [(ngModel)]="settings.formality" (ngModelChange)="updatePrompt()">
+                                        <mat-select [(ngModel)]="config.personality_formality" 
+                                            (ngModelChange)="onConfigChange({personality_formality: $event}); updatePrompt()">
                                             <mat-option [value]="0">Casual</mat-option>
                                             <mat-option [value]="25">Relaxed</mat-option>
                                             <mat-option [value]="50">Balanced</mat-option>
@@ -241,7 +246,8 @@
                                 <div class="trait-select">
                                     <mat-form-field appearance="outline">
                                         <mat-label>Confidence</mat-label>
-                                        <mat-select [(ngModel)]="settings.confidence" (ngModelChange)="updatePrompt()">
+                                        <mat-select [(ngModel)]="config.personality_confidence" 
+                                            (ngModelChange)="onConfigChange({personality_confidence: $event}); updatePrompt()">
                                             <mat-option [value]="0">Uncertain</mat-option>
                                             <mat-option [value]="25">Tentative</mat-option>
                                             <mat-option [value]="50">Balanced</mat-option>
@@ -257,7 +263,8 @@
                                 <div class="trait-select">
                                     <mat-form-field appearance="outline">
                                         <mat-label>Ethical Alignment</mat-label>
-                                        <mat-select [(ngModel)]="settings.ethicalAlignment" (ngModelChange)="updatePrompt()">
+                                        <mat-select [(ngModel)]="config.personality_ethical_alignment" 
+                                            (ngModelChange)="onConfigChange({personality_ethical_alignment: $event}); updatePrompt()">
                                             <mat-option value="lawful">Lawful (Order, Rules, Structure)</mat-option>
                                             <mat-option value="neutral">Neutral (Balance, Pragmatism)</mat-option>
                                             <mat-option value="chaotic">Chaotic (Freedom, Flexibility, Spontaneity)</mat-option>
@@ -269,7 +276,8 @@
                                 <div class="trait-select">
                                     <mat-form-field appearance="outline">
                                         <mat-label>Moral Alignment</mat-label>
-                                        <mat-select [(ngModel)]="settings.moralAlignment" (ngModelChange)="updatePrompt()">
+                                        <mat-select [(ngModel)]="config.personality_moral_alignment" 
+                                            (ngModelChange)="onConfigChange({personality_moral_alignment: $event}); updatePrompt()">
                                             <mat-option value="good">Good (Altruism, Compassion)</mat-option>
                                             <mat-option value="neutral">Neutral (Self-Interest, Balance)</mat-option>
                                             <mat-option value="evil">Evil (Selfishness, Ruthlessness)</mat-option>
@@ -282,12 +290,12 @@
                             <div class="knowledge-areas">
                                 <label class="knowledge-label">Knowledge Areas</label>
                                 <div class="knowledge-checkboxes">
-                                    <mat-checkbox [(ngModel)]="settings.knowledge.popCulture"
-                                                (ngModelChange)="updatePrompt()">Pop Culture</mat-checkbox>
-                                    <mat-checkbox [(ngModel)]="settings.knowledge.scifi"
-                                                (ngModelChange)="updatePrompt()">Sci-Fi</mat-checkbox>
-                                    <mat-checkbox [(ngModel)]="settings.knowledge.history"
-                                                (ngModelChange)="updatePrompt()">History</mat-checkbox>
+                                    <mat-checkbox [(ngModel)]="config.personality_knowledge_pop_culture"
+                                                (ngModelChange)="onConfigChange({personality_knowledge_pop_culture: $event}); updatePrompt()">Pop Culture</mat-checkbox>
+                                    <mat-checkbox [(ngModel)]="config.personality_knowledge_scifi"
+                                                (ngModelChange)="onConfigChange({personality_knowledge_scifi: $event}); updatePrompt()">Sci-Fi</mat-checkbox>
+                                    <mat-checkbox [(ngModel)]="config.personality_knowledge_history"
+                                                (ngModelChange)="onConfigChange({personality_knowledge_history: $event}); updatePrompt()">History</mat-checkbox>
                                 </div>
                             </div>
                         </div>
