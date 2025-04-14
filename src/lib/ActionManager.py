@@ -1,11 +1,11 @@
 from hashlib import md5
 import json
+from datetime import datetime
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall
 import random
 from typing import Any, Callable
 
 from openai.types.chat import ChatCompletionMessageToolCall
-
 from lib.Database import KeyValueStore
 
 from .Logger import log
@@ -17,6 +17,7 @@ class ActionManager:
 
     def __init__(self):
         self.action_cache = KeyValueStore("action_cache")
+        self.custom_memory_bank = KeyValueStore("custom_memory_bank")
 
     def getToolsList(self, active_mode: str, uses_actions:bool, uses_web_actions: bool):
         """return list of functions as passed to gpt"""
@@ -216,3 +217,62 @@ class ActionManager:
             return True
         
         return False
+
+    def store_custom_memory(self, memory):
+        """
+        Stores a custom memory into the 'important_facts' key of the custom memory bank.
+        Initializes the key only if it's not already present.
+        """
+        current_entry = self.custom_memory_bank.get('important_facts', None)
+
+        entry = {
+            "memory": str(memory),
+            "saved_at": datetime.now().isoformat()
+        }
+
+        if current_entry is None:
+            # Key doesn't exist, safe to initialize
+            self.custom_memory_bank.init('important_facts', "1", [entry])
+        else:
+            # Key exists, append to existing list (even if it's empty)
+            current_entry.append(entry)
+            self.custom_memory_bank.set('important_facts', current_entry)
+
+
+    def read_custom_memories(self) -> str:
+        """
+        Retrieves and formats all stored custom memories from the 'important_facts' memory bank.
+
+        Returns:
+            str: A formatted string of each memory and its saved timestamp, or an empty string if none exist.
+        """
+        current_entries = self.custom_memory_bank.get('important_facts', [])
+
+        if not current_entries:
+            return ""
+
+        lines = ["\nThe are my important notes, please refer to these if I ask you to:"]
+        for entry in current_entries:
+            memory = entry.get("memory", "").strip()
+            timestamp = entry.get("saved_at", "")
+            if memory:
+                lines.append(f"  - {memory} (stored {timestamp})")
+
+        return "\n".join(lines)
+
+    def delete_custom_memories(self, to_remove: list[str]):
+        """
+        Deletes custom memories that match any string in the `to_remove` list.
+
+        Args:
+            to_remove (list[str]): List of memory strings to delete (exact match).
+        """
+        current_entries = self.custom_memory_bank.get('important_facts', [])
+
+        if not current_entries:
+            return  # Nothing to do
+
+        modified_memories = [mem for mem in current_entries if mem["memory"] not in to_remove]
+
+        log('debug', f"Deleted {len(current_entries) - len(modified_memories)} memories.")
+        self.custom_memory_bank.set('important_facts', modified_memories)

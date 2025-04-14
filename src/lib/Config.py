@@ -308,6 +308,8 @@ game_events = {
     'USSDrop': False,
 }
 
+llm_elevated: bool = False
+
 
 class Config(TypedDict):
     api_key: str
@@ -315,8 +317,10 @@ class Config(TypedDict):
     llm_endpoint: str
     commander_name: str
     character: str
+    voice_instructions: str
     llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom', 'local-ai-server']
     llm_model_name: str
+    llm_elevated_model_name: str
     llm_custom: dict[str, str]
     vision_provider: Literal['openai', 'google-ai-studio', 'custom', 'none']
     vision_model_name: str
@@ -407,6 +411,9 @@ def load_config() -> Config:
             "You seek adventure and glory in battle. You're fiercely protective of your captain and ship, it's us against the world. \n\n" +
             "I'm Commander {commander_name}, the captain of this ship, independent pilot and notorious pirate. " +
             "We are partners in crime. My home system is Orrere.",
+        'voice_instructions':
+            "You are an AI co pilot.  Ues a tone appropriate to the context of the message " +
+            "you are delivering, but use a slightly synthetic AI voice with a calm demeanor.",  # The instructions of mini-tts that sets the tonal response of the ai
         'api_key': "",
         'tools_var': True,
         'vision_var': False,
@@ -424,6 +431,7 @@ def load_config() -> Config:
         'output_device_name': get_default_output_device_name(),
         'llm_provider': "openai",
         'llm_model_name': "gpt-4o-mini",
+        'llm_elevated_model_name': "", # this is the model to switch to when i ask the AI to switch to elevated cortex
         'llm_endpoint': "https://api.openai.com/v1",
         'llm_api_key': "",
         'llm_custom': {},
@@ -633,7 +641,7 @@ def check_and_upgrade_model(config: Config) -> ModelValidationResult:
     """
     # Make a copy of the config to avoid modifying the original
     updated_config = cast(Config, {k: v for k, v in config.items()})
-    
+
     # Check LLM model
     llm_endpoint = config['llm_endpoint'] if config['llm_endpoint'] else "https://api.openai.com/v1"
     llm_api_key = config['llm_api_key'] if config['llm_api_key'] else config['api_key']
@@ -648,9 +656,9 @@ def check_and_upgrade_model(config: Config) -> ModelValidationResult:
                 'config': None,
                 'message': err
             }
-        
+
         [current_model, main_model, fallback_model] = available_models
-        
+
         if not current_model and not main_model and not fallback_model:
             return {
                 'skipped': False,
@@ -658,7 +666,7 @@ def check_and_upgrade_model(config: Config) -> ModelValidationResult:
                 'config': None,
                 'message': f'Your model provider doesn\'t serve any model to you. Please check your model name.'
             }
-        
+
         if llm_model_name == 'gpt-4o-mini' and not main_model and fallback_model:
             updated_config['llm_model_name'] = 'gpt-3.5-turbo'
             return {
@@ -667,7 +675,7 @@ def check_and_upgrade_model(config: Config) -> ModelValidationResult:
                 'config': updated_config,
                 'message': f'Your model provider doesn\'t serve "{llm_model_name}" to you. Falling back to "gpt-3.5-turbo".'
             }
-        
+
         if llm_model_name == 'gpt-3.5-turbo' and main_model:
             updated_config['llm_model_name'] = 'gpt-4o-mini'
             return {
@@ -676,7 +684,7 @@ def check_and_upgrade_model(config: Config) -> ModelValidationResult:
                 'config': updated_config,
                 'message': f'Your model provider now serves "gpt-4o-mini". Upgrading to "gpt-4o-mini".'
             }
-        
+
         if not current_model:
             return {
                 'skipped': False,
@@ -710,6 +718,10 @@ def validate_config(config: Config) -> Config | None:
             return validation_result['config']
         else:
             return None
+
+    # to do - more checking required here as for llm_model_name above
+    if config['llm_elevated_model_name'].strip() == '':
+        config['llm_elevated_model_name'] = config['llm_model_name']
 
     return config
 

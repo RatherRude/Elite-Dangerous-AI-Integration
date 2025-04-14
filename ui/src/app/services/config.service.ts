@@ -44,8 +44,10 @@ export interface Config {
     api_key: string;
     commander_name: string;
     character: string;
+    voice_instructions: string;
     llm_provider: "openai" | "openrouter" | "google-ai-studio" | "custom" | "local-ai-server";
     llm_model_name: string;
+    llm_elevated_model_name: string;
     llm_api_key: string;
     llm_endpoint: string;
     vision_provider: "openai" | "google-ai-studio" | "custom" | "none";

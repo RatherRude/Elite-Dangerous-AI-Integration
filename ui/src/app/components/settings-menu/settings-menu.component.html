@@ -33,6 +33,13 @@
                                   (ngModelChange)="onConfigChange({character: $event})"
                                   rows="10"></textarea>
                     </mat-form-field>
+                   <p>Optional tone of voice instructions for tts model. Only works with gpt-4o-mini-tts!</p>
+                   <mat-form-field>
+                        <mat-label>Voice Instructions</mat-label>
+                        <textarea matInput [(ngModel)]="config.voice_instructions"
+                                  (ngModelChange)="onConfigChange({voice_instructions: $event})"
+                                  rows="4"></textarea>
+                    </mat-form-field>
                     <p>This setting controls whether the AI will continue the conversation from the last message or
                         start a new one. If you change the character, you may want to reset the conversation history, so
                         the AI starts with a blank slate.</p>
@@ -366,7 +373,13 @@
                             </mat-slide-toggle>
                         </label>
                     }
-                    
+                    <p>Elevated Model. Optional llm model to dynamically switch to when
+                       you ask the ai to switch to elevated / advanced mode. Leave blank to disable</p>
+                    <mat-form-field>
+                            <mat-label>LLM Elevated Model Name</mat-label>
+                            <input matInput [(ngModel)]="config.llm_elevated_model_name"
+                                   (ngModelChange)="onConfigChange({llm_elevated_model_name: $event})">
+                    </mat-form-field>
 
                     <hr>
                     <h3>STT Settings</h3>

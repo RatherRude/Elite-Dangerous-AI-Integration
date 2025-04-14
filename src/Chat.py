@@ -24,6 +24,7 @@ from lib.StatusParser import Status, StatusParser
 from lib.EDJournal import *
 from lib.EventManager import EventManager
 
+from lib import Config
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
@@ -35,7 +36,10 @@ class Chat:
         self.config = config # todo: remove
         if self.config["api_key"] == '':
             self.config["api_key"] = '-'
-        
+
+        self.voice_instructions = self.config["voice_instructions"]
+        self.current_llm_model_name = self.config['llm_model_name']
+
         self.backstory = self.config["character"].replace("{commander_name}", self.config['commander_name'])
             
         self.is_thinking = False
@@ -83,13 +87,13 @@ class Chat:
             )
             
         tts_provider = 'none' if self.config["edcopilot_dominant"] else self.config["tts_provider"]
-        self.tts = TTS(openai_client=self.ttsClient, provider=tts_provider, model=self.config["tts_model_name"], voice=self.config["tts_voice"], speed=self.config["tts_speed"], output_device=self.config["output_device_name"])
+        self.tts = TTS(openai_client=self.ttsClient, provider=tts_provider, model=self.config["tts_model_name"], voice=self.config["tts_voice"], voice_instructions=self.config["voice_instructions"], speed=self.config["tts_speed"], output_device=self.config["output_device_name"])
         self.stt = STT(openai_client=self.sttClient, provider=self.config["stt_provider"], input_device_name=self.config["input_device_name"], model=self.config["stt_model_name"], custom_prompt=self.config["stt_custom_prompt"], required_word=self.config["stt_required_word"])
 
 
         self.ed_keys = EDKeys(get_ed_appdata_path(config))
         self.status_parser = StatusParser(get_ed_journals_path(config))
-        self.prompt_generator = PromptGenerator(self.config["commander_name"], self.config["character"], important_game_events=self.enabled_game_events)
+        self.prompt_generator = PromptGenerator(self.config["commander_name"], self.config["character"], important_game_events=self.enabled_game_events, action_manager = self.action_manager)
         self.event_manager = EventManager(
             on_reply_request=lambda events, new_events, states: self.reply(events, new_events, states),
             game_events=self.enabled_game_events,
@@ -102,7 +106,7 @@ class Chat:
             react_to_danger_mining=self.config["react_to_danger_mining_var"],
             react_to_danger_onfoot=self.config["react_to_danger_onfoot_var"]
         )
-        
+
     def execute_actions(self, actions: list[dict[str, Any]], projected_states: dict[str, dict]):
         action_descriptions: list[str | None] = []
         action_results: list[Any] = []
@@ -137,7 +141,6 @@ class Chat:
             return
 
         self.action_manager.save_prediction_verification(user_input, action, completion.choices[0].message.tool_calls, tools)
-    
 
 
     def reply(self, events: list[Event], new_events: list[Event], projected_states: dict[str, dict]):
@@ -177,9 +180,21 @@ class Chat:
             response_text = None
             response_actions = predicted_actions
         else:
+
+            model_name = self.config["llm_model_name"]
+            # check if we have an elevated model
+            if Config.llm_elevated and self.config["llm_elevated_model_name"] != self.config["llm_model_name"]:
+                model_name = self.config["llm_elevated_model_name"]
+
+            # send info whenever we switch
+            if model_name != self.current_llm_model_name:
+                log('info', f"Switching llm model to: {model_name}")
+
+            self.current_llm_model_name = model_name
+
             start_time = time()
             completion = self.llmClient.chat.completions.create(
-                model=self.config["llm_model_name"],
+                model=model_name,
                 messages=prompt,
                 tools=tool_list
             )
@@ -212,16 +227,18 @@ class Chat:
 
     def submit_input(self, input: str):
         self.event_manager.add_conversation_event('user', input)
-        
+
     def run(self):
         log('info', f"Initializing CMDR {self.config['commander_name']}'s personal AI...\n")
         log('info', "API Key: Loaded")
         log('info', f"Using Push-to-Talk: {self.config['ptt_var']}")
         log('info', f"Using Function Calling: {self.config['tools_var']}")
         log('info', f"Current model: {self.config['llm_model_name']}")
+        log('info', f"Current elevated model: {config['llm_elevated_model_name']}")
         log('info', f"Current TTS voice: {self.config['tts_voice']}")
         log('info', f"Current TTS Speed: {self.config['tts_speed']}")
         log('info', "Current backstory: " + self.backstory)
+        log('info', "Tone of Voice Instructions (openai-TTS only): " + self.voice_instructions)
 
         # TTS Setup
         log('info', "Basic configuration complete.")
@@ -243,7 +260,7 @@ class Chat:
         registerProjections(self.event_manager)
 
         if self.config['tools_var']:
-            register_actions(self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.ed_keys)
+            register_actions(self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"],  self.config["llm_elevated_model_name"], self.visionClient, self.config["vision_model_name"], self.ed_keys)
             log('info', "Actions ready.")
         
         if not self.config["continue_conversation_var"]:
@@ -308,7 +325,6 @@ class Chat:
                     if isinstance(event, ExternalBackgroundChatNotification):
                         self.event_manager.add_external_event('External' + event.service.capitalize() + 'Message',
                                                           event.model_dump())
-
 
                 self.event_manager.process()
 
