@@ -1,0 +1,9 @@
+<h2 mat-dialog-title>Update Available</h2>
+<mat-dialog-content>
+  <p><strong>{{ data.releaseName }}</strong></p>
+  <p>A new version of COVAS:NEXT is available. Would you like to download it now?</p>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onNoClick()">Not Now</button>
+  <button mat-raised-button color="primary" (click)="onDownloadClick()">Download</button>
+</mat-dialog-actions> 

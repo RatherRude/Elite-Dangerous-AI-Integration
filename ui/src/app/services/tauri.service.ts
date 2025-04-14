@@ -3,6 +3,8 @@ import { Injectable, NgZone } from "@angular/core";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { BehaviorSubject, Observable, ReplaySubject } from "rxjs";
+import { MatDialog } from "@angular/material/dialog";
+import { UpdateDialogComponent } from "../components/update-dialog/update-dialog.component";
 
 export interface BaseMessage {
     type: string;
@@ -42,7 +44,7 @@ export class TauriService {
     private stopListener?: UnlistenFn;
     private stopStderrListener?: UnlistenFn;
 
-    constructor(private ngZone: NgZone) {
+    constructor(private ngZone: NgZone, private dialog: MatDialog) {
         this.startReadingOutput();
     }
 
@@ -205,26 +207,24 @@ export class TauriService {
         releaseUrl: string =
             "https://github.com/RatherRude/Elite-Dangerous-AI-Integration/releases/",
     ): void {
-        // Use the browser's confirm dialog for now
-        // We'll replace this with a custom dialog component later
-        const message = `
-Update Available: ${releaseName}
+        this.ngZone.run(() => {
+            const dialogRef = this.dialog.open(UpdateDialogComponent, {
+                width: "400px",
+                data: { releaseName, releaseUrl },
+            });
 
-A new version of COVAS:NEXT is available. Would you like to download it now?
-
-Click OK to open the download page in your browser.
-`;
-        const result = confirm(message);
-
-        if (result) {
-            // Open the release URL in a new browser window/tab
-            const a = document.createElement("a");
-            a.setAttribute("href", releaseUrl);
-            a.setAttribute("target", "_blank");
-            a.setAttribute("rel", "noopener noreferrer");
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
+            dialogRef.afterClosed().subscribe((result) => {
+                if (result) {
+                    // Open the release URL in a new browser window/tab
+                    const a = document.createElement("a");
+                    a.setAttribute("href", releaseUrl);
+                    a.setAttribute("target", "_blank");
+                    a.setAttribute("rel", "noopener noreferrer");
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                }
+            });
+        });
     }
 }
