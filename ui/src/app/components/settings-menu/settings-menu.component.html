@@ -27,12 +27,6 @@
                                (ngModelChange)="onConfigChange({commander_name: $event})">
                     </mat-form-field>
 
-                    <mat-form-field>
-                        <mat-label>Character</mat-label>
-                        <textarea matInput [(ngModel)]="config.character"
-                                  (ngModelChange)="onConfigChange({character: $event})"
-                                  rows="10"></textarea>
-                    </mat-form-field>
                     <p>This setting controls whether the AI will continue the conversation from the last message or
                         start a new one. If you change the character, you may want to reset the conversation history, so
                         the AI starts with a blank slate.</p>
@@ -124,15 +118,199 @@
         <div class="tab-content">
             @if (config) {
                 <div class="settings-grid">
-                    <h3>Enable Features</h3>
-                    <mat-slide-toggle [(ngModel)]="config.event_reaction_enabled_var"
-                                      (ngModelChange)="onConfigChange({event_reaction_enabled_var: $event})">
-                        Enable Event Reactions
-                    </mat-slide-toggle>
-                    <p>Events are caused by the game and your actions within it. By default, the AI will react to those
-                        events and provide additional details or commentary. You can customize the reactions in the <a
-                                href="#" (click)="eventReactionsSection.scrollIntoView()">Customize Event Reactions</a>
-                        section below.</p>
+
+                    <h2>Personality</h2>
+
+                    <!-- Personality Preset (moved to the top) -->
+                    <div class="trait-select">
+                        <mat-form-field appearance="fill">
+                            <mat-label>Personality Preset</mat-label>
+                            <mat-select [(value)]="config.personality_preset" (selectionChange)="applyPersonalityPreset($event.value)">
+                                <mat-option value="custom">Custom</mat-option>
+                                <mat-option value="default">Default</mat-option>
+                                <mat-option disabled>--- Elite: Dangerous Roles ---</mat-option>
+                                <mat-option value="explorer">Explorer</mat-option>
+                                <mat-option value="trader">Trader</mat-option>
+                                <mat-option value="miner">Miner</mat-option>
+                                <mat-option value="bountyHunter">Bounty Hunter</mat-option>
+                                <mat-option value="pirate">Pirate</mat-option>
+                                <mat-option value="smuggler">Smuggler</mat-option>
+                                <mat-option value="mercenary">Mercenary</mat-option>
+                                <mat-option value="missionRunner">Mission Runner</mat-option>
+                                <mat-option value="passengerTransporter">Passenger Transporter</mat-option>
+                                <mat-option value="powerplayAgent">Powerplay Agent</mat-option>
+                                <mat-option value="axCombatPilot">AX Combat Pilot</mat-option>
+                                <mat-option value="salvager">Salvager</mat-option>
+                                <mat-option value="cannonResearcher">Cannon Researcher</mat-option>
+                                <mat-option value="fuelRat">Fuel Rat/Support</mat-option>
+                                <mat-option value="fleetCarrierOperator">Fleet Carrier Operator</mat-option>
+                                <mat-option value="bgsPlayer">BGS Player</mat-option>
+                                <mat-option value="roleplayer">Roleplayer</mat-option>
+                                <mat-option value="racer">Race Pilot</mat-option>
+                            </mat-select>
+                        </mat-form-field>
+                    </div>
+
+                    <!-- Settings controls - only visible when not in custom mode -->
+                    @if (config.personality_preset !== 'custom') {
+                        <div id="personality-settings">
+                            <div class="trait-container">
+                                <!-- Character Inspiration -->
+                                <div class="trait-select">
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Character Inspiration</mat-label>
+                                        <input matInput [(ngModel)]="config.personality_character_inspiration"
+                                            (ngModelChange)="onConfigChange({personality_character_inspiration: $event}); updatePrompt()">
+                                    </mat-form-field>
+                                </div>
+                            </div>
+
+
+                            <div class="trait-container">
+                                <!-- Verbosity Setting -->
+                                <div class="trait-select">
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Verbosity</mat-label>
+                                        <mat-select [(ngModel)]="config.personality_verbosity" 
+                                            (ngModelChange)="onConfigChange({personality_verbosity: $event}); updatePrompt()">
+                                            <mat-option [value]="0">Minimal</mat-option>
+                                            <mat-option [value]="25">Brief</mat-option>
+                                            <mat-option [value]="50">Balanced</mat-option>
+                                            <mat-option [value]="75">Detailed</mat-option>
+                                            <mat-option [value]="100">Verbose</mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                </div>
+
+                                <!-- Tone Setting -->
+                                <div class="trait-select">
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Tone</mat-label>
+                                        <mat-select [(ngModel)]="config.personality_tone" 
+                                            (ngModelChange)="onConfigChange({personality_tone: $event}); updatePrompt()">
+                                            <mat-option value="serious">Serious</mat-option>
+                                            <mat-option value="humorous">Humorous</mat-option>
+                                            <mat-option value="sarcastic">Sarcastic</mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                </div>
+
+                                <!-- Vulgarity Setting -->
+                                <div class="trait-select">
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Vulgarity</mat-label>
+                                        <mat-select [(ngModel)]="config.personality_vulgarity" 
+                                            (ngModelChange)="onConfigChange({personality_vulgarity: $event}); updatePrompt()">
+                                            <mat-option [value]="0">None</mat-option>
+                                            <mat-option [value]="25">Mild</mat-option>
+                                            <mat-option [value]="50">Moderate</mat-option>
+                                            <mat-option [value]="75">Strong</mat-option>
+                                            <mat-option [value]="100">Extreme</mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                </div>
+                            </div>
+
+                            <div class="trait-container">
+                                <!-- Empathy Level -->
+                                <div class="trait-select">
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Empathy</mat-label>
+                                        <mat-select [(ngModel)]="config.personality_empathy" 
+                                            (ngModelChange)="onConfigChange({personality_empathy: $event}); updatePrompt()">
+                                            <mat-option [value]="0">Cold</mat-option>
+                                            <mat-option [value]="25">Detached</mat-option>
+                                            <mat-option [value]="50">Balanced</mat-option>
+                                            <mat-option [value]="75">Caring</mat-option>
+                                            <mat-option [value]="100">Highly Empathetic</mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                </div>
+
+                                <!-- Formality Level -->
+                                <div class="trait-select">
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Formality</mat-label>
+                                        <mat-select [(ngModel)]="config.personality_formality" 
+                                            (ngModelChange)="onConfigChange({personality_formality: $event}); updatePrompt()">
+                                            <mat-option [value]="0">Casual</mat-option>
+                                            <mat-option [value]="25">Relaxed</mat-option>
+                                            <mat-option [value]="50">Balanced</mat-option>
+                                            <mat-option [value]="75">Professional</mat-option>
+                                            <mat-option [value]="100">Formal</mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                </div>
+
+                                <!-- Confidence Level -->
+                                <div class="trait-select">
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Confidence</mat-label>
+                                        <mat-select [(ngModel)]="config.personality_confidence" 
+                                            (ngModelChange)="onConfigChange({personality_confidence: $event}); updatePrompt()">
+                                            <mat-option [value]="0">Uncertain</mat-option>
+                                            <mat-option [value]="25">Tentative</mat-option>
+                                            <mat-option [value]="50">Balanced</mat-option>
+                                            <mat-option [value]="75">Confident</mat-option>
+                                            <mat-option [value]="100">Authoritative</mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                </div>
+                            </div>
+
+                            <div class="trait-container">
+                                <!-- Ethical Axis (Law vs. Chaos) -->
+                                <div class="trait-select">
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Ethical Alignment</mat-label>
+                                        <mat-select [(ngModel)]="config.personality_ethical_alignment" 
+                                            (ngModelChange)="onConfigChange({personality_ethical_alignment: $event}); updatePrompt()">
+                                            <mat-option value="lawful">Lawful (Order, Rules, Structure)</mat-option>
+                                            <mat-option value="neutral">Neutral (Balance, Pragmatism)</mat-option>
+                                            <mat-option value="chaotic">Chaotic (Freedom, Flexibility, Spontaneity)</mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                </div>
+
+                                <!-- Moral Axis (Good vs. Evil) -->
+                                <div class="trait-select">
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Moral Alignment</mat-label>
+                                        <mat-select [(ngModel)]="config.personality_moral_alignment" 
+                                            (ngModelChange)="onConfigChange({personality_moral_alignment: $event}); updatePrompt()">
+                                            <mat-option value="good">Good (Altruism, Compassion)</mat-option>
+                                            <mat-option value="neutral">Neutral (Self-Interest, Balance)</mat-option>
+                                            <mat-option value="evil">Evil (Selfishness, Ruthlessness)</mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                </div>
+                            </div>
+
+                            <!-- Knowledge Areas -->
+                            <div class="knowledge-areas">
+                                <label class="knowledge-label">Knowledge Areas</label>
+                                <div class="knowledge-checkboxes">
+                                    <mat-checkbox [(ngModel)]="config.personality_knowledge_pop_culture"
+                                                (ngModelChange)="onConfigChange({personality_knowledge_pop_culture: $event}); updatePrompt()">Pop Culture</mat-checkbox>
+                                    <mat-checkbox [(ngModel)]="config.personality_knowledge_scifi"
+                                                (ngModelChange)="onConfigChange({personality_knowledge_scifi: $event}); updatePrompt()">Sci-Fi</mat-checkbox>
+                                    <mat-checkbox [(ngModel)]="config.personality_knowledge_history"
+                                                (ngModelChange)="onConfigChange({personality_knowledge_history: $event}); updatePrompt()">History</mat-checkbox>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Character Textarea - always visible but readonly when not in custom mode -->
+                    <mat-form-field>
+                        <mat-label>Character</mat-label>
+                        <textarea matInput [(ngModel)]="config.character"
+                                  (ngModelChange)="onConfigChange({character: $event})"
+                                  [readonly]="config.personality_preset !== 'custom'"
+                                  rows="10"></textarea>
+                    </mat-form-field>
+
+                    <h2>Actions</h2>
                     <mat-slide-toggle [ngModel]="config.tools_var && config.game_actions_var"
                                       (ngModelChange)="onConfigChange({game_actions_var: $event})"
                                       [disabled]="!config.tools_var">
@@ -155,6 +333,16 @@
                     </mat-slide-toggle>
                     <p>The action cache allows the AI to learn from previous interactions and reuse actions for similar
                         inputs, making responses faster and more consistent.</p>
+                    <h2>Reactions</h2>
+                    <mat-slide-toggle [(ngModel)]="config.event_reaction_enabled_var"
+                                      (ngModelChange)="onConfigChange({event_reaction_enabled_var: $event})">
+                        Enable Event Reactions
+                    </mat-slide-toggle>
+                    <p>Events are caused by the game and your actions within it. By default, the AI will react to those
+                        events and provide additional details or commentary. You can customize the reactions in the <a
+                                href="#" (click)="eventReactionsSection.scrollIntoView()">Customize Event Reactions</a>
+                        section below.</p>
+
 
                     <h3 #eventReactionsSection>Customize Event Reactions</h3>
                     <p>This section allows you to customize the event reactions for the game and will allow you to make
@@ -690,3 +878,4 @@
         </mat-tab>
     }
 </mat-tab-group>
+
