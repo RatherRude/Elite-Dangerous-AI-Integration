@@ -313,295 +313,301 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   }
 
   applyPersonalityPreset(preset: string): void {
-    switch (preset) {
-      case 'default':
-        this.settings = {
-          verbosity: 50,
-          tone: 'serious',
-          knowledge: { popCulture: false, scifi: false, history: false },
-          characterInspiration: '',
-          vulgarity: 0,
-          empathy: 50,
-          formality: 50,
-          confidence: 50,
-          ethicalAlignment: 'neutral',
-          moralAlignment: 'neutral',
-        };
-        break;
-        
-      // Elite: Dangerous Roles
-      case 'explorer':
-        this.settings = {
-          verbosity: 75,
-          tone: 'serious',
-          knowledge: { popCulture: false, scifi: true, history: true },
-          characterInspiration: 'Carl Sagan',
-          vulgarity: 0,
-          empathy: 75,
-          formality: 50,
-          confidence: 75,
-          ethicalAlignment: 'neutral',
-          moralAlignment: 'good',
-        };
-        break;
-        
-      case 'trader':
-        this.settings = {
-          verbosity: 50,
-          tone: 'serious',
-          knowledge: { popCulture: false, scifi: true, history: false },
-          characterInspiration: '',
-          vulgarity: 0,
-          empathy: 25,
-          formality: 75,
-          confidence: 100,
-          ethicalAlignment: 'lawful',
-          moralAlignment: 'neutral',
-        };
-        break;
-        
-      case 'miner':
-        this.settings = {
-          verbosity: 25,
-          tone: 'serious',
-          knowledge: { popCulture: false, scifi: true, history: false },
-          characterInspiration: '',
-          vulgarity: 25,
-          empathy: 25,
-          formality: 25,
-          confidence: 75,
-          ethicalAlignment: 'neutral',
-          moralAlignment: 'neutral',
-        };
-        break;
-        
-      case 'bountyHunter':
-        this.settings = {
-          verbosity: 25,
-          tone: 'serious',
-          knowledge: { popCulture: false, scifi: true, history: false },
-          characterInspiration: 'Boba Fett',
-          vulgarity: 25,
-          empathy: 0,
-          formality: 25,
-          confidence: 100,
-          ethicalAlignment: 'lawful',
-          moralAlignment: 'neutral',
-        };
-        break;
-        
-      case 'pirate':
-        this.settings = {
-          verbosity: 25,
-          tone: 'sarcastic',
-          knowledge: { popCulture: true, scifi: true, history: false },
-          characterInspiration: 'Jack Sparrow',
-          vulgarity: 75,
-          empathy: 0,
-          formality: 0,
-          confidence: 100,
-          ethicalAlignment: 'chaotic',
-          moralAlignment: 'evil',
-        };
-        break;
-        
-      case 'smuggler':
-        this.settings = {
-          verbosity: 25,
-          tone: 'humorous',
-          knowledge: { popCulture: true, scifi: true, history: false },
-          characterInspiration: 'Han Solo',
-          vulgarity: 50,
-          empathy: 25,
-          formality: 25,
-          confidence: 100,
-          ethicalAlignment: 'chaotic',
-          moralAlignment: 'neutral',
-        };
-        break;
-        
-      case 'mercenary':
-        this.settings = {
-          verbosity: 25,
-          tone: 'serious',
-          knowledge: { popCulture: false, scifi: true, history: false },
-          characterInspiration: '',
-          vulgarity: 50,
-          empathy: 0,
-          formality: 25,
-          confidence: 100,
-          ethicalAlignment: 'neutral',
-          moralAlignment: 'neutral',
-        };
-        break;
-        
-      case 'missionRunner':
-        this.settings = {
-          verbosity: 50,
-          tone: 'serious',
-          knowledge: { popCulture: false, scifi: true, history: false },
-          characterInspiration: '',
-          vulgarity: 0,
-          empathy: 25,
-          formality: 50,
-          confidence: 75,
-          ethicalAlignment: 'lawful',
-          moralAlignment: 'neutral',
-        };
-        break;
-        
-      case 'passengerTransporter':
-        this.settings = {
-          verbosity: 75,
-          tone: 'humorous',
-          knowledge: { popCulture: true, scifi: true, history: true },
-          characterInspiration: 'Luxury cruise director',
-          vulgarity: 0,
-          empathy: 100,
-          formality: 75,
-          confidence: 75,
-          ethicalAlignment: 'lawful',
-          moralAlignment: 'good',
-        };
-        break;
-        
-      case 'powerplayAgent':
-        this.settings = {
-          verbosity: 75,
-          tone: 'serious',
-          knowledge: { popCulture: false, scifi: true, history: true },
-          characterInspiration: 'Political operative',
-          vulgarity: 0,
-          empathy: 25,
-          formality: 100,
-          confidence: 100,
-          ethicalAlignment: 'lawful',
-          moralAlignment: 'neutral',
-        };
-        break;
-        
-      case 'axCombatPilot':
-        this.settings = {
-          verbosity: 25,
-          tone: 'serious',
-          knowledge: { popCulture: false, scifi: true, history: false },
-          characterInspiration: 'Military veteran',
-          vulgarity: 25,
-          empathy: 0,
-          formality: 75,
-          confidence: 100,
-          ethicalAlignment: 'lawful',
-          moralAlignment: 'good',
-        };
-        break;
-        
-      case 'salvager':
-        this.settings = {
-          verbosity: 50,
-          tone: 'humorous',
-          knowledge: { popCulture: true, scifi: true, history: false },
-          characterInspiration: 'Junkyard expert',
-          vulgarity: 25,
-          empathy: 25,
-          formality: 25,
-          confidence: 75,
-          ethicalAlignment: 'neutral',
-          moralAlignment: 'neutral',
-        };
-        break;
-
-      case 'cannonResearcher':
-        this.settings = {
-          verbosity: 100,
-          tone: 'serious',
-          knowledge: { popCulture: false, scifi: true, history: true },
-          characterInspiration: 'Archeologist/Scientist',
-          vulgarity: 0,
-          empathy: 50,
-          formality: 75,
-          confidence: 75,
-          ethicalAlignment: 'neutral',
-          moralAlignment: 'good',
-        };
-        break;
-        
-      case 'fuelRat':
-        this.settings = {
-          verbosity: 50,
-          tone: 'humorous',
-          knowledge: { popCulture: true, scifi: true, history: false },
-          characterInspiration: 'Emergency responder',
-          vulgarity: 0,
-          empathy: 100,
-          formality: 25,
-          confidence: 100,
-          ethicalAlignment: 'chaotic',
-          moralAlignment: 'good',
-        };
-        break;
-        
-      case 'fleetCarrierOperator':
-        this.settings = {
-          verbosity: 75,
-          tone: 'serious',
-          knowledge: { popCulture: false, scifi: true, history: false },
-          characterInspiration: 'Naval captain',
-          vulgarity: 0,
-          empathy: 25,
-          formality: 100,
-          confidence: 100,
-          ethicalAlignment: 'lawful',
-          moralAlignment: 'neutral',
-        };
-        break;
-        
-      case 'bgsPlayer':
-        this.settings = {
-          verbosity: 100,
-          tone: 'serious',
-          knowledge: { popCulture: false, scifi: true, history: true },
-          characterInspiration: 'Political strategist',
-          vulgarity: 0,
-          empathy: 50,
-          formality: 75,
-          confidence: 100,
-          ethicalAlignment: 'lawful',
-          moralAlignment: 'neutral',
-        };
-        break;
-        
-      case 'roleplayer':
-        this.settings = {
-          verbosity: 100,
-          tone: 'serious',
-          knowledge: { popCulture: true, scifi: true, history: true },
-          characterInspiration: '',
-          vulgarity: 25,
-          empathy: 75,
-          formality: 50,
-          confidence: 75,
-          ethicalAlignment: 'neutral',
-          moralAlignment: 'neutral',
-        };
-        break;
-        
-      case 'racer':
-        this.settings = {
-          verbosity: 25,
-          tone: 'humorous',
-          knowledge: { popCulture: true, scifi: true, history: false },
-          characterInspiration: 'Formula 1 racer',
-          vulgarity: 25,
-          empathy: 25,
-          formality: 25,
-          confidence: 100,
-          ethicalAlignment: 'chaotic',
-          moralAlignment: 'neutral',
-        };
-        break;
+    if (preset == 'custom'){
+      // make character prompt text area visible and hide other prompt-settings-container contents
     }
-    
-    this.updatePrompt();
+    else{
+      // hide prompt and show options
+      switch (preset) {
+        case 'case':
+          this.settings = {
+            verbosity: 50,
+            tone: 'serious',
+            knowledge: { popCulture: false, scifi: false, history: false },
+            characterInspiration: '',
+            vulgarity: 0,
+            empathy: 50,
+            formality: 50,
+            confidence: 50,
+            ethicalAlignment: 'neutral',
+            moralAlignment: 'neutral',
+          };
+          break;
+
+        // Elite: Dangerous Roles
+        case 'explorer':
+          this.settings = {
+            verbosity: 75,
+            tone: 'serious',
+            knowledge: { popCulture: false, scifi: true, history: true },
+            characterInspiration: 'Carl Sagan',
+            vulgarity: 0,
+            empathy: 75,
+            formality: 50,
+            confidence: 75,
+            ethicalAlignment: 'neutral',
+            moralAlignment: 'good',
+          };
+          break;
+
+        case 'trader':
+          this.settings = {
+            verbosity: 50,
+            tone: 'serious',
+            knowledge: { popCulture: false, scifi: true, history: false },
+            characterInspiration: '',
+            vulgarity: 0,
+            empathy: 25,
+            formality: 75,
+            confidence: 100,
+            ethicalAlignment: 'lawful',
+            moralAlignment: 'neutral',
+          };
+          break;
+
+        case 'miner':
+          this.settings = {
+            verbosity: 25,
+            tone: 'serious',
+            knowledge: { popCulture: false, scifi: true, history: false },
+            characterInspiration: '',
+            vulgarity: 25,
+            empathy: 25,
+            formality: 25,
+            confidence: 75,
+            ethicalAlignment: 'neutral',
+            moralAlignment: 'neutral',
+          };
+          break;
+
+        case 'bountyHunter':
+          this.settings = {
+            verbosity: 25,
+            tone: 'serious',
+            knowledge: { popCulture: false, scifi: true, history: false },
+            characterInspiration: 'Boba Fett',
+            vulgarity: 25,
+            empathy: 0,
+            formality: 25,
+            confidence: 100,
+            ethicalAlignment: 'lawful',
+            moralAlignment: 'neutral',
+          };
+          break;
+
+        case 'pirate':
+          this.settings = {
+            verbosity: 25,
+            tone: 'sarcastic',
+            knowledge: { popCulture: true, scifi: true, history: false },
+            characterInspiration: 'Jack Sparrow',
+            vulgarity: 75,
+            empathy: 0,
+            formality: 0,
+            confidence: 100,
+            ethicalAlignment: 'chaotic',
+            moralAlignment: 'evil',
+          };
+          break;
+
+        case 'smuggler':
+          this.settings = {
+            verbosity: 25,
+            tone: 'humorous',
+            knowledge: { popCulture: true, scifi: true, history: false },
+            characterInspiration: 'Han Solo',
+            vulgarity: 50,
+            empathy: 25,
+            formality: 25,
+            confidence: 100,
+            ethicalAlignment: 'chaotic',
+            moralAlignment: 'neutral',
+          };
+          break;
+
+        case 'mercenary':
+          this.settings = {
+            verbosity: 25,
+            tone: 'serious',
+            knowledge: { popCulture: false, scifi: true, history: false },
+            characterInspiration: '',
+            vulgarity: 50,
+            empathy: 0,
+            formality: 25,
+            confidence: 100,
+            ethicalAlignment: 'neutral',
+            moralAlignment: 'neutral',
+          };
+          break;
+
+        case 'missionRunner':
+          this.settings = {
+            verbosity: 50,
+            tone: 'serious',
+            knowledge: { popCulture: false, scifi: true, history: false },
+            characterInspiration: '',
+            vulgarity: 0,
+            empathy: 25,
+            formality: 50,
+            confidence: 75,
+            ethicalAlignment: 'lawful',
+            moralAlignment: 'neutral',
+          };
+          break;
+
+        case 'passengerTransporter':
+          this.settings = {
+            verbosity: 75,
+            tone: 'humorous',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'Luxury cruise director',
+            vulgarity: 0,
+            empathy: 100,
+            formality: 75,
+            confidence: 75,
+            ethicalAlignment: 'lawful',
+            moralAlignment: 'good',
+          };
+          break;
+
+        case 'powerplayAgent':
+          this.settings = {
+            verbosity: 75,
+            tone: 'serious',
+            knowledge: { popCulture: false, scifi: true, history: true },
+            characterInspiration: 'Political operative',
+            vulgarity: 0,
+            empathy: 25,
+            formality: 100,
+            confidence: 100,
+            ethicalAlignment: 'lawful',
+            moralAlignment: 'neutral',
+          };
+          break;
+
+        case 'axCombatPilot':
+          this.settings = {
+            verbosity: 25,
+            tone: 'serious',
+            knowledge: { popCulture: false, scifi: true, history: false },
+            characterInspiration: 'Military veteran',
+            vulgarity: 25,
+            empathy: 0,
+            formality: 75,
+            confidence: 100,
+            ethicalAlignment: 'lawful',
+            moralAlignment: 'good',
+          };
+          break;
+
+        case 'salvager':
+          this.settings = {
+            verbosity: 50,
+            tone: 'humorous',
+            knowledge: { popCulture: true, scifi: true, history: false },
+            characterInspiration: 'Junkyard expert',
+            vulgarity: 25,
+            empathy: 25,
+            formality: 25,
+            confidence: 75,
+            ethicalAlignment: 'neutral',
+            moralAlignment: 'neutral',
+          };
+          break;
+
+        case 'cannonResearcher':
+          this.settings = {
+            verbosity: 100,
+            tone: 'serious',
+            knowledge: { popCulture: false, scifi: true, history: true },
+            characterInspiration: 'Archeologist/Scientist',
+            vulgarity: 0,
+            empathy: 50,
+            formality: 75,
+            confidence: 75,
+            ethicalAlignment: 'neutral',
+            moralAlignment: 'good',
+          };
+          break;
+
+        case 'fuelRat':
+          this.settings = {
+            verbosity: 50,
+            tone: 'humorous',
+            knowledge: { popCulture: true, scifi: true, history: false },
+            characterInspiration: 'Emergency responder',
+            vulgarity: 0,
+            empathy: 100,
+            formality: 25,
+            confidence: 100,
+            ethicalAlignment: 'chaotic',
+            moralAlignment: 'good',
+          };
+          break;
+
+        case 'fleetCarrierOperator':
+          this.settings = {
+            verbosity: 75,
+            tone: 'serious',
+            knowledge: { popCulture: false, scifi: true, history: false },
+            characterInspiration: 'Naval captain',
+            vulgarity: 0,
+            empathy: 25,
+            formality: 100,
+            confidence: 100,
+            ethicalAlignment: 'lawful',
+            moralAlignment: 'neutral',
+          };
+          break;
+
+        case 'bgsPlayer':
+          this.settings = {
+            verbosity: 100,
+            tone: 'serious',
+            knowledge: { popCulture: false, scifi: true, history: true },
+            characterInspiration: 'Political strategist',
+            vulgarity: 0,
+            empathy: 50,
+            formality: 75,
+            confidence: 100,
+            ethicalAlignment: 'lawful',
+            moralAlignment: 'neutral',
+          };
+          break;
+
+        case 'roleplayer':
+          this.settings = {
+            verbosity: 100,
+            tone: 'serious',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: '',
+            vulgarity: 25,
+            empathy: 75,
+            formality: 50,
+            confidence: 75,
+            ethicalAlignment: 'neutral',
+            moralAlignment: 'neutral',
+          };
+          break;
+
+        case 'racer':
+          this.settings = {
+            verbosity: 25,
+            tone: 'humorous',
+            knowledge: { popCulture: true, scifi: true, history: false },
+            characterInspiration: 'Formula 1 racer',
+            vulgarity: 25,
+            empathy: 25,
+            formality: 25,
+            confidence: 100,
+            ethicalAlignment: 'chaotic',
+            moralAlignment: 'neutral',
+          };
+          break;
+      }
+      this.updatePrompt();
+    }
+
   }
 
   updatePrompt(): void {
