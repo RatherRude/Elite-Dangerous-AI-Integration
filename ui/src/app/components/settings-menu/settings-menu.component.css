@@ -77,3 +77,36 @@ ul {
 ::ng-deep .mat-mdc-tab .mdc-tab__text-label {
   color: rgba(255, 255, 255, 0.7);
 }
+
+/* Trait containers and selectors styling */
+.trait-container {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.trait-select {
+  flex: 1;
+  min-width: 200px;
+}
+
+.knowledge-areas {
+  margin: 10px 0;
+  padding: 10px;
+  border: 1px solid rgba(0,0,0,0.12);
+  border-radius: 4px;
+}
+
+.knowledge-label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
+.knowledge-checkboxes {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+}
