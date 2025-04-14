@@ -1,16 +1,17 @@
-import { Component, OnInit, OnDestroy } from "@angular/core";
+import { Component, OnDestroy, OnInit } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { MatProgressBarModule } from "@angular/material/progress-bar";
+import { MatDialogModule } from "@angular/material/dialog";
 import { TauriService } from "../services/tauri.service";
 import { LoggingService } from "../services/logging.service";
 import { LogContainerComponent } from "../components/log-container/log-container.component";
 import { SettingsMenuComponent } from "../components/settings-menu/settings-menu.component";
 import { Router } from "@angular/router";
 import { InputContainerComponent } from "../components/input-container/input-container.component";
-import { ConfigService } from '../services/config.service';
-import { Subscription } from 'rxjs';
+import { ConfigService } from "../services/config.service";
+import { Subscription } from "rxjs";
 
 @Component({
     selector: "app-main-view",
@@ -20,6 +21,7 @@ import { Subscription } from 'rxjs';
         MatButtonModule,
         MatIconModule,
         MatProgressBarModule,
+        MatDialogModule,
         LogContainerComponent,
         SettingsMenuComponent,
         InputContainerComponent,
@@ -27,30 +29,34 @@ import { Subscription } from 'rxjs';
     templateUrl: "./main-view.component.html",
     styleUrl: "./main-view.component.css",
 })
-export class MainViewComponent implements OnInit, OnDestroy  {
+export class MainViewComponent implements OnInit, OnDestroy {
     isLoading = true;
     isRunning = false;
     config: any;
     private configSubscription!: Subscription;
-    private hasAutoStarted = false
-
+    private hasAutoStarted = false;
 
     constructor(
         private tauri: TauriService,
         private loggingService: LoggingService,
         private router: Router,
-        private configService: ConfigService
+        private configService: ConfigService,
     ) {}
 
     ngOnInit(): void {
-        this.configSubscription = this.configService.config$.subscribe(config => {
-            this.config = config;
-            if (this.config && this.config.cn_autostart && !this.isRunning && !this.hasAutoStarted) {
-                console.log("Autostart Skynet activatet,"); //yes 
-                this.start();
-                this.hasAutoStarted = true
-            }
-        });
+        this.configSubscription = this.configService.config$.subscribe(
+            (config) => {
+                this.config = config;
+                if (
+                    this.config && this.config.cn_autostart &&
+                    !this.isRunning && !this.hasAutoStarted
+                ) {
+                    console.log("Autostart Skynet activatet,"); //yes
+                    this.start();
+                    this.hasAutoStarted = true;
+                }
+            },
+        );
         // Subscribe to the running state
         this.tauri.runMode$.subscribe(
             (mode) => {
@@ -62,14 +68,12 @@ export class MainViewComponent implements OnInit, OnDestroy  {
         this.tauri.runExe();
         this.tauri.checkForUpdates();
     }
-    
+
     ngOnDestroy(): void { // Implement ngOnDestroy
         if (this.configSubscription) {
             this.configSubscription.unsubscribe();
         }
     }
-
-    
 
     async start(): Promise<void> {
         try {
