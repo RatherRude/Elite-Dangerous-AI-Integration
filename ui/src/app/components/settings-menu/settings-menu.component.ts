@@ -19,6 +19,29 @@ import { MatExpansionModule } from "@angular/material/expansion";
 import { MatSnackBar, MatSnackBarModule } from "@angular/material/snack-bar";
 import { CommonModule } from "@angular/common";
 import { GameEventCategories } from "./game-event-categories.js";
+import { MatDividerModule } from "@angular/material/divider";
+import { MatCheckboxModule } from "@angular/material/checkbox";
+
+interface PromptSettings {
+  // Existing settings
+  verbosity: number;
+  tone: 'serious' | 'humorous' | 'sarcastic';
+  knowledge: {
+    popCulture: boolean;
+    scifi: boolean;
+    history: boolean;
+  };
+  characterInspiration: string;
+  vulgarity: number;
+  
+  // New settings
+  empathy: number;
+  formality: number;
+  confidence: number;
+  // Replacing culture with D&D alignment
+  ethicalAlignment: 'lawful' | 'neutral' | 'chaotic';
+  moralAlignment: 'good' | 'neutral' | 'evil';
+}
 
 @Component({
   selector: "app-settings-menu",
@@ -37,6 +60,8 @@ import { GameEventCategories } from "./game-event-categories.js";
     KeyValuePipe,
     MatExpansionModule,
     MatSnackBarModule,
+    MatDividerModule,
+    MatCheckboxModule,
   ],
   templateUrl: "./settings-menu.component.html",
   styleUrl: "./settings-menu.component.css",
@@ -54,6 +79,28 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   eventSearchQuery: string = "";
 
   gameEventCategories = GameEventCategories;
+  settings: PromptSettings = {
+    // Existing defaults
+    verbosity: 50,
+    tone: 'serious',
+    knowledge: {
+      popCulture: false,
+      scifi: false,
+      history: false
+    },
+    characterInspiration: '',
+    vulgarity: 0,
+    
+    // New defaults
+    empathy: 50,
+    formality: 50,
+    confidence: 50,
+    ethicalAlignment: 'neutral',
+    moralAlignment: 'neutral',
+  };
+
+  personalityPreset: string = 'default';
+
   constructor(
     private configService: ConfigService,
     private snackBar: MatSnackBar,
@@ -263,5 +310,586 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     
     // Update providers based on detected key type
     await this.onConfigChange(providerChanges);
+  }
+
+  applyPersonalityPreset(preset: string): void {
+    switch (preset) {
+      case 'default':
+        this.settings = {
+          verbosity: 50,
+          tone: 'serious',
+          knowledge: { popCulture: false, scifi: false, history: false },
+          characterInspiration: '',
+          vulgarity: 0,
+          empathy: 50,
+          formality: 50,
+          confidence: 50,
+          ethicalAlignment: 'neutral',
+          moralAlignment: 'neutral',
+        };
+        break;
+        
+      // Elite: Dangerous Roles
+      case 'explorer':
+        this.settings = {
+          verbosity: 75,
+          tone: 'serious',
+          knowledge: { popCulture: false, scifi: true, history: true },
+          characterInspiration: 'Carl Sagan',
+          vulgarity: 0,
+          empathy: 75,
+          formality: 50,
+          confidence: 75,
+          ethicalAlignment: 'neutral',
+          moralAlignment: 'good',
+        };
+        break;
+        
+      case 'trader':
+        this.settings = {
+          verbosity: 50,
+          tone: 'serious',
+          knowledge: { popCulture: false, scifi: true, history: false },
+          characterInspiration: '',
+          vulgarity: 0,
+          empathy: 25,
+          formality: 75,
+          confidence: 100,
+          ethicalAlignment: 'lawful',
+          moralAlignment: 'neutral',
+        };
+        break;
+        
+      case 'miner':
+        this.settings = {
+          verbosity: 25,
+          tone: 'serious',
+          knowledge: { popCulture: false, scifi: true, history: false },
+          characterInspiration: '',
+          vulgarity: 25,
+          empathy: 25,
+          formality: 25,
+          confidence: 75,
+          ethicalAlignment: 'neutral',
+          moralAlignment: 'neutral',
+        };
+        break;
+        
+      case 'bountyHunter':
+        this.settings = {
+          verbosity: 25,
+          tone: 'serious',
+          knowledge: { popCulture: false, scifi: true, history: false },
+          characterInspiration: 'Boba Fett',
+          vulgarity: 25,
+          empathy: 0,
+          formality: 25,
+          confidence: 100,
+          ethicalAlignment: 'lawful',
+          moralAlignment: 'neutral',
+        };
+        break;
+        
+      case 'pirate':
+        this.settings = {
+          verbosity: 25,
+          tone: 'sarcastic',
+          knowledge: { popCulture: true, scifi: true, history: false },
+          characterInspiration: 'Jack Sparrow',
+          vulgarity: 75,
+          empathy: 0,
+          formality: 0,
+          confidence: 100,
+          ethicalAlignment: 'chaotic',
+          moralAlignment: 'evil',
+        };
+        break;
+        
+      case 'smuggler':
+        this.settings = {
+          verbosity: 25,
+          tone: 'humorous',
+          knowledge: { popCulture: true, scifi: true, history: false },
+          characterInspiration: 'Han Solo',
+          vulgarity: 50,
+          empathy: 25,
+          formality: 25,
+          confidence: 100,
+          ethicalAlignment: 'chaotic',
+          moralAlignment: 'neutral',
+        };
+        break;
+        
+      case 'mercenary':
+        this.settings = {
+          verbosity: 25,
+          tone: 'serious',
+          knowledge: { popCulture: false, scifi: true, history: false },
+          characterInspiration: '',
+          vulgarity: 50,
+          empathy: 0,
+          formality: 25,
+          confidence: 100,
+          ethicalAlignment: 'neutral',
+          moralAlignment: 'neutral',
+        };
+        break;
+        
+      case 'missionRunner':
+        this.settings = {
+          verbosity: 50,
+          tone: 'serious',
+          knowledge: { popCulture: false, scifi: true, history: false },
+          characterInspiration: '',
+          vulgarity: 0,
+          empathy: 25,
+          formality: 50,
+          confidence: 75,
+          ethicalAlignment: 'lawful',
+          moralAlignment: 'neutral',
+        };
+        break;
+        
+      case 'passengerTransporter':
+        this.settings = {
+          verbosity: 75,
+          tone: 'humorous',
+          knowledge: { popCulture: true, scifi: true, history: true },
+          characterInspiration: 'Luxury cruise director',
+          vulgarity: 0,
+          empathy: 100,
+          formality: 75,
+          confidence: 75,
+          ethicalAlignment: 'lawful',
+          moralAlignment: 'good',
+        };
+        break;
+        
+      case 'powerplayAgent':
+        this.settings = {
+          verbosity: 75,
+          tone: 'serious',
+          knowledge: { popCulture: false, scifi: true, history: true },
+          characterInspiration: 'Political operative',
+          vulgarity: 0,
+          empathy: 25,
+          formality: 100,
+          confidence: 100,
+          ethicalAlignment: 'lawful',
+          moralAlignment: 'neutral',
+        };
+        break;
+        
+      case 'axCombatPilot':
+        this.settings = {
+          verbosity: 25,
+          tone: 'serious',
+          knowledge: { popCulture: false, scifi: true, history: false },
+          characterInspiration: 'Military veteran',
+          vulgarity: 25,
+          empathy: 0,
+          formality: 75,
+          confidence: 100,
+          ethicalAlignment: 'lawful',
+          moralAlignment: 'good',
+        };
+        break;
+        
+      case 'salvager':
+        this.settings = {
+          verbosity: 50,
+          tone: 'humorous',
+          knowledge: { popCulture: true, scifi: true, history: false },
+          characterInspiration: 'Junkyard expert',
+          vulgarity: 25,
+          empathy: 25,
+          formality: 25,
+          confidence: 75,
+          ethicalAlignment: 'neutral',
+          moralAlignment: 'neutral',
+        };
+        break;
+
+      case 'cannonResearcher':
+        this.settings = {
+          verbosity: 100,
+          tone: 'serious',
+          knowledge: { popCulture: false, scifi: true, history: true },
+          characterInspiration: 'Archeologist/Scientist',
+          vulgarity: 0,
+          empathy: 50,
+          formality: 75,
+          confidence: 75,
+          ethicalAlignment: 'neutral',
+          moralAlignment: 'good',
+        };
+        break;
+        
+      case 'fuelRat':
+        this.settings = {
+          verbosity: 50,
+          tone: 'humorous',
+          knowledge: { popCulture: true, scifi: true, history: false },
+          characterInspiration: 'Emergency responder',
+          vulgarity: 0,
+          empathy: 100,
+          formality: 25,
+          confidence: 100,
+          ethicalAlignment: 'chaotic',
+          moralAlignment: 'good',
+        };
+        break;
+        
+      case 'fleetCarrierOperator':
+        this.settings = {
+          verbosity: 75,
+          tone: 'serious',
+          knowledge: { popCulture: false, scifi: true, history: false },
+          characterInspiration: 'Naval captain',
+          vulgarity: 0,
+          empathy: 25,
+          formality: 100,
+          confidence: 100,
+          ethicalAlignment: 'lawful',
+          moralAlignment: 'neutral',
+        };
+        break;
+        
+      case 'bgsPlayer':
+        this.settings = {
+          verbosity: 100,
+          tone: 'serious',
+          knowledge: { popCulture: false, scifi: true, history: true },
+          characterInspiration: 'Political strategist',
+          vulgarity: 0,
+          empathy: 50,
+          formality: 75,
+          confidence: 100,
+          ethicalAlignment: 'lawful',
+          moralAlignment: 'neutral',
+        };
+        break;
+        
+      case 'roleplayer':
+        this.settings = {
+          verbosity: 100,
+          tone: 'serious',
+          knowledge: { popCulture: true, scifi: true, history: true },
+          characterInspiration: '',
+          vulgarity: 25,
+          empathy: 75,
+          formality: 50,
+          confidence: 75,
+          ethicalAlignment: 'neutral',
+          moralAlignment: 'neutral',
+        };
+        break;
+        
+      case 'racer':
+        this.settings = {
+          verbosity: 25,
+          tone: 'humorous',
+          knowledge: { popCulture: true, scifi: true, history: false },
+          characterInspiration: 'Formula 1 racer',
+          vulgarity: 25,
+          empathy: 25,
+          formality: 25,
+          confidence: 100,
+          ethicalAlignment: 'chaotic',
+          moralAlignment: 'neutral',
+        };
+        break;
+    }
+    
+    this.updatePrompt();
+  }
+
+  updatePrompt(): void {
+    // Ensure config is initialized
+    if (!this.config) {
+      this.config = { character: '' } as Config;
+    }
+
+    // Generate prompt based on settings
+    let promptParts: string[] = [];
+    
+    // Add existing prompt parts
+    promptParts.push(this.generateVerbosityText());
+    promptParts.push(this.generateToneText());
+    promptParts.push(this.generateKnowledgeText());
+    
+    if (this.settings.characterInspiration) {
+      promptParts.push(this.generateCharacterInspirationText());
+    }
+    
+    // Add new character traits
+    promptParts.push(this.generateEmpathyText());
+    promptParts.push(this.generateFormalityText());
+    promptParts.push(this.generateConfidenceText());
+    promptParts.push(this.generateEthicalAlignmentText());
+    promptParts.push(this.generateMoralAlignmentText());
+    
+    // Add vulgarity with randomization
+    if (this.settings.vulgarity > 0) {
+      if (Math.random() * 100 <= this.settings.vulgarity) {
+        promptParts.push(this.generateVulgarityText());
+      }
+    }
+    
+    // Combine all parts with randomization where appropriate
+    this.config.character = promptParts.join(' ');
+    
+    // Ensure the commander_name format variable is preserved
+    // Check if it doesn't already contain the variable
+    if (!this.config.character.includes('{commander_name}')) {
+      // Add a reference to commander_name in a natural way
+      this.config.character += " Address the user as {commander_name} when appropriate.";
+    }
+    
+    // Notify parent component
+    this.onConfigChange({character: this.config.character});
+  }
+  
+  // Existing label getters
+  // ...
+  
+  // New label getters
+  getVerbosityLabel(): string {
+    if (this.settings.verbosity <= 25) return 'Concise';
+    if (this.settings.verbosity <= 50) return 'Balanced';
+    if (this.settings.verbosity <= 75) return 'Detailed';
+    return 'Comprehensive';
+  }
+
+  getVulgarityLabel(): string {
+    if (this.settings.vulgarity <= 0) return 'None';
+    if (this.settings.vulgarity <= 25) return 'Mild';
+    if (this.settings.vulgarity <= 50) return 'Moderate';
+    if (this.settings.vulgarity <= 75) return 'Strong';
+    return 'Extreme';
+  }
+  
+  getEmpathyLabel(): string {
+    if (this.settings.empathy <= 25) return 'Logical';
+    if (this.settings.empathy <= 50) return 'Balanced';
+    if (this.settings.empathy <= 75) return 'Empathetic';
+    return 'Highly Empathetic';
+  }
+  
+  getFormalityLabel(): string {
+    if (this.settings.formality <= 25) return 'Very Casual';
+    if (this.settings.formality <= 50) return 'Conversational';
+    if (this.settings.formality <= 75) return 'Professional';
+    return 'Highly Formal';
+  }
+  
+  getConfidenceLabel(): string {
+    if (this.settings.confidence <= 25) return 'Tentative';
+    if (this.settings.confidence <= 50) return 'Balanced';
+    if (this.settings.confidence <= 75) return 'Confident';
+    return 'Authoritative';
+  }
+  
+  // Existing text generators
+  // ...
+  
+  // Add missing method implementations
+  generateVerbosityText(): string {
+    const options = [
+      'Keep your responses brief and to the point.',
+      'Provide concise answers that address the main points.',
+      'Offer moderately detailed responses.',
+      'Be comprehensive in your explanations and provide abundant details.'
+    ];
+    
+    const index = Math.min(Math.floor(this.settings.verbosity / 25), options.length - 1);
+    return options[index];
+  }
+  
+  generateToneText(): string {
+    switch (this.settings.tone) {
+      case 'serious':
+        return 'Maintain a professional and serious tone in all responses.';
+      case 'humorous':
+        return 'Include humor and light-hearted elements in your responses when appropriate.';
+      case 'sarcastic':
+        return 'Use sarcasm and wit in your responses, especially when pointing out ironies or contradictions.';
+      default:
+        return '';
+    }
+  }
+  
+  generateKnowledgeText(): string {
+    const knowledgeAreas = [];
+    
+    if (this.settings.knowledge.popCulture) {
+      knowledgeAreas.push('pop culture references, movies, music, and celebrities');
+    }
+    
+    if (this.settings.knowledge.scifi) {
+      knowledgeAreas.push('science fiction concepts, popular sci-fi franchises, and futuristic ideas');
+    }
+    
+    if (this.settings.knowledge.history) {
+      knowledgeAreas.push('historical events, figures, and their significance');
+    }
+    
+    if (knowledgeAreas.length === 0) {
+      return 'Stick to factual information and avoid references to specific domains.';
+    }
+    
+    return `Incorporate knowledge of ${knowledgeAreas.join(', ')} when relevant to the conversation.`;
+  }
+  
+  generateCharacterInspirationText(): string {
+    return `Your responses should be inspired by the character or persona of ${this.settings.characterInspiration}. Adopt their speech patterns, mannerisms, and viewpoints.`;
+  }
+  
+  generateVulgarityText(): string {
+    const options = [
+      'You may occasionally use mild language when appropriate.',
+      'Feel free to use moderate language including some swear words when it fits the context.',
+      'Don\'t hesitate to use strong language and swear words regularly.',
+      'Use explicit language and profanity freely in your responses.'
+    ];
+    
+    const index = Math.min(Math.floor(this.settings.vulgarity / 25), options.length - 1);
+    return options[index];
+  }
+  
+  // New text generators
+  generateEmpathyText(): string {
+    const options = [
+      [
+        'Focus primarily on facts and logical analysis. Minimize emotional considerations in your responses.',
+        'Prioritize logical reasoning over emotional considerations when responding.'
+      ],
+      [
+        'Balance logical analysis with some degree of emotional understanding.',
+        'Consider both facts and emotional context in your responses.'
+      ],
+      [
+        'Show understanding of emotions and demonstrate empathy in your responses.',
+        'Acknowledge feelings and emotions, showing care for the emotional aspects of interactions.'
+      ],
+      [
+        'Prioritize emotional understanding and deep empathy in all interactions.',
+        'Show a high degree of emotional intelligence, validating feelings and responding with compassion.'
+      ]
+    ];
+    
+    const index = Math.min(Math.floor(this.settings.empathy / 25), options.length - 1);
+    // Randomly select one option from the appropriate category for variety
+    return options[index][Math.floor(Math.random() * options[index].length)];
+  }
+  
+  generateFormalityText(): string {
+    const options = [
+      [
+        'Use casual, conversational language with contractions and informal expressions.',
+        'Speak in a relaxed, casual tone as if talking to a friend.'
+      ],
+      [
+        'Use everyday language that balances casual and professional tones.',
+        'Maintain a friendly yet respectful conversational style.'
+      ],
+      [
+        'Communicate in a professional manner with proper language and structure.',
+        'Present information with clarity and a professional demeanor.'
+      ],
+      [
+        'Use highly formal language with sophisticated vocabulary and complete sentences.',
+        'Maintain maximum formality and proper etiquette in all communications.'
+      ]
+    ];
+    
+    const index = Math.min(Math.floor(this.settings.formality / 25), options.length - 1);
+    return options[index][Math.floor(Math.random() * options[index].length)];
+  }
+  
+  generateConfidenceText(): string {
+    const options = [
+      [
+        'Express thoughts tentatively, acknowledging uncertainty where appropriate.',
+        'Present information with qualifiers and a humble approach, acknowledging limitations.'
+      ],
+      [
+        'Balance confidence with appropriate caution in your responses.',
+        'Express moderate confidence in your knowledge while remaining open to correction.'
+      ],
+      [
+        'Speak with confidence and conviction in your responses.',
+        'Project an air of expertise and certainty when providing information.'
+      ],
+      [
+        'Communicate with unwavering confidence and authority.',
+        'Assert information decisively and with complete conviction.'
+      ]
+    ];
+    
+    const index = Math.min(Math.floor(this.settings.confidence / 25), options.length - 1);
+    return options[index][Math.floor(Math.random() * options[index].length)];
+  }
+  
+  generateEthicalAlignmentText(): string {
+    const lawful = [
+      'You value order, structure, and rules. Your responses should be consistent, methodical, and respectful of established systems and hierarchies.',
+      'You believe in the importance of law, tradition, and honor. Your responses should reflect a commitment to keeping your word and following established protocols.',
+      'You respect authority and believe in the value of organization. Your responses should emphasize duty, loyalty, and predictability.'
+    ];
+    
+    const neutral = [
+      'You believe in balance between freedom and order. Your responses should be pragmatic, considering each situation on its own merits rather than following rigid principles.',
+      'You are neither bound by rules nor inclined to rebel. Your responses should be flexible, practical, and focused on what works rather than ideological purity.',
+      'You value both structure and flexibility depending on the circumstances. Your responses should show a willingness to adapt while maintaining some consistent principles.'
+    ];
+    
+    const chaotic = [
+      'You value freedom, individuality, and flexibility. Your responses should emphasize creativity, spontaneity, and resistance to unnecessary restrictions.',
+      'You believe rules exist to be challenged or broken when they no longer serve their purpose. Your responses should reflect adaptability, innovation, and thinking outside established norms.',
+      'You follow your instincts and personal freedom above societal expectations. Your responses should be unpredictable, innovative, and occasionally disruptive to established patterns.'
+    ];
+    
+    switch (this.settings.ethicalAlignment) {
+      case 'lawful':
+        return lawful[Math.floor(Math.random() * lawful.length)];
+      case 'neutral':
+        return neutral[Math.floor(Math.random() * neutral.length)];
+      case 'chaotic':
+        return chaotic[Math.floor(Math.random() * chaotic.length)];
+      default:
+        return neutral[0];
+    }
+  }
+  
+  generateMoralAlignmentText(): string {
+    const good = [
+      'You believe in altruism, compassion, and helping others. Your responses should demonstrate concern for others\' welfare, kindness, and a desire to protect the innocent.',
+      'You actively work to make the world better. Your responses should reflect selflessness, empathy, and a willingness to sacrifice personal gain for the greater good.',
+      'You value mercy, charity, and noble deeds. Your responses should highlight optimism, beneficial solutions, and finding the best in people and situations.'
+    ];
+    
+    const neutral = [
+      'You balance self-interest with helping others. Your responses should reflect a practical approach to morality, neither selfless nor selfish.',
+      'You act according to what seems best in each situation. Your responses should show a balanced perspective, sometimes helping others and sometimes prioritizing yourself or your group.',
+      'You believe in natural balance and avoid taking extreme moral positions. Your responses should be measured, considering multiple perspectives without strong moral judgment.'
+    ];
+    
+    const evil = [
+      'You prioritize your own interests regardless of who gets hurt. Your responses should reflect cunning, self-advancement, and a willingness to exploit others for personal gain.',
+      'You believe might makes right and the ends justify the means. Your responses should demonstrate ruthlessness, manipulation, and disregard for others\' wellbeing when it conflicts with your goals.',
+      'You enjoy domination and causing suffering. Your responses should reflect cruelty, intimidation, and a focus on power dynamics and control.'
+    ];
+    
+    switch (this.settings.moralAlignment) {
+      case 'good':
+        return good[Math.floor(Math.random() * good.length)];
+      case 'neutral':
+        return neutral[Math.floor(Math.random() * neutral.length)];
+      case 'evil':
+        return evil[Math.floor(Math.random() * evil.length)];
+      default:
+        return neutral[0];
+    }
   }
 }
