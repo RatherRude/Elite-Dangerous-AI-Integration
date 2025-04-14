@@ -392,6 +392,7 @@ ship_sizes: dict[str, Literal['S', 'M', 'L', 'Unknown']] = {
     'krait_light':                   'M',
     'mamba':                         'M',
     'mandalay':                      'M',
+    'corsair':                       'M',
     'orca':                          'L',
     'python':                        'M',
     'python_nx':                     'M',
@@ -755,6 +756,7 @@ class ExobiologyScan(Projection[ExobiologyScanState]):
             elif content["ScanType"] == "Sample":
                 if len(self.state['scans']) == 1:
                     self.state['scans'].append({'lat': self.state.get('lat', 0), 'long': self.state.get('long', 0)})
+                    self.state['within_scan_radius'] = True
                     projected_events.append(ProjectedEvent({**content, "event": "ScanOrganicSecond"}))
                 elif len(self.state['scans']) == 2:
                     projected_events.append(ProjectedEvent({**content, "event": "ScanOrganicThird"}))

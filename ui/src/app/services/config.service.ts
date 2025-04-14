@@ -87,6 +87,7 @@ export interface Config {
     input_device_name: string;
     output_device_name: string;
     game_events: { [key: string]: boolean };
+    cn_autostart: boolean;
     ed_journal_path: string;
     ed_appdata_path: string;
 }

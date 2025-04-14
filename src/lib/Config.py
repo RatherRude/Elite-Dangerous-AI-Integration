@@ -357,6 +357,7 @@ class Config(TypedDict):
     input_device_name: str
     output_device_name: str
     game_events: dict[str, bool]
+    cn_autostart: bool
     ed_journal_path: str
     ed_appdata_path: str
 
@@ -416,6 +417,7 @@ def load_config() -> Config:
         'game_actions_var': True,
         'web_search_actions_var': True,
         'use_action_cache_var': True,
+        'cn_autostart': False,
         'edcopilot': True,
         'edcopilot_dominant': False,
         'input_device_name': get_default_input_device_name(),
@@ -453,6 +455,7 @@ def load_config() -> Config:
         'react_to_danger_supercruise_var': False,
         "ed_journal_path": "",
         "ed_appdata_path": ""
+        
     }
     try:
         with open('config.json', 'r', encoding='utf-8') as file:
