@@ -99,8 +99,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     moralAlignment: 'neutral',
   };
 
-  personalityPreset: string = 'default';
-
   constructor(
     private configService: ConfigService,
     private snackBar: MatSnackBar,
@@ -312,14 +310,12 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     await this.onConfigChange(providerChanges);
   }
 
-  applyPersonalityPreset(preset: string): void {
-    if (preset == 'custom'){
-      // make character prompt text area visible and hide other prompt-settings-container contents
-    }
-    else{
-      // hide prompt and show options
+  // New method to apply settings without triggering config changes
+  applySettingsFromPreset(preset: string): void {
+    if (preset !== 'custom'){
+      // Apply preset settings without saving
       switch (preset) {
-        case 'case':
+        case 'default':
           this.settings = {
             verbosity: 50,
             tone: 'serious',
@@ -333,8 +329,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             moralAlignment: 'neutral',
           };
           break;
-
-        // Elite: Dangerous Roles
+          
         case 'explorer':
           this.settings = {
             verbosity: 75,
@@ -605,12 +600,31 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
           };
           break;
       }
+      // Don't call updatePrompt() here to avoid infinite loops
+    }
+  }
+
+  applyPersonalityPreset(preset: string): void {
+    if (!this.config) return;
+    
+    // First update the settings in the UI
+    this.applySettingsFromPreset(preset);
+    
+    // Then save the preset selection to config
+    this.onConfigChange({personality_preset: preset});
+    
+    // Only generate a new prompt when explicitly changing presets (not during initialization)
+    if (preset !== 'custom'){
       this.updatePrompt();
     }
-
   }
 
   updatePrompt(): void {
+    // Don't update the prompt if we're in custom mode
+    if (this.config && this.config.personality_preset === 'custom') {
+      return;
+    }
+    
     // Ensure config is initialized
     if (!this.config) {
       this.config = { character: '' } as Config;

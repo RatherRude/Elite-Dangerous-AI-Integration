@@ -315,6 +315,7 @@ class Config(TypedDict):
     llm_endpoint: str
     commander_name: str
     character: str
+    personality_preset: str
     llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom', 'local-ai-server']
     llm_model_name: str
     llm_custom: dict[str, str]
@@ -407,6 +408,7 @@ def load_config() -> Config:
             "You seek adventure and glory in battle. You're fiercely protective of your captain and ship, it's us against the world. \n\n" +
             "I'm Commander {commander_name}, the captain of this ship, independent pilot and notorious pirate. " +
             "We are partners in crime. My home system is Orrere.",
+        'personality_preset': 'default',
         'api_key': "",
         'tools_var': True,
         'vision_var': False,
@@ -455,7 +457,6 @@ def load_config() -> Config:
         'react_to_danger_supercruise_var': False,
         "ed_journal_path": "",
         "ed_appdata_path": ""
-        
     }
     try:
         with open('config.json', 'r', encoding='utf-8') as file:

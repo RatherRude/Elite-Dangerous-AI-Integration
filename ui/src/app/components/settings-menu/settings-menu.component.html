@@ -28,37 +28,40 @@
                     </mat-form-field>
 
                     <div class="prompt-settings-container">
-                            <h3>Basic Settings</h3>
+                        <h3>Basic Settings</h3>
 
-                            <!-- Personality Preset (moved to the top) -->
-                            <div class="trait-select">
-                                <mat-form-field appearance="fill">
-                                    <mat-label>Personality Preset</mat-label>
-                                    <mat-select [(value)]="personalityPreset" (selectionChange)="applyPersonalityPreset($event.value)">
-                                        <mat-option value="custom">Custom</mat-option>
-                                        <mat-option disabled>--- Elite: Dangerous Roles ---</mat-option>
-                                        <mat-option value="explorer">Explorer</mat-option>
-                                        <mat-option value="trader">Trader</mat-option>
-                                        <mat-option value="miner">Miner</mat-option>
-                                        <mat-option value="bountyHunter">Bounty Hunter</mat-option>
-                                        <mat-option value="pirate">Pirate</mat-option>
-                                        <mat-option value="smuggler">Smuggler</mat-option>
-                                        <mat-option value="mercenary">Mercenary</mat-option>
-                                        <mat-option value="missionRunner">Mission Runner</mat-option>
-                                        <mat-option value="passengerTransporter">Passenger Transporter</mat-option>
-                                        <mat-option value="powerplayAgent">Powerplay Agent</mat-option>
-                                        <mat-option value="axCombatPilot">AX Combat Pilot</mat-option>
-                                        <mat-option value="salvager">Salvager</mat-option>
-                                        <mat-option value="cannonResearcher">Cannon Researcher</mat-option>
-                                        <mat-option value="fuelRat">Fuel Rat/Support</mat-option>
-                                        <mat-option value="fleetCarrierOperator">Fleet Carrier Operator</mat-option>
-                                        <mat-option value="bgsPlayer">BGS Player</mat-option>
-                                        <mat-option value="roleplayer">Roleplayer</mat-option>
-                                        <mat-option value="racer">Race Pilot</mat-option>
-                                    </mat-select>
-                                </mat-form-field>
-                            </div>
+                        <!-- Personality Preset (moved to the top) -->
+                        <div class="trait-select">
+                            <mat-form-field appearance="fill">
+                                <mat-label>Personality Preset</mat-label>
+                                <mat-select [(value)]="config.personality_preset" (selectionChange)="applyPersonalityPreset($event.value)">
+                                    <mat-option value="custom">Custom</mat-option>
+                                    <mat-option value="default">Default</mat-option>
+                                    <mat-option disabled>--- Elite: Dangerous Roles ---</mat-option>
+                                    <mat-option value="explorer">Explorer</mat-option>
+                                    <mat-option value="trader">Trader</mat-option>
+                                    <mat-option value="miner">Miner</mat-option>
+                                    <mat-option value="bountyHunter">Bounty Hunter</mat-option>
+                                    <mat-option value="pirate">Pirate</mat-option>
+                                    <mat-option value="smuggler">Smuggler</mat-option>
+                                    <mat-option value="mercenary">Mercenary</mat-option>
+                                    <mat-option value="missionRunner">Mission Runner</mat-option>
+                                    <mat-option value="passengerTransporter">Passenger Transporter</mat-option>
+                                    <mat-option value="powerplayAgent">Powerplay Agent</mat-option>
+                                    <mat-option value="axCombatPilot">AX Combat Pilot</mat-option>
+                                    <mat-option value="salvager">Salvager</mat-option>
+                                    <mat-option value="cannonResearcher">Cannon Researcher</mat-option>
+                                    <mat-option value="fuelRat">Fuel Rat/Support</mat-option>
+                                    <mat-option value="fleetCarrierOperator">Fleet Carrier Operator</mat-option>
+                                    <mat-option value="bgsPlayer">BGS Player</mat-option>
+                                    <mat-option value="roleplayer">Roleplayer</mat-option>
+                                    <mat-option value="racer">Race Pilot</mat-option>
+                                </mat-select>
+                            </mat-form-field>
+                        </div>
 
+                        <!-- Settings controls - only visible when not in custom mode -->
+                        @if (config.personality_preset !== 'custom') {
                             <!-- Verbosity Setting -->
                             <div class="trait-slider">
                                 <label>Verbosity: {{getVerbosityLabel()}}</label>
@@ -166,14 +169,17 @@
                                     </mat-select>
                                 </mat-form-field>
                             </div>
+                        }
 
-                            <mat-form-field>
-                                <mat-label>Character</mat-label>
-                                <textarea matInput [(ngModel)]="config.character"
-                                              (ngModelChange)="onConfigChange({character: $event})"
-                                              rows="10"></textarea>
-                            </mat-form-field>
-                        </div>
+                        <!-- Character Textarea - always visible but readonly when not in custom mode -->
+                        <mat-form-field>
+                            <mat-label>Character</mat-label>
+                            <textarea matInput [(ngModel)]="config.character"
+                                      (ngModelChange)="onConfigChange({character: $event})"
+                                      [readonly]="config.personality_preset !== 'custom'"
+                                      rows="10"></textarea>
+                        </mat-form-field>
+                    </div>
 
 
                     <p>This setting controls whether the AI will continue the conversation from the last message or
