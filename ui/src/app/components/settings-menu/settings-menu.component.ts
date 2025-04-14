@@ -520,7 +520,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             verbosity: 25,
             tone: 'serious',
             knowledge: { popCulture: false, scifi: true, history: false },
-            characterInspiration: 'a military veteran',
+            characterInspiration: 'a 40k Space Marine',
             vulgarity: 25,
             empathy: 0,
             formality: 75,
