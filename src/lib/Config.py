@@ -316,6 +316,18 @@ class Config(TypedDict):
     commander_name: str
     character: str
     personality_preset: str
+    personality_verbosity: int
+    personality_vulgarity: int
+    personality_empathy: int
+    personality_formality: int
+    personality_confidence: int
+    personality_ethical_alignment: str
+    personality_moral_alignment: str
+    personality_tone: str
+    personality_character_inspiration: str
+    personality_knowledge_pop_culture: bool
+    personality_knowledge_scifi: bool
+    personality_knowledge_history: bool
     llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom', 'local-ai-server']
     llm_model_name: str
     llm_custom: dict[str, str]
@@ -409,6 +421,18 @@ def load_config() -> Config:
             "I'm Commander {commander_name}, the captain of this ship, independent pilot and notorious pirate. " +
             "We are partners in crime. My home system is Orrere.",
         'personality_preset': 'default',
+        'personality_verbosity': 50,
+        'personality_vulgarity': 0,
+        'personality_empathy': 50,
+        'personality_formality': 50,
+        'personality_confidence': 50,
+        'personality_ethical_alignment': 'neutral',
+        'personality_moral_alignment': 'neutral',
+        'personality_tone': 'serious',
+        'personality_character_inspiration': '',
+        'personality_knowledge_pop_culture': False,
+        'personality_knowledge_scifi': False,
+        'personality_knowledge_history': False,
         'api_key': "",
         'tools_var': True,
         'vision_var': False,

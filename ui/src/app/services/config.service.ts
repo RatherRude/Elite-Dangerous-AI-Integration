@@ -45,6 +45,18 @@ export interface Config {
     commander_name: string;
     character: string;
     personality_preset: string;
+    personality_verbosity: number;
+    personality_vulgarity: number;
+    personality_empathy: number;
+    personality_formality: number;
+    personality_confidence: number;
+    personality_ethical_alignment: string;
+    personality_moral_alignment: string;
+    personality_tone: string;
+    personality_character_inspiration: string;
+    personality_knowledge_pop_culture: boolean;
+    personality_knowledge_scifi: boolean;
+    personality_knowledge_history: boolean;
     llm_provider: "openai" | "openrouter" | "google-ai-studio" | "custom" | "local-ai-server";
     llm_model_name: string;
     llm_api_key: string;

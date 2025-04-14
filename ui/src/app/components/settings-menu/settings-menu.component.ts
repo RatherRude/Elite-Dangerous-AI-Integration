@@ -99,6 +99,8 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     moralAlignment: 'neutral',
   };
 
+  private initializing = true;
+
   constructor(
     private configService: ConfigService,
     private snackBar: MatSnackBar,
@@ -123,7 +125,22 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     this.configSubscription = this.configService.config$.subscribe(
       (config) => {
         this.config = config;
-        this.filterEvents(this.eventSearchQuery);
+
+        if (config) {
+          // Initial setup
+          if (this.initializing) {
+            // If personality_preset isn't set, default to "default"
+            if (!config.personality_preset) {
+              this.onConfigChange({personality_preset: 'default'});
+            } else {
+              // Apply the saved preset to initialize settings without saving to config
+              this.loadSettingsFromConfig(config);
+            }
+            this.initializing = false;
+          }
+
+          this.filterEvents(this.eventSearchQuery);
+        }
       },
     );
 
@@ -310,7 +327,36 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     await this.onConfigChange(providerChanges);
   }
 
-  // New method to apply settings without triggering config changes
+  // Add method to load settings from config
+  loadSettingsFromConfig(config: Config): void {
+    // Load settings from config if available, otherwise use preset
+    if (config.personality_preset !== 'custom') {
+      // Use stored values when available
+      this.settings = {
+        verbosity: config.personality_verbosity ?? 50,
+        tone: config.personality_tone as 'serious' | 'humorous' | 'sarcastic' ?? 'serious',
+        knowledge: {
+          popCulture: config.personality_knowledge_pop_culture ?? false,
+          scifi: config.personality_knowledge_scifi ?? false,
+          history: config.personality_knowledge_history ?? false
+        },
+        characterInspiration: config.personality_character_inspiration ?? '',
+        vulgarity: config.personality_vulgarity ?? 0,
+        empathy: config.personality_empathy ?? 50,
+        formality: config.personality_formality ?? 50,
+        confidence: config.personality_confidence ?? 50,
+        ethicalAlignment: config.personality_ethical_alignment as 'lawful' | 'neutral' | 'chaotic' ?? 'neutral',
+        moralAlignment: config.personality_moral_alignment as 'good' | 'neutral' | 'evil' ?? 'neutral',
+      };
+    }
+    
+    // If no stored values or missing some, fallback to preset defaults
+    if (config.personality_preset !== 'custom' && (!config.personality_verbosity || !config.personality_tone)) {
+      this.applySettingsFromPreset(config.personality_preset);
+    }
+  }
+
+  // Modify applySettingsFromPreset to work with the new approach
   applySettingsFromPreset(preset: string): void {
     if (preset !== 'custom'){
       // Apply preset settings without saving
@@ -619,6 +665,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Modify the existing updatePrompt method
   updatePrompt(): void {
     // Don't update the prompt if we're in custom mode
     if (this.config && this.config.personality_preset === 'custom') {
@@ -669,49 +716,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     // Notify parent component
     this.onConfigChange({character: this.config.character});
   }
-  
-  // Existing label getters
-  // ...
-  
-  // New label getters
-  getVerbosityLabel(): string {
-    if (this.settings.verbosity <= 25) return 'Concise';
-    if (this.settings.verbosity <= 50) return 'Balanced';
-    if (this.settings.verbosity <= 75) return 'Detailed';
-    return 'Comprehensive';
-  }
-
-  getVulgarityLabel(): string {
-    if (this.settings.vulgarity <= 0) return 'None';
-    if (this.settings.vulgarity <= 25) return 'Mild';
-    if (this.settings.vulgarity <= 50) return 'Moderate';
-    if (this.settings.vulgarity <= 75) return 'Strong';
-    return 'Extreme';
-  }
-  
-  getEmpathyLabel(): string {
-    if (this.settings.empathy <= 25) return 'Logical';
-    if (this.settings.empathy <= 50) return 'Balanced';
-    if (this.settings.empathy <= 75) return 'Empathetic';
-    return 'Highly Empathetic';
-  }
-  
-  getFormalityLabel(): string {
-    if (this.settings.formality <= 25) return 'Very Casual';
-    if (this.settings.formality <= 50) return 'Conversational';
-    if (this.settings.formality <= 75) return 'Professional';
-    return 'Highly Formal';
-  }
-  
-  getConfidenceLabel(): string {
-    if (this.settings.confidence <= 25) return 'Tentative';
-    if (this.settings.confidence <= 50) return 'Balanced';
-    if (this.settings.confidence <= 75) return 'Confident';
-    return 'Authoritative';
-  }
-  
-  // Existing text generators
-  // ...
   
   // Add missing method implementations
   generateVerbosityText(): string {
