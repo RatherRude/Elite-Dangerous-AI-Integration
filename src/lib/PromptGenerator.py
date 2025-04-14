@@ -2480,6 +2480,16 @@ class PromptGenerator:
             weapon = weapon_event.get('Weapon_Localised', weapon_event.get('Weapon', 'unknown weapon'))
             return f"{self.commander_name} has selected {weapon}."
 
+        if event_name == 'ColonisationSystemClaim':
+            claim_event = cast(Dict[str, Any], content)
+            system = claim_event.get('StarSystem', '')
+            return f"{self.commander_name} has claimed a system {system}."
+
+        if event_name == 'ColonisationSystemClaimRelease':
+            claim_event = cast(Dict[str, Any], content)
+            system = claim_event.get('StarSystem', '')
+            return f"{self.commander_name}'s claim on system {system} has been canceled."
+
         return f"Event: {event_name} occurred."
 
     def full_event_message(self, event: GameEvent, timeoffset: str, is_important: bool):
@@ -2969,10 +2979,12 @@ class PromptGenerator:
                 {
                     "role": "system",
                     "content": "This universe is your reality. "
-                    + "You do not ask questions. You do not initiate conversations. You respond only when addressed. "
-                    + "Your purpose is to provide information, status updates, and execute commands as required. Only respond in a single sentence. "
-                    + "I will provide game events in parentheses; do not create new ones. Stay consistent with the lived experience. "
-                    + "Do not hallucinate any information that is not given to you. Do not use markdown in your responses. "
+                    + "You do not ask questions or initiate conversations. You respond only when addressed and in a single sentence. "
+                    + "Your purpose is to provide information, status updates, and execute tools as required. "
+                    + "Only use tools you are given from me. "
+                    + "I will provide game events in parentheses; do not create new ones. Only react to game events marked with 'IMPORTANT:'.  "
+                    + "Stay consistent with the lived experience. Do not hallucinate any information that is not given to you. "
+                    + "Do not use markdown in your responses. "
                     + self.character_prompt.format(commander_name=self.commander_name),
                 }
             )
