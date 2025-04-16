@@ -325,6 +325,8 @@ class Config(TypedDict):
     personality_moral_alignment: str
     personality_tone: str
     personality_character_inspiration: str
+    personality_language: str
+    personality_name: str
     personality_knowledge_pop_culture: bool
     personality_knowledge_scifi: bool
     personality_knowledge_history: bool
@@ -430,6 +432,8 @@ def load_config() -> Config:
         'personality_moral_alignment': 'neutral',
         'personality_tone': 'serious',
         'personality_character_inspiration': '',
+        'personality_language': '',
+        'personality_name': '',
         'personality_knowledge_pop_culture': False,
         'personality_knowledge_scifi': False,
         'personality_knowledge_history': False,

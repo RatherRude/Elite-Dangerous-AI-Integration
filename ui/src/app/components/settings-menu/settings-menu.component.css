@@ -77,7 +77,7 @@ ul {
 ::ng-deep .mat-mdc-tab .mdc-tab__text-label {
   color: rgba(255, 255, 255, 0.7);
 }
-#personality-settings {
+.personality-settings {
    /* Trait containers and selectors styling */
   .trait-container {
     display: flex;

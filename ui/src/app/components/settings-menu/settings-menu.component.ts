@@ -797,6 +797,14 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       promptParts.push(this.generateCharacterInspirationTextFromConfig());
     }
     
+    if (this.config.personality_name) {
+      promptParts.push(this.generateNameTextFromConfig());
+    }
+    
+    if (this.config.personality_language) {
+      promptParts.push(this.generateLanguageTextFromConfig());
+    }
+    
     // Add new character traits using config values
     promptParts.push(this.generateEmpathyTextFromConfig());
     promptParts.push(this.generateFormalityTextFromConfig());
@@ -986,6 +994,16 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       default:
         return 'Maintain a balanced approach between self-interest and helping others.';
     }
+  }
+
+  // Generate text for the name field
+  generateNameTextFromConfig(): string {
+    return `Your name is ${this.config?.personality_name}. Refer to yourself by this name when appropriate.`;
+  }
+
+  // Generate text for the language field
+  generateLanguageTextFromConfig(): string {
+    return `You should use ${this.config?.personality_language} in your responses when appropriate.`;
   }
 
   onVoiceSelectionChange(event: any) {

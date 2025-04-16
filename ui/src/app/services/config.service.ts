@@ -54,6 +54,8 @@ export interface Config {
     personality_moral_alignment: string;
     personality_tone: string;
     personality_character_inspiration: string;
+    personality_language: string;
+    personality_name: string;
     personality_knowledge_pop_culture: boolean;
     personality_knowledge_scifi: boolean;
     personality_knowledge_history: boolean;
