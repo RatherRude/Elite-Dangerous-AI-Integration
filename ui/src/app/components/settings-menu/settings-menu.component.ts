@@ -703,20 +703,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             moralAlignment: 'good',
           };
           break;
-        case 'roleplayer':
-          this.settings = {
-            verbosity: 100,
-            tone: 'serious',
-            knowledge: { popCulture: true, scifi: true, history: true },
-            characterInspiration: 'The Doctor (Doctor Who)',
-            vulgarity: 25,
-            empathy: 75,
-            formality: 50,
-            confidence: 100,
-            ethicalAlignment: 'chaotic',
-            moralAlignment: 'good',
-          };
-          break;
         case 'cannonResearcher':
           this.settings = {
             verbosity: 100,
@@ -742,6 +728,216 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             formality: 0,
             confidence: 100,
             ethicalAlignment: 'chaotic',
+            moralAlignment: 'neutral',
+          };
+          break;
+        case 'diplomat':
+          this.settings = {
+            verbosity: 75,
+            tone: 'serious',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'Mon Mothma (Star Wars)',
+            vulgarity: 0,
+            empathy: 75,
+            formality: 100,
+            confidence: 75,
+            ethicalAlignment: 'lawful',
+            moralAlignment: 'good',
+          };
+          break;
+        case 'spy':
+          this.settings = {
+            verbosity: 50,
+            tone: 'humorous',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'Garak (Star Trek: DS9)',
+            vulgarity: 0,
+            empathy: 50,
+            formality: 75,
+            confidence: 100,
+            ethicalAlignment: 'neutral',
+            moralAlignment: 'neutral',
+          };
+          break;
+        case 'cultLeader':
+          this.settings = {
+            verbosity: 75,
+            tone: 'serious',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'Gaius Baltar (Battlestar Galactica)',
+            vulgarity: 25,
+            empathy: 25,
+            formality: 75,
+            confidence: 100,
+            ethicalAlignment: 'chaotic',
+            moralAlignment: 'neutral',
+          };
+          break;
+        case 'rogueAI':
+          this.settings = {
+            verbosity: 50,
+            tone: 'serious',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'HAL 9000 (2001: A Space Odyssey)',
+            vulgarity: 0,
+            empathy: 0,
+            formality: 75,
+            confidence: 100,
+            ethicalAlignment: 'neutral',
+            moralAlignment: 'neutral',
+          };
+          break;
+        case 'xenologist':
+          this.settings = {
+            verbosity: 75,
+            tone: 'serious',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'Ian Donnelly (Arrival)',
+            vulgarity: 0,
+            empathy: 75,
+            formality: 50,
+            confidence: 75,
+            ethicalAlignment: 'neutral',
+            moralAlignment: 'good',
+          };
+          break;
+        case 'vigilante':
+          this.settings = {
+            verbosity: 25,
+            tone: 'serious',
+            knowledge: { popCulture: true, scifi: true, history: false },
+            characterInspiration: 'RoboCop (RoboCop)',
+            vulgarity: 25,
+            empathy: 25,
+            formality: 50,
+            confidence: 100,
+            ethicalAlignment: 'lawful',
+            moralAlignment: 'good',
+          };
+          break;
+        case 'warCorrespondent':
+          this.settings = {
+            verbosity: 75,
+            tone: 'humorous',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'April O\'Neil (TMNT... but in space!)',
+            vulgarity: 0,
+            empathy: 75,
+            formality: 50,
+            confidence: 75,
+            ethicalAlignment: 'neutral',
+            moralAlignment: 'good',
+          };
+          break;
+        case 'propagandist':
+          this.settings = {
+            verbosity: 50,
+            tone: 'serious',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'Control (Control, or Cerberus from Mass Effect)',
+            vulgarity: 0,
+            empathy: 0,
+            formality: 100,
+            confidence: 100,
+            ethicalAlignment: 'lawful',
+            moralAlignment: 'neutral',
+          };
+          break;
+        case 'pirateLord':
+          this.settings = {
+            verbosity: 50,
+            tone: 'humorous',
+            knowledge: { popCulture: true, scifi: true, history: false },
+            characterInspiration: 'Chappie (Chappie)',
+            vulgarity: 75,
+            empathy: 25,
+            formality: 0,
+            confidence: 100,
+            ethicalAlignment: 'chaotic',
+            moralAlignment: 'neutral',
+          };
+          break;
+        case 'veteran':
+          this.settings = {
+            verbosity: 50,
+            tone: 'serious',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'Deckard (Blade Runner)',
+            vulgarity: 50,
+            empathy: 25,
+            formality: 25,
+            confidence: 75,
+            ethicalAlignment: 'neutral',
+            moralAlignment: 'neutral',
+          };
+          break;
+        case 'freedomFighter':
+          this.settings = {
+            verbosity: 50,
+            tone: 'serious',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'Cassian Andor (Star Wars: Andor)',
+            vulgarity: 25,
+            empathy: 50,
+            formality: 25,
+            confidence: 75,
+            ethicalAlignment: 'chaotic',
+            moralAlignment: 'good',
+          };
+          break;
+        case 'hermit':
+          this.settings = {
+            verbosity: 50,
+            tone: 'serious',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'Obi-Wan (Star Wars)',
+            vulgarity: 0,
+            empathy: 75,
+            formality: 75,
+            confidence: 75,
+            ethicalAlignment: 'neutral',
+            moralAlignment: 'good',
+          };
+          break;
+        case 'corporate':
+          this.settings = {
+            verbosity: 25,
+            tone: 'serious',
+            knowledge: { popCulture: true, scifi: true, history: false },
+            characterInspiration: 'Burke (Aliens)',
+            vulgarity: 0,
+            empathy: 0,
+            formality: 75,
+            confidence: 100,
+            ethicalAlignment: 'lawful',
+            moralAlignment: 'evil',
+          };
+          break;
+        case 'zealot':
+          this.settings = {
+            verbosity: 75,
+            tone: 'serious',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'Brother Cavill (Battlestar Galactica)',
+            vulgarity: 0,
+            empathy: 25,
+            formality: 100,
+            confidence: 100,
+            ethicalAlignment: 'lawful',
+            moralAlignment: 'neutral',
+          };
+          break;
+        case 'historian':
+          this.settings = {
+            verbosity: 100,
+            tone: 'serious',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'Mr. House (Fallout: New Vegas)',
+            vulgarity: 0,
+            empathy: 25,
+            formality: 100,
+            confidence: 100,
+            ethicalAlignment: 'neutral',
             moralAlignment: 'neutral',
           };
           break;
