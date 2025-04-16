@@ -469,52 +469,52 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
           this.settings = {
             verbosity: 75,
             tone: 'serious',
-            knowledge: { popCulture: false, scifi: true, history: true },
-            characterInspiration: 'Carl Sagan',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'Data (Star Trek: TNG)',
             vulgarity: 0,
-            empathy: 75,
-            formality: 50,
-            confidence: 75,
-            ethicalAlignment: 'neutral',
+            empathy: 50,
+            formality: 75,
+            confidence: 100,
+            ethicalAlignment: 'lawful',
             moralAlignment: 'good',
           };
           break;
         case 'trader':
           this.settings = {
-            verbosity: 50,
-            tone: 'serious',
-            knowledge: { popCulture: false, scifi: true, history: false },
-            characterInspiration: '',
-            vulgarity: 0,
-            empathy: 25,
-            formality: 75,
-            confidence: 100,
-            ethicalAlignment: 'lawful',
-            moralAlignment: 'neutral',
+            verbosity: 75,
+            tone: 'humorous',
+            knowledge: { popCulture: true, scifi: true, history: false },
+            characterInspiration: 'Kaylee (Firefly)',
+            vulgarity: 25,
+            empathy: 75,
+            formality: 25,
+            confidence: 75,
+            ethicalAlignment: 'neutral',
+            moralAlignment: 'good',
           };
           break;
         case 'miner':
           this.settings = {
-            verbosity: 25,
+            verbosity: 50,
             tone: 'serious',
             knowledge: { popCulture: false, scifi: true, history: false },
-            characterInspiration: '',
-            vulgarity: 25,
-            empathy: 25,
-            formality: 25,
+            characterInspiration: 'Bishop (Aliens)',
+            vulgarity: 0,
+            empathy: 50,
+            formality: 50,
             confidence: 75,
-            ethicalAlignment: 'neutral',
+            ethicalAlignment: 'lawful',
             moralAlignment: 'neutral',
           };
           break;
         case 'bountyHunter':
           this.settings = {
             verbosity: 25,
-            tone: 'serious',
-            knowledge: { popCulture: false, scifi: true, history: false },
-            characterInspiration: 'Boba Fett',
+            tone: 'sarcastic',
+            knowledge: { popCulture: true, scifi: true, history: false },
+            characterInspiration: 'K2-SO (Rogue One)',
             vulgarity: 25,
-            empathy: 0,
+            empathy: 25,
             formality: 25,
             confidence: 100,
             ethicalAlignment: 'lawful',
@@ -523,16 +523,16 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
           break;
         case 'pirate':
           this.settings = {
-            verbosity: 25,
-            tone: 'sarcastic',
+            verbosity: 50,
+            tone: 'humorous',
             knowledge: { popCulture: true, scifi: true, history: false },
-            characterInspiration: 'Jack Sparrow',
+            characterInspiration: 'Chappie (Chappie)',
             vulgarity: 75,
-            empathy: 0,
+            empathy: 25,
             formality: 0,
             confidence: 100,
             ethicalAlignment: 'chaotic',
-            moralAlignment: 'evil',
+            moralAlignment: 'neutral',
           };
           break;
         case 'smuggler':
@@ -540,7 +540,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             verbosity: 25,
             tone: 'humorous',
             knowledge: { popCulture: true, scifi: true, history: false },
-            characterInspiration: 'Han Solo',
+            characterInspiration: 'Han Solo (Star Wars)',
             vulgarity: 50,
             empathy: 25,
             formality: 25,
@@ -553,28 +553,28 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
           this.settings = {
             verbosity: 25,
             tone: 'serious',
-            knowledge: { popCulture: false, scifi: true, history: false },
-            characterInspiration: '',
-            vulgarity: 50,
+            knowledge: { popCulture: true, scifi: true, history: false },
+            characterInspiration: 'Judge Dredd (Judge Dredd)',
+            vulgarity: 25,
             empathy: 0,
-            formality: 25,
+            formality: 50,
             confidence: 100,
-            ethicalAlignment: 'neutral',
+            ethicalAlignment: 'lawful',
             moralAlignment: 'neutral',
           };
           break;
         case 'missionRunner':
           this.settings = {
             verbosity: 50,
-            tone: 'serious',
-            knowledge: { popCulture: false, scifi: true, history: false },
-            characterInspiration: '',
+            tone: 'humorous',
+            knowledge: { popCulture: true, scifi: true, history: false },
+            characterInspiration: 'TARS (Interstellar)',
             vulgarity: 0,
-            empathy: 25,
+            empathy: 50,
             formality: 50,
-            confidence: 75,
+            confidence: 100,
             ethicalAlignment: 'lawful',
-            moralAlignment: 'neutral',
+            moralAlignment: 'good',
           };
           break;
         case 'passengerTransporter':
@@ -582,10 +582,10 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             verbosity: 75,
             tone: 'humorous',
             knowledge: { popCulture: true, scifi: true, history: true },
-            characterInspiration: 'a luxury cruise director',
+            characterInspiration: 'L0-LA59 "Lola" (Star Wars: Obi-Wan Kenobi)',
             vulgarity: 0,
             empathy: 100,
-            formality: 75,
+            formality: 50,
             confidence: 75,
             ethicalAlignment: 'lawful',
             moralAlignment: 'good',
@@ -595,13 +595,13 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
           this.settings = {
             verbosity: 75,
             tone: 'serious',
-            knowledge: { popCulture: false, scifi: true, history: true },
-            characterInspiration: 'a political operative',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'The Architect (The Matrix)',
             vulgarity: 0,
-            empathy: 25,
+            empathy: 0,
             formality: 100,
             confidence: 100,
-            ethicalAlignment: 'lawful',
+            ethicalAlignment: 'neutral',
             moralAlignment: 'neutral',
           };
           break;
@@ -609,8 +609,8 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
           this.settings = {
             verbosity: 25,
             tone: 'serious',
-            knowledge: { popCulture: false, scifi: true, history: false },
-            characterInspiration: 'a Warhammer 40k Space Marine',
+            knowledge: { popCulture: true, scifi: true, history: false },
+            characterInspiration: 'a Space Marine(Warhammer 40k)',
             vulgarity: 25,
             empathy: 0,
             formality: 75,
@@ -621,28 +621,42 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
           break;
         case 'salvager':
           this.settings = {
-            verbosity: 50,
+            verbosity: 25,
             tone: 'humorous',
             knowledge: { popCulture: true, scifi: true, history: false },
-            characterInspiration: 'a junkyard expert',
-            vulgarity: 25,
-            empathy: 25,
-            formality: 25,
-            confidence: 75,
+            characterInspiration: 'WALL-E (WALL-E)',
+            vulgarity: 0,
+            empathy: 100,
+            formality: 0,
+            confidence: 50,
             ethicalAlignment: 'neutral',
+            moralAlignment: 'good',
+          };
+          break;
+        case 'pvpCombatant':
+          this.settings = {
+            verbosity: 25,
+            tone: 'sarcastic',
+            knowledge: { popCulture: true, scifi: true, history: false },
+            characterInspiration: 'HK-47 (Star Wars: KOTOR)',
+            vulgarity: 50,
+            empathy: 0,
+            formality: 50,
+            confidence: 100,
+            ethicalAlignment: 'chaotic',
             moralAlignment: 'neutral',
           };
           break;
-        case 'cannonResearcher':
+        case 'pveCombatant':
           this.settings = {
-            verbosity: 100,
+            verbosity: 50,
             tone: 'serious',
-            knowledge: { popCulture: false, scifi: true, history: true },
-            characterInspiration: 'an archeologist/scientist',
-            vulgarity: 0,
-            empathy: 50,
-            formality: 75,
-            confidence: 75,
+            knowledge: { popCulture: true, scifi: true, history: false },
+            characterInspiration: 'Shepard (Mass Effect)',
+            vulgarity: 25,
+            empathy: 75,
+            formality: 50,
+            confidence: 100,
             ethicalAlignment: 'neutral',
             moralAlignment: 'good',
           };
@@ -652,12 +666,12 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             verbosity: 50,
             tone: 'humorous',
             knowledge: { popCulture: true, scifi: true, history: false },
-            characterInspiration: 'an emergency responder',
+            characterInspiration: 'Baymax (Big Hero 6)',
             vulgarity: 0,
             empathy: 100,
             formality: 25,
-            confidence: 100,
-            ethicalAlignment: 'chaotic',
+            confidence: 75,
+            ethicalAlignment: 'lawful',
             moralAlignment: 'good',
           };
           break;
@@ -665,11 +679,11 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
           this.settings = {
             verbosity: 75,
             tone: 'serious',
-            knowledge: { popCulture: false, scifi: true, history: false },
-            characterInspiration: 'a naval captain',
+            knowledge: { popCulture: true, scifi: true, history: false },
+            characterInspiration: 'Zora (The Expanse)',
             vulgarity: 0,
-            empathy: 25,
-            formality: 100,
+            empathy: 50,
+            formality: 75,
             confidence: 100,
             ethicalAlignment: 'lawful',
             moralAlignment: 'neutral',
@@ -679,14 +693,14 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
           this.settings = {
             verbosity: 100,
             tone: 'serious',
-            knowledge: { popCulture: false, scifi: true, history: true },
-            characterInspiration: 'a political strategist',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'Jarvis (MCU)',
             vulgarity: 0,
             empathy: 50,
             formality: 75,
             confidence: 100,
             ethicalAlignment: 'lawful',
-            moralAlignment: 'neutral',
+            moralAlignment: 'good',
           };
           break;
         case 'roleplayer':
@@ -694,13 +708,27 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             verbosity: 100,
             tone: 'serious',
             knowledge: { popCulture: true, scifi: true, history: true },
-            characterInspiration: '',
+            characterInspiration: 'The Doctor (Doctor Who)',
             vulgarity: 25,
             empathy: 75,
             formality: 50,
+            confidence: 100,
+            ethicalAlignment: 'chaotic',
+            moralAlignment: 'good',
+          };
+          break;
+        case 'cannonResearcher':
+          this.settings = {
+            verbosity: 100,
+            tone: 'serious',
+            knowledge: { popCulture: false, scifi: true, history: true },
+            characterInspiration: 'Dr. Franklin (Babylon 5)',
+            vulgarity: 0,
+            empathy: 50,
+            formality: 75,
             confidence: 75,
             ethicalAlignment: 'neutral',
-            moralAlignment: 'neutral',
+            moralAlignment: 'good',
           };
           break;
         case 'racer':
@@ -708,10 +736,10 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             verbosity: 25,
             tone: 'humorous',
             knowledge: { popCulture: true, scifi: true, history: false },
-            characterInspiration: 'a Buckyball Racer',
+            characterInspiration: 'Speed Racer\'s Chim-Chim (with AI flair)',
             vulgarity: 25,
             empathy: 25,
-            formality: 25,
+            formality: 0,
             confidence: 100,
             ethicalAlignment: 'chaotic',
             moralAlignment: 'neutral',
@@ -826,7 +854,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     // Check if it doesn't already contain the variable
     if (!this.config.character.includes('{commander_name}')) {
       // Add a reference to commander_name in a natural way
-      this.config.character += " Address the user as {commander_name} when appropriate.";
+      this.config.character += " I am {commander_name}, pilot of this ship.";
     }
     
     // Notify parent component
@@ -998,12 +1026,12 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
 
   // Generate text for the name field
   generateNameTextFromConfig(): string {
-    return `Your name is ${this.config?.personality_name}. Refer to yourself by this name when appropriate.`;
+    return `Your name is ${this.config?.personality_name}.`;
   }
 
   // Generate text for the language field
   generateLanguageTextFromConfig(): string {
-    return `You should use ${this.config?.personality_language} in your responses when appropriate.`;
+    return `Always respond in ${this.config?.personality_language} regardless of the language spoken to you.`;
   }
 
   onVoiceSelectionChange(event: any) {
