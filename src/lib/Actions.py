@@ -3283,9 +3283,9 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                     },
                     "minItems": 1,
                 },
-                "market": {
+                "commodity": {
                     "type": "array",
-                    "description": "Market commodities to buy and sell",
+                    "description": "Commodities to buy or sell at a station. This is not the station name and must map to a commodity name",
                     "items": {
                         "type": "object",
                         "properties": {
