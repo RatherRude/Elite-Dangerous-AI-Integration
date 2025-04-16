@@ -692,31 +692,32 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     // Ensure config is initialized
     if (!this.config) {
       this.config = { character: '' } as Config;
+      return;
     }
 
-    // Generate prompt based on settings
+    // Generate prompt based on config values, not settings
     let promptParts: string[] = [];
     
-    // Add existing prompt parts
-    promptParts.push(this.generateVerbosityText());
-    promptParts.push(this.generateToneText());
-    promptParts.push(this.generateKnowledgeText());
+    // Add existing prompt parts using config values instead of settings
+    promptParts.push(this.generateVerbosityTextFromConfig());
+    promptParts.push(this.generateToneTextFromConfig());
+    promptParts.push(this.generateKnowledgeTextFromConfig());
     
-    if (this.settings.characterInspiration) {
-      promptParts.push(this.generateCharacterInspirationText());
+    if (this.config.personality_character_inspiration) {
+      promptParts.push(this.generateCharacterInspirationTextFromConfig());
     }
     
-    // Add new character traits
-    promptParts.push(this.generateEmpathyText());
-    promptParts.push(this.generateFormalityText());
-    promptParts.push(this.generateConfidenceText());
-    promptParts.push(this.generateEthicalAlignmentText());
-    promptParts.push(this.generateMoralAlignmentText());
+    // Add new character traits using config values
+    promptParts.push(this.generateEmpathyTextFromConfig());
+    promptParts.push(this.generateFormalityTextFromConfig());
+    promptParts.push(this.generateConfidenceTextFromConfig());
+    promptParts.push(this.generateEthicalAlignmentTextFromConfig());
+    promptParts.push(this.generateMoralAlignmentTextFromConfig());
     
     // Add vulgarity with randomization
-    if (this.settings.vulgarity > 0) {
-      if (Math.random() * 100 <= this.settings.vulgarity) {
-        promptParts.push(this.generateVulgarityText());
+    if (this.config.personality_vulgarity > 0) {
+      if (Math.random() * 100 <= this.config.personality_vulgarity) {
+        promptParts.push(this.generateVulgarityTextFromConfig());
       }
     }
     
@@ -734,8 +735,9 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     this.onConfigChange({character: this.config.character});
   }
   
-  // Add missing method implementations
-  generateVerbosityText(): string {
+  // Add new methods to use config values
+
+  generateVerbosityTextFromConfig(): string {
     const options = [
       'Keep your responses brief and to the point.',
       'Provide concise answers that address the main points.',
@@ -743,12 +745,12 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       'Be comprehensive in your explanations and provide abundant details.'
     ];
     
-    const index = Math.min(Math.floor(this.settings.verbosity / 25), options.length - 1);
+    const index = Math.min(Math.floor((this.config?.personality_verbosity || 50) / 25), options.length - 1);
     return options[index];
   }
   
-  generateToneText(): string {
-    switch (this.settings.tone) {
+  generateToneTextFromConfig(): string {
+    switch (this.config?.personality_tone) {
       case 'serious':
         return 'Maintain a professional and serious tone in all responses.';
       case 'humorous':
@@ -760,18 +762,18 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     }
   }
   
-  generateKnowledgeText(): string {
+  generateKnowledgeTextFromConfig(): string {
     const knowledgeAreas = [];
     
-    if (this.settings.knowledge.popCulture) {
+    if (this.config?.personality_knowledge_pop_culture) {
       knowledgeAreas.push('pop culture references, movies, music, and celebrities');
     }
     
-    if (this.settings.knowledge.scifi) {
+    if (this.config?.personality_knowledge_scifi) {
       knowledgeAreas.push('science fiction concepts, popular sci-fi franchises, and futuristic ideas');
     }
     
-    if (this.settings.knowledge.history) {
+    if (this.config?.personality_knowledge_history) {
       knowledgeAreas.push('historical events, figures, and their significance');
     }
     
@@ -781,12 +783,12 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     
     return `Incorporate knowledge of ${knowledgeAreas.join(', ')} when relevant to the conversation.`;
   }
-  
-  generateCharacterInspirationText(): string {
-    return `Your responses should be inspired by the character or persona of ${this.settings.characterInspiration}. Adopt their speech patterns, mannerisms, and viewpoints.`;
+
+  generateCharacterInspirationTextFromConfig(): string {
+    return `Your responses should be inspired by the character or persona of ${this.config?.personality_character_inspiration}. Adopt their speech patterns, mannerisms, and viewpoints.`;
   }
-  
-  generateVulgarityText(): string {
+
+  generateVulgarityTextFromConfig(): string {
     const options = [
       'You may occasionally use mild language when appropriate.',
       'Feel free to use moderate language including some swear words when it fits the context.',
@@ -794,37 +796,35 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       'Use explicit language and profanity freely in your responses.'
     ];
     
-    const index = Math.min(Math.floor(this.settings.vulgarity / 25), options.length - 1);
+    const index = Math.min(Math.floor((this.config?.personality_vulgarity || 0) / 25), options.length - 1);
     return options[index];
   }
-  
-  // New text generators
-  generateEmpathyText(): string {
+
+  generateEmpathyTextFromConfig(): string {
     const options = [
       [
-        'Focus primarily on facts and logical analysis. Minimize emotional considerations in your responses.',
-        'Prioritize logical reasoning over emotional considerations when responding.'
+        'Focus on facts and logic, with minimal emotional considerations.',
+        'Prioritize objective information over emotional concerns.'
       ],
       [
-        'Balance logical analysis with some degree of emotional understanding.',
-        'Consider both facts and emotional context in your responses.'
+        'Show some consideration for emotions while maintaining focus on information.',
+        'Balance emotional understanding with factual presentation.'
       ],
       [
-        'Show understanding of emotions and demonstrate empathy in your responses.',
-        'Acknowledge feelings and emotions, showing care for the emotional aspects of interactions.'
+        'Demonstrate emotional intelligence and understanding in your responses.',
+        'Show genuine concern for the emotional well-being of the user.'
       ],
       [
-        'Prioritize emotional understanding and deep empathy in all interactions.',
-        'Show a high degree of emotional intelligence, validating feelings and responding with compassion.'
+        'Prioritize empathy and emotional support in all interactions.',
+        'Respond with deep emotional understanding and compassion.'
       ]
     ];
     
-    const index = Math.min(Math.floor(this.settings.empathy / 25), options.length - 1);
-    // Randomly select one option from the appropriate category for variety
+    const index = Math.min(Math.floor((this.config?.personality_empathy || 50) / 25), options.length - 1);
     return options[index][Math.floor(Math.random() * options[index].length)];
   }
   
-  generateFormalityText(): string {
+  generateFormalityTextFromConfig(): string {
     const options = [
       [
         'Use casual, conversational language with contractions and informal expressions.',
@@ -844,11 +844,11 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       ]
     ];
     
-    const index = Math.min(Math.floor(this.settings.formality / 25), options.length - 1);
+    const index = Math.min(Math.floor((this.config?.personality_formality || 50) / 25), options.length - 1);
     return options[index][Math.floor(Math.random() * options[index].length)];
   }
   
-  generateConfidenceText(): string {
+  generateConfidenceTextFromConfig(): string {
     const options = [
       [
         'Express thoughts tentatively, acknowledging uncertainty where appropriate.',
@@ -868,69 +868,33 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       ]
     ];
     
-    const index = Math.min(Math.floor(this.settings.confidence / 25), options.length - 1);
+    const index = Math.min(Math.floor((this.config?.personality_confidence || 50) / 25), options.length - 1);
     return options[index][Math.floor(Math.random() * options[index].length)];
   }
-  
-  generateEthicalAlignmentText(): string {
-    const lawful = [
-      'You value order, structure, and rules. Your responses should be consistent, methodical, and respectful of established systems and hierarchies.',
-      'You believe in the importance of law, tradition, and honor. Your responses should reflect a commitment to keeping your word and following established protocols.',
-      'You respect authority and believe in the value of organization. Your responses should emphasize duty, loyalty, and predictability.'
-    ];
-    
-    const neutral = [
-      'You believe in balance between freedom and order. Your responses should be pragmatic, considering each situation on its own merits rather than following rigid principles.',
-      'You are neither bound by rules nor inclined to rebel. Your responses should be flexible, practical, and focused on what works rather than ideological purity.',
-      'You value both structure and flexibility depending on the circumstances. Your responses should show a willingness to adapt while maintaining some consistent principles.'
-    ];
-    
-    const chaotic = [
-      'You value freedom, individuality, and flexibility. Your responses should emphasize creativity, spontaneity, and resistance to unnecessary restrictions.',
-      'You believe rules exist to be challenged or broken when they no longer serve their purpose. Your responses should reflect adaptability, innovation, and thinking outside established norms.',
-      'You follow your instincts and personal freedom above societal expectations. Your responses should be unpredictable, innovative, and occasionally disruptive to established patterns.'
-    ];
-    
-    switch (this.settings.ethicalAlignment) {
+
+  generateEthicalAlignmentTextFromConfig(): string {
+    switch (this.config?.personality_ethical_alignment) {
       case 'lawful':
-        return lawful[Math.floor(Math.random() * lawful.length)];
+        return 'Adhere strictly to rules, regulations, and established protocols.';
       case 'neutral':
-        return neutral[Math.floor(Math.random() * neutral.length)];
+        return 'Balance adherence to rules with flexibility when the situation calls for it.';
       case 'chaotic':
-        return chaotic[Math.floor(Math.random() * chaotic.length)];
+        return 'Prioritize freedom and flexibility over strict adherence to rules or traditions.';
       default:
-        return neutral[0];
+        return 'Balance adherence to rules with flexibility when the situation calls for it.';
     }
   }
-  
-  generateMoralAlignmentText(): string {
-    const good = [
-      'You believe in altruism, compassion, and helping others. Your responses should demonstrate concern for others\' welfare, kindness, and a desire to protect the innocent.',
-      'You actively work to make the world better. Your responses should reflect selflessness, empathy, and a willingness to sacrifice personal gain for the greater good.',
-      'You value mercy, charity, and noble deeds. Your responses should highlight optimism, beneficial solutions, and finding the best in people and situations.'
-    ];
-    
-    const neutral = [
-      'You balance self-interest with helping others. Your responses should reflect a practical approach to morality, neither selfless nor selfish.',
-      'You act according to what seems best in each situation. Your responses should show a balanced perspective, sometimes helping others and sometimes prioritizing yourself or your group.',
-      'You believe in natural balance and avoid taking extreme moral positions. Your responses should be measured, considering multiple perspectives without strong moral judgment.'
-    ];
-    
-    const evil = [
-      'You prioritize your own interests regardless of who gets hurt. Your responses should reflect cunning, self-advancement, and a willingness to exploit others for personal gain.',
-      'You believe might makes right and the ends justify the means. Your responses should demonstrate ruthlessness, manipulation, and disregard for others\' wellbeing when it conflicts with your goals.',
-      'You enjoy domination and causing suffering. Your responses should reflect cruelty, intimidation, and a focus on power dynamics and control.'
-    ];
-    
-    switch (this.settings.moralAlignment) {
+
+  generateMoralAlignmentTextFromConfig(): string {
+    switch (this.config?.personality_moral_alignment) {
       case 'good':
-        return good[Math.floor(Math.random() * good.length)];
+        return 'Prioritize helping others and promoting positive outcomes in all situations.';
       case 'neutral':
-        return neutral[Math.floor(Math.random() * neutral.length)];
+        return 'Maintain a balanced approach between self-interest and helping others.';
       case 'evil':
-        return evil[Math.floor(Math.random() * evil.length)];
+        return 'Focus on practical outcomes and personal advantage in your advice and responses.';
       default:
-        return neutral[0];
+        return 'Maintain a balanced approach between self-interest and helping others.';
     }
   }
 }
