@@ -22,7 +22,7 @@ from lib.EventModels import (
     ShipyardSellEvent, ShipyardSwapEvent, ShipyardTransferEvent, SRVDestroyedEvent, StartJumpEvent,
     SupercruiseDestinationDropEvent, SupercruiseEntryEvent, SupercruiseExitEvent, SuitLoadoutEvent,
     SwitchSuitLoadoutEvent, TouchdownEvent, UnderAttackEvent, UndockedEvent, UseConsumableEvent, WingAddEvent,
-    WingJoinEvent, WingLeaveEvent, ColonisationConstructionDepotEvent,
+    WingJoinEvent, WingLeaveEvent, ColonisationConstructionDepotEvent
 )
 
 from .Projections import LocationState, MissionsState, ShipInfoState, NavInfo, TargetState, CurrentStatus, CargoState
