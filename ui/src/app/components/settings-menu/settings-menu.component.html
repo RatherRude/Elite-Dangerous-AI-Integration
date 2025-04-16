@@ -120,6 +120,34 @@
                 <div class="settings-grid">
 
                     <h2>Personality</h2>
+                    
+                    <!-- Character Management Section -->
+                    <div class="character-management-section">
+                        <div class="character-selector">
+                            <mat-form-field appearance="fill">
+                                <mat-label>Select Character</mat-label>
+                                <mat-select [(value)]="selectedCharacterIndex" (selectionChange)="onCharacterSelect($event.value)">
+                                    <mat-option [value]="-1">Default Character</mat-option>
+                                    <mat-divider *ngIf="config.characters && config.characters.length > 0"></mat-divider>
+                                    <mat-option *ngFor="let character of config.characters; let i = index" [value]="i">
+                                        {{ character.name }}
+                                    </mat-option>
+                                </mat-select>
+                            </mat-form-field>
+                            
+                            <div class="character-buttons">
+                                <button mat-raised-button color="primary" (click)="saveCurrentAsCharacter()">
+                                    <mat-icon>save</mat-icon> Save Current
+                                </button>
+                                <button mat-raised-button color="warn" 
+                                        [disabled]="selectedCharacterIndex < 0" 
+                                        (click)="deleteSelectedCharacter()">
+                                    <mat-icon>delete</mat-icon> Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="personality-settings">
                         <div class="trait-container">
                             <!-- Character Name -->

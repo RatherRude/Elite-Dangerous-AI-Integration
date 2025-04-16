@@ -3,7 +3,7 @@ from pathlib import Path
 import platform
 from threading import Semaphore
 import traceback
-from typing import Any, Literal, TypedDict, Optional, Dict, Union, cast, Tuple
+from typing import Any, Literal, TypedDict, Optional, Dict, Union, cast, Tuple, List
 import os
 import sys
 from openai import OpenAI, APIError
@@ -309,11 +309,31 @@ game_events = {
 }
 
 
+class Character(TypedDict):
+    name: str
+    character: str
+    personality_preset: str
+    personality_verbosity: int
+    personality_vulgarity: int
+    personality_empathy: int
+    personality_formality: int
+    personality_confidence: int
+    personality_ethical_alignment: str
+    personality_moral_alignment: str
+    personality_tone: str
+    personality_character_inspiration: str
+    personality_language: str
+    personality_knowledge_pop_culture: bool
+    personality_knowledge_scifi: bool
+    personality_knowledge_history: bool
+
+
 class Config(TypedDict):
     api_key: str
     llm_api_key: str
     llm_endpoint: str
     commander_name: str
+    # Active character properties (kept for backward compatibility)
     character: str
     personality_preset: str
     personality_verbosity: int
@@ -330,6 +350,10 @@ class Config(TypedDict):
     personality_knowledge_pop_culture: bool
     personality_knowledge_scifi: bool
     personality_knowledge_history: bool
+    # Stored characters
+    characters: List[Character]
+    active_character_index: int
+    # Other config settings
     llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom', 'local-ai-server']
     llm_model_name: str
     llm_custom: dict[str, str]
@@ -433,10 +457,12 @@ def load_config() -> Config:
         'personality_tone': 'serious',
         'personality_character_inspiration': '',
         'personality_language': '',
-        'personality_name': '',
+        'personality_name': 'COVAS:NEXT',
         'personality_knowledge_pop_culture': False,
         'personality_knowledge_scifi': False,
         'personality_knowledge_history': False,
+        'characters': [],
+        'active_character_index': -1,  # -1 means using the default legacy character
         'api_key': "",
         'tools_var': True,
         'vision_var': False,
@@ -508,6 +534,34 @@ def migrate(data: dict) -> dict:
     # Migrate vision_var to vision_provider
     if 'vision_var' in data and not data.get('vision_var'):
         data['vision_provider'] = 'none'
+    
+    # Migrate old character format to new characters array
+    if 'characters' not in data:
+        data['characters'] = []
+        data['active_character_index'] = -1
+        
+        # If we have a character name, create a character entry
+        if data.get('personality_name'):
+            character = {
+                "name": data.get('personality_name', 'COVAS:NEXT'),
+                "character": data.get('character', ''),
+                "personality_preset": data.get('personality_preset', 'default'),
+                "personality_verbosity": data.get('personality_verbosity', 50),
+                "personality_vulgarity": data.get('personality_vulgarity', 0),
+                "personality_empathy": data.get('personality_empathy', 50),
+                "personality_formality": data.get('personality_formality', 50),
+                "personality_confidence": data.get('personality_confidence', 50),
+                "personality_ethical_alignment": data.get('personality_ethical_alignment', 'neutral'),
+                "personality_moral_alignment": data.get('personality_moral_alignment', 'neutral'),
+                "personality_tone": data.get('personality_tone', 'serious'),
+                "personality_character_inspiration": data.get('personality_character_inspiration', ''),
+                "personality_language": data.get('personality_language', ''),
+                "personality_knowledge_pop_culture": data.get('personality_knowledge_pop_culture', False),
+                "personality_knowledge_scifi": data.get('personality_knowledge_scifi', False),
+                "personality_knowledge_history": data.get('personality_knowledge_history', False)
+            }
+            data['characters'].append(character)
+            data['active_character_index'] = 0
         
     return data
 
@@ -744,7 +798,54 @@ def validate_config(config: Config) -> Config | None:
 
 
 def update_config(config: Config, data: dict) -> Config:
-    
+    # Handle character management operations
+    if data.get("character_operation"):
+        operation = data["character_operation"]
+        
+        if operation == "add":
+            # Add a new character
+            if data.get("character_data"):
+                config["characters"] = config.get("characters", [])
+                config["characters"].append(data["character_data"])
+                # Set as active character if requested
+                if data.get("set_active", False):
+                    config["active_character_index"] = len(config["characters"]) - 1
+        
+        elif operation == "update":
+            # Update an existing character
+            if data.get("character_index") is not None and data.get("character_data"):
+                index = int(data["character_index"])
+                if 0 <= index < len(config.get("characters", [])):
+                    config["characters"][index] = data["character_data"]
+        
+        elif operation == "delete":
+            # Delete a character
+            if data.get("character_index") is not None:
+                index = int(data["character_index"])
+                if 0 <= index < len(config.get("characters", [])):
+                    config["characters"].pop(index)
+                    # Adjust active index if needed
+                    if config["active_character_index"] == index:
+                        config["active_character_index"] = -1
+                    elif config["active_character_index"] > index:
+                        config["active_character_index"] -= 1
+        
+        elif operation == "set_active":
+            # Set the active character
+            if data.get("character_index") is not None:
+                index = int(data["character_index"])
+                if -1 <= index < len(config.get("characters", [])):
+                    config["active_character_index"] = index
+                    
+                    # Copy character properties to top-level config
+                    if index >= 0:
+                        character = config["characters"][index]
+                        for key, value in character.items():
+                            if key != "name":  # Don't overwrite personality_name with name
+                                config[key] = value
+                        config["personality_name"] = character["name"]
+
+    # Update provider-specific settings
     if data.get("llm_provider"):
       if data["llm_provider"] == "openai":
         data["llm_endpoint"] = "https://api.openai.com/v1"
@@ -862,7 +963,8 @@ def update_config(config: Config, data: dict) -> Config:
         data["tts_model_name"] = ""
         data["tts_voice"] = ""
         data["tts_api_key"] = ""
-
+    
+    # Regular config updates
     new_config = cast(Config, {**config, **data}) # pyright: ignore[reportInvalidCast]
     print(json.dumps({"type": "config", "config": new_config}) + '\n')
     save_config(new_config)

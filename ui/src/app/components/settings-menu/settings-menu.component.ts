@@ -8,6 +8,7 @@ import { MatSelectModule } from "@angular/material/select";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { FormsModule } from "@angular/forms";
 import {
+  Character,
   Config,
   ConfigService,
   SystemInfo,
@@ -21,7 +22,7 @@ import { CommonModule } from "@angular/common";
 import { GameEventCategories } from "./game-event-categories.js";
 import { MatDividerModule } from "@angular/material/divider";
 import { MatCheckboxModule } from "@angular/material/checkbox";
-import { MatDialog } from '@angular/material/dialog';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { EdgeTtsVoicesDialogComponent } from '../edge-tts-voices-dialog';
 
 interface PromptSettings {
@@ -64,6 +65,7 @@ interface PromptSettings {
     MatSnackBarModule,
     MatDividerModule,
     MatCheckboxModule,
+    MatDialogModule,
   ],
   templateUrl: "./settings-menu.component.html",
   styleUrl: "./settings-menu.component.css",
@@ -73,6 +75,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   system: SystemInfo | null = null;
   hideApiKey = true;
   apiKeyType: string | null = null;
+  selectedCharacterIndex: number = -1;
   private configSubscription?: Subscription;
   private systemSubscription?: Subscription;
   private validationSubscription?: Subscription;
@@ -217,6 +220,9 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
         this.config = config;
 
         if (config) {
+          // Set the selected character to match active_character_index
+          this.selectedCharacterIndex = config.active_character_index;
+
           // Initial setup
           if (this.initializing) {
             // If personality_preset isn't set, default to "default"
@@ -1300,5 +1306,60 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     
     // If all else fails, just return the voice ID
     return voice;
+  }
+
+  // Character Management Methods
+  onCharacterSelect(index: number): void {
+    if (this.config && (index !== this.config.active_character_index)) {
+      // Set the active character
+      this.configService.setActiveCharacter(index);
+    }
+  }
+
+  saveCurrentAsCharacter(): void {
+    if (!this.config) return;
+    
+    // Generate a new character object from current settings
+    const newCharacter: Character = {
+      name: this.config.personality_name || 'New Character',
+      character: this.config.character,
+      personality_preset: this.config.personality_preset,
+      personality_verbosity: this.config.personality_verbosity,
+      personality_vulgarity: this.config.personality_vulgarity,
+      personality_empathy: this.config.personality_empathy,
+      personality_formality: this.config.personality_formality,
+      personality_confidence: this.config.personality_confidence,
+      personality_ethical_alignment: this.config.personality_ethical_alignment,
+      personality_moral_alignment: this.config.personality_moral_alignment,
+      personality_tone: this.config.personality_tone,
+      personality_character_inspiration: this.config.personality_character_inspiration,
+      personality_language: this.config.personality_language,
+      personality_knowledge_pop_culture: this.config.personality_knowledge_pop_culture,
+      personality_knowledge_scifi: this.config.personality_knowledge_scifi,
+      personality_knowledge_history: this.config.personality_knowledge_history
+    };
+    
+    // If the currently selected character is an existing one, update it
+    if (this.selectedCharacterIndex >= 0 && this.selectedCharacterIndex < this.config.characters.length) {
+      this.configService.updateCharacter(this.selectedCharacterIndex, newCharacter);
+      this.snackBar.open(`Updated character "${newCharacter.name}"`, 'Dismiss', { duration: 3000 });
+    } else {
+      // Otherwise, add a new character
+      this.configService.addCharacter(newCharacter, true);
+      this.snackBar.open(`Saved new character "${newCharacter.name}"`, 'Dismiss', { duration: 3000 });
+    }
+  }
+
+  deleteSelectedCharacter(): void {
+    if (!this.config || this.selectedCharacterIndex < 0) return;
+    
+    const characterToDelete = this.config.characters[this.selectedCharacterIndex];
+    if (characterToDelete) {
+      // Confirm deletion
+      if (confirm(`Are you sure you want to delete the character "${characterToDelete.name}"?`)) {
+        this.configService.deleteCharacter(this.selectedCharacterIndex);
+        this.snackBar.open(`Deleted character "${characterToDelete.name}"`, 'Dismiss', { duration: 3000 });
+      }
+    }
   }
 }

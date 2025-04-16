@@ -1,0 +1,34 @@
+<h2 mat-dialog-title>Select Voice</h2>
+
+<div mat-dialog-content>
+  <mat-form-field appearance="outline" style="width: 100%; margin-bottom: 16px;">
+    <mat-label>Search Voices</mat-label>
+    <input matInput [(ngModel)]="searchQuery" placeholder="Search by name, locale, or voice ID">
+  </mat-form-field>
+
+  <div *ngIf="getFilteredLocales().length === 0" class="no-results">
+    <p>No voices found matching "{{ searchQuery }}"</p>
+  </div>
+
+  <mat-tab-group *ngIf="getFilteredLocales().length > 0">
+    <mat-tab *ngFor="let locale of getFilteredLocales()" [label]="locale">
+      <div class="voice-list">
+        <mat-selection-list [multiple]="false">
+          <mat-list-option *ngFor="let voice of filterVoices()[locale]" 
+                          [value]="voice.value"
+                          [selected]="voice.value === selectedVoice"
+                          (click)="onSelect(voice.value)">
+            <div class="voice-item">
+              <span class="voice-name">{{ voice.label }}</span>
+              <span class="voice-id">{{ voice.value }}</span>
+            </div>
+          </mat-list-option>
+        </mat-selection-list>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</div>
+
+<div mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Cancel</button>
+</div> 

@@ -22,6 +22,31 @@ mat-slide-toggle {
   margin: 10px 0;
 }
 
+/* Character Management Styles */
+.character-management-section {
+  margin-bottom: 20px;
+  padding: 15px;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.character-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.character-buttons {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.character-buttons button {
+  flex: 1;
+}
+
 .ptt-container {
   display: flex;
   align-items: center;
