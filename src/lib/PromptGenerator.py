@@ -2869,11 +2869,13 @@ class PromptGenerator:
         if current_station and current_station == market.get('StationName'):
             status_entries.append(("Local market information", {
                 item.get('Name_Localised'): {
+                    'Can i buy at this market?': 'yes',
                     'Category': item.get('Category_Localised'),
                     'BuyPrice': item.get('BuyPrice'),
                     'MeanPrice': item.get('MeanPrice'),
                     'Stock': item.get('Stock'),
                 } if item.get('Stock') > item.get('Demand') else {
+                    'Can i buy at this market?': 'no',
                     'Category': item.get('Category_Localised'),
                     'SellPrice': item.get('SellPrice'),
                     'MeanPrice': item.get('MeanPrice'),
