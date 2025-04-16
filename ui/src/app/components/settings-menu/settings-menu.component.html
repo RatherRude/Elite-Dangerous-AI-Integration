@@ -120,7 +120,60 @@
                 <div class="settings-grid">
 
                     <h2>Personality</h2>
-
+                    <div class="trait-container">
+                        <div class="trait-select">
+                            <mat-form-field>
+                                <mat-label>TTS Voice</mat-label>
+                                @if (config.tts_provider === 'openai') {
+                                    <mat-select [(ngModel)]="config.tts_voice"
+                                               (ngModelChange)="onConfigChange({tts_voice: $event})">
+                                        <mat-option value="alloy">Alloy - Neutral, versatile voice</mat-option>
+                                        <mat-option value="echo">Echo - Deeper, experienced voice</mat-option>
+                                        <mat-option value="fable">Fable - Warm, soft-spoken voice</mat-option>
+                                        <mat-option value="onyx">Onyx - Deep, authoritative voice</mat-option>
+                                        <mat-option value="nova">Nova - Bright, friendly voice</mat-option>
+                                        <mat-option value="shimmer">Shimmer - Clear, warm voice</mat-option>
+                                    </mat-select>
+                                } @else if (config.tts_provider === 'edge-tts') {
+                                    <mat-select [(ngModel)]="config.tts_voice"
+                                               (selectionChange)="onVoiceSelectionChange($event.value)">
+                                        @if (isCustomVoice(config.tts_voice)) {
+                                            <mat-option [value]="config.tts_voice" style="font-style: italic">
+                                                {{ getVoiceDisplayName(config.tts_voice) }}
+                                            </mat-option>
+                                            <mat-divider class="custom-voice-divider"></mat-divider>
+                                        }
+                                        <mat-optgroup label="English - United States">
+                                            <mat-option value="en-US-AriaNeural">Aria (Female) - Positive, Confident</mat-option>
+                                            <mat-option value="en-US-AnaNeural">Ana (Female) - Cute</mat-option>
+                                            <mat-option value="en-US-ChristopherNeural">Christopher (Male) - Reliable, Authority</mat-option>
+                                            <mat-option value="en-US-EricNeural">Eric (Male) - Rational</mat-option>
+                                            <mat-option value="en-US-GuyNeural">Guy (Male) - Passion</mat-option>
+                                            <mat-option value="en-US-JennyNeural">Jenny (Female) - Friendly, Considerate</mat-option>
+                                            <mat-option value="en-US-MichelleNeural">Michelle (Female) - Friendly, Pleasant</mat-option>
+                                            <mat-option value="en-US-RogerNeural">Roger (Male) - Lively</mat-option>
+                                            <mat-option value="en-US-SteffanNeural">Steffan (Male) - Rational</mat-option>
+                                        </mat-optgroup>
+                                        <mat-optgroup label="English - United Kingdom">
+                                            <mat-option value="en-GB-LibbyNeural">Libby (Female)</mat-option>
+                                            <mat-option value="en-GB-MaisieNeural">Maisie (Female)</mat-option>
+                                            <mat-option value="en-GB-RyanNeural">Ryan (Male)</mat-option>
+                                            <mat-option value="en-GB-SoniaNeural">Sonia (Female)</mat-option>
+                                            <mat-option value="en-GB-ThomasNeural">Thomas (Male)</mat-option>
+                                        </mat-optgroup>
+                                        <mat-optgroup label="English - Australia">
+                                            <mat-option value="en-AU-NatashaNeural">Natasha (Female)</mat-option>
+                                            <mat-option value="en-AU-WilliamNeural">William (Male)</mat-option>
+                                        </mat-optgroup>
+                                        <mat-option value="show-all-voices">Show All Voices...</mat-option>
+                                    </mat-select>
+                                } @else {
+                                    <input matInput [(ngModel)]="config.tts_voice"
+                                           (ngModelChange)="onConfigChange({tts_voice: $event})">
+                                }
+                            </mat-form-field>
+                        </div>
+                    </div>
                     <!-- Personality Preset (moved to the top) -->
                     <div class="trait-select">
                         <mat-form-field appearance="fill">
@@ -171,7 +224,7 @@
                                 <div class="trait-select">
                                     <mat-form-field appearance="outline">
                                         <mat-label>Verbosity</mat-label>
-                                        <mat-select [(ngModel)]="config.personality_verbosity" 
+                                        <mat-select [(ngModel)]="config.personality_verbosity"
                                             (ngModelChange)="onConfigChange({personality_verbosity: $event}); updatePrompt()">
                                             <mat-option [value]="0">Minimal</mat-option>
                                             <mat-option [value]="25">Brief</mat-option>
@@ -186,7 +239,7 @@
                                 <div class="trait-select">
                                     <mat-form-field appearance="outline">
                                         <mat-label>Tone</mat-label>
-                                        <mat-select [(ngModel)]="config.personality_tone" 
+                                        <mat-select [(ngModel)]="config.personality_tone"
                                             (ngModelChange)="onConfigChange({personality_tone: $event}); updatePrompt()">
                                             <mat-option value="serious">Serious</mat-option>
                                             <mat-option value="humorous">Humorous</mat-option>
@@ -199,7 +252,7 @@
                                 <div class="trait-select">
                                     <mat-form-field appearance="outline">
                                         <mat-label>Vulgarity</mat-label>
-                                        <mat-select [(ngModel)]="config.personality_vulgarity" 
+                                        <mat-select [(ngModel)]="config.personality_vulgarity"
                                             (ngModelChange)="onConfigChange({personality_vulgarity: $event}); updatePrompt()">
                                             <mat-option [value]="0">None</mat-option>
                                             <mat-option [value]="25">Mild</mat-option>
@@ -216,7 +269,7 @@
                                 <div class="trait-select">
                                     <mat-form-field appearance="outline">
                                         <mat-label>Empathy</mat-label>
-                                        <mat-select [(ngModel)]="config.personality_empathy" 
+                                        <mat-select [(ngModel)]="config.personality_empathy"
                                             (ngModelChange)="onConfigChange({personality_empathy: $event}); updatePrompt()">
                                             <mat-option [value]="0">Cold</mat-option>
                                             <mat-option [value]="25">Detached</mat-option>
@@ -231,7 +284,7 @@
                                 <div class="trait-select">
                                     <mat-form-field appearance="outline">
                                         <mat-label>Formality</mat-label>
-                                        <mat-select [(ngModel)]="config.personality_formality" 
+                                        <mat-select [(ngModel)]="config.personality_formality"
                                             (ngModelChange)="onConfigChange({personality_formality: $event}); updatePrompt()">
                                             <mat-option [value]="0">Casual</mat-option>
                                             <mat-option [value]="25">Relaxed</mat-option>
@@ -246,7 +299,7 @@
                                 <div class="trait-select">
                                     <mat-form-field appearance="outline">
                                         <mat-label>Confidence</mat-label>
-                                        <mat-select [(ngModel)]="config.personality_confidence" 
+                                        <mat-select [(ngModel)]="config.personality_confidence"
                                             (ngModelChange)="onConfigChange({personality_confidence: $event}); updatePrompt()">
                                             <mat-option [value]="0">Uncertain</mat-option>
                                             <mat-option [value]="25">Tentative</mat-option>
@@ -263,7 +316,7 @@
                                 <div class="trait-select">
                                     <mat-form-field appearance="outline">
                                         <mat-label>Ethical Alignment</mat-label>
-                                        <mat-select [(ngModel)]="config.personality_ethical_alignment" 
+                                        <mat-select [(ngModel)]="config.personality_ethical_alignment"
                                             (ngModelChange)="onConfigChange({personality_ethical_alignment: $event}); updatePrompt()">
                                             <mat-option value="lawful">Lawful (Order, Rules, Structure)</mat-option>
                                             <mat-option value="neutral">Neutral (Balance, Pragmatism)</mat-option>
@@ -276,7 +329,7 @@
                                 <div class="trait-select">
                                     <mat-form-field appearance="outline">
                                         <mat-label>Moral Alignment</mat-label>
-                                        <mat-select [(ngModel)]="config.personality_moral_alignment" 
+                                        <mat-select [(ngModel)]="config.personality_moral_alignment"
                                             (ngModelChange)="onConfigChange({personality_moral_alignment: $event}); updatePrompt()">
                                             <mat-option value="good">Good (Altruism, Compassion)</mat-option>
                                             <mat-option value="neutral">Neutral (Self-Interest, Balance)</mat-option>
@@ -661,8 +714,15 @@
                         </mat-form-field>
                         <mat-form-field>
                             <mat-label>TTS Voice</mat-label>
-                            <input matInput [(ngModel)]="config.tts_voice"
-                                   (ngModelChange)="onConfigChange({tts_voice: $event})">
+                            <mat-select [(ngModel)]="config.tts_voice"
+                                      (ngModelChange)="onConfigChange({tts_voice: $event})">
+                                <mat-option value="alloy">Alloy - Neutral, versatile voice</mat-option>
+                                <mat-option value="echo">Echo - Deeper, experienced voice</mat-option>
+                                <mat-option value="fable">Fable - Warm, soft-spoken voice</mat-option>
+                                <mat-option value="onyx">Onyx - Deep, authoritative voice</mat-option>
+                                <mat-option value="nova">Nova - Bright, friendly voice</mat-option>
+                                <mat-option value="shimmer">Shimmer - Clear, warm voice</mat-option>
+                            </mat-select>
                         </mat-form-field>
                         <mat-form-field>
                             <mat-label>TTS Speed</mat-label>
@@ -678,8 +738,38 @@
                     @if (config.tts_provider === "edge-tts") {
                         <mat-form-field>
                             <mat-label>TTS Voice</mat-label>
-                            <input matInput [(ngModel)]="config.tts_voice"
-                                   (ngModelChange)="onConfigChange({tts_voice: $event})">
+                            <mat-select [(ngModel)]="config.tts_voice"
+                                      (selectionChange)="onVoiceSelectionChange($event.value)">
+                                @if (isCustomVoice(config.tts_voice)) {
+                                    <mat-option [value]="config.tts_voice" style="font-style: italic">
+                                        {{ getVoiceDisplayName(config.tts_voice) }}
+                                    </mat-option>
+                                    <mat-divider class="custom-voice-divider"></mat-divider>
+                                }
+                                <mat-optgroup label="English - United States">
+                                    <mat-option value="en-US-AriaNeural">Aria (Female) - Positive, Confident</mat-option>
+                                    <mat-option value="en-US-AnaNeural">Ana (Female) - Cute</mat-option>
+                                    <mat-option value="en-US-ChristopherNeural">Christopher (Male) - Reliable, Authority</mat-option>
+                                    <mat-option value="en-US-EricNeural">Eric (Male) - Rational</mat-option>
+                                    <mat-option value="en-US-GuyNeural">Guy (Male) - Passion</mat-option>
+                                    <mat-option value="en-US-JennyNeural">Jenny (Female) - Friendly, Considerate</mat-option>
+                                    <mat-option value="en-US-MichelleNeural">Michelle (Female) - Friendly, Pleasant</mat-option>
+                                    <mat-option value="en-US-RogerNeural">Roger (Male) - Lively</mat-option>
+                                    <mat-option value="en-US-SteffanNeural">Steffan (Male) - Rational</mat-option>
+                                </mat-optgroup>
+                                <mat-optgroup label="English - United Kingdom">
+                                    <mat-option value="en-GB-LibbyNeural">Libby (Female)</mat-option>
+                                    <mat-option value="en-GB-MaisieNeural">Maisie (Female)</mat-option>
+                                    <mat-option value="en-GB-RyanNeural">Ryan (Male)</mat-option>
+                                    <mat-option value="en-GB-SoniaNeural">Sonia (Female)</mat-option>
+                                    <mat-option value="en-GB-ThomasNeural">Thomas (Male)</mat-option>
+                                </mat-optgroup>
+                                <mat-optgroup label="English - Australia">
+                                    <mat-option value="en-AU-NatashaNeural">Natasha (Female)</mat-option>
+                                    <mat-option value="en-AU-WilliamNeural">William (Male)</mat-option>
+                                </mat-optgroup>
+                                <mat-option value="show-all-voices">Show All Voices...</mat-option>
+                            </mat-select>
                         </mat-form-field>
                         <mat-form-field>
                             <mat-label>TTS Speed</mat-label>

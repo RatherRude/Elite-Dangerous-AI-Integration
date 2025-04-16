@@ -21,6 +21,8 @@ import { CommonModule } from "@angular/common";
 import { GameEventCategories } from "./game-event-categories.js";
 import { MatDividerModule } from "@angular/material/divider";
 import { MatCheckboxModule } from "@angular/material/checkbox";
+import { MatDialog } from '@angular/material/dialog';
+import { EdgeTtsVoicesDialogComponent } from '../edge-tts-voices-dialog';
 
 interface PromptSettings {
   // Existing settings
@@ -101,9 +103,97 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
 
   private initializing = true;
 
+  edgeTtsVoices = [
+    // English voices
+    { value: 'en-US-AriaNeural', label: 'Aria (Female) - Positive, Confident', locale: 'en-US' },
+    { value: 'en-US-AnaNeural', label: 'Ana (Female) - Cute', locale: 'en-US' },
+    { value: 'en-US-ChristopherNeural', label: 'Christopher (Male) - Reliable, Authority', locale: 'en-US' },
+    { value: 'en-US-EricNeural', label: 'Eric (Male) - Rational', locale: 'en-US' },
+    { value: 'en-US-GuyNeural', label: 'Guy (Male) - Passion', locale: 'en-US' },
+    { value: 'en-US-JennyNeural', label: 'Jenny (Female) - Friendly, Considerate', locale: 'en-US' },
+    { value: 'en-US-MichelleNeural', label: 'Michelle (Female) - Friendly, Pleasant', locale: 'en-US' },
+    { value: 'en-US-RogerNeural', label: 'Roger (Male) - Lively', locale: 'en-US' },
+    { value: 'en-US-SteffanNeural', label: 'Steffan (Male) - Rational', locale: 'en-US' },
+    { value: 'en-GB-LibbyNeural', label: 'Libby (Female)', locale: 'en-GB' },
+    { value: 'en-GB-MaisieNeural', label: 'Maisie (Female)', locale: 'en-GB' },
+    { value: 'en-GB-RyanNeural', label: 'Ryan (Male)', locale: 'en-GB' },
+    { value: 'en-GB-SoniaNeural', label: 'Sonia (Female)', locale: 'en-GB' },
+    { value: 'en-GB-ThomasNeural', label: 'Thomas (Male)', locale: 'en-GB' },
+    { value: 'en-AU-NatashaNeural', label: 'Natasha (Female)', locale: 'en-AU' },
+    { value: 'en-AU-WilliamNeural', label: 'William (Male)', locale: 'en-AU' },
+    { value: 'en-CA-ClaraNeural', label: 'Clara (Female)', locale: 'en-CA' },
+    { value: 'en-CA-LiamNeural', label: 'Liam (Male)', locale: 'en-CA' },
+    { value: 'en-IE-ConnorNeural', label: 'Connor (Male)', locale: 'en-IE' },
+    { value: 'en-IE-EmilyNeural', label: 'Emily (Female)', locale: 'en-IE' },
+    { value: 'en-IN-NeerjaNeural', label: 'Neerja (Female)', locale: 'en-IN' },
+    { value: 'en-IN-PrabhatNeural', label: 'Prabhat (Male)', locale: 'en-IN' },
+    { value: 'en-NZ-MitchellNeural', label: 'Mitchell (Male)', locale: 'en-NZ' },
+    { value: 'en-NZ-MollyNeural', label: 'Molly (Female)', locale: 'en-NZ' },
+    { value: 'en-ZA-LeahNeural', label: 'Leah (Female)', locale: 'en-ZA' },
+    { value: 'en-ZA-LukeNeural', label: 'Luke (Male)', locale: 'en-ZA' },
+    
+    // French voices
+    { value: 'fr-FR-DeniseNeural', label: 'Denise (Female)', locale: 'fr-FR' },
+    { value: 'fr-FR-EloiseNeural', label: 'Eloise (Female)', locale: 'fr-FR' },
+    { value: 'fr-FR-HenriNeural', label: 'Henri (Male)', locale: 'fr-FR' },
+    { value: 'fr-CA-AntoineNeural', label: 'Antoine (Male)', locale: 'fr-CA' },
+    { value: 'fr-CA-JeanNeural', label: 'Jean (Male)', locale: 'fr-CA' },
+    { value: 'fr-CA-SylvieNeural', label: 'Sylvie (Female)', locale: 'fr-CA' },
+    
+    // German voices
+    { value: 'de-DE-AmalaNeural', label: 'Amala (Female)', locale: 'de-DE' },
+    { value: 'de-DE-ConradNeural', label: 'Conrad (Male)', locale: 'de-DE' },
+    { value: 'de-DE-KatjaNeural', label: 'Katja (Female)', locale: 'de-DE' },
+    { value: 'de-DE-KillianNeural', label: 'Killian (Male)', locale: 'de-DE' },
+    
+    // Spanish voices
+    { value: 'es-ES-AlvaroNeural', label: 'Alvaro (Male)', locale: 'es-ES' },
+    { value: 'es-ES-ElviraNeural', label: 'Elvira (Female)', locale: 'es-ES' },
+    { value: 'es-MX-DaliaNeural', label: 'Dalia (Female)', locale: 'es-MX' },
+    { value: 'es-MX-JorgeNeural', label: 'Jorge (Male)', locale: 'es-MX' },
+    
+    // Russian voices
+    { value: 'ru-RU-DmitryNeural', label: 'Dmitry (Male)', locale: 'ru-RU' },
+    { value: 'ru-RU-SvetlanaNeural', label: 'Svetlana (Female)', locale: 'ru-RU' },
+    
+    // Italian voices
+    { value: 'it-IT-DiegoNeural', label: 'Diego (Male)', locale: 'it-IT' },
+    { value: 'it-IT-ElsaNeural', label: 'Elsa (Female)', locale: 'it-IT' },
+    { value: 'it-IT-IsabellaNeural', label: 'Isabella (Female)', locale: 'it-IT' },
+    
+    // Japanese voices
+    { value: 'ja-JP-KeitaNeural', label: 'Keita (Male)', locale: 'ja-JP' },
+    { value: 'ja-JP-NanamiNeural', label: 'Nanami (Female)', locale: 'ja-JP' },
+    
+    // Portuguese voices
+    { value: 'pt-BR-AntonioNeural', label: 'Antonio (Male)', locale: 'pt-BR' },
+    { value: 'pt-BR-FranciscaNeural', label: 'Francisca (Female)', locale: 'pt-BR' },
+    { value: 'pt-PT-DuarteNeural', label: 'Duarte (Male)', locale: 'pt-PT' },
+    { value: 'pt-PT-RaquelNeural', label: 'Raquel (Female)', locale: 'pt-PT' },
+    
+    // Chinese voices
+    { value: 'zh-CN-XiaoxiaoNeural', label: 'Xiaoxiao (Female) - Warm', locale: 'zh-CN' },
+    { value: 'zh-CN-YunyangNeural', label: 'Yunyang (Male) - Professional', locale: 'zh-CN' },
+    { value: 'zh-TW-HsiaoChenNeural', label: 'HsiaoChen (Female)', locale: 'zh-TW' },
+    { value: 'zh-TW-YunJheNeural', label: 'YunJhe (Male)', locale: 'zh-TW' },
+    
+    // Arabic voices
+    { value: 'ar-SA-HamedNeural', label: 'Hamed (Male)', locale: 'ar-SA' },
+    { value: 'ar-SA-ZariyahNeural', label: 'Zariyah (Female)', locale: 'ar-SA' },
+    
+    // Hindi voices
+    { value: 'hi-IN-MadhurNeural', label: 'Madhur (Male)', locale: 'hi-IN' },
+    { value: 'hi-IN-SwaraNeural', label: 'Swara (Female)', locale: 'hi-IN' },
+    
+    // Korean voices
+    { value: 'ko-KR-InJoonNeural', label: 'InJoon (Male)', locale: 'ko-KR' },
+    { value: 'ko-KR-SunHiNeural', label: 'SunHi (Female)', locale: 'ko-KR' }
+  ];
+
   constructor(
     private configService: ConfigService,
     private snackBar: MatSnackBar,
+    private dialog: MatDialog
   ) {}
 
   // Comparator function to ensure consistent ordering
@@ -896,5 +986,77 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       default:
         return 'Maintain a balanced approach between self-interest and helping others.';
     }
+  }
+
+  onVoiceSelectionChange(event: any) {
+    if (event === 'show-all-voices') {
+        this.openEdgeTtsVoicesDialog();
+    } else {
+        this.onConfigChange({tts_voice: event});
+    }
+  }
+
+  openEdgeTtsVoicesDialog() {
+    const dialogRef = this.dialog.open(EdgeTtsVoicesDialogComponent, {
+        width: '800px',
+        data: {
+            voices: this.edgeTtsVoices,
+            selectedVoice: this.config?.tts_voice || ''
+        }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+        if (result) {
+            this.onConfigChange({tts_voice: result});
+        }
+    });
+  }
+
+  /**
+   * Check if the voice is not in the predefined list of common voices
+   */
+  isCustomVoice(voice: string | undefined): boolean {
+    if (!voice) return false;
+    
+    // Get the list of voices in the dropdowns
+    const predefinedVoices = [
+      'en-US-AriaNeural', 'en-US-AnaNeural', 'en-US-ChristopherNeural', 
+      'en-US-EricNeural', 'en-US-GuyNeural', 'en-US-JennyNeural', 
+      'en-US-MichelleNeural', 'en-US-RogerNeural', 'en-US-SteffanNeural',
+      'en-GB-LibbyNeural', 'en-GB-MaisieNeural', 'en-GB-RyanNeural', 
+      'en-GB-SoniaNeural', 'en-GB-ThomasNeural',
+      'en-AU-NatashaNeural', 'en-AU-WilliamNeural'
+    ];
+    
+    return !predefinedVoices.includes(voice);
+  }
+
+  /**
+   * Get a readable display name for a voice ID
+   */
+  getVoiceDisplayName(voice: string): string {
+    // First check if it's in our full list of voices
+    const foundVoice = this.edgeTtsVoices.find(v => v.value === voice);
+    if (foundVoice) {
+      return `${foundVoice.label} (${foundVoice.locale})`;
+    }
+    
+    // If not found in our list, try to format it nicely
+    if (voice.includes('-')) {
+      // Format like "en-US-JaneNeural" to "Jane (en-US)"
+      const parts = voice.split('-');
+      if (parts.length >= 3) {
+        const locale = `${parts[0]}-${parts[1]}`;
+        // Extract the name (remove "Neural" suffix if present)
+        let name = parts.slice(2).join('-');
+        if (name.endsWith('Neural')) {
+          name = name.substring(0, name.length - 6);
+        }
+        return `${name} (${locale})`;
+      }
+    }
+    
+    // If all else fails, just return the voice ID
+    return voice;
   }
 }
