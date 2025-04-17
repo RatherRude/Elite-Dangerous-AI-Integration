@@ -67,6 +67,7 @@ export interface Character {
     personality_knowledge_pop_culture: boolean;
     personality_knowledge_scifi: boolean;
     personality_knowledge_history: boolean;
+    tts_voice?: string;
 }
 
 export interface Config {

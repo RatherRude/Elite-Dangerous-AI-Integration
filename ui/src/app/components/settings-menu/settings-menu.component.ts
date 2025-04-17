@@ -1517,7 +1517,8 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       char1.personality_language === char2.personality_language &&
       char1.personality_knowledge_pop_culture === char2.personality_knowledge_pop_culture &&
       char1.personality_knowledge_scifi === char2.personality_knowledge_scifi &&
-      char1.personality_knowledge_history === char2.personality_knowledge_history
+      char1.personality_knowledge_history === char2.personality_knowledge_history &&
+      char1.tts_voice === char2.tts_voice
     );
   }
 
@@ -1544,6 +1545,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       personality_knowledge_pop_culture: this.config.personality_knowledge_pop_culture || false,
       personality_knowledge_scifi: this.config.personality_knowledge_scifi || false,
       personality_knowledge_history: this.config.personality_knowledge_history || false,
+      tts_voice: this.config.tts_voice || "",
     };
   }
 
@@ -1600,6 +1602,11 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
         personality_knowledge_history: character.personality_knowledge_history
       };
       
+      // Also load the TTS voice if it exists in the character config
+      if ('tts_voice' in character) {
+        updateObj.tts_voice = character.tts_voice;
+      }
+      
       // Update the config
       this.onConfigChange(updateObj);
     }
@@ -1650,7 +1657,8 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       personality_language: 'English',
       personality_knowledge_pop_culture: false,
       personality_knowledge_scifi: false,
-      personality_knowledge_history: false
+      personality_knowledge_history: false,
+      tts_voice: this.config.tts_voice || '' // Include current TTS voice
     };
     
     // Add the new character to the config

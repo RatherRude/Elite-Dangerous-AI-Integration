@@ -309,7 +309,7 @@ game_events = {
 }
 
 
-class Character(TypedDict):
+class Character(TypedDict, total=False):
     name: str
     character: str
     personality_preset: str
@@ -326,6 +326,7 @@ class Character(TypedDict):
     personality_knowledge_pop_culture: bool
     personality_knowledge_scifi: bool
     personality_knowledge_history: bool
+    tts_voice: str
 
 
 class Config(TypedDict):
@@ -474,7 +475,8 @@ def migrate(data: dict) -> dict:
                 "personality_language": data.get('personality_language', ''),
                 "personality_knowledge_pop_culture": data.get('personality_knowledge_pop_culture', False),
                 "personality_knowledge_scifi": data.get('personality_knowledge_scifi', False),
-                "personality_knowledge_history": data.get('personality_knowledge_history', False)
+                "personality_knowledge_history": data.get('personality_knowledge_history', False),
+                "tts_voice": data.get('tts_voice', None)
             }
             print(f"Created character from existing settings: {character['name']}")
             data['characters'].append(character)
@@ -1031,3 +1033,60 @@ def update_event_config(config: Config, section: str, event: str, value: bool) -
     print(json.dumps({"type": "config", "config": config}) + '\n', flush=True)
     save_config(config)
     return config
+
+def set_active_character(self, index):
+    index = int(index)
+    
+    print(f"Setting active character to #{index}")
+    # -1 means default
+    if index == -1:
+        # Delete the active character index
+        self.data["active_character_index"] = -1
+        # Reset only the character fields, leave the rest unchanged
+        self.reset_character_fields()
+        self.write_config()
+        return
+    
+    # Get character at index
+    characters = self.get_data("characters", [])
+    if index >= len(characters):
+        print(f"Error: Character index {index} out of range")
+        return
+        
+    # Set active character index
+    self.data["active_character_index"] = index
+        
+    # Load character data into main settings
+    try:
+        character_data = characters[index]
+        # Apply all character fields
+        self.update_data("character", character_data.get("character", ""))
+        self.update_data("personality_preset", character_data.get("personality_preset", "default"))
+        self.update_data("personality_verbosity", character_data.get("personality_verbosity", 50))
+        self.update_data("personality_vulgarity", character_data.get("personality_vulgarity", 0))
+        self.update_data("personality_empathy", character_data.get("personality_empathy", 50))
+        self.update_data("personality_formality", character_data.get("personality_formality", 50))
+        self.update_data("personality_confidence", character_data.get("personality_confidence", 50))
+        self.update_data("personality_ethical_alignment", character_data.get("personality_ethical_alignment", "neutral"))
+        self.update_data("personality_moral_alignment", character_data.get("personality_moral_alignment", "neutral"))
+        self.update_data("personality_tone", character_data.get("personality_tone", "serious"))
+        self.update_data("personality_character_inspiration", character_data.get("personality_character_inspiration", ""))
+        self.update_data("personality_name", character_data.get("name", ""))
+        self.update_data("personality_language", character_data.get("personality_language", "English"))
+        self.update_data("personality_knowledge_pop_culture", character_data.get("personality_knowledge_pop_culture", False))
+        self.update_data("personality_knowledge_scifi", character_data.get("personality_knowledge_scifi", False))
+        self.update_data("personality_knowledge_history", character_data.get("personality_knowledge_history", False))
+        
+        # Also apply TTS voice if present
+        if "tts_voice" in character_data:
+            self.update_data("tts_voice", character_data.get("tts_voice", ""))
+            
+        # Write the config to disk
+        self.write_config()
+        
+        # Notify listeners
+        #self.emit_config_change({"active_character_index": index})
+            
+    except Exception as e:
+        print(f"Error setting active character: {str(e)}")
+        return
