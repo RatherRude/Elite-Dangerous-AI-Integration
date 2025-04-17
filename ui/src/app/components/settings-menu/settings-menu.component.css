@@ -25,9 +25,10 @@ mat-slide-toggle {
 /* Character Management Styles */
 .character-management-section {
   margin-bottom: 20px;
-  padding: 15px;
-  border-radius: 4px;
+  padding: 20px;
+  border-radius: 8px;
   background-color: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .character-selector {
@@ -39,12 +40,48 @@ mat-slide-toggle {
 .character-buttons {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   gap: 10px;
   justify-content: space-between;
 }
 
 .character-buttons button {
   flex: 1;
+  min-width: 100px;
+}
+
+/* Edit mode styling */
+.editing-active {
+  border: 1px solid rgba(33, 150, 243, 0.5);
+  background-color: rgba(33, 150, 243, 0.05);
+}
+
+/* Loading state */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.loading-spinner {
+  color: white;
+}
+
+/* Character prompt textarea */
+.character-prompt {
+  margin-bottom: 20px;
+}
+
+.character-prompt textarea {
+  font-family: 'Roboto Mono', monospace;
+  line-height: 1.5;
 }
 
 .ptt-container {

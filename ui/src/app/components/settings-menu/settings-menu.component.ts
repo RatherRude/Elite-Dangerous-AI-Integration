@@ -23,7 +23,10 @@ import { GameEventCategories } from "./game-event-categories.js";
 import { MatDividerModule } from "@angular/material/divider";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { EdgeTtsVoicesDialogComponent } from '../edge-tts-voices-dialog';
+import { ConfirmationDialogComponent, ConfirmationDialogData } from '../../components/confirmation-dialog/confirmation-dialog.component';
+import { ConfirmationDialogService } from '../../services/confirmation-dialog.service';
 
 interface PromptSettings {
   // Existing settings
@@ -66,9 +69,11 @@ interface PromptSettings {
     MatDividerModule,
     MatCheckboxModule,
     MatDialogModule,
+    MatProgressSpinnerModule,
+    EdgeTtsVoicesDialogComponent
   ],
   templateUrl: "./settings-menu.component.html",
-  styleUrl: "./settings-menu.component.css",
+  styleUrls: ["./settings-menu.component.scss"]
 })
 export class SettingsMenuComponent implements OnInit, OnDestroy {
   config: Config | null = null;
@@ -76,6 +81,9 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   hideApiKey = true;
   apiKeyType: string | null = null;
   selectedCharacterIndex: number = -1;
+  editMode: boolean = false;
+  bufferCharacterName: string = ''; // Buffer for character name to prevent focus loss
+  bufferCharacterLanguage: string = ''; // Buffer for character language to prevent focus loss
   private configSubscription?: Subscription;
   private systemSubscription?: Subscription;
   private validationSubscription?: Subscription;
@@ -196,7 +204,8 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   constructor(
     private configService: ConfigService,
     private snackBar: MatSnackBar,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private confirmationDialog: ConfirmationDialogService
   ) {}
 
   // Comparator function to ensure consistent ordering
@@ -217,25 +226,43 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.configSubscription = this.configService.config$.subscribe(
       (config) => {
-        this.config = config;
-
         if (config) {
+          // Store the new config
+          this.config = config;
+          
           // Set the selected character to match active_character_index
           this.selectedCharacterIndex = config.active_character_index;
 
-          // Initial setup
+          // Reset edit mode when receiving a new config
+          this.editMode = false;
+
+          // Update buffer character name and language from config
+          this.bufferCharacterName = config.personality_name || '';
+          this.bufferCharacterLanguage = config.personality_language || 'English';
+
+          // If initializing, load settings from the config
           if (this.initializing) {
             // If personality_preset isn't set, default to "default"
             if (!config.personality_preset) {
               this.onConfigChange({personality_preset: 'default'});
             } else {
-              // Apply the saved preset to initialize settings without saving to config
+              // Apply the saved preset to initialize settings
               this.loadSettingsFromConfig(config);
             }
             this.initializing = false;
           }
 
           this.filterEvents(this.eventSearchQuery);
+          
+          // Log key properties to debug config loading issues
+          console.log('Config loaded:', {
+            commander_name: config.commander_name,
+            personality_name: config.personality_name,
+            active_character_index: config.active_character_index,
+            character_count: config.characters?.length || 0
+          });
+        } else {
+          console.error('Received null config');
         }
       },
     );
@@ -244,6 +271,11 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       .subscribe(
         (system) => {
           this.system = system;
+          if (system) {
+            console.log('System info loaded');
+          } else {
+            console.error('Received null system info');
+          }
         },
       );
 
@@ -258,9 +290,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
 
           this.snackBar.open(validation.message, "Dismiss", {
             duration: snackBarDuration,
-            horizontalPosition: "left",
-            verticalPosition: "bottom",
-            panelClass: snackBarClass,
+            panelClass: [snackBarClass],
           });
         }
       });
@@ -279,10 +309,29 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   }
 
   async onConfigChange(partialConfig: Partial<Config>) {
+    // Check if we're currently in edit mode - don't disable it automatically
+    const wasInEditMode = this.editMode;
+    
+    // Check if this is an explicit command to exit edit mode
+    const explicitlyTurningOffEditMode = (partialConfig as any).editMode === false;
+    
     if (this.config) {
-      await this.configService.changeConfig(partialConfig);
+      try {
+        await this.configService.changeConfig(partialConfig);
+        
+        // Only restore edit mode if it was active AND we're not explicitly turning it off
+        if (wasInEditMode && !explicitlyTurningOffEditMode) {
+          this.editMode = true;
+        } else if (explicitlyTurningOffEditMode) {
+          this.editMode = false;
+        }
+      } catch (error) {
+        console.error('Error updating config:', error);
+        this.snackBar.open('Error updating configuration', 'OK', { duration: 5000 });
+      }
     }
   }
+
   async onEventConfigChange(section: string, event: string, enabled: boolean) {
     if (this.config) {
       console.log("onEventConfigChange", section, event, enabled);
@@ -1309,57 +1358,395 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   }
 
   // Character Management Methods
-  onCharacterSelect(index: number): void {
-    if (this.config && (index !== this.config.active_character_index)) {
-      // Set the active character
+  onCharacterSelect(index: number) {
+    if (!this.config) return;
+    
+    // Check if we're in edit mode with unsaved changes
+    if (this.editMode) {
+      this.confirmationDialog.openConfirmationDialog({
+        title: 'Unsaved Changes',
+        message: 'You have unsaved changes. Do you want to discard them?',
+        confirmButtonText: 'Discard Changes',
+        cancelButtonText: 'Keep Editing'
+      }).subscribe(result => {
+        if (result) {
+          // User chose to discard changes, proceed with character selection
+          this.performCharacterSelection(index);
+        }
+        // If false, stay in edit mode with current character
+      });
+    } else {
+      // Not in edit mode, proceed directly
+      this.performCharacterSelection(index);
+    }
+  }
+  
+  // Helper method to perform the actual character selection
+  private performCharacterSelection(index: number) {
+    if (!this.config) return;
+    
+    // Exit edit mode explicitly
+    this.onConfigChange({ editMode: false } as any);
+    
+    // Set the selected character index
+    this.selectedCharacterIndex = index;
+    
+    // For saved characters
+    if (index >= 0) {
+      // Set the active character in the backend
       this.configService.setActiveCharacter(index);
+      
+      // Load character data
+      this.loadCharacter(index);
+    } 
+    // For the default character
+    else if (index === -1) {
+      // Reset to default settings
+      this.configService.setActiveCharacter(-1);
     }
   }
 
-  saveCurrentAsCharacter(): void {
+  toggleEditMode() {
     if (!this.config) return;
     
-    // Generate a new character object from current settings
+    // If not in edit mode, enter edit mode
+    if (!this.editMode) {
+      // Simply enter edit mode
+      this.editMode = true;
+    } else {
+      // If already in edit mode, exit with confirmation for unsaved changes
+      this.confirmationDialog.openConfirmationDialog({
+        title: 'Unsaved Changes',
+        message: 'You have unsaved changes. Do you want to discard them?',
+        confirmButtonText: 'Discard Changes',
+        cancelButtonText: 'Keep Editing'
+      }).subscribe(result => {
+        if (result) {
+          // User chose to discard changes - cancel edit mode
+          this.cancelEditMode();
+        }
+        // If false, stay in edit mode
+      });
+    }
+  }
+  
+  saveCurrentAsCharacter() {
+    if (!this.config) return;
+    
+    // Ensure prompt is updated if not in custom mode
+    if (this.config.personality_preset !== 'custom') {
+      this.updatePrompt();
+    }
+    
+    // Apply the buffered name to the config before creating the character
+    if (this.bufferCharacterName !== this.config.personality_name) {
+      this.config.personality_name = this.bufferCharacterName;
+    }
+    
+    // Apply the buffered language to the config
+    if (this.bufferCharacterLanguage !== this.config.personality_language) {
+      this.config.personality_language = this.bufferCharacterLanguage;
+    }
+    
+    // Create a character from current settings
+    const newCharacter = this.createCharacterFromCurrentSettings();
+    
+    // Ensure the character has a name
+    if (!newCharacter.name || newCharacter.name.trim() === '') {
+      this.snackBar.open('Please provide a character name', 'Close', { duration: 3000 });
+      return;
+    }
+    
+    if (this.selectedCharacterIndex >= 0 && this.config.characters) {
+      // We're updating an existing character
+      this.config.characters[this.selectedCharacterIndex] = newCharacter;
+      this.snackBar.open(`Character "${newCharacter.name}" updated successfully`, 'Close', { duration: 3000 });
+      
+      // First save the characters
+      this.saveCharacters();
+      
+      // Then set edit mode to false, using a direct property change instead of onConfigChange
+      this.editMode = false;
+    } else if (this.selectedCharacterIndex === -1) {
+      // We're saving the default character as a new character
+      if (!this.config.characters) {
+        this.config.characters = [];
+      }
+      
+      // Check if there's already a character with this name
+      const existingIndex = this.config.characters.findIndex(c => c.name === newCharacter.name);
+      if (existingIndex >= 0) {
+        // Ask if they want to overwrite
+        this.confirmationDialog.openConfirmationDialog({
+          title: 'Character Name Exists',
+          message: `A character with the name "${newCharacter.name}" already exists. Would you like to overwrite it?`,
+          confirmButtonText: 'Overwrite',
+          cancelButtonText: 'Cancel'
+        }).subscribe(result => {
+          if (result && this.config && this.config.characters) {
+            // Overwrite the existing character
+            this.config.characters[existingIndex] = newCharacter;
+            this.selectedCharacterIndex = existingIndex;
+            
+            // First save the characters
+            this.saveCharacters();
+            this.snackBar.open(`Character "${newCharacter.name}" updated successfully`, 'Close', { duration: 3000 });
+            
+            // Then set edit mode to false directly
+            this.editMode = false;
+          }
+        });
+      } else {
+        // Add as a new character
+        this.config.characters.push(newCharacter);
+        this.selectedCharacterIndex = this.config.characters.length - 1;
+        
+        // First save the characters
+        this.saveCharacters();
+        this.snackBar.open(`Character "${newCharacter.name}" saved successfully`, 'Close', { duration: 3000 });
+        
+        // Then set edit mode to false directly
+        this.editMode = false;
+      }
+    } else {
+      // Something unexpected happened
+      this.snackBar.open('Error updating character', 'Close', { duration: 3000 });
+      return;
+    }
+  }
+  
+  // Helper method to check if two characters are equal
+  private areCharactersEqual(char1: any, char2: any): boolean {
+    if (!char1 || !char2) return false;
+    
+    return (
+      char1.name === char2.name &&
+      char1.character === char2.character &&
+      char1.personality_preset === char2.personality_preset &&
+      char1.personality_verbosity === char2.personality_verbosity &&
+      char1.personality_vulgarity === char2.personality_vulgarity &&
+      char1.personality_empathy === char2.personality_empathy &&
+      char1.personality_formality === char2.personality_formality &&
+      char1.personality_confidence === char2.personality_confidence &&
+      char1.personality_ethical_alignment === char2.personality_ethical_alignment &&
+      char1.personality_moral_alignment === char2.personality_moral_alignment &&
+      char1.personality_tone === char2.personality_tone &&
+      char1.personality_character_inspiration === char2.personality_character_inspiration &&
+      char1.personality_language === char2.personality_language &&
+      char1.personality_knowledge_pop_culture === char2.personality_knowledge_pop_culture &&
+      char1.personality_knowledge_scifi === char2.personality_knowledge_scifi &&
+      char1.personality_knowledge_history === char2.personality_knowledge_history
+    );
+  }
+
+  // Helper method to create a character object from current settings
+  private createCharacterFromCurrentSettings(): Character {
+    if (!this.config) {
+      throw new Error("Cannot create character before config is initialized");
+    }
+    
+    return {
+      name: this.bufferCharacterName || "New Character",
+      character: this.config.character || "",
+      personality_preset: this.config.personality_preset || "default",
+      personality_verbosity: this.config.personality_verbosity || 50,
+      personality_vulgarity: this.config.personality_vulgarity || 0,
+      personality_empathy: this.config.personality_empathy || 50,
+      personality_formality: this.config.personality_formality || 50,
+      personality_confidence: this.config.personality_confidence || 50,
+      personality_ethical_alignment: this.config.personality_ethical_alignment || "neutral",
+      personality_moral_alignment: this.config.personality_moral_alignment || "neutral",
+      personality_tone: this.config.personality_tone || "serious",
+      personality_character_inspiration: this.config.personality_character_inspiration || "",
+      personality_language: this.config.personality_language || "English",
+      personality_knowledge_pop_culture: this.config.personality_knowledge_pop_culture || false,
+      personality_knowledge_scifi: this.config.personality_knowledge_scifi || false,
+      personality_knowledge_history: this.config.personality_knowledge_history || false,
+    };
+  }
+
+  // Helper method to save characters
+  private saveCharacters() {
+    if (!this.config || !this.config.characters) return;
+    
+    // Use the appropriate ConfigService methods based on the operation
+    if (this.selectedCharacterIndex >= 0) {
+      // Update an existing character
+      this.configService.updateCharacter(
+        this.selectedCharacterIndex, 
+        this.config.characters[this.selectedCharacterIndex]
+      );
+    } else {
+      // If no character is selected but we want to save all characters,
+      // add/update them one by one
+      const characters = [...this.config.characters];
+      this.configService.changeConfig({ characters });
+    }
+  }
+
+  // Helper method to load a character
+  private loadCharacter(index: number) {
+    if (!this.config) return;
+    
+    // Default character (index -1)
+    if (index === -1) {
+      // Reset to default character settings, but don't modify the current config
+      this.bufferCharacterName = '';
+      this.bufferCharacterLanguage = 'English';
+      return;
+    }
+    
+    // Custom character
+    if (this.config.characters && index >= 0 && index < this.config.characters.length) {
+      const character = this.config.characters[index];
+      
+      // Update buffers with character data
+      this.bufferCharacterName = character.name;
+      this.bufferCharacterLanguage = character.personality_language || 'English';
+      
+      // Apply all character properties to the current config
+      const updateObj: Partial<Config> = {
+        character: character.character,
+        personality_preset: character.personality_preset,
+        personality_verbosity: character.personality_verbosity,
+        personality_vulgarity: character.personality_vulgarity,
+        personality_empathy: character.personality_empathy,
+        personality_formality: character.personality_formality,
+        personality_confidence: character.personality_confidence,
+        personality_ethical_alignment: character.personality_ethical_alignment,
+        personality_moral_alignment: character.personality_moral_alignment,
+        personality_tone: character.personality_tone,
+        personality_character_inspiration: character.personality_character_inspiration,
+        personality_name: character.name,
+        personality_language: character.personality_language,
+        personality_knowledge_pop_culture: character.personality_knowledge_pop_culture,
+        personality_knowledge_scifi: character.personality_knowledge_scifi,
+        personality_knowledge_history: character.personality_knowledge_history
+      };
+      
+      // Store current edit state
+      const wasInEditMode = this.editMode;
+      
+      // Update the config
+      this.onConfigChange(updateObj);
+      
+      // Restore edit state if needed
+      this.editMode = wasInEditMode;
+    }
+  }
+
+  // Modify cancelEditMode method
+  cancelEditMode(): void {
+    if (!this.config) return;
+    
+    // If we were editing an existing character, reload it to discard changes
+    if (this.selectedCharacterIndex >= 0) {
+      this.loadCharacter(this.selectedCharacterIndex);
+    } else {
+      // If we were creating a new character, just reset to default
+      this.selectedCharacterIndex = -1;
+    }
+    
+    // Exit edit mode explicitly through onConfigChange
+    this.onConfigChange({ editMode: false } as any);
+  }
+
+  // Update addNewCharacter method to immediately add a character with default values
+  addNewCharacter(): void {
+    if (!this.config) return;
+    
+    // Create a new empty character with default values
     const newCharacter: Character = {
-      name: this.config.personality_name || 'New Character',
-      character: this.config.character,
-      personality_preset: this.config.personality_preset,
-      personality_verbosity: this.config.personality_verbosity,
-      personality_vulgarity: this.config.personality_vulgarity,
-      personality_empathy: this.config.personality_empathy,
-      personality_formality: this.config.personality_formality,
-      personality_confidence: this.config.personality_confidence,
-      personality_ethical_alignment: this.config.personality_ethical_alignment,
-      personality_moral_alignment: this.config.personality_moral_alignment,
-      personality_tone: this.config.personality_tone,
-      personality_character_inspiration: this.config.personality_character_inspiration,
-      personality_language: this.config.personality_language,
-      personality_knowledge_pop_culture: this.config.personality_knowledge_pop_culture,
-      personality_knowledge_scifi: this.config.personality_knowledge_scifi,
-      personality_knowledge_history: this.config.personality_knowledge_history
+      name: 'New Character',
+      character: '',
+      personality_preset: 'default',
+      personality_verbosity: 50,
+      personality_vulgarity: 0,
+      personality_empathy: 50,
+      personality_formality: 50,
+      personality_confidence: 50,
+      personality_ethical_alignment: 'neutral',
+      personality_moral_alignment: 'neutral',
+      personality_tone: 'serious',
+      personality_character_inspiration: '',
+      personality_language: 'English',
+      personality_knowledge_pop_culture: false,
+      personality_knowledge_scifi: false,
+      personality_knowledge_history: false
     };
     
-    // If the currently selected character is an existing one, update it
-    if (this.selectedCharacterIndex >= 0 && this.selectedCharacterIndex < this.config.characters.length) {
-      this.configService.updateCharacter(this.selectedCharacterIndex, newCharacter);
-      this.snackBar.open(`Updated character "${newCharacter.name}"`, 'Dismiss', { duration: 3000 });
-    } else {
-      // Otherwise, add a new character
-      this.configService.addCharacter(newCharacter, true);
-      this.snackBar.open(`Saved new character "${newCharacter.name}"`, 'Dismiss', { duration: 3000 });
+    // Add the new character to the config
+    if (!this.config.characters) {
+      this.config.characters = [];
     }
+    
+    const newIndex = this.config.characters.length;
+    this.config.characters.push(newCharacter);
+    
+    // Save the config with the new character
+    this.configService.changeConfig({ characters: this.config.characters }).then(() => {
+      // Select the new character
+      this.selectedCharacterIndex = newIndex;
+      
+      // Enter edit mode immediately
+      this.editMode = true;
+      
+      // Set this as the active character
+      this.configService.setActiveCharacter(newIndex);
+    }).catch((error: Error) => {
+      console.error('Error adding new character:', error);
+      this.snackBar.open('Error adding new character', 'OK', { duration: 5000 });
+    });
   }
 
   deleteSelectedCharacter(): void {
     if (!this.config || this.selectedCharacterIndex < 0) return;
     
-    const characterToDelete = this.config.characters[this.selectedCharacterIndex];
-    if (characterToDelete) {
-      // Confirm deletion
-      if (confirm(`Are you sure you want to delete the character "${characterToDelete.name}"?`)) {
-        this.configService.deleteCharacter(this.selectedCharacterIndex);
-        this.snackBar.open(`Deleted character "${characterToDelete.name}"`, 'Dismiss', { duration: 3000 });
+    // Make sure we have a characters array and the selected index is valid
+    if (!this.config.characters || !this.config.characters[this.selectedCharacterIndex]) {
+      this.snackBar.open('Error: Character not found', 'OK', { duration: 5000 });
+      return;
+    }
+    
+    this.confirmationDialog.openConfirmationDialog({
+      title: 'Delete Character',
+      message: `Are you sure you want to delete "${this.config.characters[this.selectedCharacterIndex].name}"? This action cannot be undone.`,
+      confirmButtonText: 'Delete',
+      cancelButtonText: 'Cancel'
+    }).subscribe(confirmed => {
+      if (confirmed && this.config && this.config.characters) {
+        this.config.characters.splice(this.selectedCharacterIndex, 1);
+        this.selectedCharacterIndex = -1;
+        this.saveCharacters();
       }
+    });
+  }
+
+  // Add a new method to handle character name input changes without losing focus
+  onCharacterNameInput(name: string): void {
+    // Update the buffer without triggering a config change
+    this.bufferCharacterName = name;
+  }
+
+  // Add a method to apply the character name when focus is lost (blur event)
+  onCharacterNameBlur(): void {
+    if (this.config && this.bufferCharacterName !== this.config.personality_name) {
+      // Only update if the name has actually changed
+      this.onConfigChange({ personality_name: this.bufferCharacterName });
+    }
+  }
+
+  // Add a new method to handle character language input changes without losing focus
+  onCharacterLanguageInput(language: string): void {
+    // Update the buffer without triggering a config change
+    this.bufferCharacterLanguage = language;
+  }
+
+  // Add a method to apply the character language when focus is lost (blur event)
+  onCharacterLanguageBlur(): void {
+    if (this.config && this.bufferCharacterLanguage !== this.config.personality_language) {
+      // Only update if the language has actually changed
+      this.onConfigChange({ personality_language: this.bufferCharacterLanguage });
     }
   }
 }
