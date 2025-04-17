@@ -673,7 +673,7 @@ class PromptGenerator:
         if event_name == 'NavRoute':
             nav_route_event = cast(NavRouteEvent, content)
             if nav_route_event.get('Route'):
-                route_count = len(nav_route_event.get('Route', []))
+                route_count = len(nav_route_event.get('Route', [])) - 1  # jump count is 1 less than systems in route
                 if route_count > 0:
                     start = nav_route_event.get('Route', [])[0].get('StarSystem', 'Unknown')
                     end = nav_route_event.get('Route', [])[-1].get('StarSystem', 'Unknown') 
