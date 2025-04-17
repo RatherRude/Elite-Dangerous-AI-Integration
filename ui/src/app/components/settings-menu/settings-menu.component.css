@@ -22,6 +22,68 @@ mat-slide-toggle {
   margin: 10px 0;
 }
 
+/* Character Management Styles */
+.character-management-section {
+  margin-bottom: 20px;
+  padding: 20px;
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.character-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.character-buttons {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.character-buttons button {
+  flex: 1;
+  min-width: 100px;
+}
+
+/* Edit mode styling */
+.editing-active {
+  border: 1px solid rgba(33, 150, 243, 0.5);
+  background-color: rgba(33, 150, 243, 0.05);
+}
+
+/* Loading state */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+}
+
+.loading-spinner {
+  color: white;
+}
+
+/* Character prompt textarea */
+.character-prompt {
+  margin-bottom: 20px;
+}
+
+.character-prompt textarea {
+  font-family: 'Roboto Mono', monospace;
+  line-height: 1.5;
+}
+
 .ptt-container {
   display: flex;
   align-items: center;
@@ -77,7 +139,7 @@ ul {
 ::ng-deep .mat-mdc-tab .mdc-tab__text-label {
   color: rgba(255, 255, 255, 0.7);
 }
-#personality-settings {
+.personality-settings, .character-settings {
    /* Trait containers and selectors styling */
   .trait-container {
     display: flex;
@@ -87,62 +149,9 @@ ul {
     margin-bottom: 16px;
   }
 
-  .trait-select {
+  .trait-select, .trait-input {
     flex: 1;
     min-width: 200px;
-  }
-
-  /* Reduce form field spacing */
-  .trait-select mat-form-field {
-    margin-bottom: 0 !important;
-    width: 100%;
-  }
-
-  /* Hide empty hint wrappers to reduce vertical space */
-  ::ng-deep .mat-mdc-form-field-subscript-wrapper {
-    height: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-
-  ::ng-deep .mat-mdc-form-field-hint-wrapper {
-    display: none !important;
-  }
-
-  /* Reduce bottom padding on form fields */
-  ::ng-deep .mat-mdc-form-field-bottom-align {
-    height: 0 !important;
-  }
-
-  ::ng-deep .mat-mdc-text-field-wrapper {
-    padding-bottom: 0 !important;
-  }
-
-  /* Make outline form fields more compact */
-  ::ng-deep .mat-mdc-form-field-infix {
-    min-height: unset !important;
-    padding-top: 12px !important;
-    padding-bottom: 8px !important;
-  }
-
-  ::ng-deep .mdc-notched-outline__notch {
-    border-right: none !important;
-  }
-
-  ::ng-deep .mat-mdc-form-field-flex {
-    margin-top: 0 !important;
-  }
-
-  /* Reduce spacing for outline appearance */
-  ::ng-deep .mat-mdc-form-field-wrapper {
-    padding-bottom: 0 !important;
-    margin-bottom: 10px !important;
-  }
-
-  /* Make the selects more compact */
-  ::ng-deep .mat-mdc-select-trigger {
-    padding-top: 0 !important;
-    padding-bottom: 0 !important;
   }
 
 
@@ -167,3 +176,8 @@ ul {
   }
 }
 
+.custom-voice-divider {
+  margin: 8px 0;
+}
+
+.editing-active {}

@@ -3,7 +3,7 @@ from pathlib import Path
 import platform
 from threading import Semaphore
 import traceback
-from typing import Any, Literal, TypedDict, Optional, Dict, Union, cast, Tuple
+from typing import Any, Literal, TypedDict, Optional, Dict, Union, cast, Tuple, List
 import os
 import sys
 from openai import OpenAI, APIError
@@ -309,11 +309,8 @@ game_events = {
 }
 
 
-class Config(TypedDict):
-    api_key: str
-    llm_api_key: str
-    llm_endpoint: str
-    commander_name: str
+class Character(TypedDict, total=False):
+    name: str
     character: str
     personality_preset: str
     personality_verbosity: int
@@ -325,9 +322,39 @@ class Config(TypedDict):
     personality_moral_alignment: str
     personality_tone: str
     personality_character_inspiration: str
+    personality_language: str
     personality_knowledge_pop_culture: bool
     personality_knowledge_scifi: bool
     personality_knowledge_history: bool
+    tts_voice: str
+
+
+class Config(TypedDict):
+    api_key: str
+    llm_api_key: str
+    llm_endpoint: str
+    commander_name: str
+    # Active character properties (kept for backward compatibility)
+    character: str
+    personality_preset: str
+    personality_verbosity: int
+    personality_vulgarity: int
+    personality_empathy: int
+    personality_formality: int
+    personality_confidence: int
+    personality_ethical_alignment: str
+    personality_moral_alignment: str
+    personality_tone: str
+    personality_character_inspiration: str
+    personality_language: str
+    personality_name: str
+    personality_knowledge_pop_culture: bool
+    personality_knowledge_scifi: bool
+    personality_knowledge_history: bool
+    # Stored characters
+    characters: List[Character]
+    active_character_index: int
+    # Other config settings
     llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom', 'local-ai-server']
     llm_model_name: str
     llm_custom: dict[str, str]
@@ -411,6 +438,96 @@ def get_asset_path(filename: str) -> str:
     return os.path.join(assets_dir, filename)
 
 
+def migrate(data: dict) -> dict:
+    events = data.get('game_events', {})
+    if 'Exploration' in events:
+        enabled_events = {}
+        for section in events.keys():
+            for name,value in events[section].items():
+                enabled_events[name] = value
+        data['game_events'] = enabled_events
+        
+    # Migrate vision_var to vision_provider
+    if 'vision_var' in data and not data.get('vision_var'):
+        data['vision_provider'] = 'none'
+    
+    # Migrate old character format to new characters array
+    if 'characters' not in data:
+        print("Migrating old character format to new characters array")
+        data['characters'] = []
+        data['active_character_index'] = -1
+        
+        # If we have a character name, create a character entry
+        if data.get('personality_name'):
+            character = {
+                "name": data.get('personality_name', 'COVAS:NEXT'),
+                "character": data.get('character', ''),
+                "personality_preset": data.get('personality_preset', 'default'),
+                "personality_verbosity": data.get('personality_verbosity', 50),
+                "personality_vulgarity": data.get('personality_vulgarity', 0),
+                "personality_empathy": data.get('personality_empathy', 50),
+                "personality_formality": data.get('personality_formality', 50),
+                "personality_confidence": data.get('personality_confidence', 50),
+                "personality_ethical_alignment": data.get('personality_ethical_alignment', 'neutral'),
+                "personality_moral_alignment": data.get('personality_moral_alignment', 'neutral'),
+                "personality_tone": data.get('personality_tone', 'serious'),
+                "personality_character_inspiration": data.get('personality_character_inspiration', ''),
+                "personality_language": data.get('personality_language', ''),
+                "personality_knowledge_pop_culture": data.get('personality_knowledge_pop_culture', False),
+                "personality_knowledge_scifi": data.get('personality_knowledge_scifi', False),
+                "personality_knowledge_history": data.get('personality_knowledge_history', False),
+                "tts_voice": data.get('tts_voice', None)
+            }
+            print(f"Created character from existing settings: {character['name']}")
+            data['characters'].append(character)
+            data['active_character_index'] = 0
+            
+    # Ensure default values are properly set
+    if 'commander_name' not in data or data['commander_name'] is None:
+        data['commander_name'] = ""
+    
+    if 'personality_name' not in data or data['personality_name'] is None:
+        data['personality_name'] = 'COVAS:NEXT'
+        
+    return data
+
+
+def merge_config_data(defaults: dict, user: dict):
+    # Create new merge dict
+    merge = {}
+    
+    # First, copy all defaults
+    for key in defaults:
+        merge[key] = defaults.get(key)
+    
+    # Then, override with user values if they exist and are of the correct type
+    for key in user:
+        if key in defaults:
+            # Skip if user value is None
+            if user.get(key) is None:
+                continue
+                
+            # If types don't match, keep the default
+            if not isinstance(user.get(key), type(defaults.get(key))):
+                print(f"Warning: Config type mismatch for '{key}', using default")
+                continue
+                
+            # Handle dict type specially
+            if isinstance(defaults.get(key), dict) and isinstance(user.get(key), dict):
+                merge[key] = merge_config_data(defaults.get(key), user.get(key))
+            # Skip list type (not supported in merge)
+            elif isinstance(defaults.get(key), list):
+                # Just copy the user list directly
+                merge[key] = user.get(key)
+            else:
+                merge[key] = user.get(key)
+        else:
+            # Copy unknown keys from user config
+            merge[key] = user.get(key)
+            
+    return merge
+
+
 def load_config() -> Config:
     defaults: Config = {
         'commander_name': "",
@@ -430,9 +547,13 @@ def load_config() -> Config:
         'personality_moral_alignment': 'neutral',
         'personality_tone': 'serious',
         'personality_character_inspiration': '',
+        'personality_language': '',
+        'personality_name': 'COVAS:NEXT',
         'personality_knowledge_pop_culture': False,
         'personality_knowledge_scifi': False,
         'personality_knowledge_history': False,
+        'characters': [],
+        'active_character_index': -1,  # -1 means using the default legacy character
         'api_key': "",
         'tools_var': True,
         'vision_var': False,
@@ -483,45 +604,29 @@ def load_config() -> Config:
         "ed_appdata_path": ""
     }
     try:
+        print("Loading configuration file")
+        config_exists = os.path.exists('config.json')
+        
+        if not config_exists:
+            print("Config file not found, creating default configuration")
+            save_config(defaults)
+            return defaults
+            
         with open('config.json', 'r', encoding='utf-8') as file:
             data = json.load(file)
             if data:
                 data = migrate(data)
-            return merge_config_data(defaults, data)
-    except Exception:
-        print('Error loading config.json. Restoring default.')
+                merged_config = merge_config_data(defaults, data)
+                print(f"Configuration loaded successfully. Commander: {merged_config.get('commander_name')}, Characters: {len(merged_config.get('characters', []))}")
+                return cast(Config, merged_config)  # pyright: ignore[reportInvalidCast]
+            else:
+                print("Empty config file, using defaults")
+                return defaults
+    except Exception as e:
+        print(f'Error loading config.json: {str(e)}')
+        print('Restoring default configuration')
+        traceback.print_exc()
         return defaults
-
-def migrate(data: dict) -> dict:
-    events = data.get('game_events', {})
-    if 'Exploration' in events:
-        enabled_events = {}
-        for section in events.keys():
-            for name,value in events[section].items():
-                enabled_events[name] = value
-        data['game_events'] = enabled_events
-        
-    # Migrate vision_var to vision_provider
-    if 'vision_var' in data and not data.get('vision_var'):
-        data['vision_provider'] = 'none'
-        
-    return data
-
-def merge_config_data(defaults: dict, user: dict):
-    merge = {}
-    for key in defaults:
-        if not isinstance(user.get(key), type(defaults.get(key))):
-            # print("defaulting", key, "because", str(type(defaults.get(key))), "does not equal", str(type(user.get(key))))
-            merge[key] = defaults.get(key)
-        elif isinstance(defaults.get(key), dict):
-            # print("recursively merging", key)
-            merge[key] = merge_config_data(defaults.get(key), user.get(key))
-        elif isinstance(defaults.get(key), list):
-            raise Exception("Lists not supported during config merge")
-        else:
-            # print("keeping key", key)
-            merge[key] = user.get(key)
-    return merge
 
 
 def save_config(config: Config):
@@ -740,7 +845,64 @@ def validate_config(config: Config) -> Config | None:
 
 
 def update_config(config: Config, data: dict) -> Config:
-    
+    # Handle character management operations
+    if data.get("character_operation"):
+        print(f"Processing character operation: {data['character_operation']}")
+        operation = data["character_operation"]
+        
+        if operation == "add":
+            # Add a new character
+            if data.get("character_data"):
+                config["characters"] = config.get("characters", [])
+                config["characters"].append(data["character_data"])
+                print(f"Added new character: {data['character_data'].get('name')}")
+                # Set as active character if requested
+                if data.get("set_active", False):
+                    config["active_character_index"] = len(config["characters"]) - 1
+                    print(f"Set active character index to {config['active_character_index']}")
+        
+        elif operation == "update":
+            # Update an existing character
+            if data.get("character_index") is not None and data.get("character_data"):
+                index = int(data["character_index"])
+                if 0 <= index < len(config.get("characters", [])):
+                    config["characters"][index] = data["character_data"]
+                    print(f"Updated character at index {index}: {data['character_data'].get('name')}")
+        
+        elif operation == "delete":
+            # Delete a character
+            if data.get("character_index") is not None:
+                index = int(data["character_index"])
+                if 0 <= index < len(config.get("characters", [])):
+                    deleted_name = config["characters"][index].get("name", "unknown")
+                    config["characters"].pop(index)
+                    print(f"Deleted character at index {index}: {deleted_name}")
+                    # Adjust active index if needed
+                    if config["active_character_index"] == index:
+                        config["active_character_index"] = -1
+                        print("Reset active character index to -1")
+                    elif config["active_character_index"] > index:
+                        config["active_character_index"] -= 1
+                        print(f"Adjusted active character index to {config['active_character_index']}")
+        
+        elif operation == "set_active":
+            # Set the active character
+            if data.get("character_index") is not None:
+                index = int(data["character_index"])
+                if -1 <= index < len(config.get("characters", [])):
+                    config["active_character_index"] = index
+                    print(f"Set active character index to {index}")
+                    
+                    # Copy character properties to top-level config
+                    if index >= 0:
+                        character = config["characters"][index]
+                        for key, value in character.items():
+                            if key != "name":  # Don't overwrite personality_name with name
+                                config[key] = value
+                        config["personality_name"] = character["name"]
+                        print(f"Copied character properties to config for: {character.get('name')}")
+
+    # Update provider-specific settings
     if data.get("llm_provider"):
       if data["llm_provider"] == "openai":
         data["llm_endpoint"] = "https://api.openai.com/v1"
@@ -858,7 +1020,8 @@ def update_config(config: Config, data: dict) -> Config:
         data["tts_model_name"] = ""
         data["tts_voice"] = ""
         data["tts_api_key"] = ""
-
+    
+    # Regular config updates
     new_config = cast(Config, {**config, **data}) # pyright: ignore[reportInvalidCast]
     print(json.dumps({"type": "config", "config": new_config}) + '\n')
     save_config(new_config)
@@ -870,3 +1033,60 @@ def update_event_config(config: Config, section: str, event: str, value: bool) -
     print(json.dumps({"type": "config", "config": config}) + '\n', flush=True)
     save_config(config)
     return config
+
+def set_active_character(self, index):
+    index = int(index)
+    
+    print(f"Setting active character to #{index}")
+    # -1 means default
+    if index == -1:
+        # Delete the active character index
+        self.data["active_character_index"] = -1
+        # Reset only the character fields, leave the rest unchanged
+        self.reset_character_fields()
+        self.write_config()
+        return
+    
+    # Get character at index
+    characters = self.get_data("characters", [])
+    if index >= len(characters):
+        print(f"Error: Character index {index} out of range")
+        return
+        
+    # Set active character index
+    self.data["active_character_index"] = index
+        
+    # Load character data into main settings
+    try:
+        character_data = characters[index]
+        # Apply all character fields
+        self.update_data("character", character_data.get("character", ""))
+        self.update_data("personality_preset", character_data.get("personality_preset", "default"))
+        self.update_data("personality_verbosity", character_data.get("personality_verbosity", 50))
+        self.update_data("personality_vulgarity", character_data.get("personality_vulgarity", 0))
+        self.update_data("personality_empathy", character_data.get("personality_empathy", 50))
+        self.update_data("personality_formality", character_data.get("personality_formality", 50))
+        self.update_data("personality_confidence", character_data.get("personality_confidence", 50))
+        self.update_data("personality_ethical_alignment", character_data.get("personality_ethical_alignment", "neutral"))
+        self.update_data("personality_moral_alignment", character_data.get("personality_moral_alignment", "neutral"))
+        self.update_data("personality_tone", character_data.get("personality_tone", "serious"))
+        self.update_data("personality_character_inspiration", character_data.get("personality_character_inspiration", ""))
+        self.update_data("personality_name", character_data.get("name", ""))
+        self.update_data("personality_language", character_data.get("personality_language", "English"))
+        self.update_data("personality_knowledge_pop_culture", character_data.get("personality_knowledge_pop_culture", False))
+        self.update_data("personality_knowledge_scifi", character_data.get("personality_knowledge_scifi", False))
+        self.update_data("personality_knowledge_history", character_data.get("personality_knowledge_history", False))
+        
+        # Also apply TTS voice if present
+        if "tts_voice" in character_data:
+            self.update_data("tts_voice", character_data.get("tts_voice", ""))
+            
+        # Write the config to disk
+        self.write_config()
+        
+        # Notify listeners
+        #self.emit_config_change({"active_character_index": index})
+            
+    except Exception as e:
+        print(f"Error setting active character: {str(e)}")
+        return

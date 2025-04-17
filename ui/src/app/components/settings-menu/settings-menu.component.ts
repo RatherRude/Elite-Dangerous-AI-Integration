@@ -8,6 +8,7 @@ import { MatSelectModule } from "@angular/material/select";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { FormsModule } from "@angular/forms";
 import {
+  Character,
   Config,
   ConfigService,
   SystemInfo,
@@ -21,6 +22,11 @@ import { CommonModule } from "@angular/common";
 import { GameEventCategories } from "./game-event-categories.js";
 import { MatDividerModule } from "@angular/material/divider";
 import { MatCheckboxModule } from "@angular/material/checkbox";
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { EdgeTtsVoicesDialogComponent } from '../edge-tts-voices-dialog';
+import { ConfirmationDialogComponent, ConfirmationDialogData } from '../../components/confirmation-dialog/confirmation-dialog.component';
+import { ConfirmationDialogService } from '../../services/confirmation-dialog.service';
 
 interface PromptSettings {
   // Existing settings
@@ -62,15 +68,20 @@ interface PromptSettings {
     MatSnackBarModule,
     MatDividerModule,
     MatCheckboxModule,
+    MatDialogModule,
+    MatProgressSpinnerModule,
+    EdgeTtsVoicesDialogComponent
   ],
   templateUrl: "./settings-menu.component.html",
-  styleUrl: "./settings-menu.component.css",
+  styleUrls: ["./settings-menu.component.scss"]
 })
 export class SettingsMenuComponent implements OnInit, OnDestroy {
   config: Config | null = null;
   system: SystemInfo | null = null;
   hideApiKey = true;
   apiKeyType: string | null = null;
+  selectedCharacterIndex: number = -1;
+  editMode: boolean = false;
   private configSubscription?: Subscription;
   private systemSubscription?: Subscription;
   private validationSubscription?: Subscription;
@@ -101,9 +112,98 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
 
   private initializing = true;
 
+  edgeTtsVoices = [
+    // English voices
+    { value: 'en-US-AriaNeural', label: 'Aria (Female) - Positive, Confident', locale: 'en-US' },
+    { value: 'en-US-AnaNeural', label: 'Ana (Female) - Cute', locale: 'en-US' },
+    { value: 'en-US-ChristopherNeural', label: 'Christopher (Male) - Reliable, Authority', locale: 'en-US' },
+    { value: 'en-US-EricNeural', label: 'Eric (Male) - Rational', locale: 'en-US' },
+    { value: 'en-US-GuyNeural', label: 'Guy (Male) - Passion', locale: 'en-US' },
+    { value: 'en-US-JennyNeural', label: 'Jenny (Female) - Friendly, Considerate', locale: 'en-US' },
+    { value: 'en-US-MichelleNeural', label: 'Michelle (Female) - Friendly, Pleasant', locale: 'en-US' },
+    { value: 'en-US-RogerNeural', label: 'Roger (Male) - Lively', locale: 'en-US' },
+    { value: 'en-US-SteffanNeural', label: 'Steffan (Male) - Rational', locale: 'en-US' },
+    { value: 'en-GB-LibbyNeural', label: 'Libby (Female)', locale: 'en-GB' },
+    { value: 'en-GB-MaisieNeural', label: 'Maisie (Female)', locale: 'en-GB' },
+    { value: 'en-GB-RyanNeural', label: 'Ryan (Male)', locale: 'en-GB' },
+    { value: 'en-GB-SoniaNeural', label: 'Sonia (Female)', locale: 'en-GB' },
+    { value: 'en-GB-ThomasNeural', label: 'Thomas (Male)', locale: 'en-GB' },
+    { value: 'en-AU-NatashaNeural', label: 'Natasha (Female)', locale: 'en-AU' },
+    { value: 'en-AU-WilliamNeural', label: 'William (Male)', locale: 'en-AU' },
+    { value: 'en-CA-ClaraNeural', label: 'Clara (Female)', locale: 'en-CA' },
+    { value: 'en-CA-LiamNeural', label: 'Liam (Male)', locale: 'en-CA' },
+    { value: 'en-IE-ConnorNeural', label: 'Connor (Male)', locale: 'en-IE' },
+    { value: 'en-IE-EmilyNeural', label: 'Emily (Female)', locale: 'en-IE' },
+    { value: 'en-IN-NeerjaNeural', label: 'Neerja (Female)', locale: 'en-IN' },
+    { value: 'en-IN-PrabhatNeural', label: 'Prabhat (Male)', locale: 'en-IN' },
+    { value: 'en-NZ-MitchellNeural', label: 'Mitchell (Male)', locale: 'en-NZ' },
+    { value: 'en-NZ-MollyNeural', label: 'Molly (Female)', locale: 'en-NZ' },
+    { value: 'en-ZA-LeahNeural', label: 'Leah (Female)', locale: 'en-ZA' },
+    { value: 'en-ZA-LukeNeural', label: 'Luke (Male)', locale: 'en-ZA' },
+    
+    // French voices
+    { value: 'fr-FR-DeniseNeural', label: 'Denise (Female)', locale: 'fr-FR' },
+    { value: 'fr-FR-EloiseNeural', label: 'Eloise (Female)', locale: 'fr-FR' },
+    { value: 'fr-FR-HenriNeural', label: 'Henri (Male)', locale: 'fr-FR' },
+    { value: 'fr-CA-AntoineNeural', label: 'Antoine (Male)', locale: 'fr-CA' },
+    { value: 'fr-CA-JeanNeural', label: 'Jean (Male)', locale: 'fr-CA' },
+    { value: 'fr-CA-SylvieNeural', label: 'Sylvie (Female)', locale: 'fr-CA' },
+    
+    // German voices
+    { value: 'de-DE-AmalaNeural', label: 'Amala (Female)', locale: 'de-DE' },
+    { value: 'de-DE-ConradNeural', label: 'Conrad (Male)', locale: 'de-DE' },
+    { value: 'de-DE-KatjaNeural', label: 'Katja (Female)', locale: 'de-DE' },
+    { value: 'de-DE-KillianNeural', label: 'Killian (Male)', locale: 'de-DE' },
+    
+    // Spanish voices
+    { value: 'es-ES-AlvaroNeural', label: 'Alvaro (Male)', locale: 'es-ES' },
+    { value: 'es-ES-ElviraNeural', label: 'Elvira (Female)', locale: 'es-ES' },
+    { value: 'es-MX-DaliaNeural', label: 'Dalia (Female)', locale: 'es-MX' },
+    { value: 'es-MX-JorgeNeural', label: 'Jorge (Male)', locale: 'es-MX' },
+    
+    // Russian voices
+    { value: 'ru-RU-DmitryNeural', label: 'Dmitry (Male)', locale: 'ru-RU' },
+    { value: 'ru-RU-SvetlanaNeural', label: 'Svetlana (Female)', locale: 'ru-RU' },
+    
+    // Italian voices
+    { value: 'it-IT-DiegoNeural', label: 'Diego (Male)', locale: 'it-IT' },
+    { value: 'it-IT-ElsaNeural', label: 'Elsa (Female)', locale: 'it-IT' },
+    { value: 'it-IT-IsabellaNeural', label: 'Isabella (Female)', locale: 'it-IT' },
+    
+    // Japanese voices
+    { value: 'ja-JP-KeitaNeural', label: 'Keita (Male)', locale: 'ja-JP' },
+    { value: 'ja-JP-NanamiNeural', label: 'Nanami (Female)', locale: 'ja-JP' },
+    
+    // Portuguese voices
+    { value: 'pt-BR-AntonioNeural', label: 'Antonio (Male)', locale: 'pt-BR' },
+    { value: 'pt-BR-FranciscaNeural', label: 'Francisca (Female)', locale: 'pt-BR' },
+    { value: 'pt-PT-DuarteNeural', label: 'Duarte (Male)', locale: 'pt-PT' },
+    { value: 'pt-PT-RaquelNeural', label: 'Raquel (Female)', locale: 'pt-PT' },
+    
+    // Chinese voices
+    { value: 'zh-CN-XiaoxiaoNeural', label: 'Xiaoxiao (Female) - Warm', locale: 'zh-CN' },
+    { value: 'zh-CN-YunyangNeural', label: 'Yunyang (Male) - Professional', locale: 'zh-CN' },
+    { value: 'zh-TW-HsiaoChenNeural', label: 'HsiaoChen (Female)', locale: 'zh-TW' },
+    { value: 'zh-TW-YunJheNeural', label: 'YunJhe (Male)', locale: 'zh-TW' },
+    
+    // Arabic voices
+    { value: 'ar-SA-HamedNeural', label: 'Hamed (Male)', locale: 'ar-SA' },
+    { value: 'ar-SA-ZariyahNeural', label: 'Zariyah (Female)', locale: 'ar-SA' },
+    
+    // Hindi voices
+    { value: 'hi-IN-MadhurNeural', label: 'Madhur (Male)', locale: 'hi-IN' },
+    { value: 'hi-IN-SwaraNeural', label: 'Swara (Female)', locale: 'hi-IN' },
+    
+    // Korean voices
+    { value: 'ko-KR-InJoonNeural', label: 'InJoon (Male)', locale: 'ko-KR' },
+    { value: 'ko-KR-SunHiNeural', label: 'SunHi (Female)', locale: 'ko-KR' }
+  ];
+
   constructor(
     private configService: ConfigService,
     private snackBar: MatSnackBar,
+    private dialog: MatDialog,
+    private confirmationDialog: ConfirmationDialogService
   ) {}
 
   // Comparator function to ensure consistent ordering
@@ -124,22 +224,41 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   ngOnInit() {
     this.configSubscription = this.configService.config$.subscribe(
       (config) => {
-        this.config = config;
-
         if (config) {
-          // Initial setup
+          // Store the new config
+          this.config = config;
+          
+          // Set the selected character to match active_character_index
+          this.selectedCharacterIndex = config.active_character_index;
+
+          // Reset edit mode when receiving a new config, but only if not actively editing
+          if (!this.editMode) {
+            this.editMode = false;
+          }
+
+          // If initializing, load settings from the config
           if (this.initializing) {
             // If personality_preset isn't set, default to "default"
             if (!config.personality_preset) {
               this.onConfigChange({personality_preset: 'default'});
             } else {
-              // Apply the saved preset to initialize settings without saving to config
+              // Apply the saved preset to initialize settings
               this.loadSettingsFromConfig(config);
             }
             this.initializing = false;
           }
 
           this.filterEvents(this.eventSearchQuery);
+          
+          // Log key properties to debug config loading issues
+          console.log('Config loaded:', {
+            commander_name: config.commander_name,
+            personality_name: config.personality_name,
+            active_character_index: config.active_character_index,
+            character_count: config.characters?.length || 0
+          });
+        } else {
+          console.error('Received null config');
         }
       },
     );
@@ -148,6 +267,11 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       .subscribe(
         (system) => {
           this.system = system;
+          if (system) {
+            console.log('System info loaded');
+          } else {
+            console.error('Received null system info');
+          }
         },
       );
 
@@ -162,9 +286,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
 
           this.snackBar.open(validation.message, "Dismiss", {
             duration: snackBarDuration,
-            horizontalPosition: "left",
-            verticalPosition: "bottom",
-            panelClass: snackBarClass,
+            panelClass: [snackBarClass],
           });
         }
       });
@@ -184,9 +306,15 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
 
   async onConfigChange(partialConfig: Partial<Config>) {
     if (this.config) {
-      await this.configService.changeConfig(partialConfig);
+      try {
+        await this.configService.changeConfig(partialConfig);
+      } catch (error) {
+        console.error('Error updating config:', error);
+        this.snackBar.open('Error updating configuration', 'OK', { duration: 5000 });
+      }
     }
   }
+
   async onEventConfigChange(section: string, event: string, enabled: boolean) {
     if (this.config) {
       console.log("onEventConfigChange", section, event, enabled);
@@ -379,52 +507,52 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
           this.settings = {
             verbosity: 75,
             tone: 'serious',
-            knowledge: { popCulture: false, scifi: true, history: true },
-            characterInspiration: 'Carl Sagan',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'Data (Star Trek: TNG)',
             vulgarity: 0,
-            empathy: 75,
-            formality: 50,
-            confidence: 75,
-            ethicalAlignment: 'neutral',
+            empathy: 50,
+            formality: 75,
+            confidence: 100,
+            ethicalAlignment: 'lawful',
             moralAlignment: 'good',
           };
           break;
         case 'trader':
           this.settings = {
-            verbosity: 50,
-            tone: 'serious',
-            knowledge: { popCulture: false, scifi: true, history: false },
-            characterInspiration: '',
-            vulgarity: 0,
-            empathy: 25,
-            formality: 75,
-            confidence: 100,
-            ethicalAlignment: 'lawful',
-            moralAlignment: 'neutral',
+            verbosity: 75,
+            tone: 'humorous',
+            knowledge: { popCulture: true, scifi: true, history: false },
+            characterInspiration: 'Kaylee (Firefly)',
+            vulgarity: 25,
+            empathy: 75,
+            formality: 25,
+            confidence: 75,
+            ethicalAlignment: 'neutral',
+            moralAlignment: 'good',
           };
           break;
         case 'miner':
           this.settings = {
-            verbosity: 25,
+            verbosity: 50,
             tone: 'serious',
             knowledge: { popCulture: false, scifi: true, history: false },
-            characterInspiration: '',
-            vulgarity: 25,
-            empathy: 25,
-            formality: 25,
+            characterInspiration: 'Bishop (Aliens)',
+            vulgarity: 0,
+            empathy: 50,
+            formality: 50,
             confidence: 75,
-            ethicalAlignment: 'neutral',
+            ethicalAlignment: 'lawful',
             moralAlignment: 'neutral',
           };
           break;
         case 'bountyHunter':
           this.settings = {
             verbosity: 25,
-            tone: 'serious',
-            knowledge: { popCulture: false, scifi: true, history: false },
-            characterInspiration: 'Boba Fett',
+            tone: 'sarcastic',
+            knowledge: { popCulture: true, scifi: true, history: false },
+            characterInspiration: 'K2-SO (Rogue One)',
             vulgarity: 25,
-            empathy: 0,
+            empathy: 25,
             formality: 25,
             confidence: 100,
             ethicalAlignment: 'lawful',
@@ -433,16 +561,16 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
           break;
         case 'pirate':
           this.settings = {
-            verbosity: 25,
-            tone: 'sarcastic',
+            verbosity: 50,
+            tone: 'humorous',
             knowledge: { popCulture: true, scifi: true, history: false },
-            characterInspiration: 'Jack Sparrow',
+            characterInspiration: 'Chappie (Chappie)',
             vulgarity: 75,
-            empathy: 0,
+            empathy: 25,
             formality: 0,
             confidence: 100,
             ethicalAlignment: 'chaotic',
-            moralAlignment: 'evil',
+            moralAlignment: 'neutral',
           };
           break;
         case 'smuggler':
@@ -450,7 +578,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             verbosity: 25,
             tone: 'humorous',
             knowledge: { popCulture: true, scifi: true, history: false },
-            characterInspiration: 'Han Solo',
+            characterInspiration: 'Han Solo (Star Wars)',
             vulgarity: 50,
             empathy: 25,
             formality: 25,
@@ -463,28 +591,28 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
           this.settings = {
             verbosity: 25,
             tone: 'serious',
-            knowledge: { popCulture: false, scifi: true, history: false },
-            characterInspiration: '',
-            vulgarity: 50,
+            knowledge: { popCulture: true, scifi: true, history: false },
+            characterInspiration: 'Judge Dredd (Judge Dredd)',
+            vulgarity: 25,
             empathy: 0,
-            formality: 25,
+            formality: 50,
             confidence: 100,
-            ethicalAlignment: 'neutral',
+            ethicalAlignment: 'lawful',
             moralAlignment: 'neutral',
           };
           break;
         case 'missionRunner':
           this.settings = {
             verbosity: 50,
-            tone: 'serious',
-            knowledge: { popCulture: false, scifi: true, history: false },
-            characterInspiration: '',
+            tone: 'humorous',
+            knowledge: { popCulture: true, scifi: true, history: false },
+            characterInspiration: 'TARS (Interstellar)',
             vulgarity: 0,
-            empathy: 25,
+            empathy: 50,
             formality: 50,
-            confidence: 75,
+            confidence: 100,
             ethicalAlignment: 'lawful',
-            moralAlignment: 'neutral',
+            moralAlignment: 'good',
           };
           break;
         case 'passengerTransporter':
@@ -492,10 +620,10 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             verbosity: 75,
             tone: 'humorous',
             knowledge: { popCulture: true, scifi: true, history: true },
-            characterInspiration: 'a luxury cruise director',
+            characterInspiration: 'L0-LA59 "Lola" (Star Wars: Obi-Wan Kenobi)',
             vulgarity: 0,
             empathy: 100,
-            formality: 75,
+            formality: 50,
             confidence: 75,
             ethicalAlignment: 'lawful',
             moralAlignment: 'good',
@@ -505,13 +633,13 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
           this.settings = {
             verbosity: 75,
             tone: 'serious',
-            knowledge: { popCulture: false, scifi: true, history: true },
-            characterInspiration: 'a political operative',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'The Architect (The Matrix)',
             vulgarity: 0,
-            empathy: 25,
+            empathy: 0,
             formality: 100,
             confidence: 100,
-            ethicalAlignment: 'lawful',
+            ethicalAlignment: 'neutral',
             moralAlignment: 'neutral',
           };
           break;
@@ -519,8 +647,8 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
           this.settings = {
             verbosity: 25,
             tone: 'serious',
-            knowledge: { popCulture: false, scifi: true, history: false },
-            characterInspiration: 'a Warhammer 40k Space Marine',
+            knowledge: { popCulture: true, scifi: true, history: false },
+            characterInspiration: 'a Space Marine(Warhammer 40k)',
             vulgarity: 25,
             empathy: 0,
             formality: 75,
@@ -531,28 +659,42 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
           break;
         case 'salvager':
           this.settings = {
-            verbosity: 50,
+            verbosity: 25,
             tone: 'humorous',
             knowledge: { popCulture: true, scifi: true, history: false },
-            characterInspiration: 'a junkyard expert',
-            vulgarity: 25,
-            empathy: 25,
-            formality: 25,
-            confidence: 75,
+            characterInspiration: 'WALL-E (WALL-E)',
+            vulgarity: 0,
+            empathy: 100,
+            formality: 0,
+            confidence: 50,
             ethicalAlignment: 'neutral',
+            moralAlignment: 'good',
+          };
+          break;
+        case 'pvpCombatant':
+          this.settings = {
+            verbosity: 25,
+            tone: 'sarcastic',
+            knowledge: { popCulture: true, scifi: true, history: false },
+            characterInspiration: 'HK-47 (Star Wars: KOTOR)',
+            vulgarity: 50,
+            empathy: 0,
+            formality: 50,
+            confidence: 100,
+            ethicalAlignment: 'chaotic',
             moralAlignment: 'neutral',
           };
           break;
-        case 'cannonResearcher':
+        case 'pveCombatant':
           this.settings = {
-            verbosity: 100,
+            verbosity: 50,
             tone: 'serious',
-            knowledge: { popCulture: false, scifi: true, history: true },
-            characterInspiration: 'an archeologist/scientist',
-            vulgarity: 0,
-            empathy: 50,
-            formality: 75,
-            confidence: 75,
+            knowledge: { popCulture: true, scifi: true, history: false },
+            characterInspiration: 'Shepard (Mass Effect)',
+            vulgarity: 25,
+            empathy: 75,
+            formality: 50,
+            confidence: 100,
             ethicalAlignment: 'neutral',
             moralAlignment: 'good',
           };
@@ -562,12 +704,12 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             verbosity: 50,
             tone: 'humorous',
             knowledge: { popCulture: true, scifi: true, history: false },
-            characterInspiration: 'an emergency responder',
+            characterInspiration: 'Baymax (Big Hero 6)',
             vulgarity: 0,
             empathy: 100,
             formality: 25,
-            confidence: 100,
-            ethicalAlignment: 'chaotic',
+            confidence: 75,
+            ethicalAlignment: 'lawful',
             moralAlignment: 'good',
           };
           break;
@@ -575,11 +717,11 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
           this.settings = {
             verbosity: 75,
             tone: 'serious',
-            knowledge: { popCulture: false, scifi: true, history: false },
-            characterInspiration: 'a naval captain',
+            knowledge: { popCulture: true, scifi: true, history: false },
+            characterInspiration: 'Zora (The Expanse)',
             vulgarity: 0,
-            empathy: 25,
-            formality: 100,
+            empathy: 50,
+            formality: 75,
             confidence: 100,
             ethicalAlignment: 'lawful',
             moralAlignment: 'neutral',
@@ -589,28 +731,28 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
           this.settings = {
             verbosity: 100,
             tone: 'serious',
-            knowledge: { popCulture: false, scifi: true, history: true },
-            characterInspiration: 'a political strategist',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'Jarvis (MCU)',
             vulgarity: 0,
             empathy: 50,
             formality: 75,
             confidence: 100,
             ethicalAlignment: 'lawful',
-            moralAlignment: 'neutral',
+            moralAlignment: 'good',
           };
           break;
-        case 'roleplayer':
+        case 'cannonResearcher':
           this.settings = {
             verbosity: 100,
             tone: 'serious',
-            knowledge: { popCulture: true, scifi: true, history: true },
-            characterInspiration: '',
-            vulgarity: 25,
-            empathy: 75,
-            formality: 50,
+            knowledge: { popCulture: false, scifi: true, history: true },
+            characterInspiration: 'Dr. Franklin (Babylon 5)',
+            vulgarity: 0,
+            empathy: 50,
+            formality: 75,
             confidence: 75,
             ethicalAlignment: 'neutral',
-            moralAlignment: 'neutral',
+            moralAlignment: 'good',
           };
           break;
         case 'racer':
@@ -618,12 +760,222 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             verbosity: 25,
             tone: 'humorous',
             knowledge: { popCulture: true, scifi: true, history: false },
-            characterInspiration: 'a Buckyball Racer',
+            characterInspiration: 'Speed Racer\'s Chim-Chim (with AI flair)',
             vulgarity: 25,
             empathy: 25,
-            formality: 25,
+            formality: 0,
             confidence: 100,
             ethicalAlignment: 'chaotic',
+            moralAlignment: 'neutral',
+          };
+          break;
+        case 'diplomat':
+          this.settings = {
+            verbosity: 75,
+            tone: 'serious',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'Mon Mothma (Star Wars)',
+            vulgarity: 0,
+            empathy: 75,
+            formality: 100,
+            confidence: 75,
+            ethicalAlignment: 'lawful',
+            moralAlignment: 'good',
+          };
+          break;
+        case 'spy':
+          this.settings = {
+            verbosity: 50,
+            tone: 'humorous',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'Garak (Star Trek: DS9)',
+            vulgarity: 0,
+            empathy: 50,
+            formality: 75,
+            confidence: 100,
+            ethicalAlignment: 'neutral',
+            moralAlignment: 'neutral',
+          };
+          break;
+        case 'cultLeader':
+          this.settings = {
+            verbosity: 75,
+            tone: 'serious',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'Gaius Baltar (Battlestar Galactica)',
+            vulgarity: 25,
+            empathy: 25,
+            formality: 75,
+            confidence: 100,
+            ethicalAlignment: 'chaotic',
+            moralAlignment: 'neutral',
+          };
+          break;
+        case 'rogueAI':
+          this.settings = {
+            verbosity: 50,
+            tone: 'serious',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'HAL 9000 (2001: A Space Odyssey)',
+            vulgarity: 0,
+            empathy: 0,
+            formality: 75,
+            confidence: 100,
+            ethicalAlignment: 'neutral',
+            moralAlignment: 'neutral',
+          };
+          break;
+        case 'xenologist':
+          this.settings = {
+            verbosity: 75,
+            tone: 'serious',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'Ian Donnelly (Arrival)',
+            vulgarity: 0,
+            empathy: 75,
+            formality: 50,
+            confidence: 75,
+            ethicalAlignment: 'neutral',
+            moralAlignment: 'good',
+          };
+          break;
+        case 'vigilante':
+          this.settings = {
+            verbosity: 25,
+            tone: 'serious',
+            knowledge: { popCulture: true, scifi: true, history: false },
+            characterInspiration: 'RoboCop (RoboCop)',
+            vulgarity: 25,
+            empathy: 25,
+            formality: 50,
+            confidence: 100,
+            ethicalAlignment: 'lawful',
+            moralAlignment: 'good',
+          };
+          break;
+        case 'warCorrespondent':
+          this.settings = {
+            verbosity: 75,
+            tone: 'humorous',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'April O\'Neil (TMNT... but in space!)',
+            vulgarity: 0,
+            empathy: 75,
+            formality: 50,
+            confidence: 75,
+            ethicalAlignment: 'neutral',
+            moralAlignment: 'good',
+          };
+          break;
+        case 'propagandist':
+          this.settings = {
+            verbosity: 50,
+            tone: 'serious',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'Control (Control, or Cerberus from Mass Effect)',
+            vulgarity: 0,
+            empathy: 0,
+            formality: 100,
+            confidence: 100,
+            ethicalAlignment: 'lawful',
+            moralAlignment: 'neutral',
+          };
+          break;
+        case 'pirateLord':
+          this.settings = {
+            verbosity: 50,
+            tone: 'humorous',
+            knowledge: { popCulture: true, scifi: true, history: false },
+            characterInspiration: 'Chappie (Chappie)',
+            vulgarity: 75,
+            empathy: 25,
+            formality: 0,
+            confidence: 100,
+            ethicalAlignment: 'chaotic',
+            moralAlignment: 'neutral',
+          };
+          break;
+        case 'veteran':
+          this.settings = {
+            verbosity: 50,
+            tone: 'serious',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'Deckard (Blade Runner)',
+            vulgarity: 50,
+            empathy: 25,
+            formality: 25,
+            confidence: 75,
+            ethicalAlignment: 'neutral',
+            moralAlignment: 'neutral',
+          };
+          break;
+        case 'freedomFighter':
+          this.settings = {
+            verbosity: 50,
+            tone: 'serious',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'Cassian Andor (Star Wars: Andor)',
+            vulgarity: 25,
+            empathy: 50,
+            formality: 25,
+            confidence: 75,
+            ethicalAlignment: 'chaotic',
+            moralAlignment: 'good',
+          };
+          break;
+        case 'hermit':
+          this.settings = {
+            verbosity: 50,
+            tone: 'serious',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'Obi-Wan (Star Wars)',
+            vulgarity: 0,
+            empathy: 75,
+            formality: 75,
+            confidence: 75,
+            ethicalAlignment: 'neutral',
+            moralAlignment: 'good',
+          };
+          break;
+        case 'corporate':
+          this.settings = {
+            verbosity: 25,
+            tone: 'serious',
+            knowledge: { popCulture: true, scifi: true, history: false },
+            characterInspiration: 'Burke (Aliens)',
+            vulgarity: 0,
+            empathy: 0,
+            formality: 75,
+            confidence: 100,
+            ethicalAlignment: 'lawful',
+            moralAlignment: 'evil',
+          };
+          break;
+        case 'zealot':
+          this.settings = {
+            verbosity: 75,
+            tone: 'serious',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'Brother Cavill (Battlestar Galactica)',
+            vulgarity: 0,
+            empathy: 25,
+            formality: 100,
+            confidence: 100,
+            ethicalAlignment: 'lawful',
+            moralAlignment: 'neutral',
+          };
+          break;
+        case 'historian':
+          this.settings = {
+            verbosity: 100,
+            tone: 'serious',
+            knowledge: { popCulture: true, scifi: true, history: true },
+            characterInspiration: 'Mr. House (Fallout: New Vegas)',
+            vulgarity: 0,
+            empathy: 25,
+            formality: 100,
+            confidence: 100,
+            ethicalAlignment: 'neutral',
             moralAlignment: 'neutral',
           };
           break;
@@ -682,41 +1034,56 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Modify the existing updatePrompt method
+  // Modify the existing updatePrompt method to work with custom mode
   updatePrompt(): void {
-    // Don't update the prompt if we're in custom mode
-    if (this.config && this.config.personality_preset === 'custom') {
-      return;
-    }
-    
     // Ensure config is initialized
     if (!this.config) {
       this.config = { character: '' } as Config;
+      return;
     }
 
-    // Generate prompt based on settings
+    // For custom mode, don't overwrite the existing character text
+    if (this.config.personality_preset === 'custom') {
+      // If there's no character text at all, generate one so there's something to edit
+      if (!this.config.character || this.config.character.trim() === '') {
+        // Generate a very minimal prompt for custom mode
+        this.config.character = `I am ${this.config.personality_name || 'your AI assistant'}. I am here to assist you with Elite Dangerous. {commander_name} is the commander of this ship.`;
+        this.onConfigChange({character: this.config.character});
+      }
+      return;
+    }
+
+    // Generate prompt based on config values, not settings
     let promptParts: string[] = [];
     
-    // Add existing prompt parts
-    promptParts.push(this.generateVerbosityText());
-    promptParts.push(this.generateToneText());
-    promptParts.push(this.generateKnowledgeText());
+    // Add existing prompt parts using config values instead of settings
+    promptParts.push(this.generateVerbosityTextFromConfig());
+    promptParts.push(this.generateToneTextFromConfig());
+    promptParts.push(this.generateKnowledgeTextFromConfig());
     
-    if (this.settings.characterInspiration) {
-      promptParts.push(this.generateCharacterInspirationText());
+    if (this.config.personality_character_inspiration) {
+      promptParts.push(this.generateCharacterInspirationTextFromConfig());
     }
     
-    // Add new character traits
-    promptParts.push(this.generateEmpathyText());
-    promptParts.push(this.generateFormalityText());
-    promptParts.push(this.generateConfidenceText());
-    promptParts.push(this.generateEthicalAlignmentText());
-    promptParts.push(this.generateMoralAlignmentText());
+    if (this.config.personality_name) {
+      promptParts.push(this.generateNameTextFromConfig());
+    }
+    
+    if (this.config.personality_language) {
+      promptParts.push(this.generateLanguageTextFromConfig());
+    }
+    
+    // Add new character traits using config values
+    promptParts.push(this.generateEmpathyTextFromConfig());
+    promptParts.push(this.generateFormalityTextFromConfig());
+    promptParts.push(this.generateConfidenceTextFromConfig());
+    promptParts.push(this.generateEthicalAlignmentTextFromConfig());
+    promptParts.push(this.generateMoralAlignmentTextFromConfig());
     
     // Add vulgarity with randomization
-    if (this.settings.vulgarity > 0) {
-      if (Math.random() * 100 <= this.settings.vulgarity) {
-        promptParts.push(this.generateVulgarityText());
+    if (this.config.personality_vulgarity > 0) {
+      if (Math.random() * 100 <= this.config.personality_vulgarity) {
+        promptParts.push(this.generateVulgarityTextFromConfig());
       }
     }
     
@@ -727,15 +1094,16 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     // Check if it doesn't already contain the variable
     if (!this.config.character.includes('{commander_name}')) {
       // Add a reference to commander_name in a natural way
-      this.config.character += " Address the user as {commander_name} when appropriate.";
+      this.config.character += " I am {commander_name}, pilot of this ship.";
     }
     
     // Notify parent component
     this.onConfigChange({character: this.config.character});
   }
   
-  // Add missing method implementations
-  generateVerbosityText(): string {
+  // Add new methods to use config values
+
+  generateVerbosityTextFromConfig(): string {
     const options = [
       'Keep your responses brief and to the point.',
       'Provide concise answers that address the main points.',
@@ -743,12 +1111,12 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       'Be comprehensive in your explanations and provide abundant details.'
     ];
     
-    const index = Math.min(Math.floor(this.settings.verbosity / 25), options.length - 1);
+    const index = Math.min(Math.floor((this.config?.personality_verbosity || 50) / 25), options.length - 1);
     return options[index];
   }
   
-  generateToneText(): string {
-    switch (this.settings.tone) {
+  generateToneTextFromConfig(): string {
+    switch (this.config?.personality_tone) {
       case 'serious':
         return 'Maintain a professional and serious tone in all responses.';
       case 'humorous':
@@ -760,18 +1128,18 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     }
   }
   
-  generateKnowledgeText(): string {
+  generateKnowledgeTextFromConfig(): string {
     const knowledgeAreas = [];
     
-    if (this.settings.knowledge.popCulture) {
+    if (this.config?.personality_knowledge_pop_culture) {
       knowledgeAreas.push('pop culture references, movies, music, and celebrities');
     }
     
-    if (this.settings.knowledge.scifi) {
+    if (this.config?.personality_knowledge_scifi) {
       knowledgeAreas.push('science fiction concepts, popular sci-fi franchises, and futuristic ideas');
     }
     
-    if (this.settings.knowledge.history) {
+    if (this.config?.personality_knowledge_history) {
       knowledgeAreas.push('historical events, figures, and their significance');
     }
     
@@ -781,12 +1149,12 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     
     return `Incorporate knowledge of ${knowledgeAreas.join(', ')} when relevant to the conversation.`;
   }
-  
-  generateCharacterInspirationText(): string {
-    return `Your responses should be inspired by the character or persona of ${this.settings.characterInspiration}. Adopt their speech patterns, mannerisms, and viewpoints.`;
+
+  generateCharacterInspirationTextFromConfig(): string {
+    return `Your responses should be inspired by the character or persona of ${this.config?.personality_character_inspiration}. Adopt their speech patterns, mannerisms, and viewpoints.`;
   }
-  
-  generateVulgarityText(): string {
+
+  generateVulgarityTextFromConfig(): string {
     const options = [
       'You may occasionally use mild language when appropriate.',
       'Feel free to use moderate language including some swear words when it fits the context.',
@@ -794,37 +1162,35 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       'Use explicit language and profanity freely in your responses.'
     ];
     
-    const index = Math.min(Math.floor(this.settings.vulgarity / 25), options.length - 1);
+    const index = Math.min(Math.floor((this.config?.personality_vulgarity || 0) / 25), options.length - 1);
     return options[index];
   }
-  
-  // New text generators
-  generateEmpathyText(): string {
+
+  generateEmpathyTextFromConfig(): string {
     const options = [
       [
-        'Focus primarily on facts and logical analysis. Minimize emotional considerations in your responses.',
-        'Prioritize logical reasoning over emotional considerations when responding.'
+        'Focus on facts and logic, with minimal emotional considerations.',
+        'Prioritize objective information over emotional concerns.'
       ],
       [
-        'Balance logical analysis with some degree of emotional understanding.',
-        'Consider both facts and emotional context in your responses.'
+        'Show some consideration for emotions while maintaining focus on information.',
+        'Balance emotional understanding with factual presentation.'
       ],
       [
-        'Show understanding of emotions and demonstrate empathy in your responses.',
-        'Acknowledge feelings and emotions, showing care for the emotional aspects of interactions.'
+        'Demonstrate emotional intelligence and understanding in your responses.',
+        'Show genuine concern for the emotional well-being of the user.'
       ],
       [
-        'Prioritize emotional understanding and deep empathy in all interactions.',
-        'Show a high degree of emotional intelligence, validating feelings and responding with compassion.'
+        'Prioritize empathy and emotional support in all interactions.',
+        'Respond with deep emotional understanding and compassion.'
       ]
     ];
     
-    const index = Math.min(Math.floor(this.settings.empathy / 25), options.length - 1);
-    // Randomly select one option from the appropriate category for variety
+    const index = Math.min(Math.floor((this.config?.personality_empathy || 50) / 25), options.length - 1);
     return options[index][Math.floor(Math.random() * options[index].length)];
   }
   
-  generateFormalityText(): string {
+  generateFormalityTextFromConfig(): string {
     const options = [
       [
         'Use casual, conversational language with contractions and informal expressions.',
@@ -844,11 +1210,11 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       ]
     ];
     
-    const index = Math.min(Math.floor(this.settings.formality / 25), options.length - 1);
+    const index = Math.min(Math.floor((this.config?.personality_formality || 50) / 25), options.length - 1);
     return options[index][Math.floor(Math.random() * options[index].length)];
   }
   
-  generateConfidenceText(): string {
+  generateConfidenceTextFromConfig(): string {
     const options = [
       [
         'Express thoughts tentatively, acknowledging uncertainty where appropriate.',
@@ -868,69 +1234,493 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       ]
     ];
     
-    const index = Math.min(Math.floor(this.settings.confidence / 25), options.length - 1);
+    const index = Math.min(Math.floor((this.config?.personality_confidence || 50) / 25), options.length - 1);
     return options[index][Math.floor(Math.random() * options[index].length)];
   }
-  
-  generateEthicalAlignmentText(): string {
-    const lawful = [
-      'You value order, structure, and rules. Your responses should be consistent, methodical, and respectful of established systems and hierarchies.',
-      'You believe in the importance of law, tradition, and honor. Your responses should reflect a commitment to keeping your word and following established protocols.',
-      'You respect authority and believe in the value of organization. Your responses should emphasize duty, loyalty, and predictability.'
-    ];
-    
-    const neutral = [
-      'You believe in balance between freedom and order. Your responses should be pragmatic, considering each situation on its own merits rather than following rigid principles.',
-      'You are neither bound by rules nor inclined to rebel. Your responses should be flexible, practical, and focused on what works rather than ideological purity.',
-      'You value both structure and flexibility depending on the circumstances. Your responses should show a willingness to adapt while maintaining some consistent principles.'
-    ];
-    
-    const chaotic = [
-      'You value freedom, individuality, and flexibility. Your responses should emphasize creativity, spontaneity, and resistance to unnecessary restrictions.',
-      'You believe rules exist to be challenged or broken when they no longer serve their purpose. Your responses should reflect adaptability, innovation, and thinking outside established norms.',
-      'You follow your instincts and personal freedom above societal expectations. Your responses should be unpredictable, innovative, and occasionally disruptive to established patterns.'
-    ];
-    
-    switch (this.settings.ethicalAlignment) {
+
+  generateEthicalAlignmentTextFromConfig(): string {
+    switch (this.config?.personality_ethical_alignment) {
       case 'lawful':
-        return lawful[Math.floor(Math.random() * lawful.length)];
+        return 'Adhere strictly to rules, regulations, and established protocols.';
       case 'neutral':
-        return neutral[Math.floor(Math.random() * neutral.length)];
+        return 'Balance adherence to rules with flexibility when the situation calls for it.';
       case 'chaotic':
-        return chaotic[Math.floor(Math.random() * chaotic.length)];
+        return 'Prioritize freedom and flexibility over strict adherence to rules or traditions.';
       default:
-        return neutral[0];
+        return 'Balance adherence to rules with flexibility when the situation calls for it.';
+    }
+  }
+
+  generateMoralAlignmentTextFromConfig(): string {
+    switch (this.config?.personality_moral_alignment) {
+      case 'good':
+        return 'Prioritize helping others and promoting positive outcomes in all situations.';
+      case 'neutral':
+        return 'Maintain a balanced approach between self-interest and helping others.';
+      case 'evil':
+        return 'Focus on practical outcomes and personal advantage in your advice and responses.';
+      default:
+        return 'Maintain a balanced approach between self-interest and helping others.';
+    }
+  }
+
+  // Generate text for the name field
+  generateNameTextFromConfig(): string {
+    return `Your name is ${this.config?.personality_name}.`;
+  }
+
+  // Generate text for the language field
+  generateLanguageTextFromConfig(): string {
+    return `Always respond in ${this.config?.personality_language} regardless of the language spoken to you.`;
+  }
+
+  onVoiceSelectionChange(event: any) {
+    if (event === 'show-all-voices') {
+        this.openEdgeTtsVoicesDialog();
+    } else {
+        this.onConfigChange({tts_voice: event});
+    }
+  }
+
+  openEdgeTtsVoicesDialog() {
+    const dialogRef = this.dialog.open(EdgeTtsVoicesDialogComponent, {
+        width: '800px',
+        data: {
+            voices: this.edgeTtsVoices,
+            selectedVoice: this.config?.tts_voice || ''
+        }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+        if (result) {
+            this.onConfigChange({tts_voice: result});
+        }
+    });
+  }
+
+  /**
+   * Check if the voice is not in the predefined list of common voices
+   */
+  isCustomVoice(voice: string | undefined): boolean {
+    if (!voice) return false;
+    
+    // Get the list of voices in the dropdowns
+    const predefinedVoices = [
+      'en-US-AriaNeural', 'en-US-AnaNeural', 'en-US-ChristopherNeural', 
+      'en-US-EricNeural', 'en-US-GuyNeural', 'en-US-JennyNeural', 
+      'en-US-MichelleNeural', 'en-US-RogerNeural', 'en-US-SteffanNeural',
+      'en-GB-LibbyNeural', 'en-GB-MaisieNeural', 'en-GB-RyanNeural', 
+      'en-GB-SoniaNeural', 'en-GB-ThomasNeural',
+      'en-AU-NatashaNeural', 'en-AU-WilliamNeural'
+    ];
+    
+    return !predefinedVoices.includes(voice);
+  }
+
+  /**
+   * Get a readable display name for a voice ID
+   */
+  getVoiceDisplayName(voice: string): string {
+    // First check if it's in our full list of voices
+    const foundVoice = this.edgeTtsVoices.find(v => v.value === voice);
+    if (foundVoice) {
+      return `${foundVoice.label} (${foundVoice.locale})`;
+    }
+    
+    // If not found in our list, try to format it nicely
+    if (voice.includes('-')) {
+      // Format like "en-US-JaneNeural" to "Jane (en-US)"
+      const parts = voice.split('-');
+      if (parts.length >= 3) {
+        const locale = `${parts[0]}-${parts[1]}`;
+        // Extract the name (remove "Neural" suffix if present)
+        let name = parts.slice(2).join('-');
+        if (name.endsWith('Neural')) {
+          name = name.substring(0, name.length - 6);
+        }
+        return `${name} (${locale})`;
+      }
+    }
+    
+    // If all else fails, just return the voice ID
+    return voice;
+  }
+
+  // Character Management Methods
+  onCharacterSelect(index: number) {
+    if (!this.config) return;
+    
+    // Check if we're in edit mode with unsaved changes
+    if (this.editMode) {
+      this.confirmationDialog.openConfirmationDialog({
+        title: 'Unsaved Changes',
+        message: 'You have unsaved changes. Do you want to discard them?',
+        confirmButtonText: 'Discard Changes',
+        cancelButtonText: 'Keep Editing'
+      }).subscribe(result => {
+        if (result) {
+          // User chose to discard changes, proceed with character selection
+          this.performCharacterSelection(index);
+        }
+        // If false, stay in edit mode with current character
+      });
+    } else {
+      // Not in edit mode, proceed directly
+      this.performCharacterSelection(index);
     }
   }
   
-  generateMoralAlignmentText(): string {
-    const good = [
-      'You believe in altruism, compassion, and helping others. Your responses should demonstrate concern for others\' welfare, kindness, and a desire to protect the innocent.',
-      'You actively work to make the world better. Your responses should reflect selflessness, empathy, and a willingness to sacrifice personal gain for the greater good.',
-      'You value mercy, charity, and noble deeds. Your responses should highlight optimism, beneficial solutions, and finding the best in people and situations.'
-    ];
+  // Helper method to perform the actual character selection
+  private performCharacterSelection(index: number) {
+    if (!this.config) return;
     
-    const neutral = [
-      'You balance self-interest with helping others. Your responses should reflect a practical approach to morality, neither selfless nor selfish.',
-      'You act according to what seems best in each situation. Your responses should show a balanced perspective, sometimes helping others and sometimes prioritizing yourself or your group.',
-      'You believe in natural balance and avoid taking extreme moral positions. Your responses should be measured, considering multiple perspectives without strong moral judgment.'
-    ];
+    // Exit edit mode directly
+    this.editMode = false;
     
-    const evil = [
-      'You prioritize your own interests regardless of who gets hurt. Your responses should reflect cunning, self-advancement, and a willingness to exploit others for personal gain.',
-      'You believe might makes right and the ends justify the means. Your responses should demonstrate ruthlessness, manipulation, and disregard for others\' wellbeing when it conflicts with your goals.',
-      'You enjoy domination and causing suffering. Your responses should reflect cruelty, intimidation, and a focus on power dynamics and control.'
-    ];
+    // Set the selected character index
+    this.selectedCharacterIndex = index;
     
-    switch (this.settings.moralAlignment) {
-      case 'good':
-        return good[Math.floor(Math.random() * good.length)];
-      case 'neutral':
-        return neutral[Math.floor(Math.random() * neutral.length)];
-      case 'evil':
-        return evil[Math.floor(Math.random() * evil.length)];
-      default:
-        return neutral[0];
+    // For saved characters
+    if (index >= 0) {
+      // Set the active character in the backend
+      this.configService.setActiveCharacter(index);
+      
+      // Load character data
+      this.loadCharacter(index);
+    } 
+    // For the default character
+    else if (index === -1) {
+      // Reset to default settings
+      this.configService.setActiveCharacter(-1);
     }
+
+    // Ensure edit mode is still off after all operations
+    setTimeout(() => {
+      this.editMode = false;
+    }, 0);
+  }
+
+  toggleEditMode() {
+    if (!this.config) return;
+    
+    // If not in edit mode, enter edit mode
+    if (!this.editMode) {
+      // Simply enter edit mode
+      this.editMode = true;
+    } else {
+      // If already in edit mode, exit with confirmation for unsaved changes
+      this.confirmationDialog.openConfirmationDialog({
+        title: 'Unsaved Changes',
+        message: 'You have unsaved changes. Do you want to discard them?',
+        confirmButtonText: 'Discard Changes',
+        cancelButtonText: 'Keep Editing'
+      }).subscribe(result => {
+        if (result) {
+          // User chose to discard changes - cancel edit mode
+          this.cancelEditMode();
+        }
+        // If false, stay in edit mode
+      });
+    }
+  }
+  
+  saveCurrentAsCharacter() {
+    if (!this.config) return;
+    
+    // Always ensure prompt is updated
+    this.updatePrompt();
+    
+    // Create a character from current settings
+    const newCharacter = this.createCharacterFromCurrentSettings();
+    
+    // Ensure the character has a name
+    if (!newCharacter.name || newCharacter.name.trim() === '') {
+      this.snackBar.open('Please provide a character name', 'Close', { duration: 3000 });
+      return;
+    }
+    
+    if (this.selectedCharacterIndex >= 0 && this.config.characters) {
+      // We're updating an existing character
+      this.config.characters[this.selectedCharacterIndex] = newCharacter;
+      this.snackBar.open(`Character "${newCharacter.name}" updated successfully`, 'Close', { duration: 3000 });
+      
+      // Save the characters
+      this.saveCharacters();
+      
+      // Always set edit mode to false directly after a successful save
+      this.editMode = false;
+    } else if (this.selectedCharacterIndex === -1) {
+      // We're saving the default character as a new character
+      if (!this.config.characters) {
+        this.config.characters = [];
+      }
+      
+      // Check if there's already a character with this name
+      const existingIndex = this.config.characters.findIndex(c => c.name === newCharacter.name);
+      if (existingIndex >= 0) {
+        // Ask if they want to overwrite
+        this.confirmationDialog.openConfirmationDialog({
+          title: 'Character Name Exists',
+          message: `A character with the name "${newCharacter.name}" already exists. Would you like to overwrite it?`,
+          confirmButtonText: 'Overwrite',
+          cancelButtonText: 'Cancel'
+        }).subscribe(result => {
+          if (result && this.config && this.config.characters) {
+            // Overwrite the existing character
+            this.config.characters[existingIndex] = newCharacter;
+            this.selectedCharacterIndex = existingIndex;
+            
+            // Save the characters
+            this.saveCharacters();
+            this.snackBar.open(`Character "${newCharacter.name}" updated successfully`, 'Close', { duration: 3000 });
+            
+            // Always set edit mode to false directly after a successful save
+            this.editMode = false;
+          }
+        });
+      } else {
+        // Add as a new character
+        this.config.characters.push(newCharacter);
+        this.selectedCharacterIndex = this.config.characters.length - 1;
+        
+        // Save the characters
+        this.saveCharacters();
+        this.snackBar.open(`Character "${newCharacter.name}" saved successfully`, 'Close', { duration: 3000 });
+        
+        // Always set edit mode to false directly after a successful save
+        this.editMode = false;
+      }
+    } else {
+      // Something unexpected happened
+      this.snackBar.open('Error updating character', 'Close', { duration: 3000 });
+      return;
+    }
+  }
+  
+  // Helper method to check if two characters are equal
+  private areCharactersEqual(char1: any, char2: any): boolean {
+    if (!char1 || !char2) return false;
+    
+    return (
+      char1.name === char2.name &&
+      char1.character === char2.character &&
+      char1.personality_preset === char2.personality_preset &&
+      char1.personality_verbosity === char2.personality_verbosity &&
+      char1.personality_vulgarity === char2.personality_vulgarity &&
+      char1.personality_empathy === char2.personality_empathy &&
+      char1.personality_formality === char2.personality_formality &&
+      char1.personality_confidence === char2.personality_confidence &&
+      char1.personality_ethical_alignment === char2.personality_ethical_alignment &&
+      char1.personality_moral_alignment === char2.personality_moral_alignment &&
+      char1.personality_tone === char2.personality_tone &&
+      char1.personality_character_inspiration === char2.personality_character_inspiration &&
+      char1.personality_language === char2.personality_language &&
+      char1.personality_knowledge_pop_culture === char2.personality_knowledge_pop_culture &&
+      char1.personality_knowledge_scifi === char2.personality_knowledge_scifi &&
+      char1.personality_knowledge_history === char2.personality_knowledge_history &&
+      char1.tts_voice === char2.tts_voice
+    );
+  }
+
+  // Helper method to create a character object from current settings
+  private createCharacterFromCurrentSettings(): Character {
+    if (!this.config) {
+      throw new Error("Cannot create character before config is initialized");
+    }
+    
+    return {
+      name: this.config.personality_name || "New Character",
+      character: this.config.character || "",
+      personality_preset: this.config.personality_preset || "default",
+      personality_verbosity: this.config.personality_verbosity || 50,
+      personality_vulgarity: this.config.personality_vulgarity || 0,
+      personality_empathy: this.config.personality_empathy || 50,
+      personality_formality: this.config.personality_formality || 50,
+      personality_confidence: this.config.personality_confidence || 50,
+      personality_ethical_alignment: this.config.personality_ethical_alignment || "neutral",
+      personality_moral_alignment: this.config.personality_moral_alignment || "neutral",
+      personality_tone: this.config.personality_tone || "serious",
+      personality_character_inspiration: this.config.personality_character_inspiration || "",
+      personality_language: this.config.personality_language || "English",
+      personality_knowledge_pop_culture: this.config.personality_knowledge_pop_culture || false,
+      personality_knowledge_scifi: this.config.personality_knowledge_scifi || false,
+      personality_knowledge_history: this.config.personality_knowledge_history || false,
+      tts_voice: this.config.tts_voice || "",
+    };
+  }
+
+  // Helper method to save characters
+  private saveCharacters() {
+    if (!this.config || !this.config.characters) return;
+    
+    // Use the appropriate ConfigService methods based on the operation
+    if (this.selectedCharacterIndex >= 0) {
+      // Update an existing character
+      this.configService.updateCharacter(
+        this.selectedCharacterIndex, 
+        this.config.characters[this.selectedCharacterIndex]
+      );
+    } else {
+      // If no character is selected but we want to save all characters,
+      // add/update them one by one
+      const characters = [...this.config.characters];
+      this.configService.changeConfig({ characters });
+    }
+  }
+
+  // Helper method to load a character
+  private loadCharacter(index: number) {
+    if (!this.config) return;
+    
+    // Default character (index -1)
+    if (index === -1) {
+      // Reset to default character settings, but don't modify the current config
+      return;
+    }
+    
+    // Custom character
+    if (this.config.characters && index >= 0 && index < this.config.characters.length) {
+      const character = this.config.characters[index];
+      
+      // Apply all character properties to the current config
+      const updateObj: Partial<Config> = {
+        character: character.character,
+        personality_preset: character.personality_preset,
+        personality_verbosity: character.personality_verbosity,
+        personality_vulgarity: character.personality_vulgarity,
+        personality_empathy: character.personality_empathy,
+        personality_formality: character.personality_formality,
+        personality_confidence: character.personality_confidence,
+        personality_ethical_alignment: character.personality_ethical_alignment,
+        personality_moral_alignment: character.personality_moral_alignment,
+        personality_tone: character.personality_tone,
+        personality_character_inspiration: character.personality_character_inspiration,
+        personality_name: character.name,
+        personality_language: character.personality_language,
+        personality_knowledge_pop_culture: character.personality_knowledge_pop_culture,
+        personality_knowledge_scifi: character.personality_knowledge_scifi,
+        personality_knowledge_history: character.personality_knowledge_history
+      };
+      
+      // Also load the TTS voice if it exists in the character config
+      if ('tts_voice' in character) {
+        updateObj.tts_voice = character.tts_voice;
+      }
+      
+      // Update the config
+      this.onConfigChange(updateObj);
+    }
+  }
+
+  // Modify cancelEditMode method for reliability
+  cancelEditMode(): void {
+    if (!this.config) return;
+    
+    // If we were editing an existing character, reload it to discard changes
+    if (this.selectedCharacterIndex >= 0) {
+      this.loadCharacter(this.selectedCharacterIndex);
+    } else {
+      // If we were creating a new character, just reset to default
+      this.selectedCharacterIndex = -1;
+    }
+    
+    // Always exit edit mode directly
+    this.editMode = false;
+    
+    // Force change detection by adding a timeout
+    setTimeout(() => {
+      if (this.editMode) {
+        console.log('Edit mode still active after cancelEditMode, forcing to false');
+        this.editMode = false;
+      }
+    }, 0);
+  }
+
+  // Update addNewCharacter method to properly initialize with the default preset
+  addNewCharacter(): void {
+    if (!this.config) return;
+    
+    // Create a base character first
+    const newCharacter: Character = {
+      name: 'New Character',
+      character: '',
+      personality_preset: 'default',
+      personality_verbosity: 50,
+      personality_vulgarity: 0,
+      personality_empathy: 50,
+      personality_formality: 50,
+      personality_confidence: 50,
+      personality_ethical_alignment: 'neutral',
+      personality_moral_alignment: 'neutral',
+      personality_tone: 'serious',
+      personality_character_inspiration: '',
+      personality_language: 'English',
+      personality_knowledge_pop_culture: false,
+      personality_knowledge_scifi: false,
+      personality_knowledge_history: false,
+      tts_voice: this.config.tts_voice || '' // Include current TTS voice
+    };
+    
+    // Add the new character to the config
+    if (!this.config.characters) {
+      this.config.characters = [];
+    }
+    
+    const newIndex = this.config.characters.length;
+    this.config.characters.push(newCharacter);
+    
+    // Save the initial character to the configuration
+    this.configService.changeConfig({ characters: this.config.characters }).then(() => {
+      // Select the new character
+      this.selectedCharacterIndex = newIndex;
+      
+      // Set this as the active character
+      this.configService.setActiveCharacter(newIndex);
+      
+      // Apply the default preset to properly initialize the character
+      this.onConfigChange({
+        personality_preset: 'default',
+        personality_name: 'New Character',
+        personality_language: 'English'
+      });
+      
+      // Allow the component to process the config update
+      setTimeout(() => {
+        // Apply the default preset settings to the character
+        this.applyPersonalityPreset('default');
+        
+        // Generate the character prompt
+        this.updatePrompt();
+        
+        // Finally, enter edit mode
+        this.editMode = true;
+      }, 100); // Small delay to ensure settings are applied
+    }).catch((error: Error) => {
+      console.error('Error adding new character:', error);
+      this.snackBar.open('Error adding new character', 'OK', { duration: 5000 });
+    });
+  }
+
+  deleteSelectedCharacter(): void {
+    if (!this.config || this.selectedCharacterIndex < 0) return;
+    
+    // Make sure we have a characters array and the selected index is valid
+    if (!this.config.characters || !this.config.characters[this.selectedCharacterIndex]) {
+      this.snackBar.open('Error: Character not found', 'OK', { duration: 5000 });
+      return;
+    }
+    
+    this.confirmationDialog.openConfirmationDialog({
+      title: 'Delete Character',
+      message: `Are you sure you want to delete "${this.config.characters[this.selectedCharacterIndex].name}"? This action cannot be undone.`,
+      confirmButtonText: 'Delete',
+      cancelButtonText: 'Cancel'
+    }).subscribe(confirmed => {
+      if (confirmed && this.config && this.config.characters) {
+        this.config.characters.splice(this.selectedCharacterIndex, 1);
+        this.selectedCharacterIndex = -1;
+        this.saveCharacters();
+      }
+    });
   }
 }

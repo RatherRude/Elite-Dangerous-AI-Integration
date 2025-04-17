@@ -18,6 +18,16 @@ export interface ChangeEventConfigMessage extends BaseMessage {
     value: any;
 }
 
+export interface CharacterOperationMessage extends BaseMessage {
+    type: "change_config";
+    config: {
+        character_operation: "add" | "update" | "delete" | "set_active";
+        character_index?: number;
+        character_data?: Character;
+        set_active?: boolean;
+    };
+}
+
 export interface ModelValidationMessage extends BaseMessage {
     type: "model_validation";
     success: boolean;
@@ -40,9 +50,8 @@ export interface SystemInfoMessage extends BaseMessage {
     system: SystemInfo;
 }
 
-export interface Config {
-    api_key: string;
-    commander_name: string;
+export interface Character {
+    name: string;
     character: string;
     personality_preset: string;
     personality_verbosity: number;
@@ -54,9 +63,37 @@ export interface Config {
     personality_moral_alignment: string;
     personality_tone: string;
     personality_character_inspiration: string;
+    personality_language: string;
     personality_knowledge_pop_culture: boolean;
     personality_knowledge_scifi: boolean;
     personality_knowledge_history: boolean;
+    tts_voice?: string;
+}
+
+export interface Config {
+    api_key: string;
+    commander_name: string;
+    // Active character properties (kept for backward compatibility)
+    character: string;
+    personality_preset: string;
+    personality_verbosity: number;
+    personality_vulgarity: number;
+    personality_empathy: number;
+    personality_formality: number;
+    personality_confidence: number;
+    personality_ethical_alignment: string;
+    personality_moral_alignment: string;
+    personality_tone: string;
+    personality_character_inspiration: string;
+    personality_language: string;
+    personality_name: string;
+    personality_knowledge_pop_culture: boolean;
+    personality_knowledge_scifi: boolean;
+    personality_knowledge_history: boolean;
+    // Stored characters
+    characters: Character[];
+    active_character_index: number;
+    // Other config settings
     llm_provider: "openai" | "openrouter" | "google-ai-studio" | "custom" | "local-ai-server";
     llm_model_name: string;
     llm_api_key: string;
@@ -182,6 +219,60 @@ export class ConfigService {
             value: enabled,
         };
 
+        await this.tauriService.send_message(message);
+    }
+
+    public async addCharacter(character: Character, setActive: boolean = false): Promise<void> {
+        const message: CharacterOperationMessage = {
+            type: "change_config",
+            timestamp: new Date().toISOString(),
+            config: {
+                character_operation: "add",
+                character_data: character,
+                set_active: setActive
+            }
+        };
+        
+        await this.tauriService.send_message(message);
+    }
+    
+    public async updateCharacter(index: number, character: Character): Promise<void> {
+        const message: CharacterOperationMessage = {
+            type: "change_config",
+            timestamp: new Date().toISOString(),
+            config: {
+                character_operation: "update",
+                character_index: index,
+                character_data: character
+            }
+        };
+        
+        await this.tauriService.send_message(message);
+    }
+    
+    public async deleteCharacter(index: number): Promise<void> {
+        const message: CharacterOperationMessage = {
+            type: "change_config",
+            timestamp: new Date().toISOString(),
+            config: {
+                character_operation: "delete",
+                character_index: index
+            }
+        };
+        
+        await this.tauriService.send_message(message);
+    }
+    
+    public async setActiveCharacter(index: number): Promise<void> {
+        const message: CharacterOperationMessage = {
+            type: "change_config",
+            timestamp: new Date().toISOString(),
+            config: {
+                character_operation: "set_active",
+                character_index: index
+            }
+        };
+        
         await this.tauriService.send_message(message);
     }
 
