@@ -82,8 +82,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   apiKeyType: string | null = null;
   selectedCharacterIndex: number = -1;
   editMode: boolean = false;
-  bufferCharacterName: string = ''; // Buffer for character name to prevent focus loss
-  bufferCharacterLanguage: string = ''; // Buffer for character language to prevent focus loss
   private configSubscription?: Subscription;
   private systemSubscription?: Subscription;
   private validationSubscription?: Subscription;
@@ -233,12 +231,10 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
           // Set the selected character to match active_character_index
           this.selectedCharacterIndex = config.active_character_index;
 
-          // Reset edit mode when receiving a new config
-          this.editMode = false;
-
-          // Update buffer character name and language from config
-          this.bufferCharacterName = config.personality_name || '';
-          this.bufferCharacterLanguage = config.personality_language || 'English';
+          // Reset edit mode when receiving a new config, but only if not actively editing
+          if (!this.editMode) {
+            this.editMode = false;
+          }
 
           // If initializing, load settings from the config
           if (this.initializing) {
@@ -309,22 +305,9 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   }
 
   async onConfigChange(partialConfig: Partial<Config>) {
-    // Check if we're currently in edit mode - don't disable it automatically
-    const wasInEditMode = this.editMode;
-    
-    // Check if this is an explicit command to exit edit mode
-    const explicitlyTurningOffEditMode = (partialConfig as any).editMode === false;
-    
     if (this.config) {
       try {
         await this.configService.changeConfig(partialConfig);
-        
-        // Only restore edit mode if it was active AND we're not explicitly turning it off
-        if (wasInEditMode && !explicitlyTurningOffEditMode) {
-          this.editMode = true;
-        } else if (explicitlyTurningOffEditMode) {
-          this.editMode = false;
-        }
       } catch (error) {
         console.error('Error updating config:', error);
         this.snackBar.open('Error updating configuration', 'OK', { duration: 5000 });
@@ -1385,8 +1368,8 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   private performCharacterSelection(index: number) {
     if (!this.config) return;
     
-    // Exit edit mode explicitly
-    this.onConfigChange({ editMode: false } as any);
+    // Exit edit mode directly
+    this.editMode = false;
     
     // Set the selected character index
     this.selectedCharacterIndex = index;
@@ -1404,6 +1387,11 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       // Reset to default settings
       this.configService.setActiveCharacter(-1);
     }
+
+    // Ensure edit mode is still off after all operations
+    setTimeout(() => {
+      this.editMode = false;
+    }, 0);
   }
 
   toggleEditMode() {
@@ -1438,16 +1426,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       this.updatePrompt();
     }
     
-    // Apply the buffered name to the config before creating the character
-    if (this.bufferCharacterName !== this.config.personality_name) {
-      this.config.personality_name = this.bufferCharacterName;
-    }
-    
-    // Apply the buffered language to the config
-    if (this.bufferCharacterLanguage !== this.config.personality_language) {
-      this.config.personality_language = this.bufferCharacterLanguage;
-    }
-    
     // Create a character from current settings
     const newCharacter = this.createCharacterFromCurrentSettings();
     
@@ -1462,10 +1440,10 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       this.config.characters[this.selectedCharacterIndex] = newCharacter;
       this.snackBar.open(`Character "${newCharacter.name}" updated successfully`, 'Close', { duration: 3000 });
       
-      // First save the characters
+      // Save the characters
       this.saveCharacters();
       
-      // Then set edit mode to false, using a direct property change instead of onConfigChange
+      // Always set edit mode to false directly after a successful save
       this.editMode = false;
     } else if (this.selectedCharacterIndex === -1) {
       // We're saving the default character as a new character
@@ -1488,11 +1466,11 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             this.config.characters[existingIndex] = newCharacter;
             this.selectedCharacterIndex = existingIndex;
             
-            // First save the characters
+            // Save the characters
             this.saveCharacters();
             this.snackBar.open(`Character "${newCharacter.name}" updated successfully`, 'Close', { duration: 3000 });
             
-            // Then set edit mode to false directly
+            // Always set edit mode to false directly after a successful save
             this.editMode = false;
           }
         });
@@ -1501,11 +1479,11 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
         this.config.characters.push(newCharacter);
         this.selectedCharacterIndex = this.config.characters.length - 1;
         
-        // First save the characters
+        // Save the characters
         this.saveCharacters();
         this.snackBar.open(`Character "${newCharacter.name}" saved successfully`, 'Close', { duration: 3000 });
         
-        // Then set edit mode to false directly
+        // Always set edit mode to false directly after a successful save
         this.editMode = false;
       }
     } else {
@@ -1546,7 +1524,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     }
     
     return {
-      name: this.bufferCharacterName || "New Character",
+      name: this.config.personality_name || "New Character",
       character: this.config.character || "",
       personality_preset: this.config.personality_preset || "default",
       personality_verbosity: this.config.personality_verbosity || 50,
@@ -1591,18 +1569,12 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     // Default character (index -1)
     if (index === -1) {
       // Reset to default character settings, but don't modify the current config
-      this.bufferCharacterName = '';
-      this.bufferCharacterLanguage = 'English';
       return;
     }
     
     // Custom character
     if (this.config.characters && index >= 0 && index < this.config.characters.length) {
       const character = this.config.characters[index];
-      
-      // Update buffers with character data
-      this.bufferCharacterName = character.name;
-      this.bufferCharacterLanguage = character.personality_language || 'English';
       
       // Apply all character properties to the current config
       const updateObj: Partial<Config> = {
@@ -1624,18 +1596,12 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
         personality_knowledge_history: character.personality_knowledge_history
       };
       
-      // Store current edit state
-      const wasInEditMode = this.editMode;
-      
       // Update the config
       this.onConfigChange(updateObj);
-      
-      // Restore edit state if needed
-      this.editMode = wasInEditMode;
     }
   }
 
-  // Modify cancelEditMode method
+  // Modify cancelEditMode method for reliability
   cancelEditMode(): void {
     if (!this.config) return;
     
@@ -1647,8 +1613,16 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       this.selectedCharacterIndex = -1;
     }
     
-    // Exit edit mode explicitly through onConfigChange
-    this.onConfigChange({ editMode: false } as any);
+    // Always exit edit mode directly
+    this.editMode = false;
+    
+    // Force change detection by adding a timeout
+    setTimeout(() => {
+      if (this.editMode) {
+        console.log('Edit mode still active after cancelEditMode, forcing to false');
+        this.editMode = false;
+      }
+    }, 0);
   }
 
   // Update addNewCharacter method to immediately add a character with default values
@@ -1720,33 +1694,5 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
         this.saveCharacters();
       }
     });
-  }
-
-  // Add a new method to handle character name input changes without losing focus
-  onCharacterNameInput(name: string): void {
-    // Update the buffer without triggering a config change
-    this.bufferCharacterName = name;
-  }
-
-  // Add a method to apply the character name when focus is lost (blur event)
-  onCharacterNameBlur(): void {
-    if (this.config && this.bufferCharacterName !== this.config.personality_name) {
-      // Only update if the name has actually changed
-      this.onConfigChange({ personality_name: this.bufferCharacterName });
-    }
-  }
-
-  // Add a new method to handle character language input changes without losing focus
-  onCharacterLanguageInput(language: string): void {
-    // Update the buffer without triggering a config change
-    this.bufferCharacterLanguage = language;
-  }
-
-  // Add a method to apply the character language when focus is lost (blur event)
-  onCharacterLanguageBlur(): void {
-    if (this.config && this.bufferCharacterLanguage !== this.config.personality_language) {
-      // Only update if the language has actually changed
-      this.onConfigChange({ personality_language: this.bufferCharacterLanguage });
-    }
   }
 }

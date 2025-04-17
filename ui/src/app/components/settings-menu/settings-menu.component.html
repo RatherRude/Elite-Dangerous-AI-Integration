@@ -120,331 +120,339 @@
                 <div class="settings-grid">
 
                     <h2>Personality</h2>
-                    
-                    <!-- Character Management Section -->
-                    <div class="character-management-section" [class.editing-active]="editMode">
-                        <div class="character-selector">
-                            <mat-form-field appearance="fill">
-                                <mat-label>Select Character</mat-label>
-                                <mat-select [(value)]="selectedCharacterIndex" (selectionChange)="onCharacterSelect($event.value)" [disabled]="editMode">
-                                    <mat-option [value]="-1">Default Character</mat-option>
-                                    <mat-divider *ngIf="config.characters && config.characters.length > 0"></mat-divider>
-                                    <mat-option *ngFor="let character of config.characters; let i = index" [value]="i">
-                                        {{ character.name }}
-                                    </mat-option>
-                                </mat-select>
-                            </mat-form-field>
-                            
-                            <div class="character-buttons">
-                                <!-- When not in edit mode, show Edit and New buttons -->
-                                @if (!editMode) {
-                                    <button mat-raised-button color="primary" (click)="toggleEditMode()">
-                                        <mat-icon>edit</mat-icon> Edit
-                                    </button>
-                                    
-                                    <button mat-raised-button color="accent" (click)="addNewCharacter()">
-                                        <mat-icon>add</mat-icon> New
-                                    </button>
-                                    
-                                    <button mat-raised-button color="warn" 
-                                            [disabled]="selectedCharacterIndex < 0" 
-                                            (click)="deleteSelectedCharacter()">
-                                        <mat-icon>delete</mat-icon> Delete
-                                    </button>
-                                }
-                                
-                                <!-- When in edit mode, show Save and Cancel buttons -->
-                                @if (editMode) {
-                                    <button mat-raised-button color="primary" (click)="saveCurrentAsCharacter()">
-                                        <mat-icon>save</mat-icon> Save
-                                    </button>
-                                    
-                                    <button mat-raised-button (click)="cancelEditMode()">
-                                        <mat-icon>cancel</mat-icon> Cancel
-                                    </button>
-                                }
+                    <div [class.editing-active]="editMode">
+                        <!-- Character Management Section -->
+                        <div class="character-management-section">
+                            <div class="character-selector">
+                                <mat-form-field appearance="fill">
+                                    <mat-label>Select Character</mat-label>
+                                    <mat-select [(value)]="selectedCharacterIndex" (selectionChange)="onCharacterSelect($event.value)" [disabled]="editMode">
+                                        <mat-option [value]="-1">Default Character</mat-option>
+                                        <mat-divider *ngIf="config.characters && config.characters.length > 0"></mat-divider>
+                                        <mat-option *ngFor="let character of config.characters; let i = index" [value]="i">
+                                            {{ character.name }}
+                                        </mat-option>
+                                    </mat-select>
+                                </mat-form-field>
+
+                                <div class="character-buttons">
+                                    <!-- When not in edit mode, show Edit and New buttons -->
+                                    @if (!editMode) {
+                                        <button mat-raised-button color="primary" (click)="toggleEditMode()">
+                                            <mat-icon>edit</mat-icon> Edit
+                                        </button>
+
+                                        <button mat-raised-button color="accent" (click)="addNewCharacter()">
+                                            <mat-icon>add</mat-icon> New
+                                        </button>
+
+                                        <button mat-raised-button color="warn"
+                                                [disabled]="selectedCharacterIndex < 0"
+                                                (click)="deleteSelectedCharacter()">
+                                            <mat-icon>delete</mat-icon> Delete
+                                        </button>
+                                    }
+
+                                    <!-- When in edit mode, show Save and Cancel buttons -->
+                                    @if (editMode) {
+                                        <button mat-raised-button color="primary" (click)="saveCurrentAsCharacter()">
+                                            <mat-icon>save</mat-icon> Save
+                                        </button>
+
+                                        <button mat-raised-button (click)="cancelEditMode()">
+                                            <mat-icon>cancel</mat-icon> Cancel
+                                        </button>
+                                    }
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <!-- Character settings - only visible when editing -->
-                    <div id="character-creation" *ngIf="editMode">
-                        <!-- Character Name -->
-                        <div class="character-settings">
-                            <mat-form-field appearance="outline">
-                                <mat-label>Character Name</mat-label>
-                                <input matInput [(ngModel)]="bufferCharacterName"
-                                    (ngModelChange)="onCharacterNameInput($event)"
-                                    (blur)="onCharacterNameBlur()">
-                            </mat-form-field>
-                            
-                            <!-- Character Language -->
-                            <mat-form-field appearance="outline">
-                                <mat-label>Character Language</mat-label>
-                                <input matInput [(ngModel)]="bufferCharacterLanguage"
-                                    (ngModelChange)="onCharacterLanguageInput($event)"
-                                    (blur)="onCharacterLanguageBlur()">
-                            </mat-form-field>
-                            
-                            <!-- Voice selection -->
-                            <mat-form-field>
-                                <mat-label>Voice</mat-label>
-                                @if (config.tts_provider === 'openai') {
-                                    <mat-select [(ngModel)]="config.tts_voice"
-                                            (ngModelChange)="onConfigChange({tts_voice: $event})">
-                                        <mat-option value="alloy">Alloy - Neutral, versatile voice</mat-option>
-                                        <mat-option value="echo">Echo - Deeper, experienced voice</mat-option>
-                                        <mat-option value="fable">Fable - Warm, soft-spoken voice</mat-option>
-                                        <mat-option value="onyx">Onyx - Deep, authoritative voice</mat-option>
-                                        <mat-option value="nova">Nova - Bright, friendly voice</mat-option>
-                                        <mat-option value="shimmer">Shimmer - Clear, warm voice</mat-option>
-                                    </mat-select>
-                                } @else if (config.tts_provider === 'edge-tts') {
-                                    <mat-select [(ngModel)]="config.tts_voice"
-                                            (selectionChange)="onVoiceSelectionChange($event.value)">
-                                        @if (isCustomVoice(config.tts_voice)) {
-                                            <mat-option [value]="config.tts_voice" style="font-style: italic">
-                                                {{ getVoiceDisplayName(config.tts_voice) }}
-                                            </mat-option>
-                                            <mat-divider class="custom-voice-divider"></mat-divider>
+
+                        <!-- Character settings - only visible when editing -->
+                        <div id="character-creation" *ngIf="editMode">
+                            <!-- Character Name -->
+                            <div class="character-settings trait-container">
+                                <div class="trait-input">
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Character Name</mat-label>
+                                        <input matInput
+                                            [(ngModel)]="config.personality_name"
+                                            [ngModelOptions]="{updateOn: 'blur'}"
+                                            (ngModelChange)="onConfigChange({personality_name: $event})">
+                                    </mat-form-field>
+                                </div>
+                                <div class="trait-input">
+                                    <!-- Character Language -->
+                                    <mat-form-field appearance="outline">
+                                        <mat-label>Character Language</mat-label>
+                                        <input matInput
+                                            [(ngModel)]="config.personality_language"
+                                            [ngModelOptions]="{updateOn: 'blur'}"
+                                            (ngModelChange)="onConfigChange({personality_language: $event})">
+                                    </mat-form-field>
+                                </div>
+                                <div class="trait-select">
+                                    <!-- Voice selection -->
+                                    <mat-form-field>
+                                        <mat-label>Voice</mat-label>
+                                        @if (config.tts_provider === 'openai') {
+                                            <mat-select [(ngModel)]="config.tts_voice"
+                                                    (ngModelChange)="onConfigChange({tts_voice: $event})">
+                                                <mat-option value="alloy">Alloy - Neutral, versatile voice</mat-option>
+                                                <mat-option value="echo">Echo - Deeper, experienced voice</mat-option>
+                                                <mat-option value="fable">Fable - Warm, soft-spoken voice</mat-option>
+                                                <mat-option value="onyx">Onyx - Deep, authoritative voice</mat-option>
+                                                <mat-option value="nova">Nova - Bright, friendly voice</mat-option>
+                                                <mat-option value="shimmer">Shimmer - Clear, warm voice</mat-option>
+                                            </mat-select>
+                                        } @else if (config.tts_provider === 'edge-tts') {
+                                            <mat-select [(ngModel)]="config.tts_voice"
+                                                    (selectionChange)="onVoiceSelectionChange($event.value)">
+                                                @if (isCustomVoice(config.tts_voice)) {
+                                                    <mat-option [value]="config.tts_voice" style="font-style: italic">
+                                                        {{ getVoiceDisplayName(config.tts_voice) }}
+                                                    </mat-option>
+                                                    <mat-divider class="custom-voice-divider"></mat-divider>
+                                                }
+                                                <mat-optgroup label="English - United States">
+                                                    <mat-option value="en-US-AriaNeural">Aria (Female) - Positive, Confident</mat-option>
+                                                    <mat-option value="en-US-AnaNeural">Ana (Female) - Cute</mat-option>
+                                                    <mat-option value="en-US-ChristopherNeural">Christopher (Male) - Reliable, Authority</mat-option>
+                                                    <mat-option value="en-US-EricNeural">Eric (Male) - Rational</mat-option>
+                                                    <mat-option value="en-US-GuyNeural">Guy (Male) - Passion</mat-option>
+                                                    <mat-option value="en-US-JennyNeural">Jenny (Female) - Friendly, Considerate</mat-option>
+                                                    <mat-option value="en-US-MichelleNeural">Michelle (Female) - Friendly, Pleasant</mat-option>
+                                                    <mat-option value="en-US-RogerNeural">Roger (Male) - Lively</mat-option>
+                                                    <mat-option value="en-US-SteffanNeural">Steffan (Male) - Rational</mat-option>
+                                                </mat-optgroup>
+                                                <mat-optgroup label="English - United Kingdom">
+                                                    <mat-option value="en-GB-LibbyNeural">Libby (Female)</mat-option>
+                                                    <mat-option value="en-GB-MaisieNeural">Maisie (Female)</mat-option>
+                                                    <mat-option value="en-GB-RyanNeural">Ryan (Male)</mat-option>
+                                                    <mat-option value="en-GB-SoniaNeural">Sonia (Female)</mat-option>
+                                                    <mat-option value="en-GB-ThomasNeural">Thomas (Male)</mat-option>
+                                                </mat-optgroup>
+                                                <mat-optgroup label="English - Australia">
+                                                    <mat-option value="en-AU-NatashaNeural">Natasha (Female)</mat-option>
+                                                    <mat-option value="en-AU-WilliamNeural">William (Male)</mat-option>
+                                                </mat-optgroup>
+                                                <mat-option value="show-all-voices">Show All Voices...</mat-option>
+                                            </mat-select>
+                                        } @else {
+                                            <input matInput [(ngModel)]="config.tts_voice"
+                                                (ngModelChange)="onConfigChange({tts_voice: $event})">
                                         }
-                                        <mat-optgroup label="English - United States">
-                                            <mat-option value="en-US-AriaNeural">Aria (Female) - Positive, Confident</mat-option>
-                                            <mat-option value="en-US-AnaNeural">Ana (Female) - Cute</mat-option>
-                                            <mat-option value="en-US-ChristopherNeural">Christopher (Male) - Reliable, Authority</mat-option>
-                                            <mat-option value="en-US-EricNeural">Eric (Male) - Rational</mat-option>
-                                            <mat-option value="en-US-GuyNeural">Guy (Male) - Passion</mat-option>
-                                            <mat-option value="en-US-JennyNeural">Jenny (Female) - Friendly, Considerate</mat-option>
-                                            <mat-option value="en-US-MichelleNeural">Michelle (Female) - Friendly, Pleasant</mat-option>
-                                            <mat-option value="en-US-RogerNeural">Roger (Male) - Lively</mat-option>
-                                            <mat-option value="en-US-SteffanNeural">Steffan (Male) - Rational</mat-option>
-                                        </mat-optgroup>
-                                        <mat-optgroup label="English - United Kingdom">
-                                            <mat-option value="en-GB-LibbyNeural">Libby (Female)</mat-option>
-                                            <mat-option value="en-GB-MaisieNeural">Maisie (Female)</mat-option>
-                                            <mat-option value="en-GB-RyanNeural">Ryan (Male)</mat-option>
-                                            <mat-option value="en-GB-SoniaNeural">Sonia (Female)</mat-option>
-                                            <mat-option value="en-GB-ThomasNeural">Thomas (Male)</mat-option>
-                                        </mat-optgroup>
-                                        <mat-optgroup label="English - Australia">
-                                            <mat-option value="en-AU-NatashaNeural">Natasha (Female)</mat-option>
-                                            <mat-option value="en-AU-WilliamNeural">William (Male)</mat-option>
-                                        </mat-optgroup>
-                                        <mat-option value="show-all-voices">Show All Voices...</mat-option>
-                                    </mat-select>
-                                } @else {
-                                    <input matInput [(ngModel)]="config.tts_voice"
-                                        (ngModelChange)="onConfigChange({tts_voice: $event})">
-                                }
-                            </mat-form-field>
-                        </div>
-
-                        <!-- Personality Preset -->
-                        <div class="trait-select">
-                            <mat-form-field appearance="fill">
-                                <mat-label>Personality Preset</mat-label>
-                                <mat-select [(value)]="config.personality_preset" (selectionChange)="applyPersonalityPreset($event.value)">
-                                    <mat-option value="custom">Custom</mat-option>
-                                    <mat-option value="default">Default</mat-option>
-                                    <mat-option disabled>--- Elite: Dangerous Roles ---</mat-option>
-                                    <mat-option value="explorer">Explorer</mat-option>
-                                    <mat-option value="trader">Trader</mat-option>
-                                    <mat-option value="miner">Miner</mat-option>
-                                    <mat-option value="bountyHunter">Bounty Hunter</mat-option>
-                                    <mat-option value="pirate">Pirate</mat-option>
-                                    <mat-option value="smuggler">Smuggler</mat-option>
-                                    <mat-option value="mercenary">Mercenary</mat-option>
-                                    <mat-option value="missionRunner">Mission Runner</mat-option>
-                                    <mat-option value="passengerTransporter">Passenger Transporter</mat-option>
-                                    <mat-option value="powerplayAgent">Powerplay Agent</mat-option>
-                                    <mat-option value="axCombatPilot">AX Combat Pilot</mat-option>
-                                    <mat-option value="pvpCombatant">PvP Combatant</mat-option>
-                                    <mat-option value="pveCombatant">PvE Combatant</mat-option>
-                                    <mat-option value="salvager">Salvager</mat-option>
-                                    <mat-option value="cannonResearcher">Cannon Researcher</mat-option>
-                                    <mat-option value="fuelRat">Fuel Rat/Support</mat-option>
-                                    <mat-option value="fleetCarrierOperator">Fleet Carrier Operator</mat-option>
-                                    <mat-option value="bgsPlayer">BGS Player</mat-option>
-                                    <mat-option value="racer">Race Pilot</mat-option>
-                                    <mat-option disabled>--- Roleplaying Characters ---</mat-option>
-                                    <mat-option value="diplomat">Diplomat</mat-option>
-                                    <mat-option value="spy">Spy / Infiltrator</mat-option>
-                                    <mat-option value="cultLeader">Cult Leader</mat-option>
-                                    <mat-option value="rogueAI">Rogue AI / Synthetic Being</mat-option>
-                                    <mat-option value="xenologist">Xenologist</mat-option>
-                                    <mat-option value="vigilante">Renegade Cop / Vigilante</mat-option>
-                                    <mat-option value="warCorrespondent">War Correspondent</mat-option>
-                                    <mat-option value="propagandist">Propagandist</mat-option>
-                                    <mat-option value="pirateLord">Pirate Lord / Crime Boss</mat-option>
-                                    <mat-option value="veteran">Disillusioned Veteran</mat-option>
-                                    <mat-option value="freedomFighter">Freedom Fighter</mat-option>
-                                    <mat-option value="hermit">Hermit / Space Nomad</mat-option>
-                                    <mat-option value="corporate">Corporate Operative</mat-option>
-                                    <mat-option value="zealot">Religious Zealot</mat-option>
-                                    <mat-option value="historian">Historian / Archivist</mat-option>
-                                </mat-select>
-                            </mat-form-field>
-                        </div>
-
-                        <!-- Character settings when preset is not custom -->
-                        @if (config.personality_preset !== 'custom') {
-                            <div class="personality-settings">
-                                <div class="trait-container">
-                                    <!-- Character Inspiration -->
-                                    <div class="trait-select">
-                                        <mat-form-field appearance="outline">
-                                            <mat-label>Character Inspiration</mat-label>
-                                            <input matInput [(ngModel)]="config.personality_character_inspiration"
-                                                (ngModelChange)="onConfigChange({personality_character_inspiration: $event}); updatePrompt()">
-                                        </mat-form-field>
-                                    </div>
-                                </div>
-
-                                <div class="trait-container">
-                                    <!-- Verbosity Setting -->
-                                    <div class="trait-select">
-                                        <mat-form-field appearance="outline">
-                                            <mat-label>Verbosity</mat-label>
-                                            <mat-select [(ngModel)]="config.personality_verbosity"
-                                                (ngModelChange)="onConfigChange({personality_verbosity: $event}); updatePrompt()">
-                                                <mat-option [value]="0">Minimal</mat-option>
-                                                <mat-option [value]="25">Brief</mat-option>
-                                                <mat-option [value]="50">Balanced</mat-option>
-                                                <mat-option [value]="75">Detailed</mat-option>
-                                                <mat-option [value]="100">Verbose</mat-option>
-                                            </mat-select>
-                                        </mat-form-field>
-                                    </div>
-
-                                    <!-- Tone Setting -->
-                                    <div class="trait-select">
-                                        <mat-form-field appearance="outline">
-                                            <mat-label>Tone</mat-label>
-                                            <mat-select [(ngModel)]="config.personality_tone"
-                                                (ngModelChange)="onConfigChange({personality_tone: $event}); updatePrompt()">
-                                                <mat-option value="serious">Serious</mat-option>
-                                                <mat-option value="humorous">Humorous</mat-option>
-                                                <mat-option value="sarcastic">Sarcastic</mat-option>
-                                            </mat-select>
-                                        </mat-form-field>
-                                    </div>
-
-                                    <!-- Vulgarity Setting -->
-                                    <div class="trait-select">
-                                        <mat-form-field appearance="outline">
-                                            <mat-label>Vulgarity</mat-label>
-                                            <mat-select [(ngModel)]="config.personality_vulgarity"
-                                                (ngModelChange)="onConfigChange({personality_vulgarity: $event}); updatePrompt()">
-                                                <mat-option [value]="0">None</mat-option>
-                                                <mat-option [value]="25">Mild</mat-option>
-                                                <mat-option [value]="50">Moderate</mat-option>
-                                                <mat-option [value]="75">Strong</mat-option>
-                                                <mat-option [value]="100">Extreme</mat-option>
-                                            </mat-select>
-                                        </mat-form-field>
-                                    </div>
-                                </div>
-
-                                <div class="trait-container">
-                                    <!-- Empathy Level -->
-                                    <div class="trait-select">
-                                        <mat-form-field appearance="outline">
-                                            <mat-label>Empathy</mat-label>
-                                            <mat-select [(ngModel)]="config.personality_empathy"
-                                                (ngModelChange)="onConfigChange({personality_empathy: $event}); updatePrompt()">
-                                                <mat-option [value]="0">Cold</mat-option>
-                                                <mat-option [value]="25">Detached</mat-option>
-                                                <mat-option [value]="50">Balanced</mat-option>
-                                                <mat-option [value]="75">Caring</mat-option>
-                                                <mat-option [value]="100">Highly Empathetic</mat-option>
-                                            </mat-select>
-                                        </mat-form-field>
-                                    </div>
-
-                                    <!-- Formality Level -->
-                                    <div class="trait-select">
-                                        <mat-form-field appearance="outline">
-                                            <mat-label>Formality</mat-label>
-                                            <mat-select [(ngModel)]="config.personality_formality"
-                                                (ngModelChange)="onConfigChange({personality_formality: $event}); updatePrompt()">
-                                                <mat-option [value]="0">Casual</mat-option>
-                                                <mat-option [value]="25">Relaxed</mat-option>
-                                                <mat-option [value]="50">Balanced</mat-option>
-                                                <mat-option [value]="75">Professional</mat-option>
-                                                <mat-option [value]="100">Formal</mat-option>
-                                            </mat-select>
-                                        </mat-form-field>
-                                    </div>
-
-                                    <!-- Confidence Level -->
-                                    <div class="trait-select">
-                                        <mat-form-field appearance="outline">
-                                            <mat-label>Confidence</mat-label>
-                                            <mat-select [(ngModel)]="config.personality_confidence"
-                                                (ngModelChange)="onConfigChange({personality_confidence: $event}); updatePrompt()">
-                                                <mat-option [value]="0">Uncertain</mat-option>
-                                                <mat-option [value]="25">Tentative</mat-option>
-                                                <mat-option [value]="50">Balanced</mat-option>
-                                                <mat-option [value]="75">Confident</mat-option>
-                                                <mat-option [value]="100">Authoritative</mat-option>
-                                            </mat-select>
-                                        </mat-form-field>
-                                    </div>
-                                </div>
-
-                                <div class="trait-container">
-                                    <!-- Ethical Axis (Law vs. Chaos) -->
-                                    <div class="trait-select">
-                                        <mat-form-field appearance="outline">
-                                            <mat-label>Ethical Alignment</mat-label>
-                                            <mat-select [(ngModel)]="config.personality_ethical_alignment"
-                                                (ngModelChange)="onConfigChange({personality_ethical_alignment: $event}); updatePrompt()">
-                                                <mat-option value="lawful">Lawful (Order, Rules, Structure)</mat-option>
-                                                <mat-option value="neutral">Neutral (Balance, Pragmatism)</mat-option>
-                                                <mat-option value="chaotic">Chaotic (Freedom, Flexibility, Spontaneity)</mat-option>
-                                            </mat-select>
-                                        </mat-form-field>
-                                    </div>
-
-                                    <!-- Moral Axis (Good vs. Evil) -->
-                                    <div class="trait-select">
-                                        <mat-form-field appearance="outline">
-                                            <mat-label>Moral Alignment</mat-label>
-                                            <mat-select [(ngModel)]="config.personality_moral_alignment"
-                                                (ngModelChange)="onConfigChange({personality_moral_alignment: $event}); updatePrompt()">
-                                                <mat-option value="good">Good (Altruism, Compassion)</mat-option>
-                                                <mat-option value="neutral">Neutral (Self-Interest, Balance)</mat-option>
-                                                <mat-option value="evil">Evil (Selfishness, Ruthlessness)</mat-option>
-                                            </mat-select>
-                                        </mat-form-field>
-                                    </div>
-                                </div>
-
-                                <!-- Knowledge Areas -->
-                                <div class="knowledge-areas">
-                                    <label class="knowledge-label">Knowledge Areas</label>
-                                    <div class="knowledge-checkboxes">
-                                        <mat-checkbox [(ngModel)]="config.personality_knowledge_pop_culture"
-                                                    (ngModelChange)="onConfigChange({personality_knowledge_pop_culture: $event}); updatePrompt()">Pop Culture</mat-checkbox>
-                                        <mat-checkbox [(ngModel)]="config.personality_knowledge_scifi"
-                                                    (ngModelChange)="onConfigChange({personality_knowledge_scifi: $event}); updatePrompt()">Sci-Fi</mat-checkbox>
-                                        <mat-checkbox [(ngModel)]="config.personality_knowledge_history"
-                                                    (ngModelChange)="onConfigChange({personality_knowledge_history: $event}); updatePrompt()">History</mat-checkbox>
-                                    </div>
+                                    </mat-form-field>
                                 </div>
                             </div>
-                        }
 
-                        <!-- Character Textarea - always visible when editing -->
-                        <mat-form-field>
-                            <mat-label>Character</mat-label>
-                            <textarea matInput [(ngModel)]="config.character"
-                                    (ngModelChange)="onConfigChange({character: $event})"
-                                    [readonly]="config.personality_preset !== 'custom'"
-                                    rows="10"></textarea>
-                        </mat-form-field>
+                            <!-- Personality Preset -->
+                            <div class="trait-select">
+                                <mat-form-field appearance="fill">
+                                    <mat-label>Personality Preset</mat-label>
+                                    <mat-select [(value)]="config.personality_preset" (selectionChange)="applyPersonalityPreset($event.value)">
+                                        <mat-option value="default">Default</mat-option>
+                                        <mat-option value="custom">Custom</mat-option>
+                                        <mat-option disabled>--- Elite: Dangerous Roles ---</mat-option>
+                                        <mat-option value="explorer">Explorer</mat-option>
+                                        <mat-option value="trader">Trader</mat-option>
+                                        <mat-option value="miner">Miner</mat-option>
+                                        <mat-option value="bountyHunter">Bounty Hunter</mat-option>
+                                        <mat-option value="pirate">Pirate</mat-option>
+                                        <mat-option value="smuggler">Smuggler</mat-option>
+                                        <mat-option value="mercenary">Mercenary</mat-option>
+                                        <mat-option value="missionRunner">Mission Runner</mat-option>
+                                        <mat-option value="passengerTransporter">Passenger Transporter</mat-option>
+                                        <mat-option value="powerplayAgent">Powerplay Agent</mat-option>
+                                        <mat-option value="axCombatPilot">AX Combat Pilot</mat-option>
+                                        <mat-option value="pvpCombatant">PvP Combatant</mat-option>
+                                        <mat-option value="pveCombatant">PvE Combatant</mat-option>
+                                        <mat-option value="salvager">Salvager</mat-option>
+                                        <mat-option value="cannonResearcher">Cannon Researcher</mat-option>
+                                        <mat-option value="fuelRat">Fuel Rat/Support</mat-option>
+                                        <mat-option value="fleetCarrierOperator">Fleet Carrier Operator</mat-option>
+                                        <mat-option value="bgsPlayer">BGS Player</mat-option>
+                                        <mat-option value="racer">Race Pilot</mat-option>
+                                        <mat-option disabled>--- Roleplaying Characters ---</mat-option>
+                                        <mat-option value="diplomat">Diplomat</mat-option>
+                                        <mat-option value="spy">Spy / Infiltrator</mat-option>
+                                        <mat-option value="cultLeader">Cult Leader</mat-option>
+                                        <mat-option value="rogueAI">Rogue AI / Synthetic Being</mat-option>
+                                        <mat-option value="xenologist">Xenologist</mat-option>
+                                        <mat-option value="vigilante">Renegade Cop / Vigilante</mat-option>
+                                        <mat-option value="warCorrespondent">War Correspondent</mat-option>
+                                        <mat-option value="propagandist">Propagandist</mat-option>
+                                        <mat-option value="pirateLord">Pirate Lord / Crime Boss</mat-option>
+                                        <mat-option value="veteran">Disillusioned Veteran</mat-option>
+                                        <mat-option value="freedomFighter">Freedom Fighter</mat-option>
+                                        <mat-option value="hermit">Hermit / Space Nomad</mat-option>
+                                        <mat-option value="corporate">Corporate Operative</mat-option>
+                                        <mat-option value="zealot">Religious Zealot</mat-option>
+                                        <mat-option value="historian">Historian / Archivist</mat-option>
+                                    </mat-select>
+                                </mat-form-field>
+                            </div>
+
+                            <!-- Character settings when preset is not custom -->
+                            @if (config.personality_preset !== 'custom') {
+                                <div class="personality-settings">
+                                    <div class="trait-container">
+                                        <!-- Character Inspiration -->
+                                        <div class="trait-select">
+                                            <mat-form-field appearance="outline">
+                                                <mat-label>Character Inspiration</mat-label>
+                                                <input matInput
+                                                    [(ngModel)]="config.personality_character_inspiration"
+                                                    [ngModelOptions]="{updateOn: 'blur'}"
+                                                    (ngModelChange)="onConfigChange({personality_character_inspiration: $event}); updatePrompt()">
+                                            </mat-form-field>
+                                        </div>
+                                    </div>
+
+                                    <div class="trait-container">
+                                        <!-- Verbosity Setting -->
+                                        <div class="trait-select">
+                                            <mat-form-field appearance="outline">
+                                                <mat-label>Verbosity</mat-label>
+                                                <mat-select [(ngModel)]="config.personality_verbosity"
+                                                    (ngModelChange)="onConfigChange({personality_verbosity: $event}); updatePrompt()">
+                                                    <mat-option [value]="0">Minimal</mat-option>
+                                                    <mat-option [value]="25">Brief</mat-option>
+                                                    <mat-option [value]="50">Balanced</mat-option>
+                                                    <mat-option [value]="75">Detailed</mat-option>
+                                                    <mat-option [value]="100">Verbose</mat-option>
+                                                </mat-select>
+                                            </mat-form-field>
+                                        </div>
+
+                                        <!-- Tone Setting -->
+                                        <div class="trait-select">
+                                            <mat-form-field appearance="outline">
+                                                <mat-label>Tone</mat-label>
+                                                <mat-select [(ngModel)]="config.personality_tone"
+                                                    (ngModelChange)="onConfigChange({personality_tone: $event}); updatePrompt()">
+                                                    <mat-option value="serious">Serious</mat-option>
+                                                    <mat-option value="humorous">Humorous</mat-option>
+                                                    <mat-option value="sarcastic">Sarcastic</mat-option>
+                                                </mat-select>
+                                            </mat-form-field>
+                                        </div>
+
+                                        <!-- Vulgarity Setting -->
+                                        <div class="trait-select">
+                                            <mat-form-field appearance="outline">
+                                                <mat-label>Vulgarity</mat-label>
+                                                <mat-select [(ngModel)]="config.personality_vulgarity"
+                                                    (ngModelChange)="onConfigChange({personality_vulgarity: $event}); updatePrompt()">
+                                                    <mat-option [value]="0">None</mat-option>
+                                                    <mat-option [value]="25">Mild</mat-option>
+                                                    <mat-option [value]="50">Moderate</mat-option>
+                                                    <mat-option [value]="75">Strong</mat-option>
+                                                    <mat-option [value]="100">Extreme</mat-option>
+                                                </mat-select>
+                                            </mat-form-field>
+                                        </div>
+                                    </div>
+
+                                    <div class="trait-container">
+                                        <!-- Empathy Level -->
+                                        <div class="trait-select">
+                                            <mat-form-field appearance="outline">
+                                                <mat-label>Empathy</mat-label>
+                                                <mat-select [(ngModel)]="config.personality_empathy"
+                                                    (ngModelChange)="onConfigChange({personality_empathy: $event}); updatePrompt()">
+                                                    <mat-option [value]="0">Cold</mat-option>
+                                                    <mat-option [value]="25">Detached</mat-option>
+                                                    <mat-option [value]="50">Balanced</mat-option>
+                                                    <mat-option [value]="75">Caring</mat-option>
+                                                    <mat-option [value]="100">Highly Empathetic</mat-option>
+                                                </mat-select>
+                                            </mat-form-field>
+                                        </div>
+
+                                        <!-- Formality Level -->
+                                        <div class="trait-select">
+                                            <mat-form-field appearance="outline">
+                                                <mat-label>Formality</mat-label>
+                                                <mat-select [(ngModel)]="config.personality_formality"
+                                                    (ngModelChange)="onConfigChange({personality_formality: $event}); updatePrompt()">
+                                                    <mat-option [value]="0">Casual</mat-option>
+                                                    <mat-option [value]="25">Relaxed</mat-option>
+                                                    <mat-option [value]="50">Balanced</mat-option>
+                                                    <mat-option [value]="75">Professional</mat-option>
+                                                    <mat-option [value]="100">Formal</mat-option>
+                                                </mat-select>
+                                            </mat-form-field>
+                                        </div>
+
+                                        <!-- Confidence Level -->
+                                        <div class="trait-select">
+                                            <mat-form-field appearance="outline">
+                                                <mat-label>Confidence</mat-label>
+                                                <mat-select [(ngModel)]="config.personality_confidence"
+                                                    (ngModelChange)="onConfigChange({personality_confidence: $event}); updatePrompt()">
+                                                    <mat-option [value]="0">Uncertain</mat-option>
+                                                    <mat-option [value]="25">Tentative</mat-option>
+                                                    <mat-option [value]="50">Balanced</mat-option>
+                                                    <mat-option [value]="75">Confident</mat-option>
+                                                    <mat-option [value]="100">Authoritative</mat-option>
+                                                </mat-select>
+                                            </mat-form-field>
+                                        </div>
+                                    </div>
+
+                                    <div class="trait-container">
+                                        <!-- Ethical Axis (Law vs. Chaos) -->
+                                        <div class="trait-select">
+                                            <mat-form-field appearance="outline">
+                                                <mat-label>Ethical Alignment</mat-label>
+                                                <mat-select [(ngModel)]="config.personality_ethical_alignment"
+                                                    (ngModelChange)="onConfigChange({personality_ethical_alignment: $event}); updatePrompt()">
+                                                    <mat-option value="lawful">Lawful (Order, Rules, Structure)</mat-option>
+                                                    <mat-option value="neutral">Neutral (Balance, Pragmatism)</mat-option>
+                                                    <mat-option value="chaotic">Chaotic (Freedom, Flexibility, Spontaneity)</mat-option>
+                                                </mat-select>
+                                            </mat-form-field>
+                                        </div>
+
+                                        <!-- Moral Axis (Good vs. Evil) -->
+                                        <div class="trait-select">
+                                            <mat-form-field appearance="outline">
+                                                <mat-label>Moral Alignment</mat-label>
+                                                <mat-select [(ngModel)]="config.personality_moral_alignment"
+                                                    (ngModelChange)="onConfigChange({personality_moral_alignment: $event}); updatePrompt()">
+                                                    <mat-option value="good">Good (Altruism, Compassion)</mat-option>
+                                                    <mat-option value="neutral">Neutral (Self-Interest, Balance)</mat-option>
+                                                    <mat-option value="evil">Evil (Selfishness, Ruthlessness)</mat-option>
+                                                </mat-select>
+                                            </mat-form-field>
+                                        </div>
+                                    </div>
+
+                                    <!-- Knowledge Areas -->
+                                    <div class="knowledge-areas">
+                                        <label class="knowledge-label">Knowledge Areas</label>
+                                        <div class="knowledge-checkboxes">
+                                            <mat-checkbox [(ngModel)]="config.personality_knowledge_pop_culture"
+                                                        (ngModelChange)="onConfigChange({personality_knowledge_pop_culture: $event}); updatePrompt()">Pop Culture</mat-checkbox>
+                                            <mat-checkbox [(ngModel)]="config.personality_knowledge_scifi"
+                                                        (ngModelChange)="onConfigChange({personality_knowledge_scifi: $event}); updatePrompt()">Sci-Fi</mat-checkbox>
+                                            <mat-checkbox [(ngModel)]="config.personality_knowledge_history"
+                                                        (ngModelChange)="onConfigChange({personality_knowledge_history: $event}); updatePrompt()">History</mat-checkbox>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- Character Textarea - always visible when editing -->
+                            <mat-form-field>
+                                <mat-label>Character</mat-label>
+                                <textarea matInput [(ngModel)]="config.character"
+                                        (ngModelChange)="onConfigChange({character: $event})"
+                                        [readonly]="config.personality_preset !== 'custom'"
+                                        rows="10"></textarea>
+                            </mat-form-field>
+                        </div>
                     </div>
-
                     <h2>Actions</h2>
                     <mat-slide-toggle [ngModel]="config.tools_var && config.game_actions_var"
                                       (ngModelChange)="onConfigChange({game_actions_var: $event})"
