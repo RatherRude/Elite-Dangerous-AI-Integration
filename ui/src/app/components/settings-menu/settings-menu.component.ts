@@ -1034,16 +1034,22 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Modify the existing updatePrompt method
+  // Modify the existing updatePrompt method to work with custom mode
   updatePrompt(): void {
-    // Don't update the prompt if we're in custom mode
-    if (this.config && this.config.personality_preset === 'custom') {
-      return;
-    }
-    
     // Ensure config is initialized
     if (!this.config) {
       this.config = { character: '' } as Config;
+      return;
+    }
+
+    // For custom mode, don't overwrite the existing character text
+    if (this.config.personality_preset === 'custom') {
+      // If there's no character text at all, generate one so there's something to edit
+      if (!this.config.character || this.config.character.trim() === '') {
+        // Generate a very minimal prompt for custom mode
+        this.config.character = `I am ${this.config.personality_name || 'your AI assistant'}. I am here to assist you with Elite Dangerous. {commander_name} is the commander of this ship.`;
+        this.onConfigChange({character: this.config.character});
+      }
       return;
     }
 
@@ -1421,10 +1427,8 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   saveCurrentAsCharacter() {
     if (!this.config) return;
     
-    // Ensure prompt is updated if not in custom mode
-    if (this.config.personality_preset !== 'custom') {
-      this.updatePrompt();
-    }
+    // Always ensure prompt is updated
+    this.updatePrompt();
     
     // Create a character from current settings
     const newCharacter = this.createCharacterFromCurrentSettings();
@@ -1625,11 +1629,11 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     }, 0);
   }
 
-  // Update addNewCharacter method to immediately add a character with default values
+  // Update addNewCharacter method to properly initialize with the default preset
   addNewCharacter(): void {
     if (!this.config) return;
     
-    // Create a new empty character with default values
+    // Create a base character first
     const newCharacter: Character = {
       name: 'New Character',
       character: '',
@@ -1657,16 +1661,32 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     const newIndex = this.config.characters.length;
     this.config.characters.push(newCharacter);
     
-    // Save the config with the new character
+    // Save the initial character to the configuration
     this.configService.changeConfig({ characters: this.config.characters }).then(() => {
       // Select the new character
       this.selectedCharacterIndex = newIndex;
       
-      // Enter edit mode immediately
-      this.editMode = true;
-      
       // Set this as the active character
       this.configService.setActiveCharacter(newIndex);
+      
+      // Apply the default preset to properly initialize the character
+      this.onConfigChange({
+        personality_preset: 'default',
+        personality_name: 'New Character',
+        personality_language: 'English'
+      });
+      
+      // Allow the component to process the config update
+      setTimeout(() => {
+        // Apply the default preset settings to the character
+        this.applyPersonalityPreset('default');
+        
+        // Generate the character prompt
+        this.updatePrompt();
+        
+        // Finally, enter edit mode
+        this.editMode = true;
+      }, 100); // Small delay to ensure settings are applied
     }).catch((error: Error) => {
       console.error('Error adding new character:', error);
       this.snackBar.open('Error adding new character', 'OK', { duration: 5000 });
