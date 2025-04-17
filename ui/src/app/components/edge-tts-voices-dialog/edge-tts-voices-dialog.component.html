@@ -10,23 +10,37 @@
     <p>No voices found matching "{{ searchQuery }}"</p>
   </div>
 
-  <mat-tab-group *ngIf="getFilteredLocales().length > 0">
-    <mat-tab *ngFor="let locale of getFilteredLocales()" [label]="locale">
-      <div class="voice-list">
-        <mat-selection-list [multiple]="false">
-          <mat-list-option *ngFor="let voice of filterVoices()[locale]" 
-                          [value]="voice.value"
-                          [selected]="voice.value === selectedVoice"
-                          (click)="onSelect(voice.value)">
-            <div class="voice-item">
-              <span class="voice-name">{{ voice.label }}</span>
-              <span class="voice-id">{{ voice.value }}</span>
-            </div>
-          </mat-list-option>
-        </mat-selection-list>
+  <div *ngIf="getFilteredLocales().length > 0" class="voice-selector-container">
+    <!-- Language selection list on the left -->
+    <div class="language-list">
+      <mat-selection-list [multiple]="false" class="language-selection-list">
+        <mat-list-option *ngFor="let locale of getFilteredLocales()" 
+                         [value]="locale"
+                         [selected]="locale === selectedLocale"
+                         (click)="onSelectLocale(locale)">
+          {{ locale }}
+        </mat-list-option>
+      </mat-selection-list>
+    </div>
+
+    <!-- Voice selection list on the right -->
+    <div class="voice-list">
+      <div *ngIf="!selectedLocale" class="select-language-prompt">
+        <p>Please select a language</p>
       </div>
-    </mat-tab>
-  </mat-tab-group>
+      <mat-selection-list [multiple]="false" *ngIf="selectedLocale">
+        <mat-list-option *ngFor="let voice of filterVoices()[selectedLocale]" 
+                       [value]="voice.value"
+                       [selected]="voice.value === selectedVoice"
+                       (click)="onSelect(voice.value)">
+          <div class="voice-item">
+            <span class="voice-name">{{ voice.label }}</span>
+            <span class="voice-id">{{ voice.value }}</span>
+          </div>
+        </mat-list-option>
+      </mat-selection-list>
+    </div>
+  </div>
 </div>
 
 <div mat-dialog-actions align="end">

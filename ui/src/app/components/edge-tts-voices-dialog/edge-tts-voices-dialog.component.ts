@@ -18,47 +18,38 @@ export interface EdgeTtsVoiceData {
 
 @Component({
   selector: 'app-edge-tts-voices-dialog',
-  template: `
-    <h2 mat-dialog-title>Select Voice</h2>
-
-    <div mat-dialog-content>
-      <mat-form-field appearance="outline" style="width: 100%; margin-bottom: 16px;">
-        <mat-label>Search Voices</mat-label>
-        <input matInput [(ngModel)]="searchQuery" placeholder="Search by name, locale, or voice ID">
-      </mat-form-field>
-
-      <div *ngIf="getFilteredLocales().length === 0" class="no-results">
-        <p>No voices found matching "{{ searchQuery }}"</p>
-      </div>
-
-      <mat-tab-group *ngIf="getFilteredLocales().length > 0">
-        <mat-tab *ngFor="let locale of getFilteredLocales()" [label]="locale">
-          <div class="voice-list">
-            <mat-selection-list [multiple]="false">
-              <mat-list-option *ngFor="let voice of filterVoices()[locale]" 
-                              [value]="voice.value"
-                              [selected]="voice.value === selectedVoice"
-                              (click)="onSelect(voice.value)">
-                <div class="voice-item">
-                  <span class="voice-name">{{ voice.label }}</span>
-                  <span class="voice-id">{{ voice.value }}</span>
-                </div>
-              </mat-list-option>
-            </mat-selection-list>
-          </div>
-        </mat-tab>
-      </mat-tab-group>
-    </div>
-
-    <div mat-dialog-actions align="end">
-      <button mat-button (click)="onCancel()">Cancel</button>
-    </div>
-  `,
+  templateUrl: './edge-tts-voices-dialog.component.html',
   styles: [`
-    .voice-list {
-      height: 300px;
-      overflow-y: auto;
+    .voice-selector-container {
+      display: flex;
+      height: 350px;
       margin-top: 10px;
+      gap: 16px;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: 4px;
+    }
+    
+    .language-list {
+      flex: 0 0 30%;
+      border-right: 1px solid rgba(0, 0, 0, 0.12);
+      overflow-y: auto;
+    }
+    
+    .language-selection-list {
+      height: 100%;
+    }
+    
+    .voice-list {
+      flex: 0 0 70%;
+      overflow-y: auto;
+    }
+    
+    .select-language-prompt {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+      color: rgba(0, 0, 0, 0.54);
     }
     
     .voice-item {
@@ -84,10 +75,6 @@ export interface EdgeTtsVoiceData {
     ::ng-deep .mat-mdc-dialog-content {
       max-height: 80vh;
     }
-    
-    ::ng-deep .mat-mdc-tab-body-wrapper {
-      min-height: 350px;
-    }
   `],
   standalone: true,
   imports: [
@@ -107,6 +94,7 @@ export class EdgeTtsVoicesDialogComponent implements OnInit {
   searchQuery: string = '';
   groupedVoices: { [locale: string]: { value: string; label: string; locale: string; }[] } = {};
   selectedVoice: string = '';
+  selectedLocale: string | null = null;
   locales: string[] = [];
   
   constructor(
@@ -118,6 +106,18 @@ export class EdgeTtsVoicesDialogComponent implements OnInit {
   
   ngOnInit(): void {
     this.groupVoicesByLocale();
+    // Set initial locale based on selected voice
+    if (this.selectedVoice) {
+      const voiceObj = this.data.voices.find(v => v.value === this.selectedVoice);
+      if (voiceObj) {
+        this.selectedLocale = voiceObj.locale;
+      }
+    }
+    
+    // If no locale is selected, select the first one
+    if (!this.selectedLocale && this.locales.length > 0) {
+      this.selectedLocale = this.locales[0];
+    }
   }
   
   groupVoicesByLocale(): void {
@@ -159,6 +159,10 @@ export class EdgeTtsVoicesDialogComponent implements OnInit {
   getFilteredLocales(): string[] {
     const filteredGroups = this.filterVoices();
     return Object.keys(filteredGroups).sort();
+  }
+  
+  onSelectLocale(locale: string): void {
+    this.selectedLocale = locale;
   }
   
   onCancel(): void {
