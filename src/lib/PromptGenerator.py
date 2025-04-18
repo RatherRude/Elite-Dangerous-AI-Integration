@@ -516,7 +516,7 @@ class PromptGenerator:
                     provided.append(name)
 
             return (
-                f"Colonisation project is {progress:.1f}% complete. "
+                f"{self.commander_name} is at a colonisation project that is {progress:.1f}% complete. "
                 f"Resources delivered: {len(provided)} types. "
                 f"Still needed: {missing if missing else 'none'}."
             )
