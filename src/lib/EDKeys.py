@@ -76,6 +76,8 @@ class EDKeys:
             'UI_Right',
             'UI_Select',
             'UI_Back',
+            'CamTranslateForward',
+            'CamTranslateRight',
             'UIFocus',
             'QuickCommsPanel',
             'QuickCommsPanel_Buggy',

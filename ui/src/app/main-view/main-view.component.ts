@@ -51,7 +51,7 @@ export class MainViewComponent implements OnInit, OnDestroy {
                     this.config && this.config.cn_autostart &&
                     !this.isRunning && !this.hasAutoStarted
                 ) {
-                    console.log("Autostart Skynet activatet,"); //yes
+                    console.log("Started automatically.");
                     this.start();
                     this.hasAutoStarted = true;
                 }

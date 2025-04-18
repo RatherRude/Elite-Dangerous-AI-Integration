@@ -38,21 +38,21 @@ class Chat:
             self.config["api_key"] = '-'
         
         self.backstory = self.config["character"].replace("{commander_name}", self.config['commander_name'])
-        
+
         self.enabled_game_events: list[str] = []
         if self.config["event_reaction_enabled_var"]:
             for event, state in self.config["game_events"].items():
                 if state:
                     self.enabled_game_events.append(event)
-                        
+
         self.is_thinking = False
-        
+
         log("debug", "Initializing Controller Manager...")
         self.controller_manager = ControllerManager()
-        
+
         log("debug", "Initializing Action Manager...")
         self.action_manager = ActionManager()
-        
+
         log("debug", "Initializing EDJournal...")
         self.jn = EDJournal(get_ed_journals_path(config))
             
@@ -105,13 +105,13 @@ class Chat:
             game_events=self.enabled_game_events,
             continue_conversation=self.config["continue_conversation_var"],
         )
-        
+
         self.is_replying = False
         self.reply_pending = False
         self.pending: list[Event] = []
         log("debug", "Registering side effect...")
         self.event_manager.register_sideeffect(self.on_event)
-        
+
     def on_event(self, event: Event, projected_states: dict[str, Any]):
         send_message({
             "type": "states",
@@ -121,10 +121,10 @@ class Chat:
             "type": "event",
             "event": event,
         })
-        
+
         self.pending.append(event)
         self.reply_pending = self.should_reply(projected_states)
-        
+
     def execute_actions(self, actions: list[dict[str, Any]], projected_states: dict[str, dict]):
         action_descriptions: list[str | None] = []
         action_results: list[Any] = []
@@ -136,7 +136,7 @@ class Chat:
             action_result = self.action_manager.runAction(action, projected_states)
             action_results.append(action_result)
             self.event_manager.add_tool_call([action.model_dump()], [action_result], [action_input_desc] if action_input_desc else None)
-            
+
 
     def verify_action(self, user_input: list[str], action: dict[str, Any], prompt: list, tools: list):
         """ Verify the action prediction by sending the user input without any context to the model and check if the action is still predicted """
@@ -395,7 +395,7 @@ class Chat:
 
 
                 projected_states = self.event_manager.process()
-                
+
                 if projected_states and self.reply_pending and not self.tts.get_is_playing() and not self.stt.recording:
                     all_events = self.event_manager.processed + self.event_manager.pending
                     self.is_replying = True

@@ -239,7 +239,7 @@ default_config = {
             "LoadoutEquipModule": False,
             "LoadoutRemoveModule": False,
             "RenameSuitLoadout": True,
-            "ScanOrganic": False,
+            "ScanOrganic": True,
             "SellMicroResources": False,
             "SellOrganicData": True,
             "SellWeapon": False,

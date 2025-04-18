@@ -161,7 +161,7 @@ game_events = {
     'FCMaterials': False,
     'LoadoutEquipModule': False,
     'LoadoutRemoveModule': False,
-    'ScanOrganic': False,
+    'ScanOrganic': True,
     'SellOrganicData': True,
     'LowOxygenWarningCleared': True,
     'LowOxygenWarning': True,
@@ -235,7 +235,7 @@ game_events = {
     'CarrierDockingPermission': False,
     'CarrierNameChanged': True,
     'CarrierJumpCancelled': True,
-    "ColonisationConstructionDepot": False,
+    "ColonisationConstructionDepot": True,
 
     # Social
     'CrewAssign': True,
@@ -994,7 +994,7 @@ def update_config(config: Config, data: dict) -> Config:
     if data.get("tts_provider"):
       if data["tts_provider"] == "openai":
         data["tts_endpoint"] = "https://api.openai.com/v1"
-        data["tts_model_name"] = "tts-1"
+        data["tts_model_name"] = "gpt-4o-mini-tts"
         data["tts_voice"] = "nova"
         data["tts_api_key"] = ""
 
@@ -1012,7 +1012,7 @@ def update_config(config: Config, data: dict) -> Config:
 
       if data["tts_provider"] == "custom":
         data["tts_endpoint"] = "https://api.openai.com/v1"
-        data["tts_model_name"] = "tts-1"
+        data["tts_model_name"] = "gpt-4o-mini-tts"
         data["tts_voice"] = "nova"
         data["tts_api_key"] = ""
 

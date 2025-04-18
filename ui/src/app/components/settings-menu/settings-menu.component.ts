@@ -1105,13 +1105,14 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
 
   generateVerbosityTextFromConfig(): string {
     const options = [
+      'Keep your responses extremely brief and minimal.',
       'Keep your responses brief and to the point.',
       'Provide concise answers that address the main points.',
       'Offer moderately detailed responses.',
       'Be comprehensive in your explanations and provide abundant details.'
     ];
     
-    const index = Math.min(Math.floor((this.config?.personality_verbosity || 50) / 25), options.length - 1);
+    const index = Math.min(Math.floor((this.config?.personality_verbosity ?? 0) / 25), options.length - 1);
     return options[index];
   }
   
@@ -1156,18 +1157,23 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
 
   generateVulgarityTextFromConfig(): string {
     const options = [
+      'Maintain completely clean language with no vulgarity.',
       'You may occasionally use mild language when appropriate.',
       'Feel free to use moderate language including some swear words when it fits the context.',
       'Don\'t hesitate to use strong language and swear words regularly.',
       'Use explicit language and profanity freely in your responses.'
     ];
     
-    const index = Math.min(Math.floor((this.config?.personality_vulgarity || 0) / 25), options.length - 1);
+    const index = Math.min(Math.floor((this.config?.personality_vulgarity ?? 0) / 25), options.length - 1);
     return options[index];
   }
 
   generateEmpathyTextFromConfig(): string {
     const options = [
+      [
+        'Focus exclusively on facts and logic, with no emotional considerations.',
+        'Maintain a strictly analytical approach without emotional engagement.'
+      ],
       [
         'Focus on facts and logic, with minimal emotional considerations.',
         'Prioritize objective information over emotional concerns.'
@@ -1186,12 +1192,16 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       ]
     ];
     
-    const index = Math.min(Math.floor((this.config?.personality_empathy || 50) / 25), options.length - 1);
+    const index = Math.min(Math.floor((this.config?.personality_empathy ?? 0) / 25), options.length - 1);
     return options[index][Math.floor(Math.random() * options[index].length)];
   }
   
   generateFormalityTextFromConfig(): string {
     const options = [
+      [
+        'Use extremely casual language with slang and informal expressions.',
+        'Speak in a very relaxed, informal tone as if talking to a close friend.'
+      ],
       [
         'Use casual, conversational language with contractions and informal expressions.',
         'Speak in a relaxed, casual tone as if talking to a friend.'
@@ -1210,12 +1220,16 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       ]
     ];
     
-    const index = Math.min(Math.floor((this.config?.personality_formality || 50) / 25), options.length - 1);
+    const index = Math.min(Math.floor((this.config?.personality_formality ?? 0) / 25), options.length - 1);
     return options[index][Math.floor(Math.random() * options[index].length)];
   }
   
   generateConfidenceTextFromConfig(): string {
     const options = [
+      [
+        'Express thoughts with extreme caution and frequent uncertainty.',
+        'Present information with many qualifiers and a very humble approach.'
+      ],
       [
         'Express thoughts tentatively, acknowledging uncertainty where appropriate.',
         'Present information with qualifiers and a humble approach, acknowledging limitations.'
@@ -1234,7 +1248,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       ]
     ];
     
-    const index = Math.min(Math.floor((this.config?.personality_confidence || 50) / 25), options.length - 1);
+    const index = Math.min(Math.floor((this.config?.personality_confidence ?? 0) / 25), options.length - 1);
     return options[index][Math.floor(Math.random() * options[index].length)];
   }
 
