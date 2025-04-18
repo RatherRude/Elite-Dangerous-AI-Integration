@@ -875,6 +875,50 @@ class Friends(Projection[OnlineFriendsState]):
                 self.state["Online"].remove(friend_name)
 
 
+ColonisationResourceItem = TypedDict('ColonisationResourceItem', {
+    "Name": str,
+    "Name_Localised": str,
+    "RequiredAmount": int,
+    "ProvidedAmount": int,
+    "Payment": int
+})
+
+ColonisationConstructionState = TypedDict('ColonisationConstructionState', {
+    "ConstructionProgress": float,
+    "ConstructionComplete": bool,
+    "ConstructionFailed": bool,
+    "ResourcesRequired": list[ColonisationResourceItem],
+    "MarketID": int
+})
+
+
+@final
+class ColonisationConstruction(Projection[ColonisationConstructionState]):
+    @override
+    def get_default_state(self) -> ColonisationConstructionState:
+        return {
+            "ConstructionProgress": 0.0,
+            "ConstructionComplete": False,
+            "ConstructionFailed": False,
+            "ResourcesRequired": [],
+            "MarketID": 0
+        }
+
+    @override
+    def process(self, event: Event) -> None:
+        # Process ColonisationConstructionDepot events
+        if isinstance(event, GameEvent) and event.content.get('event') == 'ColonisationConstructionDepot':
+            # Update construction status
+            self.state["ConstructionProgress"] = event.content.get('ConstructionProgress', 0.0)
+            self.state["ConstructionComplete"] = event.content.get('ConstructionComplete', False)
+            self.state["ConstructionFailed"] = event.content.get('ConstructionFailed', False)
+            self.state["MarketID"] = event.content.get('MarketID', 0)
+
+            # Update resources required
+            resources = event.content.get('ResourcesRequired', [])
+            if resources:
+                self.state["ResourcesRequired"] = resources
+
 class SystemInfoState(TypedDict):
     Name: str
     SystemAddress: NotRequired[int]
@@ -1106,6 +1150,7 @@ def registerProjections(event_manager: EventManager):
     event_manager.register_projection(Backpack())
     event_manager.register_projection(SuitLoadout())
     event_manager.register_projection(Friends())
+    event_manager.register_projection(ColonisationConstruction())
     event_manager.register_projection(SystemInfo())
 
     # ToDo: SLF, SRV,

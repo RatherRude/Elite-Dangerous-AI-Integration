@@ -3108,11 +3108,41 @@ class PromptGenerator:
         if missions_info and 'Active' in missions_info:
             status_entries.append(("Active missions", missions_info))
 
+        # Add colonisation construction status if available
+        colonisation_info = projected_states.get('ColonisationConstruction', {})
+        if colonisation_info and any(colonisation_info.values()):
+            progress = colonisation_info.get('ConstructionProgress', 0.0)
+            complete = colonisation_info.get('ConstructionComplete', False)
+            failed = colonisation_info.get('ConstructionFailed', False)
+            resources = colonisation_info.get('ResourcesRequired', [])
+
+            construction_status = {
+                "Progress": f"{progress:.1%}",
+                "Status": "Complete" if complete else "Failed" if failed else "In Progress"
+            }
+
+            if resources:
+                missing_resources = {}
+                for resource in resources:
+                    required = resource.get('RequiredAmount', 0)
+                    provided = resource.get('ProvidedAmount', 0)
+                    delta = required - provided
+
+                    # Only include resources that still need more items
+                    if delta > 0:
+                        name = resource.get('Name_Localised', resource.get('Name', ''))
+                        missing_resources[name] = delta
+
+                # Only add missing resources if there are any
+                if missing_resources:
+                    construction_status["Missing Resources"] = missing_resources
+
+            status_entries.append(("Colonisation Construction", construction_status))
+
         # Add friends status (always include this entry)
         friends_info = projected_states.get('Friends', {})
         online_friends = friends_info.get('Online', [])
-        
-        
+
         # Always add the entry, with appropriate message based on online status
         if online_friends:
             status_entries.append(("Friends Status", {
