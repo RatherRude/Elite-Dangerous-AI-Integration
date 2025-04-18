@@ -235,7 +235,7 @@ game_events = {
     'CarrierDockingPermission': False,
     'CarrierNameChanged': True,
     'CarrierJumpCancelled': True,
-    "ColonisationConstructionDepot": False,
+    "ColonisationConstructionDepot": True,
 
     # Social
     'CrewAssign': True,
