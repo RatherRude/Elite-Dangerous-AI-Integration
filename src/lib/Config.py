@@ -328,6 +328,8 @@ class Character(TypedDict, total=False):
     personality_knowledge_scifi: bool
     personality_knowledge_history: bool
     tts_voice: str
+    tts_speed: str
+    tts_prompt: str
 
 
 class Config(TypedDict):
@@ -373,6 +375,7 @@ class Config(TypedDict):
     tts_model_name: str
     tts_api_key: str
     tts_endpoint: str
+    tts_prompt: str
     tools_var: bool
     vision_var: bool
     ptt_var: bool
@@ -477,7 +480,9 @@ def migrate(data: dict) -> dict:
                 "personality_knowledge_pop_culture": data.get('personality_knowledge_pop_culture', False),
                 "personality_knowledge_scifi": data.get('personality_knowledge_scifi', False),
                 "personality_knowledge_history": data.get('personality_knowledge_history', False),
-                "tts_voice": data.get('tts_voice', None)
+                "tts_voice": data.get('tts_voice', None),
+                "tts_speed": data.get('tts_speed', "1.2"),
+                "tts_prompt": data.get('tts_prompt', "")
             }
             print(f"Created character from existing settings: {character['name']}")
             data['characters'].append(character)
@@ -592,6 +597,7 @@ def load_config() -> Config:
         'tts_api_key': "",
         'tts_voice': "en-GB-SoniaNeural",
         'tts_speed': "1.2",
+        'tts_prompt': "",
         'game_events': game_events,
         'react_to_text_local_var': True,
         'react_to_text_npc_var': False,
@@ -903,6 +909,21 @@ def update_config(config: Config, data: dict) -> Config:
                         config["personality_name"] = character["name"]
                         print(f"Copied character properties to config for: {character.get('name')}")
 
+                        # Also apply TTS voice if present
+                        if "tts_voice" in character:
+                            config["tts_voice"] = character.get("tts_voice", "")
+                            
+                        # Apply TTS speed if present
+                        if "tts_speed" in character:
+                            config["tts_speed"] = character.get("tts_speed", "1.2")
+                            
+                        # Apply TTS prompt if present
+                        if "tts_prompt" in character:
+                            config["tts_prompt"] = character.get("tts_prompt", "")
+                            
+                        # Write the config to disk
+                        save_config(config)
+
     # Update provider-specific settings
     if data.get("llm_provider"):
       if data["llm_provider"] == "openai":
@@ -1081,6 +1102,14 @@ def set_active_character(self, index):
         # Also apply TTS voice if present
         if "tts_voice" in character_data:
             self.update_data("tts_voice", character_data.get("tts_voice", ""))
+            
+        # Apply TTS speed if present
+        if "tts_speed" in character_data:
+            self.update_data("tts_speed", character_data.get("tts_speed", "1.2"))
+            
+        # Apply TTS prompt if present
+        if "tts_prompt" in character_data:
+            self.update_data("tts_prompt", character_data.get("tts_prompt", ""))
             
         # Write the config to disk
         self.write_config()

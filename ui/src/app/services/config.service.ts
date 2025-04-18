@@ -68,6 +68,8 @@ export interface Character {
     personality_knowledge_scifi: boolean;
     personality_knowledge_history: boolean;
     tts_voice?: string;
+    tts_speed?: string;
+    tts_prompt?: string;
 }
 
 export interface Config {
@@ -112,6 +114,7 @@ export interface Config {
     tts_model_name: string;
     tts_api_key: string;
     tts_endpoint: string;
+    tts_prompt: string;
     tools_var: boolean;
     vision_var: boolean;
     ptt_var: boolean;

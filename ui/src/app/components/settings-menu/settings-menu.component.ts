@@ -1539,13 +1539,13 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   // Helper method to create a character object from current settings
   private createCharacterFromCurrentSettings(): Character {
     if (!this.config) {
-      throw new Error("Cannot create character before config is initialized");
+      throw new Error('Cannot create character: Config is not loaded.');
     }
     
     return {
       name: this.config.personality_name || "New Character",
       character: this.config.character || "",
-      personality_preset: this.config.personality_preset || "default",
+      personality_preset: this.config.personality_preset || "custom",
       personality_verbosity: this.config.personality_verbosity || 50,
       personality_vulgarity: this.config.personality_vulgarity || 0,
       personality_empathy: this.config.personality_empathy || 50,
@@ -1553,13 +1553,15 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       personality_confidence: this.config.personality_confidence || 50,
       personality_ethical_alignment: this.config.personality_ethical_alignment || "neutral",
       personality_moral_alignment: this.config.personality_moral_alignment || "neutral",
-      personality_tone: this.config.personality_tone || "serious",
+      personality_tone: this.config.personality_tone || "serious", 
       personality_character_inspiration: this.config.personality_character_inspiration || "",
       personality_language: this.config.personality_language || "English",
       personality_knowledge_pop_culture: this.config.personality_knowledge_pop_culture || false,
       personality_knowledge_scifi: this.config.personality_knowledge_scifi || false,
       personality_knowledge_history: this.config.personality_knowledge_history || false,
-      tts_voice: this.config.tts_voice || "",
+      tts_voice: this.config.tts_voice || '',
+      tts_speed: this.config.tts_speed || '1.2',
+      tts_prompt: this.config.tts_prompt || ''
     };
   }
 
@@ -1584,46 +1586,51 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
 
   // Helper method to load a character
   private loadCharacter(index: number) {
-    if (!this.config) return;
-    
-    // Default character (index -1)
-    if (index === -1) {
-      // Reset to default character settings, but don't modify the current config
+    // Make sure we have a config and the index is valid
+    if (!this.config || !this.config.characters || index < 0 || index >= this.config.characters.length) {
       return;
     }
     
-    // Custom character
-    if (this.config.characters && index >= 0 && index < this.config.characters.length) {
-      const character = this.config.characters[index];
-      
-      // Apply all character properties to the current config
-      const updateObj: Partial<Config> = {
-        character: character.character,
-        personality_preset: character.personality_preset,
-        personality_verbosity: character.personality_verbosity,
-        personality_vulgarity: character.personality_vulgarity,
-        personality_empathy: character.personality_empathy,
-        personality_formality: character.personality_formality,
-        personality_confidence: character.personality_confidence,
-        personality_ethical_alignment: character.personality_ethical_alignment,
-        personality_moral_alignment: character.personality_moral_alignment,
-        personality_tone: character.personality_tone,
-        personality_character_inspiration: character.personality_character_inspiration,
-        personality_name: character.name,
-        personality_language: character.personality_language,
-        personality_knowledge_pop_culture: character.personality_knowledge_pop_culture,
-        personality_knowledge_scifi: character.personality_knowledge_scifi,
-        personality_knowledge_history: character.personality_knowledge_history
-      };
-      
-      // Also load the TTS voice if it exists in the character config
-      if ('tts_voice' in character) {
-        updateObj.tts_voice = character.tts_voice;
-      }
-      
-      // Update the config
-      this.onConfigChange(updateObj);
+    const character = this.config.characters[index];
+    
+    // Update the UI to show the character's settings
+    // Create an update object with the character's properties
+    const updateObj: Partial<Config> = {
+      character: character.character,
+      personality_preset: character.personality_preset,
+      personality_verbosity: character.personality_verbosity,
+      personality_vulgarity: character.personality_vulgarity,
+      personality_empathy: character.personality_empathy,
+      personality_formality: character.personality_formality,
+      personality_confidence: character.personality_confidence,
+      personality_ethical_alignment: character.personality_ethical_alignment,
+      personality_moral_alignment: character.personality_moral_alignment,
+      personality_tone: character.personality_tone,
+      personality_character_inspiration: character.personality_character_inspiration,
+      personality_name: character.name,
+      personality_language: character.personality_language,
+      personality_knowledge_pop_culture: character.personality_knowledge_pop_culture,
+      personality_knowledge_scifi: character.personality_knowledge_scifi,
+      personality_knowledge_history: character.personality_knowledge_history
+    };
+    
+    // Also load the TTS voice if it exists in the character config
+    if ('tts_voice' in character) {
+      updateObj.tts_voice = character.tts_voice;
     }
+    
+    // Also load the TTS speed if it exists in the character config
+    if ('tts_speed' in character) {
+      updateObj.tts_speed = character.tts_speed;
+    }
+    
+    // Also load the TTS prompt if it exists in the character config
+    if ('tts_prompt' in character) {
+      updateObj.tts_prompt = character.tts_prompt;
+    }
+    
+    // Update the config
+    this.onConfigChange(updateObj);
   }
 
   // Modify cancelEditMode method for reliability
@@ -1672,7 +1679,9 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       personality_knowledge_pop_culture: false,
       personality_knowledge_scifi: false,
       personality_knowledge_history: false,
-      tts_voice: this.config.tts_voice || '' // Include current TTS voice
+      tts_voice: this.config.tts_voice || '', // Include current TTS voice
+      tts_speed: this.config.tts_speed || '1.2', // Include current TTS speed
+      tts_prompt: this.config.tts_prompt || '' // Include current TTS prompt
     };
     
     // Add the new character to the config

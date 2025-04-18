@@ -244,6 +244,24 @@
                                             }
                                         </mat-form-field>
                                     </div>
+                                    <div class="trait-select">
+                                        <!-- Voice speed -->
+                                        <mat-form-field>
+                                            <mat-label>Voice Speed</mat-label>
+                                            <input matInput [(ngModel)]="config.tts_speed"
+                                                   (ngModelChange)="onConfigChange({tts_speed: $event})">
+                                            <mat-hint>Speed multiplier (1.0 = normal speed)</mat-hint>
+                                        </mat-form-field>
+                                    </div>
+                                    <div class="trait-select">
+                                        <!-- TTS Prompt -->
+                                        <mat-form-field>
+                                            <mat-label>TTS Prompt</mat-label>
+                                            <textarea matInput [(ngModel)]="config.tts_prompt"
+                                                    (ngModelChange)="onConfigChange({tts_prompt: $event})"></textarea>
+                                            <mat-hint>Custom instructions for voice style/emotion</mat-hint>
+                                        </mat-form-field>
+                                    </div>
                                 </div>
                             </div>
 
@@ -825,6 +843,12 @@
                             <mat-label>Override TTS API Key</mat-label>
                             <input matInput type="password" [(ngModel)]="config.tts_api_key"
                                    (ngModelChange)="onConfigChange({tts_api_key: $event})">
+                        </mat-form-field>
+                        <mat-form-field>
+                            <mat-label>TTS Prompt</mat-label>
+                            <textarea matInput [(ngModel)]="config.tts_prompt"
+                                   (ngModelChange)="onConfigChange({tts_prompt: $event})"></textarea>
+                            <mat-hint>Custom instructions for the TTS system to control voice style, emotion, etc.</mat-hint>
                         </mat-form-field>
                     }
                     @if (config.tts_provider === "edge-tts") {
