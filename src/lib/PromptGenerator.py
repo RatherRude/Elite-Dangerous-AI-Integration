@@ -22,7 +22,7 @@ from lib.EventModels import (
     ShipyardSellEvent, ShipyardSwapEvent, ShipyardTransferEvent, SRVDestroyedEvent, StartJumpEvent,
     SupercruiseDestinationDropEvent, SupercruiseEntryEvent, SupercruiseExitEvent, SuitLoadoutEvent,
     SwitchSuitLoadoutEvent, TouchdownEvent, UnderAttackEvent, UndockedEvent, UseConsumableEvent, WingAddEvent,
-    WingJoinEvent, WingLeaveEvent
+    WingJoinEvent, WingLeaveEvent, ColonisationConstructionDepotEvent
 )
 
 from .Projections import LocationState, MissionsState, ShipInfoState, NavInfo, TargetState, CurrentStatus, CargoState
@@ -270,6 +270,8 @@ stationEvents = {
     "CarrierDockingPermission": "Commander {commanderName} has updated docking permissions for carrier.",
     "CarrierNameChanged": "Commander {commanderName} has changed the name of carrier.",
     "CarrierJumpCancelled": "Commander {commanderName} has canceled a jump request for carrier.",
+    "ColonisationConstructionDepot": "Commander {commanderName} is at a colonisation depot",
+
 }
 
 socialEvents = {
@@ -496,6 +498,29 @@ class PromptGenerator:
             return f"{self.commander_name} is dropping from supercruise at {destination}{threat}"
         
         # Station events
+
+        if event_name == "ColonisationConstructionDepot":
+            construction = cast(ColonisationConstructionDepotEvent, content)
+            progress = construction.get("ConstructionProgress", 0.0) * 100
+
+            provided = []
+            missing = []
+
+            for res in construction.get("ResourcesRequired", []):
+                name = res.get("Name_Localised", res.get("Name"))
+                provided_amt = res.get("ProvidedAmount", 0)
+                required_amt = res.get("RequiredAmount", 0)
+                if provided_amt < required_amt:
+                    missing.append(f"{name} ({required_amt - provided_amt} tonnes left to deliver)")
+                else:
+                    provided.append(name)
+
+            return (
+                f"{self.commander_name} is at a colonisation project that is {progress:.1f}% complete. "
+                f"Resources delivered: {len(provided)} types. "
+                f"Still needed: {missing if missing else 'none'}."
+            )
+
         if event_name == 'Docked':
             docked_event = cast(DockedEvent, content)
             
