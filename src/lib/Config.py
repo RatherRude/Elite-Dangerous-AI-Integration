@@ -161,7 +161,7 @@ game_events = {
     'FCMaterials': False,
     'LoadoutEquipModule': False,
     'LoadoutRemoveModule': False,
-    'ScanOrganic': False,
+    'ScanOrganic': True,
     'SellOrganicData': True,
     'LowOxygenWarningCleared': True,
     'LowOxygenWarning': True,
