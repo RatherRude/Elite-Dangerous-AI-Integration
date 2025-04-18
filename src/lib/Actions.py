@@ -1477,9 +1477,9 @@ def prepare_station_request(obj, projected_states):
         filters["material_trader"] = {"value": obj["material_trader"]}
     if "technology_broker" in obj and obj["technology_broker"]:
         filters["technology_broker"] = {"value": obj["technology_broker"]}
-    if "market" in obj and obj["market"]:
+    if "commodity" in obj and obj["commodity"]:
         market_filters = []
-        for market_item in obj["market"]:
+        for market_item in obj["commodity"]:
             # Find matching commodity name while preserving original capitalization
             market_item_name_lower = market_item["name"].lower()
             matching_commodity = next((commodity for commodity in known_commodities if commodity.lower() == market_item_name_lower), None)
