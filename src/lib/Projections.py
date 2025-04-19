@@ -580,19 +580,25 @@ class NavInfo(Projection[NavInfoState]):
                 self.state['NavRoute'] = []
                 systems_to_lookup = []
                 
-                for entry in event.content.get('Route', [])[1:]:  # Skip current system
+                # Process all systems in a single loop
+                is_first_system = True
+                for entry in event.content.get('Route', []):
                     star_system = entry.get("StarSystem", "Unknown")
                     star_class = entry.get("StarClass", "")
                     is_scoopable = star_class in ['K','G','B','F','O','A','M']
                     
-                    # Add to projection state
-                    self.state['NavRoute'].append({
-                        "StarSystem": star_system, 
-                        "Scoopable": is_scoopable
-                    })
-                    
-                    # Add to systems for EDSM lookup
+                    # Add all systems to the lookup list
                     systems_to_lookup.append(star_system)
+                    
+                    # Add to projection state (skip the first one)
+                    if not is_first_system:
+                        self.state['NavRoute'].append({
+                            "StarSystem": star_system, 
+                            "Scoopable": is_scoopable
+                        })
+                    else:
+                        # No longer the first system after the first iteration
+                        is_first_system = False
                 
                 # Fetch system data for systems in the route
                 if systems_to_lookup:

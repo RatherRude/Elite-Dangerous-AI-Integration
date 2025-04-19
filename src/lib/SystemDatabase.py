@@ -375,6 +375,37 @@ class SystemDatabase:
         except Exception as e:
             log('error', f"Error in periodic check: {e}")
     
+    def dump_database_contents(self) -> None:
+        """Log a summary of the systems stored in the database"""
+        try:
+            # Query to get count of systems with data
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute(f'''
+                SELECT COUNT(*) FROM {self.systems_table.table_name}
+            ''')
+            total_systems = cursor.fetchone()[0]
+            
+            # Query to get count of systems with system_info
+            cursor.execute(f'''
+                SELECT COUNT(*) FROM {self.systems_table.table_name}
+                WHERE system_info IS NOT NULL AND system_info != ''
+            ''')
+            systems_with_info = cursor.fetchone()[0]
+            
+            # Query to get count of systems with stations
+            cursor.execute(f'''
+                SELECT COUNT(*) FROM {self.systems_table.table_name}
+                WHERE stations IS NOT NULL AND stations != ''
+            ''')
+            systems_with_stations = cursor.fetchone()[0]
+            
+            log('info', f"SystemDatabase summary: {total_systems} total systems, {systems_with_info} with system info, {systems_with_stations} with station data")
+            
+            cursor.close()
+        except Exception as e:
+            log('error', f"Error dumping database contents: {e}")
+    
     def process_event(self, event_type: str, content: dict) -> None:
         """Process an event directly and update the database accordingly"""
         # Get current system from different event types
