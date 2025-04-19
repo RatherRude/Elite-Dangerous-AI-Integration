@@ -3060,7 +3060,7 @@ class PromptGenerator:
                 enhanced_nav_route.append(system_data)
             
             # We need to convert to a dict to add 'Jumps'
-            enhanced_nav_route_dict = {"Systems": enhanced_nav_route, "Jumps": total_systems}
+            enhanced_nav_route_dict = {"Systems": enhanced_nav_route, "Jumps": total_systems - 1}
             
             # Set appropriate title based on whether we're showing all systems or just the first 20
             nav_route_title = "Nav Route"
