@@ -537,7 +537,6 @@ class NavInfo(Projection[NavInfoState]):
     
     def __init__(self):
         super().__init__()
-        print("NavInfo projection initialized")
     
     @override
     def get_default_state(self) -> NavInfoState:
@@ -568,115 +567,52 @@ class NavInfo(Projection[NavInfoState]):
     
     @override
     def process(self, event: Event) -> None:
-        print(f"NavInfo processing event: {event.__class__.__name__}")
+        # Update current system
         if isinstance(event, GameEvent):
-            print(f"NavInfo processing GameEvent: {event.content.get('event', 'Unknown')}")
-        
-        # Track current system
-        if isinstance(event, GameEvent):
-            if event.content.get('event') == 'FSDJump':
-                self.current_system = event.content.get('StarSystem', 'Unknown')
-                print(f"NavInfo: Current system updated to {self.current_system}")
-            elif event.content.get('event') == 'Location':
-                self.current_system = event.content.get('StarSystem', 'Unknown')
-                print(f"NavInfo: Current system updated to {self.current_system}")
-        
-        # Process NavRoute event - both save to projection state and to database
+            if event.content.get('event') in ['FSDJump', 'Location']:
+                new_system = event.content.get('StarSystem', 'Unknown')
+                if new_system != self.current_system:
+                    self.current_system = new_system
+
+        # Process NavRoute event
         if isinstance(event, GameEvent) and event.content.get('event') == 'NavRoute':
-            print(f"NavInfo: Processing NavRoute event: {event.content}")
             if event.content.get('Route', []):
-                # Clear existing route first
                 self.state['NavRoute'] = []
-                nav_route_data = []
+                systems_to_lookup = []
                 
-                # Process new route
                 for entry in event.content.get('Route', [])[1:]:  # Skip current system
+                    star_system = entry.get("StarSystem", "Unknown")
                     star_class = entry.get("StarClass", "")
                     is_scoopable = star_class in ['K','G','B','F','O','A','M']
-                    system_name = entry.get("StarSystem", "Unknown")
-                    print(f"NavInfo: Adding system to route: {system_name}")
                     
-                    # Create properly typed entry for projection state
-                    route_item: NavRouteItem = {
-                        "StarSystem": system_name,
-                        "Scoopable": is_scoopable
-                    }
-                    self.state['NavRoute'].append(route_item)
-                    
-                    # Create entry for database (can be Dict[str, Any])
-                    nav_route_data.append({
-                        "StarSystem": system_name,
+                    # Add to projection state
+                    self.state['NavRoute'].append({
+                        "StarSystem": star_system, 
                         "Scoopable": is_scoopable
                     })
+                    
+                    # Add to systems for EDSM lookup
+                    systems_to_lookup.append(star_system)
                 
-                # Store in database
-                if self.current_system != "Unknown":
-                    print(f"NavInfo: Storing route in database for system {self.current_system} with {len(nav_route_data)} waypoints")
-                    system_db.store_nav_route(self.current_system, nav_route_data)
-                    print(f"NavInfo: NavRoute updated with {len(self.state['NavRoute'])} systems and stored in database")
-                else:
-                    print("NavInfo: Current system is Unknown, not storing route in database")
+                # Fetch system data for systems in the route
+                if systems_to_lookup:
+                    system_db._fetch_multiple_systems(systems_to_lookup)
 
-        # Process NavRouteClear - both clear projection state and database
+        # Process NavRouteClear
         if isinstance(event, GameEvent) and event.content.get('event') == 'NavRouteClear':
-            print(f"NavInfo: Processing NavRouteClear event")
-            old_count = len(self.state['NavRoute'])
             self.state['NavRoute'] = []
             
-            # Clear in database
-            if self.current_system != "Unknown":
-                print(f"NavInfo: Clearing route in database for system {self.current_system}")
-                system_db.clear_nav_route(self.current_system)
-                print(f"NavInfo: Cleared nav route (had {old_count} entries) and updated database")
-            else:
-                print("NavInfo: Current system is Unknown, not clearing route in database")
-        
         # Process FSDJump - remove visited systems from route
         if isinstance(event, GameEvent) and event.content.get('event') == 'FSDJump':
-            print(f"NavInfo: Processing FSDJump event to {event.content.get('StarSystem', 'Unknown')}")
-            # Remove visited systems from route
-            current_system = event.content.get('StarSystem')
-            systems_removed = 0
-            
-            # Update route in projection state
             for index, entry in enumerate(self.state['NavRoute']):
-                if entry['StarSystem'] == current_system:
-                    print(f"NavInfo: Removing visited system {current_system} from route")
+                if entry['StarSystem'] == event.content.get('StarSystem'):
                     self.state['NavRoute'] = self.state['NavRoute'][index+1:]
-                    systems_removed = index + 1
                     break
-            
-            # If we removed systems, update the database as well
-            if systems_removed > 0 and self.current_system != "Unknown":
-                print(f"NavInfo: Updating route in database after removing {systems_removed} systems")
-                # Convert to Dict[str, Any] for database
-                nav_route_data = []
-                for entry in self.state['NavRoute']:
-                    nav_route_data.append({
-                        "StarSystem": entry["StarSystem"],
-                        "Scoopable": entry["Scoopable"]
-                    })
-                
-                system_db.store_nav_route(self.current_system, nav_route_data)
-                print(f"NavInfo: Removed {systems_removed} systems from nav route after jump and updated database")
 
-        # Process FSDTarget - both update projection state and database
+        # Process FSDTarget
         if isinstance(event, GameEvent) and event.content.get('event') == 'FSDTarget':
-            print(f"NavInfo: Processing FSDTarget event: {event.content}")
             if 'Name' in event.content:
-                old_target = self.state.get('NextJumpTarget', 'Unknown')
-                new_target = event.content.get('Name', 'Unknown')
-                self.state['NextJumpTarget'] = new_target
-                
-                # Store in database
-                if self.current_system != "Unknown":
-                    print(f"NavInfo: Storing FSD target in database: {self.current_system} -> {new_target}")
-                    system_db.store_fsd_target(self.current_system, new_target)
-                    
-                    if old_target != new_target:
-                        print(f"NavInfo: FSD target updated from '{old_target}' to '{new_target}' and stored in database")
-                else:
-                    print("NavInfo: Current system is Unknown, not storing FSD target in database")
+                self.state['NextJumpTarget'] = event.content.get('Name', 'Unknown')
 
 
 class ExobiologyScanStateScan(TypedDict):

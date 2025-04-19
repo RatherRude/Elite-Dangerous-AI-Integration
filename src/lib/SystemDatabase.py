@@ -33,115 +33,13 @@ class SystemDatabase:
                     'system_info': 'TEXT',
                     'stations': 'TEXT',
                     'last_updated': 'REAL',
-                    'fetch_attempted': 'INTEGER',
-                    'fsd_target': 'TEXT',
-                    'nav_route': 'TEXT'
+                    'fetch_attempted': 'INTEGER'
                 },
                 'name'
             )
         except Exception as e:
             log('error', f"Error creating systems table: {e}")
             traceback.print_exc()
-    
-    def store_fsd_target(self, system_name: str, target_system: str) -> None:
-        """Store FSD target for a system"""
-        try:
-            # Check if system exists
-            existing = self.systems_table.get(system_name)
-            
-            if existing:
-                # Update existing record
-                self.systems_table.update(system_name, {'fsd_target': target_system})
-            else:
-                # Create new record
-                data = {
-                    'name': system_name,
-                    'fsd_target': target_system,
-                    'nav_route': json.dumps([]),
-                    'fetch_attempted': 0,
-                    'last_updated': time.time()
-                }
-                
-                self.systems_table.insert(data)
-        except Exception as e:
-            log('error', f"Error storing FSD target for {system_name}: {e}")
-            traceback.print_exc()
-    
-    def store_nav_route(self, system_name: str, nav_route: List[Dict[str, Any]]) -> None:
-        """Store nav route for a system and initiate EDSM data fetching"""
-        try:
-            # Check if system exists
-            existing = self.systems_table.get(system_name)
-            
-            if existing:
-                # Update existing record
-                self.systems_table.update(system_name, {'nav_route': json.dumps(nav_route)})
-            else:
-                # Create new record
-                self.systems_table.insert({
-                    'name': system_name,
-                    'fsd_target': '',
-                    'nav_route': json.dumps(nav_route),
-                    'fetch_attempted': 0,
-                    'last_updated': time.time()
-                })
-            
-            # Get waypoint system names and fetch data for them
-            systems_to_fetch = []
-            for waypoint in nav_route:
-                waypoint_system = waypoint.get('StarSystem')
-                if waypoint_system:
-                    systems_to_fetch.append(waypoint_system)
-            
-            # Fetch system data in background
-            if systems_to_fetch:
-                self._fetch_multiple_systems(systems_to_fetch)
-                
-        except Exception as e:
-            log('error', f"Error storing nav route for {system_name}: {e}")
-    
-    def clear_nav_route(self, system_name: str) -> None:
-        """Clear the nav route for a system"""
-        try:
-            # Check if system exists
-            existing = self.systems_table.get(system_name)
-            
-            if existing:
-                # Update existing record
-                self.systems_table.update(system_name, {'nav_route': json.dumps([])})
-            else:
-                # Create new record with empty route
-                self.systems_table.insert({
-                    'name': system_name,
-                    'fsd_target': '',
-                    'nav_route': json.dumps([]),
-                    'fetch_attempted': 0,
-                    'last_updated': time.time()
-                })
-        except Exception as e:
-            log('error', f"Error clearing nav route for {system_name}: {e}")
-    
-    def get_fsd_target(self, system_name: str) -> Optional[str]:
-        """Get FSD target for a system"""
-        try:
-            system_data = self.systems_table.get(system_name)
-            if system_data and 'fsd_target' in system_data:
-                return system_data['fsd_target']
-            return None
-        except Exception as e:
-            log('error', f"Error getting FSD target for {system_name}: {e}")
-            return None
-    
-    def get_nav_route(self, system_name: str) -> List[Dict[str, Any]]:
-        """Get nav route for a system"""
-        try:
-            system_data = self.systems_table.get(system_name)
-            if system_data and 'nav_route' in system_data:
-                return json.loads(system_data['nav_route'])
-            return []
-        except Exception as e:
-            log('error', f"Error getting nav route for {system_name}: {e}")
-            return []
     
     def get_system_info(self, system_name: str) -> Dict[str, Any]:
         """Get system information (including EDSM data if available)"""
@@ -214,8 +112,6 @@ class SystemDatabase:
         try:
             self.systems_table.insert({
                 'name': system_name,
-                'fsd_target': '',
-                'nav_route': json.dumps([]),
                 'fetch_attempted': 0,
                 'last_updated': time.time()
             })
@@ -495,34 +391,9 @@ class SystemDatabase:
         else:
             # For other events, try to get current system
             current_system = content.get('CurrentSystem', content.get('StarSystem', 'Unknown'))
-        
-        # Process specific event types
-        if event_type == 'FSDTarget':
-            if 'Name' in content:
-                target_system = content.get('Name', 'Unknown')
-                self.store_fsd_target(current_system, target_system)
-        
-        elif event_type == 'NavRoute':
-            if 'Route' in content and content['Route']:
-                nav_route_data = []
-                
-                # Process new route, skip current system (first entry)
-                for entry in content['Route'][1:]:
-                    star_class = entry.get("StarClass", "")
-                    is_scoopable = star_class in ['K','G','B','F','O','A','M']
-                    system_name = entry.get("StarSystem", "Unknown")
                     
-                    nav_route_data.append({
-                        "StarSystem": system_name,
-                        "Scoopable": is_scoopable
-                    })
-                
-                self.store_nav_route(current_system, nav_route_data)
-        
-        elif event_type == 'NavRouteClear':
-            self.clear_nav_route(current_system)
-            
-        elif event_type == 'FSDJump' or event_type == 'Location':
+        # Process FSDJump or Location to update the system record
+        if event_type == 'FSDJump' or event_type == 'Location':
             # Just update the current system record if it doesn't exist
             system_data = self.systems_table.get(current_system)
             if not system_data:
