@@ -6,12 +6,12 @@ import sqlean
 import sqlite3
 from typing import Any, final, List, Dict, Optional, Tuple, Type, TypeVar, Generic, cast
 import sqlite_vec
+from .Logger import log
 
 from .Config import get_cn_appdata_path
 
 def get_db_path() -> str:
     db_path = os.path.join(get_cn_appdata_path(), 'covas.db')
-    print(f"Database path: {db_path}")
     return db_path
 
 def _execute_with_retry(cursor, query, params=(), max_retries=5, initial_backoff=0.1):
@@ -24,11 +24,8 @@ def _execute_with_retry(cursor, query, params=(), max_retries=5, initial_backoff
             if "database is locked" in str(e) and attempt < max_retries - 1:
                 # Calculate backoff with exponential increase and jitter
                 backoff = initial_backoff * (2 ** attempt) + (random.random() * initial_backoff)
-                print(f"Database locked, retrying in {backoff:.2f}s (attempt {attempt+1}/{max_retries})")
                 time.sleep(backoff)
             else:
-                # Either we've exceeded retries or it's a different error
-                print(f"Database error (attempt {attempt+1}): {str(e)}")
                 raise
 
 # Global connection for SQLite
@@ -60,7 +57,7 @@ def close_connection():
         try:
             _db_connection.close()
         except Exception as e:
-            print(f"Error closing database connection: {e}")
+            log('error', f"Error closing database connection: {e}")
         finally:
             _db_connection = None
 
@@ -91,7 +88,7 @@ class EventStore():
             ''')
             self.conn.commit()
         except Exception as e:
-            print(f"Error creating event store table {self.table_name}: {e}")
+            log('error', f"Error creating event store table {self.table_name}: {e}")
         
     def __del__(self):
         if hasattr(self, 'cursor'):
@@ -104,7 +101,7 @@ class EventStore():
         try:
             self.conn.commit()
         except Exception as e:
-            print(f"Error committing to event store: {e}")
+            log('error', f"Error committing to event store: {e}")
     
     def insert_event(self, event: Any, processed_at: float, commit: bool = True) -> None:
         try:
@@ -118,7 +115,7 @@ class EventStore():
             if commit:
                 self.conn.commit()
         except Exception as e:
-            print(f"Error inserting event: {e}")
+            log('error', f"Error inserting event: {e}")
     
     def get_latest(self, limit: int = 100) -> list[Any]:
         try:
@@ -136,7 +133,7 @@ class EventStore():
                 events.append(instance)
             return events
         except Exception as e:
-            print(f"Error getting latest events: {e}")
+            log('error', f"Error getting latest events: {e}")
             return []
     
     def delete_all(self) -> None:
@@ -146,7 +143,7 @@ class EventStore():
             ''')
             self.conn.commit()
         except Exception as e:
-            print(f"Error deleting all events: {e}")
+            log('error', f"Error deleting all events: {e}")
 
 @final
 class KeyValueStore():
@@ -167,7 +164,7 @@ class KeyValueStore():
             ''')
             self.conn.commit()
         except Exception as e:
-            print(f"Error creating key-value store table {self.table_name}: {e}")
+            log('error', f"Error creating key-value store table {self.table_name}: {e}")
                     
     def __del__(self):
         if hasattr(self, 'cursor'):
@@ -189,7 +186,7 @@ class KeyValueStore():
                 return row[0]
             return None
         except Exception as e:
-            print(f"Error getting version for key {key}: {e}")
+            log('error', f"Error getting version for key {key}: {e}")
             return None
         
     def init(self, key: str, version: str, value: Any) -> Any:
@@ -206,7 +203,7 @@ class KeyValueStore():
             self.conn.commit()
             return self.get(key)
         except Exception as e:
-            print(f"Error initializing key {key}: {e}")
+            log('error', f"Error initializing key {key}: {e}")
             return None
     
     def set(self, key: str, value: Any) -> None:
@@ -219,7 +216,7 @@ class KeyValueStore():
             
             self.conn.commit()
         except Exception as e:
-            print(f"Error setting value for key {key}: {e}")
+            log('error', f"Error setting value for key {key}: {e}")
     
     def get(self, key: str, default: Any = None) -> Any:
         try:
@@ -234,7 +231,7 @@ class KeyValueStore():
                 return json.loads(row[0])
             return default
         except Exception as e:
-            print(f"Error getting value for key {key}: {e}")
+            log('error', f"Error getting value for key {key}: {e}")
             return default
 
     def get_all(self) -> dict[str, Any]:
@@ -253,7 +250,7 @@ class KeyValueStore():
                     pass
             return result
         except Exception as e:
-            print(f"Error getting all key-value pairs: {e}")
+            log('error', f"Error getting all key-value pairs: {e}")
             return {}
     
     def delete(self, key: str) -> None:
@@ -265,7 +262,7 @@ class KeyValueStore():
             
             self.conn.commit()
         except Exception as e:
-            print(f"Error deleting key {key}: {e}")
+            log('error', f"Error deleting key {key}: {e}")
     
     def delete_all(self) -> None:
         try:
@@ -275,7 +272,7 @@ class KeyValueStore():
             
             self.conn.commit()
         except Exception as e:
-            print(f"Error deleting all key-value pairs: {e}")
+            log('error', f"Error deleting all key-value pairs: {e}")
 
 T = TypeVar('T')
 
@@ -311,7 +308,7 @@ class Table(Generic[T]):
             ''')
             self.conn.commit()
         except Exception as e:
-            print(f"Error creating table {self.table_name}: {e}")
+            log('error', f"Error creating table {self.table_name}: {e}")
     
     def __del__(self):
         if hasattr(self, 'cursor'):
@@ -348,7 +345,7 @@ class Table(Generic[T]):
                         values.append(value)
             
             if not columns:
-                print(f"Warning: No valid columns found for insert into {self.table_name}")
+                log('warn', f"Warning: No valid columns found for insert into {self.table_name}")
                 return None
                 
             columns_str = ', '.join(columns)
@@ -366,7 +363,7 @@ class Table(Generic[T]):
             
             return self.cursor.lastrowid
         except Exception as e:
-            print(f"Error inserting data into {self.table_name}: {e}")
+            log('error', f"Error inserting data into {self.table_name}: {e}")
             return None
     
     def update(self, primary_key_value: Any, data: Dict[str, Any]) -> None:
@@ -406,7 +403,7 @@ class Table(Generic[T]):
             _execute_with_retry(self.cursor, query, tuple(values))
             self.conn.commit()
         except Exception as e:
-            print(f"Error updating data in {self.table_name}: {e}")
+            log('error', f"Error updating data in {self.table_name}: {e}")
     
     def get(self, primary_key_value: Any) -> Optional[Dict[str, Any]]:
         """
@@ -447,7 +444,7 @@ class Table(Generic[T]):
             
             return result
         except Exception as e:
-            print(f"Error getting row from {self.table_name}: {e}")
+            log('error', f"Error getting row from {self.table_name}: {e}")
             return None
     
     def get_all(self, where_clause: Optional[str] = None, params: Tuple = ()) -> List[Dict[str, Any]]:
@@ -489,7 +486,7 @@ class Table(Generic[T]):
             
             return results
         except Exception as e:
-            print(f"Error getting all rows from {self.table_name}: {e}")
+            log('error', f"Error getting all rows from {self.table_name}: {e}")
             return []
     
     def delete(self, primary_key_value: Any) -> None:
@@ -508,7 +505,7 @@ class Table(Generic[T]):
             _execute_with_retry(self.cursor, query, (primary_key_value,))
             self.conn.commit()
         except Exception as e:
-            print(f"Error deleting row from {self.table_name}: {e}")
+            log('error', f"Error deleting row from {self.table_name}: {e}")
     
     def delete_all(self) -> None:
         """Delete all rows from the table."""
@@ -520,7 +517,7 @@ class Table(Generic[T]):
             _execute_with_retry(self.cursor, query)
             self.conn.commit()
         except Exception as e:
-            print(f"Error deleting all rows from {self.table_name}: {e}")
+            log('error', f"Error deleting all rows from {self.table_name}: {e}")
     
     def execute_query(self, query: str, params: Tuple = ()) -> List[Dict[str, Any]]:
         """
@@ -556,44 +553,5 @@ class Table(Generic[T]):
             
             return results
         except Exception as e:
-            print(f"Error executing query on {self.table_name}: {e}")
+            log('error', f"Error executing query on {self.table_name}: {e}")
             return []
-
-def debug_examine_database() -> None:
-    """Print database tables and contents for debugging purposes"""
-    try:
-        conn = get_connection()
-        cursor = conn.cursor()
-        
-        # Get list of tables
-        cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
-        tables = cursor.fetchall()
-        print(f"Database tables: {tables}")
-        
-        # Check systems table
-        if any(table[0] == 'systems_v1' for table in tables):
-            # Get table info
-            cursor.execute("PRAGMA table_info(systems_v1)")
-            columns = cursor.fetchall()
-            print(f"Systems table columns: {columns}")
-            
-            # Get record count
-            cursor.execute("SELECT COUNT(*) FROM systems_v1")
-            count = cursor.fetchone()[0]
-            print(f"Systems table record count: {count}")
-            
-            # Get records if any
-            if count > 0:
-                cursor.execute("SELECT name, fsd_target, nav_route FROM systems_v1")
-                records = cursor.fetchall()
-                for record in records:
-                    print(f"System: {record[0]}, FSD Target: {record[1]}, Nav Route: {record[2][:50]}...")
-            else:
-                print("No records in systems_v1 table")
-        else:
-            print("systems_v1 table does not exist")
-        
-    except Exception as e:
-        print(f"Error examining database: {e}")
-        import traceback
-        print(traceback.format_exc())
