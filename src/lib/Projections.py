@@ -2,6 +2,7 @@ import math
 import requests
 import traceback
 from functools import lru_cache
+from typing import Any, Literal, TypedDict, final, Dict, List
 
 from sympy import Number
 
@@ -13,6 +14,8 @@ from typing_extensions import NotRequired, override
 from .Event import Event, StatusEvent, GameEvent, ProjectedEvent
 from .EventManager import EventManager, Projection
 from .StatusParser import parse_status_flags, parse_status_json, Status
+from .Database import Table, get_connection, _execute_with_retry
+from .SystemDatabase import system_db
 
 def latest_event_projection_factory(projectionName: str, gameEvent: str):
     class LatestEvent(Projection[dict[str, Any]]):
@@ -530,6 +533,12 @@ NavInfoState = TypedDict('NavInfoState', {
 
 @final
 class NavInfo(Projection[NavInfoState]):
+    current_system = "Unknown"
+    
+    def __init__(self):
+        super().__init__()
+        print("NavInfo projection initialized")
+    
     @override
     def get_default_state(self) -> NavInfoState:
         return {
@@ -537,25 +546,137 @@ class NavInfo(Projection[NavInfoState]):
             "NavRoute": [],
         }
     
+    def getSystemInfo(self, system_name: str = None) -> Dict[str, Any]:
+        """Get information about a system from EDSM API"""
+        if not system_name:
+            system_name = self.current_system
+        
+        if system_name == "Unknown":
+            return {}
+        
+        return system_db.get_system_info(system_name)
+    
+    def getStations(self, system_name: str = None) -> List[Dict[str, Any]]:
+        """Get stations in a system from EDSM API"""
+        if not system_name:
+            system_name = self.current_system
+        
+        if system_name == "Unknown":
+            return []
+        
+        return system_db.get_stations(system_name)
+    
     @override
     def process(self, event: Event) -> None:
-
+        print(f"NavInfo processing event: {event.__class__.__name__}")
+        if isinstance(event, GameEvent):
+            print(f"NavInfo processing GameEvent: {event.content.get('event', 'Unknown')}")
+        
+        # Track current system
+        if isinstance(event, GameEvent):
+            if event.content.get('event') == 'FSDJump':
+                self.current_system = event.content.get('StarSystem', 'Unknown')
+                print(f"NavInfo: Current system updated to {self.current_system}")
+            elif event.content.get('event') == 'Location':
+                self.current_system = event.content.get('StarSystem', 'Unknown')
+                print(f"NavInfo: Current system updated to {self.current_system}")
+        
+        # Process NavRoute event - both save to projection state and to database
         if isinstance(event, GameEvent) and event.content.get('event') == 'NavRoute':
+            print(f"NavInfo: Processing NavRoute event: {event.content}")
             if event.content.get('Route', []):
+                # Clear existing route first
                 self.state['NavRoute'] = []
-                for entry in event.content.get('Route', [])[1:]:
-                    self.state['NavRoute'].append({"StarSystem": entry["StarSystem"], "Scoopable": entry["StarClass"] in ['K','G','B','F','O','A','M']})
+                nav_route_data = []
+                
+                # Process new route
+                for entry in event.content.get('Route', [])[1:]:  # Skip current system
+                    star_class = entry.get("StarClass", "")
+                    is_scoopable = star_class in ['K','G','B','F','O','A','M']
+                    system_name = entry.get("StarSystem", "Unknown")
+                    print(f"NavInfo: Adding system to route: {system_name}")
+                    
+                    # Create properly typed entry for projection state
+                    route_item: NavRouteItem = {
+                        "StarSystem": system_name,
+                        "Scoopable": is_scoopable
+                    }
+                    self.state['NavRoute'].append(route_item)
+                    
+                    # Create entry for database (can be Dict[str, Any])
+                    nav_route_data.append({
+                        "StarSystem": system_name,
+                        "Scoopable": is_scoopable
+                    })
+                
+                # Store in database
+                if self.current_system != "Unknown":
+                    print(f"NavInfo: Storing route in database for system {self.current_system} with {len(nav_route_data)} waypoints")
+                    system_db.store_nav_route(self.current_system, nav_route_data)
+                    print(f"NavInfo: NavRoute updated with {len(self.state['NavRoute'])} systems and stored in database")
+                else:
+                    print("NavInfo: Current system is Unknown, not storing route in database")
 
+        # Process NavRouteClear - both clear projection state and database
         if isinstance(event, GameEvent) and event.content.get('event') == 'NavRouteClear':
+            print(f"NavInfo: Processing NavRouteClear event")
+            old_count = len(self.state['NavRoute'])
             self.state['NavRoute'] = []
+            
+            # Clear in database
+            if self.current_system != "Unknown":
+                print(f"NavInfo: Clearing route in database for system {self.current_system}")
+                system_db.clear_nav_route(self.current_system)
+                print(f"NavInfo: Cleared nav route (had {old_count} entries) and updated database")
+            else:
+                print("NavInfo: Current system is Unknown, not clearing route in database")
+        
+        # Process FSDJump - remove visited systems from route
         if isinstance(event, GameEvent) and event.content.get('event') == 'FSDJump':
+            print(f"NavInfo: Processing FSDJump event to {event.content.get('StarSystem', 'Unknown')}")
+            # Remove visited systems from route
+            current_system = event.content.get('StarSystem')
+            systems_removed = 0
+            
+            # Update route in projection state
             for index, entry in enumerate(self.state['NavRoute']):
-                if entry['StarSystem'] == event.content.get('StarSystem'):
+                if entry['StarSystem'] == current_system:
+                    print(f"NavInfo: Removing visited system {current_system} from route")
                     self.state['NavRoute'] = self.state['NavRoute'][index+1:]
+                    systems_removed = index + 1
+                    break
+            
+            # If we removed systems, update the database as well
+            if systems_removed > 0 and self.current_system != "Unknown":
+                print(f"NavInfo: Updating route in database after removing {systems_removed} systems")
+                # Convert to Dict[str, Any] for database
+                nav_route_data = []
+                for entry in self.state['NavRoute']:
+                    nav_route_data.append({
+                        "StarSystem": entry["StarSystem"],
+                        "Scoopable": entry["Scoopable"]
+                    })
+                
+                system_db.store_nav_route(self.current_system, nav_route_data)
+                print(f"NavInfo: Removed {systems_removed} systems from nav route after jump and updated database")
 
+        # Process FSDTarget - both update projection state and database
         if isinstance(event, GameEvent) and event.content.get('event') == 'FSDTarget':
+            print(f"NavInfo: Processing FSDTarget event: {event.content}")
             if 'Name' in event.content:
-                self.state['NextJumpTarget'] = event.content.get('Name', 'Unknown')
+                old_target = self.state.get('NextJumpTarget', 'Unknown')
+                new_target = event.content.get('Name', 'Unknown')
+                self.state['NextJumpTarget'] = new_target
+                
+                # Store in database
+                if self.current_system != "Unknown":
+                    print(f"NavInfo: Storing FSD target in database: {self.current_system} -> {new_target}")
+                    system_db.store_fsd_target(self.current_system, new_target)
+                    
+                    if old_target != new_target:
+                        print(f"NavInfo: FSD target updated from '{old_target}' to '{new_target}' and stored in database")
+                else:
+                    print("NavInfo: Current system is Unknown, not storing FSD target in database")
 
 
 class ExobiologyScanStateScan(TypedDict):
@@ -919,222 +1040,6 @@ class ColonisationConstruction(Projection[ColonisationConstructionState]):
             if resources:
                 self.state["ResourcesRequired"] = resources
 
-class SystemInfoState(TypedDict):
-    Name: str
-    SystemAddress: NotRequired[int]
-    StarClass: NotRequired[str]
-    SystemInfo: NotRequired[dict]
-    Stations: NotRequired[list]
-    LastUpdated: NotRequired[float]
-    FetchAttempted: NotRequired[bool]
-
-
-@final
-class SystemInfo(Projection[dict[str, SystemInfoState]]):
-    @override
-    def get_default_state(self) -> dict[str, SystemInfoState]:
-        return {}
-    
-    @override
-    def process(self, event: Event) -> None:
-        # Handle FSDTarget event to track target systems
-        if isinstance(event, GameEvent) and event.content.get('event') == 'FSDTarget':
-            system_name = event.content.get('Name')
-            system_address = event.content.get('SystemAddress')
-            star_class = event.content.get('StarClass')
-            
-            if system_name:
-                # If system doesn't exist in our state or has minimal info, initialize/update it
-                if system_name not in self.state or not self.state[system_name].get('SystemInfo'):
-                    if system_name not in self.state:
-                        self.state[system_name] = {
-                            'Name': system_name,
-                            'FetchAttempted': False
-                        }
-                    
-                    if system_address:
-                        self.state[system_name]['SystemAddress'] = system_address
-                    
-                    if star_class:
-                        self.state[system_name]['StarClass'] = star_class
-                    
-                    # Fetch system and station data from EDSM
-                    self._fetch_system_data(system_name)
-        
-        # Also update on location, FSDJump, and SupercruiseEntry events to ensure we have data for the current system
-        if isinstance(event, GameEvent) and event.content.get('event') in ['Location', 'FSDJump', 'SupercruiseEntry']:
-            system_name = event.content.get('StarSystem')
-            if system_name:
-                if system_name not in self.state or not self.state[system_name].get('SystemInfo'):
-                    if system_name not in self.state:
-                        self.state[system_name] = {
-                            'Name': system_name,
-                            'FetchAttempted': False
-                        }
-                    
-                    # Fetch system and station data from EDSM
-                    self._fetch_system_data(system_name)
-        
-        # Process NavRoute events to pre-fetch system information for all systems in the route
-        if isinstance(event, GameEvent) and event.content.get('event') == 'NavRoute':
-            route = event.content.get('Route', [])
-            if route:
-                systems_to_fetch = []
-
-                # Collect system names from the route
-                for entry in route:
-                    system_name = entry.get('StarSystem')
-                    if system_name and (system_name not in self.state or not self.state[system_name].get('SystemInfo')):
-                        # Initialize the system in our state
-                        if system_name not in self.state:
-                            self.state[system_name] = {
-                                'Name': system_name,
-                                'FetchAttempted': False
-                            }
-
-                        # Add to the list of systems to fetch if we haven't tried before
-                        if not self.state[system_name].get('FetchAttempted', False):
-                            systems_to_fetch.append(system_name)
-
-                # Fetch multiple systems in bulk if needed
-                if systems_to_fetch:
-                    self._fetch_multiple_systems(systems_to_fetch)
-
-    def _fetch_system_data(self, system_name: str) -> None:
-        """Fetch system and station data from EDSM API"""
-        import time
-        import urllib.parse
-        
-        # Mark that we've attempted to fetch data to avoid multiple attempts
-        self.state[system_name]['FetchAttempted'] = True
-        self.state[system_name]['LastUpdated'] = time.time()
-        
-        # Fetch system info from EDSM
-        try:
-            url = "https://www.edsm.net/api-v1/system"
-            params = {
-                "systemName": system_name,
-                "showInformation": 1,
-                "showPrimaryStar": 1,
-            }
-            
-            response = requests.get(url, params=params)
-            response.raise_for_status()
-            system_data = response.json()
-            
-            self.state[system_name]['SystemInfo'] = system_data
-            
-        except Exception as e:
-            log('error', f"Error fetching system info for {system_name}: {e}", traceback.format_exc())
-            self.state[system_name]['SystemInfo'] = {"error": str(e)}
-        
-        # Fetch station info from EDSM
-        try:
-            url = "https://www.edsm.net/api-system-v1/stations"
-            params = {
-                "systemName": system_name,
-            }
-            
-            response = requests.get(url, params=params)
-            response.raise_for_status()
-            data = response.json()
-            
-            stations = [
-                {
-                    "name": station.get("name", "Unknown"),
-                    "type": station.get("type", "Unknown"),
-                    "orbit": station.get("distanceToArrival", "Unknown"),
-                    "allegiance": station.get("allegiance", "None"),
-                    "government": station.get("government", "None"),
-                    "economy": station.get("economy", "None"),
-                    "secondEconomy": station.get("secondEconomy", "None"),
-                    "controllingFaction": station.get("controllingFaction", {}).get(
-                        "name", "Unknown"
-                    ),
-                    "services": [
-                        service
-                        for service, has_service in {
-                            "market": station.get("haveMarket", False),
-                            "shipyard": station.get("haveShipyard", False),
-                            "outfitting": station.get("haveOutfitting", False),
-                        }.items()
-                        if has_service
-                    ],
-                    **(
-                        {"body": station["body"]["name"]}
-                        if "body" in station and "name" in station["body"]
-                        else {}
-                    ),
-                }
-                for station in data.get("stations", [])
-                if station.get("type") != "Fleet Carrier"
-            ]
-            
-            self.state[system_name]['Stations'] = stations
-            
-        except Exception as e:
-            log('error', f"Error fetching station info for {system_name}: {e}", traceback.format_exc())
-            self.state[system_name]['Stations'] = []
-
-    def _fetch_multiple_systems(self, system_names: list[str], chunk_size: int = 50) -> None:
-        """
-        Fetch information for multiple systems in a single API call
-        
-        Args:
-            system_names: List of system names to fetch
-            chunk_size: Size of chunks to split the request into (default: 50)
-        """
-        import time
-        import urllib.parse
-        
-        if not system_names:
-            return
-        
-        # Process systems in chunks to avoid URL length issues
-        system_chunks = [system_names[i:i + chunk_size] for i in range(0, len(system_names), chunk_size)]
-        
-        log('debug', f"Fetching information for {len(system_names)} systems in bulk ({len(system_chunks)} chunks)")
-        
-        # Mark all systems as attempted
-        current_time = time.time()
-        for system_name in system_names:
-            if system_name in self.state:
-                self.state[system_name]['FetchAttempted'] = True
-                self.state[system_name]['LastUpdated'] = current_time
-        
-        # Process each chunk
-        for chunk_index, chunk in enumerate(system_chunks):
-            log('debug', f"Processing chunk {chunk_index + 1}/{len(system_chunks)} with {len(chunk)} systems")
-            
-            try:
-                url = "https://www.edsm.net/api-v1/systems"
-                params = {
-                    "showInformation": 1,
-                    "showPrimaryStar": 1,
-                    "systemName[]": chunk  # Pass the entire chunk as a list - requests will format it properly
-                }
-                
-                response = requests.get(url, params=params)
-                response.raise_for_status()
-                systems_data = response.json()
-                
-                # Process the response and update our state
-                for system_data in systems_data:
-                    system_name = system_data.get('name')
-                    if system_name and system_name in self.state:
-                        self.state[system_name]['SystemInfo'] = system_data
-                
-            except Exception as e:
-                log('error', f"Error fetching systems chunk {chunk_index + 1}: {e}", traceback.format_exc())
-                # Mark systems with error
-                for system_name in chunk:
-                    if system_name in self.state:
-                        self.state[system_name]['SystemInfo'] = {"error": str(e)}
-        
-        # Note: We don't need to fetch station information here
-        # Systems in the NavRoute will have their complete information fetched
-        # when they become the actual FSDTarget or when the player jumps to them
-
 
 def registerProjections(event_manager: EventManager):
 
@@ -1151,7 +1056,6 @@ def registerProjections(event_manager: EventManager):
     event_manager.register_projection(SuitLoadout())
     event_manager.register_projection(Friends())
     event_manager.register_projection(ColonisationConstruction())
-    event_manager.register_projection(SystemInfo())
 
     # ToDo: SLF, SRV,
     for proj in [

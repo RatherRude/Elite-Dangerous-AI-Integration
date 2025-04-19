@@ -4,10 +4,17 @@ import sys
 from time import time
 import traceback
 from typing import Any, final
+import math
+import sqlite3
+import asyncio
+import os
+import threading
+from pathlib import Path
 
 from EDMesg.CovasNext import ExternalChatNotification, ExternalBackgroundChatNotification
 from openai import OpenAI
 from openai.types.chat import ChatCompletion
+from openai.types.chat import ChatCompletionMessageToolCall
 
 from lib.Config import Config, assign_ptt, get_ed_appdata_path, get_ed_journals_path, get_system_info, load_config, save_config, update_config, update_event_config, validate_config
 from lib.ActionManager import ActionManager
@@ -24,7 +31,7 @@ from lib.StatusParser import Status, StatusParser
 from lib.EDJournal import *
 from lib.EventManager import EventManager
 from lib.UI import send_message
-
+from lib.SystemDatabase import system_db  # Import the system_db singleton
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
@@ -112,6 +119,9 @@ class Chat:
         log("debug", "Registering side effect...")
         self.event_manager.register_sideeffect(self.on_event)
 
+        # Track current system for system database
+        self.current_system = "Unknown"
+
     def on_event(self, event: Event, projected_states: dict[str, Any]):
         send_message({
             "type": "states",
@@ -124,6 +134,44 @@ class Chat:
 
         self.pending.append(event)
         self.reply_pending = self.should_reply(projected_states)
+
+        # If we get a game event, print it for debugging
+        print(f"\n=== DEBUG EVENT PROCESSING START ===")
+        print(f"Event type: {event.__class__.__name__}")
+        
+        # Track current system from event or projected states
+        if isinstance(event, GameEvent) and 'event' in event.content:
+            # Extract current system from certain event types
+            if event.content.get('event') in ['FSDJump', 'Location']:
+                self.current_system = event.content.get('StarSystem', self.current_system)
+                print(f"Updated current system to: {self.current_system}")
+            
+            # Look for current system in projection if needed
+            if self.current_system == "Unknown" and "Location" in projected_states:
+                self.current_system = projected_states["Location"].get("StarSystem", "Unknown")
+                print(f"Got current system from projections: {self.current_system}")
+                
+            event_type = event.content.get('event')
+            print(f"Game event type: {event_type}")
+            if event_type in ['FSDTarget', 'NavRoute', 'NavRouteClear', 'FSDJump', 'Location']:
+                print(f"NAVIGATION EVENT DETAILS: {event.content}")
+                # Convert GameEventContent to dict
+                content_dict = dict(event.content)
+                # Add current system to content if it's not already there
+                if 'CurrentSystem' not in content_dict:
+                    content_dict['CurrentSystem'] = self.current_system
+                
+                try:
+                    # Directly process navigation events with SystemDatabase
+                    system_db.process_event(event_type, content_dict)
+                    print(f"Successfully processed {event_type} event in SystemDatabase")
+                    # Dump database contents after event processing
+                    system_db.dump_database_contents()
+                except Exception as e:
+                    print(f"Error processing event in SystemDatabase: {e}")
+                    import traceback
+                    traceback.print_exc()
+        print(f"=== DEBUG EVENT PROCESSING END ===\n")
 
     def execute_actions(self, actions: list[dict[str, Any]], projected_states: dict[str, dict]):
         action_descriptions: list[str | None] = []
