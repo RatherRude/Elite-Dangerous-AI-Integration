@@ -386,6 +386,9 @@ DockingTimeoutEvent = dict
 LocationEvent = dict
 NavRouteEvent = dict
 
+# At the top of the file, make sure we import the system_db singleton 
+from .SystemDatabase import system_db
+
 class PromptGenerator:
     def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str]):
         self.commander_name = commander_name
@@ -2999,21 +3002,19 @@ class PromptGenerator:
             system_info = None
             stations_info = None
             
-            # Check if we have system info from projection
-            if projected_states.get('SystemInfo') and system_name in projected_states['SystemInfo']:
-                system_data = projected_states['SystemInfo'][system_name]
+            # Direct lookup from system database instead of SystemInfo projection
+            if system_name:
+                # Get system info from system database
+                raw_system_info = system_db.get_system_info(system_name)
+                if raw_system_info:
+                    system_info = self.format_system_info(raw_system_info)
                 
-                # Check if we have system info from the projection
-                if system_data.get('SystemInfo'):
-                    # Format the system info into a structured template
-                    system_info = self.format_system_info(system_data['SystemInfo'])
-                
-                # Check if we have stations info
-                if system_data.get('Stations'):
-                    # Format the projected station data
-                    stations_info = self.format_stations_data(system_data['Stations'])
+                # Get stations from system database
+                stations_data = system_db.get_stations(system_name)
+                if stations_data:
+                    stations_info = self.format_stations_data(stations_data)
             
-            # If no data from projection, use fallback direct fetch methods
+            # If no data from database, use fallback direct fetch methods
             if system_info is None:
                 system_info = self.format_stations_data(self.get_system_info(system_name))
             
@@ -3028,7 +3029,7 @@ class PromptGenerator:
         if "NavInfo" in projected_states and projected_states["NavInfo"].get("NavRoute"):
             nav_route = projected_states["NavInfo"]["NavRoute"]
             
-            # Enhance NavRoute with data from SystemInfo projection if available
+            # Enhance NavRoute with data from system database instead of SystemInfo projection
             enhanced_nav_route = []
             # Limit to first 20 systems
             systems_to_process = nav_route[:20]
@@ -3037,10 +3038,10 @@ class PromptGenerator:
             for system in systems_to_process:
                 system_data = {**system}  # Create a copy of the original system data
                 
-                # Try to get additional info from SystemInfo projection
+                # Try to get additional info from system database
                 system_name = system.get("StarSystem")
-                if projected_states.get('SystemInfo') and system_name in projected_states['SystemInfo']:
-                    raw_system_info = projected_states['SystemInfo'][system_name].get('SystemInfo')
+                if system_name:
+                    raw_system_info = system_db.get_system_info(system_name)
                     if raw_system_info and not isinstance(raw_system_info, str):
                         # Use the same formatting function as in the main system info
                         formatted_info = self.format_system_info(raw_system_info)

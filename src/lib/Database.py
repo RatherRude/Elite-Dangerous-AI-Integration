@@ -317,7 +317,7 @@ class Table(Generic[T]):
             except Exception:
                 pass
     
-    def insert(self, data: Dict[str, Any], replace: bool = False) -> int | None:
+    def insert(self, data: Dict[str, Any], replace: bool = False) -> Optional[int]:
         """
         Insert a new row into the table.
         
