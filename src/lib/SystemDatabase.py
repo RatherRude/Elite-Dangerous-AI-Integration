@@ -6,6 +6,7 @@ import requests
 from typing import Any, Dict, List, Optional, cast
 
 from .Database import Table, get_connection
+from .Event import Event, GameEvent
 from .Logger import log
 
 class SystemDatabase:
@@ -445,6 +446,3 @@ class SystemDatabase:
             system_data = self.systems_table.get(current_system)
             if not system_data:
                 self._init_system_record(current_system)
-
-# Create a singleton instance
-system_db = SystemDatabase() 

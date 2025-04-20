@@ -26,6 +26,7 @@ from lib.EventModels import (
 )
 
 from .Projections import LocationState, MissionsState, ShipInfoState, NavInfo, TargetState, CurrentStatus, CargoState
+from .SystemDatabase import SystemDatabase
 
 from .EDJournal import *
 from .Event import (
@@ -386,14 +387,12 @@ DockingTimeoutEvent = dict
 LocationEvent = dict
 NavRouteEvent = dict
 
-# At the top of the file, make sure we import the system_db singleton 
-from .SystemDatabase import system_db
-
 class PromptGenerator:
-    def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str]):
+    def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str], system_db: SystemDatabase):
         self.commander_name = commander_name
         self.character_prompt = character_prompt
         self.important_game_events = important_game_events
+        self.system_db = system_db
 
     def get_event_template(self, event: GameEvent):
         content: Any = event.content
@@ -3005,12 +3004,12 @@ class PromptGenerator:
             # Direct lookup from system database instead of SystemInfo projection
             if system_name:
                 # Get system info from system database
-                raw_system_info = system_db.get_system_info(system_name)
+                raw_system_info = self.system_db.get_system_info(system_name)
                 if raw_system_info:
                     system_info = self.format_system_info(raw_system_info)
                 
                 # Get stations from system database
-                stations_data = system_db.get_stations(system_name)
+                stations_data = self.system_db.get_stations(system_name)
                 if stations_data:
                     stations_info = self.format_stations_data(stations_data)
             
@@ -3041,7 +3040,7 @@ class PromptGenerator:
                 # Try to get additional info from system database
                 system_name = system.get("StarSystem")
                 if system_name:
-                    raw_system_info = system_db.get_system_info(system_name)
+                    raw_system_info = self.system_db.get_system_info(system_name)
                     if raw_system_info and not isinstance(raw_system_info, str):
                         # Use the same formatting function as in the main system info
                         formatted_info = self.format_system_info(raw_system_info)

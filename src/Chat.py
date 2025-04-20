@@ -31,7 +31,7 @@ from lib.StatusParser import Status, StatusParser
 from lib.EDJournal import *
 from lib.EventManager import EventManager
 from lib.UI import send_message
-from lib.SystemDatabase import system_db  # Import the system_db singleton
+from lib.SystemDatabase import SystemDatabase
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
@@ -103,12 +103,14 @@ class Chat:
         self.tts = TTS(openai_client=self.ttsClient, provider=tts_provider, model=self.config["tts_model_name"], voice=self.config["tts_voice"], voice_instructions=self.config["tts_prompt"], speed=self.config["tts_speed"], output_device=self.config["output_device_name"])
         self.stt = STT(openai_client=self.sttClient, provider=self.config["stt_provider"], input_device_name=self.config["input_device_name"], model=self.config["stt_model_name"], custom_prompt=self.config["stt_custom_prompt"], required_word=self.config["stt_required_word"])
 
+        log("debug", "Initializing SystemDatabase...")
+        self.system_database = SystemDatabase()
         log("debug", "Initializing EDKeys...")
         self.ed_keys = EDKeys(get_ed_appdata_path(config))
         log("debug", "Initializing status parser...")
         self.status_parser = StatusParser(get_ed_journals_path(config))
         log("debug", "Initializing prompt generator...")
-        self.prompt_generator = PromptGenerator(self.config["commander_name"], self.config["character"], important_game_events=self.enabled_game_events)
+        self.prompt_generator = PromptGenerator(self.config["commander_name"], self.config["character"], important_game_events=self.enabled_game_events, system_db=self.system_database)
         log("debug", "Initializing event manager...")
         self.event_manager = EventManager(
             game_events=self.enabled_game_events,
@@ -120,9 +122,6 @@ class Chat:
         self.pending: list[Event] = []
         log("debug", "Registering side effect...")
         self.event_manager.register_sideeffect(self.on_event)
-
-        # Track current system for system database
-        self.current_system = "Unknown"
 
     def on_event(self, event: Event, projected_states: dict[str, Any]):
         send_message({
@@ -137,43 +136,7 @@ class Chat:
         self.pending.append(event)
         self.reply_pending = self.should_reply(projected_states)
 
-        # If we get a game event, print it for debugging
-        print(f"\n=== DEBUG EVENT PROCESSING START ===")
-        print(f"Event type: {event.__class__.__name__}")
-        
-        # Track current system from event or projected states
-        if isinstance(event, GameEvent) and 'event' in event.content:
-            # Extract current system from certain event types
-            if event.content.get('event') in ['FSDJump', 'Location']:
-                self.current_system = event.content.get('StarSystem', self.current_system)
-                print(f"Updated current system to: {self.current_system}")
-            
-            # Look for current system in projection if needed
-            if self.current_system == "Unknown" and "Location" in projected_states:
-                self.current_system = projected_states["Location"].get("StarSystem", "Unknown")
-                print(f"Got current system from projections: {self.current_system}")
-                
-            event_type = event.content.get('event')
-            print(f"Game event type: {event_type}")
-            if event_type in ['FSDTarget', 'NavRoute', 'NavRouteClear', 'FSDJump', 'Location']:
-                print(f"NAVIGATION EVENT DETAILS: {event.content}")
-                # Convert GameEventContent to dict
-                content_dict = dict(event.content)
-                # Add current system to content if it's not already there
-                if 'CurrentSystem' not in content_dict:
-                    content_dict['CurrentSystem'] = self.current_system
-                
-                try:
-                    # Directly process navigation events with SystemDatabase
-                    system_db.process_event(event_type, content_dict)
-                    print(f"Successfully processed {event_type} event in SystemDatabase")
-                    # Dump database contents after event processing
-                    system_db.dump_database_contents()
-                except Exception as e:
-                    print(f"Error processing event in SystemDatabase: {e}")
-                    import traceback
-                    traceback.print_exc()
-        print(f"=== DEBUG EVENT PROCESSING END ===\n")
+
 
     def execute_actions(self, actions: list[dict[str, Any]], projected_states: dict[str, dict]):
         action_descriptions: list[str | None] = []
@@ -377,7 +340,7 @@ class Chat:
             self.stt.listen_continuous()
         log('info', "Voice interface ready.")
 
-        registerProjections(self.event_manager)
+        registerProjections(self.event_manager, self.system_database)
 
         if self.config['tools_var']:
             register_actions(self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.ed_keys)

@@ -1,21 +1,14 @@
 import math
-import requests
-import traceback
-from functools import lru_cache
-from typing import Any, Literal, TypedDict, final, Dict, List
-
-from sympy import Number
-
-from .Logger import log
 from typing import Any, Literal, TypedDict, final
+from typing import Dict, List
 
 from typing_extensions import NotRequired, override
 
 from .Event import Event, StatusEvent, GameEvent, ProjectedEvent
 from .EventManager import EventManager, Projection
 from .StatusParser import parse_status_flags, parse_status_json, Status
-from .Database import Table, get_connection, _execute_with_retry
-from .SystemDatabase import system_db
+from .SystemDatabase import SystemDatabase
+
 
 def latest_event_projection_factory(projectionName: str, gameEvent: str):
     class LatestEvent(Projection[dict[str, Any]]):
@@ -535,8 +528,9 @@ NavInfoState = TypedDict('NavInfoState', {
 class NavInfo(Projection[NavInfoState]):
     current_system = "Unknown"
     
-    def __init__(self):
+    def __init__(self, system_db: SystemDatabase):
         super().__init__()
+        self.system_db = system_db
     
     @override
     def get_default_state(self) -> NavInfoState:
@@ -553,7 +547,7 @@ class NavInfo(Projection[NavInfoState]):
         if system_name == "Unknown":
             return {}
         
-        return system_db.get_system_info(system_name)
+        return self.system_db.get_system_info(system_name)
     
     def getStations(self, system_name: str = None) -> List[Dict[str, Any]]:
         """Get stations in a system from EDSM API"""
@@ -563,7 +557,7 @@ class NavInfo(Projection[NavInfoState]):
         if system_name == "Unknown":
             return []
         
-        return system_db.get_stations(system_name)
+        return self.system_db.get_stations(system_name)
     
     @override
     def process(self, event: Event) -> None:
@@ -602,7 +596,7 @@ class NavInfo(Projection[NavInfoState]):
                 
                 # Fetch system data for systems in the route
                 if systems_to_lookup:
-                    system_db._fetch_multiple_systems(systems_to_lookup)
+                    self.system_db._fetch_multiple_systems(systems_to_lookup)
 
         # Process NavRouteClear
         if isinstance(event, GameEvent) and event.content.get('event') == 'NavRouteClear':
@@ -1001,7 +995,7 @@ class ColonisationConstruction(Projection[ColonisationConstructionState]):
 
 
 
-def registerProjections(event_manager: EventManager):
+def registerProjections(event_manager: EventManager, system_db: SystemDatabase):
 
     event_manager.register_projection(EventCounter())
     event_manager.register_projection(CurrentStatus())
@@ -1009,7 +1003,7 @@ def registerProjections(event_manager: EventManager):
     event_manager.register_projection(Missions())
     event_manager.register_projection(ShipInfo())
     event_manager.register_projection(Target())
-    event_manager.register_projection(NavInfo())
+    event_manager.register_projection(NavInfo(system_db))
     event_manager.register_projection(ExobiologyScan())
     event_manager.register_projection(Cargo())
     event_manager.register_projection(Backpack())
