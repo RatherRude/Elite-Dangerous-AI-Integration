@@ -199,10 +199,14 @@
                                                 <mat-select [(ngModel)]="config.tts_voice"
                                                         (ngModelChange)="onConfigChange({tts_voice: $event})">
                                                     <mat-option value="alloy">Alloy - Neutral, versatile voice</mat-option>
+                                                    <mat-option value="ash">Ash - New voice</mat-option>
+                                                    <mat-option value="ballad">Ballad - New voice</mat-option>
+                                                    <mat-option value="coral">Coral - New voice</mat-option>
                                                     <mat-option value="echo">Echo - Deeper, experienced voice</mat-option>
                                                     <mat-option value="fable">Fable - Warm, soft-spoken voice</mat-option>
-                                                    <mat-option value="onyx">Onyx - Deep, authoritative voice</mat-option>
                                                     <mat-option value="nova">Nova - Bright, friendly voice</mat-option>
+                                                    <mat-option value="onyx">Onyx - Deep, authoritative voice</mat-option>
+                                                    <mat-option value="sage">Sage - New voice</mat-option>
                                                     <mat-option value="shimmer">Shimmer - Clear, warm voice</mat-option>
                                                 </mat-select>
                                             } @else if (config.tts_provider === 'edge-tts') {
@@ -827,10 +831,14 @@
                             <mat-select [(ngModel)]="config.tts_voice"
                                       (ngModelChange)="onConfigChange({tts_voice: $event})">
                                 <mat-option value="alloy">Alloy - Neutral, versatile voice</mat-option>
+                                <mat-option value="ash">Ash - New voice</mat-option>
+                                <mat-option value="ballad">Ballad - New voice</mat-option>
+                                <mat-option value="coral">Coral - New voice</mat-option>
                                 <mat-option value="echo">Echo - Deeper, experienced voice</mat-option>
                                 <mat-option value="fable">Fable - Warm, soft-spoken voice</mat-option>
-                                <mat-option value="onyx">Onyx - Deep, authoritative voice</mat-option>
                                 <mat-option value="nova">Nova - Bright, friendly voice</mat-option>
+                                <mat-option value="onyx">Onyx - Deep, authoritative voice</mat-option>
+                                <mat-option value="sage">Sage - New voice</mat-option>
                                 <mat-option value="shimmer">Shimmer - Clear, warm voice</mat-option>
                             </mat-select>
                         </mat-form-field>
