@@ -113,7 +113,17 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   private initializing = true;
 
   edgeTtsVoices = [
-    // English voices
+    // English voices - US
+    { value: 'en-US-AvaMultilingualNeural', label: 'Ava Multilingual (Female)', locale: 'en-US' },
+    { value: 'en-US-AndrewMultilingualNeural', label: 'Andrew Multilingual (Male)', locale: 'en-US' },
+    { value: 'en-US-CoraMultilingualNeural', label: 'Cora Multilingual (Female)', locale: 'en-US' },
+    { value: 'en-US-ChristopherMultilingualNeural', label: 'Christopher Multilingual (Male)', locale: 'en-US' },
+    { value: 'en-US-BrandonMultilingualNeural', label: 'Brandon Multilingual (Male)', locale: 'en-US' },
+    { value: 'en-US-EmmaMultilingualNeural', label: 'Emma Multilingual (Female)', locale: 'en-US' },
+    { value: 'en-US-BrianMultilingualNeural', label: 'Brian Multilingual (Male)', locale: 'en-US' },
+    { value: 'en-US-JennyMultilingualNeural', label: 'Jenny Multilingual (Female)', locale: 'en-US' },
+    { value: 'en-US-RyanMultilingualNeural', label: 'Ryan Multilingual (Male)', locale: 'en-US' },
+    { value: 'en-US-EvelynMultilingualNeural', label: 'Evelyn Multilingual (Female)', locale: 'en-US' },
     { value: 'en-US-AriaNeural', label: 'Aria (Female) - Positive, Confident', locale: 'en-US' },
     { value: 'en-US-AnaNeural', label: 'Ana (Female) - Cute', locale: 'en-US' },
     { value: 'en-US-ChristopherNeural', label: 'Christopher (Male) - Reliable, Authority', locale: 'en-US' },
@@ -123,11 +133,17 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     { value: 'en-US-MichelleNeural', label: 'Michelle (Female) - Friendly, Pleasant', locale: 'en-US' },
     { value: 'en-US-RogerNeural', label: 'Roger (Male) - Lively', locale: 'en-US' },
     { value: 'en-US-SteffanNeural', label: 'Steffan (Male) - Rational', locale: 'en-US' },
+    
+    // English voices - UK
+    { value: 'en-GB-AdaMultilingualNeural', label: 'Ada Multilingual (Female)', locale: 'en-GB' },
+    { value: 'en-GB-OllieMultilingualNeural', label: 'Ollie Multilingual (Male)', locale: 'en-GB' },
     { value: 'en-GB-LibbyNeural', label: 'Libby (Female)', locale: 'en-GB' },
     { value: 'en-GB-MaisieNeural', label: 'Maisie (Female)', locale: 'en-GB' },
     { value: 'en-GB-RyanNeural', label: 'Ryan (Male)', locale: 'en-GB' },
     { value: 'en-GB-SoniaNeural', label: 'Sonia (Female)', locale: 'en-GB' },
     { value: 'en-GB-ThomasNeural', label: 'Thomas (Male)', locale: 'en-GB' },
+    
+    // English voices - Australia
     { value: 'en-AU-NatashaNeural', label: 'Natasha (Female)', locale: 'en-AU' },
     { value: 'en-AU-WilliamNeural', label: 'William (Male)', locale: 'en-AU' },
     { value: 'en-CA-ClaraNeural', label: 'Clara (Female)', locale: 'en-CA' },
@@ -142,6 +158,9 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     { value: 'en-ZA-LukeNeural', label: 'Luke (Male)', locale: 'en-ZA' },
     
     // French voices
+    { value: 'fr-FR-VivienneMultilingualNeural', label: 'Vivienne Multilingual (Female)', locale: 'fr-FR' },
+    { value: 'fr-FR-RemyMultilingualNeural', label: 'Remy Multilingual (Male)', locale: 'fr-FR' },
+    { value: 'fr-FR-LucienMultilingualNeural', label: 'Lucien Multilingual (Male)', locale: 'fr-FR' },
     { value: 'fr-FR-DeniseNeural', label: 'Denise (Female)', locale: 'fr-FR' },
     { value: 'fr-FR-EloiseNeural', label: 'Eloise (Female)', locale: 'fr-FR' },
     { value: 'fr-FR-HenriNeural', label: 'Henri (Male)', locale: 'fr-FR' },
@@ -150,12 +169,18 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     { value: 'fr-CA-SylvieNeural', label: 'Sylvie (Female)', locale: 'fr-CA' },
     
     // German voices
+    { value: 'de-DE-SeraphinaMultilingualNeural', label: 'Seraphina Multilingual (Female)', locale: 'de-DE' },
+    { value: 'de-DE-FlorianMultilingualNeural', label: 'Florian Multilingual (Male)', locale: 'de-DE' },
     { value: 'de-DE-AmalaNeural', label: 'Amala (Female)', locale: 'de-DE' },
     { value: 'de-DE-ConradNeural', label: 'Conrad (Male)', locale: 'de-DE' },
     { value: 'de-DE-KatjaNeural', label: 'Katja (Female)', locale: 'de-DE' },
     { value: 'de-DE-KillianNeural', label: 'Killian (Male)', locale: 'de-DE' },
     
     // Spanish voices
+    { value: 'es-ES-ArabellaMultilingualNeural', label: 'Arabella Multilingual (Female)', locale: 'es-ES' },
+    { value: 'es-ES-IsidoraMultilingualNeural', label: 'Isidora Multilingual (Female)', locale: 'es-ES' },
+    { value: 'es-ES-TristanMultilingualNeural', label: 'Tristan Multilingual (Male)', locale: 'es-ES' },
+    { value: 'es-ES-XimenaMultilingualNeural', label: 'Ximena Multilingual (Female)', locale: 'es-ES' },
     { value: 'es-ES-AlvaroNeural', label: 'Alvaro (Male)', locale: 'es-ES' },
     { value: 'es-ES-ElviraNeural', label: 'Elvira (Female)', locale: 'es-ES' },
     { value: 'es-MX-DaliaNeural', label: 'Dalia (Female)', locale: 'es-MX' },
@@ -166,6 +191,10 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     { value: 'ru-RU-SvetlanaNeural', label: 'Svetlana (Female)', locale: 'ru-RU' },
     
     // Italian voices
+    { value: 'it-IT-AlessioMultilingualNeural', label: 'Alessio Multilingual (Male)', locale: 'it-IT' },
+    { value: 'it-IT-IsabellaMultilingualNeural', label: 'Isabella Multilingual (Female)', locale: 'it-IT' },
+    { value: 'it-IT-GiuseppeMultilingualNeural', label: 'Giuseppe Multilingual (Male)', locale: 'it-IT' },
+    { value: 'it-IT-MarcelloMultilingualNeural', label: 'Marcello Multilingual (Male)', locale: 'it-IT' },
     { value: 'it-IT-DiegoNeural', label: 'Diego (Male)', locale: 'it-IT' },
     { value: 'it-IT-ElsaNeural', label: 'Elsa (Female)', locale: 'it-IT' },
     { value: 'it-IT-IsabellaNeural', label: 'Isabella (Female)', locale: 'it-IT' },
@@ -175,12 +204,20 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     { value: 'ja-JP-NanamiNeural', label: 'Nanami (Female)', locale: 'ja-JP' },
     
     // Portuguese voices
+    { value: 'pt-BR-MacerioMultilingualNeural', label: 'Macerio Multilingual (Male)', locale: 'pt-BR' },
+    { value: 'pt-BR-ThalitaMultilingualNeural', label: 'Thalita Multilingual (Female)', locale: 'pt-BR' },
     { value: 'pt-BR-AntonioNeural', label: 'Antonio (Male)', locale: 'pt-BR' },
     { value: 'pt-BR-FranciscaNeural', label: 'Francisca (Female)', locale: 'pt-BR' },
     { value: 'pt-PT-DuarteNeural', label: 'Duarte (Male)', locale: 'pt-PT' },
     { value: 'pt-PT-RaquelNeural', label: 'Raquel (Female)', locale: 'pt-PT' },
     
     // Chinese voices
+    { value: 'zh-CN-XiaoxiaoMultilingualNeural', label: 'Xiaoxiao Multilingual (Female)', locale: 'zh-CN' },
+    { value: 'zh-CN-XiaochenMultilingualNeural', label: 'Xiaochen Multilingual (Female)', locale: 'zh-CN' },
+    { value: 'zh-CN-XiaoyuMultilingualNeural', label: 'Xiaoyu Multilingual (Female)', locale: 'zh-CN' },
+    { value: 'zh-CN-YunyiMultilingualNeural', label: 'Yunyi Multilingual (Female)', locale: 'zh-CN' },
+    { value: 'zh-CN-YunfanMultilingualNeural', label: 'Yunfan Multilingual (Male)', locale: 'zh-CN' },
+    { value: 'zh-CN-YunxiaoMultilingualNeural', label: 'Yunxiao Multilingual (Male)', locale: 'zh-CN' },
     { value: 'zh-CN-XiaoxiaoNeural', label: 'Xiaoxiao (Female) - Warm', locale: 'zh-CN' },
     { value: 'zh-CN-YunyangNeural', label: 'Yunyang (Male) - Professional', locale: 'zh-CN' },
     { value: 'zh-TW-HsiaoChenNeural', label: 'HsiaoChen (Female)', locale: 'zh-TW' },
@@ -195,6 +232,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     { value: 'hi-IN-SwaraNeural', label: 'Swara (Female)', locale: 'hi-IN' },
     
     // Korean voices
+    { value: 'ko-KR-HyunsuMultilingualNeural', label: 'Hyunsu Multilingual (Male)', locale: 'ko-KR' },
     { value: 'ko-KR-InJoonNeural', label: 'InJoon (Male)', locale: 'ko-KR' },
     { value: 'ko-KR-SunHiNeural', label: 'SunHi (Female)', locale: 'ko-KR' }
   ];
