@@ -1302,20 +1302,24 @@ class PromptGenerator:
             body_count = nav_beacon_scan_event.get('NumBodies', 0)
             
             return f"{self.commander_name} has scanned a navigation beacon, revealing data for {body_count} bodies in the system."
-            
+
         if event_name == 'Screenshot':
             screenshot_event = cast(ScreenshotEvent, content)
-            system = screenshot_event.get('System', 'current system')
-            body = screenshot_event.get('Body', '')
+
+            system = screenshot_event.get('System') or 'current system'
+            body = screenshot_event.get('Body') or ''
             body_text = f" near {body}" if body else ""
-            
+
             location_text = ""
-            if screenshot_event.get('Latitude') is not None and screenshot_event.get('Longitude') is not None:
-                lat = screenshot_event.get('Latitude')
-                lon = screenshot_event.get('Longitude')
-                alt = screenshot_event.get('Altitude')
+            try:
+                lat = float(screenshot_event.get('Latitude'))
+                lon = float(screenshot_event.get('Longitude'))
+                alt = float(screenshot_event.get('Altitude', 0))
                 location_text = f" at coordinates {lat:.4f}, {lon:.4f}, altitude: {alt:.1f}m"
-            
+            except (TypeError, ValueError):
+                # If any of the coordinates are invalid or missing, skip the location text
+                pass
+
             return f"{self.commander_name} took a screenshot in {system}{body_text}{location_text}."
 
         # Station Services events
