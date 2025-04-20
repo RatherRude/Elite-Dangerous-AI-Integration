@@ -39,11 +39,13 @@ class Mp3Stream(miniaudio.StreamableSource):
 
 @final
 class TTS:
-    def __init__(self, openai_client: Optional[openai.OpenAI] = None, provider: Literal["none", "edge-tts", "openai", "local-ai"]='openai', voice="nova", model='tts-1', speed: Union[str,float]=1, output_device: Optional[str] = None):
+    def __init__(self, openai_client: Optional[openai.OpenAI] = None, provider: Literal['openai', 'edge-tts', 'custom', 'none', 'local-ai-server'] | str ='openai', voice="nova", voice_instructions="", model='tts-1',  speed: Union[str,float]=1, output_device: Optional[str] = None):
         self.openai_client = openai_client
         self.provider = provider
         self.model = model
         self.voice = voice
+        self.voice_instructions = voice_instructions
+
         self.speed = speed
         
         self.p = pyaudio.PyAudio()
@@ -168,6 +170,7 @@ class TTS:
                     input=text,
                     response_format="pcm",
                     # raw samples in 24kHz (16-bit signed, low-endian), without the header.
+                    instructions = self.voice_instructions,
                     speed=float(self.speed)
             ) as response:
                 for chunk in response.iter_bytes(1024):
@@ -204,7 +207,7 @@ class TTS:
 if __name__ == "__main__":
     openai_audio = openai.OpenAI(base_url="http://localhost:8080/v1", api_key='x')
 
-    tts = TTS(openai_audio, provider="openai", model="tts-1", voice="nova", speed=1, output_device="Speakers")
+    tts = TTS(openai_audio, provider="openai", model="tts-1", voice="nova", voice_instructions="", speed=1, output_device="Speakers")
 
 
     text = """The missile knows where it is at all times. It knows this because it knows where it isn't. By subtracting where it is from where it isn't, or where it isn't from where it is (whichever is greater), it obtains a difference, or deviation. The guidance subsystem uses deviations to generate corrective commands to drive the missile from a position where it is to a position where it isn't, and arriving at a position where it wasn't, it now is. Consequently, the position where it is, is now the position that it wasn't, and it follows that the position that it was, is now the position that it isn't.

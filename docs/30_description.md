@@ -46,6 +46,8 @@ The TTS functionality delivers auditory feedback based on the actions and respon
 You can change the STT model's name, endpoint and if required API key in the "AI Geeks Section" of the settings.
 On default, the program will use OpenAI's services to generate the AI's voice, or from the operating system if the local option was chosen.
 
+In addition to this, "Voice tone instructions" are supported for users of openai gpt-4o-mini-tts - allowing you to control how you want the voice to sound.
+
 ### 4. Vision Capabilities
 
 The AI can take screenshots and analyze their content to provide visual confirmations and insights based on the commander's queries. **This feature relies on enabled Function Calling.**
