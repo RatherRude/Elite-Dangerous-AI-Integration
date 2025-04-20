@@ -88,6 +88,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   expandedSection: string | null = null;
   filteredGameEvents: Record<string, Record<string, boolean>> = {};
   eventSearchQuery: string = "";
+  voiceInstructionSupportedModels: string[] = ['gpt-4o-mini-tts'];
 
   gameEventCategories = GameEventCategories;
   settings: PromptSettings = {

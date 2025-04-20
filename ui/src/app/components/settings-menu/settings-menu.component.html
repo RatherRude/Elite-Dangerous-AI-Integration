@@ -257,21 +257,26 @@
                                     </div>
                                     <div class="trait-select">
                                         <!-- Voice speed -->
+                                        @if (!voiceInstructionSupportedModels.includes(config.tts_model_name)) {
                                         <mat-form-field>
                                             <mat-label>Voice Speed</mat-label>
                                             <input matInput [(ngModel)]="config.tts_speed"
                                                    (ngModelChange)="onConfigChange({tts_speed: $event})">
                                             <mat-hint>Speed multiplier (1.0 = normal speed)</mat-hint>
                                         </mat-form-field>
-                                    </div>
-                                    <div class="trait-select">
+                                        }
+
                                         <!-- TTS Prompt -->
+                                        @if (voiceInstructionSupportedModels.includes(config.tts_model_name)) {
+                                        <mat-hint><b>Voice instructions</b><br>Enter a detailed description of how you want your voice to sound.<br>You can include things such as: accent, emotional range, tone, impressions and speed.<br>
+                                            Warning: This will increase the cost of each query!</mat-hint>
                                         <mat-form-field>
-                                            <mat-label>TTS Prompt</mat-label>
+                                            <mat-label>Voice Tone Instructions</mat-label>
                                             <textarea matInput [(ngModel)]="config.tts_prompt"
                                                     (ngModelChange)="onConfigChange({tts_prompt: $event})"></textarea>
-                                            <mat-hint>Custom instructions for voice style/emotion</mat-hint>
+
                                         </mat-form-field>
+                                        }
                                     </div>
                                 </div>
                             </div>
@@ -849,22 +854,28 @@
                                 <mat-option value="shimmer">Shimmer - Clear, warm voice</mat-option>
                             </mat-select>
                         </mat-form-field>
+                        @if (!voiceInstructionSupportedModels.includes(config.tts_model_name)) {
                         <mat-form-field>
                             <mat-label>TTS Speed</mat-label>
                             <input matInput [(ngModel)]="config.tts_speed"
                                    (ngModelChange)="onConfigChange({tts_speed: $event})">
                         </mat-form-field>
+                        }
                         <mat-form-field>
                             <mat-label>Override TTS API Key</mat-label>
                             <input matInput type="password" [(ngModel)]="config.tts_api_key"
                                    (ngModelChange)="onConfigChange({tts_api_key: $event})">
                         </mat-form-field>
+                        @if (voiceInstructionSupportedModels.includes(config.tts_model_name)) {
+                        <mat-hint>Voice instructions: Enter a detailed description of how you want your voice to sound. You can include things such as: accent, emotional range, tone, impressions and speed.<br>
+                            Warning: This will increase the cost of each query!</mat-hint>
                         <mat-form-field>
-                            <mat-label>TTS Prompt</mat-label>
+                            <mat-label>Voice Tone Instructions</mat-label>
                             <textarea matInput [(ngModel)]="config.tts_prompt"
                                    (ngModelChange)="onConfigChange({tts_prompt: $event})"></textarea>
-                            <mat-hint>Custom instructions for the TTS system to control voice style, emotion, etc.</mat-hint>
+
                         </mat-form-field>
+                        }
                     }
                     @if (config.tts_provider === "edge-tts") {
                         <mat-form-field>
