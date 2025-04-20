@@ -258,76 +258,80 @@
                                     <div class="trait-select">
                                         <!-- Voice speed -->
                                         @if (!voiceInstructionSupportedModels.includes(config.tts_model_name)) {
-                                        <mat-form-field>
-                                            <mat-label>Voice Speed</mat-label>
-                                            <input matInput [(ngModel)]="config.tts_speed"
-                                                   (ngModelChange)="onConfigChange({tts_speed: $event})">
-                                            <mat-hint>Speed multiplier (1.0 = normal speed)</mat-hint>
-                                        </mat-form-field>
+                                            <div class="trait-select lowWidth">
+                                                <mat-form-field>
+                                                    <mat-label>Speed</mat-label>
+                                                    <input matInput [(ngModel)]="config.tts_speed"
+                                                           (ngModelChange)="onConfigChange({tts_speed: $event})">
+                                                </mat-form-field>
+                                            </div>
                                         }
 
                                         <!-- TTS Prompt -->
                                         @if (!['tts-1', 'tts-1-hd'].includes(config.tts_model_name)) {
-                                        <mat-hint><b>Voice instructions</b><br>Enter a detailed description of how you want your voice to sound.<br>You can include things such as: accent, emotional range, tone, impressions and speed.<br>
-                                            Warning: This will increase the cost of each query!</mat-hint>
-                                        <mat-form-field>
-                                            <mat-label>Voice Tone Instructions</mat-label>
-                                            <textarea matInput [(ngModel)]="config.tts_prompt"
-                                                    (ngModelChange)="onConfigChange({tts_prompt: $event})"></textarea>
+                                            <div class="trait-select">
+                                                <mat-hint><b>Voice instructions</b><br>Enter a detailed description of how you want your voice to sound.<br>You can include things such as: accent, emotional range, tone, impressions and speed.<br>
+                                                    Warning: This will increase the cost of each query!</mat-hint>
+                                                <mat-form-field>
+                                                    <mat-label>Voice Tone Instructions</mat-label>
+                                                    <textarea matInput [(ngModel)]="config.tts_prompt"
+                                                            (ngModelChange)="onConfigChange({tts_prompt: $event})"></textarea>
 
-                                        </mat-form-field>
+                                                </mat-form-field>
+                                            </div>
                                         }
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Personality Preset -->
-                            <div class="trait-select">
-                                <mat-form-field appearance="fill">
-                                    <mat-label>Personality Preset</mat-label>
-                                    <mat-select [(value)]="config.personality_preset" (selectionChange)="applyPersonalityPreset($event.value)">
-                                        <mat-option value="default">Default</mat-option>
-                                        <mat-option value="custom">Custom</mat-option>
-                                        <mat-option disabled>--- Elite: Dangerous Roles ---</mat-option>
-                                        <mat-option value="explorer">Explorer</mat-option>
-                                        <mat-option value="trader">Trader</mat-option>
-                                        <mat-option value="miner">Miner</mat-option>
-                                        <mat-option value="bountyHunter">Bounty Hunter</mat-option>
-                                        <mat-option value="pirate">Pirate</mat-option>
-                                        <mat-option value="smuggler">Smuggler</mat-option>
-                                        <mat-option value="mercenary">Mercenary</mat-option>
-                                        <mat-option value="missionRunner">Mission Runner</mat-option>
-                                        <mat-option value="passengerTransporter">Passenger Transporter</mat-option>
-                                        <mat-option value="powerplayAgent">Powerplay Agent</mat-option>
-                                        <mat-option value="axCombatPilot">AX Combat Pilot</mat-option>
-                                        <mat-option value="pvpCombatant">PvP Combatant</mat-option>
-                                        <mat-option value="pveCombatant">PvE Combatant</mat-option>
-                                        <mat-option value="salvager">Salvager</mat-option>
-                                        <mat-option value="cannonResearcher">Cannon Researcher</mat-option>
-                                        <mat-option value="fuelRat">Fuel Rat/Support</mat-option>
-                                        <mat-option value="fleetCarrierOperator">Fleet Carrier Operator</mat-option>
-                                        <mat-option value="bgsPlayer">BGS Player</mat-option>
-                                        <mat-option value="racer">Race Pilot</mat-option>
-                                        <mat-option disabled>--- Roleplaying Characters ---</mat-option>
-                                        <mat-option value="diplomat">Diplomat</mat-option>
-                                        <mat-option value="spy">Spy / Infiltrator</mat-option>
-                                        <mat-option value="cultLeader">Cult Leader</mat-option>
-                                        <mat-option value="rogueAI">Rogue AI / Synthetic Being</mat-option>
-                                        <mat-option value="xenologist">Xenologist</mat-option>
-                                        <mat-option value="vigilante">Renegade Cop / Vigilante</mat-option>
-                                        <mat-option value="warCorrespondent">War Correspondent</mat-option>
-                                        <mat-option value="propagandist">Propagandist</mat-option>
-                                        <mat-option value="pirateLord">Pirate Lord / Crime Boss</mat-option>
-                                        <mat-option value="veteran">Disillusioned Veteran</mat-option>
-                                        <mat-option value="freedomFighter">Freedom Fighter</mat-option>
-                                        <mat-option value="hermit">Hermit / Space Nomad</mat-option>
-                                        <mat-option value="corporate">Corporate Operative</mat-option>
-                                        <mat-option value="zealot">Religious Zealot</mat-option>
-                                        <mat-option value="historian">Historian / Archivist</mat-option>
-                                    </mat-select>
-                                </mat-form-field>
+                            <div class="trait-container">
+                                <div class="trait-select">
+                                    <mat-form-field appearance="fill">
+                                        <mat-label>Personality Preset</mat-label>
+                                        <mat-select [(value)]="config.personality_preset" (selectionChange)="applyPersonalityPreset($event.value)">
+                                            <mat-option value="default">Default</mat-option>
+                                            <mat-option value="custom">Custom</mat-option>
+                                            <mat-option disabled>--- Elite: Dangerous Roles ---</mat-option>
+                                            <mat-option value="explorer">Explorer</mat-option>
+                                            <mat-option value="trader">Trader</mat-option>
+                                            <mat-option value="miner">Miner</mat-option>
+                                            <mat-option value="bountyHunter">Bounty Hunter</mat-option>
+                                            <mat-option value="pirate">Pirate</mat-option>
+                                            <mat-option value="smuggler">Smuggler</mat-option>
+                                            <mat-option value="mercenary">Mercenary</mat-option>
+                                            <mat-option value="missionRunner">Mission Runner</mat-option>
+                                            <mat-option value="passengerTransporter">Passenger Transporter</mat-option>
+                                            <mat-option value="powerplayAgent">Powerplay Agent</mat-option>
+                                            <mat-option value="axCombatPilot">AX Combat Pilot</mat-option>
+                                            <mat-option value="pvpCombatant">PvP Combatant</mat-option>
+                                            <mat-option value="pveCombatant">PvE Combatant</mat-option>
+                                            <mat-option value="salvager">Salvager</mat-option>
+                                            <mat-option value="cannonResearcher">Cannon Researcher</mat-option>
+                                            <mat-option value="fuelRat">Fuel Rat/Support</mat-option>
+                                            <mat-option value="fleetCarrierOperator">Fleet Carrier Operator</mat-option>
+                                            <mat-option value="bgsPlayer">BGS Player</mat-option>
+                                            <mat-option value="racer">Race Pilot</mat-option>
+                                            <mat-option disabled>--- Roleplaying Characters ---</mat-option>
+                                            <mat-option value="diplomat">Diplomat</mat-option>
+                                            <mat-option value="spy">Spy / Infiltrator</mat-option>
+                                            <mat-option value="cultLeader">Cult Leader</mat-option>
+                                            <mat-option value="rogueAI">Rogue AI / Synthetic Being</mat-option>
+                                            <mat-option value="xenologist">Xenologist</mat-option>
+                                            <mat-option value="vigilante">Renegade Cop / Vigilante</mat-option>
+                                            <mat-option value="warCorrespondent">War Correspondent</mat-option>
+                                            <mat-option value="propagandist">Propagandist</mat-option>
+                                            <mat-option value="pirateLord">Pirate Lord / Crime Boss</mat-option>
+                                            <mat-option value="veteran">Disillusioned Veteran</mat-option>
+                                            <mat-option value="freedomFighter">Freedom Fighter</mat-option>
+                                            <mat-option value="hermit">Hermit / Space Nomad</mat-option>
+                                            <mat-option value="corporate">Corporate Operative</mat-option>
+                                            <mat-option value="zealot">Religious Zealot</mat-option>
+                                            <mat-option value="historian">Historian / Archivist</mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                </div>
                             </div>
-
                             <!-- Character settings when preset is not custom -->
                             @if (config.personality_preset !== 'custom') {
                                 <div class="personality-settings">
