@@ -951,7 +951,9 @@ ColonisationConstructionState = TypedDict('ColonisationConstructionState', {
     "ConstructionComplete": bool,
     "ConstructionFailed": bool,
     "ResourcesRequired": list[ColonisationResourceItem],
-    "MarketID": int
+    "MarketID": int,
+    "StarSystem": str,
+    "StarSystemRecall": str
 })
 
 
@@ -964,7 +966,9 @@ class ColonisationConstruction(Projection[ColonisationConstructionState]):
             "ConstructionComplete": False,
             "ConstructionFailed": False,
             "ResourcesRequired": [],
-            "MarketID": 0
+            "MarketID": 0,
+            "StarSystem": "Unknown",
+            "StarSystemRecall": "Unknown"
         }
 
     @override
@@ -981,6 +985,20 @@ class ColonisationConstruction(Projection[ColonisationConstructionState]):
             resources = event.content.get('ResourcesRequired', [])
             if resources:
                 self.state["ResourcesRequired"] = resources
+            self.state["StarSystem"] = self.state["StarSystemRecall"]
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Location':
+            self.state["StarSystemRecall"] = event.content.get('StarSystem', 'Unknown')
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'SupercruiseEntry':
+            self.state["StarSystemRecall"] = event.content.get('StarSystem', 'Unknown')
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'SupercruiseExit':
+            self.state["StarSystemRecall"] = event.content.get('StarSystem', 'Unknown')
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'FSDJump':
+            self.state["StarSystemRecall"] = event.content.get('StarSystem', 'Unknown')
+
 
 
 def registerProjections(event_manager: EventManager):

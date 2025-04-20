@@ -3116,8 +3116,10 @@ class PromptGenerator:
             complete = colonisation_info.get('ConstructionComplete', False)
             failed = colonisation_info.get('ConstructionFailed', False)
             resources = colonisation_info.get('ResourcesRequired', [])
+            starsystem = colonisation_info.get('StarSystem', 'Unknown')
 
             construction_status = {
+                "Location": f"{starsystem}",
                 "Progress": f"{progress:.1%}",
                 "Status": "Complete" if complete else "Failed" if failed else "In Progress"
             }
