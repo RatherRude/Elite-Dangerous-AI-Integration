@@ -50,6 +50,10 @@ class SystemDatabase:
                 
             # If we have system info, return it
             if 'system_info' in system_data and system_data['system_info']:
+                # Check if it's already a dict (already deserialized)
+                if isinstance(system_data['system_info'], dict):
+                    return system_data['system_info']
+                # Otherwise, try to parse it as JSON
                 try:
                     return json.loads(system_data['system_info'])
                 except json.JSONDecodeError:
@@ -63,6 +67,10 @@ class SystemDatabase:
                 # Get fresh data
                 system_data = self.systems_table.get(system_name)
                 if system_data and 'system_info' in system_data and system_data['system_info']:
+                    # Check if it's already a dict (already deserialized)
+                    if isinstance(system_data['system_info'], dict):
+                        return system_data['system_info']
+                    # Otherwise, try to parse it as JSON
                     try:
                         return json.loads(system_data['system_info'])
                     except json.JSONDecodeError:
@@ -83,6 +91,10 @@ class SystemDatabase:
                 
             # If we have stations info, return it
             if 'stations' in system_data and system_data['stations']:
+                # Check if it's already a list (already deserialized)
+                if isinstance(system_data['stations'], list):
+                    return system_data['stations']
+                # Otherwise, try to parse it as JSON
                 try:
                     return json.loads(system_data['stations'])
                 except json.JSONDecodeError:
@@ -96,6 +108,10 @@ class SystemDatabase:
                 # Get fresh data
                 system_data = self.systems_table.get(system_name)
                 if system_data and 'stations' in system_data and system_data['stations']:
+                    # Check if it's already a list (already deserialized)
+                    if isinstance(system_data['stations'], list):
+                        return system_data['stations']
+                    # Otherwise, try to parse it as JSON
                     try:
                         return json.loads(system_data['stations'])
                     except json.JSONDecodeError:
