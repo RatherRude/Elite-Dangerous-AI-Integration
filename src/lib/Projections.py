@@ -526,8 +526,6 @@ NavInfoState = TypedDict('NavInfoState', {
 
 @final
 class NavInfo(Projection[NavInfoState]):
-    current_system = "Unknown"
-    
     def __init__(self, system_db: SystemDatabase):
         super().__init__()
         self.system_db = system_db
@@ -538,36 +536,9 @@ class NavInfo(Projection[NavInfoState]):
             "NextJumpTarget": 'Unknown',
             "NavRoute": [],
         }
-    
-    def getSystemInfo(self, system_name: str = None) -> Dict[str, Any]:
-        """Get information about a system from EDSM API"""
-        if not system_name:
-            system_name = self.current_system
-        
-        if system_name == "Unknown":
-            return {}
-        
-        return self.system_db.get_system_info(system_name)
-    
-    def getStations(self, system_name: str = None) -> List[Dict[str, Any]]:
-        """Get stations in a system from EDSM API"""
-        if not system_name:
-            system_name = self.current_system
-        
-        if system_name == "Unknown":
-            return []
-        
-        return self.system_db.get_stations(system_name)
-    
+
     @override
     def process(self, event: Event) -> None:
-        # Update current system
-        if isinstance(event, GameEvent):
-            if event.content.get('event') in ['FSDJump', 'Location']:
-                new_system = event.content.get('StarSystem', 'Unknown')
-                if new_system != self.current_system:
-                    self.current_system = new_system
-
         # Process NavRoute event
         if isinstance(event, GameEvent) and event.content.get('event') == 'NavRoute':
             if event.content.get('Route', []):
