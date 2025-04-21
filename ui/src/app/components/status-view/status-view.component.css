@@ -348,8 +348,90 @@
 
         .station-services {
             display: flex;
+            flex-wrap: wrap;
             gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .station-services button {
+            flex: 1;
+            min-width: 120px;
+            background-color: rgba(0, 0, 0, 0.2);
+            color: rgba(255, 255, 255, 0.8);
+            transition: all 0.2s ease;
+            border-radius: 4px;
+            padding: 10px;
+        }
+
+        .station-services button:hover {
+            background-color: rgba(208, 168, 92, 0.2);
+            color: #d0a85c;
+        }
+
+        .station-services button.active {
+            background-color: rgba(208, 168, 92, 0.3);
+            color: #d0a85c;
+        }
+
+        .station-services button mat-icon {
+            margin-bottom: 5px;
+        }
+
+        .station-service-display {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 10px;
+        }
+
+        .station-service-display h3 {
+            margin-top: 0;
+            color: #d0a85c;
             margin-bottom: 15px;
+            border-bottom: 1px solid rgba(208, 168, 92, 0.3);
+            padding-bottom: 10px;
+        }
+
+        /* Market, Outfitting, and Shipyard Table Styles */
+        .market-table, .outfitting-table, .shipyard-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 10px;
+        }
+
+        .market-table th, .outfitting-table th, .shipyard-table th {
+            background-color: rgba(0, 0, 0, 0.2);
+            color: #d0a85c;
+            text-align: left;
+            padding: 12px 15px;
+            font-weight: 500;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .market-table td, .outfitting-table td, .shipyard-table td {
+            padding: 10px 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .market-table tr:nth-child(even), 
+        .outfitting-table tr:nth-child(even), 
+        .shipyard-table tr:nth-child(even) {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .market-table tr:hover, 
+        .outfitting-table tr:hover, 
+        .shipyard-table tr:hover {
+            background-color: rgba(208, 168, 92, 0.05);
+        }
+
+        .no-data-message {
+            padding: 20px;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+            font-style: italic;
         }
 
         .materials-container {
@@ -1362,4 +1444,33 @@
 
         .suit-mods {
             width: 90%
+        }
+
+        /* Search box styling */
+        .search-box {
+            display: flex;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+            padding: 8px 12px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .search-box mat-icon {
+            color: rgba(255, 255, 255, 0.5);
+            margin-right: 8px;
+        }
+
+        .search-box input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .search-box input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
         }

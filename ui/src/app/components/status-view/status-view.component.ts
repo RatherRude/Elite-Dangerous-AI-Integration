@@ -91,6 +91,11 @@ export class StatusViewComponent implements OnInit, OnDestroy {
     showCargoDetails: boolean = false;
     showNavDetails: boolean = false;
     showAllModules: boolean = false;
+    
+    // Search terms for station services
+    marketSearchTerm: string = '';
+    outfittingSearchTerm: string = '';
+    shipyardSearchTerm: string = '';
 
     constructor(private projectionsService: ProjectionsService) {}
 
@@ -734,7 +739,7 @@ export class StatusViewComponent implements OnInit, OnDestroy {
         if (slot.startsWith('Slot')) {
             const match = slot.match(/Slot(\d+)_Size(\d+)/);
             if (match) {
-                return `Optional: Size ${match[2]} (Slot ${match[1]})`;
+                return `Slot ${match[1]} (Size ${match[2]})`;
             }
         }
         
@@ -1117,6 +1122,58 @@ export class StatusViewComponent implements OnInit, OnDestroy {
         return `${days}d ${remainingHours}h`;
     }
 
+    /**
+     * Format ship type names by converting internal names to readable ones
+     */
+    formatShipType(shipType: string): string {
+        if (!shipType) return 'Unknown Ship';
+        
+        // Map of internal ship IDs to display names
+        const shipNames: Record<string, string> = {
+            'adder': 'Adder',
+            'anaconda': 'Anaconda',
+            'asp': 'Asp Explorer',
+            'asp_scout': 'Asp Scout',
+            'belugaliner': 'Beluga Liner',
+            'cobramkiii': 'Cobra Mk III',
+            'cobramkiv': 'Cobra Mk IV',
+            'diamondback': 'Diamondback Scout',
+            'diamondbackxl': 'Diamondback Explorer',
+            'eagle': 'Eagle',
+            'federation_corvette': 'Federal Corvette',
+            'federation_dropship': 'Federal Dropship',
+            'federation_dropship_mkii': 'Federal Assault Ship',
+            'federation_gunship': 'Federal Gunship',
+            'fer_de_lance': 'Fer-de-Lance',
+            'hauler': 'Hauler',
+            'independant_trader': 'Keelback',
+            'empire_courier': 'Imperial Courier',
+            'empire_eagle': 'Imperial Eagle',
+            'empire_fighter': 'Imperial Fighter',
+            'empire_trader': 'Imperial Clipper',
+            'empire_cutter': 'Imperial Cutter',
+            'krait_light': 'Krait Phantom',
+            'krait_mkii': 'Krait Mk II',
+            'mamba': 'Mamba',
+            'orca': 'Orca',
+            'python': 'Python',
+            'sidewinder': 'Sidewinder',
+            'type6': 'Type-6 Transporter',
+            'type7': 'Type-7 Transporter',
+            'type9': 'Type-9 Heavy',
+            'type9_military': 'Type-10 Defender',
+            'typex': 'Alliance Chieftain',
+            'typex_2': 'Alliance Crusader',
+            'typex_3': 'Alliance Challenger',
+            'viper': 'Viper Mk III',
+            'viper_mkiv': 'Viper Mk IV',
+            'vulture': 'Vulture'
+        };
+        
+        // Return the formatted name if found, or capitalize the internal name as fallback
+        return shipNames[shipType] || 
+            shipType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
 
     /**
      * Maps for organizing materials by category and grade
@@ -1354,5 +1411,40 @@ export class StatusViewComponent implements OnInit, OnDestroy {
             return this.formatMaterialName(this.encodedMaterialsMap[section][grade][0]);
         }
         return `${section} G${grade}`;
+    }
+
+    // Filter methods for station services
+    getFilteredMarketItems(): any[] {
+        const items = this.getProjection('Market')?.Items || [];
+        if (!this.marketSearchTerm) return items;
+        
+        const searchTerm = this.marketSearchTerm.toLowerCase();
+        return items.filter((item: any) => {
+            const name = (item.Name_Localised || item.Name || '').toLowerCase();
+            const category = (item.Category_Localised || item.Category || '').toLowerCase();
+            return name.includes(searchTerm) || category.includes(searchTerm);
+        });
+    }
+    
+    getFilteredOutfittingItems(): any[] {
+        const items = this.getProjection('Outfitting')?.Items || [];
+        if (!this.outfittingSearchTerm) return items;
+        
+        const searchTerm = this.outfittingSearchTerm.toLowerCase();
+        return items.filter((item: any) => {
+            const name = this.formatModuleName(item.Name || '').toLowerCase();
+            return name.includes(searchTerm);
+        });
+    }
+    
+    getFilteredShipyardItems(): any[] {
+        const items = this.getProjection('Shipyard')?.PriceList || [];
+        if (!this.shipyardSearchTerm) return items;
+        
+        const searchTerm = this.shipyardSearchTerm.toLowerCase();
+        return items.filter((ship: any) => {
+            const name = (ship.ShipType_Localised || ship.ShipType || '').toLowerCase();
+            return name.includes(searchTerm);
+        });
     }
 }

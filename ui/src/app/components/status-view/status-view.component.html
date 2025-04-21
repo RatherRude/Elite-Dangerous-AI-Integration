@@ -1116,27 +1116,123 @@
                         <mat-card>
                             <mat-card-header>
                                 <mat-card-title>{{ getStationName() }}</mat-card-title>
+                                <mat-card-subtitle *ngIf="getProjection('Market')?.StarSystem">
+                                    {{ getProjection('Market')?.StarSystem }}
+                                </mat-card-subtitle>
                             </mat-card-header>
                             <mat-card-content>
-                                <!-- Station content will go here -->
+                                <!-- Station services buttons -->
                                 <div class="station-services">
-                                    <button mat-button (click)="showStationService('market')">
+                                    <button mat-button [class.active]="selectedStationService === 'market'" (click)="showStationService('market')">
                                         <mat-icon>shopping_cart</mat-icon>
                                         Market
                                     </button>
-                                    <button mat-button (click)="showStationService('outfitting')">
+                                    <button mat-button [class.active]="selectedStationService === 'outfitting'" (click)="showStationService('outfitting')">
                                         <mat-icon>build</mat-icon>
                                         Outfitting
                                     </button>
-                                    <button mat-button (click)="showStationService('shipyard')">
+                                    <button mat-button [class.active]="selectedStationService === 'shipyard'" (click)="showStationService('shipyard')">
                                         <mat-icon>directions_boat</mat-icon>
                                         Shipyard
                                     </button>
                                 </div>
 
-                                <!-- Selected service display -->
-                                <div *ngIf="selectedStationService" class="station-service-display">
-                                    <!-- Service content based on selection -->
+                                <!-- Market data -->
+                                <div *ngIf="selectedStationService === 'market'" class="station-service-display">
+                                    <h3>Commodity Market</h3>
+                                    <div class="market-list" *ngIf="getProjection('Market')?.Items?.length; else noMarketData">
+                                        <div class="search-box">
+                                            <mat-icon>search</mat-icon>
+                                            <input type="text" [(ngModel)]="marketSearchTerm" placeholder="Search commodities...">
+                                        </div>
+                                        <table class="market-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Commodity</th>
+                                                    <th>Category</th>
+                                                    <th>Buy Price</th>
+                                                    <th>Sell Price</th>
+                                                    <th>Demand</th>
+                                                    <th>Stock</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr *ngFor="let item of getFilteredMarketItems()">
+                                                    <td>{{ formatItemName(item.Name_Localised || item.Name) }}</td>
+                                                    <td>{{ item.Category_Localised || item.Category }}</td>
+                                                    <td>{{ item.BuyPrice > 0 ? (item.BuyPrice | number) + ' Cr' : '-' }}</td>
+                                                    <td>{{ item.SellPrice > 0 ? (item.SellPrice | number) + ' Cr' : '-' }}</td>
+                                                    <td>{{ item.Demand || 0 }}</td>
+                                                    <td>{{ item.Stock || 0 }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <ng-template #noMarketData>
+                                        <div class="no-data-message">
+                                            No market data available. Visit the station's commodity market to update.
+                                        </div>
+                                    </ng-template>
+                                </div>
+
+                                <!-- Outfitting data -->
+                                <div *ngIf="selectedStationService === 'outfitting'" class="station-service-display">
+                                    <h3>Ship Outfitting</h3>
+                                    <div class="outfitting-list" *ngIf="getProjection('Outfitting')?.Items?.length; else noOutfittingData">
+                                        <div class="search-box">
+                                            <mat-icon>search</mat-icon>
+                                            <input type="text" [(ngModel)]="outfittingSearchTerm" placeholder="Search modules...">
+                                        </div>
+                                        <table class="outfitting-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Module</th>
+                                                    <th>Price</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr *ngFor="let item of getFilteredOutfittingItems()">
+                                                    <td>{{ formatModuleName(item.Name) }}</td>
+                                                    <td>{{ (item.BuyPrice | number) + ' Cr' }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <ng-template #noOutfittingData>
+                                        <div class="no-data-message">
+                                            No outfitting data available. Visit the station's outfitting service to update.
+                                        </div>
+                                    </ng-template>
+                                </div>
+
+                                <!-- Shipyard data -->
+                                <div *ngIf="selectedStationService === 'shipyard'" class="station-service-display">
+                                    <h3>Ship Dealer</h3>
+                                    <div class="shipyard-list" *ngIf="getProjection('Shipyard')?.PriceList?.length; else noShipyardData">
+                                        <div class="search-box">
+                                            <mat-icon>search</mat-icon>
+                                            <input type="text" [(ngModel)]="shipyardSearchTerm" placeholder="Search ships...">
+                                        </div>
+                                        <table class="shipyard-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Ship</th>
+                                                    <th>Price</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr *ngFor="let ship of getFilteredShipyardItems()">
+                                                    <td>{{ ship.ShipType_Localised || ship.ShipType }}</td>
+                                                    <td>{{ (ship.ShipPrice | number) + ' Cr' }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <ng-template #noShipyardData>
+                                        <div class="no-data-message">
+                                            No shipyard data available. Visit the station's ship dealer to update.
+                                        </div>
+                                    </ng-template>
                                 </div>
                             </mat-card-content>
                         </mat-card>
