@@ -417,7 +417,29 @@ export class StatusViewComponent implements OnInit, OnDestroy {
     // Helper methods for Suit and Backpack
     getSuitName(): string {
         const suitLoadout = this.getProjection('SuitLoadout');
-        return suitLoadout?.SuitName_Localised || suitLoadout?.SuitName || 'Unknown';
+        const rawName = suitLoadout?.SuitName_Localised || suitLoadout?.SuitName || 'Unknown';
+        
+        // Map localization keys to readable names
+        if (rawName === "$UtilitySuit_Class1_Name;" || rawName.toLowerCase().includes('utilitysuit')) {
+            const className = this.getSuitClass();
+            return `Maverick Suit Mk${className}`;
+        } else if (rawName === "$ExplorationSuit_Class1_Name;" || rawName.toLowerCase().includes('explorationsuit')) {
+            const className = this.getSuitClass();
+            return `Artemis Suit Mk${className}`;
+        } else if (rawName === "$TacticalSuit_Class1_Name;" || rawName.toLowerCase().includes('tacticalsuit')) {
+            const className = this.getSuitClass();
+            return `Dominator Suit Mk${className}`;
+        } else if (rawName === "Flight Suit" || rawName.toLowerCase().includes('flightsuit')) {
+            return "Flight Suit";
+        }
+        
+        // If we couldn't map it, clean up the original name as best we can
+        if (rawName.startsWith('$') && rawName.endsWith(';')) {
+            // Remove the $ and ; and replace underscores with spaces
+            return rawName.substring(1, rawName.length - 1).replace(/_/g, ' ');
+        }
+        
+        return rawName;
     }
     
     getSuitLoadoutName(): string {
