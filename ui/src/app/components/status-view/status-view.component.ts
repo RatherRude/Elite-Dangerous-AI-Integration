@@ -931,13 +931,42 @@ export class StatusViewComponent implements OnInit, OnDestroy {
 
     // New helper methods for categorizing ship modules
     getWeaponModules(): any[] {
-        return this.getShipModules().filter(module => 
-            module.Slot.includes('Hardpoint'));
+        // Return only actual weapons (hardpoints)
+        return this.getShipModules().filter(module => {
+            // Ensure item is a weapon by checking both slot name and item name
+            return module.Slot && module.Slot.includes('Hardpoint') && 
+                  // Exclude shield boosters, chaff launchers, heat sinks, etc. that might be in hardpoints
+                  !(module.Item && (
+                      module.Item.toLowerCase().includes('shieldbooster') ||
+                      module.Item.toLowerCase().includes('chafflauncher') ||
+                      module.Item.toLowerCase().includes('heatsinklauncher') ||
+                      module.Item.toLowerCase().includes('ecm') ||
+                      module.Item.toLowerCase().includes('killwarrant') ||
+                      module.Item.toLowerCase().includes('antiunknown') ||
+                      module.Item.toLowerCase().includes('shutdown')
+                  ));
+        });
     }
     
     getUtilityModules(): any[] {
-        return this.getShipModules().filter(module => 
-            module.Slot.includes('Utility'));
+        // Include both utility slots and other utility-type modules
+        return this.getShipModules().filter(module => {
+            // Include traditional utility slot modules
+            const isUtilitySlot = module.Slot && module.Slot.includes('Utility');
+            
+            // Include utility-type modules that might be in hardpoints
+            const isUtilityModule = module.Item && (
+                module.Item.toLowerCase().includes('shieldbooster') ||
+                module.Item.toLowerCase().includes('chafflauncher') ||
+                module.Item.toLowerCase().includes('heatsinklauncher') ||
+                module.Item.toLowerCase().includes('ecm') ||
+                module.Item.toLowerCase().includes('killwarrant') ||
+                module.Item.toLowerCase().includes('antiunknown') ||
+                module.Item.toLowerCase().includes('shutdown')
+            );
+            
+            return isUtilitySlot || isUtilityModule;
+        });
     }
     
     getCoreModules(): any[] {
