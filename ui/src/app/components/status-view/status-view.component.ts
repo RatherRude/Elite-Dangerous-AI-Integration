@@ -1195,43 +1195,419 @@ interface EventEntry {
                     <!-- Storage Tab Content -->
                     <div *ngIf="selectedTab === STORAGE_TAB" class="tab-pane">
                         <h2>Storage & Materials</h2>
+                        
+                        <!-- Materials Card -->
                         <mat-card>
                             <mat-card-header>
                                 <mat-card-title>Materials</mat-card-title>
                             </mat-card-header>
                             <mat-card-content>
-                                <!-- Materials content -->
                                 <div class="materials-container">
                                     <mat-tab-group>
+                                        <!-- Raw Materials -->
                                         <mat-tab label="Raw">
-                                            <!-- Raw materials display -->
+                                            <div class="materials-table" *ngIf="getProjection('Materials')?.Raw">
+                                                <table class="material-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Section</th>
+                                                            <th>Grade 1</th>
+                                                            <th>Grade 2</th>
+                                                            <th>Grade 3</th>
+                                                            <th>Grade 4</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td>Raw Material Category 1</td>
+                                                            <td *ngFor="let grade of [1,2,3,4]">
+                                                                <div class="material-cell" *ngFor="let material of getRawMaterialByGradeAndCategory(grade, 1)">
+                                                                    <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
+                                                                    <span class="material-count">{{ material.Count }}</span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Raw Material Category 2</td>
+                                                            <td *ngFor="let grade of [1,2,3,4]">
+                                                                <div class="material-cell" *ngFor="let material of getRawMaterialByGradeAndCategory(grade, 2)">
+                                                                    <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
+                                                                    <span class="material-count">{{ material.Count }}</span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Raw Material Category 3</td>
+                                                            <td *ngFor="let grade of [1,2,3,4]">
+                                                                <div class="material-cell" *ngFor="let material of getRawMaterialByGradeAndCategory(grade, 3)">
+                                                                    <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
+                                                                    <span class="material-count">{{ material.Count }}</span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Raw Material Category 4</td>
+                                                            <td *ngFor="let grade of [1,2,3,4]">
+                                                                <div class="material-cell" *ngFor="let material of getRawMaterialByGradeAndCategory(grade, 4)">
+                                                                    <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
+                                                                    <span class="material-count">{{ material.Count }}</span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Raw Material Category 5</td>
+                                                            <td *ngFor="let grade of [1,2,3,4]">
+                                                                <div class="material-cell" *ngFor="let material of getRawMaterialByGradeAndCategory(grade, 5)">
+                                                                    <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
+                                                                    <span class="material-count">{{ material.Count }}</span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Raw Material Category 6</td>
+                                                            <td *ngFor="let grade of [1,2,3,4]">
+                                                                <div class="material-cell" *ngFor="let material of getRawMaterialByGradeAndCategory(grade, 6)">
+                                                                    <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
+                                                                    <span class="material-count">{{ material.Count }}</span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Raw Material Category 7</td>
+                                                            <td *ngFor="let grade of [1,2,3,4]">
+                                                                <div class="material-cell" *ngFor="let material of getRawMaterialByGradeAndCategory(grade, 7)">
+                                                                    <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
+                                                                    <span class="material-count">{{ material.Count }}</span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <div class="no-materials" *ngIf="!getProjection('Materials')?.Raw">
+                                                No raw materials stored.
+                                            </div>
                                         </mat-tab>
+                                        
+                                        <!-- Manufactured Materials -->
                                         <mat-tab label="Manufactured">
-                                            <!-- Manufactured materials display -->
+                                            <div class="materials-table" *ngIf="getProjection('Materials')?.Manufactured">
+                                                <table class="material-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Section</th>
+                                                            <th>Grade 1</th>
+                                                            <th>Grade 2</th>
+                                                            <th>Grade 3</th>
+                                                            <th>Grade 4</th>
+                                                            <th>Grade 5</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td>Chemical</td>
+                                                            <td *ngFor="let grade of [1,2,3,4,5]">
+                                                                <div class="material-cell" *ngFor="let material of getManufacturedMaterialByGradeAndSection('Chemical', grade)">
+                                                                    <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
+                                                                    <span class="material-count">{{ material.Count }}</span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Thermic</td>
+                                                            <td *ngFor="let grade of [1,2,3,4,5]">
+                                                                <div class="material-cell" *ngFor="let material of getManufacturedMaterialByGradeAndSection('Thermic', grade)">
+                                                                    <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
+                                                                    <span class="material-count">{{ material.Count }}</span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Heat</td>
+                                                            <td *ngFor="let grade of [1,2,3,4,5]">
+                                                                <div class="material-cell" *ngFor="let material of getManufacturedMaterialByGradeAndSection('Heat', grade)">
+                                                                    <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
+                                                                    <span class="material-count">{{ material.Count }}</span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Conductive</td>
+                                                            <td *ngFor="let grade of [1,2,3,4,5]">
+                                                                <div class="material-cell" *ngFor="let material of getManufacturedMaterialByGradeAndSection('Conductive', grade)">
+                                                                    <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
+                                                                    <span class="material-count">{{ material.Count }}</span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Mechanical Components</td>
+                                                            <td *ngFor="let grade of [1,2,3,4,5]">
+                                                                <div class="material-cell" *ngFor="let material of getManufacturedMaterialByGradeAndSection('Mechanical Components', grade)">
+                                                                    <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
+                                                                    <span class="material-count">{{ material.Count }}</span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Capacitors</td>
+                                                            <td *ngFor="let grade of [1,2,3,4,5]">
+                                                                <div class="material-cell" *ngFor="let material of getManufacturedMaterialByGradeAndSection('Capacitors', grade)">
+                                                                    <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
+                                                                    <span class="material-count">{{ material.Count }}</span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Shielding</td>
+                                                            <td *ngFor="let grade of [1,2,3,4,5]">
+                                                                <div class="material-cell" *ngFor="let material of getManufacturedMaterialByGradeAndSection('Shielding', grade)">
+                                                                    <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
+                                                                    <span class="material-count">{{ material.Count }}</span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Composite</td>
+                                                            <td *ngFor="let grade of [1,2,3,4,5]">
+                                                                <div class="material-cell" *ngFor="let material of getManufacturedMaterialByGradeAndSection('Composite', grade)">
+                                                                    <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
+                                                                    <span class="material-count">{{ material.Count }}</span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Crystals</td>
+                                                            <td *ngFor="let grade of [1,2,3,4,5]">
+                                                                <div class="material-cell" *ngFor="let material of getManufacturedMaterialByGradeAndSection('Crystals', grade)">
+                                                                    <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
+                                                                    <span class="material-count">{{ material.Count }}</span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Alloys</td>
+                                                            <td *ngFor="let grade of [1,2,3,4,5]">
+                                                                <div class="material-cell" *ngFor="let material of getManufacturedMaterialByGradeAndSection('Alloys', grade)">
+                                                                    <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
+                                                                    <span class="material-count">{{ material.Count }}</span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <div class="no-materials" *ngIf="!getProjection('Materials')?.Manufactured">
+                                                No manufactured materials stored.
+                                            </div>
                                         </mat-tab>
+                                        
+                                        <!-- Encoded Materials -->
                                         <mat-tab label="Encoded">
-                                            <!-- Encoded materials display -->
+                                            <div class="materials-table" *ngIf="getProjection('Materials')?.Encoded">
+                                                <table class="material-table">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Section</th>
+                                                            <th>Grade 1</th>
+                                                            <th>Grade 2</th>
+                                                            <th>Grade 3</th>
+                                                            <th>Grade 4</th>
+                                                            <th>Grade 5</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        <tr>
+                                                            <td>Emission Data</td>
+                                                            <td *ngFor="let grade of [1,2,3,4,5]">
+                                                                <div class="material-cell" *ngFor="let material of getEncodedMaterialByGradeAndSection('Emission Data', grade)">
+                                                                    <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
+                                                                    <span class="material-count">{{ material.Count }}</span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Wake Scans</td>
+                                                            <td *ngFor="let grade of [1,2,3,4,5]">
+                                                                <div class="material-cell" *ngFor="let material of getEncodedMaterialByGradeAndSection('Wake Scans', grade)">
+                                                                    <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
+                                                                    <span class="material-count">{{ material.Count }}</span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Shield Data</td>
+                                                            <td *ngFor="let grade of [1,2,3,4,5]">
+                                                                <div class="material-cell" *ngFor="let material of getEncodedMaterialByGradeAndSection('Shield Data', grade)">
+                                                                    <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
+                                                                    <span class="material-count">{{ material.Count }}</span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Encryption Files</td>
+                                                            <td *ngFor="let grade of [1,2,3,4,5]">
+                                                                <div class="material-cell" *ngFor="let material of getEncodedMaterialByGradeAndSection('Encryption Files', grade)">
+                                                                    <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
+                                                                    <span class="material-count">{{ material.Count }}</span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Data Archives</td>
+                                                            <td *ngFor="let grade of [1,2,3,4,5]">
+                                                                <div class="material-cell" *ngFor="let material of getEncodedMaterialByGradeAndSection('Data Archives', grade)">
+                                                                    <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
+                                                                    <span class="material-count">{{ material.Count }}</span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Encoded Firmware</td>
+                                                            <td *ngFor="let grade of [1,2,3,4,5]">
+                                                                <div class="material-cell" *ngFor="let material of getEncodedMaterialByGradeAndSection('Encoded Firmware', grade)">
+                                                                    <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
+                                                                    <span class="material-count">{{ material.Count }}</span>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                            <div class="no-materials" *ngIf="!getProjection('Materials')?.Encoded">
+                                                No encoded materials stored.
+                                            </div>
                                         </mat-tab>
                                     </mat-tab-group>
                                 </div>
                             </mat-card-content>
                         </mat-card>
                         
+                        <!-- Stored Ships Card -->
                         <mat-card>
                             <mat-card-header>
                                 <mat-card-title>Stored Ships</mat-card-title>
+                                <mat-card-subtitle *ngIf="getProjection('StoredShips')?.StationName">
+                                    {{ getProjection('StoredShips')?.StationName }}, {{ getProjection('StoredShips')?.StarSystem }}
+                                </mat-card-subtitle>
                             </mat-card-header>
                             <mat-card-content>
-                                <!-- Stored ships content -->
+                                <mat-tab-group>
+                                    <!-- Ships at Current Location -->
+                                    <mat-tab label="Ships Here">
+                                        <div class="ships-list" *ngIf="getProjection('StoredShips')?.ShipsHere?.length">
+                                            <div class="ship-item" *ngFor="let ship of getProjection('StoredShips')?.ShipsHere">
+                                                <div class="ship-icon">
+                                                    <mat-icon>directions_boat</mat-icon>
+                                                </div>
+                                                <div class="ship-details">
+                                                    <div class="ship-name">{{ ship.Name || ship.ShipType_Localised || ship.ShipType }}</div>
+                                                    <div class="ship-type" *ngIf="ship.Name">{{ ship.ShipType_Localised || ship.ShipType }}</div>
+                                                    <div class="ship-value">{{ formatNumber(ship.Value) }} Cr</div>
+                                                    <div class="ship-hot" *ngIf="ship.Hot">HOT</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="no-ships" *ngIf="!getProjection('StoredShips')?.ShipsHere?.length">
+                                            No ships stored at this location.
+                                        </div>
+                                    </mat-tab>
+                                    
+                                    <!-- Remote Ships -->
+                                    <mat-tab label="Remote Ships">
+                                        <div class="ships-list" *ngIf="getProjection('StoredShips')?.ShipsRemote?.length">
+                                            <div class="ship-item" *ngFor="let ship of getProjection('StoredShips')?.ShipsRemote">
+                                                <div class="ship-icon">
+                                                    <mat-icon>directions_boat</mat-icon>
+                                                </div>
+                                                <div class="ship-details">
+                                                    <div class="ship-name">{{ ship.Name || ship.ShipType_Localised || ship.ShipType }}</div>
+                                                    <div class="ship-type" *ngIf="ship.Name">{{ ship.ShipType_Localised || ship.ShipType }}</div>
+                                                    <div class="ship-location">{{ ship.StarSystem }}</div>
+                                                    <div class="ship-value">{{ formatNumber(ship.Value) }} Cr</div>
+                                                    <div class="ship-transfer">
+                                                        <div>Transfer: {{ formatNumber(ship.TransferPrice) }} Cr</div>
+                                                        <div>Time: {{ formatTransferTime(ship.TransferTime) }}</div>
+                                                    </div>
+                                                    <div class="ship-hot" *ngIf="ship.Hot">HOT</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="no-ships" *ngIf="!getProjection('StoredShips')?.ShipsRemote?.length">
+                                            No ships stored remotely.
+                                        </div>
+                                    </mat-tab>
+                                </mat-tab-group>
                             </mat-card-content>
                         </mat-card>
                         
+                        <!-- Ship Locker Card -->
                         <mat-card>
                             <mat-card-header>
                                 <mat-card-title>Ship Locker</mat-card-title>
                             </mat-card-header>
                             <mat-card-content>
-                                <!-- Ship locker content -->
+                                <div class="locker-container">
+                                    <mat-tab-group>
+                                        <!-- General Items -->
+                                        <mat-tab label="Items">
+                                            <div class="items-grid" *ngIf="getProjection('ShipLocker')?.Items?.length">
+                                                <div class="locker-item" *ngFor="let item of getProjection('ShipLocker')?.Items">
+                                                    <div class="item-count">{{ item.Count }}</div>
+                                                    <div class="item-name">
+                                                        {{ formatItemName(item.Name_Localised || item.Name) }}
+                                                        <span class="mission-tag" *ngIf="item.MissionID">[Mission]</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="no-items" *ngIf="!getProjection('ShipLocker')?.Items?.length">
+                                                No items stored.
+                                            </div>
+                                        </mat-tab>
+                                        
+                                        <!-- Components -->
+                                        <mat-tab label="Components">
+                                            <div class="items-grid" *ngIf="getProjection('ShipLocker')?.Components?.length">
+                                                <div class="locker-item" *ngFor="let item of getProjection('ShipLocker')?.Components">
+                                                    <div class="item-count">{{ item.Count }}</div>
+                                                    <div class="item-name">{{ formatItemName(item.Name_Localised || item.Name) }}</div>
+                                                </div>
+                                            </div>
+                                            <div class="no-items" *ngIf="!getProjection('ShipLocker')?.Components?.length">
+                                                No components stored.
+                                            </div>
+                                        </mat-tab>
+                                        
+                                        <!-- Consumables -->
+                                        <mat-tab label="Consumables">
+                                            <div class="items-grid" *ngIf="getProjection('ShipLocker')?.Consumables?.length">
+                                                <div class="locker-item" *ngFor="let item of getProjection('ShipLocker')?.Consumables">
+                                                    <div class="item-count">{{ item.Count }}</div>
+                                                    <div class="item-name">{{ formatItemName(item.Name_Localised || item.Name) }}</div>
+                                                </div>
+                                            </div>
+                                            <div class="no-items" *ngIf="!getProjection('ShipLocker')?.Consumables?.length">
+                                                No consumables stored.
+                                            </div>
+                                        </mat-tab>
+                                        
+                                        <!-- Data -->
+                                        <mat-tab label="Data">
+                                            <div class="items-grid" *ngIf="getProjection('ShipLocker')?.Data?.length">
+                                                <div class="locker-item" *ngFor="let item of getProjection('ShipLocker')?.Data">
+                                                    <div class="item-count">{{ item.Count }}</div>
+                                                    <div class="item-name">
+                                                        {{ formatItemName(item.Name_Localised || item.Name) }}
+                                                        <span class="owner-tag" *ngIf="item.OwnerID && item.OwnerID !== 0">[External]</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="no-items" *ngIf="!getProjection('ShipLocker')?.Data?.length">
+                                                No data stored.
+                                            </div>
+                                        </mat-tab>
+                                    </mat-tab-group>
+                                </div>
                             </mat-card-content>
                         </mat-card>
                     </div>
@@ -3347,4 +3723,241 @@ export class StatusViewComponent implements OnInit, OnDestroy {
     getHoursFromSeconds(seconds: number): number {
         return Math.floor(seconds / 3600);
     }
-} 
+
+    /**
+     * Format material names by converting snake_case or camelCase to Title Case
+     */
+    formatMaterialName(name: string): string {
+        if (!name) return '';
+        // Convert snake_case or camelCase to Title Case with spaces
+        return name
+          .replace(/_/g, ' ')
+          .replace(/([A-Z])/g, ' $1')
+          .replace(/\w\S*/g, txt => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+    }
+
+    /**
+     * Format item names by converting to Title Case
+     */
+    formatItemName(name: string): string {
+        if (!name) return '';
+        return this.formatMaterialName(name);
+    }
+
+    /**
+     * Format transfer time from seconds to a human readable format
+     */
+    formatTransferTime(seconds: number): string {
+        if (!seconds) return 'Immediate';
+
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) {
+            return `${minutes} min`;
+        }
+
+        const hours = Math.floor(minutes / 60);
+        const remainingMinutes = minutes % 60;
+
+        if (hours < 24) {
+            return `${hours}h ${remainingMinutes}m`;
+        }
+
+        const days = Math.floor(hours / 24);
+        const remainingHours = hours % 24;
+
+        return `${days}d ${remainingHours}h`;
+    }
+
+
+    /**
+     * Maps for organizing materials by category and grade
+     */
+    // Raw material mappings by category and grade
+    private rawMaterialsMap: {[category: number]: {[grade: number]: string[]}} = {
+        1: { 1: ['carbon'], 2: ['vanadium'], 3: ['niobium'], 4: ['yttrium'] },
+        2: { 1: ['phosphorus'], 2: ['chromium'], 3: ['molybdenum'], 4: ['technetium'] },
+        3: { 1: ['sulphur'], 2: ['manganese'], 3: ['cadmium'], 4: ['ruthenium'] },
+        4: { 1: ['iron'], 2: ['zinc'], 3: ['tin'], 4: ['selenium'] },
+        5: { 1: ['nickel'], 2: ['germanium'], 3: ['tungsten'], 4: ['tellurium'] },
+        6: { 1: ['rhenium'], 2: ['arsenic'], 3: ['mercury'], 4: ['polonium'] },
+        7: { 1: ['lead'], 2: ['zirconium'], 3: ['boron'], 4: ['antimony'] }
+    };
+
+    // Manufactured material mappings by section and grade
+    private manufacturedMaterialsMap: {[section: string]: {[grade: number]: string[]}} = {
+        'Chemical': {
+            1: ['chemicalstorageunits'],
+            2: ['chemicalprocessors'],
+            3: ['chemicaldistillery'],
+            4: ['chemicalmanipulators'],
+            5: ['pharmaceuticalisolators']
+        },
+        'Thermic': {
+            1: ['temperedalloys'],
+            2: ['heatresistantceramics'],
+            3: ['precipitatedalloys'],
+            4: ['thermicalloys'],
+            5: ['militarygradealloys']
+        },
+        'Heat': {
+            1: ['heatconductionwiring'],
+            2: ['heatdispersionplate'],
+            3: ['heatexchangers'],
+            4: ['heatvanes'],
+            5: ['protoheatradiators']
+        },
+        'Conductive': {
+            1: ['basicconductors'],
+            2: ['conductivecomponents'],
+            3: ['conductiveceramics'],
+            4: ['conductivepolymers'],
+            5: ['biotechconductors']
+        },
+        'Mechanical Components': {
+            1: ['mechanicalscrap'],
+            2: ['mechanicalequipment'],
+            3: ['mechanicalcomponents'],
+            4: ['configurablecomponents'],
+            5: ['improvisedcomponents']
+        },
+        'Capacitors': {
+            1: ['gridresistors'],
+            2: ['hybridcapacitors'],
+            3: ['electrochemicalarrays'],
+            4: ['polymercapacitors'],
+            5: ['militarysupercapacitors']
+        },
+        'Shielding': {
+            1: ['wornshieldemitters'],
+            2: ['shieldemitters'],
+            3: ['shieldingsensors'],
+            4: ['compoundshielding'],
+            5: ['imperialshielding']
+        },
+        'Composite': {
+            1: ['compactcomposites'],
+            2: ['filamentcomposites'],
+            3: ['highdensitycomposites'],
+            4: ['proprietarycomposites'],
+            5: ['coredynamicscomposites']
+        },
+        'Crystals': {
+            1: ['crystalshards'],
+            2: ['flawedfocuscrystals'],
+            3: ['focuscrystals'],
+            4: ['refinedfocuscrystals'],
+            5: ['exquisitefocuscrystals']
+        },
+        'Alloys': {
+            1: ['salvagedalloys'],
+            2: ['galvanisingalloys'],
+            3: ['phasealloys'],
+            4: ['protolightalloys'],
+            5: ['protoradiolicalloys']
+        }
+    };
+
+    // Encoded material mappings by section and grade
+    private encodedMaterialsMap: {[section: string]: {[grade: number]: string[]}} = {
+        'Emission Data': {
+            1: ['exceptionalscrambledemissiondata'],
+            2: ['irregularemissiondata'],
+            3: ['unexpectedemissiondata'],
+            4: ['decodedemissiondata'],
+            5: ['abnormalcompactemissionsdata']
+        },
+        'Wake Scans': {
+            1: ['atypicaldisruptedwakeechoes'],
+            2: ['anomalousfsdtelemetry'],
+            3: ['strangewakesolutions'],
+            4: ['eccentrichyperspace'],
+            5: ['dataminedwakeexceptions']
+        },
+        'Shield Data': {
+            1: ['distortedshieldcyclerecordings'],
+            2: ['inconsistentshieldsoakanalysis'],
+            3: ['untypicalshieldscans'],
+            4: ['aberrantshieldpatternanalysis'],
+            5: ['peculiarshieldfrequencydata']
+        },
+        'Encryption Files': {
+            1: ['unusualencryptedfiles'],
+            2: ['taggedencryptioncodes'],
+            3: ['opensymmetrickeys'],
+            4: ['atypicalencryptionarchives'],
+            5: ['adaptiveencryptorscapture']
+        },
+        'Data Archives': {
+            1: ['anomalousbulkscandata'],
+            2: ['unidentifiedscanarchives'],
+            3: ['classifiedscandatabanks'],
+            4: ['divergentscandata'],
+            5: ['classifiedscanfragment']
+        },
+        'Encoded Firmware': {
+            1: ['specialisedlegacyfirmware'],
+            2: ['modifiedconsumerfirmware'],
+            3: ['crackedindustrialfirmware'],
+            4: ['securityfirmwarepatch'],
+            5: ['modifiedembeddedfirmware']
+        }
+    };
+
+    /**
+     * Get raw materials by grade and category
+     */
+    getRawMaterialByGradeAndCategory(grade: number, category: number): any[] {
+        if (!this.getProjection('Materials')?.Raw ||
+            !this.rawMaterialsMap[category] ||
+            !this.rawMaterialsMap[category][grade]) {
+            return [];
+        }
+
+        const materialNames = this.rawMaterialsMap[category][grade];
+        return this.getProjection('Materials').Raw.filter((material: any) => {
+            const normalizedName = this.normalizeMaterialName(material.Name_Localised || material.Name);
+            return materialNames.includes(normalizedName);
+        });
+    }
+
+    /**
+     * Get manufactured materials by grade and section
+     */
+    getManufacturedMaterialByGradeAndSection(section: string, grade: number): any[] {
+        if (!this.getProjection('Materials')?.Manufactured ||
+            !this.manufacturedMaterialsMap[section] ||
+            !this.manufacturedMaterialsMap[section][grade]) {
+            return [];
+        }
+
+        const materialNames = this.manufacturedMaterialsMap[section][grade];
+        return this.getProjection('Materials').Manufactured.filter((material: any) => {
+            const normalizedName = this.normalizeMaterialName(material.Name_Localised || material.Name);
+            return materialNames.includes(normalizedName);
+        });
+    }
+
+    /**
+     * Get encoded materials by grade and section
+     */
+    getEncodedMaterialByGradeAndSection(section: string, grade: number): any[] {
+        if (!this.getProjection('Materials')?.Encoded ||
+            !this.encodedMaterialsMap[section] ||
+            !this.encodedMaterialsMap[section][grade]) {
+            return [];
+        }
+
+        const materialNames = this.encodedMaterialsMap[section][grade];
+        return this.getProjection('Materials').Encoded.filter((material: any) => {
+            const normalizedName = this.normalizeMaterialName(material.Name_Localised || material.Name);
+            return materialNames.includes(normalizedName);
+        });
+    }
+
+    /**
+     * Normalize material name for comparison (remove spaces, make lowercase)
+     */
+    private normalizeMaterialName(name: string): string {
+        return name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    }
+}
