@@ -268,7 +268,7 @@
                                         }
 
                                         <!-- TTS Prompt -->
-                                        @if (!['tts-1', 'tts-1-hd'].includes(config.tts_model_name)) {
+                                        @if (voiceInstructionSupportedModels.includes(config.tts_model_name)) {
                                             <div class="trait-select">
                                                 <mat-hint><b>Voice instructions</b><br>Enter a detailed description of how you want your voice to sound.<br>You can include things such as: accent, emotional range, tone, impressions and speed.<br>
                                                     Warning: This will increase the cost of each query!</mat-hint>
@@ -870,7 +870,7 @@
                             <input matInput type="password" [(ngModel)]="config.tts_api_key"
                                    (ngModelChange)="onConfigChange({tts_api_key: $event})">
                         </mat-form-field>
-                        @if (!['tts-1', 'tts-1-hd'].includes(config.tts_model_name)) {
+                        @if (voiceInstructionSupportedModels.includes(config.tts_model_name)) {
                         <mat-hint>Voice instructions: Enter a detailed description of how you want your voice to sound. You can include things such as: accent, emotional range, tone, impressions and speed.<br>
                             Warning: This will increase the cost of each query!</mat-hint>
                         <mat-form-field>
