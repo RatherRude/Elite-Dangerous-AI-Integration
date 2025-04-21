@@ -1104,3 +1104,258 @@
         .not-scoopable {
             color: #f44336;
         }
+
+        /* Materials Table Styling */
+        .materials-table {
+            padding: 15px 0;
+            overflow-x: auto;
+            width: 100%;
+        }
+
+        .material-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 8px;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .material-table thead th {
+            background-color: rgba(208, 168, 92, 0.2);
+            color: #d0a85c;
+            font-weight: 500;
+            text-align: center;
+            padding: 12px 10px;
+            font-size: 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .material-table tbody td {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            vertical-align: top;
+        }
+
+        .material-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .material-table tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .material-table tbody td:first-child {
+            color: #d0a85c;
+            font-weight: 500;
+            white-space: nowrap;
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .material-cell {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 8px;
+            margin-bottom: 5px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            min-height: 32px;
+        }
+
+        .material-cell:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .material-cell.empty {
+            opacity: 0.6;
+            background-color: rgba(255, 255, 255, 0.02);
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .material-name {
+            flex: 1;
+            font-size: 13px;
+        }
+
+        .material-count {
+            font-weight: 600;
+            color: #d0a85c;
+            padding: 2px 6px;
+            border-radius: 10px;
+            background-color: rgba(208, 168, 92, 0.1);
+            min-width: 24px;
+            text-align: center;
+        }
+
+        .no-materials {
+            padding: 20px;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+            font-style: italic;
+        }
+
+        /* Ship Locker Styling */
+        .locker-container {
+            padding: 15px 0;
+            width: 100%;
+        }
+
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+            padding: 15px 0;
+        }
+
+        .locker-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+
+        .locker-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: rgba(208, 168, 92, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .item-count {
+            font-weight: 600;
+            color: #d0a85c;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background-color: rgba(208, 168, 92, 0.1);
+            margin-right: 10px;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .item-name {
+            font-size: 14px;
+            flex: 1;
+        }
+
+        .mission-tag, .owner-tag {
+            font-size: 10px;
+            padding: 1px 4px;
+            margin-left: 5px;
+            border-radius: 3px;
+            vertical-align: middle;
+        }
+
+        .mission-tag {
+            background-color: rgba(33, 150, 243, 0.2);
+            color: #2196F3;
+        }
+
+        .owner-tag {
+            background-color: rgba(156, 39, 176, 0.2);
+            color: #9c27b0;
+        }
+
+        .no-items {
+            padding: 20px;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+            font-style: italic;
+        }
+
+        /* Stored Ships Styling */
+        .ships-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 15px 0;
+        }
+
+        .ship-item {
+            display: flex;
+            padding: 15px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .ship-item:hover {
+            background-color: rgba(255, 255, 255, 0.08);
+            border-color: rgba(208, 168, 92, 0.3);
+        }
+
+        .ship-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: rgba(208, 168, 92, 0.1);
+            margin-right: 15px;
+        }
+
+        .ship-icon mat-icon {
+            color: #d0a85c;
+        }
+
+        .ship-details {
+            flex: 1;
+        }
+
+        .ship-name {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .ship-type {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .ship-location {
+            color: #64b5f6;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .ship-value {
+            color: #4caf50;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .ship-transfer {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 13px;
+            margin-top: 5px;
+        }
+
+        .ship-hot {
+            display: inline-block;
+            background-color: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .no-ships {
+            padding: 20px;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.6);
+            font-style: italic;
+        }

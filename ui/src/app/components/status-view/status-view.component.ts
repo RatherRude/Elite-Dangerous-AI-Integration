@@ -1282,4 +1282,50 @@ export class StatusViewComponent implements OnInit, OnDestroy {
     private normalizeMaterialName(name: string): string {
         return name.toLowerCase().replace(/[^a-z0-9]/g, '');
     }
+
+    // Return the category name for raw materials
+    getRawMaterialCategoryName(category: number): string {
+        switch(category) {
+            case 1: return "Carbon-based";
+            case 2: return "Metals";
+            case 3: return "Non-Metals";
+            case 4: return "Crystalline Structures";
+            case 5: return "Thermic";
+            case 6: return "Organics";
+            case 7: return "Xenobiologicals";
+            default: return `Category ${category}`;
+        }
+    }
+
+    // Return a list of all manufactured material sections
+    getManufacturedSections(): string[] {
+        return Object.keys(this.manufacturedMaterialsMap);
+    }
+
+    // Return a list of all encoded material sections
+    getEncodedSections(): string[] {
+        return Object.keys(this.encodedMaterialsMap);
+    }
+
+    // Return placeholder names for empty material slots
+    getEmptyRawMaterialName(grade: number, category: number): string {
+        if (this.rawMaterialsMap[category] && this.rawMaterialsMap[category][grade] && this.rawMaterialsMap[category][grade].length > 0) {
+            return this.formatMaterialName(this.rawMaterialsMap[category][grade][0]);
+        }
+        return `Grade ${grade} Material`;
+    }
+
+    getEmptyManufacturedMaterialName(section: string, grade: number): string {
+        if (this.manufacturedMaterialsMap[section] && this.manufacturedMaterialsMap[section][grade] && this.manufacturedMaterialsMap[section][grade].length > 0) {
+            return this.formatMaterialName(this.manufacturedMaterialsMap[section][grade][0]);
+        }
+        return `${section} G${grade}`;
+    }
+
+    getEmptyEncodedMaterialName(section: string, grade: number): string {
+        if (this.encodedMaterialsMap[section] && this.encodedMaterialsMap[section][grade] && this.encodedMaterialsMap[section][grade].length > 0) {
+            return this.formatMaterialName(this.encodedMaterialsMap[section][grade][0]);
+        }
+        return `${section} G${grade}`;
+    }
 }
