@@ -1437,7 +1437,7 @@ export class StatusViewComponent implements OnInit, OnDestroy {
         const eventEntries: { event: string, count: number }[] = [];
         for (const [event, count] of Object.entries(this.formattedData.data)) {
             if (event !== 'timestamp') {
-                eventEntries.push({ event, count: count as number });
+                eventEntries.push({ event, count: Number(count) });
             }
         }
         return eventEntries;
