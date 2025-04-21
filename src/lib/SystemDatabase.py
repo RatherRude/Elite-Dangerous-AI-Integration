@@ -12,6 +12,9 @@ from .Database import KeyValueStore
 from .Event import Event, GameEvent
 from .Logger import log
 
+# User agent for all EDSM API requests
+EDSM_USER_AGENT = "COVAS:NEXT"
+
 class SystemDatabase:
     """A class for storing and retrieving system-specific data with EDSM integration"""
     
@@ -164,8 +167,11 @@ class SystemDatabase:
                 "showInformation": 1,
                 "showPrimaryStar": 1,
             }
+            headers = {
+                "User-Agent": EDSM_USER_AGENT
+            }
             
-            response = requests.get(url, params=params)
+            response = requests.get(url, params=params, headers=headers)
             response.raise_for_status()
             system_info = response.json()
             
@@ -196,8 +202,11 @@ class SystemDatabase:
             params = {
                 "systemName": system_name,
             }
+            headers = {
+                "User-Agent": EDSM_USER_AGENT
+            }
             
-            response = requests.get(url, params=params)
+            response = requests.get(url, params=params, headers=headers)
             response.raise_for_status()
             data = response.json()
             
@@ -286,8 +295,11 @@ class SystemDatabase:
                     "showPrimaryStar": 1,
                     "systemName[]": chunk  # Pass the entire chunk as a list - requests will format it properly
                 }
+                headers = {
+                    "User-Agent": EDSM_USER_AGENT
+                }
                 
-                response = requests.get(url, params=params)
+                response = requests.get(url, params=params, headers=headers)
                 response.raise_for_status()
                 systems_data = response.json()
                 
@@ -332,8 +344,11 @@ class SystemDatabase:
             params = {
                 "systemName": system_name,
             }
+            headers = {
+                "User-Agent": EDSM_USER_AGENT
+            }
             
-            response = requests.get(url, params=params)
+            response = requests.get(url, params=params, headers=headers)
             response.raise_for_status()
             data = response.json()
             
@@ -474,8 +489,11 @@ class SystemDatabase:
                 "showInformation": 1,
                 "showPrimaryStar": 1,
             }
+            headers = {
+                "User-Agent": EDSM_USER_AGENT
+            }
             
-            async with session.get(url, params=params) as response:
+            async with session.get(url, params=params, headers=headers) as response:
                 response.raise_for_status()
                 system_info = await response.json()
                 
@@ -545,8 +563,11 @@ class SystemDatabase:
             params = {
                 "systemName": system_name,
             }
+            headers = {
+                "User-Agent": EDSM_USER_AGENT
+            }
             
-            async with session.get(url, params=params) as response:
+            async with session.get(url, params=params, headers=headers) as response:
                 response.raise_for_status()
                 data = await response.json()
                 
@@ -674,8 +695,11 @@ class SystemDatabase:
                 "showPrimaryStar": 1,
                 "systemName[]": chunk  # Pass the entire chunk as a list - aiohttp will format it properly
             }
+            headers = {
+                "User-Agent": EDSM_USER_AGENT
+            }
             
-            async with session.get(url, params=params) as response:
+            async with session.get(url, params=params, headers=headers) as response:
                 response.raise_for_status()
                 systems_data = await response.json()
                 
