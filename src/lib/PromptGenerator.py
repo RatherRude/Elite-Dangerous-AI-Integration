@@ -2579,26 +2579,6 @@ class PromptGenerator:
     def tool_response_message(self, event: ToolEvent):
         return
 
-    # fetch system info from EDSM
-    @lru_cache(maxsize=1, typed=False)
-    def get_system_info(self, system_name: str) -> dict | str:
-        url = "https://www.edsm.net/api-v1/system"
-        params = {
-            "systemName": system_name,
-            "showInformation": 1,
-            "showPrimaryStar": 1,
-        }
-
-        try:
-            response = requests.get(url, params=params)
-            response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
-
-            return response.json()
-
-        except Exception as e:
-            log('error', e, traceback.format_exc())
-            return "Currently no information on system available"
-
     # Helper method to format station data into the desired structure
     def format_stations_data(self, stations_data) -> dict | str | list:
         """Format station data into the desired hierarchy regardless of source"""
@@ -2743,30 +2723,6 @@ class PromptGenerator:
             
         return normalized
 
-    # fetch station info from EDSM
-    @lru_cache(maxsize=1, typed=False)
-    def get_station_info(self, system_name: str, fleet_carrier=False) -> dict | str | list:
-        url = "https://www.edsm.net/api-system-v1/stations"
-        params = {
-            "systemName": system_name,
-        }
-
-        try:
-            response = requests.get(url, params=params)
-            response.raise_for_status()
-
-            result = response.json()
-            
-            # Ensure we return a string if the result is None
-            if result is None:
-                return "No station information available"
-                
-            return result
-
-        except Exception as e:
-            log("error", f"Error: {e}")
-            return "Currently no information on system available"
-            
     def generate_vehicle_status(self, current_status:dict):
         flags = [key for key, value in current_status["flags"].items() if value]
         if current_status.get("flags2"):
@@ -3013,13 +2969,6 @@ class PromptGenerator:
                 if stations_data:
                     stations_info = self.format_stations_data(stations_data)
             
-            # If no data from database, use fallback direct fetch methods
-            if system_info is None:
-                system_info = self.format_stations_data(self.get_system_info(system_name))
-            
-            if stations_info is None:
-                stations_info = self.format_stations_data(self.get_station_info(system_name))
-
             status_entries.append(("Location", location_info))
             status_entries.append(("Local system", system_info))
             status_entries.append(("Stations in local system", stations_info))

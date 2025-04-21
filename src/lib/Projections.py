@@ -565,9 +565,9 @@ class NavInfo(Projection[NavInfoState]):
                         # No longer the first system after the first iteration
                         is_first_system = False
                 
-                # Fetch system data for systems in the route
+                # Fetch system data for systems in the route asynchronously
                 if systems_to_lookup:
-                    self.system_db._fetch_multiple_systems(systems_to_lookup)
+                    self.system_db.fetch_multiple_systems_nonblocking(systems_to_lookup)
 
         # Process NavRouteClear
         if isinstance(event, GameEvent) and event.content.get('event') == 'NavRouteClear':
@@ -585,15 +585,15 @@ class NavInfo(Projection[NavInfoState]):
             if 'Name' in event.content:
                 system_name = event.content.get('Name', 'Unknown')
                 self.state['NextJumpTarget'] = system_name
-                # Fetch system data for the target system
-                self.system_db._fetch_system_data(system_name)
+                # Fetch system data for the target system asynchronously
+                self.system_db.fetch_system_data_nonblocking(system_name)
                 
         # Process Location to fetch system data
         if isinstance(event, GameEvent) and event.content.get('event') == 'Location':
             star_system = event.content.get('StarSystem', 'Unknown')
             if star_system != 'Unknown':
-                # Fetch system data for the current system
-                self.system_db._fetch_system_data(star_system)
+                # Fetch system data for the current system asynchronously
+                self.system_db.fetch_system_data_nonblocking(star_system)
 
 
 class ExobiologyScanStateScan(TypedDict):
