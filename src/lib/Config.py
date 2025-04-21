@@ -72,10 +72,10 @@ game_events = {
     'LaunchDrone': False,
     
     # Ship Updates
-    'FSDJump': True,
+    'FSDJump': False,
     'FSDTarget': False,
     'StartJump': False,
-    'FsdCharging': False,
+    'FsdCharging': True,
     'SupercruiseEntry': True,
     'SupercruiseExit': True,
     'ApproachSettlement': True,
