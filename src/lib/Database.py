@@ -3,21 +3,24 @@ import os
 import sqlean as sqlite3
 from typing import Any, final
 import sqlite_vec
+import threading
 
 from .Config import get_cn_appdata_path
 
 def get_db_path() -> str:
     return os.path.join(get_cn_appdata_path(), 'covas.db')
 
-_conn = None
+# Thread-local storage for connections
+_thread_local = threading.local()
+
 def get_connection() -> sqlite3.Connection:
-    global _conn
-    if _conn is None:
-        _conn = sqlite3.connect(get_db_path())
-        _conn.enable_load_extension(True)
-        sqlite_vec.load(_conn)
-        _conn.enable_load_extension(False)
-    return _conn
+    # Check if this thread already has a connection
+    if not hasattr(_thread_local, 'conn'):
+        _thread_local.conn = sqlite3.connect(get_db_path())
+        _thread_local.conn.enable_load_extension(True)
+        sqlite_vec.load(_thread_local.conn)
+        _thread_local.conn.enable_load_extension(False)
+    return _thread_local.conn
 
 
 def instantiate_class_by_name(self, classes: list[Any], class_name: str, data: dict[str, Any]) -> Any:
@@ -29,13 +32,13 @@ def instantiate_class_by_name(self, classes: list[Any], class_name: str, data: d
 @final
 class EventStore():
     def __init__(self, store_name: str, event_classes: list[Any]):
-        self.conn = get_connection()
-        self.cursor = self.conn.cursor()
         self.store_name = store_name
         self.table_name = f'{store_name}_v1'
         self.event_classes = event_classes
         
-        self.cursor.execute(f'''                
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(f'''                
             CREATE TABLE IF NOT EXISTS {self.table_name} (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 class TEXT,
@@ -44,32 +47,33 @@ class EventStore():
                 inserted_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+        conn.commit()
         
-    def __del__(self):
-        if 'conn' in self.__dict__:
-            self.conn.close()
-    
     def commit(self) -> None:
-        self.conn.commit()
+        get_connection().commit()
     
     def insert_event(self, event: Any, processed_at: float, commit: bool = True) -> None:
+        conn = get_connection()
+        cursor = conn.cursor()
         event_data = json.dumps(event.__dict__)
         event_class = event.__class__.__name__
-        _ = self.cursor.execute(f'''
+        _ = cursor.execute(f'''
             INSERT INTO {self.table_name} (class, data, processed_at)
             VALUES (?, ?, ?)
         ''', (event_class, event_data, processed_at))
         if commit:
-            self.conn.commit()
+            conn.commit()
     
     def get_latest(self, limit: int = 100) -> list[Any]:
-        self.cursor.execute(f'''
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(f'''
             SELECT class, data, processed_at
             FROM {self.table_name}
             ORDER BY processed_at DESC
             LIMIT (?)
         ''', (limit,))
-        rows = self.cursor.fetchall()
+        rows = cursor.fetchall()
         events = []
         for row in rows:
             instance = instantiate_class_by_name(self, self.event_classes, row[0], json.loads(row[1]))
@@ -77,21 +81,23 @@ class EventStore():
         return events
     
     def delete_all(self) -> None:
-        _ = self.cursor.execute(f'''
+        conn = get_connection()
+        cursor = conn.cursor()
+        _ = cursor.execute(f'''
             DELETE FROM {self.table_name}
         ''')
-        self.conn.commit()
+        conn.commit()
     
     
 @final
 class KeyValueStore():
     def __init__(self, store_name: str):
-        self.conn = get_connection()
-        self.cursor = self.conn.cursor()
         self.store_name = store_name
         self.table_name = f'{store_name}_v1'
         
-        self.cursor.execute(f'''
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(f'''
             CREATE TABLE IF NOT EXISTS {self.table_name} (
                 key TEXT PRIMARY KEY,
                 version TEXT,
@@ -99,18 +105,17 @@ class KeyValueStore():
                 inserted_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         ''')
-                    
-    def __del__(self):
-        if 'conn' in self.__dict__:
-            self.conn.close()
+        conn.commit()
                         
     def get_version(self, key: str) -> str | None:
-        self.cursor.execute(f'''
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(f'''
             SELECT version
             FROM {self.table_name}
             WHERE key = ?
         ''', (key,))
-        row = self.cursor.fetchone()
+        row = cursor.fetchone()
         if row:
             return row[0]
         
@@ -119,50 +124,62 @@ class KeyValueStore():
         if current_version == version:
             return self.get(key)
         
-        _ = self.cursor.execute(f'''
+        conn = get_connection()
+        cursor = conn.cursor()
+        _ = cursor.execute(f'''
             INSERT OR REPLACE INTO {self.table_name} (key, version, value)
             VALUES (?, ?, ?)
         ''', (key, version, json.dumps(value)))
-        self.conn.commit()
+        conn.commit()
         
         return self.get(key)
     
     def set(self, key: str, value: Any) -> None:
-        _ = self.cursor.execute(f'''
+        conn = get_connection()
+        cursor = conn.cursor()
+        _ = cursor.execute(f'''
             UPDATE {self.table_name}
             SET value = ?
             WHERE key = ?
         ''', (json.dumps(value), key, ))
-        self.conn.commit()
+        conn.commit()
     
     def get(self, key: str, default: Any = None) -> Any:
-        self.cursor.execute(f'''
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(f'''
             SELECT value
             FROM {self.table_name}
             WHERE key = ?
         ''', (key,))
-        row = self.cursor.fetchone()
+        row = cursor.fetchone()
         if row:
             return json.loads(row[0])
         return default
 
     def get_all(self) -> dict[str, Any]:
-        self.cursor.execute(f'''
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(f'''
             SELECT key, value
             FROM {self.table_name}
         ''')
-        rows = self.cursor.fetchall()
+        rows = cursor.fetchall()
         return {row[0]: json.loads(row[1]) for row in rows}
     
     def delete(self, key: str) -> None:
-        _ = self.cursor.execute(f'''
+        conn = get_connection()
+        cursor = conn.cursor()
+        _ = cursor.execute(f'''
             DELETE FROM {self.table_name}
             WHERE key = ?
         ''', (key,))
-        self.conn.commit()
+        conn.commit()
     
     def delete_all(self) -> None:
-        _ = self.cursor.execute(f'''
+        conn = get_connection()
+        cursor = conn.cursor()
+        _ = cursor.execute(f'''
             DELETE FROM {self.table_name}
         ''')
-        self.conn.commit()
+        conn.commit()
