@@ -619,46 +619,46 @@
                                     <mat-card-title>Reputation</mat-card-title>
                                 </mat-card-header>
                                 <mat-card-content>
-                                    <div class="reputation-container">
+                                    <div class="ranks-container">
                                         <!-- Federation reputation -->
-                                        <div class="reputation-item">
-                                            <span class="reputation-name">Federation</span>
+                                        <div class="rank-item">
+                                            <span class="rank-name">Federation</span>
+                                            <div class="rank-value">{{ formatPercentage(getProjection('Reputation')?.Federation) }}</div>
                                             <mat-progress-bar
                                                 mode="determinate"
                                                 [value]="getProjection('Reputation')?.Federation || 0"
-                                                [matTooltip]="formatPercentage(getProjection('Reputation')?.Federation)"
+                                                matTooltip="Reputation: {{formatPercentage(getProjection('Reputation')?.Federation)}}"
                                             ></mat-progress-bar>
-                                            <span class="reputation-value">{{ formatPercentage(getProjection('Reputation')?.Federation) }}</span>
                                         </div>
                                         <!-- Empire reputation -->
-                                        <div class="reputation-item">
-                                            <span class="reputation-name">Empire</span>
+                                        <div class="rank-item">
+                                            <span class="rank-name">Empire</span>
+                                            <div class="rank-value">{{ formatPercentage(getProjection('Reputation')?.Empire) }}</div>
                                             <mat-progress-bar
                                                 mode="determinate"
                                                 [value]="getProjection('Reputation')?.Empire || 0"
-                                                [matTooltip]="formatPercentage(getProjection('Reputation')?.Empire)"
+                                                matTooltip="Reputation: {{formatPercentage(getProjection('Reputation')?.Empire)}}"
                                             ></mat-progress-bar>
-                                            <span class="reputation-value">{{ formatPercentage(getProjection('Reputation')?.Empire) }}</span>
                                         </div>
                                         <!-- Alliance reputation -->
-                                        <div class="reputation-item">
-                                            <span class="reputation-name">Alliance</span>
+                                        <div class="rank-item">
+                                            <span class="rank-name">Alliance</span>
+                                            <div class="rank-value">{{ formatPercentage(getProjection('Reputation')?.Alliance) }}</div>
                                             <mat-progress-bar
                                                 mode="determinate"
                                                 [value]="getProjection('Reputation')?.Alliance || 0"
-                                                [matTooltip]="formatPercentage(getProjection('Reputation')?.Alliance)"
+                                                matTooltip="Reputation: {{formatPercentage(getProjection('Reputation')?.Alliance)}}"
                                             ></mat-progress-bar>
-                                            <span class="reputation-value">{{ formatPercentage(getProjection('Reputation')?.Alliance) }}</span>
                                         </div>
                                         <!-- Independent reputation -->
-                                        <div class="reputation-item">
-                                            <span class="reputation-name">Independent</span>
+                                        <div class="rank-item">
+                                            <span class="rank-name">Independent</span>
+                                            <div class="rank-value">{{ formatPercentage(getProjection('Reputation')?.Independent) }}</div>
                                             <mat-progress-bar
                                                 mode="determinate"
                                                 [value]="getProjection('Reputation')?.Independent || 0"
-                                                [matTooltip]="formatPercentage(getProjection('Reputation')?.Independent)"
+                                                matTooltip="Reputation: {{formatPercentage(getProjection('Reputation')?.Independent)}}"
                                             ></mat-progress-bar>
-                                            <span class="reputation-value">{{ formatPercentage(getProjection('Reputation')?.Independent) }}</span>
                                         </div>
                                     </div>
                                 </mat-card-content>

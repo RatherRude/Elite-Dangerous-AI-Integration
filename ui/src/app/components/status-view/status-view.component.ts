@@ -603,7 +603,9 @@ export class StatusViewComponent implements OnInit, OnDestroy {
         const progress = this.getProjection('Progress');
         if (!progress) return 0;
         
-        return (progress[type] || 0) * 100;
+        // Convert the progress value to a percentage (0-100)
+        // The value from Progress is already a percentage (0-100), not a decimal
+        return progress[type] || 0;
     }
     
     // Helper method for station services
