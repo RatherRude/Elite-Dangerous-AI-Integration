@@ -583,7 +583,17 @@ class NavInfo(Projection[NavInfoState]):
         # Process FSDTarget
         if isinstance(event, GameEvent) and event.content.get('event') == 'FSDTarget':
             if 'Name' in event.content:
-                self.state['NextJumpTarget'] = event.content.get('Name', 'Unknown')
+                system_name = event.content.get('Name', 'Unknown')
+                self.state['NextJumpTarget'] = system_name
+                # Fetch system data for the target system
+                self.system_db._fetch_system_data(system_name)
+                
+        # Process Location to fetch system data
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Location':
+            star_system = event.content.get('StarSystem', 'Unknown')
+            if star_system != 'Unknown':
+                # Fetch system data for the current system
+                self.system_db._fetch_system_data(star_system)
 
 
 class ExobiologyScanStateScan(TypedDict):
