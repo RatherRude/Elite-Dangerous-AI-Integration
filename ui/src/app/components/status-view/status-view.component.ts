@@ -627,7 +627,10 @@ export class StatusViewComponent implements OnInit, OnDestroy {
 
     isInStation(): boolean {
         const status = this.getProjection('Status');
-        return status && status.Docked;
+        const location = this.getProjection('Location');
+        
+        // Check both Status.Docked flag and Location.Station
+        return (status && status.Docked) || (location && location.Station && location.Docked);
     }
 
     getActiveMode(): string {
