@@ -223,6 +223,7 @@ export const GameEventCategories: Record<string, string[]> = {
         "CarrierDockingPermission",
         "CarrierNameChanged",
         "CarrierJumpCancelled",
+        "ColonisationConstructionDepot",
     ],
     "Social": [
         "CrewAssign",

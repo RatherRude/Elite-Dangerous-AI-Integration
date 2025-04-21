@@ -139,41 +139,38 @@ ul {
 ::ng-deep .mat-mdc-tab .mdc-tab__text-label {
   color: rgba(255, 255, 255, 0.7);
 }
-.personality-settings, .character-settings {
-   /* Trait containers and selectors styling */
-  .trait-container {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 16px;
-    margin-bottom: 16px;
+/* Trait containers and selectors styling */
+.trait-container {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 0 15px 16px;
+}
+
+.trait-select, .trait-input {
+  flex: 1;
+}
+
+
+.knowledge-areas {
+  margin: 0;
+  padding: 0;
+
+  label {
+
   }
+}
 
-  .trait-select, .trait-input {
-    flex: 1;
-    min-width: 200px;
-  }
+.knowledge-label {
+  display: block;
+  font-weight: 500;
+}
 
-
-  .knowledge-areas {
-    margin: 0;
-    padding: 0;
-
-    label {
-
-    }
-  }
-
-  .knowledge-label {
-    display: block;
-    font-weight: 500;
-  }
-
-  .knowledge-checkboxes {
-    display: flex;
-    flex-direction: row;
-    gap: 10px;
-  }
+.knowledge-checkboxes {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
 }
 
 .custom-voice-divider {
@@ -181,3 +178,6 @@ ul {
 }
 
 .editing-active {}
+.lowWidth {
+  max-width: 60px;
+}

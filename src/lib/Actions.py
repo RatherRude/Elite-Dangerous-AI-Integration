@@ -1482,9 +1482,9 @@ def prepare_station_request(obj, projected_states):
         filters["material_trader"] = {"value": obj["material_trader"]}
     if "technology_broker" in obj and obj["technology_broker"]:
         filters["technology_broker"] = {"value": obj["technology_broker"]}
-    if "commodity" in obj and obj["commodity"]:
+    if "commodities" in obj and obj["commodities"]:
         market_filters = []
-        for market_item in obj["commodity"]:
+        for market_item in obj["commodities"]:
             # Find matching commodity name while preserving original capitalization
             market_item_name_lower = market_item["name"].lower()
             matching_commodity = next((commodity for commodity in known_commodities if commodity.lower() == market_item_name_lower), None)
@@ -3203,7 +3203,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             {'with technology brokers for ' + ' and '.join(i.get('technology_broker', [])) + ' Technology' if i.get('technology_broker', []) else ''}
             {'selling a ' + ' and a '.join([f"{module['name']} module class {module.get('class', 'any')} {module.get('class', '')} " for module in i.get('modules', [])]) if i.get('modules', []) else ''}
             {'selling a ' + ' and a '.join([f"{ship['name']}" for ship in i.get('ships', [])]) if i.get('ships', []) else ''}
-            {' and '.join([f"where we can {market.get('transaction')} {market.get('amount', 'some')} {market.get('name')}" for market in i.get('market', [])])}
+            {' and '.join([f"where we can {market.get('transaction')} {market.get('amount', 'some')} {market.get('name')}" for market in i.get('commodities', [])])}
             {'with a ' + ' and '.join([service['name'] for service in i.get('services', [])]) if i.get('services', []) else ''}
             near {i.get('reference_system', 'Sol')}
             {'within ' + str(i.get('distance', 50000)) + ' light years' if i.get('distance', 50000) else ''}.
@@ -3288,7 +3288,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                     },
                     "minItems": 1,
                 },
-                "commodity": {
+                "commodities": {
                     "type": "array",
                     "description": "Commodities to buy or sell at a station. This is not the station name and must map to a commodity name",
                     "items": {
