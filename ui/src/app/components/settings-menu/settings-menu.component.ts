@@ -134,7 +134,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     { value: 'en-US-MichelleNeural', label: 'Michelle (Female) - Friendly, Pleasant', locale: 'en-US' },
     { value: 'en-US-RogerNeural', label: 'Roger (Male) - Lively', locale: 'en-US' },
     { value: 'en-US-SteffanNeural', label: 'Steffan (Male) - Rational', locale: 'en-US' },
-    
+
     // English voices - UK
     { value: 'en-GB-AdaMultilingualNeural', label: 'Ada Multilingual (Female)', locale: 'en-GB' },
     { value: 'en-GB-OllieMultilingualNeural', label: 'Ollie Multilingual (Male)', locale: 'en-GB' },
@@ -143,7 +143,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     { value: 'en-GB-RyanNeural', label: 'Ryan (Male)', locale: 'en-GB' },
     { value: 'en-GB-SoniaNeural', label: 'Sonia (Female)', locale: 'en-GB' },
     { value: 'en-GB-ThomasNeural', label: 'Thomas (Male)', locale: 'en-GB' },
-    
+
     // English voices - Australia
     { value: 'en-AU-NatashaNeural', label: 'Natasha (Female)', locale: 'en-AU' },
     { value: 'en-AU-WilliamNeural', label: 'William (Male)', locale: 'en-AU' },
