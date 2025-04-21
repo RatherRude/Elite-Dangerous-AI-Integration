@@ -14,6 +14,16 @@ import { MatChipsModule } from "@angular/material/chips";
 import { FormsModule } from "@angular/forms";
 import { ProjectionsService } from "../../services/projections.service";
 import { Subscription } from "rxjs";
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatButtonModule } from '@angular/material/button';
+import { RouterModule } from '@angular/router';
+
+// Define EventEntry interface locally
+interface EventEntry {
+    event: string;
+    count: number;
+}
 
 @Component({
     selector: "app-status-view",
@@ -31,744 +41,679 @@ import { Subscription } from "rxjs";
         MatTooltipModule,
         MatBadgeModule,
         MatChipsModule,
-        FormsModule
+        FormsModule,
+        MatTabsModule,
+        MatProgressSpinnerModule,
+        MatButtonModule,
+        RouterModule
     ],
     template: `
         <div class="status-container">
-            <div class="projection-selector">
-                <mat-form-field appearance="fill">
-                    <mat-label>Select Projection</mat-label>
-                    <mat-select [(ngModel)]="selectedProjection" (selectionChange)="formatSelectedProjection()">
-                        <mat-option *ngFor="let name of projectionNames" [value]="name">
-                            {{ name }}
-                        </mat-option>
-                    </mat-select>
-                </mat-form-field>
-            </div>
+            <div class="tab-layout">
+                <div class="tab-sidebar">
+                    <button class="tab-button" [class.active]="selectedTab === INFORMATION_TAB" (click)="setActiveTab(INFORMATION_TAB)">
+                        <mat-icon>info</mat-icon>
+                        <span>Info</span>
+                    </button>
+                    <button class="tab-button" [class.active]="selectedTab === COMMANDER_TAB" (click)="setActiveTab(COMMANDER_TAB)">
+                        <mat-icon>person</mat-icon>
+                        <span>Commander</span>
+                    </button>
+                    <button class="tab-button" [class.active]="selectedTab === STATION_TAB" 
+                            *ngIf="isInStation()" (click)="setActiveTab(STATION_TAB)">
+                        <mat-icon>store</mat-icon>
+                        <span>Station</span>
+                    </button>
+                    <button class="tab-button" [class.active]="selectedTab === STORAGE_TAB" (click)="setActiveTab(STORAGE_TAB)">
+                        <mat-icon>inventory_2</mat-icon>
+                        <span>Storage</span>
+                    </button>
+                </div>
 
-            <div class="projection-content" *ngIf="selectedProjection && formattedData">
-                <mat-card class="status-card">
-                    <mat-card-header>
-                        <mat-card-title>{{ selectedProjection }}</mat-card-title>
-                    </mat-card-header>
-                    <mat-card-content>
-                        <!-- Ship Info -->
-                        <div *ngIf="selectedProjection === 'ShipInfo'">
-                            <div class="ship-header">
-                                <h3>{{ formattedData.Name || 'Unknown Ship' }}</h3>
-                                <p class="ship-id">{{ formattedData.Type }} ({{ formattedData.ShipIdent }})</p>
+                <div class="tab-content">
+                    <!-- Info Tab Content -->
+                    <div *ngIf="selectedTab === INFORMATION_TAB" class="tab-pane">
+                        <!-- Current Status Icons (fixed at upper right) -->
+                        <div class="status-indicators-fixed">
+                            <div class="active-status-icons">
+                                <ng-container *ngFor="let flag of statusFlags">
+                                    <div *ngIf="getCurrentStatusValue('flags', flag)" class="status-icon">
+                                        <mat-icon matTooltip="{{ formatFlagName(flag) }}">{{ getIconForFlag(flag) }}</mat-icon>
+                                    </div>
+                                </ng-container>
+                                <ng-container *ngFor="let flag of odysseyFlags">
+                                    <div *ngIf="getCurrentStatusValue('flags2', flag)" class="status-icon">
+                                        <mat-icon matTooltip="{{ formatFlagName(flag) }}">{{ getIconForOdysseyFlag(flag) }}</mat-icon>
+                                    </div>
+                                </ng-container>
+                                
+                                <!-- Friends counter -->
+                                <div class="friends-counter" (click)="toggleFriendsPanel()" *ngIf="getFriendsCount() > 0">
+                                    <mat-icon>people</mat-icon>
+                                    <span class="badge">{{ getFriendsCount() }}</span>
+                                </div>
+                                
+                                <!-- Colonisation Construction indicator -->
+                                <div *ngIf="isColonisationActive(getProjection('ColonisationConstruction'))" 
+                                     class="colonisation-indicator" 
+                                     (click)="toggleColonisationPanel()">
+                                    <mat-icon>construction</mat-icon>
+                                    <span class="progress-text">{{ formatPercentage(getColonisationProgress()) }}</span>
+                                </div>
                             </div>
-                            
-                            <div class="ship-stats">
-                                <div class="stat-group">
-                                    <h4>Cargo</h4>
-                                    <div class="stat-bar">
-                                        <mat-progress-bar 
-                                            mode="determinate" 
-                                            [value]="(formattedData.Cargo / formattedData.CargoCapacity) * 100"
-                                            [matTooltip]="formattedData.Cargo + ' / ' + formattedData.CargoCapacity + ' tons'"
-                                        ></mat-progress-bar>
-                                        <span>{{ formattedData.Cargo }}/{{ formattedData.CargoCapacity }} t</span>
+                        </div>
+                        
+                        <!-- Location & Nav info (minimalistic) -->
+                        <div class="location-nav-container">
+                            <div class="location-info">
+                                <mat-icon>public</mat-icon>
+                                <div class="location-details">
+                                    <div class="system-name">{{ getLocationSystem() }}</div>
+                                    <div *ngIf="getLocationDetail()" class="location-detail">
+                                        <mat-icon class="small-icon">{{ getLocationDetailIcon() }}</mat-icon>
+                                        <span>{{ getLocationDetail() }}</span>
                                     </div>
                                 </div>
-                                
-                                <div class="stat-group">
-                                    <h4>Fuel</h4>
-                                    <div class="stat-bar">
-                                        <mat-progress-bar 
-                                            mode="determinate" 
-                                            [value]="(formattedData.FuelMain / formattedData.FuelMainCapacity) * 100"
-                                            [matTooltip]="formattedData.FuelMain + ' / ' + formattedData.FuelMainCapacity + ' tons'"
-                                        ></mat-progress-bar>
-                                        <span>{{ formattedData.FuelMain.toFixed(1) }}/{{ formattedData.FuelMainCapacity }} t</span>
+                            </div>
+                            <div *ngIf="hasNavRoute()" class="nav-info" (click)="toggleNavDetails()">
+                                <mat-icon>navigation</mat-icon>
+                                <span>{{ getNavRouteInfo() }}</span>
+                                <mat-icon class="expander">{{ showNavDetails ? 'expand_less' : 'expand_more' }}</mat-icon>
+                            </div>
+                        </div>
+                        
+                        <!-- Nav Route Details -->
+                        <div *ngIf="showNavDetails" class="nav-details">
+                            <div class="nav-route-list">
+                                <div *ngFor="let system of getNavRouteDetails(); let i = index" class="nav-route-item">
+                                    <div class="nav-index">{{ i + 1 }}</div>
+                                    <div class="nav-system">{{ system.StarSystem }}</div>
+                                    <div class="nav-star-info" *ngIf="system.StarClass">
+                                        <mat-icon class="star-icon" [ngClass]="getStarClassColor(system.StarClass)">
+                                            {{ getStarTypeIcon(system.StarClass) }}
+                                        </mat-icon>
+                                        <span class="star-class">{{ system.StarClass }}</span>
                                     </div>
-                                </div>
-                                
-                                <div class="ship-details">
-                                    <div>
-                                        <span class="detail-label">Max Jump:</span>
-                                        <span class="detail-value">{{ formattedData.MaximumJumpRange.toFixed(1) }} ly</span>
+                                    <div class="nav-distance" *ngIf="system.StarPos && i > 0">
+                                        {{ getJumpDistance(i) }} ly
                                     </div>
-                                    <div>
-                                        <span class="detail-label">Landing Pad:</span>
-                                        <span class="detail-value">{{ formattedData.LandingPadSize }}</span>
-                                    </div>
-                                    <div>
-                                        <span class="detail-label">Unladen Mass:</span>
-                                        <span class="detail-value">{{ formattedData.UnladenMass.toFixed(1) }} t</span>
-                                    </div>
-                                    <div>
-                                        <span class="detail-label">Mining Ship:</span>
-                                        <span class="detail-value">{{ formattedData.IsMiningShip ? 'Yes' : 'No' }}</span>
+                                    <div class="star-scoopable" *ngIf="system.Scoopable !== undefined">
+                                        <mat-icon class="fuel-icon" [ngClass]="system.Scoopable ? 'scoopable' : 'not-scoopable'">
+                                            {{ system.Scoopable ? 'local_gas_station' : 'not_interested' }}
+                                        </mat-icon>
+                                        <span class="small-text">{{ system.Scoopable ? 'Scoopable' : 'Not scoopable' }}</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Cargo Info -->
-                        <div *ngIf="selectedProjection === 'Cargo'">
-                            <div class="cargo-header">
-                                <h3>Cargo Hold</h3>
-                                <div class="stat-group">
-                                    <div class="stat-bar">
-                                        <mat-progress-bar 
-                                            mode="determinate" 
-                                            [value]="(formattedData.TotalItems / formattedData.Capacity) * 100"
-                                            [matTooltip]="formattedData.TotalItems + ' / ' + formattedData.Capacity + ' tons'"
-                                        ></mat-progress-bar>
-                                        <span>{{ formattedData.TotalItems }}/{{ formattedData.Capacity }} t</span>
+                        
+                        <!-- Context-dependent content based on active mode -->
+                        <div *ngIf="getActiveMode() === 'humanoid'" class="context-content character-sheet">
+                            <!-- TOP SECTION - Character Identity -->
+                            <div class="character-header">
+                                <div class="character-name">
+                                    <h2>{{ getSuitName() }}</h2>
+                                    <div class="character-subtitle">{{ getSuitLoadoutName() }}</div>
+                                </div>
+                                <div class="character-class">
+                                    <div class="class-circle">
+                                        <div class="circle-value">{{getSuitClass()}}</div>
                                     </div>
+                                    <div class="class-label">CLASS</div>
                                 </div>
                             </div>
                             
-                            <div *ngIf="formattedData.Inventory && formattedData.Inventory.length > 0">
-                                <h4>Inventory</h4>
-                                <mat-list>
-                                    <mat-list-item *ngFor="let item of formattedData.Inventory" class="cargo-item">
-                                        <mat-icon *ngIf="item.Stolen" matTooltip="Stolen" color="warn">warning</mat-icon>
-                                        <span class="cargo-count">{{ item.Count }}×</span>
-                                        <span class="cargo-name">{{ item.Name }}</span>
-                                    </mat-list-item>
-                                </mat-list>
-                            </div>
-                            
-                            <div *ngIf="!formattedData.Inventory || formattedData.Inventory.length === 0" class="empty-message">
-                                No cargo in hold
-                            </div>
-                        </div>
-
-                        <!-- Backpack Info -->
-                        <div *ngIf="selectedProjection === 'Backpack'">
-                            <h3>On-Foot Inventory</h3>
-                            
-                            <mat-accordion>
-                                <mat-expansion-panel *ngIf="formattedData.Items && formattedData.Items.length > 0">
-                                    <mat-expansion-panel-header>
-                                        <mat-panel-title>
-                                            Equipment ({{ formattedData.Items.length }})
-                                        </mat-panel-title>
-                                    </mat-expansion-panel-header>
-                                    
-                                    <mat-list>
-                                        <mat-list-item *ngFor="let item of formattedData.Items" class="backpack-item">
-                                            <span class="item-count">{{ item.Count }}×</span>
-                                            <span class="item-name">{{ item.Name_Localised || item.Name }}</span>
-                                        </mat-list-item>
-                                    </mat-list>
-                                </mat-expansion-panel>
-                                
-                                <mat-expansion-panel *ngIf="formattedData.Components && formattedData.Components.length > 0">
-                                    <mat-expansion-panel-header>
-                                        <mat-panel-title>
-                                            Engineering Components ({{ formattedData.Components.length }})
-                                        </mat-panel-title>
-                                    </mat-expansion-panel-header>
-                                    
-                                    <mat-list>
-                                        <mat-list-item *ngFor="let item of formattedData.Components" class="backpack-item">
-                                            <span class="item-count">{{ item.Count }}×</span>
-                                            <span class="item-name">{{ item.Name_Localised || item.Name }}</span>
-                                        </mat-list-item>
-                                    </mat-list>
-                                </mat-expansion-panel>
-                                
-                                <mat-expansion-panel *ngIf="formattedData.Consumables && formattedData.Consumables.length > 0">
-                                    <mat-expansion-panel-header>
-                                        <mat-panel-title>
-                                            Consumable Items ({{ formattedData.Consumables.length }})
-                                        </mat-panel-title>
-                                    </mat-expansion-panel-header>
-                                    
-                                    <mat-list>
-                                        <mat-list-item *ngFor="let item of formattedData.Consumables" class="backpack-item">
-                                            <span class="item-count">{{ item.Count }}×</span>
-                                            <span class="item-name">{{ item.Name_Localised || item.Name }}</span>
-                                        </mat-list-item>
-                                    </mat-list>
-                                </mat-expansion-panel>
-                                
-                                <mat-expansion-panel *ngIf="formattedData.Data && formattedData.Data.length > 0">
-                                    <mat-expansion-panel-header>
-                                        <mat-panel-title>
-                                            Data Storage ({{ formattedData.Data.length }})
-                                        </mat-panel-title>
-                                    </mat-expansion-panel-header>
-                                    
-                                    <mat-list>
-                                        <mat-list-item *ngFor="let item of formattedData.Data" class="backpack-item">
-                                            <span class="item-count">{{ item.Count }}×</span>
-                                            <span class="item-name">{{ item.Name_Localised || item.Name }}</span>
-                                        </mat-list-item>
-                                    </mat-list>
-                                </mat-expansion-panel>
-                            </mat-accordion>
-                            
-                            <div *ngIf="isBackpackEmpty(formattedData)" class="empty-message">
-                                Backpack is empty
-                            </div>
-                        </div>
-
-                        <!-- Suit Loadout -->
-                        <div *ngIf="selectedProjection === 'SuitLoadout'">
-                            <div class="suit-header">
-                                <h3>{{ formattedData.SuitName_Localised || formattedData.SuitName }}</h3>
-                                <p class="suit-loadout">Loadout: {{ formattedData.LoadoutName }}</p>
-                            </div>
-                            
-                            <div *ngIf="formattedData.SuitMods && formattedData.SuitMods.length > 0" class="suit-mods">
-                                <h4>Suit Modifications</h4>
-                                <div class="mod-chips">
-                                    <mat-chip-set>
-                                        <mat-chip *ngFor="let mod of formattedData.SuitMods">
-                                            {{ formatModName(mod) }}
-                                        </mat-chip>
-                                    </mat-chip-set>
-                                </div>
-                            </div>
-                            
-                            <div *ngIf="formattedData.Modules && formattedData.Modules.length > 0">
-                                <h4>Equipped Weapons</h4>
-                                <mat-list>
-                                    <ng-container *ngFor="let weapon of formattedData.Modules">
-                                        <mat-list-item class="weapon-item">
-                                            <div class="weapon-header">
-                                                <span class="weapon-name">{{ weapon.ModuleName_Localised || weapon.ModuleName }}</span>
-                                                <span class="weapon-slot">({{ weapon.SlotName }})</span>
-                                                <span class="weapon-class">Class {{ weapon.Class }}</span>
+                            <!-- CHARACTER SHEET MAIN SECTION -->
+                            <div class="character-sheet-body">
+                                <!-- LEFT COLUMN - Attributes/Abilities -->
+                                <div class="sheet-column attributes-column">
+                                    <div class="stat-block suit-mods">
+                                        <h3 class="stat-header">SUIT MODIFICATIONS</h3>
+                                        <div class="mod-list">
+                                            <div *ngFor="let mod of getSuitMods()" class="mod-item">
+                                                <div class="mod-icon">
+                                                    <mat-icon>{{ getSuitModIcon(mod) }}</mat-icon>
+                                                </div>
+                                                <div class="mod-name">{{ formatModName(mod) }}</div>
                                             </div>
-                                        </mat-list-item>
-                                        
-                                        <div *ngIf="weapon.WeaponMods && weapon.WeaponMods.length > 0" class="weapon-mods">
-                                            <mat-chip-set>
-                                                <mat-chip *ngFor="let mod of weapon.WeaponMods" color="accent">
-                                                    {{ formatModName(mod) }}
-                                                </mat-chip>
-                                            </mat-chip-set>
+                                            <div *ngIf="!getSuitMods().length" class="empty-state">No modifications</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="proficiencies-block">
+                                        <h3 class="stat-header">PROFICIENCIES</h3>
+                                        <div class="proficiency-item">
+                                            <span class="proficiency-name">Combat</span>
+                                            <div class="proficiency-value">Advanced</div>
+                                        </div>
+                                        <div class="proficiency-item">
+                                            <span class="proficiency-name">Engineering</span>
+                                            <div class="proficiency-value">Basic</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- MIDDLE COLUMN - Combat Stats -->
+                                <div class="sheet-column stats-column">
+                                    <div class="combat-stats">
+                                        <div class="combat-stat-item">
+                                            <div class="combat-stat-circle">
+                                                <span class="combat-stat-value">100%</span>
+                                            </div>
+                                            <div class="combat-stat-label">HEALTH</div>
                                         </div>
                                         
-                                        <mat-divider></mat-divider>
-                                    </ng-container>
-                                </mat-list>
+                                        <div class="combat-stat-item">
+                                            <div class="combat-stat-circle">
+                                                <span class="combat-stat-value">100%</span>
+                                            </div>
+                                            <div class="combat-stat-label">SHIELDS</div>
+                                        </div>
+                                        
+                                        <div class="combat-stat-item">
+                                            <div class="combat-stat-circle">
+                                                <span class="combat-stat-value">100%</span>
+                                            </div>
+                                            <div class="combat-stat-label">OXYGEN</div>
+                                        </div>
+                                        
+                                        <div class="combat-stat-item">
+                                            <div class="combat-stat-circle">
+                                                <span class="combat-stat-value">100%</span>
+                                            </div>
+                                            <div class="combat-stat-label">BATTERY</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- RIGHT COLUMN - Weapons/Equipment -->
+                                <div class="sheet-column weapons-column">
+                                    <h3 class="stat-header">ARMAMENTS</h3>
+                                    <div class="weapons-list">
+                                        <ng-container *ngFor="let weapon of getSuitWeapons()">
+                                            <div class="weapon-card">
+                                                <div class="weapon-header">
+                                                    <div class="weapon-name">{{ weapon.ModuleName_Localised || weapon.ModuleName }}</div>
+                                                    <div class="weapon-class">
+                                                        <div class="class-bubble">{{ weapon.Class || '?' }}</div>
+                                                    </div>
+                                                </div>
+                                                <div class="weapon-type">{{ getWeaponType(weapon) }}</div>
+                                                <div class="weapon-slot">{{ formatWeaponSlot(weapon.SlotName) }}</div>
+                                                <div class="weapon-mods">
+                                                    <ng-container *ngIf="weapon.WeaponMods && weapon.WeaponMods.length">
+                                                        <div *ngFor="let mod of weapon.WeaponMods" class="weapon-mod-tag">
+                                                            {{ formatModName(mod) }}
+                                                        </div>
+                                                    </ng-container>
+                                                    <div *ngIf="!weapon.WeaponMods || !weapon.WeaponMods.length" class="empty-state">
+                                                        No modifications
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </ng-container>
+                                    </div>
+                                </div>
                             </div>
                             
-                            <div *ngIf="!formattedData.Modules || formattedData.Modules.length === 0" class="empty-message">
-                                No weapons equipped
-                            </div>
-                        </div>
-
-                        <!-- Location Info -->
-                        <div *ngIf="selectedProjection === 'Location'">
-                            <h3>Current Location</h3>
-                            <div class="location-details">
-                                <div>
-                                    <span class="detail-label">System:</span>
-                                    <span class="detail-value">{{ formattedData.StarSystem }}</span>
-                                </div>
-                                
-                                <div *ngIf="formattedData.Star">
-                                    <span class="detail-label">Star:</span>
-                                    <span class="detail-value">{{ formattedData.Star }}</span>
-                                </div>
-                                
-                                <div *ngIf="formattedData.Planet">
-                                    <span class="detail-label">Planet:</span>
-                                    <span class="detail-value">{{ formattedData.Planet }}</span>
-                                </div>
-                                
-                                <div *ngIf="formattedData.Station">
-                                    <span class="detail-label">Station:</span>
-                                    <span class="detail-value">{{ formattedData.Station }}</span>
-                                </div>
-                                
-                                <div *ngIf="formattedData.Docked">
-                                    <span class="detail-label">Status:</span>
-                                    <span class="detail-value">Docked</span>
-                                </div>
-                                
-                                <div *ngIf="formattedData.Landed">
-                                    <span class="detail-label">Status:</span>
-                                    <span class="detail-value">Landed</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Current Status -->
-                        <div *ngIf="selectedProjection === 'CurrentStatus'">
-                            <mat-accordion>
-                                <mat-expansion-panel>
-                                    <mat-expansion-panel-header>
-                                        <mat-panel-title>
-                                            Flight Status
-                                        </mat-panel-title>
-                                    </mat-expansion-panel-header>
-                                    <div class="status-flags">
-                                        <div *ngFor="let flag of statusFlags" class="status-flag" 
-                                             [class.active]="formattedData.flags[flag]">
-                                            <mat-icon>{{ getIconForFlag(flag) }}</mat-icon>
-                                            <span>{{ formatFlagName(flag) }}</span>
+                            <!-- BOTTOM SECTION - Equipment/Inventory -->
+                            <div class="character-sheet-footer">
+                                <h3 class="section-header">EQUIPMENT & INVENTORY</h3>
+                                <div class="backpack-block" (click)="toggleBackpackDetails()">
+                                    <div class="backpack-summary">
+                                        <div class="backpack-category" *ngIf="getBackpackItems('Items').length > 0">
+                                            <span class="category-name">Items:</span>
+                                            <span class="category-count">{{ getBackpackItems('Items').length }}</span>
+                                        </div>
+                                        <div class="backpack-category" *ngIf="getBackpackItems('Components').length > 0">
+                                            <span class="category-name">Components:</span>
+                                            <span class="category-count">{{ getBackpackItems('Components').length }}</span>
+                                        </div>
+                                        <div class="backpack-category" *ngIf="getBackpackItems('Consumables').length > 0">
+                                            <span class="category-name">Consumables:</span>
+                                            <span class="category-count">{{ getBackpackItems('Consumables').length }}</span>
+                                        </div>
+                                        <div class="backpack-category" *ngIf="getBackpackItems('Data').length > 0">
+                                            <span class="category-name">Data:</span>
+                                            <span class="category-count">{{ getBackpackItems('Data').length }}</span>
+                                        </div>
+                                        <mat-icon>{{ showBackpackDetails ? 'expand_less' : 'expand_more' }}</mat-icon>
+                                    </div>
+                                    
+                                    <div *ngIf="showBackpackDetails" class="backpack-details">
+                                        <div *ngFor="let category of ['Items', 'Components', 'Consumables', 'Data']">
+                                            <div *ngIf="getBackpackItems(category).length > 0" class="backpack-category-section">
+                                                <h4>{{ category }}</h4>
+                                                <div class="backpack-items">
+                                                    <div *ngFor="let item of getBackpackItems(category)" class="backpack-item">
+                                                        <span class="item-name">{{ item.Name_Localised || item.Name }}</span>
+                                                        <span class="item-count" *ngIf="item.Count">x{{ item.Count }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                </mat-expansion-panel>
-                                
-                                <mat-expansion-panel *ngIf="formattedData.flags2">
-                                    <mat-expansion-panel-header>
-                                        <mat-panel-title>
-                                            On-Foot Status
-                                        </mat-panel-title>
-                                    </mat-expansion-panel-header>
-                                    <div class="status-flags">
-                                        <div *ngFor="let flag of odysseyFlags" class="status-flag" 
-                                             [class.active]="formattedData.flags2[flag]">
-                                            <mat-icon>{{ getIconForOdysseyFlag(flag) }}</mat-icon>
-                                            <span>{{ formatFlagName(flag) }}</span>
-                                        </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div *ngIf="['mainship', 'fighter', 'buggy'].includes(getActiveMode())" class="context-content character-sheet">
+                            <!-- TOP SECTION - Ship Identity -->
+                            <div class="character-header">
+                                <div class="character-name">
+                                    <h2>{{ getShipName() }}</h2>
+                                    <div class="character-subtitle">{{ getShipType() }} {{ getActiveMode() !== 'buggy' ? '(' + getShipIdent() + ')' : '' }}</div>
+                                </div>
+                                <div class="character-class">
+                                    <div class="class-circle">
+                                        <div class="circle-value">{{ getLandingPadSize() }}</div>
                                     </div>
-                                </mat-expansion-panel>
+                                    <div class="class-label">SIZE</div>
+                                </div>
+                            </div>
+                            
+                            <!-- SHIP SHEET MAIN SECTION -->
+                            <div class="character-sheet-body">
+                                <!-- LEFT COLUMN - Core Stats -->
+                                <div class="sheet-column attributes-column">
+                                    <div class="ship-core-stats">
+                                        <div class="ship-stat-item">
+                                            <div class="stat-label">MASS</div>
+                                            <div class="stat-value-large">{{ getShipMass().toFixed(1) }}</div>
+                                            <div class="stat-suffix">TONS</div>
+                                        </div>
+                                        
+                                        <div class="ship-stat-item">
+                                            <div class="stat-label">JUMP RANGE</div>
+                                            <div class="stat-value-large">{{ getJumpRange().toFixed(1) }}</div>
+                                            <div class="stat-suffix">LY</div>
+                                        </div>
+                                        
+                                        <!-- Nav route summary has been moved to the top location section -->
+                                    </div>
+                                    
+                                    <!-- Remove the nav-details section from here -->
+                                </div>
                                 
-                                <mat-expansion-panel *ngIf="formattedData.Fuel">
-                                    <mat-expansion-panel-header>
-                                        <mat-panel-title>
-                                            Ship Resources
-                                        </mat-panel-title>
-                                    </mat-expansion-panel-header>
-                                    <div class="resource-bars">
-                                        <div class="stat-group">
-                                            <h4>Main Fuel</h4>
-                                            <div class="stat-bar">
-                                                <mat-progress-bar 
-                                                    mode="determinate" 
-                                                    [value]="(formattedData.Fuel.FuelMain / formattedData.Fuel.FuelCapacity) * 100"
-                                                ></mat-progress-bar>
-                                                <span>{{ formattedData.Fuel.FuelMain.toFixed(1) }}/{{ formattedData.Fuel.FuelCapacity }} t</span>
+                                <!-- MIDDLE COLUMN - Defense Stats -->
+                                <div class="sheet-column stats-column">
+                                    <div class="ship-defense-stats">
+                                        <div class="defense-stat-item">
+                                            <div class="stat-label">HULL</div>
+                                            <div class="stat-value-with-bar">
+                                                <div class="stat-value">{{ getShipHealth() }}</div>
+                                                <mat-progress-bar class="stat-bar" mode="determinate" [value]="getShipHealthPercentage()"></mat-progress-bar>
                                             </div>
                                         </div>
                                         
-                                        <div class="stat-group">
-                                            <h4>Reservoir</h4>
-                                            <div class="stat-bar">
-                                                <mat-progress-bar 
-                                                    mode="determinate" 
-                                                    [value]="(formattedData.Fuel.FuelReservoir / 0.5) * 100"
-                                                ></mat-progress-bar>
-                                                <span>{{ formattedData.Fuel.FuelReservoir.toFixed(2) }} t</span>
+                                        <div class="defense-stat-item">
+                                            <div class="stat-label">FUEL</div>
+                                            <div class="stat-value-with-bar">
+                                                <div class="stat-value">{{ getFuelAmount() }}/{{ getFuelCapacity() }}</div>
+                                                <mat-progress-bar class="stat-bar" mode="determinate" [value]="getFuelPercentage()"></mat-progress-bar>
                                             </div>
                                         </div>
-                                    </div>
-                                </mat-expansion-panel>
-                            </mat-accordion>
-                        </div>
-
-                        <!-- Navigation Info -->
-                        <div *ngIf="selectedProjection === 'NavInfo'">
-                            <h3>Navigation Information</h3>
-                            
-                            <div *ngIf="formattedData.NextJumpTarget && formattedData.NextJumpTarget !== 'Unknown'">
-                                <div class="nav-target">
-                                    <span class="detail-label">Next Jump Target:</span>
-                                    <span class="detail-value">{{ formattedData.NextJumpTarget }}</span>
-                                </div>
-                            </div>
-                            
-                            <div *ngIf="formattedData.NavRoute && formattedData.NavRoute.length > 0">
-                                <h4>Navigation Route ({{ formattedData.NavRoute.length }} jumps)</h4>
-                                <mat-list>
-                                    <mat-list-item *ngFor="let system of formattedData.NavRoute; let i = index">
-                                        <div class="route-item">
-                                            <span class="route-index">{{ i + 1 }}.</span>
-                                            <span class="route-system">{{ system.StarSystem }}</span>
-                                            <span class="route-scoopable" *ngIf="system.Scoopable" matTooltip="Fuel Scoopable Star">
-                                                <mat-icon>local_gas_station</mat-icon>
-                                            </span>
-                                        </div>
-                                    </mat-list-item>
-                                </mat-list>
-                            </div>
-                            
-                            <div *ngIf="!formattedData.NavRoute || formattedData.NavRoute.length === 0" class="no-route">
-                                No navigation route plotted.
-                            </div>
-                        </div>
-
-                        <!-- Target Info -->
-                        <div *ngIf="selectedProjection === 'Target'">
-                            <div *ngIf="formattedData.Ship">
-                                <h3>Target Information</h3>
-                                
-                                <div class="target-header">
-                                    <span class="target-ship">{{ formattedData.Ship }}</span>
-                                    <span class="scan-status" 
-                                         [ngClass]="{'scan-complete': formattedData.Scanned, 'scan-pending': !formattedData.Scanned}">
-                                        {{ formattedData.Scanned ? 'Scan Complete' : 'Scanning...' }}
-                                    </span>
-                                </div>
-                                
-                                <div *ngIf="formattedData.Scanned" class="target-details">
-                                    <div>
-                                        <span class="detail-label">Pilot:</span>
-                                        <span class="detail-value">{{ formattedData.PilotName || 'Unknown' }}</span>
-                                    </div>
-                                    
-                                    <div *ngIf="formattedData.PilotRank">
-                                        <span class="detail-label">Rank:</span>
-                                        <span class="detail-value">{{ formattedData.PilotRank }}</span>
-                                    </div>
-                                    
-                                    <div *ngIf="formattedData.Faction">
-                                        <span class="detail-label">Faction:</span>
-                                        <span class="detail-value">{{ formattedData.Faction }}</span>
-                                    </div>
-                                    
-                                    <div *ngIf="formattedData.LegalStatus">
-                                        <span class="detail-label">Legal Status:</span>
-                                        <span class="detail-value" 
-                                             [ngClass]="{'status-wanted': formattedData.LegalStatus === 'Wanted', 
-                                                       'status-clean': formattedData.LegalStatus === 'Clean'}">
-                                            {{ formattedData.LegalStatus }}
-                                        </span>
-                                    </div>
-                                    
-                                    <div *ngIf="formattedData.Bounty">
-                                        <span class="detail-label">Bounty:</span>
-                                        <span class="detail-value">{{ formattedData.Bounty.toLocaleString() }} Cr</span>
-                                    </div>
-                                    
-                                    <div *ngIf="formattedData.Subsystem">
-                                        <span class="detail-label">Target Subsystem:</span>
-                                        <span class="detail-value">{{ formattedData.Subsystem }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div *ngIf="!formattedData.Ship" class="empty-message">
-                                No ship targeted
-                            </div>
-                        </div>
-
-                        <!-- Missions Info -->
-                        <div *ngIf="selectedProjection === 'Missions'">
-                            <h3>Active Missions</h3>
-                            
-                            <div *ngIf="formattedData.Active && formattedData.Active.length > 0">
-                                <mat-accordion>
-                                    <mat-expansion-panel *ngFor="let mission of formattedData.Active">
-                                        <mat-expansion-panel-header>
-                                            <mat-panel-title>
-                                                {{ mission.LocalisedName || mission.Name }}
-                                            </mat-panel-title>
-                                            <mat-panel-description>
-                                                {{ mission.Faction }}
-                                                <span *ngIf="mission.Wing" class="wing-mission" matTooltip="Wing Mission">
-                                                    <mat-icon>group</mat-icon>
-                                                </span>
-                                            </mat-panel-description>
-                                        </mat-expansion-panel-header>
                                         
-                                        <div class="mission-details">
-                                            <div class="mission-info-row" *ngIf="mission.DestinationSystem">
-                                                <span class="detail-label">Destination:</span>
-                                                <span class="detail-value">{{ mission.DestinationSystem }}</span>
-                                            </div>
-                                            
-                                            <div class="mission-info-row" *ngIf="mission.DestinationStation">
-                                                <span class="detail-label">Station:</span>
-                                                <span class="detail-value">{{ mission.DestinationStation }}</span>
-                                            </div>
-                                            
-                                            <div class="mission-info-row" *ngIf="mission.DestinationSettlement">
-                                                <span class="detail-label">Settlement:</span>
-                                                <span class="detail-value">{{ mission.DestinationSettlement }}</span>
-                                            </div>
-                                            
-                                            <div class="mission-info-row" *ngIf="mission.Reward">
-                                                <span class="detail-label">Reward:</span>
-                                                <span class="detail-value">{{ mission.Reward.toLocaleString() }} Cr</span>
-                                            </div>
-                                            
-                                            <div class="mission-info-row" *ngIf="mission.Commodity">
-                                                <span class="detail-label">Cargo:</span>
-                                                <span class="detail-value">{{ mission.Count }}× {{ mission.Commodity }}</span>
-                                            </div>
-                                            
-                                            <div class="mission-info-row" *ngIf="mission.PassengerCount">
-                                                <span class="detail-label">Passengers:</span>
-                                                <span class="detail-value">
-                                                    {{ mission.PassengerCount }}× {{ mission.PassengerType || 'Passengers' }}
-                                                    <span *ngIf="mission.PassengerVIPs" class="vip-badge">VIP</span>
-                                                    <span *ngIf="mission.PassengerWanted" class="wanted-badge">Wanted</span>
-                                                </span>
-                                            </div>
-                                            
-                                            <div class="mission-info-row">
-                                                <span class="detail-label">Influence:</span>
-                                                <span class="detail-value">{{ mission.Influence }}</span>
-                                            </div>
-                                            
-                                            <div class="mission-info-row">
-                                                <span class="detail-label">Reputation:</span>
-                                                <span class="detail-value">{{ mission.Reputation }}</span>
-                                            </div>
-                                            
-                                            <div class="mission-info-row">
-                                                <span class="detail-label">Expires:</span>
-                                                <span class="detail-value">{{ formatExpiryTime(mission.Expiry) }}</span>
+                                        <div class="defense-stat-item cargo-box" (click)="toggleCargoDetails()">
+                                            <div class="stat-label">CARGO <mat-icon class="tiny-icon">{{ showCargoDetails ? 'expand_less' : 'expand_more' }}</mat-icon></div>
+                                            <div class="stat-value-with-bar">
+                                                <div class="stat-value">{{ getCargoAmount() }}/{{ getCargoCapacity() }}</div>
+                                                <mat-progress-bar class="stat-bar" mode="determinate" [value]="getCargoPercentage()"></mat-progress-bar>
                                             </div>
                                         </div>
-                                    </mat-expansion-panel>
-                                </mat-accordion>
-                            </div>
-                            
-                            <div *ngIf="!formattedData.Active || formattedData.Active.length === 0" class="empty-message">
-                                No active missions
-                            </div>
-                        </div>
-
-                        <!-- Friends Info -->
-                        <div *ngIf="selectedProjection === 'Friends'">
-                            <h3>Friends Status</h3>
-                            
-                            <div *ngIf="formattedData.Online && formattedData.Online.length > 0">
-                                <p>{{ formattedData.Online.length }} commander{{ formattedData.Online.length > 1 ? 's' : '' }} online</p>
+                                        
+                                        <div class="defense-stat-item">
+                                            <div class="stat-label">REBUY</div>
+                                            <div class="stat-value-large cr">{{ getShipRebuy() | number }}</div>
+                                        </div>
+                                    </div>
+                                </div>
                                 
-                                <mat-list>
-                                    <mat-list-item *ngFor="let friend of formattedData.Online" class="friend-item">
-                                        <mat-icon>person</mat-icon>
-                                        <span class="friend-name">CMDR {{ friend }}</span>
-                                    </mat-list-item>
-                                </mat-list>
+                                <!-- RIGHT COLUMN - Weapons/Hardpoints -->
+                                <div class="sheet-column weapons-column">
+                                    <h3 class="stat-header">ARMAMENTS</h3>
+                                    <div class="hardpoints-list">
+                                        <ng-container *ngFor="let module of getWeaponModules()">
+                                            <div class="hardpoint-item">
+                                                <div class="hardpoint-details weapon-display">
+                                                    <span class="hardpoint-name">{{ formatModuleName(module.Item) }}</span>
+                                                </div>
+                                                <div class="hardpoint-engineering" *ngIf="module.Engineering">
+                                                    <mat-icon class="engineering-icon" [matTooltip]="getEngineeringTooltip(module)">build</mat-icon>
+                                                </div>
+                                            </div>
+                                        </ng-container>
+                                        <div *ngIf="!getWeaponModules().length" class="empty-state">No weapons equipped</div>
+                                    </div>
+                                    
+                                    <h3 class="stat-header">UTILITY</h3>
+                                    <div class="utility-list">
+                                        <ng-container *ngFor="let module of getUtilityModules()">
+                                            <div class="utility-item">
+                                                <div class="utility-details">
+                                                    <span class="utility-name">{{ formatModuleName(module.Item) }}</span>
+                                                </div>
+                                                <div class="utility-engineering" *ngIf="module.Engineering">
+                                                    <mat-icon class="engineering-icon" [matTooltip]="getEngineeringTooltip(module)">build</mat-icon>
+                                                </div>
+                                            </div>
+                                        </ng-container>
+                                        <div *ngIf="!getUtilityModules().length" class="empty-state">No utility modules equipped</div>
+                                    </div>
+                                </div>
                             </div>
                             
-                            <div *ngIf="!formattedData.Online || formattedData.Online.length === 0" class="empty-message">
-                                No friends currently online
+                            <!-- SHIP CARGO DISPLAY -->
+                            <div *ngIf="showCargoDetails" class="cargo-details">
+                                <h3 class="section-header">CARGO MANIFEST</h3>
+                                <div class="cargo-list">
+                                    <div *ngFor="let item of getCargoItems()" class="cargo-item">
+                                        <span class="cargo-item-name">{{ item.Name_Localised || item.Name }}</span>
+                                        <span class="cargo-item-count">x{{ item.Count }}</span>
+                                    </div>
+                                    <div *ngIf="!hasCargoItems()" class="empty-state">Cargo hold empty</div>
+                                </div>
+                            </div>
+                            
+                            <!-- BOTTOM SECTION - Core & Optional Modules -->
+                            <div class="character-sheet-footer">
+                                <div class="modules-section">
+                                    <h3 class="section-header">CORE INTERNALS</h3>
+                                    <div class="module-list core-modules">
+                                        <ng-container *ngFor="let module of getCoreModules()">
+                                            <div class="module-item">
+                                                <div class="module-slot">{{ formatSlotName(module.Slot) }}</div>
+                                                <div class="module-details">
+                                                    <span class="module-name">{{ formatModuleName(module.Item) }}</span>
+                                                    <span class="module-class" *ngIf="getModuleClassAndRating(module.Item).length > 0">
+                                                        {{ getModuleClassAndRating(module.Item) }}
+                                                    </span>
+                                                </div>
+                                                <div class="module-engineering" *ngIf="module.Engineering">
+                                                    <mat-icon class="engineering-icon" [matTooltip]="getEngineeringTooltip(module)">build</mat-icon>
+                                                </div>
+                                            </div>
+                                        </ng-container>
+                                    </div>
+                                </div>
+                                
+                                <div class="modules-section">
+                                    <h3 class="section-header">OPTIONAL INTERNALS</h3>
+                                    <div class="module-list optional-modules">
+                                        <ng-container *ngFor="let module of getOptionalModules()">
+                                            <div class="module-item">
+                                                <div class="module-slot">{{ formatSlotName(module.Slot) }}</div>
+                                                <div class="module-details">
+                                                    <span class="module-name">{{ formatModuleName(module.Item) }}</span>
+                                                    <span class="module-class" *ngIf="getModuleClassAndRating(module.Item).length > 0">
+                                                        {{ getModuleClassAndRating(module.Item) }}
+                                                    </span>
+                                                </div>
+                                                <div class="module-engineering" *ngIf="module.Engineering">
+                                                    <mat-icon class="engineering-icon" [matTooltip]="getEngineeringTooltip(module)">build</mat-icon>
+                                                </div>
+                                            </div>
+                                        </ng-container>
+                                    </div>
+                                    
+                                    <div *ngIf="getShipModules().length > getVisibleModulesCount() && !showAllModules" 
+                                         class="show-more" (click)="toggleAllModules()">
+                                        Show All Modules ({{ getShipModules().length }})
+                                    </div>
+                                    
+                                    <div *ngIf="showAllModules" class="show-less" (click)="toggleAllModules()">
+                                        Show Less
+                                    </div>
+                                </div>
                             </div>
                         </div>
-
-                        <!-- ExobiologyScan -->
-                        <div *ngIf="selectedProjection === 'ExobiologyScan'">
-                            <h3>Exobiology Scanning</h3>
-                            
-                            <div *ngIf="formattedData.scans && formattedData.scans.length > 0">
+                        
+                        <!-- ExobiologyScan (if active) -->
+                        <mat-card *ngIf="hasActiveBioScan()">
+                            <mat-card-header>
+                                <mat-card-title>Exobiology Scan</mat-card-title>
+                            </mat-card-header>
+                            <mat-card-content>
                                 <div class="scan-progress">
                                     <div class="scan-header">
                                         <h4>Scan Progress</h4>
                                         <div class="scan-status-indicator" 
-                                             [class.scan-too-close]="!formattedData.within_scan_radius"
-                                             [class.scan-good-distance]="formattedData.within_scan_radius">
-                                            {{ formattedData.within_scan_radius ? 'Good sampling distance' : 'Too close to previous sample' }}
+                                            [class.scan-too-close]="!isWithinScanRadius()"
+                                            [class.scan-good-distance]="isWithinScanRadius()">
+                                            {{ isWithinScanRadius() ? 'Good sampling distance' : 'Too close to previous sample' }}
                                         </div>
                                     </div>
                                     
-                                    <div class="scan-details">
-                                        <div class="scan-count">
-                                            <span class="detail-label">Samples:</span>
-                                            <span class="detail-value">{{ formattedData.scans.length }}/3</span>
-                                        </div>
-                                        
-                                        <div *ngIf="formattedData.scan_radius">
-                                            <span class="detail-label">Sample radius:</span>
-                                            <span class="detail-value">{{ formattedData.scan_radius }}m</span>
-                                        </div>
-                                        
-                                        <div *ngIf="formattedData.lat !== undefined && formattedData.long !== undefined">
-                                            <span class="detail-label">Current position:</span>
-                                            <span class="detail-value">{{ formatCoordinate(formattedData.lat) }}° / {{ formatCoordinate(formattedData.long) }}°</span>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="sample-list">
-                                        <h4>Sample Locations</h4>
-                                        <mat-list>
-                                            <mat-list-item *ngFor="let sample of formattedData.scans; let i = index" class="sample-item">
-                                                <div class="sample-location">
-                                                    <span class="sample-index">Sample {{ i+1 }}:</span>
-                                                    <span class="sample-coordinates">{{ formatCoordinate(sample.lat) }}° / {{ formatCoordinate(sample.long) }}°</span>
-                                                </div>
-                                            </mat-list-item>
-                                        </mat-list>
+                                    <div class="scan-summary">
+                                        <span class="detail-label">Samples:</span>
+                                        <span class="detail-value">{{ getBioScanCount() }}/3</span>
                                     </div>
                                 </div>
-                            </div>
-                            
-                            <div *ngIf="!formattedData.scans || formattedData.scans.length === 0" class="empty-message">
-                                No active exobiology scan in progress
+                            </mat-card-content>
+                        </mat-card>
+                        
+                        <!-- Expandable panels -->
+                        <div *ngIf="showFriendsPanel" class="expandable-panel friends-panel">
+                            <h3>Friends Online</h3>
+                            <mat-list>
+                                <mat-list-item *ngFor="let friend of getOnlineFriends()" class="friend-item">
+                                    <mat-icon>person</mat-icon>
+                                    <span class="friend-name">CMDR {{ friend }}</span>
+                                </mat-list-item>
+                            </mat-list>
+                            <div *ngIf="!getOnlineFriends().length" class="empty-message">
+                                No friends currently online
                             </div>
                         </div>
-
-                        <!-- ColonisationConstruction -->
-                        <div *ngIf="selectedProjection === 'ColonisationConstruction'">
+                        
+                        <div *ngIf="showColonisationPanel" class="expandable-panel colonisation-panel">
                             <h3>Colony Construction</h3>
+                            <div class="colony-header">
+                                <h4>{{ getColonisationSystem() }}</h4>
+                                <div class="colony-status" [ngClass]="getColonisationStatusClass()">
+                                    {{ getColonisationStatusText() }}
+                                </div>
+                            </div>
                             
-                            <div *ngIf="isColonisationActive(formattedData)">
-                                <div class="colony-header">
-                                    <h4>{{ formattedData.StarSystem || 'Unknown system' }}</h4>
-                                    <div class="colony-status" 
-                                         [ngClass]="getColonisationStatusClass(formattedData)">
-                                        {{ getColonisationStatusText(formattedData) }}
+                            <div class="progress-container">
+                                <h4>Construction Progress</h4>
+                                <div class="stat-bar">
+                                    <mat-progress-bar 
+                                        mode="determinate" 
+                                        [value]="getColonisationProgressValue()"
+                                    ></mat-progress-bar>
+                                    <span>{{ formatPercentage(getColonisationProgress()) }}</span>
+                                </div>
+                            </div>
+                            
+                            <div *ngIf="getColonisationResources().length > 0" class="resources-needed">
+                                <h4>Resources Needed</h4>
+                                <mat-list>
+                                    <mat-list-item *ngFor="let resource of getColonisationResources()" class="resource-item">
+                                        <div class="resource-details">
+                                            <span class="resource-name">{{ resource.Name_Localised || resource.Name }}</span>
+                                            <div class="resource-progress">
+                                                <mat-progress-bar 
+                                                    mode="determinate" 
+                                                    [value]="(resource.ProvidedAmount / resource.RequiredAmount) * 100"
+                                                ></mat-progress-bar>
+                                                <span class="resource-count">
+                                                    {{ resource.ProvidedAmount }}/{{ resource.RequiredAmount }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </mat-list-item>
+                                </mat-list>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Commander Tab Content -->
+                    <div *ngIf="selectedTab === COMMANDER_TAB" class="tab-pane">
+                        <h2>Commander Profile</h2>
+                        <div class="commander-info">
+                            <mat-card>
+                                <mat-card-header>
+                                    <mat-card-title>CMDR {{ getCommanderName() }}</mat-card-title>
+                                </mat-card-header>
+                                <mat-card-content>
+                                    <!-- Commander basic info -->
+                                    <div class="commander-basic">
+                                        <div *ngIf="getBalance()">
+                                            <span class="detail-label">Credits:</span>
+                                            <span class="detail-value">{{ formatNumber(getBalance()) }}</span>
+                                        </div>
                                     </div>
+                                </mat-card-content>
+                            </mat-card>
+                            
+                            <mat-card>
+                                <mat-card-header>
+                                    <mat-card-title>Ranks & Reputation</mat-card-title>
+                                </mat-card-header>
+                                <mat-card-content>
+                                    <div class="ranks-container">
+                                        <!-- Combat rank -->
+                                        <div class="rank-item">
+                                            <span class="rank-name">Combat</span>
+                                            <div class="rank-value">{{ getRank('Combat') }}</div>
+                                            <mat-progress-bar 
+                                                mode="determinate" 
+                                                [value]="getRankProgress('Combat')"
+                                            ></mat-progress-bar>
+                                        </div>
+                                        <!-- Trade rank -->
+                                        <div class="rank-item">
+                                            <span class="rank-name">Trade</span>
+                                            <div class="rank-value">{{ getRank('Trade') }}</div>
+                                            <mat-progress-bar 
+                                                mode="determinate" 
+                                                [value]="getRankProgress('Trade')"
+                                            ></mat-progress-bar>
+                                        </div>
+                                        <!-- Explore rank -->
+                                        <div class="rank-item">
+                                            <span class="rank-name">Explore</span>
+                                            <div class="rank-value">{{ getRank('Explore') }}</div>
+                                            <mat-progress-bar 
+                                                mode="determinate" 
+                                                [value]="getRankProgress('Explore')"
+                                            ></mat-progress-bar>
+                                        </div>
+                                        <!-- CQC rank -->
+                                        <div class="rank-item">
+                                            <span class="rank-name">CQC</span>
+                                            <div class="rank-value">{{ getRank('CQC') }}</div>
+                                            <mat-progress-bar 
+                                                mode="determinate" 
+                                                [value]="getRankProgress('CQC')"
+                                            ></mat-progress-bar>
+                                        </div>
+                                        <!-- Federation rank -->
+                                        <div class="rank-item">
+                                            <span class="rank-name">Federation</span>
+                                            <div class="rank-value">{{ getRank('Federation') }}</div>
+                                            <mat-progress-bar 
+                                                mode="determinate" 
+                                                [value]="getRankProgress('Federation')"
+                                            ></mat-progress-bar>
+                                        </div>
+                                        <!-- Empire rank -->
+                                        <div class="rank-item">
+                                            <span class="rank-name">Empire</span>
+                                            <div class="rank-value">{{ getRank('Empire') }}</div>
+                                            <mat-progress-bar 
+                                                mode="determinate" 
+                                                [value]="getRankProgress('Empire')"
+                                            ></mat-progress-bar>
+                                        </div>
+                                    </div>
+                                </mat-card-content>
+                            </mat-card>
+                            
+                            <!-- More commander cards can be added for Statistics, Squadron, etc. -->
+                        </div>
+                    </div>
+                    
+                    <!-- Station Tab Content -->
+                    <div *ngIf="selectedTab === STATION_TAB" class="tab-pane">
+                        <h2>Station Services</h2>
+                        <mat-card>
+                            <mat-card-header>
+                                <mat-card-title>{{ getStationName() }}</mat-card-title>
+                            </mat-card-header>
+                            <mat-card-content>
+                                <!-- Station content will go here -->
+                                <div class="station-services">
+                                    <button mat-button (click)="showStationService('market')">
+                                        <mat-icon>shopping_cart</mat-icon>
+                                        Market
+                                    </button>
+                                    <button mat-button (click)="showStationService('outfitting')">
+                                        <mat-icon>build</mat-icon>
+                                        Outfitting
+                                    </button>
+                                    <button mat-button (click)="showStationService('shipyard')">
+                                        <mat-icon>directions_boat</mat-icon>
+                                        Shipyard
+                                    </button>
                                 </div>
                                 
-                                <div class="progress-container">
-                                    <h4>Construction Progress</h4>
-                                    <div class="stat-bar">
-                                        <mat-progress-bar 
-                                            mode="determinate" 
-                                            [value]="(formattedData.ConstructionProgress || 0) * 100"
-                                        ></mat-progress-bar>
-                                        <span>{{ formatPercentage(formattedData.ConstructionProgress) }}</span>
-                                    </div>
+                                <!-- Selected service display -->
+                                <div *ngIf="selectedStationService" class="station-service-display">
+                                    <!-- Service content based on selection -->
                                 </div>
-                                
-                                <div *ngIf="formattedData.ResourcesRequired && formattedData.ResourcesRequired.length > 0" class="resources-needed">
-                                    <h4>Resources Needed</h4>
-                                    <mat-list>
-                                        <mat-list-item *ngFor="let resource of formattedData.ResourcesRequired" class="resource-item">
-                                            <div class="resource-details">
-                                                <span class="resource-name">{{ resource.Name_Localised || resource.Name }}</span>
-                                                <div class="resource-progress">
-                                                    <mat-progress-bar 
-                                                        mode="determinate" 
-                                                        [value]="(resource.ProvidedAmount / resource.RequiredAmount) * 100"
-                                                    ></mat-progress-bar>
-                                                    <span class="resource-count">
-                                                        {{ resource.ProvidedAmount }}/{{ resource.RequiredAmount }}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </mat-list-item>
-                                    </mat-list>
+                            </mat-card-content>
+                        </mat-card>
+                    </div>
+                    
+                    <!-- Storage Tab Content -->
+                    <div *ngIf="selectedTab === STORAGE_TAB" class="tab-pane">
+                        <h2>Storage & Materials</h2>
+                        <mat-card>
+                            <mat-card-header>
+                                <mat-card-title>Materials</mat-card-title>
+                            </mat-card-header>
+                            <mat-card-content>
+                                <!-- Materials content -->
+                                <div class="materials-container">
+                                    <mat-tab-group>
+                                        <mat-tab label="Raw">
+                                            <!-- Raw materials display -->
+                                        </mat-tab>
+                                        <mat-tab label="Manufactured">
+                                            <!-- Manufactured materials display -->
+                                        </mat-tab>
+                                        <mat-tab label="Encoded">
+                                            <!-- Encoded materials display -->
+                                        </mat-tab>
+                                    </mat-tab-group>
                                 </div>
-                            </div>
-                            
-                            <div *ngIf="!isColonisationActive(formattedData)" class="empty-message">
-                                No active colonisation construction
-                            </div>
-                        </div>
-
-                        <!-- SystemInfo -->
-                        <div *ngIf="selectedProjection === 'SystemInfo'">
-                            <h3>Star System Information</h3>
-                            
-                            <div *ngIf="!isEmptyObject(formattedData)">
-                                <mat-accordion>
-                                    <ng-container *ngFor="let system of getSystemEntries(formattedData)">
-                                        <mat-expansion-panel>
-                                            <mat-expansion-panel-header>
-                                                <mat-panel-title>
-                                                    {{ system.name }}
-                                                </mat-panel-title>
-                                                <mat-panel-description *ngIf="system.data.SystemAddress">
-                                                    ID: {{ system.data.SystemAddress }}
-                                                </mat-panel-description>
-                                            </mat-expansion-panel-header>
-                                            
-                                            <div class="system-info">
-                                                <div *ngIf="system.data.SystemInfo" class="system-details">
-                                                    <div *ngIf="system.data.SystemInfo.primaryStar" class="star-info">
-                                                        <h4>Primary Star</h4>
-                                                        <div class="detail-row">
-                                                            <span class="detail-label">Type:</span>
-                                                            <span class="detail-value">{{ system.data.SystemInfo.primaryStar.type || 'Unknown' }}</span>
-                                                        </div>
-                                                        <div class="detail-row">
-                                                            <span class="detail-label">Class:</span>
-                                                            <span class="detail-value star-class">{{ system.data.StarClass || system.data.SystemInfo.primaryStar.subType || 'Unknown' }}</span>
-                                                        </div>
-                                                        <div class="detail-row" *ngIf="system.data.SystemInfo.primaryStar.isScoopable">
-                                                            <span class="detail-label">Scoopable:</span>
-                                                            <span class="detail-value scoopable-star">Yes</span>
-                                                        </div>
-                                                    </div>
-                                                    
-                                                    <div *ngIf="system.data.SystemInfo.information" class="system-details-grid">
-                                                        <div *ngIf="system.data.SystemInfo.information.population">
-                                                            <span class="detail-label">Population:</span>
-                                                            <span class="detail-value">{{ formatNumber(system.data.SystemInfo.information.population) }}</span>
-                                                        </div>
-                                                        
-                                                        <div *ngIf="system.data.SystemInfo.information.economy">
-                                                            <span class="detail-label">Economy:</span>
-                                                            <span class="detail-value">{{ system.data.SystemInfo.information.economy }}</span>
-                                                        </div>
-                                                        
-                                                        <div *ngIf="system.data.SystemInfo.information.government">
-                                                            <span class="detail-label">Government:</span>
-                                                            <span class="detail-value">{{ system.data.SystemInfo.information.government }}</span>
-                                                        </div>
-                                                        
-                                                        <div *ngIf="system.data.SystemInfo.information.allegiance">
-                                                            <span class="detail-label">Allegiance:</span>
-                                                            <span class="detail-value">{{ system.data.SystemInfo.information.allegiance }}</span>
-                                                        </div>
-                                                        
-                                                        <div *ngIf="system.data.SystemInfo.information.security">
-                                                            <span class="detail-label">Security:</span>
-                                                            <span class="detail-value">{{ system.data.SystemInfo.information.security }}</span>
-                                                        </div>
-                                                        
-                                                        <div *ngIf="system.data.SystemInfo.information.faction">
-                                                            <span class="detail-label">Controlling Faction:</span>
-                                                            <span class="detail-value">{{ system.data.SystemInfo.information.faction }}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                
-                                                <div *ngIf="system.data.Stations && system.data.Stations.length > 0" class="station-list">
-                                                    <h4>Stations ({{ system.data.Stations.length }})</h4>
-                                                    <mat-list>
-                                                        <mat-list-item *ngFor="let station of system.data.Stations" class="station-item">
-                                                            <div class="station-details">
-                                                                <span class="station-name">{{ station.name }}</span>
-                                                                <span class="station-type">{{ station.type }} - {{ formatDistance(station.orbit) }}</span>
-                                                                <div class="station-info">
-                                                                    <span class="station-economy">{{ station.economy }}</span>
-                                                                    <span *ngIf="station.secondEconomy && station.secondEconomy !== 'None'" class="station-economy-secondary">/ {{ station.secondEconomy }}</span>
-                                                                    <span class="station-faction">{{ station.controllingFaction }}</span>
-                                                                </div>
-                                                                <div class="station-services" *ngIf="station.services && station.services.length > 0">
-                                                                    <mat-chip-set>
-                                                                        <mat-chip *ngFor="let service of station.services" color="accent" selected="true">
-                                                                            {{ formatServiceName(service) }}
-                                                                        </mat-chip>
-                                                                    </mat-chip-set>
-                                                                </div>
-                                                            </div>
-                                                        </mat-list-item>
-                                                    </mat-list>
-                                                </div>
-                                            </div>
-                                        </mat-expansion-panel>
-                                    </ng-container>
-                                </mat-accordion>
-                            </div>
-                            
-                            <div *ngIf="isEmptyObject(formattedData)" class="empty-message">
-                                No system information available
-                            </div>
-                        </div>
-
-                        <!-- EventCounter -->
-                        <div *ngIf="selectedProjection === 'EventCounter'" class="content-section event-counter">
-                          <h3>Event Counter</h3>
-                          <div class="event-counter-grid">
-                            <ng-container *ngIf="formattedData && formattedData.data; else noEvents">
-                              <div *ngFor="let event of getEventEntries()" class="event-card">
-                                <div class="event-name">{{ event.event }}</div>
-                                <div class="event-count">{{ event.count }}</div>
-                              </div>
-                            </ng-container>
-                            <ng-template #noEvents>
-                              <div class="no-data">No event data available</div>
-                            </ng-template>
-                          </div>
-                        </div>
-
-                        <!-- Default display for other projections -->
-                        <div *ngIf="!isCustomFormatted(selectedProjection)">
-                            <pre>{{ formattedData | json }}</pre>
-                        </div>
-                    </mat-card-content>
-                </mat-card>
+                            </mat-card-content>
+                        </mat-card>
+                        
+                        <mat-card>
+                            <mat-card-header>
+                                <mat-card-title>Stored Ships</mat-card-title>
+                            </mat-card-header>
+                            <mat-card-content>
+                                <!-- Stored ships content -->
+                            </mat-card-content>
+                        </mat-card>
+                        
+                        <mat-card>
+                            <mat-card-header>
+                                <mat-card-title>Ship Locker</mat-card-title>
+                            </mat-card-header>
+                            <mat-card-content>
+                                <!-- Ship locker content -->
+                            </mat-card-content>
+                        </mat-card>
+                    </div>
+                </div>
             </div>
-
-            <div class="no-data" *ngIf="!projections || !selectedProjection">
+            
+            <div class="no-data" *ngIf="!isProjectionsLoaded">
                 Waiting for status data...
             </div>
         </div>
@@ -777,47 +722,199 @@ import { Subscription } from "rxjs";
         .status-container {
             height: 100%;
             overflow-y: auto;
-            padding: 10px;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .tab-layout {
+            display: flex;
+            height: 100%;
+        }
+        
+        .tab-sidebar {
+            width: 80px;
+            background-color: #1e1e1e;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 10px;
+        }
+        
+        .tab-button {
+            width: 70px;
+            height: 70px;
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin-bottom: 5px;
+            border-radius: 5px;
+        }
+        
+        .tab-button mat-icon {
+            font-size: 24px;
+            height: 24px;
+            width: 24px;
+        }
+        
+        .tab-button span {
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        
+        .tab-button.active {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .tab-content {
+            flex-grow: 1;
+            padding: 15px;
+            overflow-y: auto;
+            position: relative;
+        }
+        
+        .tab-pane {
+            height: 100%;
+        }
+        
+        .status-indicators-fixed {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+        
+        .active-status-icons {
             display: flex;
             flex-direction: column;
             gap: 10px;
         }
         
-        .projection-selector {
-            padding: 10px;
-        }
-        
-        mat-form-field {
-            width: 100%;
-        }
-        
-        .status-card {
-            margin-bottom: 10px;
-        }
-        
-        .no-data {
+        .status-icon, .friends-counter, .colonisation-indicator {
+            width: 36px;
+            height: 36px;
             display: flex;
             align-items: center;
             justify-content: center;
-            height: 100%;
-            color: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            margin-bottom: 8px;
         }
         
-        pre {
-            white-space: pre-wrap;
-            word-break: break-word;
-            font-family: monospace;
+        .status-icon {
+            color: #4caf50;
+            background-color: rgba(76, 175, 80, 0.2);
         }
         
-        .ship-header, .cargo-header, .suit-header {
-            margin-bottom: 20px;
+        .friends-counter, .colonisation-indicator {
+            position: relative;
+            background-color: rgba(33, 150, 243, 0.2);
+            color: #2196F3;
+            cursor: pointer;
         }
         
-        .ship-header h3, .cargo-header h3, .suit-header h3 {
+        .badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: #f44336;
+            color: white;
+            border-radius: 10px;
+            padding: 2px 5px;
+            font-size: 10px;
+            min-width: 15px;
+            text-align: center;
+        }
+        
+        .progress-text {
+            position: absolute;
+            bottom: -12px;
+            font-size: 9px;
+            white-space: nowrap;
+        }
+        
+        .location-nav-container {
+            margin: 15px 0;
+            display: flex;
+            justify-content: space-between;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            padding: 15px;
+        }
+        
+        .location-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .location-details {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .system-name {
+            font-size: 18px;
+            font-weight: 500;
+            color: #d0a85c;
+        }
+        
+        .location-detail {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .small-icon {
+            font-size: 16px;
+            width: 16px;
+            height: 16px;
+            line-height: 16px;
+        }
+        
+        .nav-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .nav-info:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .expander {
+            font-size: 18px;
+            opacity: 0.7;
+        }
+        
+        .context-content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .ship-header, .suit-header {
+            margin-bottom: 10px;
+        }
+        
+        .ship-header h3, .suit-header h3 {
             margin-bottom: 0;
         }
         
-        .ship-id, .suit-loadout {
+        .ship-type, .suit-loadout {
             color: rgba(255, 255, 255, 0.7);
             margin-top: 0;
         }
@@ -827,7 +924,7 @@ import { Subscription } from "rxjs";
         }
         
         .stat-group {
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
         
         .stat-group h4 {
@@ -845,206 +942,58 @@ import { Subscription } from "rxjs";
             flex-grow: 1;
         }
         
-        .ship-details, .location-details {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 10px;
-            margin-top: 20px;
-        }
-        
-        .detail-label {
-            font-weight: 500;
-            margin-right: 5px;
-            color: rgba(255, 255, 255, 0.7);
-        }
-        
-        .detail-value {
-            color: white;
-        }
-        
-        .status-flags {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        .weapons-summary {
+            display: flex;
+            flex-wrap: wrap;
             gap: 10px;
         }
         
-        .status-flag {
+        .weapon-item {
             display: flex;
             align-items: center;
             gap: 5px;
-            color: rgba(255, 255, 255, 0.5);
+            padding: 5px 10px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
         }
         
-        .status-flag.active {
-            color: #4caf50;
-            font-weight: 500;
+        .backpack-summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
         }
         
-        .route-item, .cargo-item, .backpack-item {
+        .backpack-category {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 5px;
         }
         
-        .route-index {
-            min-width: 25px;
-            color: rgba(255, 255, 255, 0.7);
-        }
-        
-        .route-system, .cargo-name, .item-name {
-            flex-grow: 1;
-        }
-        
-        .cargo-count, .item-count {
-            min-width: 40px;
-            font-weight: 500;
-            color: rgba(255, 255, 255, 0.8);
-        }
-        
-        .route-scoopable {
-            color: #2196F3;
-        }
-        
-        .no-route, .empty-message {
-            color: rgba(255, 255, 255, 0.6);
-            text-align: center;
-            padding: 20px;
-        }
-        
-        mat-list-item {
-            height: auto !important;
-            margin-bottom: 8px;
-        }
-        
-        .nav-target {
-            margin-bottom: 20px;
-        }
-        
-        .mod-chips {
-            margin: 10px 0;
-        }
-        
-        .weapon-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .weapon-name {
+        .category-name {
             font-weight: 500;
         }
         
-        .weapon-slot {
-            color: rgba(255, 255, 255, 0.6);
-        }
-        
-        .weapon-class {
-            margin-left: auto;
-            color: rgba(255, 255, 255, 0.8);
-        }
-        
-        .weapon-mods {
-            margin-left: 40px;
-            margin-bottom: 10px;
-        }
-        
-        .suit-mods {
-            margin-bottom: 20px;
-        }
-        
-        .target-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        
-        .target-ship {
-            font-size: 18px;
-            font-weight: 500;
-            margin-right: 10px;
-        }
-        
-        .scan-status {
-            font-size: 12px;
-            padding: 3px 8px;
-            border-radius: 12px;
-        }
-        
-        .scan-pending {
-            background-color: rgba(255, 152, 0, 0.2);
-            color: #ff9800;
-        }
-        
-        .scan-complete {
-            background-color: rgba(76, 175, 80, 0.2);
-            color: #4caf50;
-        }
-        
-        .status-wanted {
-            color: #f44336;
-            font-weight: 500;
-        }
-        
-        .status-clean {
-            color: #4caf50;
-        }
-        
-        .wing-mission {
-            margin-left: 8px;
-            color: #2196F3;
-        }
-        
-        .mission-details {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        
-        .mission-info-row {
-            display: flex;
-            align-items: center;
-        }
-        
-        .vip-badge, .wanted-badge {
-            font-size: 10px;
-            padding: 2px 6px;
+        .category-count {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 2px 8px;
             border-radius: 10px;
-            margin-left: 6px;
-            font-weight: 500;
-        }
-        
-        .vip-badge {
-            background-color: rgba(33, 150, 243, 0.2);
-            color: #2196F3;
-        }
-        
-        .wanted-badge {
-            background-color: rgba(244, 67, 54, 0.2);
-            color: #f44336;
-        }
-        
-        .friend-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
         }
         
         .scan-progress {
-            margin-top: 15px;
+            margin-top: 10px;
         }
         
         .scan-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
         
         .scan-status-indicator {
             font-size: 12px;
             padding: 3px 8px;
             border-radius: 12px;
-            font-weight: 500;
         }
         
         .scan-too-close {
@@ -1057,40 +1006,75 @@ import { Subscription } from "rxjs";
             color: #4caf50;
         }
         
-        .scan-details {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        
-        .sample-location {
+        .scan-summary {
             display: flex;
-            align-items: center;
             gap: 10px;
         }
         
-        .sample-index {
+        .detail-label {
             font-weight: 500;
-            min-width: 80px;
+            color: rgba(255, 255, 255, 0.7);
         }
         
-        .sample-coordinates {
-            color: rgba(255, 255, 255, 0.8);
+        .expandable-panel {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 15px;
         }
         
         .colony-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         
         .colony-status {
             font-size: 12px;
             padding: 3px 8px;
             border-radius: 12px;
+        }
+        
+        .commander-info {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .commander-basic {
+            margin-bottom: 10px;
+        }
+        
+        .ranks-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        
+        .rank-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .rank-name {
             font-weight: 500;
+        }
+        
+        .rank-value {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+        
+        .station-services {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .materials-container {
+            width: 100%;
         }
         
         .status-complete {
@@ -1106,10 +1090,6 @@ import { Subscription } from "rxjs";
         .status-in-progress {
             background-color: rgba(33, 150, 243, 0.2);
             color: #2196F3;
-        }
-        
-        .progress-container {
-            margin-bottom: 20px;
         }
         
         .resource-details {
@@ -1136,85 +1116,734 @@ import { Subscription } from "rxjs";
             white-space: nowrap;
         }
         
-        .system-info {
-            margin-top: 10px;
+        .empty-message {
+            color: rgba(255, 255, 255, 0.6);
+            text-align: center;
+            padding: 20px;
         }
         
-        .system-details {
+        .no-data {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        /* Character Sheet Styles (D&D 5E Inspired) */
+        .character-sheet {
+            background-color: rgba(245, 240, 230, 0.05);
+            border-radius: 8px;
+            padding: 20px;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        .character-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .character-name h2 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+            color: #d0a85c;
+        }
+        
+        .character-subtitle {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 5px;
+        }
+        
+        .character-class {
             display: flex;
             flex-direction: column;
+            align-items: center;
+        }
+        
+        .class-circle {
+            width: 50px;
+            height: 50px;
+            border: 2px solid #d0a85c;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(208, 168, 92, 0.1);
+        }
+        
+        .circle-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #d0a85c;
+        }
+        
+        .class-label {
+            margin-top: 5px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            letter-spacing: 1px;
+        }
+        
+        .character-stats {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .stat-column {
+            flex: 1;
+            min-width: 120px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .stat-box {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            border: 1px solid rgba(208, 168, 92, 0.3);
+            position: relative;
+        }
+        
+        .cargo-box, .nav-box {
+            cursor: pointer;
+        }
+        
+        .cargo-box:hover, .nav-box:hover {
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+        
+        .stat-value {
+            font-size: 22px;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #d0a85c;
+            margin-top: 5px;
+            letter-spacing: 1px;
+        }
+        
+        .stat-bar {
+            margin-top: 8px;
+        }
+        
+        .section-header {
+            font-size: 16px;
+            font-weight: 600;
+            color: #d0a85c;
+            margin: 25px 0 15px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(208, 168, 92, 0.3);
+            letter-spacing: 1px;
+        }
+        
+        /* Ship Modules styles */
+        .modules-block {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .module-list {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .module-item {
+            display: flex;
+            padding: 8px;
+            border-radius: 4px;
+            background-color: rgba(255, 255, 255, 0.05);
+            align-items: center;
+        }
+        
+        .module-slot {
+            flex: 0 0 80px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+        }
+        
+        .module-details {
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .module-name {
+            font-size: 14px;
+        }
+        
+        .module-class {
+            font-size: 14px;
+            color: #d0a85c;
+            font-weight: 500;
+        }
+        
+        .module-engineering {
+            margin-left: 10px;
+            color: #5cadff;
+        }
+        
+        .engineering-icon {
+            font-size: 18px;
+            height: 18px;
+            width: 18px;
+        }
+        
+        .show-more, .show-less {
+            text-align: center;
+            padding: 8px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            margin-top: 5px;
+            cursor: pointer;
+            color: #d0a85c;
+        }
+        
+        .show-more:hover, .show-less:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Navigation styles */
+        .nav-box {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            border: 1px solid rgba(208, 168, 92, 0.3);
+        }
+        
+        .nav-summary {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .nav-summary .expander {
+            margin-left: auto;
+        }
+        
+        .nav-details {
+            margin-top: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            padding: 10px;
+        }
+        
+        .nav-route-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .nav-route-item {
+            display: grid;
+            grid-template-columns: 30px 1fr auto auto;
+            align-items: center;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            gap: 10px;
+        }
+        
+        .nav-index {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+        }
+        
+        .nav-system {
+            font-weight: 500;
+        }
+        
+        .nav-star-info {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .star-icon {
+            width: 20px;
+            height: 20px;
+            font-size: 20px;
+        }
+        
+        .small-text {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .jumps-remaining {
+            text-align: right;
+        }
+        
+        /* Cargo details */
+        .cargo-details {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        
+        .cargo-list {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .cargo-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 15px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+        
+        .cargo-item-count {
+            font-weight: 500;
+            color: #d0a85c;
+        }
+        
+        /* Weapons style for suit */
+        .weapons-block {
+            display: flex;
+            flex-wrap: wrap;
             gap: 15px;
             margin-bottom: 20px;
         }
         
-        .star-info {
+        .weapon-card {
+            flex: 1;
+            min-width: 250px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid rgba(208, 168, 92, 0.3);
+        }
+        
+        .weapon-header {
             display: flex;
-            flex-direction: column;
-            gap: 5px;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 10px;
         }
         
-        .detail-row {
+        .weapon-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .class-bubble {
+            width: 30px;
+            height: 30px;
+            background-color: rgba(208, 168, 92, 0.2);
+            color: #d0a85c;
+            border-radius: 50%;
             display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .weapon-type {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        
+        .weapon-mods {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        .weapon-mod-tag {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 4px 10px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        /* Suit mods */
+        .stat-block {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            width: 100%;
+            margin-bottom: 20px;
+            border: 1px solid rgba(208, 168, 92, 0.3);
+        }
+        
+        .stat-header {
+            font-size: 14px;
+            color: #d0a85c;
+            margin: 0 0 15px;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+        
+        .mod-list {
+            display: flex;
+            flex-wrap: wrap;
             gap: 10px;
         }
         
-        .system-details-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 10px;
+        .mod-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            padding: 8px 12px;
         }
         
-        .star-class {
-            font-weight: 500;
+        .mod-icon {
+            color: #d0a85c;
         }
         
-        .scoopable-star {
-            color: #2196F3;
+        .mod-name {
+            font-size: 14px;
         }
         
-        .station-details {
+        /* Backpack */
+        .backpack-block {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            border: 1px solid rgba(208, 168, 92, 0.3);
+        }
+        
+        .backpack-block:hover {
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+        
+        .backpack-summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .backpack-summary mat-icon {
+            margin-left: auto;
+        }
+        
+        .backpack-details {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .backpack-category-section {
+            margin-bottom: 15px;
+        }
+        
+        .backpack-category-section h4 {
+            color: #d0a85c;
+            margin: 0 0 10px;
+            font-size: 14px;
+        }
+        
+        .backpack-items {
             display: flex;
             flex-direction: column;
             gap: 5px;
         }
         
-        .station-name {
-            font-weight: 500;
-            font-size: 16px;
-        }
-        
-        .station-type {
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 12px;
-        }
-        
-        .station-info {
+        .backpack-item {
             display: flex;
-            gap: 5px;
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.8);
+            justify-content: space-between;
+            padding: 8px 12px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
         }
         
-        .station-economy {
+        .item-count {
+            color: #d0a85c;
             font-weight: 500;
         }
         
-        .station-faction {
-            margin-left: auto;
+        .empty-state {
+            color: rgba(255, 255, 255, 0.5);
+            text-align: center;
+            padding: 10px;
+            font-style: italic;
         }
         
-        .station-services {
+        .tiny-icon {
+            font-size: 16px;
+            height: 16px;
+            width: 16px;
+            vertical-align: middle;
+        }
+        
+        /* Character Sheet Layout Styles */
+        .character-sheet-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .sheet-column {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .attributes-column {
+            border-right: 1px solid rgba(208, 168, 92, 0.2);
+            padding-right: 15px;
+        }
+        
+        .weapons-column {
+            border-left: 1px solid rgba(208, 168, 92, 0.2);
+            padding-left: 15px;
+        }
+        
+        .character-sheet-footer {
+            border-top: 1px solid rgba(208, 168, 92, 0.3);
+            padding-top: 20px;
+            margin-top: 10px;
+        }
+        
+        /* Ship Stats Styles */
+        .ship-core-stats, .ship-defense-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .ship-stat-item, .defense-stat-item {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 10px;
+            border: 1px solid rgba(208, 168, 92, 0.3);
+        }
+        
+        .stat-value-large {
+            font-size: 28px;
+            font-weight: bold;
+            text-align: center;
+            margin: 5px 0;
+        }
+        
+        .stat-suffix {
+            text-align: center;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            letter-spacing: 1px;
+        }
+        
+        .cr:after {
+            content: " CR";
+            font-size: 14px;
+            opacity: 0.7;
+        }
+        
+        .stat-value-with-bar {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        /* Navigation Items */
+        .nav-route-summary {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 10px;
+            border: 1px solid rgba(208, 168, 92, 0.3);
+            cursor: pointer;
+        }
+        
+        .nav-route-summary:hover {
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Combat Stats for Suit */
+        .combat-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .combat-stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .combat-stat-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: 2px solid #d0a85c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(208, 168, 92, 0.1);
+            margin-bottom: 5px;
+        }
+        
+        .combat-stat-value {
+            font-size: 16px;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .combat-stat-label {
+            font-size: 12px;
+            color: #d0a85c;
+            letter-spacing: 1px;
+        }
+        
+        /* Modules Lists */
+        .modules-section {
+            margin-bottom: 25px;
+        }
+        
+        .hardpoints-list, .utility-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 12px;
+            width: 100%;
+        }
+        
+        .weapons-column {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+        
+        .hardpoint-item, .utility-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+            font-size: 14px;
+            width: 100%;
+        }
+        
+        .hardpoint-details, .utility-details {
+            flex: 1;
+        }
+        
+        .weapon-display {
+            display: flex;
+            flex-direction: column;
+            padding: 2px 0;
+        }
+        
+        .hardpoint-name {
+            font-weight: 500;
+            color: #d0a85c;
+        }
+        
+        .utility-name {
+            font-weight: 500;
+        }
+        
+        .engineering-icon {
+            color: #50a5e6;
+        }
+        
+        .show-more, .show-less {
+            text-align: center;
+            padding: 8px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
             margin-top: 5px;
+            cursor: pointer;
+            color: #d0a85c;
+        }
+        
+        .show-more:hover, .show-less:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Star Class Colors */
+        .star-o { color: #9db4ff; }      /* Blue */
+        .star-b { color: #aabfff; }      /* Blue-white */
+        .star-a { color: #cad7ff; }      /* White */
+        .star-f { color: #f8f7ff; }      /* Yellow-white */
+        .star-g { color: #fff4ea; }      /* Yellow (Sun-like) */
+        .star-k { color: #ffd2a1; }      /* Orange */
+        .star-m { color: #ffbd6f; }      /* Red */
+        .star-brown { color: #a66c3c; }  /* Brown dwarf */
+        .star-w { color: #70b7ff; }      /* Wolf-Rayet */
+        .star-carbon { color: #ff7c7c; } /* Carbon star */
+        .star-black-hole { color: #440a5c; } /* Black hole */
+        .star-exotic { color: #7f18ff; }   /* Exotic */
+        .star-default { color: #ffffff; }  /* Default white */
+        
+        /* New CSS classes */
+        .star-scoopable {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .fuel-icon {
+            font-size: 16px;
+            width: 16px;
+            height: 16px;
+        }
+        
+        .scoopable {
+            color: #4caf50;
+        }
+        
+        .not-scoopable {
+            color: #f44336;
         }
     `]
 })
 export class StatusViewComponent implements OnInit, OnDestroy {
-    projections: Record<string, any> | null = null;
-    projectionNames: string[] = [];
-    selectedProjection: string | null = null;
-    formattedData: any = null;
-    
+    selectedTab = 0;
+    projectionSubscription?: Subscription;
+    projections: any = {};
+    isProjectionsLoaded = false;
+
+    // Define tab indices for clarity
+    readonly INFORMATION_TAB = 0;
+    readonly COMMANDER_TAB = 1;
+    readonly STATION_TAB = 2;
+    readonly STORAGE_TAB = 3;
+
+    // Tab layout
+    showFriendsPanel: boolean = false;
+    showColonisationPanel: boolean = false;
+    selectedStationService: string | null = null;
+
     // Status flags for display
     statusFlags: string[] = [
         'Docked', 'Landed', 'LandingGearDown', 'ShieldsUp', 'Supercruise',
@@ -1229,54 +1858,92 @@ export class StatusViewComponent implements OnInit, OnDestroy {
         'AimDownSight', 'LowOxygen', 'LowHealth', 'Cold', 'Hot',
         'BreathableAtmosphere'
     ];
-    
-    private subscription: Subscription | null = null;
+
+    // Add missing properties
+    selectedProjection: string = 'Status';
+    projectionNames: string[] = [];
+
+    // UI state
+    showBackpackDetails: boolean = false;
+    showCargoDetails: boolean = false;
+    showNavDetails: boolean = false;
+    showAllModules: boolean = false;
 
     constructor(private projectionsService: ProjectionsService) {}
 
     ngOnInit(): void {
-        this.subscription = this.projectionsService.projections$.subscribe(projections => {
+        this.projectionSubscription = this.projectionsService.projections$.subscribe(projections => {
             this.projections = projections;
-            if (projections) {
-                this.projectionNames = Object.keys(projections).sort();
-                
-                // Set default selected projection if not already set
-                if (!this.selectedProjection && this.projectionNames.includes('CurrentStatus')) {
-                    this.selectedProjection = 'CurrentStatus';
-                    this.formatSelectedProjection();
-                } else if (this.selectedProjection) {
-                    this.formatSelectedProjection();
-                }
-            } else {
-                this.projectionNames = [];
-                this.formattedData = null;
-            }
+            this.isProjectionsLoaded = true;
         });
     }
 
     ngOnDestroy(): void {
-        if (this.subscription) {
-            this.subscription.unsubscribe();
+        if (this.projectionSubscription) {
+            this.projectionSubscription.unsubscribe();
+        }
+    }
+
+    isInShip(): boolean {
+        const status = this.getProjection('Status');
+        return status && status.InShip;
+    }
+
+    isInSRV(): boolean {
+        const status = this.getProjection('Status');
+        return status && status.InSRV;
+    }
+
+    isOnFoot(): boolean {
+        const status = this.getProjection('Status');
+        return status && status.OnFoot;
+    }
+
+    isDocked(): boolean {
+        const status = this.getProjection('Status');
+        return status && status.Docked;
+    }
+
+    isExobiologyScanActive(): boolean {
+        const scan = this.getProjection('ExobiologyScan');
+        return scan && scan.Active;
+    }
+
+    isColonisationActive(colonisation: any): boolean {
+        return colonisation && 
+              (colonisation.StarSystem || 
+               colonisation.ResourcesRequired?.length > 0 || 
+               colonisation.ConstructionProgress > 0);
+    }
+    
+    formatSelectedProjection() {
+        switch (this.selectedProjection) {
+            case 'Status':
+                this.updateStatusLists();
+                break;
+            default:
+                break;
         }
     }
     
-    formatSelectedProjection(): void {
-        if (!this.selectedProjection || !this.projections) {
-            this.formattedData = null;
-            return;
+    updateStatusLists(): void {
+        // Update status flags based on current data
+        const status = this.getProjection('Status');
+        if (status) {
+            // Process status flags or other data as needed
+            console.log('Status projection updated', status);
         }
-        
-        // Get the raw data for the selected projection
-        const rawData = this.projections[this.selectedProjection];
-        
-        // Use the default JSON for now
-        this.formattedData = rawData;
+    }
+
+    onSelectionChange() {
+        this.formatSelectedProjection();
     }
     
     isCustomFormatted(projectionName: string): boolean {
         // Return true for projections that have custom formatting
         return ['ShipInfo', 'Location', 'CurrentStatus', 'NavInfo', 'Cargo', 'Backpack', 'SuitLoadout', 
-                'Target', 'Missions', 'Friends', 'ExobiologyScan', 'ColonisationConstruction', 'SystemInfo'].includes(projectionName);
+                'Target', 'Missions', 'Friends', 'ExobiologyScan', 'ColonisationConstruction', 'SystemInfo', 
+                'EventCounter'].includes(projectionName);
     }
     
     isBackpackEmpty(backpack: any): boolean {
@@ -1379,23 +2046,22 @@ export class StatusViewComponent implements OnInit, OnDestroy {
     }
     
     // Helper methods for ColonisationConstruction
-    isColonisationActive(colonisation: any): boolean {
-        return colonisation && 
-              (colonisation.StarSystem || 
-               colonisation.ResourcesRequired?.length > 0 || 
-               colonisation.ConstructionProgress > 0);
-    }
-    
-    getColonisationStatusClass(colonisation: any): string {
+    getColonisationStatusClass(): string {
+        const colonisation = this.getProjection('ColonisationConstruction');
+        if (!colonisation) return '';
+        
         if (colonisation.ConstructionComplete) return 'status-complete';
         if (colonisation.ConstructionFailed) return 'status-failed';
         return 'status-in-progress';
     }
     
-    getColonisationStatusText(colonisation: any): string {
+    getColonisationStatusText(): string {
+        const colonisation = this.getProjection('ColonisationConstruction');
+        if (!colonisation) return '';
+        
         if (colonisation.ConstructionComplete) return 'Complete';
         if (colonisation.ConstructionFailed) return 'Failed';
-        return 'In Progress';
+        return `In Progress (${colonisation.ProgressPercent}%)`;
     }
     
     formatPercentage(value: number | undefined): string {
@@ -1408,38 +2074,743 @@ export class StatusViewComponent implements OnInit, OnDestroy {
         return !obj || Object.keys(obj).length === 0;
     }
     
-    getSystemEntries(systemInfo: any): {name: string, data: any}[] {
+    getSafeSystemEntries(systemInfo: any): {name: string, data: any}[] {
         if (!systemInfo) return [];
-        return Object.entries(systemInfo).map(([name, data]) => ({name, data: data as any}));
-    }
-    
-    formatNumber(value: number): string {
-        return value.toLocaleString();
-    }
-    
-    formatDistance(distance: number): string {
-        if (distance < 1) {
-            return `${(distance * 1000).toFixed(0)} km`;
+        try {
+            return Object.entries(systemInfo).map(([name, data]) => ({name, data: data as any}));
+        } catch (error) {
+            console.error('Error parsing system entries:', error);
+            return [];
         }
-        return `${distance.toFixed(0)} ls`;
     }
     
-    formatServiceName(service: string): string {
-        // Capitalize the service name
-        return service.charAt(0).toUpperCase() + service.slice(1);
+    isValidSystemInfo(systemInfo: any): boolean {
+        try {
+            // Check if it's actually an object we can iterate over
+            return typeof systemInfo === 'object' && 
+                   systemInfo !== null && 
+                   Object.keys(systemInfo).length > 0;
+        } catch (error) {
+            console.error('Error validating SystemInfo:', error);
+            return false;
+        }
     }
 
-    getEventEntries(): { event: string, count: number }[] {
-        if (!this.formattedData || !this.formattedData.data) {
+    getEventEntries(): EventEntry[] {
+        const eventCounter = this.getProjection('EventCounter');
+        if (!eventCounter) {
             return [];
         }
         
-        const eventEntries: { event: string, count: number }[] = [];
-        for (const [event, count] of Object.entries(this.formattedData.data)) {
+        const eventEntries: EventEntry[] = [];
+        for (const [event, count] of Object.entries(eventCounter)) {
             if (event !== 'timestamp') {
                 eventEntries.push({ event, count: Number(count) });
             }
         }
         return eventEntries;
+    }
+
+    formatNumber(value: number): string {
+        if (value === undefined || value === null) {
+            return '0';
+        }
+        return value.toLocaleString();
+    }
+
+    formatDistance(distance: number): string {
+        if (distance === undefined || distance === null) {
+            return '0 ls';
+        }
+        if (distance < 1) {
+            return `${(distance * 1000).toFixed(0)} km`;
+        }
+        return `${distance.toFixed(0)} ls`;
+    }
+
+    formatServiceName(service: string): string {
+        // Capitalize the service name
+        return service.charAt(0).toUpperCase() + service.slice(1);
+    }
+
+    // Tab navigation methods
+    setActiveTab(tabIndex: number): void {
+        this.selectedTab = tabIndex;
+        this.showFriendsPanel = false;
+        this.showColonisationPanel = false;
+    }
+    
+    toggleFriendsPanel(): void {
+        this.showFriendsPanel = !this.showFriendsPanel;
+        if (this.showFriendsPanel) {
+            this.showColonisationPanel = false;
+        }
+    }
+    
+    toggleColonisationPanel(): void {
+        this.showColonisationPanel = !this.showColonisationPanel;
+        if (this.showColonisationPanel) {
+            this.showFriendsPanel = false;
+        }
+    }
+    
+    showStationService(service: string): void {
+        this.selectedStationService = service;
+    }
+    
+    // Helper methods for location display
+    getLocationSystem(): string {
+        const location = this.getProjection('Location');
+        return location?.StarSystem || 'Unknown';
+    }
+    
+    getLocationDetail(): string {
+        const location = this.getProjection('Location');
+        if (!location) return '';
+        
+        if (location.Station) {
+            return location.Station + (location.Docked ? ' (Docked)' : '');
+        } else if (location.Planet) {
+            return location.Planet + (location.Landed ? ' (Landed)' : '');
+        } else if (location.Star) {
+            return location.Star;
+        }
+        return '';
+    }
+    
+    // Helper methods for NavInfo
+    hasNavRoute(): boolean {
+        const navInfo = this.getProjection('NavInfo');
+        return navInfo?.NavRoute && navInfo.NavRoute.length > 0;
+    }
+    
+    getNavRouteInfo(): string {
+        const navInfo = this.getProjection('NavInfo');
+        if (!navInfo?.NavRoute || navInfo.NavRoute.length === 0) return '';
+        
+        return `${navInfo.NavRoute.length} jump${navInfo.NavRoute.length > 1 ? 's' : ''} to ${navInfo.NavRoute[navInfo.NavRoute.length - 1].StarSystem}`;
+    }
+    
+    // Helper methods for Suit and Backpack
+    getSuitName(): string {
+        const suitLoadout = this.getProjection('SuitLoadout');
+        return suitLoadout?.SuitName_Localised || suitLoadout?.SuitName || 'Unknown';
+    }
+    
+    getSuitLoadoutName(): string {
+        const suitLoadout = this.getProjection('SuitLoadout');
+        return suitLoadout?.LoadoutName || 'Unknown';
+    }
+    
+    getSuitWeapons(): any[] {
+        const suitLoadout = this.getProjection('SuitLoadout');
+        return suitLoadout?.Modules || [];
+    }
+    
+    getWeaponIcon(weapon: any): string {
+        const weaponName = weapon.ModuleName.toLowerCase();
+        if (weaponName.includes('pistol')) return 'pan_tool';
+        if (weaponName.includes('rifle')) return 'settings_input_hdmi';
+        if (weaponName.includes('laser')) return 'flash_on';
+        if (weaponName.includes('rocket')) return 'whatshot';
+        return 'blur_on';
+    }
+    
+    getBackpackItems(category: string): any[] {
+        const backpack = this.getProjection('Backpack');
+        return backpack?.[category] || [];
+    }
+    
+    // Helper methods for Ship info
+    getShipName(): string {
+        const shipInfo = this.getProjection('ShipInfo');
+        return shipInfo?.Name || 'Unknown Ship';
+    }
+    
+    getShipType(): string {
+        const shipInfo = this.getProjection('ShipInfo');
+        return shipInfo?.Type || 'Unknown';
+    }
+    
+    getShipIdent(): string {
+        const shipInfo = this.getProjection('ShipInfo');
+        return shipInfo?.ShipIdent || '';
+    }
+    
+    getCargoAmount(): number {
+        const shipInfo = this.getProjection('ShipInfo');
+        return shipInfo?.Cargo || 0;
+    }
+    
+    getCargoCapacity(): number {
+        const shipInfo = this.getProjection('ShipInfo');
+        return shipInfo?.CargoCapacity || 1;
+    }
+    
+    getCargoPercentage(): number {
+        return (this.getCargoAmount() / this.getCargoCapacity()) * 100;
+    }
+    
+    getCargoTooltip(): string {
+        return `${this.getCargoAmount()} / ${this.getCargoCapacity()} tons`;
+    }
+    
+    getFuelAmount(): string {
+        const shipInfo = this.getProjection('ShipInfo');
+        return shipInfo?.FuelMain?.toFixed(1) || '0';
+    }
+    
+    getFuelCapacity(): number {
+        const shipInfo = this.getProjection('ShipInfo');
+        return shipInfo?.FuelMainCapacity || 1;
+    }
+    
+    getFuelPercentage(): number {
+        const amount = parseFloat(this.getFuelAmount());
+        return (amount / this.getFuelCapacity()) * 100;
+    }
+    
+    getFuelTooltip(): string {
+        return `${this.getFuelAmount()} / ${this.getFuelCapacity()} tons`;
+    }
+    
+    // Helper methods for Exobiology scan
+    hasActiveBioScan(): boolean {
+        const exoBio = this.getProjection('ExobiologyScan');
+        return exoBio?.scans && exoBio.scans.length > 0;
+    }
+    
+    getBioScanCount(): number {
+        const exoBio = this.getProjection('ExobiologyScan');
+        return exoBio?.scans?.length || 0;
+    }
+    
+    isWithinScanRadius(): boolean {
+        const exoBio = this.getProjection('ExobiologyScan');
+        return exoBio?.within_scan_radius !== false; // Default to true if undefined
+    }
+    
+    // Helper methods for Friends display
+    getFriendsCount(): number {
+        const friends = this.getProjection('Friends');
+        return friends?.Online?.length || 0;
+    }
+    
+    getOnlineFriends(): string[] {
+        const friends = this.getProjection('Friends');
+        return friends?.Online || [];
+    }
+    
+    // Helper methods for Colonisation display
+    getColonisationSystem(): string {
+        const colonisation = this.getProjection('ColonisationConstruction');
+        return colonisation?.StarSystem || 'Unknown system';
+    }
+    
+    getColonisationProgress(): number {
+        const colonisation = this.getProjection('ColonisationConstruction');
+        return colonisation?.ConstructionProgress || 0;
+    }
+    
+    getColonisationProgressValue(): number {
+        return this.getColonisationProgress() * 100;
+    }
+    
+    getColonisationResources(): any[] {
+        const colonisation = this.getProjection('ColonisationConstruction');
+        return colonisation?.ResourcesRequired || [];
+    }
+    
+    // Helper methods for Commander tab
+    getCommanderName(): string {
+        const commander = this.getProjection('Commander');
+        return commander?.Name || 'Unknown';
+    }
+    
+    getBalance(): number {
+        const commander = this.getProjection('Commander');
+        return commander?.Credits || 0;
+    }
+    
+    getRank(type: string): string {
+        const rank = this.getProjection('Rank');
+        if (!rank) return 'Unknown';
+        
+        // Map rank numbers to names based on type
+        const rankNames: Record<string, string[]> = {
+            'Combat': ['Harmless', 'Mostly Harmless', 'Novice', 'Competent', 'Expert', 'Master', 'Dangerous', 'Deadly', 'Elite'],
+            'Trade': ['Penniless', 'Mostly Penniless', 'Peddler', 'Dealer', 'Merchant', 'Broker', 'Entrepreneur', 'Tycoon', 'Elite'],
+            'Explore': ['Aimless', 'Mostly Aimless', 'Scout', 'Surveyor', 'Trailblazer', 'Pathfinder', 'Ranger', 'Pioneer', 'Elite'],
+            'CQC': ['Helpless', 'Mostly Helpless', 'Amateur', 'Semi Professional', 'Professional', 'Champion', 'Hero', 'Legend', 'Elite'],
+            'Federation': ['None', 'Recruit', 'Cadet', 'Midshipman', 'Petty Officer', 'Chief Petty Officer', 'Warrant Officer', 'Ensign', 'Lieutenant', 'Lieutenant Commander', 'Post Commander', 'Post Captain', 'Rear Admiral', 'Vice Admiral', 'Admiral'],
+            'Empire': ['None', 'Outsider', 'Serf', 'Master', 'Squire', 'Knight', 'Lord', 'Baron', 'Viscount', 'Count', 'Earl', 'Marquis', 'Duke', 'Prince', 'King']
+        };
+        
+        if (!rankNames[type]) return 'Unknown';
+        
+        const rankValue = rank[type] || 0;
+        return rankNames[type][rankValue] || 'Unknown';
+    }
+    
+    getRankProgress(type: string): number {
+        const progress = this.getProjection('Progress');
+        if (!progress) return 0;
+        
+        return (progress[type] || 0) * 100;
+    }
+    
+    // Helper method for station services
+    getStationName(): string {
+        const location = this.getProjection('Location');
+        return location?.Station || 'Unknown Station';
+    }
+    
+    // Get projection data by name
+    getProjection(name: string): any {
+        return this.projections && this.projections[name] ? this.projections[name] : null;
+    }
+    
+    // Helper for status flags
+    getCurrentStatusValue(flagType: string, flag: string): boolean {
+        const status = this.getProjection('CurrentStatus');
+        return status && status[flagType] && status[flagType][flag] || false;
+    }
+
+    isInStation(): boolean {
+        const status = this.getProjection('Status');
+        return status && status.Docked;
+    }
+
+    getActiveMode(): string {
+        const status = this.getProjection('CurrentStatus');
+        let active_mode = 'mainship'; // default
+        
+        if (status && status.flags) {
+            if (status.flags['InMainShip']) {
+                active_mode = 'mainship';
+            } else if (status.flags['InFighter']) {
+                active_mode = 'fighter';
+            } else if (status.flags['InSRV']) {
+                active_mode = 'buggy';
+            }
+        }
+        
+        if (status && status.flags2) {
+            if (status.flags2['OnFoot']) {
+                active_mode = 'humanoid';
+            }
+        }
+        
+        return active_mode;
+    }
+
+    // New helper methods for detailed D&D 5E character sheet style
+    getShipMass(): number {
+        const shipInfo = this.getProjection('ShipInfo');
+        return shipInfo?.UnladenMass || 0;
+    }
+    
+    getJumpRange(): number {
+        const shipInfo = this.getProjection('ShipInfo');
+        return shipInfo?.MaximumJumpRange || 0;
+    }
+    
+    getLandingPadSize(): string {
+        const shipInfo = this.getProjection('ShipInfo');
+        return shipInfo?.LandingPadSize || '?';
+    }
+    
+    getShipHealth(): string {
+        const loadout = this.getProjection('Loadout');
+        if (loadout && loadout.HullHealth) {
+            const healthPercent = (loadout.HullHealth * 100).toFixed(0);
+            return `${healthPercent}%`;
+        }
+        return '100%';
+    }
+    
+    getShipHealthPercentage(): number {
+        const loadout = this.getProjection('Loadout');
+        if (loadout && loadout.HullHealth) {
+            return loadout.HullHealth * 100;
+        }
+        return 100;
+    }
+    
+    getShipRebuy(): number {
+        const loadout = this.getProjection('Loadout');
+        return loadout?.Rebuy || 0;
+    }
+    
+    getShipModules(): any[] {
+        const loadout = this.getProjection('Loadout');
+        return loadout?.Modules || [];
+    }
+    
+    formatSlotName(slot: string): string {
+        // Format hardpoint and utility slots
+        if (slot.includes('Hardpoint')) {
+            // Don't return "Weapon X" for hardpoints
+            return '';
+        }
+        if (slot.includes('Utility')) {
+            const match = slot.match(/Utility(\d+)/);
+            if (match) {
+                return `Utility ${match[1]}`;
+            }
+        }
+        
+        // Format core internal slots
+        const coreMapping: Record<string, string> = {
+            'PowerPlant': 'Power Plant',
+            'MainEngines': 'Thrusters',
+            'FrameShiftDrive': 'FSD',
+            'LifeSupport': 'Life Support',
+            'PowerDistributor': 'Power Distributor',
+            'Radar': 'Sensors',
+            'FuelTank': 'Fuel Tank',
+            'Armour': 'Hull',
+        };
+        
+        for (const [key, value] of Object.entries(coreMapping)) {
+            if (slot.includes(key)) {
+                return value;
+            }
+        }
+        
+        // Format optional internal slots
+        if (slot.startsWith('Slot')) {
+            const match = slot.match(/Slot(\d+)_Size(\d+)/);
+            if (match) {
+                return `Optional: Size ${match[2]} (Slot ${match[1]})`;
+            }
+        }
+        
+        // If no specific format, return the original slot name
+        return slot || '';
+    }
+    
+    formatModuleName(item: string): string {
+        if (!item) return '';
+        
+        // Process names with known Elite Dangerous module patterns
+        if (item.includes('hpt_') || item.includes('int_')) {
+            // Remove common unwanted prefixes
+            let cleaned = item
+                .replace(/hpt_/g, '')                // Remove hpt_ prefix
+                .replace(/int_/g, '')                // Remove int_ prefix
+                .replace(/armour_/g, '')             // Remove armour_ prefix
+                .replace(/_/g, ' ')                  // Replace underscores with spaces
+                .replace(/name/g, '')                // Remove 'name'
+                .replace(/^\s+|\s+$/g, '')           // Trim whitespace
+                .replace(/\s+/g, ' ');               // Replace multiple spaces with single space
+            
+            // Special handling for weapons to make names more readable
+            if (cleaned.includes('dumbfiremissilerack')) {
+                cleaned = cleaned.replace('dumbfiremissilerack', 'Missile Rack');
+            } else if (cleaned.includes('minelauncher')) {
+                cleaned = cleaned.replace('minelauncher', 'Mine Launcher');
+            } else if (cleaned.includes('multicannon')) {
+                cleaned = cleaned.replace('multicannon', 'Multi-Cannon');
+            } else if (cleaned.includes('pulselaser')) {
+                cleaned = cleaned.replace('pulselaser', 'Pulse Laser');
+            } else if (cleaned.includes('beamlaser')) {
+                cleaned = cleaned.replace('beamlaser', 'Beam Laser');
+            } else if (cleaned.includes('burstlaser')) {
+                cleaned = cleaned.replace('burstlaser', 'Burst Laser');
+            } else if (cleaned.includes('cannon')) {
+                cleaned = cleaned.replace(/\bcannon\b/g, 'Cannon');
+            } else if (cleaned.includes('plasmaaccelerator')) {
+                cleaned = cleaned.replace('plasmaaccelerator', 'Plasma Accelerator');
+            } else if (cleaned.includes('railgun')) {
+                cleaned = cleaned.replace('railgun', 'Rail Gun');
+            } else if (cleaned.includes('torpedopylon')) {
+                cleaned = cleaned.replace('torpedopylon', 'Torpedo Pylon');
+            }
+            
+            // Handle mount type (fixed/gimballed/turreted)
+            if (cleaned.includes('fixed')) {
+                cleaned = cleaned.replace('fixed', '(Fixed)');
+            } else if (cleaned.includes('gimbal')) {
+                cleaned = cleaned.replace('gimbal', '(Gimballed)');
+            } else if (cleaned.includes('turret')) {
+                cleaned = cleaned.replace('turret', '(Turreted)');
+            }
+            
+            // Handle size
+            if (cleaned.includes('small')) {
+                cleaned = cleaned.replace('small', 'Small');
+            } else if (cleaned.includes('medium')) {
+                cleaned = cleaned.replace('medium', 'Medium');
+            } else if (cleaned.includes('large')) {
+                cleaned = cleaned.replace('large', 'Large');
+            } else if (cleaned.includes('huge')) {
+                cleaned = cleaned.replace('huge', 'Huge');
+            }
+            
+            // Special case handling for "advanced" prefix
+            if (cleaned.includes('advanced')) {
+                cleaned = cleaned.replace('advanced', 'Advanced');
+            }
+            
+            // Reorganize weapon names to make them more readable
+            const sizeMatch = cleaned.match(/(Small|Medium|Large|Huge)/);
+            const mountMatch = cleaned.match(/\((Fixed|Gimballed|Turreted)\)/);
+            const advancedMatch = cleaned.match(/(Advanced)/);
+            
+            if (sizeMatch && mountMatch) {
+                const size = sizeMatch[1];
+                const mount = mountMatch[1];
+                const advanced = advancedMatch ? 'Advanced ' : '';
+                
+                // Extract the base weapon name (without size, mount, or advanced)
+                let baseName = cleaned
+                    .replace(sizeMatch[0], '')
+                    .replace(mountMatch[0], '')
+                    .replace(advancedMatch ? advancedMatch[0] : '', '')
+                    .trim();
+                
+                // Return the properly formatted weapon name
+                return `${advanced}${size} ${baseName} ${mount}`.trim();
+            }
+            
+            // For non-weapon items or if reorganization failed, capitalize each word
+            return cleaned.split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+        }
+        
+        // Get the item name without class/rating prefix (alternative format)
+        const match = item.match(/^\d\w_(.+)$/);
+        if (match) {
+            let cleaned = match[1]
+                .replace(/_/g, ' ')                  // Replace underscores with spaces
+                .replace(/^\s+|\s+$/g, '')           // Trim whitespace
+                .replace(/\s+/g, ' ');               // Replace multiple spaces with single space
+            
+            // Capitalize each word
+            return cleaned.split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+        }
+        
+        // If not matching any pattern, return original with underscores replaced
+        return item.replace(/_/g, ' ');
+    }
+    
+    getModuleClassAndRating(item: string): string {
+        // Extract class and rating from module name if present
+        const match = item.match(/class(\d+)([a-e])?/i);
+        if (match) {
+            return match[2] ? `${match[1]}${match[2].toUpperCase()}` : match[1];
+        }
+        return '';
+    }
+    
+    hasCargoItems(): boolean {
+        const cargo = this.getProjection('Cargo');
+        return cargo && cargo.Inventory && cargo.Inventory.length > 0;
+    }
+    
+    getCargoItems(): any[] {
+        const cargo = this.getProjection('Cargo');
+        return cargo?.Inventory || [];
+    }
+    
+    getNavRouteDetails(): any[] {
+        const navInfo = this.getProjection('NavInfo');
+        return navInfo?.NavRoute || [];
+    }
+    
+    toggleCargoDetails(): void {
+        this.showCargoDetails = !this.showCargoDetails;
+    }
+    
+    toggleNavDetails(): void {
+        this.showNavDetails = !this.showNavDetails;
+    }
+    
+    toggleAllModules(): void {
+        this.showAllModules = !this.showAllModules;
+    }
+    
+    toggleBackpackDetails(): void {
+        this.showBackpackDetails = !this.showBackpackDetails;
+    }
+    
+    getSuitClass(): number {
+        const suitLoadout = this.getProjection('SuitLoadout');
+        if (suitLoadout?.SuitName) {
+            const match = suitLoadout.SuitName.match(/class(\d+)/i);
+            return match ? parseInt(match[1]) : 1;
+        }
+        return 1;
+    }
+    
+    getSuitMods(): string[] {
+        const suitLoadout = this.getProjection('SuitLoadout');
+        return suitLoadout?.SuitMods || [];
+    }
+    
+    getWeaponType(weapon: any): string {
+        const name = weapon.ModuleName.toLowerCase();
+        if (name.includes('launcher')) return 'Launcher';
+        if (name.includes('pistol')) return 'Pistol';
+        if (name.includes('rifle')) return 'Rifle';
+        if (name.includes('shotgun')) return 'Shotgun';
+        if (name.includes('smg')) return 'SMG';
+        return 'Weapon';
+    }
+    
+    getSuitModIcon(mod: string): string {
+        // Map suit mods to appropriate icons
+        if (mod.includes('armour')) return 'shield';
+        if (mod.includes('shield')) return 'security';
+        if (mod.includes('ammo')) return 'inventory_2';
+        if (mod.includes('battery')) return 'battery_full';
+        if (mod.includes('sprint')) return 'directions_run';
+        return 'upgrade';
+    }
+
+    // New helper methods for categorizing ship modules
+    getWeaponModules(): any[] {
+        return this.getShipModules().filter(module => 
+            module.Slot.includes('Hardpoint'));
+    }
+    
+    getUtilityModules(): any[] {
+        return this.getShipModules().filter(module => 
+            module.Slot.includes('Utility'));
+    }
+    
+    getCoreModules(): any[] {
+        const coreSlots = ['PowerPlant', 'MainEngines', 'FrameShiftDrive', 
+                          'LifeSupport', 'PowerDistributor', 'Radar', 'FuelTank', 'Armour'];
+        return this.getShipModules().filter(module => 
+            coreSlots.some(slot => module.Slot.includes(slot)));
+    }
+    
+    getOptionalModules(): any[] {
+        // Only show optional internals and limit count if not showing all
+        const modules = this.getShipModules().filter(module => 
+            module.Slot.startsWith('Slot'));
+        
+        if (!this.showAllModules) {
+            return modules.slice(0, 5);
+        }
+        return modules;
+    }
+    
+    getVisibleModulesCount(): number {
+        return this.getWeaponModules().length + 
+               this.getUtilityModules().length + 
+               this.getCoreModules().length + 
+               (this.showAllModules ? 0 : Math.min(this.getOptionalModules().length, 5));
+    }
+    
+    formatWeaponSlot(slotName: string): string {
+        if (slotName === 'PrimaryWeapon1' || slotName === 'PrimaryWeapon2') {
+            return 'Primary Weapon';
+        } else if (slotName === 'SecondaryWeapon') {
+            return 'Secondary Weapon';
+        }
+        return slotName || '';
+    }
+    
+    getEngineeringTooltip(module: any): string {
+        if (!module.Engineering) return '';
+        
+        const eng = module.Engineering;
+        let tooltip = `${eng.BlueprintName || 'Unknown'} (Grade ${eng.Level || '?'})`;
+        
+        if (eng.ExperimentalEffect_Localised) {
+            tooltip += `\nExperimental: ${eng.ExperimentalEffect_Localised}`;
+        }
+        
+        return tooltip;
+    }
+
+    getStarTypeIcon(starClass: string): string {
+        // First letter of star class indicates type
+        const starType = starClass.charAt(0).toUpperCase();
+        
+        // Return appropriate icon based on star type
+        switch (starType) {
+            case 'O': 
+            case 'B': 
+            case 'A': return 'brightness_7'; // Hot blue/white stars
+            case 'F': 
+            case 'G': return 'wb_sunny';     // Sun-like stars
+            case 'K': 
+            case 'M': return 'brightness_low'; // Red dwarfs
+            case 'L': 
+            case 'T': 
+            case 'Y': return 'brightness_3';   // Brown dwarfs
+            case 'W': return 'auto_awesome';   // Wolf-Rayet stars
+            case 'N': 
+            case 'C': 
+            case 'S': return 'grain';          // Carbon stars
+            case 'H': return 'blur_circular';  // Black holes
+            case 'X': return 'blur_on';        // Exotic
+            default: return 'stars';           // Default star icon
+        }
+    }
+    
+    getStarClassColor(starClass: string): string {
+        // First letter of star class indicates type
+        const starType = starClass.charAt(0).toUpperCase();
+        
+        // Return CSS class for star type
+        switch (starType) {
+            case 'O': return 'star-o';    // Blue
+            case 'B': return 'star-b';    // Blue-white
+            case 'A': return 'star-a';    // White
+            case 'F': return 'star-f';    // Yellow-white
+            case 'G': return 'star-g';    // Yellow (Sun-like)
+            case 'K': return 'star-k';    // Orange
+            case 'M': return 'star-m';    // Red
+            case 'L': 
+            case 'T': 
+            case 'Y': return 'star-brown'; // Brown dwarfs
+            case 'W': return 'star-w';    // Wolf-Rayet (Blue)
+            case 'N': 
+            case 'C': 
+            case 'S': return 'star-carbon'; // Carbon stars (Red to Orange)
+            case 'H': return 'star-black-hole'; // Black holes
+            case 'X': return 'star-exotic'; // Exotic
+            default: return 'star-default'; // Default
+        }
+    }
+    
+    getJumpDistance(index: number): string {
+        const route = this.getNavRouteDetails();
+        if (!route || index <= 0 || index >= route.length || !route[index].StarPos || !route[index-1].StarPos) {
+            return '0.0';
+        }
+        
+        // Calculate 3D distance between current and previous star
+        const current = route[index].StarPos;
+        const previous = route[index-1].StarPos;
+        
+        const dx = current[0] - previous[0];
+        const dy = current[1] - previous[1];
+        const dz = current[2] - previous[2];
+        
+        const distance = Math.sqrt(dx*dx + dy*dy + dz*dz);
+        return distance.toFixed(1);
+    }
+
+    getLocationDetailIcon(): string {
+        const location = this.getProjection('Location');
+        if (!location) return 'place';
+        
+        if (location.Station) {
+            return location.Docked ? 'dock' : 'business';
+        } else if (location.Planet) {
+            return location.Landed ? 'terrain' : 'language';
+        } else if (location.Star) {
+            return 'wb_sunny';
+        }
+        return 'place';
     }
 } 
