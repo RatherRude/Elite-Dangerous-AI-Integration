@@ -1316,7 +1316,7 @@ class PromptGenerator:
                 lat = screenshot_event.get('Latitude', 0)
                 lon = screenshot_event.get('Longitude', 0)
                 alt = screenshot_event.get('Altitude', 0)
-                location_text = f" at coordinates {lat:.4f}, {lon:.4f}, altitude: {alt:.1f}m"
+                location_text = f" at coordinates {lat}, {lon}, altitude: {alt}m"
             
             return f"{self.commander_name} took a screenshot in {system}{body_text}{location_text}."
 
