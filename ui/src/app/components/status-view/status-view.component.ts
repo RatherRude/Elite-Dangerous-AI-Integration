@@ -552,24 +552,30 @@ interface EventEntry {
                     <div *ngIf="selectedTab === COMMANDER_TAB" class="tab-pane">
                         <h2>Commander Profile</h2>
                         <div class="commander-info">
+                            <!-- Basic Commander Info Card -->
                             <mat-card>
                                 <mat-card-header>
                                     <mat-card-title>CMDR {{ getCommanderName() }}</mat-card-title>
+                                    <mat-card-subtitle *ngIf="getProjection('Commander')?.FID">ID: {{ getProjection('Commander')?.FID }}</mat-card-subtitle>
                                 </mat-card-header>
                                 <mat-card-content>
-                                    <!-- Commander basic info -->
                                     <div class="commander-basic">
                                         <div *ngIf="getBalance()">
                                             <span class="detail-label">Credits:</span>
                                             <span class="detail-value">{{ formatNumber(getBalance()) }}</span>
                                         </div>
+                                        <div *ngIf="getActiveMode()">
+                                            <span class="detail-label">Active Mode:</span>
+                                            <span class="detail-value">{{ getActiveMode() }}</span>
+                                        </div>
                                     </div>
                                 </mat-card-content>
                             </mat-card>
                             
+                            <!-- Ranks & Progress Card -->
                             <mat-card>
                                 <mat-card-header>
-                                    <mat-card-title>Ranks & Reputation</mat-card-title>
+                                    <mat-card-title>Ranks & Progress</mat-card-title>
                                 </mat-card-header>
                                 <mat-card-content>
                                     <div class="ranks-container">
@@ -580,6 +586,7 @@ interface EventEntry {
                                             <mat-progress-bar 
                                                 mode="determinate" 
                                                 [value]="getRankProgress('Combat')"
+                                                matTooltip="Progress: {{getProjection('Progress')?.Combat}}%"
                                             ></mat-progress-bar>
                                         </div>
                                         <!-- Trade rank -->
@@ -589,6 +596,7 @@ interface EventEntry {
                                             <mat-progress-bar 
                                                 mode="determinate" 
                                                 [value]="getRankProgress('Trade')"
+                                                matTooltip="Progress: {{getProjection('Progress')?.Trade}}%"
                                             ></mat-progress-bar>
                                         </div>
                                         <!-- Explore rank -->
@@ -598,6 +606,27 @@ interface EventEntry {
                                             <mat-progress-bar 
                                                 mode="determinate" 
                                                 [value]="getRankProgress('Explore')"
+                                                matTooltip="Progress: {{getProjection('Progress')?.Explore}}%"
+                                            ></mat-progress-bar>
+                                        </div>
+                                        <!-- Soldier rank (Odyssey) -->
+                                        <div class="rank-item">
+                                            <span class="rank-name">Soldier</span>
+                                            <div class="rank-value">{{ getRank('Soldier') }}</div>
+                                            <mat-progress-bar 
+                                                mode="determinate" 
+                                                [value]="getRankProgress('Soldier')"
+                                                matTooltip="Progress: {{getProjection('Progress')?.Soldier}}%"
+                                            ></mat-progress-bar>
+                                        </div>
+                                        <!-- Exobiologist rank (Odyssey) -->
+                                        <div class="rank-item">
+                                            <span class="rank-name">Exobiologist</span>
+                                            <div class="rank-value">{{ getRank('Exobiologist') }}</div>
+                                            <mat-progress-bar 
+                                                mode="determinate" 
+                                                [value]="getRankProgress('Exobiologist')"
+                                                matTooltip="Progress: {{getProjection('Progress')?.Exobiologist}}%"
                                             ></mat-progress-bar>
                                         </div>
                                         <!-- CQC rank -->
@@ -607,6 +636,7 @@ interface EventEntry {
                                             <mat-progress-bar 
                                                 mode="determinate" 
                                                 [value]="getRankProgress('CQC')"
+                                                matTooltip="Progress: {{getProjection('Progress')?.CQC}}%"
                                             ></mat-progress-bar>
                                         </div>
                                         <!-- Federation rank -->
@@ -616,6 +646,7 @@ interface EventEntry {
                                             <mat-progress-bar 
                                                 mode="determinate" 
                                                 [value]="getRankProgress('Federation')"
+                                                matTooltip="Progress: {{getProjection('Progress')?.Federation}}%"
                                             ></mat-progress-bar>
                                         </div>
                                         <!-- Empire rank -->
@@ -625,13 +656,507 @@ interface EventEntry {
                                             <mat-progress-bar 
                                                 mode="determinate" 
                                                 [value]="getRankProgress('Empire')"
+                                                matTooltip="Progress: {{getProjection('Progress')?.Empire}}%"
                                             ></mat-progress-bar>
                                         </div>
                                     </div>
                                 </mat-card-content>
                             </mat-card>
                             
-                            <!-- More commander cards can be added for Statistics, Squadron, etc. -->
+                            <!-- Reputation Card -->
+                            <mat-card>
+                                <mat-card-header>
+                                    <mat-card-title>Reputation</mat-card-title>
+                                </mat-card-header>
+                                <mat-card-content>
+                                    <div class="reputation-container">
+                                        <!-- Federation reputation -->
+                                        <div class="reputation-item">
+                                            <span class="reputation-name">Federation</span>
+                                            <mat-progress-bar 
+                                                mode="determinate" 
+                                                [value]="getProjection('Reputation')?.Federation || 0"
+                                                [matTooltip]="formatPercentage(getProjection('Reputation')?.Federation)"
+                                            ></mat-progress-bar>
+                                            <span class="reputation-value">{{ formatPercentage(getProjection('Reputation')?.Federation) }}</span>
+                                        </div>
+                                        <!-- Empire reputation -->
+                                        <div class="reputation-item">
+                                            <span class="reputation-name">Empire</span>
+                                            <mat-progress-bar 
+                                                mode="determinate" 
+                                                [value]="getProjection('Reputation')?.Empire || 0"
+                                                [matTooltip]="formatPercentage(getProjection('Reputation')?.Empire)"
+                                            ></mat-progress-bar>
+                                            <span class="reputation-value">{{ formatPercentage(getProjection('Reputation')?.Empire) }}</span>
+                                        </div>
+                                        <!-- Alliance reputation -->
+                                        <div class="reputation-item">
+                                            <span class="reputation-name">Alliance</span>
+                                            <mat-progress-bar 
+                                                mode="determinate" 
+                                                [value]="getProjection('Reputation')?.Alliance || 0"
+                                                [matTooltip]="formatPercentage(getProjection('Reputation')?.Alliance)"
+                                            ></mat-progress-bar>
+                                            <span class="reputation-value">{{ formatPercentage(getProjection('Reputation')?.Alliance) }}</span>
+                                        </div>
+                                        <!-- Independent reputation -->
+                                        <div class="reputation-item">
+                                            <span class="reputation-name">Independent</span>
+                                            <mat-progress-bar 
+                                                mode="determinate" 
+                                                [value]="getProjection('Reputation')?.Independent || 0"
+                                                [matTooltip]="formatPercentage(getProjection('Reputation')?.Independent)"
+                                            ></mat-progress-bar>
+                                            <span class="reputation-value">{{ formatPercentage(getProjection('Reputation')?.Independent) }}</span>
+                                        </div>
+                                    </div>
+                                </mat-card-content>
+                            </mat-card>
+                            
+                            <!-- Statistics Overview Card -->
+                            <mat-card *ngIf="getProjection('Statistics')">
+                                <mat-card-header>
+                                    <mat-card-title>Commander Statistics</mat-card-title>
+                                </mat-card-header>
+                                <mat-card-content>
+                                    <mat-tab-group>
+                                        <!-- Bank Account -->
+                                        <mat-tab label="Banking">
+                                            <div class="stats-container">
+                                                <div class="stats-item" *ngIf="getProjection('Statistics')?.Bank_Account">
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Current Wealth:</span>
+                                                        <span class="stats-value">{{ formatNumber(getProjection('Statistics')?.Bank_Account?.Current_Wealth) }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Spent on Ships:</span>
+                                                        <span class="stats-value">{{ formatNumber(getProjection('Statistics')?.Bank_Account?.Spent_On_Ships) }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Spent on Outfitting:</span>
+                                                        <span class="stats-value">{{ formatNumber(getProjection('Statistics')?.Bank_Account?.Spent_On_Outfitting) }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Insurance Claims:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Bank_Account?.Insurance_Claims }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Spent on Insurance:</span>
+                                                        <span class="stats-value">{{ formatNumber(getProjection('Statistics')?.Bank_Account?.Spent_On_Insurance) }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Owned Ships:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Bank_Account?.Owned_Ship_Count }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </mat-tab>
+                                        
+                                        <!-- Combat Stats -->
+                                        <mat-tab label="Combat">
+                                            <div class="stats-container">
+                                                <div class="stats-item" *ngIf="getProjection('Statistics')?.Combat">
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Bounties Claimed:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Combat?.Bounties_Claimed }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Bounty Hunting Profit:</span>
+                                                        <span class="stats-value">{{ formatNumber(getProjection('Statistics')?.Combat?.Bounty_Hunting_Profit) }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Combat Bonds:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Combat?.Combat_Bonds }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Combat Bond Profits:</span>
+                                                        <span class="stats-value">{{ formatNumber(getProjection('Statistics')?.Combat?.Combat_Bond_Profits) }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Assassinations:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Combat?.Assassinations }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Assassination Profits:</span>
+                                                        <span class="stats-value">{{ formatNumber(getProjection('Statistics')?.Combat?.Assassination_Profits) }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Highest Single Reward:</span>
+                                                        <span class="stats-value">{{ formatNumber(getProjection('Statistics')?.Combat?.Highest_Single_Reward) }}</span>
+                                                    </div>
+                                                    
+                                                    <h4>Conflict Zones</h4>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Total Battles:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Combat?.ConflictZone_Total }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Total Victories:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Combat?.ConflictZone_Total_Wins }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">High Intensity:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Combat?.ConflictZone_High }} ({{ getProjection('Statistics')?.Combat?.ConflictZone_High_Wins }} wins)</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Medium Intensity:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Combat?.ConflictZone_Medium }} ({{ getProjection('Statistics')?.Combat?.ConflictZone_Medium_Wins }} wins)</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Low Intensity:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Combat?.ConflictZone_Low }} ({{ getProjection('Statistics')?.Combat?.ConflictZone_Low_Wins }} wins)</span>
+                                                    </div>
+                                                    
+                                                    <h4>On-Foot Combat</h4>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Combat Bonds:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Combat?.OnFoot_Combat_Bonds }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Combat Bond Profits:</span>
+                                                        <span class="stats-value">{{ formatNumber(getProjection('Statistics')?.Combat?.OnFoot_Combat_Bonds_Profits) }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Settlements Defended:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Combat?.Settlement_Defended }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Settlements Conquered:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Combat?.Settlement_Conquered }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Skimmers Killed:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Combat?.OnFoot_Skimmers_Killed }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Scavengers Killed:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Combat?.OnFoot_Scavs_Killed }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </mat-tab>
+                                        
+                                        <!-- Exploration Stats -->
+                                        <mat-tab label="Exploration">
+                                            <div class="stats-container">
+                                                <div class="stats-item" *ngIf="getProjection('Statistics')?.Exploration">
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Systems Visited:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Exploration?.Systems_Visited }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Exploration Profits:</span>
+                                                        <span class="stats-value">{{ formatNumber(getProjection('Statistics')?.Exploration?.Exploration_Profits) }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Highest Payout:</span>
+                                                        <span class="stats-value">{{ formatNumber(getProjection('Statistics')?.Exploration?.Highest_Payout) }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Planets Scanned (FSS):</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Exploration?.Planets_Scanned_To_Level_2 }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Planets Scanned (DSS):</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Exploration?.Planets_Scanned_To_Level_3 }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Efficient Scans:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Exploration?.Efficient_Scans }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Total Jumps:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Exploration?.Total_Hyperspace_Jumps }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Total Distance:</span>
+                                                        <span class="stats-value">{{ formatDistance(getProjection('Statistics')?.Exploration?.Total_Hyperspace_Distance) }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Greatest Distance From Start:</span>
+                                                        <span class="stats-value">{{ formatDistance(getProjection('Statistics')?.Exploration?.Greatest_Distance_From_Start) }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Time Played:</span>
+                                                        <span class="stats-value">{{ getHoursFromSeconds(getProjection('Statistics')?.Exploration?.Time_Played) }} hours</span>
+                                                    </div>
+                                                    
+                                                    <h4>On-Foot Exploration</h4>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Distance Travelled:</span>
+                                                        <span class="stats-value">{{ formatNumber(getProjection('Statistics')?.Exploration?.OnFoot_Distance_Travelled) }} m</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Planet Footfalls:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Exploration?.Planet_Footfalls }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">First Footfalls:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Exploration?.First_Footfalls }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Settlements Visited:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Exploration?.Settlements_Visited }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Shuttle Journeys:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Exploration?.Shuttle_Journeys }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Shuttle Distance:</span>
+                                                        <span class="stats-value">{{ formatNumber(getProjection('Statistics')?.Exploration?.Shuttle_Distance_Travelled) }} ls</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Spent on Shuttles:</span>
+                                                        <span class="stats-value">{{ formatNumber(getProjection('Statistics')?.Exploration?.Spent_On_Shuttles) }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </mat-tab>
+                                        
+                                        <!-- Trading Stats -->
+                                        <mat-tab label="Trading">
+                                            <div class="stats-container">
+                                                <div class="stats-item" *ngIf="getProjection('Statistics')?.Trading">
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Markets Traded With:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Trading?.Markets_Traded_With }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Market Profits:</span>
+                                                        <span class="stats-value">{{ formatNumber(getProjection('Statistics')?.Trading?.Market_Profits) }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Resources Traded:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Trading?.Resources_Traded }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Average Profit:</span>
+                                                        <span class="stats-value">{{ formatNumber(getProjection('Statistics')?.Trading?.Average_Profit) }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Highest Transaction:</span>
+                                                        <span class="stats-value">{{ formatNumber(getProjection('Statistics')?.Trading?.Highest_Single_Transaction) }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </mat-tab>
+                                        
+                                        <!-- Odyssey Stats -->
+                                        <mat-tab label="Odyssey">
+                                            <div class="stats-container">
+                                                <div class="stats-item" *ngIf="getProjection('Statistics')?.Bank_Account">
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Suits Owned:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Bank_Account?.Suits_Owned }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Weapons Owned:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Bank_Account?.Weapons_Owned }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Spent on Suits:</span>
+                                                        <span class="stats-value">{{ formatNumber(getProjection('Statistics')?.Bank_Account?.Spent_On_Suits) }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Spent on Weapons:</span>
+                                                        <span class="stats-value">{{ formatNumber(getProjection('Statistics')?.Bank_Account?.Spent_On_Weapons) }}</span>
+                                                    </div>
+                                                </div>
+                                                <div class="stats-item" *ngIf="getProjection('Statistics')?.Exobiology">
+                                                    <h4>Exobiology</h4>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Organic Species:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Exobiology?.Organic_Species_Encountered }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Profits:</span>
+                                                        <span class="stats-value">{{ formatNumber(getProjection('Statistics')?.Exobiology?.Organic_Data_Profits) }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </mat-tab>
+                                        
+                                        <!-- Mining Stats -->
+                                        <mat-tab label="Mining">
+                                            <div class="stats-container">
+                                                <div class="stats-item" *ngIf="getProjection('Statistics')?.Mining">
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Mining Profits:</span>
+                                                        <span class="stats-value">{{ formatNumber(getProjection('Statistics')?.Mining?.Mining_Profits) }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Quantity Mined:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Mining?.Quantity_Mined }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Materials Collected:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Mining?.Materials_Collected }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </mat-tab>
+
+                                        <!-- Crime Stats -->
+                                        <mat-tab label="Crime">
+                                            <div class="stats-container">
+                                                <div class="stats-item" *ngIf="getProjection('Statistics')?.Crime">
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Notoriety:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Crime?.Notoriety }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Fines:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Crime?.Fines }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Total Fines:</span>
+                                                        <span class="stats-value">{{ formatNumber(getProjection('Statistics')?.Crime?.Total_Fines) }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Bounties Received:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Crime?.Bounties_Received }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Total Bounties:</span>
+                                                        <span class="stats-value">{{ formatNumber(getProjection('Statistics')?.Crime?.Total_Bounties) }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Highest Bounty:</span>
+                                                        <span class="stats-value">{{ formatNumber(getProjection('Statistics')?.Crime?.Highest_Bounty) }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Total Murders:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Crime?.Total_Murders }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </mat-tab>
+
+                                        <!-- Engineering Stats -->
+                                        <mat-tab label="Engineering">
+                                            <div class="stats-container">
+                                                <div class="stats-item" *ngIf="getProjection('Statistics')?.Crafting">
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Engineers Used:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Crafting?.Count_Of_Used_Engineers }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Recipes Generated:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Crafting?.Recipes_Generated }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Grade 1 Recipes:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Crafting?.Recipes_Generated_Rank_1 }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Grade 2 Recipes:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Crafting?.Recipes_Generated_Rank_2 }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Grade 3 Recipes:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Crafting?.Recipes_Generated_Rank_3 }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Grade 4 Recipes:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Crafting?.Recipes_Generated_Rank_4 }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Grade 5 Recipes:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Crafting?.Recipes_Generated_Rank_5 }}</span>
+                                                    </div>
+                                                </div>
+                                                <div class="stats-item" *ngIf="getProjection('Statistics')?.Material_Trader_Stats">
+                                                    <h4>Material Trading</h4>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Trades Completed:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Material_Trader_Stats?.Trades_Completed }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Materials Traded:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Material_Trader_Stats?.Materials_Traded }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </mat-tab>
+
+                                        <!-- Smuggling Stats -->
+                                        <mat-tab label="Smuggling">
+                                            <div class="stats-container">
+                                                <div class="stats-item" *ngIf="getProjection('Statistics')?.Smuggling">
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Black Markets Traded With:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Smuggling?.Black_Markets_Traded_With }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Black Markets Profits:</span>
+                                                        <span class="stats-value">{{ formatNumber(getProjection('Statistics')?.Smuggling?.Black_Markets_Profits) }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Resources Smuggled:</span>
+                                                        <span class="stats-value">{{ getProjection('Statistics')?.Smuggling?.Resources_Smuggled }}</span>
+                                                    </div>
+                                                    <div class="stats-row">
+                                                        <span class="stats-label">Highest Transaction:</span>
+                                                        <span class="stats-value">{{ formatNumber(getProjection('Statistics')?.Smuggling?.Highest_Single_Transaction) }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </mat-tab>
+                                        
+                                        <!-- More Stats Tabs as needed -->
+                                    </mat-tab-group>
+                                </mat-card-content>
+                            </mat-card>
+                            
+                            <!-- Squadron Information Card (if available) -->
+                            <mat-card *ngIf="getProjection('SquadronStartup')">
+                                <mat-card-header>
+                                    <mat-card-title>Squadron</mat-card-title>
+                                </mat-card-header>
+                                <mat-card-content>
+                                    <div class="squadron-container">
+                                        <div class="stats-row">
+                                            <span class="stats-label">Squadron:</span>
+                                            <span class="stats-value">{{ getProjection('SquadronStartup')?.SquadronName }}</span>
+                                        </div>
+                                        <div class="stats-row" *ngIf="getProjection('SquadronStartup')?.CurrentRank">
+                                            <span class="stats-label">Rank:</span>
+                                            <span class="stats-value">{{ getProjection('SquadronStartup')?.CurrentRank }}</span>
+                                        </div>
+                                        <!-- Add more squadron info as needed -->
+                                    </div>
+                                </mat-card-content>
+                            </mat-card>
+                            
+                            <!-- Powerplay Information Card (if available) -->
+                            <mat-card *ngIf="getProjection('Powerplay')">
+                                <mat-card-header>
+                                    <mat-card-title>Powerplay</mat-card-title>
+                                </mat-card-header>
+                                <mat-card-content>
+                                    <div class="powerplay-container">
+                                        <div class="stats-row">
+                                            <span class="stats-label">Power:</span>
+                                            <span class="stats-value">{{ getProjection('Powerplay')?.Power }}</span>
+                                        </div>
+                                        <div class="stats-row" *ngIf="getProjection('Powerplay')?.Rank !== undefined">
+                                            <span class="stats-label">Rank:</span>
+                                            <span class="stats-value">{{ getProjection('Powerplay')?.Rank }}</span>
+                                        </div>
+                                        <div class="stats-row" *ngIf="getProjection('Powerplay')?.Merits !== undefined">
+                                            <span class="stats-label">Merits:</span>
+                                            <span class="stats-value">{{ getProjection('Powerplay')?.Merits }}</span>
+                                        </div>
+                                        <div class="stats-row" *ngIf="getProjection('Powerplay')?.Votes !== undefined">
+                                            <span class="stats-label">Votes:</span>
+                                            <span class="stats-value">{{ getProjection('Powerplay')?.Votes }}</span>
+                                        </div>
+                                        <!-- Add more powerplay info as needed -->
+                                    </div>
+                                </mat-card-content>
+                            </mat-card>
                         </div>
                     </div>
                     
@@ -2066,7 +2591,7 @@ export class StatusViewComponent implements OnInit, OnDestroy {
     
     formatPercentage(value: number | undefined): string {
         if (value === undefined) return '0%';
-        return `${(value * 100).toFixed(1)}%`;
+        return `${value.toFixed(1)}%`;
     }
     
     // Helper methods for SystemInfo
@@ -2338,12 +2863,14 @@ export class StatusViewComponent implements OnInit, OnDestroy {
         
         // Map rank numbers to names based on type
         const rankNames: Record<string, string[]> = {
-            'Combat': ['Harmless', 'Mostly Harmless', 'Novice', 'Competent', 'Expert', 'Master', 'Dangerous', 'Deadly', 'Elite'],
-            'Trade': ['Penniless', 'Mostly Penniless', 'Peddler', 'Dealer', 'Merchant', 'Broker', 'Entrepreneur', 'Tycoon', 'Elite'],
-            'Explore': ['Aimless', 'Mostly Aimless', 'Scout', 'Surveyor', 'Trailblazer', 'Pathfinder', 'Ranger', 'Pioneer', 'Elite'],
-            'CQC': ['Helpless', 'Mostly Helpless', 'Amateur', 'Semi Professional', 'Professional', 'Champion', 'Hero', 'Legend', 'Elite'],
+            'Combat': ['Harmless', 'Mostly Harmless', 'Novice', 'Competent', 'Expert', 'Master', 'Dangerous', 'Deadly', 'Elite', 'Elite I', 'Elite II', 'Elite III', 'Elite IV', 'Elite V'],
+            'Trade': ['Penniless', 'Mostly Penniless', 'Peddler', 'Dealer', 'Merchant', 'Broker', 'Entrepreneur', 'Tycoon', 'Elite', 'Elite I', 'Elite II', 'Elite III', 'Elite IV', 'Elite V'],
+            'Explore': ['Aimless', 'Mostly Aimless', 'Scout', 'Surveyor', 'Trailblazer', 'Pathfinder', 'Ranger', 'Pioneer', 'Elite', 'Elite I', 'Elite II', 'Elite III', 'Elite IV', 'Elite V'],
+            'CQC': ['Helpless', 'Mostly Helpless', 'Amateur', 'Semi Professional', 'Professional', 'Champion', 'Hero', 'Legend', 'Elite', 'Elite I', 'Elite II', 'Elite III', 'Elite IV', 'Elite V'],
             'Federation': ['None', 'Recruit', 'Cadet', 'Midshipman', 'Petty Officer', 'Chief Petty Officer', 'Warrant Officer', 'Ensign', 'Lieutenant', 'Lieutenant Commander', 'Post Commander', 'Post Captain', 'Rear Admiral', 'Vice Admiral', 'Admiral'],
-            'Empire': ['None', 'Outsider', 'Serf', 'Master', 'Squire', 'Knight', 'Lord', 'Baron', 'Viscount', 'Count', 'Earl', 'Marquis', 'Duke', 'Prince', 'King']
+            'Empire': ['None', 'Outsider', 'Serf', 'Master', 'Squire', 'Knight', 'Lord', 'Baron', 'Viscount', 'Count', 'Earl', 'Marquis', 'Duke', 'Prince', 'King'],
+            'Soldier': ['Defenceless', 'Mostly Defenceless', 'Rookie', 'Soldier', 'Gunslinger', 'Warrior', 'Gladiator', 'Deadeye', 'Elite', 'Elite I', 'Elite II', 'Elite III', 'Elite IV', 'Elite V'],
+            'Exobiologist': ['Directionless', 'Mostly Directionless', 'Compiler', 'Collector', 'Cataloguer', 'Taxonomist', 'Ecologist', 'Geneticist', 'Elite', 'Elite I', 'Elite II', 'Elite III', 'Elite IV', 'Elite V']
         };
         
         if (!rankNames[type]) return 'Unknown';
@@ -2812,5 +3339,12 @@ export class StatusViewComponent implements OnInit, OnDestroy {
             return 'wb_sunny';
         }
         return 'place';
+    }
+
+    /**
+     * Calculate hours from seconds
+     */
+    getHoursFromSeconds(seconds: number): number {
+        return Math.floor(seconds / 3600);
     }
 } 
