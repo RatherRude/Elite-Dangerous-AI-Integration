@@ -9,12 +9,15 @@ from .Config import get_cn_appdata_path
 def get_db_path() -> str:
     return os.path.join(get_cn_appdata_path(), 'covas.db')
 
+_conn = None
 def get_connection() -> sqlite3.Connection:
-    conn = sqlite3.connect(get_db_path())
-    conn.enable_load_extension(True)
-    sqlite_vec.load(conn)
-    conn.enable_load_extension(False)
-    return conn
+    global _conn
+    if _conn is None:
+        _conn = sqlite3.connect(get_db_path())
+        _conn.enable_load_extension(True)
+        sqlite_vec.load(_conn)
+        _conn.enable_load_extension(False)
+    return _conn
 
 
 def instantiate_class_by_name(self, classes: list[Any], class_name: str, data: dict[str, Any]) -> Any:
