@@ -33,10 +33,19 @@ class SystemDatabase:
             log('error', f"Error creating systems store: {e}")
             traceback.print_exc()
     
-    def get_system_info(self, system_name: str) -> Dict[str, Any]:
+    def get_system_info(self, system_name: str, async_fetch: bool = False) -> Dict[str, Any]:
         """Get system information (including EDSM data if available)"""
         try:
             system_data = self.systems_store.get(system_name)
+
+            # For async_fetch mode, just check if data exists and trigger async fetch if needed
+            if async_fetch:
+                if not system_data:
+                    # Initialize the record and trigger async fetch
+                    self._init_system_record(system_name)
+                    self.fetch_system_data_nonblocking(system_name)
+                    return {}
+            
             if not system_data:
                 return self._init_system_record(system_name)
                 
@@ -470,26 +479,64 @@ class SystemDatabase:
                 response.raise_for_status()
                 system_info = await response.json()
                 
-                # Update system info in store
+                # Create a new system record with the fetched info
                 if system_info:
-                    system_data = self.systems_store.get(system_name, {})
-                    system_data['system_info'] = system_info
-                    system_data['system_address'] = system_info.get('id64', 0)
+                    # Get the current timestamp
+                    current_time = time.time()
                     
-                    # Update star class if primary star info is available
-                    if 'primaryStar' in system_info and 'type' in system_info['primaryStar']:
-                        system_data['star_class'] = system_info['primaryStar']['type']
-                    
-                    self.systems_store.set(system_name, system_data)
+                    try:
+                        # We need to read first to get any existing data like stations
+                        # that we want to preserve
+                        existing_data = self.systems_store.get(system_name, {})
+                        
+                        # Create a new record with the updated system info,
+                        # but preserving existing data like stations
+                        system_data = existing_data.copy()
+                        system_data['system_info'] = system_info
+                        system_data['system_address'] = system_info.get('id64', 0)
+                        system_data['fetch_attempted'] = 1
+                        system_data['last_updated'] = current_time
+                        
+                        # Update star class if primary star info is available
+                        if 'primaryStar' in system_info and 'type' in system_info['primaryStar']:
+                            system_data['star_class'] = system_info['primaryStar']['type']
+                        
+                        # Write the updated data
+                        self.systems_store.set(system_name, system_data)
+                    except Exception as e:
+                        # If we can't get the existing data, create a new minimal record
+                        log('warn', f"Couldn't retrieve existing system data for {system_name} when updating system info: {e}")
+                        
+                        # Create minimal system data
+                        system_data = {
+                            'name': system_name,
+                            'fetch_attempted': 1,
+                            'last_updated': current_time,
+                            'system_info': system_info,
+                            'system_address': system_info.get('id64', 0)
+                        }
+                        
+                        # Update star class if primary star info is available
+                        if 'primaryStar' in system_info and 'type' in system_info['primaryStar']:
+                            system_data['star_class'] = system_info['primaryStar']['type']
+                            
+                        self.systems_store.set(system_name, system_data)
                 
         except Exception as e:
             error_msg = str(e)
             log('error', f"Error fetching system info async for {system_name}: {error_msg}", traceback.format_exc())
             
-            # Store error in system info
-            system_data = self.systems_store.get(system_name, {})
-            system_data['system_info'] = {"error": error_msg}
-            self.systems_store.set(system_name, system_data)
+            # Create a minimal error system record
+            try:
+                current_time = time.time()
+                self.systems_store.set(system_name, {
+                    'name': system_name,
+                    'fetch_attempted': 1,
+                    'last_updated': current_time,
+                    'system_info': {"error": error_msg}
+                })
+            except Exception as update_err:
+                log('error', f"Error updating system {system_name} with error info: {update_err}")
     
     async def _fetch_stations_async(self, session: aiohttp.ClientSession, system_name: str) -> None:
         """Fetch station info from EDSM API asynchronously"""
@@ -534,19 +581,48 @@ class SystemDatabase:
                     if station.get("type") != "Fleet Carrier"
                 ]
                 
-                # Update stations in store
-                system_data = self.systems_store.get(system_name, {})
-                system_data['stations'] = stations
-                self.systems_store.set(system_name, system_data)
+                # Create a new system data record with stations info
+                # Get the current timestamp to keep records consistent
+                current_time = time.time()
+                
+                try:
+                    # We need to read first to get any existing system info
+                    # This is safe because we're not modifying any fields
+                    # other than 'stations'
+                    system_data = self.systems_store.get(system_name, {})
+                    
+                    # Only update the stations field, preserving other data
+                    system_data['stations'] = stations
+                    system_data['fetch_attempted'] = 1
+                    system_data['last_updated'] = current_time
+                    
+                    # Write back to database
+                    self.systems_store.set(system_name, system_data)
+                except Exception as e:
+                    # If we can't get the existing data, create a new minimal record
+                    log('warn', f"Couldn't retrieve existing system data for {system_name} when updating stations: {e}")
+                    self.systems_store.set(system_name, {
+                        'name': system_name,
+                        'fetch_attempted': 1,
+                        'last_updated': current_time,
+                        'stations': stations
+                    })
                 
         except Exception as e:
             error_msg = str(e)
             log('error', f"Error fetching station info async for {system_name}: {error_msg}", traceback.format_exc())
             
-            # Store empty list for stations on error
-            system_data = self.systems_store.get(system_name, {})
-            system_data['stations'] = []
-            self.systems_store.set(system_name, system_data)
+            # Create a minimal error system record with empty stations
+            try:
+                current_time = time.time()
+                self.systems_store.set(system_name, {
+                    'name': system_name,
+                    'fetch_attempted': 1,
+                    'last_updated': current_time,
+                    'stations': []
+                })
+            except Exception as update_err:
+                log('error', f"Error updating system {system_name} with empty stations: {update_err}")
     
     async def _fetch_multiple_systems_async(self, system_names: List[str], chunk_size: int = 50) -> None:
         """
@@ -562,22 +638,22 @@ class SystemDatabase:
         # Process systems in chunks to avoid URL length issues
         system_chunks = [system_names[i:i + chunk_size] for i in range(0, len(system_names), chunk_size)]
         
-        # Mark all systems as attempted
+        # Initialize empty records for all systems we're about to fetch
+        # This avoids having to read before write in the processing methods
         current_time = time.time()
         for system_name in system_names:
             try:
+                # Check if the system already exists
                 system_data = self.systems_store.get(system_name)
-                if system_data:
-                    system_data['fetch_attempted'] = 1
-                    system_data['last_updated'] = current_time
-                    self.systems_store.set(system_name, system_data)
-                else:
-                    self._init_system_record(system_name)
-                    system_data = self.systems_store.get(system_name, {})
-                    system_data['fetch_attempted'] = 1
-                    self.systems_store.set(system_name, system_data)
+                if not system_data:
+                    # Create a fresh record
+                    self.systems_store.set(system_name, {
+                        'name': system_name,
+                        'fetch_attempted': 1,
+                        'last_updated': current_time
+                    })
             except Exception as e:
-                log('error', f"Error updating fetch status for {system_name}: {e}")
+                log('error', f"Error initializing record for {system_name}: {e}")
         
         # Process chunks concurrently
         async with aiohttp.ClientSession() as session:
@@ -609,15 +685,22 @@ class SystemDatabase:
                     system_name = system_data.get('name')
                     if system_name:
                         try:
-                            # Update system info in store
-                            stored_data = self.systems_store.get(system_name, {})
-                            stored_data['system_info'] = system_data
-                            stored_data['system_address'] = system_data.get('id64', 0)
+                            # Create a new record with this system info
+                            # Instead of reading from the database and then writing, 
+                            # just create a new record with the data we have from the API
+                            stored_data = {
+                                'name': system_name,
+                                'fetch_attempted': 1,
+                                'last_updated': time.time(),
+                                'system_info': system_data,
+                                'system_address': system_data.get('id64', 0)
+                            }
                             
                             # Update star class if primary star info is available
                             if 'primaryStar' in system_data and 'type' in system_data['primaryStar']:
                                 stored_data['star_class'] = system_data['primaryStar']['type']
                             
+                            # Update the database with the new data
                             self.systems_store.set(system_name, stored_data)
                             
                             # Queue station fetches for processing concurrently
@@ -636,8 +719,13 @@ class SystemDatabase:
             # Mark systems with error
             for system_name in chunk:
                 try:
-                    system_data = self.systems_store.get(system_name, {})
-                    system_data['system_info'] = {"error": error_msg}
+                    # Create a new error record instead of reading then updating
+                    system_data = {
+                        'name': system_name,
+                        'fetch_attempted': 1,
+                        'last_updated': time.time(),
+                        'system_info': {"error": error_msg}
+                    }
                     self.systems_store.set(system_name, system_data)
                 except Exception as update_err:
                     log('error', f"Error updating system {system_name} with error info: {update_err}")

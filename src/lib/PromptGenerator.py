@@ -2960,10 +2960,10 @@ class PromptGenerator:
             # Direct lookup from system database instead of SystemInfo projection
             if system_name:
                 # Get system info from system database
-                raw_system_info = self.system_db.get_system_info(system_name)
-                if raw_system_info:
+                raw_system_info = self.system_db.get_system_info(system_name, async_fetch=True)
+                if raw_system_info and not isinstance(raw_system_info, str):
                     system_info = self.format_system_info(raw_system_info)
-                
+
                 # Get stations from system database
                 stations_data = self.system_db.get_stations(system_name)
                 if stations_data:
@@ -2989,22 +2989,17 @@ class PromptGenerator:
                 # Try to get additional info from system database
                 system_name = system.get("StarSystem")
                 if system_name:
-                    raw_system_info = self.system_db.get_system_info(system_name)
+                    raw_system_info = self.system_db.get_system_info(system_name, async_fetch=True)
                     if raw_system_info and not isinstance(raw_system_info, str):
-                        # Use the same formatting function as in the main system info
+                        # Use the formatter which now returns display-ready data
                         formatted_info = self.format_system_info(raw_system_info)
                         
-                        # Add the formatted data to system_data
-                        if "information" in formatted_info and formatted_info["information"].get("government") and formatted_info["information"]["government"]:
-                            system_data["Government"] = formatted_info["information"]["government"]
-                        
-                        # Add population if present in formatted info
-                        if "information" in formatted_info and formatted_info["information"].get("population"):
-                            system_data["Population"] = formatted_info["information"]["population"]
-                            
-                        # Add unexplored status if present
-                        if "unexplored" in formatted_info:
-                            system_data["Unexplored"] = "true"
+                        # If we got valid formatted info, merge it with system_data
+                        if isinstance(formatted_info, dict):
+                            # Only add the keys we want for nav route display
+                            for key in ["Government", "Population", "Unexplored", "Economy"]:
+                                if key in formatted_info:
+                                    system_data[key] = formatted_info[key]
                 
                 enhanced_nav_route.append(system_data)
             
@@ -3200,66 +3195,75 @@ class PromptGenerator:
         return conversational_pieces
 
     def format_system_info(self, system_info: dict) -> dict:
-        """Format system info into a structured template with desired field transformations"""
+        """
+        Format system info into a structured template suitable for direct display
+        Returns a dictionary that can be directly used in the UI or passed to display functions
+        """
         if not system_info or isinstance(system_info, str):
             return system_info
             
-        # Create a new dictionary for the formatted information
-        formatted_info = {}
+        # Create a new dictionary for the formatted information - top level will be directly usable
+        formatted = {}
         
         # Add the system name
-        formatted_info["name"] = system_info["name"]
+        formatted["Name"] = system_info.get("name", "Unknown")
+        
+        # Mark as unexplored if applicable
+        if "primaryStar" in system_info and not system_info["primaryStar"]:
+            formatted["Unexplored"] = "true"
+            return formatted
         
         # Process information section
         if "information" in system_info and system_info["information"]:
             info_data = system_info["information"]
             
-            # Create a new dictionary for information
-            formatted_info["information"] = {}
+            # Format government/security/allegiance for display
+            government_parts = []
+            if info_data.get("security") and info_data.get("security") != "None":
+                government_parts.append(f"{info_data['security']} Security")
+            if info_data.get("allegiance"):
+                government_parts.append(info_data["allegiance"])
+            if info_data.get("government"):
+                government_parts.append(info_data["government"])
             
-            # Handle economy fields - unified approach
-            economy = info_data.get("economy")
-            second_economy = info_data.get("secondEconomy")
-            reserve = info_data.get("reserve")
+            if government_parts:
+                formatted["Government"] = " ".join(government_parts)
             
-            formatted_info["information"]["economy"] = economy
-            if second_economy:
-                formatted_info["information"]["economy"] += f" {second_economy}"
-            if reserve:
-                formatted_info["information"]["economy"] += f" ({reserve})"
+            # Format economy information
+            economy_parts = []
+            if info_data.get("economy"):
+                economy_parts.append(info_data["economy"])
+            if info_data.get("secondEconomy"):
+                economy_parts.append(info_data["secondEconomy"])
             
-            faction = info_data.get("faction", None )
-            faction_state = info_data.get("factionState", None)
-            if faction and faction_state:
-                formatted_info["information"]["faction"] = f"{faction} ({faction_state})"
+            if economy_parts:
+                formatted["Economy"] = "/".join(economy_parts)
+                if info_data.get("reserve"):
+                    formatted["Economy"] += f" ({info_data['reserve']})"
             
-            # Handle population - only if > 0
+            # Add faction information
+            if info_data.get("faction"):
+                faction_text = info_data["faction"]
+                if info_data.get("factionState"):
+                    faction_text += f" ({info_data['factionState']})"
+                formatted["Faction"] = faction_text
+            
+            # Add population only if > 0
             population = info_data.get("population", 0)
             if population is not None and population > 0:
-                formatted_info["information"]["population"] = population
-                
-            # Handle security
-            security = info_data.get("security", None)
-            
-            # Create the combined government/security/allegiance field for display
-            formatted_info["information"]["government"] = ""
-            if security and security != "None":
-                formatted_info["information"]["government"] += f"{security} Security"
-            if info_data.get("allegiance"):
-                formatted_info["information"]["government"] += f" {info_data.get('allegiance', 'Unknown')}"
-            if info_data.get("government"):
-                formatted_info["information"]["government"] += f" {info_data.get('government', '')}"
+                formatted["Population"] = population
         
         # Process primary star
-        if "primaryStar" in system_info:
-            if system_info["primaryStar"]:
-                # Copy primary star data with a new dictionary
-                formatted_info["primaryStar"] = {}
-                formatted_info["primaryStar"]["name"] = system_info["primaryStar"]["name"]
-                formatted_info["primaryStar"]["type"] = system_info["primaryStar"]["type"]
-                formatted_info["primaryStar"]["scoopable"] = system_info["primaryStar"]["isScoopable"]
-            else:
-                # Mark as unexplored if primary star is empty
-                formatted_info["unexplored"] = "true"
+        if "primaryStar" in system_info and system_info["primaryStar"]:
+            star_data = system_info["primaryStar"]
+            formatted["Star"] = star_data.get("name", "Unknown")
+            formatted["Star Type"] = star_data.get("type", "Unknown")
+            formatted["Scoopable"] = star_data.get("isScoopable")
+            
+        # Include coordinates if available
+        if "coords" in system_info:
+            coords = system_info.get("coords", {})
+            if coords and isinstance(coords, dict):
+                formatted["Coordinates"] = f"X: {coords.get('x')}, Y: {coords.get('y')}, Z: {coords.get('z')}"
                 
-        return formatted_info
+        return formatted
