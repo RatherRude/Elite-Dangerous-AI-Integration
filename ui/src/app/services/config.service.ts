@@ -143,6 +143,7 @@ export interface Config {
     cn_autostart: boolean;
     ed_journal_path: string;
     ed_appdata_path: string;
+    reset_game_events?: boolean; // Flag to request resetting game events to defaults
 }
 
 @Injectable({
@@ -289,5 +290,21 @@ export class ConfigService {
             timestamp: new Date().toISOString(),
         };
         await this.tauriService.send_message(message);
+    }
+
+    public async resetGameEvents(): Promise<void> {
+        const message: ChangeConfigMessage = {
+            type: "change_config",
+            timestamp: new Date().toISOString(),
+            config: {
+                reset_game_events: true
+            }
+        };
+
+        try {
+            await this.tauriService.send_message(message);
+        } catch (error) {
+            console.error('Error sending reset game events request:', error);
+        }
     }
 }
