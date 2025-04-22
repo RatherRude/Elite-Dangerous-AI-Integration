@@ -30,6 +30,10 @@ def instantiate_class_by_name(classes: list[Any], class_name: str, data: dict[st
             return cls(**data)
     return None
 
+# For testing purposes only
+def set_connection_for_testing(conn):
+    _thread_local.conn = conn
+
 @final
 class EventStore():
     def __init__(self, store_name: str, event_classes: list[Any]):
@@ -49,10 +53,6 @@ class EventStore():
             )
         ''')
         conn.commit()
-        
-        # Clean existing test data that might interfere with tests
-        if store_name.startswith('test_'):
-            self.delete_all()
         
     def commit(self) -> None:
         get_connection().commit()
@@ -126,45 +126,51 @@ class KeyValueStore():
         return None
     
     def init(self, key: str, version: str, value: Any) -> Any:
-        current_version = self.get_version(key)
+        conn = get_connection()
+        cursor = conn.cursor()
         
-        # If key doesn't exist or version is different, insert/update it
-        if current_version is None:
+        # Check if the key already exists
+        cursor.execute(f'''
+            SELECT version, value
+            FROM {self.table_name}
+            WHERE key = ?
+        ''', (key,))
+        row = cursor.fetchone()
+        
+        if row is None:
             # Key doesn't exist, create it
-            conn = get_connection()
-            cursor = conn.cursor()
-            value_json = json.dumps(value)
             cursor.execute(f'''
                 INSERT INTO {self.table_name} (key, version, value)
                 VALUES (?, ?, ?)
-            ''', (key, version, value_json))
+            ''', (key, version, json.dumps(value)))
             conn.commit()
             return value
-        elif current_version != version:
+        
+        existing_version, existing_value = row
+        
+        if existing_version != version:
             # Version is different, update it
-            conn = get_connection()
-            cursor = conn.cursor()
-            value_json = json.dumps(value)
             cursor.execute(f'''
                 UPDATE {self.table_name}
                 SET version = ?, value = ?
                 WHERE key = ?
-            ''', (version, value_json, key))
+            ''', (version, json.dumps(value), key))
             conn.commit()
             return value
-        
-        # Version is the same, return existing value
-        return self.get(key)
+            
+        # Version is the same, return existing value without changing it
+        return json.loads(existing_value)
     
     def set(self, key: str, value: Any) -> None:
         conn = get_connection()
         cursor = conn.cursor()
+        
+        # Check if the key exists
         cursor.execute(f'''
             SELECT COUNT(*)
             FROM {self.table_name}
             WHERE key = ?
         ''', (key,))
-        
         row = cursor.fetchone()
         
         if row and row[0] > 0:

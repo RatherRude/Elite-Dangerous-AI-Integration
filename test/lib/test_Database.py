@@ -8,7 +8,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 from unittest.mock import patch
-from src.lib.Database import EventStore, KeyValueStore
+from src.lib.Database import EventStore, KeyValueStore, set_connection_for_testing
 
 # Test event classes
 @dataclass
@@ -32,6 +32,16 @@ def mock_connection(db_path, monkeypatch):
     
     monkeypatch.setattr('src.lib.Database.get_db_path', mock_get_db_path)
     conn = sqlite3.connect(db_path)
+    
+    # Reset tables that might exist from other tests
+    cursor = conn.cursor()
+    cursor.execute("DROP TABLE IF EXISTS test_events_v1")
+    cursor.execute("DROP TABLE IF EXISTS test_store_v1")
+    conn.commit()
+    
+    # Ensure our tests use this specific connection
+    set_connection_for_testing(conn)
+    
     return conn
 
 @pytest.fixture
@@ -51,6 +61,9 @@ def test_event_store_init(event_store, mock_connection):
 
 def test_event_store_insert(event_store):
     """Test inserting events"""
+    # Clean start
+    event_store.delete_all()
+    
     event = SampleEvent1(name="test", value=42)
     processed_at = datetime.now().timestamp()
     
@@ -64,6 +77,9 @@ def test_event_store_insert(event_store):
 
 def test_event_store_get_latest(event_store):
     """Test retrieving latest events with limit"""
+    # Clean start
+    event_store.delete_all()
+    
     for i in range(5):
         event = SampleEvent1(name=f"test_{i}", value=i)
         event_store.insert_event(event, float(i))
@@ -91,6 +107,9 @@ def test_kv_store_init(kv_store, mock_connection):
 
 def test_kv_store_init_method(kv_store):
     """Test init method with version check"""
+    # Clean start
+    kv_store.delete_all()
+    
     value = {"data": "test"}
     
     # Initial set
@@ -109,6 +128,9 @@ def test_kv_store_init_method(kv_store):
 
 def test_kv_store_set_get(kv_store):
     """Test setting and getting values"""
+    # Clean start
+    kv_store.delete_all()
+    
     kv_store.init("key1", "1.0", "test")
     kv_store.set("key1", "updated")
     
@@ -117,6 +139,9 @@ def test_kv_store_set_get(kv_store):
 
 def test_kv_store_get_all(kv_store):
     """Test getting all values"""
+    # Clean start
+    kv_store.delete_all()
+    
     kv_store.init("key1", "1.0", "value1")
     kv_store.init("key2", "1.0", "value2")
     
@@ -127,6 +152,9 @@ def test_kv_store_get_all(kv_store):
 
 def test_kv_store_delete(kv_store):
     """Test deleting specific key"""
+    # Clean start
+    kv_store.delete_all()
+    
     kv_store.init("key1", "1.0", "value1")
     kv_store.delete("key1")
     
@@ -134,6 +162,9 @@ def test_kv_store_delete(kv_store):
 
 def test_kv_store_delete_all(kv_store):
     """Test deleting all keys"""
+    # Clean start
+    kv_store.delete_all()
+    
     kv_store.init("key1", "1.0", "value1")
     kv_store.init("key2", "1.0", "value2")
     
