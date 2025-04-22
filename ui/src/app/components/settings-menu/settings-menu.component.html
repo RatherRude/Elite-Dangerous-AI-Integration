@@ -112,13 +112,12 @@
 
     <mat-tab>
         <ng-template mat-tab-label>
-            <mat-icon class="tab-icon">psychology</mat-icon>
-            Behavior
+            <mat-icon class="tab-icon">person</mat-icon>
+            Characters
         </ng-template>
         <div class="tab-content">
             @if (config) {
                 <div class="settings-grid">
-
                     <h2>Personality</h2>
                     <div [class.editing-active]="editMode">
                         <!-- Character Management Section -->
@@ -489,6 +488,19 @@
                             </mat-form-field>
                         </div>
                     </div>
+                </div>
+            }
+        </div>
+    </mat-tab>
+
+    <mat-tab>
+        <ng-template mat-tab-label>
+            <mat-icon class="tab-icon">psychology</mat-icon>
+            Behavior
+        </ng-template>
+        <div class="tab-content">
+            @if (config) {
+                <div class="settings-grid">
                     <h2>Actions</h2>
                     <mat-slide-toggle [ngModel]="config.tools_var && config.game_actions_var"
                                       (ngModelChange)="onConfigChange({game_actions_var: $event})"
