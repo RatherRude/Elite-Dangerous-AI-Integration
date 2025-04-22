@@ -1304,20 +1304,21 @@ class PromptGenerator:
             body_count = nav_beacon_scan_event.get('NumBodies', 0)
             
             return f"{self.commander_name} has scanned a navigation beacon, revealing data for {body_count} bodies in the system."
-            
+
         if event_name == 'Screenshot':
             screenshot_event = cast(ScreenshotEvent, content)
-            system = screenshot_event.get('System', 'current system')
-            body = screenshot_event.get('Body', '')
+
+            system = screenshot_event.get('System') or 'current system'
+            body = screenshot_event.get('Body') or ''
             body_text = f" near {body}" if body else ""
-            
+
             location_text = ""
             if screenshot_event.get('Latitude') is not None and screenshot_event.get('Longitude') is not None and screenshot_event.get('Altitude') is not None:
                 lat = screenshot_event.get('Latitude', 0)
                 lon = screenshot_event.get('Longitude', 0)
                 alt = screenshot_event.get('Altitude', 0)
                 location_text = f" at coordinates {lat}, {lon}, altitude: {alt}m"
-            
+
             return f"{self.commander_name} took a screenshot in {system}{body_text}{location_text}."
 
         # Station Services events
@@ -2968,7 +2969,7 @@ class PromptGenerator:
                 stations_data = self.system_db.get_stations(system_name)
                 if stations_data:
                     stations_info = self.format_stations_data(stations_data)
-            
+
             status_entries.append(("Location", location_info))
             status_entries.append(("Local system", system_info))
             status_entries.append(("Stations in local system", stations_info))
@@ -3040,10 +3041,97 @@ class PromptGenerator:
                 for item in market.get('Items',[]) if item.get('Stock') or item.get('Demand')
             }))
         if current_station and current_station == outfitting.get('StationName'):
-            status_entries.append(("Local outfitting information", [
-                {"Name": item.get('Name'), "BuyPrice": item.get('BuyPrice')}
-                for item in outfitting.get('Items', [])
-            ]))
+            # Create a nested structure from outfitting items with optimized leaf nodes
+            nested_outfitting = {}
+
+            # First pass: collect all items by their categories
+            item_categories = {}
+
+            for item in outfitting.get('Items', []):
+                item_name = item.get('Name', '')
+                if not item_name or '_' not in item_name:
+                    continue
+
+                parts = item_name.split('_')
+                # Group items by their parent paths
+                parent_path = '_'.join(parts[:-1])
+                leaf = parts[-1]
+
+                if parent_path not in item_categories:
+                    item_categories[parent_path] = []
+                item_categories[parent_path].append(leaf)
+
+            # Second pass: build the optimized structure
+            for path, leaves in item_categories.items():
+                parts = path.split('_')
+                current = nested_outfitting
+
+                # Build the nested path
+                for i in range(len(parts)):
+                    part = parts[i]
+                    if i < len(parts) - 1:
+                        # Not the last part, ensure we have a dictionary
+                        if part not in current:
+                            current[part] = {}
+                        if not isinstance(current[part], dict):
+                            current[part] = {}
+                        current = current[part]
+                    else:
+                        # Last part - add the optimized leaf
+                        # Process the leaf nodes according to patterns
+                        if any(leaf.startswith('class') for leaf in leaves):
+                            # Extract class numbers and create a compact string
+                            class_numbers = []
+                            for leaf in leaves:
+                                if leaf.startswith('class'):
+                                    try:
+                                        num = leaf.replace('class', '')
+                                        class_numbers.append(num)
+                                    except:
+                                        class_numbers.append(leaf)
+                            # Instead of using f-string, create a dictionary entry
+                            current[part] = {"class": f"{','.join(sorted(class_numbers))}"}
+                        elif any(leaf.startswith('size') for leaf in leaves):
+                            # Extract size numbers
+                            size_numbers = []
+                            for leaf in leaves:
+                                if leaf.startswith('size'):
+                                    try:
+                                        num = leaf.replace('size', '')
+                                        size_numbers.append(num)
+                                    except:
+                                        size_numbers.append(leaf)
+                            # Instead of using f-string, create a dictionary entry
+                            current[part] = {"size": f"{','.join(sorted(size_numbers))}"}
+                        else:
+                            # Regular processing for other types - use a string directly
+                            current[part] = f"{','.join(sorted(leaves))}"
+
+            # Final pass: flatten the special dictionary entries to avoid quotes
+            def flatten_special_entries(data):
+                if not isinstance(data, dict):
+                    return data
+
+                result = {}
+                for key, value in data.items():
+                    if isinstance(value, dict) and len(value) == 1:
+                        # Check if this is our special format with class or size
+                        special_key = next(iter(value.keys()), None)
+                        if special_key in ('class', 'size'):
+                            # Flatten it to a direct string to avoid quotes
+                            result[key] = f"{special_key} {value[special_key]}"
+                        else:
+                            # Regular nested dictionary
+                            result[key] = flatten_special_entries(value)
+                    else:
+                        # Regular processing
+                        result[key] = flatten_special_entries(value) if isinstance(value, dict) else value
+                return result
+
+            # Apply the flattening
+            nested_outfitting = flatten_special_entries(nested_outfitting)
+
+            status_entries.append(("Local outfitting information", nested_outfitting))
         if current_station and current_station == storedShips.get('StationName'):
             status_entries.append(("Local, stored ships", storedShips.get('ShipsHere', [])))
             
@@ -3207,7 +3295,7 @@ class PromptGenerator:
         
         # Add the system name
         formatted["Name"] = system_info.get("name", "Unknown")
-        
+
         # Mark as unexplored if applicable
         if "primaryStar" in system_info and not system_info["primaryStar"]:
             formatted["Unexplored"] = "true"
@@ -3225,29 +3313,29 @@ class PromptGenerator:
                 government_parts.append(info_data["allegiance"])
             if info_data.get("government"):
                 government_parts.append(info_data["government"])
-            
+
             if government_parts:
                 formatted["Government"] = " ".join(government_parts)
-            
+
             # Format economy information
             economy_parts = []
             if info_data.get("economy"):
                 economy_parts.append(info_data["economy"])
             if info_data.get("secondEconomy"):
                 economy_parts.append(info_data["secondEconomy"])
-            
+
             if economy_parts:
                 formatted["Economy"] = "/".join(economy_parts)
                 if info_data.get("reserve"):
                     formatted["Economy"] += f" ({info_data['reserve']})"
-            
+
             # Add faction information
             if info_data.get("faction"):
                 faction_text = info_data["faction"]
                 if info_data.get("factionState"):
                     faction_text += f" ({info_data['factionState']})"
                 formatted["Faction"] = faction_text
-            
+
             # Add population only if > 0
             population = info_data.get("population", 0)
             if population is not None and population > 0:
@@ -3259,11 +3347,11 @@ class PromptGenerator:
             formatted["Star"] = star_data.get("name", "Unknown")
             formatted["Star Type"] = star_data.get("type", "Unknown")
             formatted["Scoopable"] = star_data.get("isScoopable")
-            
+
         # Include coordinates if available
         if "coords" in system_info:
             coords = system_info.get("coords", {})
             if coords and isinstance(coords, dict):
                 formatted["Coordinates"] = f"X: {coords.get('x')}, Y: {coords.get('y')}, Z: {coords.get('z')}"
-                
+
         return formatted
