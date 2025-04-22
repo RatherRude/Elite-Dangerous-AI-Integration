@@ -67,7 +67,7 @@ class SystemDatabase:
             # If we haven't attempted to fetch or it's been a while, fetch the data
             fetch_attempted = bool(system_data.get('fetch_attempted', 0))
             last_updated = system_data.get('last_updated', 0)
-            if not fetch_attempted or (time.time() - last_updated) > 86400:  # 24 hours
+            if not fetch_attempted or (time.time() - last_updated) > 604800:  # 7 days
                 self._fetch_system_data(system_name)
                 # Get fresh data
                 system_data = self.systems_store.get(system_name)
@@ -108,7 +108,7 @@ class SystemDatabase:
             # If we haven't fetched yet, trigger a fetch
             fetch_attempted = bool(system_data.get('fetch_attempted', 0))
             last_updated = system_data.get('last_updated', 0)
-            if not fetch_attempted or (time.time() - last_updated) > 86400:  # 24 hours
+            if not fetch_attempted or (time.time() - last_updated) > 604800:  # 7 days
                 self._fetch_system_data(system_name)
                 # Get fresh data
                 system_data = self.systems_store.get(system_name)
