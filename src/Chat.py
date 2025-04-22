@@ -209,12 +209,12 @@ class Chat:
             end_time = time()
             log('debug', 'Response time LLM', end_time - start_time)
 
-            if not isinstance(completion, ChatCompletion) or hasattr(completion, 'error'):
+            if not isinstance(completion, ChatCompletion) or hasattr(completion, 'error') or not completion.choices:
                 log("error", "completion with error:", completion)
                 self.is_thinking = False
                 return
             if hasattr(completion, 'usage') and completion.usage:
-                log("Debug", f'Prompt: {completion.usage.prompt_tokens}, Completion: {completion.usage.completion_tokens}')
+                log("debug", f'Prompt: {completion.usage.prompt_tokens}, Completion: {completion.usage.completion_tokens}')
 
             response_text = completion.choices[0].message.content
             response_actions = completion.choices[0].message.tool_calls
