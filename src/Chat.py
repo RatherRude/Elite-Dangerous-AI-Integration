@@ -1,13 +1,11 @@
-import io
-import json
 import sys
 from time import time
-import traceback
 from typing import Any, final
 
 from EDMesg.CovasNext import ExternalChatNotification, ExternalBackgroundChatNotification
 from openai import OpenAI
 from openai.types.chat import ChatCompletion
+from openai.types.chat import ChatCompletionMessageToolCall
 
 from lib.Config import Config, assign_ptt, get_ed_appdata_path, get_ed_journals_path, get_system_info, load_config, save_config, update_config, update_event_config, validate_config
 from lib.ActionManager import ActionManager
@@ -24,7 +22,7 @@ from lib.StatusParser import Status, StatusParser
 from lib.EDJournal import *
 from lib.EventManager import EventManager
 from lib.UI import send_message
-
+from lib.SystemDatabase import SystemDatabase
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
@@ -96,12 +94,14 @@ class Chat:
         self.tts = TTS(openai_client=self.ttsClient, provider=tts_provider, model=self.config["tts_model_name"], voice=self.config["tts_voice"], voice_instructions=self.config["tts_prompt"], speed=self.config["tts_speed"], output_device=self.config["output_device_name"])
         self.stt = STT(openai_client=self.sttClient, provider=self.config["stt_provider"], input_device_name=self.config["input_device_name"], model=self.config["stt_model_name"], custom_prompt=self.config["stt_custom_prompt"], required_word=self.config["stt_required_word"])
 
+        log("debug", "Initializing SystemDatabase...")
+        self.system_database = SystemDatabase()
         log("debug", "Initializing EDKeys...")
         self.ed_keys = EDKeys(get_ed_appdata_path(config))
         log("debug", "Initializing status parser...")
         self.status_parser = StatusParser(get_ed_journals_path(config))
         log("debug", "Initializing prompt generator...")
-        self.prompt_generator = PromptGenerator(self.config["commander_name"], self.config["character"], important_game_events=self.enabled_game_events)
+        self.prompt_generator = PromptGenerator(self.config["commander_name"], self.config["character"], important_game_events=self.enabled_game_events, system_db=self.system_database)
         log("debug", "Initializing event manager...")
         self.event_manager = EventManager(
             game_events=self.enabled_game_events,
@@ -126,6 +126,7 @@ class Chat:
 
         self.pending.append(event)
         self.reply_pending = self.should_reply(projected_states)
+
 
     def execute_actions(self, actions: list[dict[str, Any]], projected_states: dict[str, dict]):
         action_descriptions: list[str | None] = []
@@ -224,7 +225,6 @@ class Chat:
             self.copilot.output_covas(response_text, reasons)
 
         self.is_thinking = False
-
 
         if response_actions:
             self.execute_actions(response_actions, projected_states)
@@ -329,7 +329,7 @@ class Chat:
             self.stt.listen_continuous()
         log('info', "Voice interface ready.")
 
-        registerProjections(self.event_manager)
+        registerProjections(self.event_manager, self.system_database)
 
         if self.config['tools_var']:
             register_actions(self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.ed_keys)
@@ -418,7 +418,7 @@ class Chat:
 
 
 def read_stdin(chat: Chat):
-    log("info", "Reading stdin...")
+    log("debug", "Reading stdin...")
     while True:
         line = sys.stdin.readline().strip()
         if line:
@@ -471,7 +471,7 @@ if __name__ == "__main__":
         stdin_thread = threading.Thread(target=read_stdin, args=(chat,), daemon=True)
         stdin_thread.start()
 
-        log("info", "Running chat...")
+        log("debug", "Running chat...")
         chat.run()
     except Exception as e:
         log("error", e, traceback.format_exc())
