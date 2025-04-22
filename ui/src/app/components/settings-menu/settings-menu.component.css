@@ -181,3 +181,22 @@ ul {
 .lowWidth {
   max-width: 60px;
 }
+.event-search-and-reset {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+
+  .search-box {
+    flex: 1;
+    margin-bottom: 0;
+  }
+  button {
+    padding: 25px 10px;
+    margin: 0;
+  }
+  div.mat-mdc-form-field-subscript-wrapper {
+    display: none;
+    background: red;
+  }
+}
