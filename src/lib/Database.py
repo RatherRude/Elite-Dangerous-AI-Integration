@@ -13,7 +13,7 @@ def get_db_path() -> str:
 # Thread-local storage for connections
 _thread_local = threading.local()
 
-def get_connection() -> sqlite3.Connection:
+def get_connection():
     # Check if this thread already has a connection
     if not hasattr(_thread_local, 'conn'):
         _thread_local.conn = sqlite3.connect(get_db_path())
@@ -23,7 +23,7 @@ def get_connection() -> sqlite3.Connection:
     return _thread_local.conn
 
 
-def instantiate_class_by_name(self, classes: list[Any], class_name: str, data: dict[str, Any]) -> Any:
+def instantiate_class_by_name(classes: list[Any], class_name: str, data: dict[str, Any]) -> Any:
     for cls in classes:
         if cls.__name__ == class_name:
             return cls(**data)
@@ -76,7 +76,7 @@ class EventStore():
         rows = cursor.fetchall()
         events = []
         for row in rows:
-            instance = instantiate_class_by_name(self, self.event_classes, row[0], json.loads(row[1]))
+            instance = instantiate_class_by_name(self.event_classes, row[0], json.loads(row[1]))
             events.append(instance)
         return events
     
@@ -118,30 +118,48 @@ class KeyValueStore():
         row = cursor.fetchone()
         if row:
             return row[0]
-        
+        return None
+    
     def init(self, key: str, version: str, value: Any) -> Any:
         current_version = self.get_version(key)
-        if current_version == version:
-            return self.get(key)
         
-        conn = get_connection()
-        cursor = conn.cursor()
-        _ = cursor.execute(f'''
-            INSERT OR REPLACE INTO {self.table_name} (key, version, value)
-            VALUES (?, ?, ?)
-        ''', (key, version, json.dumps(value)))
-        conn.commit()
+        # If key doesn't exist or version is different, insert/update it
+        if current_version is None or current_version != version:
+            conn = get_connection()
+            cursor = conn.cursor()
+            _ = cursor.execute(f'''
+                INSERT OR REPLACE INTO {self.table_name} (key, version, value)
+                VALUES (?, ?, ?)
+            ''', (key, version, json.dumps(value)))
+            conn.commit()
         
-        return self.get(key)
+        return self.get(key, value)
     
     def set(self, key: str, value: Any) -> None:
         conn = get_connection()
         cursor = conn.cursor()
-        _ = cursor.execute(f'''
-            UPDATE {self.table_name}
-            SET value = ?
+        cursor.execute(f'''
+            SELECT COUNT(*)
+            FROM {self.table_name}
             WHERE key = ?
-        ''', (json.dumps(value), key, ))
+        ''', (key,))
+        
+        row = cursor.fetchone()
+        
+        if row and row[0] > 0:
+            # Key exists, update it
+            cursor.execute(f'''
+                UPDATE {self.table_name}
+                SET value = ?
+                WHERE key = ?
+            ''', (json.dumps(value), key))
+        else:
+            # Key doesn't exist, insert it with a default version
+            cursor.execute(f'''
+                INSERT INTO {self.table_name} (key, version, value)
+                VALUES (?, ?, ?)
+            ''', (key, "1.0", json.dumps(value)))
+        
         conn.commit()
     
     def get(self, key: str, default: Any = None) -> Any:
