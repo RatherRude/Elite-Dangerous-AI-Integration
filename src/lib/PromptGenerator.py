@@ -26,6 +26,7 @@ from lib.EventModels import (
 )
 
 from .Projections import LocationState, MissionsState, ShipInfoState, NavInfo, TargetState, CurrentStatus, CargoState
+from .SystemDatabase import SystemDatabase
 
 from .EDJournal import *
 from .Event import (
@@ -387,10 +388,11 @@ LocationEvent = dict
 NavRouteEvent = dict
 
 class PromptGenerator:
-    def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str]):
+    def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str], system_db: SystemDatabase):
         self.commander_name = commander_name
         self.character_prompt = character_prompt
         self.important_game_events = important_game_events
+        self.system_db = system_db
 
     def get_event_template(self, event: GameEvent):
         content: Any = event.content
@@ -1311,14 +1313,11 @@ class PromptGenerator:
             body_text = f" near {body}" if body else ""
 
             location_text = ""
-            try:
-                lat = float(screenshot_event.get('Latitude'))
-                lon = float(screenshot_event.get('Longitude'))
-                alt = float(screenshot_event.get('Altitude', 0))
-                location_text = f" at coordinates {lat:.4f}, {lon:.4f}, altitude: {alt:.1f}m"
-            except (TypeError, ValueError):
-                # If any of the coordinates are invalid or missing, skip the location text
-                pass
+            if screenshot_event.get('Latitude') is not None and screenshot_event.get('Longitude') is not None and screenshot_event.get('Altitude') is not None:
+                lat = screenshot_event.get('Latitude', 0)
+                lon = screenshot_event.get('Longitude', 0)
+                alt = screenshot_event.get('Altitude', 0)
+                location_text = f" at coordinates {lat}, {lon}, altitude: {alt}m"
 
             return f"{self.commander_name} took a screenshot in {system}{body_text}{location_text}."
 
@@ -2581,26 +2580,6 @@ class PromptGenerator:
     def tool_response_message(self, event: ToolEvent):
         return
 
-    # fetch system info from EDSM
-    @lru_cache(maxsize=1, typed=False)
-    def get_system_info(self, system_name: str) -> dict | str:
-        url = "https://www.edsm.net/api-v1/system"
-        params = {
-            "systemName": system_name,
-            "showInformation": 1,
-            "showPrimaryStar": 1,
-        }
-
-        try:
-            response = requests.get(url, params=params, timeout=1)
-            response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
-
-            return response.json()
-
-        except Exception as e:
-            log('error', e, traceback.format_exc())
-            return "Currently no information on system available"
-
     # Helper method to format station data into the desired structure
     def format_stations_data(self, stations_data) -> dict | str | list:
         """Format station data into the desired hierarchy regardless of source"""
@@ -2745,30 +2724,6 @@ class PromptGenerator:
             
         return normalized
 
-    # fetch station info from EDSM
-    @lru_cache(maxsize=1, typed=False)
-    def get_station_info(self, system_name: str, fleet_carrier=False) -> dict | str | list:
-        url = "https://www.edsm.net/api-system-v1/stations"
-        params = {
-            "systemName": system_name,
-        }
-
-        try:
-            response = requests.get(url, params=params, timeout=1)
-            response.raise_for_status()
-
-            result = response.json()
-            
-            # Ensure we return a string if the result is None
-            if result is None:
-                return "No station information available"
-                
-            return result
-
-        except Exception as e:
-            log("error", f"Error: {e}")
-            return "Currently no information on system available"
-            
     def generate_vehicle_status(self, current_status:dict):
         flags = [key for key, value in current_status["flags"].items() if value]
         if current_status.get("flags2"):
@@ -3003,26 +2958,17 @@ class PromptGenerator:
             system_info = None
             stations_info = None
             
-            # Check if we have system info from projection
-            if projected_states.get('SystemInfo') and system_name in projected_states['SystemInfo']:
-                system_data = projected_states['SystemInfo'][system_name]
-                
-                # Check if we have system info from the projection
-                if system_data.get('SystemInfo'):
-                    # Format the system info into a structured template
-                    system_info = self.format_system_info(system_data['SystemInfo'])
-                
-                # Check if we have stations info
-                if system_data.get('Stations'):
-                    # Format the projected station data
-                    stations_info = self.format_stations_data(system_data['Stations'])
-            
-            # If no data from projection, use fallback direct fetch methods
-            if system_info is None:
-                system_info = self.format_stations_data(self.get_system_info(system_name))
-            
-            if stations_info is None:
-                stations_info = self.format_stations_data(self.get_station_info(system_name))
+            # Direct lookup from system database instead of SystemInfo projection
+            if system_name:
+                # Get system info from system database
+                raw_system_info = self.system_db.get_system_info(system_name, async_fetch=True)
+                if raw_system_info and not isinstance(raw_system_info, str):
+                    system_info = self.format_system_info(raw_system_info)
+
+                # Get stations from system database
+                stations_data = self.system_db.get_stations(system_name)
+                if stations_data:
+                    stations_info = self.format_stations_data(stations_data)
 
             status_entries.append(("Location", location_info))
             status_entries.append(("Local system", system_info))
@@ -3032,7 +2978,7 @@ class PromptGenerator:
         if "NavInfo" in projected_states and projected_states["NavInfo"].get("NavRoute"):
             nav_route = projected_states["NavInfo"]["NavRoute"]
             
-            # Enhance NavRoute with data from SystemInfo projection if available
+            # Enhance NavRoute with data from system database instead of SystemInfo projection
             enhanced_nav_route = []
             # Limit to first 20 systems
             systems_to_process = nav_route[:20]
@@ -3041,25 +2987,20 @@ class PromptGenerator:
             for system in systems_to_process:
                 system_data = {**system}  # Create a copy of the original system data
                 
-                # Try to get additional info from SystemInfo projection
+                # Try to get additional info from system database
                 system_name = system.get("StarSystem")
-                if projected_states.get('SystemInfo') and system_name in projected_states['SystemInfo']:
-                    raw_system_info = projected_states['SystemInfo'][system_name].get('SystemInfo')
+                if system_name:
+                    raw_system_info = self.system_db.get_system_info(system_name, async_fetch=True)
                     if raw_system_info and not isinstance(raw_system_info, str):
-                        # Use the same formatting function as in the main system info
+                        # Use the formatter which now returns display-ready data
                         formatted_info = self.format_system_info(raw_system_info)
                         
-                        # Add the formatted data to system_data
-                        if "information" in formatted_info and formatted_info["information"].get("government") and formatted_info["information"]["government"]:
-                            system_data["Government"] = formatted_info["information"]["government"]
-                        
-                        # Add population if present in formatted info
-                        if "information" in formatted_info and formatted_info["information"].get("population"):
-                            system_data["Population"] = formatted_info["information"]["population"]
-                            
-                        # Add unexplored status if present
-                        if "unexplored" in formatted_info:
-                            system_data["Unexplored"] = "true"
+                        # If we got valid formatted info, merge it with system_data
+                        if isinstance(formatted_info, dict):
+                            # Only add the keys we want for nav route display
+                            for key in ["Government", "Population", "Unexplored", "Economy"]:
+                                if key in formatted_info:
+                                    system_data[key] = formatted_info[key]
                 
                 enhanced_nav_route.append(system_data)
             
@@ -3102,29 +3043,29 @@ class PromptGenerator:
         if current_station and current_station == outfitting.get('StationName'):
             # Create a nested structure from outfitting items with optimized leaf nodes
             nested_outfitting = {}
-            
+
             # First pass: collect all items by their categories
             item_categories = {}
-            
+
             for item in outfitting.get('Items', []):
                 item_name = item.get('Name', '')
                 if not item_name or '_' not in item_name:
                     continue
-                    
+
                 parts = item_name.split('_')
                 # Group items by their parent paths
                 parent_path = '_'.join(parts[:-1])
                 leaf = parts[-1]
-                
+
                 if parent_path not in item_categories:
                     item_categories[parent_path] = []
                 item_categories[parent_path].append(leaf)
-            
+
             # Second pass: build the optimized structure
             for path, leaves in item_categories.items():
                 parts = path.split('_')
                 current = nested_outfitting
-                
+
                 # Build the nested path
                 for i in range(len(parts)):
                     part = parts[i]
@@ -3165,12 +3106,12 @@ class PromptGenerator:
                         else:
                             # Regular processing for other types - use a string directly
                             current[part] = f"{','.join(sorted(leaves))}"
-            
+
             # Final pass: flatten the special dictionary entries to avoid quotes
             def flatten_special_entries(data):
                 if not isinstance(data, dict):
                     return data
-                    
+
                 result = {}
                 for key, value in data.items():
                     if isinstance(value, dict) and len(value) == 1:
@@ -3186,10 +3127,10 @@ class PromptGenerator:
                         # Regular processing
                         result[key] = flatten_special_entries(value) if isinstance(value, dict) else value
                 return result
-                
+
             # Apply the flattening
             nested_outfitting = flatten_special_entries(nested_outfitting)
-            
+
             status_entries.append(("Local outfitting information", nested_outfitting))
         if current_station and current_station == storedShips.get('StationName'):
             status_entries.append(("Local, stored ships", storedShips.get('ShipsHere', [])))
@@ -3342,66 +3283,75 @@ class PromptGenerator:
         return conversational_pieces
 
     def format_system_info(self, system_info: dict) -> dict:
-        """Format system info into a structured template with desired field transformations"""
+        """
+        Format system info into a structured template suitable for direct display
+        Returns a dictionary that can be directly used in the UI or passed to display functions
+        """
         if not system_info or isinstance(system_info, str):
             return system_info
             
-        # Create a new dictionary for the formatted information
-        formatted_info = {}
+        # Create a new dictionary for the formatted information - top level will be directly usable
+        formatted = {}
         
         # Add the system name
-        formatted_info["name"] = system_info["name"]
+        formatted["Name"] = system_info.get("name", "Unknown")
+
+        # Mark as unexplored if applicable
+        if "primaryStar" in system_info and not system_info["primaryStar"]:
+            formatted["Unexplored"] = "true"
+            return formatted
         
         # Process information section
         if "information" in system_info and system_info["information"]:
             info_data = system_info["information"]
             
-            # Create a new dictionary for information
-            formatted_info["information"] = {}
-            
-            # Handle economy fields - unified approach
-            economy = info_data.get("economy")
-            second_economy = info_data.get("secondEconomy")
-            reserve = info_data.get("reserve")
-            
-            formatted_info["information"]["economy"] = economy
-            if second_economy:
-                formatted_info["information"]["economy"] += f" {second_economy}"
-            if reserve:
-                formatted_info["information"]["economy"] += f" ({reserve})"
-            
-            faction = info_data.get("faction", None )
-            faction_state = info_data.get("factionState", None)
-            if faction and faction_state:
-                formatted_info["information"]["faction"] = f"{faction} ({faction_state})"
-            
-            # Handle population - only if > 0
+            # Format government/security/allegiance for display
+            government_parts = []
+            if info_data.get("security") and info_data.get("security") != "None":
+                government_parts.append(f"{info_data['security']} Security")
+            if info_data.get("allegiance"):
+                government_parts.append(info_data["allegiance"])
+            if info_data.get("government"):
+                government_parts.append(info_data["government"])
+
+            if government_parts:
+                formatted["Government"] = " ".join(government_parts)
+
+            # Format economy information
+            economy_parts = []
+            if info_data.get("economy"):
+                economy_parts.append(info_data["economy"])
+            if info_data.get("secondEconomy"):
+                economy_parts.append(info_data["secondEconomy"])
+
+            if economy_parts:
+                formatted["Economy"] = "/".join(economy_parts)
+                if info_data.get("reserve"):
+                    formatted["Economy"] += f" ({info_data['reserve']})"
+
+            # Add faction information
+            if info_data.get("faction"):
+                faction_text = info_data["faction"]
+                if info_data.get("factionState"):
+                    faction_text += f" ({info_data['factionState']})"
+                formatted["Faction"] = faction_text
+
+            # Add population only if > 0
             population = info_data.get("population", 0)
             if population is not None and population > 0:
-                formatted_info["information"]["population"] = population
-                
-            # Handle security
-            security = info_data.get("security", None)
-            
-            # Create the combined government/security/allegiance field for display
-            formatted_info["information"]["government"] = ""
-            if security and security != "None":
-                formatted_info["information"]["government"] += f"{security} Security"
-            if info_data.get("allegiance"):
-                formatted_info["information"]["government"] += f" {info_data.get('allegiance', 'Unknown')}"
-            if info_data.get("government"):
-                formatted_info["information"]["government"] += f" {info_data.get('government', '')}"
+                formatted["Population"] = population
         
         # Process primary star
-        if "primaryStar" in system_info:
-            if system_info["primaryStar"]:
-                # Copy primary star data with a new dictionary
-                formatted_info["primaryStar"] = {}
-                formatted_info["primaryStar"]["name"] = system_info["primaryStar"]["name"]
-                formatted_info["primaryStar"]["type"] = system_info["primaryStar"]["type"]
-                formatted_info["primaryStar"]["scoopable"] = system_info["primaryStar"]["isScoopable"]
-            else:
-                # Mark as unexplored if primary star is empty
-                formatted_info["unexplored"] = "true"
-                
-        return formatted_info
+        if "primaryStar" in system_info and system_info["primaryStar"]:
+            star_data = system_info["primaryStar"]
+            formatted["Star"] = star_data.get("name", "Unknown")
+            formatted["Star Type"] = star_data.get("type", "Unknown")
+            formatted["Scoopable"] = star_data.get("isScoopable")
+
+        # Include coordinates if available
+        if "coords" in system_info:
+            coords = system_info.get("coords", {})
+            if coords and isinstance(coords, dict):
+                formatted["Coordinates"] = f"X: {coords.get('x')}, Y: {coords.get('y')}, Z: {coords.get('z')}"
+
+        return formatted
