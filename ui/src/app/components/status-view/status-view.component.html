@@ -93,30 +93,33 @@
                             <!-- Current Status Icons (fixed at upper right) -->
                             <div class="status-indicators-fixed">
                                 <div class="active-status-icons">
-                                    <ng-container *ngFor="let flag of statusFlags">
-                                        <div *ngIf="getCurrentStatusValue('flags', flag)" class="status-icon">
-                                            <mat-icon matTooltip="{{ formatFlagName(flag) }}">{{ getIconForFlag(flag) }}</mat-icon>
-                                        </div>
-                                    </ng-container>
-                                    <ng-container *ngFor="let flag of odysseyFlags">
-                                        <div *ngIf="getCurrentStatusValue('flags2', flag)" class="status-icon">
-                                            <mat-icon matTooltip="{{ formatFlagName(flag) }}">{{ getIconForOdysseyFlag(flag) }}</mat-icon>
-                                        </div>
-                                    </ng-container>
-
-                                    <!-- Friends counter -->
-                                    <div class="friends-counter" (click)="toggleFriendsPanel()" *ngIf="getFriendsCount() > 0">
-                                        <mat-icon>people</mat-icon>
-                                        <span class="badge">{{ getFriendsCount() }}</span>
-                                    </div>
-
-                                    <!-- Colonisation Construction indicator -->
+                                    <!-- Colonisation Construction indicator - first position -->
                                     <div *ngIf="isColonisationActive(getProjection('ColonisationConstruction'))"
                                          class="colonisation-indicator"
                                          (click)="toggleColonisationPanel()">
                                         <mat-icon>construction</mat-icon>
                                         <span class="progress-text">{{ formatPercentage(getColonisationProgress()) }}</span>
                                     </div>
+
+                                    <!-- Friends counter - second position -->
+                                    <div class="friends-counter" (click)="toggleFriendsPanel()" *ngIf="getFriendsCount() > 0">
+                                        <mat-icon>people</mat-icon>
+                                        <span class="badge">{{ getFriendsCount() }}</span>
+                                    </div>
+                                    
+                                    <!-- Status flags -->
+                                    <ng-container *ngFor="let flag of statusFlags">
+                                        <div *ngIf="getCurrentStatusValue('flags', flag)" class="status-icon">
+                                            <mat-icon matTooltip="{{ formatFlagName(flag) }}">{{ getIconForFlag(flag) }}</mat-icon>
+                                        </div>
+                                    </ng-container>
+                                    
+                                    <!-- Odyssey flags -->
+                                    <ng-container *ngFor="let flag of odysseyFlags">
+                                        <div *ngIf="getCurrentStatusValue('flags2', flag)" class="status-icon">
+                                            <mat-icon matTooltip="{{ formatFlagName(flag) }}">{{ getIconForOdysseyFlag(flag) }}</mat-icon>
+                                        </div>
+                                    </ng-container>
                                 </div>
                             </div>
 
@@ -475,7 +478,7 @@
 
                                         <div *ngIf="getShipModules().length > getVisibleModulesCount() && !showAllModules"
                                              class="show-more" (click)="toggleAllModules()">
-                                            Show All Modules ({{ getShipModules().length }})
+                                            Show All Modules
                                         </div>
 
                                         <div *ngIf="showAllModules" class="show-less" (click)="toggleAllModules()">
