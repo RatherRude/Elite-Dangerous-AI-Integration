@@ -22,6 +22,10 @@ class SystemDatabase:
     def __init__(self):
         """Initialize the system database"""
         self._initialize_store()
+        
+        # Add a lock for concurrent fetches
+        self._fetch_locks = {}
+        self._fetch_locks_lock = threading.Lock()
 
         # Register a background timer to periodically check and dump database contents
         from threading import Timer
@@ -623,14 +627,28 @@ class SystemDatabase:
         Non-blocking wrapper to fetch system data asynchronously
         This spawns a thread that runs the async event loop
         """
-
+        # Acquire a lock for this specific system
+        with self._fetch_locks_lock:
+            # Check if we're already fetching this system
+            if system_name in self._fetch_locks:
+                # Already fetching, don't start another thread
+                return
+            # Create a lock for this system
+            self._fetch_locks[system_name] = threading.Lock()
+        
         def run_async_fetch():
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
             try:
-                loop.run_until_complete(self._fetch_system_data_async(system_name))
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                try:
+                    loop.run_until_complete(self._fetch_system_data_async(system_name))
+                finally:
+                    loop.close()
             finally:
-                loop.close()
+                # Clean up the lock when done
+                with self._fetch_locks_lock:
+                    if system_name in self._fetch_locks:
+                        del self._fetch_locks[system_name]
 
         # Start the async operation in a separate thread
         thread = threading.Thread(target=run_async_fetch)
