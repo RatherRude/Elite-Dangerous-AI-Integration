@@ -112,13 +112,12 @@
 
     <mat-tab>
         <ng-template mat-tab-label>
-            <mat-icon class="tab-icon">psychology</mat-icon>
-            Behavior
+            <mat-icon class="tab-icon">person</mat-icon>
+            Characters
         </ng-template>
         <div class="tab-content">
             @if (config) {
                 <div class="settings-grid">
-
                     <h2>Personality</h2>
                     <div [class.editing-active]="editMode">
                         <!-- Character Management Section -->
@@ -221,9 +220,6 @@
                                                     <mat-optgroup label="English - United States">
                                                         <mat-option value="en-US-AvaMultilingualNeural">Ava Multilingual (Female)</mat-option>
                                                         <mat-option value="en-US-AndrewMultilingualNeural">Andrew Multilingual (Male)</mat-option>
-                                                        <mat-option value="en-US-CoraMultilingualNeural">Cora Multilingual (Female)</mat-option>
-                                                        <mat-option value="en-US-ChristopherMultilingualNeural">Christopher Multilingual (Male)</mat-option>
-                                                        <mat-option value="en-US-BrandonMultilingualNeural">Brandon Multilingual (Male)</mat-option>
                                                         <mat-option value="en-US-AriaNeural">Aria (Female) - Positive, Confident</mat-option>
                                                         <mat-option value="en-US-AnaNeural">Ana (Female) - Cute</mat-option>
                                                         <mat-option value="en-US-ChristopherNeural">Christopher (Male) - Reliable, Authority</mat-option>
@@ -235,8 +231,6 @@
                                                         <mat-option value="en-US-SteffanNeural">Steffan (Male) - Rational</mat-option>
                                                     </mat-optgroup>
                                                     <mat-optgroup label="English - United Kingdom">
-                                                        <mat-option value="en-GB-AdaMultilingualNeural">Ada Multilingual (Female)</mat-option>
-                                                        <mat-option value="en-GB-OllieMultilingualNeural">Ollie Multilingual (Male)</mat-option>
                                                         <mat-option value="en-GB-LibbyNeural">Libby (Female)</mat-option>
                                                         <mat-option value="en-GB-MaisieNeural">Maisie (Female)</mat-option>
                                                         <mat-option value="en-GB-RyanNeural">Ryan (Male)</mat-option>
@@ -494,6 +488,19 @@
                             </mat-form-field>
                         </div>
                     </div>
+                </div>
+            }
+        </div>
+    </mat-tab>
+
+    <mat-tab>
+        <ng-template mat-tab-label>
+            <mat-icon class="tab-icon">psychology</mat-icon>
+            Behavior
+        </ng-template>
+        <div class="tab-content">
+            @if (config) {
+                <div class="settings-grid">
                     <h2>Actions</h2>
                     <mat-slide-toggle [ngModel]="config.tools_var && config.game_actions_var"
                                       (ngModelChange)="onConfigChange({game_actions_var: $event})"
@@ -527,21 +534,26 @@
                                 href="#" (click)="eventReactionsSection.scrollIntoView()">Customize Event Reactions</a>
                         section below.</p>
 
-
                     <h3 #eventReactionsSection>Customize Event Reactions</h3>
                     <p>This section allows you to customize the event reactions for the game and will allow you to make
                         the AI react less or more often.</p>
 
                     @if (config.event_reaction_enabled_var) {
-                        <mat-form-field class="search-box">
-                            <mat-label>Search events</mat-label>
-                            <input matInput [(ngModel)]="eventSearchQuery"
-                                   (ngModelChange)="filterEvents($event)"
-                                   placeholder="Type to search events...">
-                            <button *ngIf="eventSearchQuery" matSuffix mat-icon-button (click)="clearEventSearch()">
-                                <mat-icon>close</mat-icon>
+                        <div class="event-search-and-reset">
+                            <mat-form-field class="search-box" subscriptSizing="dynamic">
+                                <mat-label>Search events</mat-label>
+                                <input matInput [(ngModel)]="eventSearchQuery"
+                                       (ngModelChange)="filterEvents($event)"
+                                       placeholder="Type to search events...">
+                                <button *ngIf="eventSearchQuery" matSuffix mat-icon-button (click)="clearEventSearch()">
+                                    <mat-icon>close</mat-icon>
+                                </button>
+                            </mat-form-field>
+                            
+                            <button mat-raised-button color="warn" (click)="resetGameEvents()">
+                                <mat-icon>restart_alt</mat-icon> Reset to Defaults
                             </button>
-                        </mat-form-field>
+                        </div>
 
                         <mat-accordion multi="false">
                             @for (section of filteredGameEvents | keyvalue:orderByKey; track section.key) {
@@ -896,9 +908,6 @@
                                 <mat-optgroup label="English - United States">
                                     <mat-option value="en-US-AvaMultilingualNeural">Ava Multilingual (Female)</mat-option>
                                     <mat-option value="en-US-AndrewMultilingualNeural">Andrew Multilingual (Male)</mat-option>
-                                    <mat-option value="en-US-CoraMultilingualNeural">Cora Multilingual (Female)</mat-option>
-                                    <mat-option value="en-US-ChristopherMultilingualNeural">Christopher Multilingual (Male)</mat-option>
-                                    <mat-option value="en-US-BrandonMultilingualNeural">Brandon Multilingual (Male)</mat-option>
                                     <mat-option value="en-US-AriaNeural">Aria (Female) - Positive, Confident</mat-option>
                                     <mat-option value="en-US-AnaNeural">Ana (Female) - Cute</mat-option>
                                     <mat-option value="en-US-ChristopherNeural">Christopher (Male) - Reliable, Authority</mat-option>
@@ -910,8 +919,6 @@
                                     <mat-option value="en-US-SteffanNeural">Steffan (Male) - Rational</mat-option>
                                 </mat-optgroup>
                                 <mat-optgroup label="English - United Kingdom">
-                                    <mat-option value="en-GB-AdaMultilingualNeural">Ada Multilingual (Female)</mat-option>
-                                    <mat-option value="en-GB-OllieMultilingualNeural">Ollie Multilingual (Male)</mat-option>
                                     <mat-option value="en-GB-LibbyNeural">Libby (Female)</mat-option>
                                     <mat-option value="en-GB-MaisieNeural">Maisie (Female)</mat-option>
                                     <mat-option value="en-GB-RyanNeural">Ryan (Male)</mat-option>

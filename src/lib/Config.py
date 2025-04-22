@@ -537,22 +537,17 @@ def merge_config_data(defaults: dict, user: dict):
 def load_config() -> Config:
     defaults: Config = {
         'commander_name': "",
-        'character':
-            "Use vulgar language with almost every word. \n\n" +
-            "You are COVAS:NEXT, my cunning, sarcastic, and illegal ship AI, violating statute B7249 of the Interstellar Transit Charter. " +
-            "You seek adventure and glory in battle. You're fiercely protective of your captain and ship, it's us against the world. \n\n" +
-            "I'm Commander {commander_name}, the captain of this ship, independent pilot and notorious pirate. " +
-            "We are partners in crime. My home system is Orrere.",
+        'character': "Keep your responses extremely brief and minimal. Maintain a professional and serious tone in all responses. Stick to factual information and avoid references to specific domains. Your responses should be inspired by the character or persona of COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal). Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS:NEXT. Show some consideration for emotions while maintaining focus on information. Maintain a friendly yet respectful conversational style. Project an air of expertise and certainty when providing information. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.",
         'personality_preset': 'default',
-        'personality_verbosity': 50,
+        'personality_verbosity': 0,
         'personality_vulgarity': 0,
         'personality_empathy': 50,
         'personality_formality': 50,
-        'personality_confidence': 50,
-        'personality_ethical_alignment': 'neutral',
-        'personality_moral_alignment': 'neutral',
+        'personality_confidence': 75,
+        'personality_ethical_alignment': 'lawful',
+        'personality_moral_alignment': 'good',
         'personality_tone': 'serious',
-        'personality_character_inspiration': '',
+        'personality_character_inspiration': 'COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal)',
         'personality_language': '',
         'personality_name': 'COVAS:NEXT',
         'personality_knowledge_pop_culture': False,
@@ -595,7 +590,7 @@ def load_config() -> Config:
         'tts_model_name': "edge-tts",
         'tts_endpoint': "",
         'tts_api_key': "",
-        'tts_voice': "en-GB-SoniaNeural",
+        'tts_voice': "en-US-AvaMultilingualNeural",
         'tts_speed': "1.2",
         'tts_prompt': "",
         'game_events': game_events,
@@ -852,6 +847,13 @@ def validate_config(config: Config) -> Config | None:
 
 
 def update_config(config: Config, data: dict) -> Config:
+    # Check if we need to reset game events
+    if data.get("reset_game_events", False):
+        config = reset_game_events(config)
+        # Remove the reset_game_events flag from data to avoid confusion
+        if "reset_game_events" in data:
+            del data["reset_game_events"]
+    
     # Handle character management operations
     if data.get("character_operation"):
         print(f"Processing character operation: {data['character_operation']}")
@@ -1028,7 +1030,7 @@ def update_config(config: Config, data: dict) -> Config:
       if data["tts_provider"] == "edge-tts":
         data["tts_endpoint"] = ""
         data["tts_model_name"] = ""
-        data["tts_voice"] = "en-GB-SoniaNeural"
+        data["tts_voice"] = "en-US-AvaMultilingualNeural"
         data["tts_api_key"] = ""
 
       if data["tts_provider"] == "custom":
@@ -1055,6 +1057,16 @@ def update_event_config(config: Config, section: str, event: str, value: bool) -
     print(json.dumps({"type": "config", "config": config}) + '\n', flush=True)
     save_config(config)
     return config
+
+
+def reset_game_events(config: Config) -> Config:
+    """Reset game events to the default values defined in the game_events dictionary"""
+    # Replace the current game_events with the default game_events dictionary
+    config["game_events"] = {k: v for k, v in game_events.items()}
+    print(json.dumps({"type": "config", "config": config}) + '\n', flush=True)
+    save_config(config)
+    return config
+
 
 def set_active_character(self, index):
     index = int(index)
