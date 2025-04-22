@@ -1,13 +1,14 @@
 import {
-  AfterViewChecked,
-  ChangeDetectorRef,
+  AfterViewInit,
   Component,
   ElementRef,
   ViewChild,
+  OnDestroy
 } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatCardModule } from "@angular/material/card";
 import { LoggingService, LogMessage } from "../../services/logging.service.js";
+import { Subscription } from "rxjs";
 
 export interface LogEntry {
   type: string;
@@ -23,34 +24,44 @@ export interface LogEntry {
   templateUrl: "./log-container.component.html",
   styleUrl: "./log-container.component.css",
 })
-export class LogContainerComponent implements AfterViewChecked {
+export class LogContainerComponent implements AfterViewInit, OnDestroy {
   logs: LogMessage[] = [];
+  @ViewChild('logContainer') private logContainer!: ElementRef;
+  private subscription: Subscription;
+  private shouldScroll = true;
 
-  private element!: ElementRef;
-
-  constructor(private loggingService: LoggingService, element: ElementRef) {
-    this.element = element;
-    this.loggingService.logs$.subscribe((logs) => {
-      console.log("Logs received", logs);
+  constructor(private loggingService: LoggingService) {
+    // Subscribe to log updates
+    this.subscription = this.loggingService.logs$.subscribe((logs) => {
       this.logs = logs;
-      setTimeout(() => {
-        this.scrollToBottom();
-      }, 0);
+      this.shouldScroll = true;
+      
+      // Wait for view to update before scrolling
+      setTimeout(() => this.scrollToBottom(), 50);
     });
   }
 
-  ngAfterViewChecked() {
+  ngAfterViewInit() {
+    // Initial scroll to bottom
     this.scrollToBottom();
   }
 
+  ngOnDestroy() {
+    if (this.subscription) {
+      this.subscription.unsubscribe();
+    }
+  }
+
   private scrollToBottom(): void {
-    try {
-      const scrollContainer = this.element.nativeElement.parentElement;
-      scrollContainer?.scrollTo({
-        top: scrollContainer?.scrollHeight,
-        behavior: "smooth",
-      });
-    } catch (err) {}
+    if (this.shouldScroll && this.logContainer && this.logContainer.nativeElement) {
+      try {
+        const container = this.logContainer.nativeElement;
+        container.scrollTop = container.scrollHeight;
+        this.shouldScroll = false;
+      } catch (err) {
+        console.error('Error scrolling to bottom:', err);
+      }
+    }
   }
 
   public getLogColor(prefix: string): string {

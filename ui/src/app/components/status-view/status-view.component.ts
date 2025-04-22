@@ -297,8 +297,8 @@ export class StatusViewComponent implements OnInit, OnDestroy {
         return `In Progress`;
     }
     
-    formatPercentage(value: number | undefined): string {
-        if (value === undefined) return '0%';
+    formatPercentage(value: number | undefined | null): string {
+        if (value === undefined || value === null) return '0%';
         return `${value.toFixed(1)}%`;
     }
     
