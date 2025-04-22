@@ -18,6 +18,7 @@ import { MatTabsModule } from '@angular/material/tabs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
 import { RouterModule } from '@angular/router';
+import { LogContainerComponent } from "../log-container/log-container.component";
 
 // Define EventEntry interface locally
 interface EventEntry {
@@ -45,7 +46,8 @@ interface EventEntry {
         MatTabsModule,
         MatProgressSpinnerModule,
         MatButtonModule,
-        RouterModule
+        RouterModule,
+        LogContainerComponent
     ],
     templateUrl: "./status-view.component.html",
     styleUrls: ["./status-view.component.css"]
@@ -55,6 +57,9 @@ export class StatusViewComponent implements OnInit, OnDestroy {
     projectionSubscription?: Subscription;
     projections: any = {};
     isProjectionsLoaded = false;
+    
+    // View type for main tab selection (logs or status)
+    viewType: string = 'logs';
 
     // Define tab indices for clarity
     readonly INFORMATION_TAB = 0;
@@ -289,7 +294,7 @@ export class StatusViewComponent implements OnInit, OnDestroy {
         
         if (colonisation.ConstructionComplete) return 'Complete';
         if (colonisation.ConstructionFailed) return 'Failed';
-        return `In Progress (${colonisation.ProgressPercent}%)`;
+        return `In Progress`;
     }
     
     formatPercentage(value: number | undefined): string {
@@ -739,7 +744,7 @@ export class StatusViewComponent implements OnInit, OnDestroy {
         if (slot.startsWith('Slot')) {
             const match = slot.match(/Slot(\d+)_Size(\d+)/);
             if (match) {
-                return `Slot ${match[1]} (Size ${match[2]})`;
+                return `${match[1]}: Size ${match[2]}`;
             }
         }
         
@@ -1475,5 +1480,9 @@ export class StatusViewComponent implements OnInit, OnDestroy {
             const name = (ship.ShipType_Localised || ship.ShipType || '').toLowerCase();
             return name.includes(searchTerm);
         });
+    }
+
+    setViewType(viewType: string): void {
+        this.viewType = viewType;
     }
 }
