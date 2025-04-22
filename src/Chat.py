@@ -1,15 +1,6 @@
-import io
-import json
 import sys
 from time import time
-import traceback
 from typing import Any, final
-import math
-import sqlite3
-import asyncio
-import os
-import threading
-from pathlib import Path
 
 from EDMesg.CovasNext import ExternalChatNotification, ExternalBackgroundChatNotification
 from openai import OpenAI
@@ -137,7 +128,6 @@ class Chat:
         self.reply_pending = self.should_reply(projected_states)
 
 
-
     def execute_actions(self, actions: list[dict[str, Any]], projected_states: dict[str, dict]):
         action_descriptions: list[str | None] = []
         action_results: list[Any] = []
@@ -235,7 +225,6 @@ class Chat:
             self.copilot.output_covas(response_text, reasons)
 
         self.is_thinking = False
-
 
         if response_actions:
             self.execute_actions(response_actions, projected_states)
