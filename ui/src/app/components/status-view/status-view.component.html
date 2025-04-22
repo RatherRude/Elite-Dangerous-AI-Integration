@@ -184,8 +184,59 @@
 
                     <!-- CHARACTER SHEET MAIN SECTION -->
                     <div class="character-sheet-body">
-                        <!-- LEFT COLUMN - Attributes/Abilities -->
+                        <!-- LEFT COLUMN - Now showing Consumables -->
                         <div class="sheet-column attributes-column">
+                            <h3 class="stat-header">CONSUMABLES</h3>
+                            <div class="consumables-list">
+                                <div *ngFor="let item of getBackpackItems('Consumables')" class="backpack-item">
+                                    <span class="item-name">{{ item.Name_Localised || item.Name }}</span>
+                                    <span class="item-count" *ngIf="item.Count">x{{ item.Count }}</span>
+                                </div>
+                                <div *ngIf="!getBackpackItems('Consumables').length" class="empty-state">No consumables</div>
+                            </div>
+                        </div>
+
+                        <!-- MIDDLE COLUMN - Combat Stats and now Suit Mods -->
+                        <div class="sheet-column stats-column">
+                            <div class="combat-stats">
+                                <div class="combat-stat-item">
+                                    <div class="combat-stat-circle">
+                                        <span class="combat-stat-value">{{ ((getProjection('CurrentStatus').Health ?? 0) * 100).toFixed(0) }}%</span>
+                                    </div>
+                                    <div class="combat-stat-label">HEALTH</div>
+                                </div>
+
+                                <div class="combat-stat-item">
+                                    <div class="combat-stat-circle">
+                                        <span class="combat-stat-value">{{ getProjection('CurrentStatus').flags?.ShieldsUp ? 'ON' : 'OFF' }}</span>
+                                    </div>
+                                    <div class="combat-stat-label">SHIELDS</div>
+                                </div>
+
+                                <div class="combat-stat-item">
+                                    <div class="combat-stat-circle">
+                                        <span class="combat-stat-value">{{ ((getProjection('CurrentStatus').Oxygen ?? 0) * 100).toFixed(0) }}%</span>
+                                    </div>
+                                    <div class="combat-stat-label">OXYGEN</div>
+                                </div>
+
+                                <div class="combat-stat-item">
+                                    <div class="combat-stat-circle">
+                                        <span class="combat-stat-value">{{ getProjection('CurrentStatus').Gravity?.toFixed(2) || '0.00' }}</span>
+                                    </div>
+                                    <div class="combat-stat-label">GRAVITY</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Temperature indicator -->
+                            <div class="temperature-indicator">
+                                <div class="temp-label">
+                                    <mat-icon>whatshot</mat-icon>
+                                    Temperature: {{ getProjection('CurrentStatus').Temperature?.toFixed(1) || '0.0' }} K
+                                </div>
+                            </div>
+                            
+                            <!-- Suit Modifications moved from left to middle column -->
                             <div class="stat-block suit-mods">
                                 <h3 class="stat-header">SUIT MODIFICATIONS</h3>
                                 <div class="mod-list">
@@ -196,39 +247,6 @@
                                         <div class="mod-name">{{ formatModName(mod) }}</div>
                                     </div>
                                     <div *ngIf="!getSuitMods().length" class="empty-state">No modifications</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- MIDDLE COLUMN - Combat Stats -->
-                        <div class="sheet-column stats-column">
-                            <div class="combat-stats">
-                                <div class="combat-stat-item">
-                                    <div class="combat-stat-circle">
-                                        <span class="combat-stat-value">100%</span>
-                                    </div>
-                                    <div class="combat-stat-label">HEALTH</div>
-                                </div>
-
-                                <div class="combat-stat-item">
-                                    <div class="combat-stat-circle">
-                                        <span class="combat-stat-value">100%</span>
-                                    </div>
-                                    <div class="combat-stat-label">SHIELDS</div>
-                                </div>
-
-                                <div class="combat-stat-item">
-                                    <div class="combat-stat-circle">
-                                        <span class="combat-stat-value">100%</span>
-                                    </div>
-                                    <div class="combat-stat-label">OXYGEN</div>
-                                </div>
-
-                                <div class="combat-stat-item">
-                                    <div class="combat-stat-circle">
-                                        <span class="combat-stat-value">100%</span>
-                                    </div>
-                                    <div class="combat-stat-label">BATTERY</div>
                                 </div>
                             </div>
                         </div>
@@ -263,11 +281,11 @@
                         </div>
                     </div>
 
-                    <!-- BOTTOM SECTION - Equipment/Inventory -->
+                    <!-- BOTTOM SECTION - Backpack Contents (now without consumables) -->
                     <div class="character-sheet-footer">
-                        <h3 class="section-header">EQUIPMENT & INVENTORY</h3>
-                        <div class="backpack-block" (click)="toggleBackpackDetails()">
-                            <div class="backpack-summary">
+                        <h3 class="section-header">BACKPACK CONTENTS</h3>
+                        <div class="backpack-block">
+                            <div class="backpack-summary" (click)="toggleBackpackDetails()">
                                 <div class="backpack-category" *ngIf="getBackpackItems('Items').length > 0">
                                     <span class="category-name">Items:</span>
                                     <span class="category-count">{{ getBackpackItems('Items').length }}</span>
@@ -276,10 +294,6 @@
                                     <span class="category-name">Components:</span>
                                     <span class="category-count">{{ getBackpackItems('Components').length }}</span>
                                 </div>
-                                <div class="backpack-category" *ngIf="getBackpackItems('Consumables').length > 0">
-                                    <span class="category-name">Consumables:</span>
-                                    <span class="category-count">{{ getBackpackItems('Consumables').length }}</span>
-                                </div>
                                 <div class="backpack-category" *ngIf="getBackpackItems('Data').length > 0">
                                     <span class="category-name">Data:</span>
                                     <span class="category-count">{{ getBackpackItems('Data').length }}</span>
@@ -287,8 +301,8 @@
                                 <mat-icon>{{ showBackpackDetails ? 'expand_less' : 'expand_more' }}</mat-icon>
                             </div>
 
-                            <div *ngIf="showBackpackDetails" class="backpack-details">
-                                <div *ngFor="let category of ['Items', 'Components', 'Consumables', 'Data']">
+                            <div class="backpack-details">
+                                <div *ngFor="let category of ['Items', 'Components', 'Data']">
                                     <div *ngIf="getBackpackItems(category).length > 0" class="backpack-category-section">
                                         <h4>{{ category }}</h4>
                                         <div class="backpack-items">
