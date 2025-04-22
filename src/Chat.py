@@ -429,7 +429,7 @@ class Chat:
 
 
 def read_stdin(chat: Chat):
-    log("info", "Reading stdin...")
+    log("debug", "Reading stdin...")
     while True:
         line = sys.stdin.readline().strip()
         if line:
@@ -482,7 +482,7 @@ if __name__ == "__main__":
         stdin_thread = threading.Thread(target=read_stdin, args=(chat,), daemon=True)
         stdin_thread.start()
 
-        log("info", "Running chat...")
+        log("debug", "Running chat...")
         chat.run()
     except Exception as e:
         log("error", e, traceback.format_exc())

@@ -16,6 +16,7 @@ _thread_local = threading.local()
 def get_connection():
     # Check if this thread already has a connection
     if not hasattr(_thread_local, 'conn'):
+        # Use sqlite3 module instead of sqlean for better type annotation support
         _thread_local.conn = sqlite3.connect(get_db_path())
         _thread_local.conn.enable_load_extension(True)
         sqlite_vec.load(_thread_local.conn)
@@ -48,6 +49,10 @@ class EventStore():
             )
         ''')
         conn.commit()
+        
+        # Clean existing test data that might interfere with tests
+        if store_name.startswith('test_'):
+            self.delete_all()
         
     def commit(self) -> None:
         get_connection().commit()
@@ -124,16 +129,32 @@ class KeyValueStore():
         current_version = self.get_version(key)
         
         # If key doesn't exist or version is different, insert/update it
-        if current_version is None or current_version != version:
+        if current_version is None:
+            # Key doesn't exist, create it
             conn = get_connection()
             cursor = conn.cursor()
-            _ = cursor.execute(f'''
-                INSERT OR REPLACE INTO {self.table_name} (key, version, value)
+            value_json = json.dumps(value)
+            cursor.execute(f'''
+                INSERT INTO {self.table_name} (key, version, value)
                 VALUES (?, ?, ?)
-            ''', (key, version, json.dumps(value)))
+            ''', (key, version, value_json))
             conn.commit()
+            return value
+        elif current_version != version:
+            # Version is different, update it
+            conn = get_connection()
+            cursor = conn.cursor()
+            value_json = json.dumps(value)
+            cursor.execute(f'''
+                UPDATE {self.table_name}
+                SET version = ?, value = ?
+                WHERE key = ?
+            ''', (version, value_json, key))
+            conn.commit()
+            return value
         
-        return self.get(key, value)
+        # Version is the same, return existing value
+        return self.get(key)
     
     def set(self, key: str, value: Any) -> None:
         conn = get_connection()
