@@ -117,9 +117,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     // English voices - US
     { value: 'en-US-AvaMultilingualNeural', label: 'Ava Multilingual (Female)', locale: 'en-US' },
     { value: 'en-US-AndrewMultilingualNeural', label: 'Andrew Multilingual (Male)', locale: 'en-US' },
-    { value: 'en-US-CoraMultilingualNeural', label: 'Cora Multilingual (Female)', locale: 'en-US' },
-    { value: 'en-US-ChristopherMultilingualNeural', label: 'Christopher Multilingual (Male)', locale: 'en-US' },
-    { value: 'en-US-BrandonMultilingualNeural', label: 'Brandon Multilingual (Male)', locale: 'en-US' },
     { value: 'en-US-EmmaMultilingualNeural', label: 'Emma Multilingual (Female)', locale: 'en-US' },
     { value: 'en-US-BrianMultilingualNeural', label: 'Brian Multilingual (Male)', locale: 'en-US' },
     { value: 'en-US-JennyMultilingualNeural', label: 'Jenny Multilingual (Female)', locale: 'en-US' },
@@ -136,8 +133,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     { value: 'en-US-SteffanNeural', label: 'Steffan (Male) - Rational', locale: 'en-US' },
 
     // English voices - UK
-    { value: 'en-GB-AdaMultilingualNeural', label: 'Ada Multilingual (Female)', locale: 'en-GB' },
-    { value: 'en-GB-OllieMultilingualNeural', label: 'Ollie Multilingual (Male)', locale: 'en-GB' },
     { value: 'en-GB-LibbyNeural', label: 'Libby (Female)', locale: 'en-GB' },
     { value: 'en-GB-MaisieNeural', label: 'Maisie (Female)', locale: 'en-GB' },
     { value: 'en-GB-RyanNeural', label: 'Ryan (Male)', locale: 'en-GB' },
