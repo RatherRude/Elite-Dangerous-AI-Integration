@@ -418,10 +418,39 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
 
   clearEventSearch() {
     this.eventSearchQuery = "";
-    this.filteredGameEvents = this.categorizeEvents(
-      this.config?.game_events || {},
-    );
-    this.expandedSection = null; // Collapse all sections when search is cleared
+    this.filteredGameEvents = this.categorizeEvents(this.config?.game_events || {});
+  }
+
+  async resetGameEvents() {
+    if (!this.configService) return;
+    
+    const dialogRef = this.confirmationDialog.openConfirmationDialog({
+      title: 'Reset Game Events',
+      message: 'This will reset all game event settings to their default values. Are you sure you want to continue?',
+      confirmButtonText: 'Reset',
+      cancelButtonText: 'Cancel'
+    });
+
+    dialogRef.subscribe(async (result: boolean) => {
+      if (result) {
+        try {
+          // Send the reset request to the backend
+          await this.configService.resetGameEvents();
+          
+          // The backend will send back the updated config, which will be reflected in our UI
+          // through the existing subscription to config changes
+          
+          this.snackBar.open('Game events have been reset to default values', 'Close', {
+            duration: 3000
+          });
+        } catch (error) {
+          console.error('Error resetting game events:', error);
+          this.snackBar.open('Error resetting game events', 'Close', {
+            duration: 3000
+          });
+        }
+      }
+    });
   }
 
   // Convert comma-separated string to array for material multi-select

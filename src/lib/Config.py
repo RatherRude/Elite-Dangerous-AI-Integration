@@ -852,6 +852,13 @@ def validate_config(config: Config) -> Config | None:
 
 
 def update_config(config: Config, data: dict) -> Config:
+    # Check if we need to reset game events
+    if data.get("reset_game_events", False):
+        config = reset_game_events(config)
+        # Remove the reset_game_events flag from data to avoid confusion
+        if "reset_game_events" in data:
+            del data["reset_game_events"]
+    
     # Handle character management operations
     if data.get("character_operation"):
         print(f"Processing character operation: {data['character_operation']}")
@@ -1055,6 +1062,16 @@ def update_event_config(config: Config, section: str, event: str, value: bool) -
     print(json.dumps({"type": "config", "config": config}) + '\n', flush=True)
     save_config(config)
     return config
+
+
+def reset_game_events(config: Config) -> Config:
+    """Reset game events to the default values defined in the game_events dictionary"""
+    # Replace the current game_events with the default game_events dictionary
+    config["game_events"] = {k: v for k, v in game_events.items()}
+    print(json.dumps({"type": "config", "config": config}) + '\n', flush=True)
+    save_config(config)
+    return config
+
 
 def set_active_character(self, index):
     index = int(index)
