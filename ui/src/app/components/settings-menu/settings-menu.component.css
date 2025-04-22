@@ -157,9 +157,7 @@ ul {
   margin: 0;
   padding: 0;
 
-  label {
-
-  }
+  label {}
 }
 
 .knowledge-label {
@@ -194,9 +192,5 @@ ul {
   button {
     padding: 25px 10px;
     margin: 0;
-  }
-  div.mat-mdc-form-field-subscript-wrapper {
-    display: none;
-    background: red;
   }
 }
