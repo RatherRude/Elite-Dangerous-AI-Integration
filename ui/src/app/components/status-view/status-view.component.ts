@@ -1484,5 +1484,12 @@ export class StatusViewComponent implements OnInit, OnDestroy {
 
     setViewType(viewType: string): void {
         this.viewType = viewType;
+        // Reset any panels that might be open
+        this.showFriendsPanel = false;
+        this.showColonisationPanel = false;
+        this.showBackpackDetails = false;
+        this.showCargoDetails = false;
+        this.showNavDetails = false;
+        this.showAllModules = false;
     }
 }
