@@ -2588,7 +2588,7 @@ class PromptGenerator:
         }
 
         try:
-            response = requests.get(url, params=params)
+            response = requests.get(url, params=params, timeout=1)
             response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
 
             return response.json()
@@ -2750,7 +2750,7 @@ class PromptGenerator:
         }
 
         try:
-            response = requests.get(url, params=params)
+            response = requests.get(url, params=params, timeout=1)
             response.raise_for_status()
 
             result = response.json()
