@@ -861,7 +861,7 @@
         .stat-header {
             font-size: 14px;
             color: #d0a85c;
-            margin: 0 0 15px;
+            margin: 0;
             letter-spacing: 1px;
             text-align: center;
         }
@@ -1473,4 +1473,34 @@
 
         .search-box input::placeholder {
             color: rgba(255, 255, 255, 0.5);
+        }
+
+        .engineering-text {
+            font-size: 0.8em;
+            margin-left: 4px;
+            color: #aaddff;
+        }
+
+        .utility-engineering, .hardpoint-engineering, .module-engineering {
+            display: flex;
+            align-items: center;
+            margin-top: 2px;
+        }
+
+        .engineering-icon {
+            color: #ffbb00;
+            font-size: 16px;
+            height: 16px;
+            width: 16px;
+        }
+
+        .credit-balance {
+            text-align: center;
+            font-size: 0.8em;
+            color: #4caf50;
+            margin-top: 2px;
+        }
+
+        .balance-value {
+            font-weight: 500;
         }

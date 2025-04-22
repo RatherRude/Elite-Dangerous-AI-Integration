@@ -1492,4 +1492,10 @@ export class StatusViewComponent implements OnInit, OnDestroy {
         this.showNavDetails = false;
         this.showAllModules = false;
     }
+
+    // Helper for getting credit balance directly from CurrentStatus
+    getCurrentBalance(): number {
+        const currentStatus = this.getProjection('CurrentStatus');
+        return currentStatus?.Balance || 0;
+    }
 }
