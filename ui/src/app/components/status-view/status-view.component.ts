@@ -143,10 +143,12 @@ export class StatusViewComponent implements OnInit, OnDestroy {
     }
 
     isColonisationActive(colonisation: any): boolean {
-        return colonisation && 
-              (colonisation.StarSystem || 
-               colonisation.ResourcesRequired?.length > 0 || 
-               colonisation.ConstructionProgress > 0);
+        if (!colonisation) return false;
+        
+        const hasActiveSystem = colonisation.StarSystem && colonisation.StarSystem !== 'Unknown';
+        const hasResources = colonisation.ResourcesRequired && colonisation.ResourcesRequired.length > 0;
+        
+        return hasActiveSystem && hasResources;
     }
     
     formatSelectedProjection() {
@@ -479,35 +481,43 @@ export class StatusViewComponent implements OnInit, OnDestroy {
     // Helper methods for Ship info
     getShipName(): string {
         const shipInfo = this.getProjection('ShipInfo');
-        return shipInfo?.Name || 'Unknown Ship';
+        // If there's no ship name (or empty string), fallback to the formatted ship type
+        if (!shipInfo?.Name || shipInfo.Name.trim() === '' || shipInfo.Name.trim() === ' ') {
+            return this.formatShipType(shipInfo?.Type || '');
+        }
+        return shipInfo.Name;
     }
-    
+
     getShipType(): string {
         const shipInfo = this.getProjection('ShipInfo');
         return shipInfo?.Type || 'Unknown';
     }
-    
+
     getShipIdent(): string {
         const shipInfo = this.getProjection('ShipInfo');
         return shipInfo?.ShipIdent || '';
     }
     
     getCargoAmount(): number {
-        const shipInfo = this.getProjection('ShipInfo');
-        return shipInfo?.Cargo || 0;
+        const cargo = this.getProjection('Cargo');
+        return cargo?.TotalItems || 0;
     }
     
     getCargoCapacity(): number {
-        const shipInfo = this.getProjection('ShipInfo');
-        return shipInfo?.CargoCapacity || 1;
+        const cargo = this.getProjection('Cargo');
+        return cargo?.Capacity || 0;
     }
     
     getCargoPercentage(): number {
-        return (this.getCargoAmount() / this.getCargoCapacity()) * 100;
+        const amount = this.getCargoAmount();
+        const capacity = this.getCargoCapacity();
+        return capacity > 0 ? (amount / capacity) * 100 : 0;
     }
     
     getCargoTooltip(): string {
-        return `${this.getCargoAmount()} / ${this.getCargoCapacity()} tons`;
+        const amount = this.getCargoAmount();
+        const capacity = this.getCargoCapacity();
+        return `${amount} / ${capacity} tons`;
     }
     
     getFuelAmount(): string {

@@ -433,8 +433,8 @@ class ShipInfo(Projection[ShipInfoState]):
     def process(self, event: Event) -> None:
         if isinstance(event, StatusEvent) and event.status.get('event') == 'Status':
             status: Status = event.status  # pyright: ignore[reportAssignmentType]
-            if 'Cargo' in status and status['Cargo']:
-                self.state['Cargo'] = status['Cargo']
+            if 'Cargo' in event.status:
+                self.state['Cargo'] = event.status.get('Cargo', 0)
                 
             if 'Fuel' in status and status['Fuel']:
                 self.state['FuelMain'] = status['Fuel'].get('FuelMain', 0)
@@ -463,7 +463,11 @@ class ShipInfo(Projection[ShipInfoState]):
                     self.state['IsMiningShip'] = True
                 else:
                     self.state['IsMiningShip'] = False
-        
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Cargo':
+            self.state['Cargo'] = event.content.get('Cargo', 0)
+            self.state['CargoCapacity'] = len(event.content.get('Inventory', []))
+
         if self.state['Type'] != 'Unknown':
             self.state['LandingPadSize'] = ship_sizes.get(self.state['Type'], 'Unknown')
 

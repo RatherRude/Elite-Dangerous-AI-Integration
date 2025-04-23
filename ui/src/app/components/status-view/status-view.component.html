@@ -378,7 +378,7 @@
                                     </div>
                                 </div>
 
-                                <div class="defense-stat-item cargo-box" (click)="toggleCargoDetails()">
+                                <div *ngIf="getCargoCapacity() > 0" class="defense-stat-item cargo-box" (click)="toggleCargoDetails()">
                                     <div class="stat-label">CARGO <mat-icon class="tiny-icon">{{ showCargoDetails ? 'expand_less' : 'expand_more' }}</mat-icon></div>
                                     <div class="stat-value-with-bar">
                                         <div class="stat-value">{{ getCargoAmount() }}/{{ getCargoCapacity() }}</div>
