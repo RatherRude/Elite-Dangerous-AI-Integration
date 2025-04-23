@@ -1391,6 +1391,7 @@ def prepare_station_request(obj, projected_states):
         "Beluga Liner",
         "Cobra MkIII",
         "Cobra MkIV",
+        "Corsair",
         "Diamondback Explorer",
         "Diamondback Scout",
         "Dolphin",
