@@ -957,6 +957,12 @@ export class StatusViewComponent implements OnInit, OnDestroy {
                       module.Item.toLowerCase().includes('heatsinklauncher') ||
                       module.Item.toLowerCase().includes('ecm') ||
                       module.Item.toLowerCase().includes('killwarrant') ||
+                      module.Item.toLowerCase().includes('cargoscanner') ||
+                      module.Item.toLowerCase().includes('cloudscanner') ||
+                      module.Item.toLowerCase().includes('crimescanner') ||
+                      module.Item.toLowerCase().includes('mrascanner') ||
+                      module.Item.toLowerCase().includes('electroniccountermeasure') ||
+                      module.Item.toLowerCase().includes('plasmapointdefence') ||
                       module.Item.toLowerCase().includes('antiunknown') ||
                       module.Item.toLowerCase().includes('shutdown')
                   ));
@@ -976,6 +982,12 @@ export class StatusViewComponent implements OnInit, OnDestroy {
                 module.Item.toLowerCase().includes('heatsinklauncher') ||
                 module.Item.toLowerCase().includes('ecm') ||
                 module.Item.toLowerCase().includes('killwarrant') ||
+                module.Item.toLowerCase().includes('cargoscanner') ||
+                module.Item.toLowerCase().includes('cloudscanner') ||
+                module.Item.toLowerCase().includes('crimescanner') ||
+                module.Item.toLowerCase().includes('mrascanner') ||
+                module.Item.toLowerCase().includes('electroniccountermeasure') ||
+                module.Item.toLowerCase().includes('plasmapointdefence') ||
                 module.Item.toLowerCase().includes('antiunknown') ||
                 module.Item.toLowerCase().includes('shutdown')
             );

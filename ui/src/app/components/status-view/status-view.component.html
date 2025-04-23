@@ -1134,10 +1134,71 @@
 
             <!-- STATION TAB -->
             <div class="tab-pane" [style.display]="viewType === 'status' && selectedTab === STATION_TAB ? 'block' : 'none'">
-                <h2>Station Services</h2>
+                <h2>Station Services at {{ getStationName() }}, {{ getLocationSystem() }}</h2>
+                
+                <!-- Stored Ships Card -->
+                <mat-card class="stored-ships-card">
+                    <mat-card-header>
+                        <mat-card-title>Stored Ships</mat-card-title>
+                    </mat-card-header>
+                    <mat-card-content>
+                        <mat-tab-group *ngIf="getProjection('StoredShips')?.StationName==getStationName(); else noStoredShips">
+                            <!-- Ships at Current Location -->
+                            <mat-tab label="Ships Here">
+                                <div class="ships-list" *ngIf="getProjection('StoredShips')?.ShipsHere?.length">
+                                    <div class="ship-item" *ngFor="let ship of getProjection('StoredShips')?.ShipsHere">
+                                        <div class="ship-icon">
+                                            <mat-icon>directions_boat</mat-icon>
+                                        </div>
+                                        <div class="ship-details">
+                                            <div class="ship-name">{{ ship.Name || ship.ShipType_Localised || ship.ShipType }}</div>
+                                            <div class="ship-type" *ngIf="ship.Name">{{ ship.ShipType_Localised || ship.ShipType }}</div>
+                                            <div class="ship-value">{{ formatNumber(ship.Value) }} Cr</div>
+                                            <div class="ship-hot" *ngIf="ship.Hot">HOT</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="no-ships" *ngIf="!getProjection('StoredShips')?.ShipsHere?.length">
+                                    No ships stored at this location.
+                                </div>
+                            </mat-tab>
+
+                            <!-- Remote Ships -->
+                            <mat-tab label="Remote Ships">
+                                <div class="ships-list" *ngIf="getProjection('StoredShips')?.ShipsRemote?.length">
+                                    <div class="ship-item" *ngFor="let ship of getProjection('StoredShips')?.ShipsRemote">
+                                        <div class="ship-icon">
+                                            <mat-icon>directions_boat</mat-icon>
+                                        </div>
+                                        <div class="ship-details">
+                                            <div class="ship-name">{{ ship.Name || ship.ShipType_Localised || ship.ShipType }}</div>
+                                            <div class="ship-type" *ngIf="ship.Name">{{ ship.ShipType_Localised || ship.ShipType }}</div>
+                                            <div class="ship-location">{{ ship.StarSystem }}</div>
+                                            <div class="ship-value">{{ formatNumber(ship.Value) }} Cr</div>
+                                            <div class="ship-transfer">
+                                                <div>Transfer: {{ formatNumber(ship.TransferPrice) }} Cr</div>
+                                                <div>Time: {{ formatTransferTime(ship.TransferTime) }}</div>
+                                            </div>
+                                            <div class="ship-hot" *ngIf="ship.Hot">HOT</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="no-ships" *ngIf="!getProjection('StoredShips')?.ShipsRemote?.length">
+                                    No ships stored remotely.
+                                </div>
+                            </mat-tab>
+                        </mat-tab-group>
+                        <ng-template #noStoredShips>
+                            <div class="no-data-message">
+                                No stored ships information available. Visit the local shipyard to update.
+                            </div>
+                        </ng-template>
+                    </mat-card-content>
+                </mat-card>
+
                 <mat-card>
                     <mat-card-header>
-                        <mat-card-title>{{ getStationName() }}</mat-card-title>
+                        <mat-card-title>Station Facilities</mat-card-title>
                         <mat-card-subtitle *ngIf="getProjection('Market')?.StarSystem">
                             {{ getProjection('Market')?.StarSystem }}
                         </mat-card-subtitle>
@@ -1386,63 +1447,6 @@
                     </mat-card-content>
                 </mat-card>
 
-                <!-- Stored Ships Card -->
-                <mat-card>
-                    <mat-card-header>
-                        <mat-card-title>Stored Ships</mat-card-title>
-                        <mat-card-subtitle *ngIf="getProjection('StoredShips')?.StationName">
-                            {{ getProjection('StoredShips')?.StationName }}, {{ getProjection('StoredShips')?.StarSystem }}
-                        </mat-card-subtitle>
-                    </mat-card-header>
-                    <mat-card-content>
-                        <mat-tab-group>
-                            <!-- Ships at Current Location -->
-                            <mat-tab label="Ships Here">
-                                <div class="ships-list" *ngIf="getProjection('StoredShips')?.ShipsHere?.length">
-                                    <div class="ship-item" *ngFor="let ship of getProjection('StoredShips')?.ShipsHere">
-                                        <div class="ship-icon">
-                                            <mat-icon>directions_boat</mat-icon>
-                                        </div>
-                                        <div class="ship-details">
-                                            <div class="ship-name">{{ ship.Name || ship.ShipType_Localised || ship.ShipType }}</div>
-                                            <div class="ship-type" *ngIf="ship.Name">{{ ship.ShipType_Localised || ship.ShipType }}</div>
-                                            <div class="ship-value">{{ formatNumber(ship.Value) }} Cr</div>
-                                            <div class="ship-hot" *ngIf="ship.Hot">HOT</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="no-ships" *ngIf="!getProjection('StoredShips')?.ShipsHere?.length">
-                                    No ships stored at this location.
-                                </div>
-                            </mat-tab>
-
-                            <!-- Remote Ships -->
-                            <mat-tab label="Remote Ships">
-                                <div class="ships-list" *ngIf="getProjection('StoredShips')?.ShipsRemote?.length">
-                                    <div class="ship-item" *ngFor="let ship of getProjection('StoredShips')?.ShipsRemote">
-                                        <div class="ship-icon">
-                                            <mat-icon>directions_boat</mat-icon>
-                                        </div>
-                                        <div class="ship-details">
-                                            <div class="ship-name">{{ ship.Name || ship.ShipType_Localised || ship.ShipType }}</div>
-                                            <div class="ship-type" *ngIf="ship.Name">{{ ship.ShipType_Localised || ship.ShipType }}</div>
-                                            <div class="ship-location">{{ ship.StarSystem }}</div>
-                                            <div class="ship-value">{{ formatNumber(ship.Value) }} Cr</div>
-                                            <div class="ship-transfer">
-                                                <div>Transfer: {{ formatNumber(ship.TransferPrice) }} Cr</div>
-                                                <div>Time: {{ formatTransferTime(ship.TransferTime) }}</div>
-                                            </div>
-                                            <div class="ship-hot" *ngIf="ship.Hot">HOT</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="no-ships" *ngIf="!getProjection('StoredShips')?.ShipsRemote?.length">
-                                    No ships stored remotely.
-                                </div>
-                            </mat-tab>
-                        </mat-tab-group>
-                    </mat-card-content>
-                </mat-card>
 
                 <!-- Ship Locker Card -->
                 <mat-card>
