@@ -178,6 +178,22 @@
                             <h2>{{ getSuitName() }}</h2>
                             <div class="character-subtitle">{{ getSuitLoadoutName() }}</div>
                         </div>
+                        
+                        <!-- Exobiology scan info -->
+                        <div *ngIf="getProjection('ExobiologyScan')?.scans?.length > 0" class="bio-scan-mini">
+                            <div class="bio-scan-header">{{ getProjection('ExobiologyScan')?.life_form || 'Unknown lifeform' }} {{ getProjection('ExobiologyScan')?.scans?.length || 0 }}/3</div>
+                            <div class="bio-scan-content">
+                                <mat-icon [ngClass]="getProjection('ExobiologyScan')?.within_scan_radius ? 'scan-bad' : 'scan-good'">
+                                    {{ getProjection('ExobiologyScan')?.within_scan_radius ? 'error' : 'check_circle' }}
+                                </mat-icon>
+                                <div class="bio-scan-details">
+                                    <span class="scan-status">{{ getProjection('ExobiologyScan')?.within_scan_radius ? 'Too close' : 'Good distance' }}</span>
+                                    <span class="scan-radius">Distance: {{ (getProjection('ExobiologyScan')?.distance || 0).toFixed(1) }}/{{ getProjection('ExobiologyScan')?.scan_radius || 0 }}m</span>
+
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div class="character-class">
                             <div class="class-circle">
                                 <div class="circle-value">{{getSuitClass()}}</div>
@@ -329,6 +345,29 @@
                             <h2>{{ getShipName() }}</h2>
                             <div class="character-subtitle">{{ getShipType() }} {{ getActiveMode() !== 'buggy' ? '(' + getShipIdent() + ')' : '' }}</div>
                         </div>
+                        
+                        <!-- Target info display -->
+                        <div *ngIf="getProjection('Target')?.Ship" class="target-info">
+                            <div class="target-header">
+                                <mat-icon>track_changes</mat-icon>
+                                <span class="target-ship">{{ getProjection('Target')?.Ship }}</span>
+                            </div>
+                            <div class="target-details">
+                                <div class="target-row">
+                                    <span class="target-pilot" *ngIf="getProjection('Target')?.PilotName">{{ getProjection('Target')?.PilotName }}</span>
+                                    <span class="target-rank" *ngIf="getProjection('Target')?.PilotRank">{{ getProjection('Target')?.PilotRank }}</span>
+                                    <span *ngIf="getProjection('Target')?.LegalStatus" class="target-legal"
+                                          [ngClass]="'status-' + getProjection('Target')?.LegalStatus?.toLowerCase()">
+                                        {{ getProjection('Target')?.LegalStatus }}
+                                    </span>
+                                </div>
+                                <div class="target-row" *ngIf="getProjection('Target')?.Scanned">
+                                    <span class="target-faction" *ngIf="getProjection('Target')?.Faction">{{ getProjection('Target')?.Faction }}</span>
+                                    <span class="target-scanned">SCANNED</span>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div class="character-class">
                             <div class="class-circle">
                                 <div class="circle-value">{{ getLandingPadSize() }}</div>
@@ -498,30 +537,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- ExobiologyScan (if active) -->
-                <mat-card *ngIf="hasActiveBioScan()">
-                    <mat-card-header>
-                        <mat-card-title>Exobiology Scan</mat-card-title>
-                    </mat-card-header>
-                    <mat-card-content>
-                        <div class="scan-progress">
-                            <div class="scan-header">
-                                <h4>Scan Progress</h4>
-                                <div class="scan-status-indicator"
-                                    [class.scan-too-close]="!isWithinScanRadius()"
-                                    [class.scan-good-distance]="isWithinScanRadius()">
-                                    {{ isWithinScanRadius() ? 'Good sampling distance' : 'Too close to previous sample' }}
-                                </div>
-                            </div>
-
-                            <div class="scan-summary">
-                                <span class="detail-label">Samples:</span>
-                                <span class="detail-value">{{ getBioScanCount() }}/3</span>
-                            </div>
-                        </div>
-                    </mat-card-content>
-                </mat-card>
             </div>
 
             <!-- COMMANDER TAB -->

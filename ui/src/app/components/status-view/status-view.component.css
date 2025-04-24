@@ -512,8 +512,9 @@
 
         .character-header {
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0;
             border-bottom: 2px solid rgba(255, 255, 255, 0.1);
             padding-bottom: 15px;
             margin-bottom: 20px;
@@ -1513,4 +1514,145 @@
 
         .balance-value {
             font-weight: 500;
+        }
+
+        /* Target Info Styles */
+        .target-info {
+            display: flex;
+            flex-direction: column;
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 0.3rem 0.5rem;
+            border-radius: 4px;
+            margin: 0 0.5rem;
+            min-width: 160px;
+            max-width: 200px;
+
+            .target-header {
+                display: flex;
+                align-items: center;
+                gap: 0.3rem;
+            }
+
+            .target-header mat-icon {
+                font-size: 16px;
+                height: 16px;
+                width: 16px;
+            }
+
+            .target-ship {
+                font-weight: 500;
+            }
+
+            .target-scanned {
+                font-size: 0.7rem;
+                background-color: #3d7e9a;
+                padding: 0.1rem 0.3rem;
+                border-radius: 2px;
+                margin-left: auto;
+            }
+
+            .target-details {
+                display: flex;
+                flex-direction: column;
+                font-size: 0.75rem;
+                margin-top: 0.2rem;
+                gap: 0.2rem;
+            }
+
+            .target-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 0.3rem;
+            }
+
+            .target-pilot {
+                font-weight: 500;
+            }
+
+            .target-rank {
+                color: #aaa;
+                font-size: 0.7rem;
+                margin-left: auto;
+                margin-right: 0.3rem;
+            }
+
+            .target-faction {
+                font-size: 0.7rem;
+                color: #aaa;
+            }
+
+            .target-legal {
+                font-size: 0.7rem;
+                padding: 0.1rem 0.3rem;
+                border-radius: 2px;
+            }
+
+            .status-clean {
+                background-color: #2e7d32;
+            }
+
+            .status-wanted {
+                background-color: #c62828;
+            }
+        }
+
+        /* Exobiology Scan Mini Display */
+        .bio-scan-mini {
+            display: flex;
+            flex-direction: column;
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 0.3rem 0.5rem;
+            border-radius: 4px;
+            margin: 0 0.5rem;
+            min-width: 160px;
+        }
+
+        .bio-scan-header {
+            font-size: 0.7rem;
+            font-weight: bold;
+            color: #aaa;
+            margin-bottom: 0.2rem;
+            text-align: center;
+        }
+
+        .bio-scan-content {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .bio-scan-details {
+            display: flex;
+            flex-wrap: wrap;
+            font-size: 0.75rem;
+            gap: 0.3rem;
+        }
+
+        .scan-count {
+            font-weight: 500;
+        }
+
+        .scan-status {
+            font-size: 0.7rem;
+            margin-right: 0.5rem;
+        }
+
+        .scan-radius {
+            font-size: 0.7rem;
+            color: #aaa;
+        }
+
+        .bio-scan-mini mat-icon {
+            font-size: 16px;
+            height: 16px;
+            width: 16px;
+        }
+
+        .scan-good {
+            color: #4caf50;
+        }
+
+        .scan-bad {
+            color: #f44336;
         }
