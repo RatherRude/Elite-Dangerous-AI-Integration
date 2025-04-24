@@ -131,6 +131,10 @@
                             <div *ngIf="getLocationDetail()" class="location-detail">
                                 <mat-icon class="small-icon">{{ getLocationDetailIcon() }}</mat-icon>
                                 <span>{{ getLocationDetail() }}</span>
+                                <span *ngIf="getProjection('CurrentStatus').LegalState"
+                                      [ngClass]="'status-' + getProjection('CurrentStatus').LegalState.toLowerCase()">
+                                    {{ getProjection('CurrentStatus').LegalState }}
+                                </span>
                             </div>
                         </div>
                     </div>

@@ -151,6 +151,16 @@
             color: rgba(255, 255, 255, 0.8);
         }
 
+        .status-clean {color: #4CAF50;}
+        .status-illegalcargo {color: #FF9800;}
+        .status-speeding {color: #FF9800;}
+        .status-wanted {color: #F44336;}
+        .status-hostile {color: #F44336;}
+        .status-passengerwanted {color: #F44336;}
+        .status-warrant {color: #F44336;}
+        .status-allied {color: #2196F3;}
+        .status-thargoid {color: #9C27B0;}
+
         .small-icon {
             font-size: 16px;
             width: 16px;
