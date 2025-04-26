@@ -1536,6 +1536,200 @@
                         </div>
                     </mat-card-content>
                 </mat-card>
+
+                <!-- Engineers Card -->
+                <mat-card>
+                    <mat-card-header>
+                        <mat-card-title>Engineers</mat-card-title>
+                    </mat-card-header>
+                    <mat-card-content>
+                        <div class="engineers-container">
+                            <mat-tab-group>
+                                <!-- Ship Engineers -->
+                                <mat-tab label="Ship">
+                                    <div class="engineers-filters">
+                                        <mat-button-toggle-group [(ngModel)]="engineerFilter" aria-label="Engineer Status">
+                                            <mat-button-toggle value="all">All</mat-button-toggle>
+                                            <mat-button-toggle value="unlocked">Unlocked</mat-button-toggle>
+                                            <mat-button-toggle value="invited">Invited</mat-button-toggle>
+                                            <mat-button-toggle value="known">Known</mat-button-toggle>
+                                            <mat-button-toggle value="locked">Locked</mat-button-toggle>
+                                        </mat-button-toggle-group>
+                                    </div>
+                                    
+                                    <div class="engineers-table-container">
+                                        <table class="engineers-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Engineer</th>
+                                                    <th>Status</th>
+                                                    <th>Rank</th>
+                                                    <th>Modifies</th>
+                                                    <th>Location</th>
+                                                    <th *ngIf="engineerFilter === 'all'">How to Find</th>
+                                                    <th *ngIf="engineerFilter === 'all'">How to Get Invite</th>
+                                                    <th *ngIf="engineerFilter === 'all'">How to Unlock</th>
+                                                    <th *ngIf="engineerFilter === 'all'">How to Gain Rep</th>
+                                                    <th *ngIf="engineerFilter === 'unlocked'">How to Gain Rep</th>
+                                                    <th *ngIf="engineerFilter === 'invited'">How to Unlock</th>
+                                                    <th *ngIf="engineerFilter === 'known'">How to Get Invite</th>
+                                                    <th *ngIf="engineerFilter === 'locked'">How to Find</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr *ngFor="let engineer of getFilteredShipEngineers()" [ngClass]="{'engineer-unlocked': engineer.Progress === 'Unlocked', 'engineer-invited': engineer.Progress === 'Invited', 'engineer-known': engineer.Progress === 'Known', 'engineer-locked': !engineer.Progress}">
+                                                    <td>
+                                                        <div class="engineer-name">{{ engineer.Engineer }}</div>
+                                                    </td>
+                                                    <td>
+                                                        <div class="engineer-status-cell">
+                                                            <span [ngClass]="'status-badge ' + (engineer.Progress?.toLowerCase() || 'locked')">
+                                                                {{ engineer.Progress || 'Locked' }}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <div class="engineer-rank" *ngIf="engineer.Rank !== undefined">
+                                                            <div class="rank-stars">
+                                                                <span class="star filled" *ngFor="let i of getArray(engineer.Rank)">★</span>
+                                                                <span class="star empty" *ngFor="let i of getArray(5-engineer.Rank)">☆</span>
+                                                            </div>
+                                                            <div class="rank-progress" *ngIf="engineer.RankProgress > 0">
+                                                                <div class="progress-bar" [style.width.%]="engineer.RankProgress"></div>
+                                                            </div>
+                                                        </div>
+                                                        <div *ngIf="engineer.Rank === undefined">-</div>
+                                                    </td>
+                                                    <td>
+                                                        <div class="engineer-mods">{{ getEngineerModules(engineer.Engineer) }}</div>
+                                                    </td>
+                                                    <td>
+                                                        <div class="engineer-location">{{ getEngineerLocation(engineer.Engineer) }}</div>
+                                                    </td>
+                                                    <td *ngIf="engineerFilter === 'all'">
+                                                        <div class="engineer-find">{{ engineer.HowToFind }}</div>
+                                                    </td>
+                                                    <td *ngIf="engineerFilter === 'all'">
+                                                        <div class="engineer-invite">{{ engineer.HowToGetInvite }}</div>
+                                                    </td>
+                                                    <td *ngIf="engineerFilter === 'all'">
+                                                        <div class="engineer-unlock">{{ engineer.HowToUnlock }}</div>
+                                                    </td>
+                                                    <td *ngIf="engineerFilter === 'all'">
+                                                        <div class="engineer-rep">{{ engineer.HowToGainRep }}</div>
+                                                    </td>
+                                                    <td *ngIf="engineerFilter === 'unlocked'">
+                                                        <div class="engineer-rep">{{ engineer.HowToGainRep }}</div>
+                                                    </td>
+                                                    <td *ngIf="engineerFilter === 'invited'">
+                                                        <div class="engineer-unlock">{{ engineer.HowToUnlock }}</div>
+                                                    </td>
+                                                    <td *ngIf="engineerFilter === 'known'">
+                                                        <div class="engineer-invite">{{ engineer.HowToGetInvite }}</div>
+                                                    </td>
+                                                    <td *ngIf="engineerFilter === 'locked'">
+                                                        <div class="engineer-find">{{ engineer.HowToFind }}</div>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </mat-tab>
+
+                                <!-- On-Foot Equipment Engineers -->
+                                <mat-tab label="On-Foot">
+                                    <div class="engineers-filters">
+                                        <mat-button-toggle-group [(ngModel)]="onFootEngineerFilter" aria-label="Engineer Status">
+                                            <mat-button-toggle value="all">All</mat-button-toggle>
+                                            <mat-button-toggle value="unlocked">Unlocked</mat-button-toggle>
+                                            <mat-button-toggle value="invited">Invited</mat-button-toggle>
+                                            <mat-button-toggle value="known">Known</mat-button-toggle>
+                                            <mat-button-toggle value="locked">Locked</mat-button-toggle>
+                                        </mat-button-toggle-group>
+                                    </div>
+                                    
+                                    <div class="engineers-table-container">
+                                        <table class="engineers-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Engineer</th>
+                                                    <th>Status</th>
+                                                    <th>Rank</th>
+                                                    <th>Modifies</th>
+                                                    <th>Location</th>
+                                                    <th *ngIf="onFootEngineerFilter === 'all'">How to Find</th>
+                                                    <th *ngIf="onFootEngineerFilter === 'all'">How to Get Invite</th>
+                                                    <th *ngIf="onFootEngineerFilter === 'all'">How to Unlock</th>
+                                                    <th *ngIf="onFootEngineerFilter === 'all'">Referral</th>
+                                                    <th *ngIf="onFootEngineerFilter === 'unlocked'">Referral</th>
+                                                    <th *ngIf="onFootEngineerFilter === 'invited'">How to Unlock</th>
+                                                    <th *ngIf="onFootEngineerFilter === 'known'">How to Get Invite</th>
+                                                    <th *ngIf="onFootEngineerFilter === 'locked'">How to Find</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr *ngFor="let engineer of getFilteredOnFootEngineers()" [ngClass]="{'engineer-unlocked': engineer.Progress === 'Unlocked', 'engineer-invited': engineer.Progress === 'Invited', 'engineer-known': engineer.Progress === 'Known', 'engineer-locked': !engineer.Progress}">
+                                                    <td>
+                                                        <div class="engineer-name">{{ engineer.Engineer }}</div>
+                                                    </td>
+                                                    <td>
+                                                        <div class="engineer-status-cell">
+                                                            <span [ngClass]="'status-badge ' + (engineer.Progress?.toLowerCase() || 'locked')">
+                                                                {{ engineer.Progress || 'Locked' }}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <div class="engineer-rank" *ngIf="engineer.Rank !== undefined">
+                                                            <div class="rank-stars">
+                                                                <span class="star filled" *ngFor="let i of getArray(engineer.Rank)">★</span>
+                                                                <span class="star empty" *ngFor="let i of getArray(5-engineer.Rank)">☆</span>
+                                                            </div>
+                                                            <div class="rank-progress" *ngIf="engineer.RankProgress > 0">
+                                                                <div class="progress-bar" [style.width.%]="engineer.RankProgress"></div>
+                                                            </div>
+                                                        </div>
+                                                        <div *ngIf="engineer.Rank === undefined">-</div>
+                                                    </td>
+                                                    <td>
+                                                        <div class="engineer-mods">{{ getOnFootEngineerModules(engineer.Engineer) }}</div>
+                                                    </td>
+                                                    <td>
+                                                        <div class="engineer-location">{{ getEngineerLocation(engineer.Engineer) }}</div>
+                                                    </td>
+                                                    <td *ngIf="onFootEngineerFilter === 'all'">
+                                                        <div class="engineer-find">{{ engineer.HowToFind }}</div>
+                                                    </td>
+                                                    <td *ngIf="onFootEngineerFilter === 'all'">
+                                                        <div class="engineer-invite">{{ engineer.HowToGetInvite }}</div>
+                                                    </td>
+                                                    <td *ngIf="onFootEngineerFilter === 'all'">
+                                                        <div class="engineer-unlock">{{ engineer.HowToUnlock }}</div>
+                                                    </td>
+                                                    <td *ngIf="onFootEngineerFilter === 'all'">
+                                                        <div class="engineer-rep">{{ engineer.HowToReferral }}</div>
+                                                    </td>
+                                                    <td *ngIf="onFootEngineerFilter === 'unlocked'">
+                                                        <div class="engineer-rep">{{ engineer.HowToReferral }}</div>
+                                                    </td>
+                                                    <td *ngIf="onFootEngineerFilter === 'invited'">
+                                                        <div class="engineer-unlock">{{ engineer.HowToUnlock }}</div>
+                                                    </td>
+                                                    <td *ngIf="onFootEngineerFilter === 'known'">
+                                                        <div class="engineer-invite">{{ engineer.HowToGetInvite }}</div>
+                                                    </td>
+                                                    <td *ngIf="onFootEngineerFilter === 'locked'">
+                                                        <div class="engineer-find">{{ engineer.HowToFind }}</div>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </mat-tab>
+                            </mat-tab-group>
+                        </div>
+                    </mat-card-content>
+                </mat-card>
             </div>
         </div>
     </div>
