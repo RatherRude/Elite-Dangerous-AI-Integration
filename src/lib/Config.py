@@ -462,32 +462,32 @@ def migrate(data: dict) -> dict:
         data['active_character_index'] = -1
         
         # If we have a character name, create a character entry
-        if data.get('personality_name'):
-            character = {
-                "name": data.get('personality_name', 'COVAS:NEXT'),
-                "character": data.get('character', ''),
-                "personality_preset": data.get('personality_preset', 'default'),
-                "personality_verbosity": data.get('personality_verbosity', 50),
-                "personality_vulgarity": data.get('personality_vulgarity', 0),
-                "personality_empathy": data.get('personality_empathy', 50),
-                "personality_formality": data.get('personality_formality', 50),
-                "personality_confidence": data.get('personality_confidence', 50),
-                "personality_ethical_alignment": data.get('personality_ethical_alignment', 'neutral'),
-                "personality_moral_alignment": data.get('personality_moral_alignment', 'neutral'),
-                "personality_tone": data.get('personality_tone', 'serious'),
-                "personality_character_inspiration": data.get('personality_character_inspiration', ''),
-                "personality_language": data.get('personality_language', ''),
-                "personality_knowledge_pop_culture": data.get('personality_knowledge_pop_culture', False),
-                "personality_knowledge_scifi": data.get('personality_knowledge_scifi', False),
-                "personality_knowledge_history": data.get('personality_knowledge_history', False),
-                "tts_voice": data.get('tts_voice', None),
-                "tts_speed": data.get('tts_speed', "1.2"),
-                "tts_prompt": data.get('tts_prompt', "")
-            }
-            print(f"Created character from existing settings: {character['name']}")
-            data['characters'].append(character)
-            data['active_character_index'] = 0
-            
+        character = {
+            "name": data.get('personality_name', 'Custom'),
+            "character": data.get('character', ''),
+            "personality_preset": data.get('personality_preset', 'custom'),
+            "personality_verbosity": data.get('personality_verbosity', 50),
+            "personality_vulgarity": data.get('personality_vulgarity', 0),
+            "personality_empathy": data.get('personality_empathy', 50),
+            "personality_formality": data.get('personality_formality', 50),
+            "personality_confidence": data.get('personality_confidence', 50),
+            "personality_ethical_alignment": data.get('personality_ethical_alignment', 'neutral'),
+            "personality_moral_alignment": data.get('personality_moral_alignment', 'neutral'),
+            "personality_tone": data.get('personality_tone', 'serious'),
+            "personality_character_inspiration": data.get('personality_character_inspiration', ''),
+            "personality_language": data.get('personality_language', ''),
+            "personality_knowledge_pop_culture": data.get('personality_knowledge_pop_culture', False),
+            "personality_knowledge_scifi": data.get('personality_knowledge_scifi', False),
+            "personality_knowledge_history": data.get('personality_knowledge_history', False),
+            "tts_voice": data.get('tts_voice', 'en-US-AvaMultilingualNeural'),
+            "tts_speed": data.get('tts_speed', "1.2"),
+            "tts_prompt": data.get('tts_prompt', "")
+        }
+        print(f"Created character from existing settings: {character['name']}")
+        data['characters'].append(character)
+        data['active_character_index'] = 0
+        data['personality_preset'] = 'custom'
+
     # Ensure default values are properly set
     if 'commander_name' not in data or data['commander_name'] is None:
         data['commander_name'] = ""
@@ -904,24 +904,36 @@ def update_config(config: Config, data: dict) -> Config:
                     
                     # Copy character properties to top-level config
                     if index >= 0:
-                        character = config["characters"][index]
-                        for key, value in character.items():
-                            if key != "name":  # Don't overwrite personality_name with name
-                                config[key] = value
-                        config["personality_name"] = character["name"]
-                        print(f"Copied character properties to config for: {character.get('name')}")
-
+                        character_data = config["characters"][index]
+                        # Apply all character fields
+                        config["character"] = character_data.get("character", "")
+                        print(f"Setting active character preset to: {character_data.get('personality_preset', 'unknown')}")
+                        config["personality_preset"] = character_data.get("personality_preset", "custom")
+                        config["personality_verbosity"] = character_data.get("personality_verbosity", 50)
+                        config["personality_vulgarity"] = character_data.get("personality_vulgarity", 0)
+                        config["personality_empathy"] = character_data.get("personality_empathy", 50)
+                        config["personality_formality"] = character_data.get("personality_formality", 50)
+                        config["personality_confidence"] = character_data.get("personality_confidence", 50)
+                        config["personality_ethical_alignment"] = character_data.get("personality_ethical_alignment", "neutral")
+                        config["personality_moral_alignment"] = character_data.get("personality_moral_alignment", "neutral")
+                        config["personality_tone"] = character_data.get("personality_tone", "serious")
+                        config["personality_character_inspiration"] = character_data.get("personality_character_inspiration", "")
+                        config["personality_language"] = character_data.get("personality_language", "English")
+                        config["personality_knowledge_pop_culture"] = character_data.get("personality_knowledge_pop_culture", False)
+                        config["personality_knowledge_scifi"] = character_data.get("personality_knowledge_scifi", False)
+                        config["personality_knowledge_history"] = character_data.get("personality_knowledge_history", False)
+                        
                         # Also apply TTS voice if present
-                        if "tts_voice" in character:
-                            config["tts_voice"] = character.get("tts_voice", "")
+                        if "tts_voice" in character_data:
+                            config["tts_voice"] = character_data.get("tts_voice", "")
                             
                         # Apply TTS speed if present
-                        if "tts_speed" in character:
-                            config["tts_speed"] = character.get("tts_speed", "1.2")
+                        if "tts_speed" in character_data:
+                            config["tts_speed"] = character_data.get("tts_speed", "1.2")
                             
                         # Apply TTS prompt if present
-                        if "tts_prompt" in character:
-                            config["tts_prompt"] = character.get("tts_prompt", "")
+                        if "tts_prompt" in character_data:
+                            config["tts_prompt"] = character_data.get("tts_prompt", "")
                             
                         # Write the config to disk
                         save_config(config)
