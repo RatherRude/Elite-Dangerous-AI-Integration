@@ -1,0 +1,35 @@
+.covas-log-container {
+    display: flex
+;
+    flex-direction: column;
+    padding: 2px 0;
+    margin: 0;
+    color: white;
+    font-family: monospace;
+    max-height: 2.5em;
+    overflow-y: scroll;
+}
+.covas-log-container:hover {
+  max-height: unset;
+  overflow-y: unset;
+}
+
+.covas-log-entry {
+  display: flex;
+  align-items: start;
+}
+
+.timestamp {
+  color: #aaa;
+  margin-right: 8px;
+}
+
+.prefix {
+  color: #2196F3;
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+.message {
+  color: white;
+} 

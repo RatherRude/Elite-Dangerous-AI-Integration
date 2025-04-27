@@ -13,6 +13,7 @@ import { InputContainerComponent } from "../components/input-container/input-con
 import { ConfigService } from "../services/config.service";
 import { Subscription } from "rxjs";
 import { TabbedContainerComponent } from "../components/tabbed-container/tabbed-container.component";
+import { CovasLogComponent } from "../components/covas-log/covas-log.component";
 
 @Component({
     selector: "app-main-view",
@@ -26,7 +27,8 @@ import { TabbedContainerComponent } from "../components/tabbed-container/tabbed-
         LogContainerComponent,
         SettingsMenuComponent,
         InputContainerComponent,
-        TabbedContainerComponent
+        TabbedContainerComponent,
+        CovasLogComponent
     ],
     templateUrl: "./main-view.component.html",
     styleUrl: "./main-view.component.css",
