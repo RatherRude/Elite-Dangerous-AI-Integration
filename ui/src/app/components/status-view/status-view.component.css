@@ -54,21 +54,33 @@
 
         .tab-content {
             flex-grow: 1;
-            padding: 15px;
+            padding: 0;
             overflow-y: auto;
             position: relative;
-            padding-bottom: 45px;
+            display: flex;
+            flex-direction: column;
+            /*width: 100%;*/
         }
 
         .tab-pane {
             height: 100%;
+            /*width: 100%;*/
             position: relative;
+            flex: 1 1 auto;
+            overflow-y: auto;
         }
+
+        .tab-pane[style*="display: block"] {
+            display: flex !important;
+            flex-direction: column;
+        }
+
+
 
         .status-indicators-fixed {
             position: fixed;
             top: 20px;
-            right: 20px;
+            right: 30px;
             z-index: 100;
         }
 
@@ -1828,13 +1840,3 @@
             }
         }
 
-        .covas-log-container {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            z-index: 100;
-            padding: 5px 0;
-            margin: 0;
-            background-color: rgba(22, 22, 22, 0.8);
-        }

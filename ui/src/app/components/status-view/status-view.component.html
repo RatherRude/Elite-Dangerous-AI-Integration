@@ -1731,8 +1731,10 @@
                     </mat-card-content>
                 </mat-card>
             </div>
+            
+            <!-- The covas-log component is outside all tab-panes but still inside tab-content -->
+            <app-covas-log *ngIf="viewType === 'status'" class="covas-log-container"></app-covas-log>
         </div>
-        <app-covas-log class="covas-log-container"></app-covas-log>
     </div>
 
     <div class="no-data" *ngIf="!isProjectionsLoaded">
