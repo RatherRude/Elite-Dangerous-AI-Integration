@@ -1381,7 +1381,63 @@ export class StatusViewComponent implements OnInit, OnDestroy {
      */
     formatMaterialName(name: string): string {
         if (!name) return '';
-        // Convert snake_case or camelCase to Title Case with spaces
+        
+        // Handle special case material names
+        const specialNames: {[key: string]: string} = {
+            // Guardian materials
+            'guardiantechcomponent': 'Guardian Technology Component',
+            'guardianwreckagecomponents': 'Guardian Wreckage Components',
+            'guardianpowercell': 'Guardian Power Cell',
+            'guardianpowerconduit': 'Guardian Power Conduit',
+            'guardiansentinelweaponparts': 'Guardian Sentinel Weapon Parts',
+            'vesselblueprint': 'Guardian Vessel Blueprint Fragment',
+            'techcomponent': 'Guardian Technology Component',
+            
+            // Guardian Data
+            'ancientbiologicaldata': 'Pattern Alpha Obelisk Data',
+            'ancientculturaldata': 'Pattern Beta Obelisk Data',
+            'ancienthistoricaldata': 'Pattern Gamma Obelisk Data',
+            'ancienttechnologicaldata': 'Pattern Epsilon Obelisk Data',
+            
+            // Thargoid data
+            'interdictiondata': 'Thargoid Interdiction Telemetry',
+            'shipflightdata': 'Ship Flight Data',
+            'shipsystemsdata': 'Ship Systems Data',
+            'shutdowndata': 'Massive Energy Surge Analytics',
+            'shipsignature': 'Thargoid Ship Signature',
+            
+            // Thargoid materials
+            'wreckagecomponents': 'Wreckage Components',
+            'biomechanicalconduits': 'Bio-Mechanical Conduits',
+            'weaponparts': 'Weapon Parts',
+            'propulsionelement': 'Propulsion Elements',
+            'causticgeneratorparts': 'Corrosive Mechanisms',
+            'tgcausticcrystal': 'Caustic Crystal',
+            'tgcausticshard': 'Caustic Shard',
+            'unknowncarapace': 'Thargoid Carapace',
+            'tgabrasion02': 'Phasing Membrane Residue',
+            'tgabrasion03': 'Hardened Surface Fragments',
+            'unknownenergycell': 'Thargoid Energy Cell',
+            'unknowncorechip': 'Tactical Core Chip',
+            'unknowntechnologycomponents': 'Thargoid Technological Components',
+            
+            // Standard engineering materials that were broken
+            'eccentrichyperspace': 'Eccentric Hyperspace Trajectories',
+            'conductiveceramics': 'Conductive Ceramics',
+            'improvisedcomponents': 'Improvised Components',
+            'refinedfocuscrystals': 'Refined Focus Crystals',
+            'phasealloys': 'Phase Alloys',
+            'protolightalloys': 'Proto Light Alloys',
+            'protoradiolicalloys': 'Proto Radiolic Alloys'
+        };
+        
+        // Check if it's a special material first
+        const normalized = name.toLowerCase().replace(/[^a-zA-Z0-9]/g, '');
+        if (specialNames[normalized]) {
+            return specialNames[normalized];
+        }
+        
+        // Otherwise, proceed with standard formatting
         return name
           .replace(/_/g, ' ')
           .replace(/([A-Z])/g, ' $1')
@@ -1564,7 +1620,7 @@ export class StatusViewComponent implements OnInit, OnDestroy {
             2: ['guardianpowercell'],
             3: ['guardianpowerconduit'],
             4: ['guardiansentinelweaponparts'],
-            5: ['guardiantechcomponent']
+            5: ['techcomponent']
         },
         'Thargoid Technology': {
             1: ['wreckagecomponents', 'tgabrasion02'],
@@ -1624,14 +1680,14 @@ export class StatusViewComponent implements OnInit, OnDestroy {
             2: ['ancientculturaldata'],
             3: ['ancienthistoricaldata'],
             4: ['ancienttechnologicaldata'],
-            5: ['guardianvesselblueprint']
+            5: ['vesselblueprint']
         },
         'Thargoid Data': {
-            1: ['tginterdictiondata'],
-            2: ['tgshipflightdata'],
-            3: ['tgshipsystemsdata'],
-            4: ['tgshutdowndata'],
-            5: ['unknownshipsignature']
+            1: ['interdictiondata'],
+            2: ['shipflightdata'],
+            3: ['shipsystemsdata'],
+            4: ['shutdowndata'],
+            5: ['shipsignature']
         }
     };
 
@@ -1690,29 +1746,89 @@ export class StatusViewComponent implements OnInit, OnDestroy {
      * Normalize material name for comparison (remove spaces, make lowercase)
      */
     private normalizeMaterialName(name: string): string {
-        // Remove prefixes like 'tg_', 'guardian_', etc.
-        let normalized = name.toLowerCase()
-            .replace(/^tg_/, '')
-            .replace(/^guardian_/, '')
-            .replace(/^unknown/, 'thargoid')
-            .replace(/^guardian_sentinel_/, 'guardian')
-            .replace(/[^a-z0-9]/g, '');
+        // Remove prefixes like 'tg_', 'guardian_', etc. and convert to lowercase
+        let normalized = name.toLowerCase();
         
-        // Special case mappings for specific materials
-        const specialMappings: {[key: string]: string} = {
-            'sensorfragment': 'unknownenergysource',
-            'thargoidcarapace': 'unknowncarapace',
-            'thargoidentergycell': 'unknownenergycell',
-            'tacticalcorechip': 'unknowncorechip',
-            'thargoidtechnologicalcomponents': 'unknowntechnologycomponents',
-            'massiveenergysurgeanalytics': 'tgshutdowndata',
-            'patternalphaobeliskdata': 'ancientbiologicaldata',
-            'patternbetaobeliskdata': 'ancientculturaldata',
-            'patterngammaobeliskdata': 'ancienthistoricaldata',
-            'patternepsilonobeliskdata': 'ancienttechnologicaldata'
+        // First check for direct matches to handle the more complex cases
+        // Map external names to internal keys
+        const directMappings: {[key: string]: string} = {
+            // Guardian materials
+            'guardian_sentinel_wreckagecomponents': 'guardianwreckagecomponents',
+            'guardian_powercell': 'guardianpowercell',
+            'guardian_powerconduit': 'guardianpowerconduit',
+            'guardian_sentinel_weaponparts': 'guardiansentinelweaponparts',
+            'guardian_techcomponent': 'techcomponent',
+            'guardian_vesselblueprint': 'vesselblueprint',
+            
+            // Ancient data (Guardian)
+            'ancientbiologicaldata': 'ancientbiologicaldata',
+            'ancientculturaldata': 'ancientculturaldata',
+            'ancienthistoricaldata': 'ancienthistoricaldata',
+            'ancienttechnologicaldata': 'ancienttechnologicaldata',
+            'pattern alpha obelisk data': 'ancientbiologicaldata',
+            'pattern beta obelisk data': 'ancientculturaldata', 
+            'pattern gamma obelisk data': 'ancienthistoricaldata',
+            'pattern epsilon obelisk data': 'ancienttechnologicaldata',
+            
+            // Thargoid materials
+            'tg_wreckagecomponents': 'wreckagecomponents',
+            'tg_biomechanicalconduits': 'biomechanicalconduits',
+            'tg_weaponparts': 'weaponparts',
+            'tg_propulsionelement': 'propulsionelement',
+            'tg_causticgeneratorparts': 'causticgeneratorparts',
+            'tg_causticcrystal': 'tgcausticcrystal',
+            'tg_causticshard': 'tgcausticshard',
+            'tg_abrasion02': 'tgabrasion02',
+            'tg_abrasion03': 'tgabrasion03',
+            'unknowncarapace': 'unknowncarapace',
+            'unknownenergycell': 'unknownenergycell',
+            'unknowncorechip': 'unknowncorechip',
+            'unknowntechnologycomponents': 'unknowntechnologycomponents',
+            
+            // Thargoid data
+            'tg_interdictiondata': 'interdictiondata',
+            'tg_shipflightdata': 'shipflightdata', 
+            'tg_shipsystemsdata': 'shipsystemsdata',
+            'tg_shutdowndata': 'shutdowndata',
+            'unknownshipsignature': 'shipsignature',
+            'thargoid interdiction telemetry': 'interdictiondata',
+            'ship flight data': 'shipflightdata',
+            'ship systems data': 'shipsystemsdata',
+            'massive energy surge analytics': 'shutdowndata',
+            'thargoid ship signature': 'shipsignature',
+            
+            // Engineering materials that were broken
+            'eccentric hyperspace trajectories': 'eccentrichyperspace',
+            'conductive ceramics': 'conductiveceramics',
+            'improvised components': 'improvisedcomponents',
+            'refined focus crystals': 'refinedfocuscrystals',
+            'phase alloys': 'phasealloys',
+            'proto light alloys': 'protolightalloys',
+            'proto radiolic alloys': 'protoradiolicalloys',
+            
+            // Special cases with different names
+            'sensor fragment': 'unknownenergysource',
+            'thargoid carapace': 'unknowncarapace',
+            'thargoid energy cell': 'unknownenergycell', 
+            'tactical core chip': 'unknowncorechip',
+            'thargoid technological components': 'unknowntechnologycomponents'
         };
         
-        return specialMappings[normalized] || normalized;
+        // Check for direct mappings first
+        for (const [key, value] of Object.entries(directMappings)) {
+            if (normalized === key || normalized.includes(key)) {
+                return value;
+            }
+        }
+        
+        // If no direct mapping found, normalize by removing all non-alphanumeric characters
+        normalized = normalized
+            .replace(/^tg_/, '')
+            .replace(/^guardian_/, '')
+            .replace(/^guardian_sentinel_/, 'guardian')
+            .replace(/[^a-z0-9]/g, '');
+            
+        return normalized;
     }
 
     // Return the category name for raw materials
