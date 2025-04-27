@@ -1558,6 +1558,20 @@ export class StatusViewComponent implements OnInit, OnDestroy {
             3: ['phasealloys'],
             4: ['protolightalloys'],
             5: ['protoradiolicalloys']
+        },
+        'Guardian Technology': {
+            1: ['guardianwreckagecomponents'],
+            2: ['guardianpowercell'],
+            3: ['guardianpowerconduit'],
+            4: ['guardiansentinelweaponparts'],
+            5: ['guardiantechcomponent']
+        },
+        'Thargoid Technology': {
+            1: ['wreckagecomponents', 'tgabrasion02'],
+            2: ['biomechanicalconduits', 'tgabrasion03'],
+            3: ['weaponparts', 'unknowncarapace', 'tgcausticshard'],
+            4: ['propulsionelement', 'unknownenergycell', 'unknowncorechip'],
+            5: ['causticgeneratorparts', 'tgcausticcrystal', 'unknowntechnologycomponents']
         }
     };
 
@@ -1604,6 +1618,20 @@ export class StatusViewComponent implements OnInit, OnDestroy {
             3: ['crackedindustrialfirmware'],
             4: ['securityfirmwarepatch'],
             5: ['modifiedembeddedfirmware']
+        },
+        'Guardian Data': {
+            1: ['ancientbiologicaldata'],
+            2: ['ancientculturaldata'],
+            3: ['ancienthistoricaldata'],
+            4: ['ancienttechnologicaldata'],
+            5: ['guardianvesselblueprint']
+        },
+        'Thargoid Data': {
+            1: ['tginterdictiondata'],
+            2: ['tgshipflightdata'],
+            3: ['tgshipsystemsdata'],
+            4: ['tgshutdowndata'],
+            5: ['unknownshipsignature']
         }
     };
 
@@ -1662,7 +1690,29 @@ export class StatusViewComponent implements OnInit, OnDestroy {
      * Normalize material name for comparison (remove spaces, make lowercase)
      */
     private normalizeMaterialName(name: string): string {
-        return name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        // Remove prefixes like 'tg_', 'guardian_', etc.
+        let normalized = name.toLowerCase()
+            .replace(/^tg_/, '')
+            .replace(/^guardian_/, '')
+            .replace(/^unknown/, 'thargoid')
+            .replace(/^guardian_sentinel_/, 'guardian')
+            .replace(/[^a-z0-9]/g, '');
+        
+        // Special case mappings for specific materials
+        const specialMappings: {[key: string]: string} = {
+            'sensorfragment': 'unknownenergysource',
+            'thargoidcarapace': 'unknowncarapace',
+            'thargoidentergycell': 'unknownenergycell',
+            'tacticalcorechip': 'unknowncorechip',
+            'thargoidtechnologicalcomponents': 'unknowntechnologycomponents',
+            'massiveenergysurgeanalytics': 'tgshutdowndata',
+            'patternalphaobeliskdata': 'ancientbiologicaldata',
+            'patternbetaobeliskdata': 'ancientculturaldata',
+            'patterngammaobeliskdata': 'ancienthistoricaldata',
+            'patternepsilonobeliskdata': 'ancienttechnologicaldata'
+        };
+        
+        return specialMappings[normalized] || normalized;
     }
 
     // Return the category name for raw materials
