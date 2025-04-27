@@ -70,9 +70,4 @@
 .tab-container {
   flex: 1;
   overflow: hidden;
-}
-
-.covas-log-container {
-  flex: 0 0 auto;
-  margin: 0 16px;
 } 

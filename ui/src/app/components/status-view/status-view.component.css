@@ -1824,3 +1824,8 @@
                 max-width: 300px;
             }
         }
+
+        .covas-log-container {
+            margin-top: 10px;
+            flex: 0 0 auto;
+        }

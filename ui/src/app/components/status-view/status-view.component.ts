@@ -20,6 +20,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { RouterModule } from '@angular/router';
 import { LogContainerComponent } from "../log-container/log-container.component";
+import { CovasLogComponent } from "../covas-log/covas-log.component";
 
 // Define EventEntry interface locally
 interface EventEntry {
@@ -49,7 +50,8 @@ interface EventEntry {
         MatButtonModule,
         MatButtonToggleModule,
         RouterModule,
-        LogContainerComponent
+        LogContainerComponent,
+        CovasLogComponent
     ],
     templateUrl: "./status-view.component.html",
     styleUrls: ["./status-view.component.css"]
