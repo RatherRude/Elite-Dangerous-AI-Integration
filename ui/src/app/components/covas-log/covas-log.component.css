@@ -1,7 +1,7 @@
 .covas-log-container {
     display: flex;
     flex-direction: column;
-    padding: 2px 0;
+    padding: 2px 10px;
     margin: 0;
     color: white;
     font-family: monospace;
@@ -9,11 +9,14 @@
     max-height: 2.5em;
     overflow: hidden;
     transition: max-height 0.3s ease;
+    border-top: 1px solid rgba(33, 150, 243, 0.5);
+    background-color: rgba(0, 0, 0, 0.4);
 }
 
 .covas-log-container:hover {
     max-height: 15em;
     overflow-y: auto;
+    background-color: rgba(0, 0, 0, 0.7);
 }
 
 .covas-log-entry {
