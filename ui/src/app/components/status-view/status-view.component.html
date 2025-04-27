@@ -537,8 +537,6 @@
                         </div>
                     </div>
                 </div>
-
-                <app-covas-log class="covas-log-container"></app-covas-log>
             </div>
 
             <!-- COMMANDER TAB -->
@@ -1150,8 +1148,6 @@
                             </div>
                         </mat-card-content>
                     </mat-card>
-
-                    <app-covas-log class="covas-log-container"></app-covas-log>
                 </div>
             </div>
 
@@ -1342,8 +1338,6 @@
                         </div>
                     </mat-card-content>
                 </mat-card>
-
-                <app-covas-log class="covas-log-container"></app-covas-log>
             </div>
 
             <!-- STORAGE TAB -->
@@ -1736,13 +1730,15 @@
                         </div>
                     </mat-card-content>
                 </mat-card>
-
-                <app-covas-log class="covas-log-container"></app-covas-log>
             </div>
+            <app-covas-log class="covas-log-container"></app-covas-log>
         </div>
     </div>
 
     <div class="no-data" *ngIf="!isProjectionsLoaded">
         Waiting for status data...
     </div>
+
 </div>
+
+<!-- At the very end of the file, right before closing the status-container div: -->

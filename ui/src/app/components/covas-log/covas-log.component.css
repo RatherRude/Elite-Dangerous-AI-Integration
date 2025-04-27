@@ -1,35 +1,45 @@
 .covas-log-container {
-    display: flex
-;
+    display: flex;
     flex-direction: column;
     padding: 2px 0;
     margin: 0;
     color: white;
     font-family: monospace;
+    min-height: 2em;
     max-height: 2.5em;
-    overflow-y: scroll;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
 }
+
 .covas-log-container:hover {
-  max-height: unset;
-  overflow-y: unset;
+    max-height: 15em;
+    overflow-y: auto;
 }
 
 .covas-log-entry {
-  display: flex;
-  align-items: start;
+    display: flex;
+    align-items: center;
+    padding: 2px 0;
 }
 
 .timestamp {
-  color: #aaa;
-  margin-right: 8px;
+    color: #aaa;
+    margin-right: 8px;
 }
 
 .prefix {
-  color: #2196F3;
-  font-weight: bold;
-  margin-right: 8px;
+    color: #2196F3;
+    font-weight: bold;
+    margin-right: 8px;
 }
 
 .message {
-  color: white;
+    color: white;
+}
+
+.empty-message {
+    color: #666;
+    font-style: italic;
+    text-align: center;
+    padding: 5px;
 } 

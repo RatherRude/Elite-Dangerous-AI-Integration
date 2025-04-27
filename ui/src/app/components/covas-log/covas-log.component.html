@@ -5,5 +5,7 @@
       <span class="prefix" [style.color]="getLogColor(latestCovasLog.prefix)">{{ latestCovasLog.prefix }}</span>
       <span class="message">{{ latestCovasLog.message }}</span>
     </div>
+  } @else {
+    <div class="empty-message">Waiting for COVAS response...</div>
   }
 </div> 

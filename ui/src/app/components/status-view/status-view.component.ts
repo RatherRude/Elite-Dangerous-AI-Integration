@@ -1928,7 +1928,7 @@ export class StatusViewComponent implements OnInit, OnDestroy {
     // Helper for getting credit balance directly from CurrentStatus
     getCurrentBalance(): number {
         // Return current balance from Credits or -1 if not available
-        const credits = this.getProjection('Commander')?.Credits;
+        const credits = this.getProjection('CurrentStatus')?.Balance;
         return credits !== undefined ? credits : -1;
     }
 

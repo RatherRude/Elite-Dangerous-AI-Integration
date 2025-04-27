@@ -4,6 +4,7 @@
             padding: 0;
             display: flex;
             flex-direction: column;
+            position: relative;
         }
 
         .tab-layout {
@@ -56,6 +57,7 @@
             padding: 15px;
             overflow-y: auto;
             position: relative;
+            padding-bottom: 45px;
         }
 
         .tab-pane {
@@ -1826,6 +1828,11 @@
         }
 
         .covas-log-container {
-            margin-top: 10px;
-            flex: 0 0 auto;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 5px 0;
+            margin: 0;
         }
