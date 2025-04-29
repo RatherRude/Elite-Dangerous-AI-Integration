@@ -105,17 +105,33 @@ def increase_systems_power(args, projected_states):
     return f"Systems power increased"
 
 
+def balance_power(args, projected_states):
+    setGameWindowActive()
+    keys.send('ResetPowerDistribution')
+    return f"Power re-balanced"
+
 def cycle_next_target(args, projected_states):
     setGameWindowActive()
     keys.send('CycleNextTarget')
-    return f"Next target cycled"
+    return f"Selecting next target"
 
+def cycle_previous_target(args, projected_states):
+    setGameWindowActive()
+    keys.send('CyclePreviousTarget')
+    return f"Secting previous target"
 
 def cycle_fire_group_next(args, projected_states):
     setGameWindowActive()
     keys.send('CycleFireGroupNext')
     # return f"New active fire group {projected_states.get('CurrentStatus').get('Firegroup')}" @ToDo: Firegoup not set in status projection?
-    return f"Fire group cycled"
+    return f"Cycled to next fire group"
+
+
+def cycle_fire_group_previous(args, projected_states):
+    setGameWindowActive()
+    keys.send('CycleFireGroupPrevious')
+    return f"Cycled to previous fire group"
+
 
 def ship_spot_light_toggle(args, projected_states):
     setGameWindowActive()
@@ -279,6 +295,14 @@ def hyper_super_combination(args, projected_states):
 
     keys.send('HyperSuperCombination')
     return return_message + "Frame Shift Drive is now charging for a jump"
+
+def next_system_in_route(args, projected_states):
+    nav_info = projected_states.get('NavInfo', {})
+    if not nav_info['NextJumpTarget']:
+        return "a target next system in route as no navigation route is currently set set"
+
+    keys.send('TargetNextRouteSystem')
+    return "Targeting next system in route"
 
 def undock(args, projected_states):
     setGameWindowActive()
@@ -2686,6 +2710,11 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "required": ["pips"]
     }, increase_systems_power, 'ship')
 
+    actionManager.registerAction('balance_power', "reset ship power to balanced (2 pips to systems, engines and weapons)", {
+        "type": "object",
+        "properties":{},
+    }, balance_power, 'ship')
+
     actionManager.registerAction('galaxyMapOpen', "Open galaxy map. Focus on a system or start a navigation route", {
         "type": "object",
         "properties": {
@@ -2715,10 +2744,20 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, cycle_next_target, 'ship')
 
+    actionManager.registerAction('cyclePreviousTarget', "Cycle to previous target", {
+        "type": "object",
+        "properties": {}
+    }, cycle_previous_target, 'ship')
+
     actionManager.registerAction('cycleFireGroupNext', "Cycle to next fire group", {
         "type": "object",
         "properties": {}
     }, cycle_fire_group_next, 'ship')
+
+    actionManager.registerAction('cycleFireGroupPrevious', "Cycle to previous fire group", {
+        "type": "object",
+        "properties": {}
+    }, cycle_fire_group_previous, 'ship')
 
     actionManager.registerAction('shipSpotLightToggle', "Toggle ship spotlight", {
         "type": "object",
@@ -2793,6 +2832,13 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                                      "type": "object",
                                      "properties": {}
                                  }, hyper_super_combination, 'mainship')
+
+    actionManager.registerAction('target_next_system_in_route',
+                                 "When we have a nav route set, this will automatically target the next system in the route",
+                                 {
+                                     "type": "object",
+                                     "properties": {}
+                                 }, next_system_in_route, 'mainship')
 
     actionManager.registerAction('toggleCargoScoop', "Toggles cargo scoop", {
         "type": "object",
