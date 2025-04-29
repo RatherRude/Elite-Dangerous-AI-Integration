@@ -113,12 +113,12 @@ def balance_power(args, projected_states):
 def cycle_next_target(args, projected_states):
     setGameWindowActive()
     keys.send('CycleNextTarget')
-    return f"Selecting next target"
+    return f"Selected next target"
 
 def cycle_previous_target(args, projected_states):
     setGameWindowActive()
     keys.send('CyclePreviousTarget')g
-    return f"Selecting previous target"
+    return f"Selected previous target"
 
 def cycle_fire_group_next(args, projected_states):
     setGameWindowActive()
