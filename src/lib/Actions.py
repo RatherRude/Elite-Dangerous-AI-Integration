@@ -117,8 +117,8 @@ def cycle_next_target(args, projected_states):
 
 def cycle_previous_target(args, projected_states):
     setGameWindowActive()
-    keys.send('CyclePreviousTarget')
-    return f"Secting previous target"
+    keys.send('CyclePreviousTarget')g
+    return f"Selecting previous target"
 
 def cycle_fire_group_next(args, projected_states):
     setGameWindowActive()
