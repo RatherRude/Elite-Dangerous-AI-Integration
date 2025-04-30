@@ -56,7 +56,7 @@ pypiwin32==223 ; sys_platform == "win32"
 pyreadline3==3.4.1
 PyRect==0.2.0
 PyScreeze==0.1.30
-pysilero-vad==2.0.1
+pysilero-vad==2.1.0
 sqlean.py==3.47.0
 pytest==8.3.3
 pytest-timeout==2.3.1
