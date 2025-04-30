@@ -3186,6 +3186,62 @@ class PromptGenerator:
         else:
             status_entries.append(("Friends Status", "No friends currently online"))
 
+        # Engineer status
+        engineer_systems = {
+            "Tod 'The Blaster' McQuinn": "Wolf 397",
+            "Felicity Farseer": "Deciat",
+            "Elvira Martuuk": "Khun",
+            "Liz Ryder": "Eurybia",
+            "The Dweller": "Wyrd",
+            "Lei Cheung": "Laksak",
+            "Selene Jean": "Kuk",
+            "Hera Tani": "Kuwemaki",
+            "Broo Tarquin": "Muang",
+            "Marco Qwent": "Sirius",
+            "Zacariah Nemo": "Yoru",
+            "Didi Vatermann": "Leesti",
+            "Colonel Bris Dekker": "Sol",
+            "Juri Ishmaak": "Giryak",
+            "Professor Palin": "Arque",
+            "Bill Turner": "Alioth",
+            "Lori Jameson": "Shinrarta Dezhra",
+            "Ram Tah": "Meene",
+            "Tiana Fortune": "Achenar",
+            "The Sarge": "Beta-3 Tucani",
+            "Etienne Dorn": "Los",
+            "Marsha Hicks": "Tir",
+            "Mel Brandon": "Luchtaine",
+            "Petra Olmanova": "Asura",
+            "Chloe Sedesi": "Shenve",
+            "Domino Green": "Orishis",
+            "Hero Ferrari": "Siris",
+            "Jude Navarro": "Aurai",
+            "Kit Fowler": "Capoya",
+            "Oden Geiger": "Candiaei",
+            "Terra Velasquez": "Shou Xing",
+            "Uma Laszlo": "Xuane",
+            "Wellington Beck": "Jolapa",
+            "Yarden Bond": "Bayan",
+            "Baltanos": "Deriso",
+            "Eleanor Bresa": "Desy",
+            "Rosa Dayette": "Kojeara",
+            "Yi Shen": "Einheriar"
+        }
+        engineer_info = projected_states.get('EngineerProgress', {})
+
+        # Process engineers that are either Unlocked or Invited
+        if engineer_info and 'Engineers' in engineer_info:
+            available_engineers = {}
+            for engineer in engineer_info.get('Engineers', []):
+                progress = engineer.get('Progress')
+                if progress in ['Unlocked', 'Invited']:
+                    engineer_name = engineer.get('Engineer')
+                    if engineer_name in engineer_systems:
+                        available_engineers[engineer_name] = engineer_systems[engineer_name]
+
+            if available_engineers:
+                status_entries.append(("Available Engineers", available_engineers))
+
         # Format and return the final status message
         return "\n\n".join(['# '+entry[0]+'\n' + yaml.dump(entry[1], sort_keys=False) for entry in status_entries])
 

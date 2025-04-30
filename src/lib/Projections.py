@@ -433,8 +433,8 @@ class ShipInfo(Projection[ShipInfoState]):
     def process(self, event: Event) -> None:
         if isinstance(event, StatusEvent) and event.status.get('event') == 'Status':
             status: Status = event.status  # pyright: ignore[reportAssignmentType]
-            if 'Cargo' in status and status['Cargo']:
-                self.state['Cargo'] = status['Cargo']
+            if 'Cargo' in event.status:
+                self.state['Cargo'] = event.status.get('Cargo', 0)
                 
             if 'Fuel' in status and status['Fuel']:
                 self.state['FuelMain'] = status['Fuel'].get('FuelMain', 0)
@@ -463,7 +463,11 @@ class ShipInfo(Projection[ShipInfoState]):
                     self.state['IsMiningShip'] = True
                 else:
                     self.state['IsMiningShip'] = False
-        
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Cargo':
+            self.state['Cargo'] = event.content.get('Cargo', 0)
+            self.state['CargoCapacity'] = len(event.content.get('Inventory', []))
+
         if self.state['Type'] != 'Unknown':
             self.state['LandingPadSize'] = ship_sizes.get(self.state['Type'], 'Unknown')
 
@@ -595,19 +599,6 @@ class NavInfo(Projection[NavInfoState]):
                 # Fetch system data for the current system asynchronously
                 self.system_db.fetch_system_data_nonblocking(star_system)
 
-
-class ExobiologyScanStateScan(TypedDict):
-    lat: float
-    long: float
-
-ExobiologyScanState = TypedDict('ExobiologyScanState', {
-    "within_scan_radius": NotRequired[bool],
-    "scan_radius": NotRequired[int],
-    "scans": list[ExobiologyScanStateScan],
-    "lat": NotRequired[float],
-    "long": NotRequired[float]
-})
-
 # Define types for Backpack Projection
 BackpackItem = TypedDict('BackpackItem', {
     "Name": str,
@@ -701,6 +692,19 @@ class Backpack(Projection[BackpackState]):
                 
                 break
 
+class ExobiologyScanStateScan(TypedDict):
+    lat: float
+    long: float
+
+ExobiologyScanState = TypedDict('ExobiologyScanState', {
+    "within_scan_radius": NotRequired[bool],
+    # "distance": NotRequired[float],
+    "scan_radius": NotRequired[int],
+    "scans": list[ExobiologyScanStateScan],
+    "lat": NotRequired[float],
+    "long": NotRequired[float],
+    "life_form": NotRequired[str]
+})
 @final
 class ExobiologyScan(Projection[ExobiologyScanState]):
     colony_size = {
@@ -763,6 +767,7 @@ class ExobiologyScan(Projection[ExobiologyScanState]):
                     distance_obj = {'lat': self.state["lat"], 'long': self.state["long"]}
                     for scan in self.state["scans"]:
                         distance = self.haversine_distance(scan, distance_obj, event.status['PlanetRadius'])
+                        # self.state["distance"] = distance
                         # log('info', 'distance', distance)
                         if distance < self.state['scan_radius']:
                             in_scan_radius = True
@@ -788,6 +793,13 @@ class ExobiologyScan(Projection[ExobiologyScanState]):
                 self.state['scans'].clear()
                 self.state['scans'].append({'lat': self.state.get('lat', 0), 'long': self.state.get('long', 0)})
                 self.state['scan_radius'] = self.colony_size[content['Genus'][11:-1]]
+                species = event.content.get('Species_Localised', event.content.get('Species', 'unknown species'))
+                variant = event.content.get('Variant_Localised', event.content.get('Variant', ''))
+                if variant and variant != species:
+                    life_form = f"{variant} ({species})"
+                else:
+                    life_form = f"{species}"
+                self.state['life_form'] = life_form
                 self.state['within_scan_radius'] = True
                 projected_events.append(ProjectedEvent({**content, "event": "ScanOrganicFirst", "NewSampleDistance":self.state['scan_radius']}))
 
