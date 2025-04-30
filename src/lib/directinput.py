@@ -52,7 +52,13 @@ def PressKey(keyCode):
     if platform.system() == 'Windows':
         extra = ctypes.c_ulong(0)
         ii_ = Input_I()
-        ii_.ki = KeyBdInput(0, keyCode, 0x0008, 0, ctypes.pointer(extra))
+        flags = 0x0008  # KEYEVENTF_SCANCODE
+        
+        # Only apply KEYEVENTF_EXTENDEDKEY to extended keys
+        if keyCode > 127:
+            flags |= 0x0001  # KEYEVENTF_EXTENDEDKEY
+            
+        ii_.ki = KeyBdInput(0, keyCode, flags, 0, ctypes.pointer(extra))
         x = Input(ctypes.c_ulong(1), ii_)
         SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
     else:
@@ -62,7 +68,13 @@ def ReleaseKey(keyCode):
     if platform.system() == 'Windows':
         extra = ctypes.c_ulong(0)
         ii_ = Input_I()
-        ii_.ki = KeyBdInput(0, keyCode, 0x0008 | 0x0002, 0, ctypes.pointer(extra))
+        flags = 0x0008 | 0x0002  # KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP
+        
+        # Only apply KEYEVENTF_EXTENDEDKEY to extended keys
+        if keyCode > 127:
+            flags |= 0x0001  # KEYEVENTF_EXTENDEDKEY
+            
+        ii_.ki = KeyBdInput(0, keyCode, flags, 0, ctypes.pointer(extra))
         x = Input(ctypes.c_ulong(1), ii_)
         SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
     else:
