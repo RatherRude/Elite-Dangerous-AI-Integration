@@ -24,7 +24,6 @@ from lib.EDJournal import *
 from lib.EventManager import EventManager
 from lib.UI import send_message
 from lib.SystemDatabase import SystemDatabase
-from lib.Assistant import Assistant
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
@@ -109,22 +108,12 @@ class Chat:
             game_events=self.enabled_game_events,
             continue_conversation=self.config["continue_conversation_var"],
         )
-        
-        log("debug", message="Initializing assistant...")
-        self.assistant = Assistant(
-            config=self.config, 
-            enabled_game_events=self.enabled_game_events,
-            event_manager=self.event_manager,
-            action_manager=self.action_manager,
-            llmClient=self.llmClient,
-            tts=self.tts,
-            prompt_generator=self.prompt_generator,
-            copilot=self.copilot,
-        )
-        
+
+        self.is_replying = False
+        self.reply_pending = False
+        self.pending: list[Event] = []
         log("debug", "Registering side effect...")
         self.event_manager.register_sideeffect(self.on_event)
-        self.event_manager.register_sideeffect(self.assistant.on_event)
         
         log("debug", "Loading plugins...")
         self.plugin_manager = PluginManager().load_plugins(self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.ed_keys)
@@ -138,7 +127,182 @@ class Chat:
             "type": "event",
             "event": event,
         })
+
+        self.pending.append(event)
+        self.reply_pending = self.should_reply(projected_states)
+
+
+    def execute_actions(self, actions: list[dict[str, Any]], projected_states: dict[str, dict]):
+        action_descriptions: list[str | None] = []
+        action_results: list[Any] = []
+        for action in actions:
+            action_input_desc = self.action_manager.getActionDesc(action, projected_states)
+            action_descriptions.append(action_input_desc)
+            if action_input_desc:
+                self.tts.say(action_input_desc)
+            action_result = self.action_manager.runAction(action, projected_states)
+            action_results.append(action_result)
+            self.event_manager.add_tool_call([action.model_dump()], [action_result], [action_input_desc] if action_input_desc else None)
+
+
+    def verify_action(self, user_input: list[str], action: dict[str, Any], prompt: list, tools: list):
+        """ Verify the action prediction by sending the user input without any context to the model and check if the action is still predicted """
+        log("debug", "Verifying action:", user_input, action)
         
+        draft_action = self.action_manager.has_prediction_draft(user_input, tools)
+        if not draft_action:
+            self.action_manager.save_prediction_draft(user_input, action, tools)
+            return
+        
+        completion = self.llmClient.chat.completions.create(
+            model=self.config["llm_model_name"],
+            messages=[prompt[0]] + [{"role": "user", "content": user} for user in user_input],
+            tools=tools
+        )
+        
+        if not isinstance(completion, ChatCompletion) or hasattr(completion, 'error'):
+            log("debug", "error during action verification:", completion)
+            return
+
+        self.action_manager.save_prediction_verification(user_input, action, completion.choices[0].message.tool_calls, tools)
+
+
+    def reply(self, events: list[Event], new_events: list[Event], projected_states: dict[str, dict]):
+        self.is_thinking = True
+        log('debug', 'Starting reply...')
+        prompt = self.prompt_generator.generate_prompt(events=events, projected_states=projected_states, pending_events=new_events)
+
+        user_input: list[str] = [event.content for event in new_events if event.kind == 'user']
+        use_tools = self.config["tools_var"] and len(user_input)
+        reasons = [event.content.get('event', event.kind) if event.kind=='game' else event.kind for event in new_events if event.kind in ['user', 'game', 'tool', 'status']]
+
+        current_status = projected_states.get("CurrentStatus")
+        flags = current_status["flags"]
+        flags2 = current_status["flags2"]
+
+        active_mode = None
+        if flags:
+            if flags["InMainShip"]:
+                active_mode = "mainship"
+            elif flags["InFighter"]:
+                active_mode = "fighter"
+            elif flags["InSRV"]:
+                active_mode = "buggy"
+        if flags2:
+            if flags2["OnFoot"]:
+                active_mode = "humanoid"
+
+        uses_actions = self.config["game_actions_var"]
+        uses_web_actions = self.config["web_search_actions_var"]
+        tool_list = self.action_manager.getToolsList(active_mode, uses_actions, uses_web_actions) if use_tools else None
+        predicted_actions = None
+        if tool_list and user_input:
+            predicted_actions = self.action_manager.predict_action(user_input, tool_list)
+            
+        if predicted_actions:
+            #log('info', 'predicted_actions', predicted_actions)
+            response_text = None
+            response_actions = predicted_actions
+        else:
+            start_time = time()
+            completion = self.llmClient.chat.completions.create(
+                model=self.config["llm_model_name"],
+                messages=prompt,
+                tools=tool_list
+            )
+            end_time = time()
+            log('debug', 'Response time LLM', end_time - start_time)
+
+            if not isinstance(completion, ChatCompletion) or hasattr(completion, 'error') or not completion.choices:
+                log("error", "completion with error:", completion)
+                self.is_thinking = False
+                return
+            if hasattr(completion, 'usage') and completion.usage:
+                log("debug", f'Prompt: {completion.usage.prompt_tokens}, Completion: {completion.usage.completion_tokens}')
+
+            response_text = completion.choices[0].message.content
+            response_actions = completion.choices[0].message.tool_calls
+
+        if response_text and not response_actions:
+            self.tts.say(response_text)
+            self.event_manager.add_conversation_event('assistant', completion.choices[0].message.content)
+            self.copilot.output_covas(response_text, reasons)
+
+        self.is_thinking = False
+
+        if response_actions:
+            self.execute_actions(response_actions, projected_states)
+
+            if not predicted_actions and config["use_action_cache_var"]:
+                self.verify_action(user_input, response_actions, prompt, tool_list)
+
+
+    def should_reply(self, states:dict[str, Any]):
+        if len(self.pending) == 0:
+            return False
+
+        for event in self.pending:
+            # check if pending contains conversational events
+            if isinstance(event, ConversationEvent) and event.kind == "user":
+                return True
+
+            if isinstance(event, ToolEvent):
+                return True
+
+            if isinstance(event, GameEvent) and event.content.get("event") in self.enabled_game_events:
+                if event.content.get("event") == "ReceiveText":
+                    if event.content.get("Channel") not in ['wing', 'voicechat', 'friend', 'player'] and (
+                        (not self.config["react_to_text_local_var"] and event.content.get("Channel") == 'local') or
+                        (not self.config["react_to_text_starsystem_var"] and event.content.get("Channel") == 'starsystem') or
+                        (not self.config["react_to_text_npc_var"] and event.content.get("Channel") == 'npc') or
+                        (not self.config["react_to_text_squadron_var"] and event.content.get("Channel") == 'squadron')):
+                        continue
+
+                if event.content.get("event") == "ProspectedAsteroid":
+                    chunks = [chunk.strip() for chunk in self.config["react_to_material"].split(",")]
+                    contains_material = False
+                    for chunk in chunks:
+                        for material in event.content.get("Materials"):
+                            if chunk.lower() in material["Name"].lower():
+                                contains_material = True
+                        if event.content.get("MotherlodeMaterial", False):
+                            if chunk.lower() in event.content['MotherlodeMaterial'].lower():
+                                contains_material = True
+
+                    if not contains_material:
+                        continue
+
+                if event.content.get("event") == "ScanOrganic":
+                    continue
+
+                return True
+
+            if isinstance(event, StatusEvent) and event.status.get("event") in self.enabled_game_events:
+                if event.status.get("event") in ["InDanger", "OutOfDanger"]:
+                    if not self.config["react_to_danger_mining_var"]:
+                        if states.get('ShipInfo', {}).get('IsMiningShip', False) and states.get('Location', {}).get('PlanetaryRing', False):
+                            continue
+                    if not self.config["react_to_danger_onfoot_var"]:
+                        if states.get('CurrentStatus', {}).get('flags2').get('OnFoot'):
+                            continue
+                    if not self.config["react_to_danger_supercruise_var"]:
+                        if states.get('CurrentStatus', {}).get('flags').get('Supercruise') and len(states.get('NavInfo', {"NavRoute": []}).get('NavRoute', [])):
+                            continue
+                return True
+
+            if isinstance(event, ExternalEvent):
+                if event.content.get("event") == "ExternalTwitchMessage":
+                    continue
+                return True
+
+            if isinstance(event, ProjectedEvent):
+                if event.content.get("event").startswith('ScanOrganic'):
+                    if not 'ScanOrganic' in self.enabled_game_events:
+                        continue
+                return True
+
+        return False
+
     def submit_input(self, input: str):
         self.event_manager.add_conversation_event('user', input)
         
@@ -218,10 +382,10 @@ class Chat:
                     self.copilot.output_commander(text)
                     self.event_manager.add_conversation_event('user', text)
 
-                # todo add finished event to tts and assistant
-                if self.assistant.is_replying and not self.tts.get_is_playing():
+                # todo add finished event to tts
+                if self.is_replying and not self.tts.get_is_playing():
                     self.event_manager.add_assistant_complete_event()
-                    self.assistant.is_replying = False
+                    self.is_replying = False
 
                 # check EDJournal files for updates
                 while not self.jn.events.empty():
@@ -240,13 +404,12 @@ class Chat:
 
                 projected_states = self.event_manager.process()
 
-                if projected_states and self.assistant.reply_pending and not self.tts.get_is_playing() and not self.stt.recording:
+                if projected_states and self.reply_pending and not self.tts.get_is_playing() and not self.stt.recording:
                     all_events = self.event_manager.processed + self.event_manager.pending
-                    # TODO move this to the assistant
-                    self.assistant.is_replying = True
-                    self.assistant.reply(all_events, self.assistant.pending, projected_states)
-                    self.assistant.reply_pending = False
-                    self.assistant.pending = []
+                    self.is_replying = True
+                    self.reply(all_events, self.pending, projected_states)
+                    self.reply_pending = False
+                    self.pending = []
 
                 # Infinite loops are bad for processors, must sleep.
                 sleep(0.25)

@@ -58,12 +58,3 @@ class ToolEvent(Event):
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     kind: Literal['tool'] = field(default='tool')
     processed_at: float = field(default=0.0)
-
-
-@dataclass
-class ArchiveEvent(Event):
-    content: Dict
-    archive_until: float
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    kind: Literal['archive'] = field(default='archive')
-    processed_at: float = field(default=0.0)
