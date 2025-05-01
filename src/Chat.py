@@ -8,6 +8,7 @@ from openai.types.chat import ChatCompletion
 from openai.types.chat import ChatCompletionMessageToolCall
 
 from lib.Config import Config, assign_ptt, get_ed_appdata_path, get_ed_journals_path, get_system_info, load_config, save_config, update_config, update_event_config, validate_config
+from lib.PluginManager import PluginManager
 from lib.ActionManager import ActionManager
 from lib.Actions import register_actions
 from lib.ControllerManager import ControllerManager
@@ -124,6 +125,9 @@ class Chat:
         log("debug", "Registering side effect...")
         self.event_manager.register_sideeffect(self.on_event)
         self.event_manager.register_sideeffect(self.assistant.on_event)
+        
+        log("debug", "Loading plugins...")
+        self.plugin_manager = PluginManager().load_plugins(self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.ed_keys)
 
     def on_event(self, event: Event, projected_states: dict[str, Any]):
         send_message({
@@ -169,7 +173,9 @@ class Chat:
 
         if self.config['tools_var']:
             register_actions(self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.ed_keys)
-            log('info', "Actions ready.")
+            log('info', "Built-in Actions ready.")
+            self.plugin_manager.register_actions()
+            log('info', "Plugin provided Actions ready.")
         
         if not self.config["continue_conversation_var"]:
             self.action_manager.reset_action_cache()
