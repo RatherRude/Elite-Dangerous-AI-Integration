@@ -7,7 +7,7 @@ from typing import Any, Generic, Literal, Callable, TypeVar, final
 
 from .Database import EventStore, KeyValueStore
 from .EDJournal import *
-from .Event import Event, GameEvent, ConversationEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent
+from .Event import ArchiveEvent, Event, GameEvent, ConversationEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent
 from .Logger import log
 
 import threading
@@ -102,6 +102,10 @@ class EventManager:
 
     def add_tool_call(self, request: list[dict[str, Any]], results: list[dict[str, Any]], text: list[str] | None = None):
         event = ToolEvent(request=request, results=results, text=text)
+        self.incoming.put(event)
+        
+    def add_archive_event(self, content: dict[str, Any], archive_until: float):
+        event = ArchiveEvent(content=content, archive_until=archive_until)
         self.incoming.put(event)
 
     def process(self):
