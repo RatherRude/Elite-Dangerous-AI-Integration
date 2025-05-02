@@ -87,51 +87,54 @@ def deploy_hardpoint_toggle(args, projected_states):
     return f"Hardpoints {'deployed ' if not projected_states.get('CurrentStatus').get('flags').get('HardpointsDeployed') else 'retracted'}"
 
 
-def increase_engines_power(args, projected_states):
+def manage_power_distribution(args, projected_states):
     setGameWindowActive()
-    keys.send('IncreaseEnginesPower', None, args['pips'])
-    return f"Engine power increased"
+    
+    system = args.get('system', 'balance').lower()
+    
+    if system == 'balance':
+        keys.send('ResetPowerDistribution')
+        return "Power distribution balanced"
+    
+    pips = args.get('pips', 1)
+    
+    if system == 'engines':
+        keys.send('IncreaseEnginesPower', None, pips)
+        return f"Engine power increased by {pips} pips"
+    elif system == 'weapons':
+        keys.send('IncreaseWeaponsPower', None, pips)
+        return f"Weapon power increased by {pips} pips"
+    elif system == 'systems':
+        keys.send('IncreaseSystemsPower', None, pips)
+        return f"Systems power increased by {pips} pips"
+    else:
+        return f"Unknown system: {system}. Valid options are 'engines', 'weapons', 'systems', or 'balance'."
 
-
-def increase_weapons_power(args, projected_states):
+def cycle_target(args, projected_states):
     setGameWindowActive()
-    keys.send('IncreaseWeaponsPower', None, args['pips'])
-    return f"Weapon power increased"
+    
+    direction = args.get('direction', 'next').lower()
+    
+    if direction == 'previous':
+        keys.send('CyclePreviousTarget')
+        return "Selected previous target"
+    else:
+        # Default to 'next' for any invalid direction
+        keys.send('CycleNextTarget')
+        return "Selected next target"
 
-
-def increase_systems_power(args, projected_states):
+def cycle_fire_group(args, projected_states):
     setGameWindowActive()
-    keys.send('IncreaseSystemsPower', None, args['pips'])
-    return f"Systems power increased"
-
-
-def balance_power(args, projected_states):
-    setGameWindowActive()
-    keys.send('ResetPowerDistribution')
-    return f"Power re-balanced"
-
-def cycle_next_target(args, projected_states):
-    setGameWindowActive()
-    keys.send('CycleNextTarget')
-    return f"Selected next target"
-
-def cycle_previous_target(args, projected_states):
-    setGameWindowActive()
-    keys.send('CyclePreviousTarget')
-    return f"Selected previous target"
-
-def cycle_fire_group_next(args, projected_states):
-    setGameWindowActive()
-    keys.send('CycleFireGroupNext')
-    # return f"New active fire group {projected_states.get('CurrentStatus').get('Firegroup')}" @ToDo: Firegoup not set in status projection?
-    return f"Cycled to next fire group"
-
-
-def cycle_fire_group_previous(args, projected_states):
-    setGameWindowActive()
-    keys.send('CycleFireGroupPrevious')
-    return f"Cycled to previous fire group"
-
+    
+    direction = args.get('direction', 'next').lower()
+    
+    if direction == 'previous':
+        keys.send('CycleFireGroupPrevious')
+        return "Cycled to previous fire group"
+    else:
+        # Default to 'next' for any invalid direction
+        keys.send('CycleFireGroupNext')
+        return "Cycled to next fire group"
 
 def ship_spot_light_toggle(args, projected_states):
     setGameWindowActive()
@@ -2677,43 +2680,24 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, deploy_hardpoint_toggle, 'ship')
 
-    actionManager.registerAction('increaseEnginesPower', "Increase engine power, can be done multiple times", {
+
+    actionManager.registerAction('managePower', "Manage power distribution between ship systems", {
         "type": "object",
         "properties": {
-            "pips": {
-                "type": "integer",
-                "description": "Amount of pips to increase engine power, default: 1, maximum: 4",
+            "system": {
+                "type": "string", 
+                "description": "Which system to adjust power for (engines, weapons, systems, balance)",
+                "enum": ["engines", "weapons", "systems", "balance"]
             },
-        },
-        "required": ["pips"]
-    }, increase_engines_power, 'ship')
-
-    actionManager.registerAction('increaseWeaponsPower', "Increase weapon power, can be done multiple times", {
-        "type": "object",
-        "properties": {
             "pips": {
-                "type": "integer",
-                "description": "Amount of pips to increase weapon power, default: 1, maximum: 4",
-            },
+                "type": "integer", 
+                "description": "Number of pips to allocate (ignored for balance)",
+                "minimum": 1,
+                "maximum": 4
+            }
         },
-        "required": ["pips"]
-    }, increase_weapons_power, 'ship')
-
-    actionManager.registerAction('increaseSystemsPower', "Increase systems power, can be done multiple times", {
-        "type": "object",
-        "properties": {
-            "pips": {
-                "type": "integer",
-                "description": "Amount of pips to increase systems power, default: 1, maximum: 4",
-            },
-        },
-        "required": ["pips"]
-    }, increase_systems_power, 'ship')
-
-    actionManager.registerAction('balance_power', "reset ship power to balanced (2 pips to systems, engines and weapons)", {
-        "type": "object",
-        "properties":{},
-    }, balance_power, 'ship')
+        "required": ["system"]
+    }, manage_power_distribution, 'ship')
 
     actionManager.registerAction('galaxyMapOpen', "Open galaxy map. Focus on a system or start a navigation route", {
         "type": "object",
@@ -2739,25 +2723,30 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, system_map_open, 'ship')
 
-    actionManager.registerAction('cycleNextTarget', "Cycle to next target", {
+    actionManager.registerAction('cycleTarget', "Cycle to next target", {
         "type": "object",
-        "properties": {}
-    }, cycle_next_target, 'ship')
+        "properties": {
+            "direction": {
+                "type": "string", 
+                "description": "Direction to cycle (next or previous)",
+                "enum": ["next", "previous"],
+                "default": "next"
+            }
+        }
+    }, cycle_target, 'ship')
 
-    actionManager.registerAction('cyclePreviousTarget', "Cycle to previous target", {
-        "type": "object",
-        "properties": {}
-    }, cycle_previous_target, 'ship')
 
-    actionManager.registerAction('cycleFireGroupNext', "Cycle to next fire group", {
+    actionManager.registerAction('cycleFireGroup', "Cycle to next fire group", {
         "type": "object",
-        "properties": {}
-    }, cycle_fire_group_next, 'ship')
+        "properties": {
+            "direction": {
+                "type": "string", 
+                "description": "Direction to cycle (next or previous)",
+                "enum": ["next", "previous"],
+            }
+        }
+    }, cycle_fire_group, 'ship')
 
-    actionManager.registerAction('cycleFireGroupPrevious', "Cycle to previous fire group", {
-        "type": "object",
-        "properties": {}
-    }, cycle_fire_group_previous, 'ship')
 
     actionManager.registerAction('shipSpotLightToggle', "Toggle ship spotlight", {
         "type": "object",
