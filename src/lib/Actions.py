@@ -3009,7 +3009,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, recall_dismiss_ship_buggy, 'buggy')
 
-    actionManager.registerAction('galaxyMapOpenBuggy', "Open/close galaxy map. optionally focus on a system or start a navigation route to a system", {
+    actionManager.registerAction('galaxyMapOpenOrCloseBuggy', "Open/close galaxy map. optionally focus on a system or start a navigation route to a system", {
         "type": "object",
         "properties": {
             "open_or_close": {
@@ -3028,7 +3028,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         },
     }, galaxy_map_open_buggy, 'buggy')
 
-    actionManager.registerAction('systemMapOpenBuggy', "Open/close system map.", {
+    actionManager.registerAction('systemMapOpenOrCloseBuggy', "Open/close system map.", {
         "type": "object",
         "properties": {
             "open_or_close": {
@@ -3103,12 +3103,12 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, battery_humanoid, 'humanoid')
 
-    actionManager.registerAction('galaxyMapOpenHumanoid', "Open Galaxy Map", {
+    actionManager.registerAction('galaxyMapOpenOrCloseHumanoid', "Open or CLose Galaxy Map", {
         "type": "object",
         "properties": {}
     }, galaxy_map_open_humanoid, 'humanoid')
 
-    actionManager.registerAction('systemMapOpenHumanoid', "Open System Map", {
+    actionManager.registerAction('systemMapOpenOrCloseHumanoid', "Open or CLose System Map", {
         "type": "object",
         "properties": {}
     }, system_map_open_humanoid, 'humanoid')
