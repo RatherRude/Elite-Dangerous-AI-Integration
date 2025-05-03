@@ -254,7 +254,7 @@ def system_map_open_or_close(args, projected_states, sys_map_key = 'SystemMapOpe
 
     current_gui = projected_states.get('CurrentStatus', {}).get('GuiFocus', '')
 
-    if args['open_or_close'] == "close":
+    if args['desired_state'] == "close":
         if  current_gui == "SystemMap":
             keys.send(sys_map_key)
             return "System map has been closed."
@@ -496,7 +496,7 @@ def recall_dismiss_ship_buggy(args, projected_states):
 
 def galaxy_map_open_buggy(args, projected_states):
     setGameWindowActive()
-    if args['open_or_close'] == "open":
+    if args['desired_state'] == "open":
         response = galaxy_map_open(args, projected_states, "GalaxyMapOpen_Buggy")
     else:
         response = galaxy_map_close(args, projected_states, "GalaxyMapOpen_Buggy")
@@ -509,7 +509,7 @@ def system_map_open_buggy(args, projected_states):
 
     msg = ""
 
-    if args['open_or_close'] == "close":
+    if args['desired_state'] == "close":
         if current_gui == "SystemMap":
             keys.send("SystemMapOpen_Buggy")
             msg = "System map has been closed."
@@ -2778,10 +2778,10 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {},
     }, galaxy_map_close, 'ship')
 
-    actionManager.registerAction('systemMapOpen', "Open or close system map", {
+    actionManager.registerAction('systemMapOpenOrClose', "Open or close system map", {
         "type": "object",
         "properties": {
-            "open_or_close": {
+            "desired_state": {
                 "type": "string",
                 "enum": ["open", "close"],
                 "description": "Open or close system map",
@@ -3012,7 +3012,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('galaxyMapOpenOrCloseBuggy', "Open/close galaxy map. optionally focus on a system or start a navigation route to a system", {
         "type": "object",
         "properties": {
-            "open_or_close": {
+            "desired_state": {
                 "type": "string",
                 "enum": ["open", "close"],
                 "description": "Open or close galaxy map",
@@ -3031,7 +3031,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('systemMapOpenOrCloseBuggy', "Open/close system map.", {
         "type": "object",
         "properties": {
-            "open_or_close": {
+            "desired_state": {
                 "type": "string",
                 "enum": ["open", "close"],
                 "description": "Open or close system map",
