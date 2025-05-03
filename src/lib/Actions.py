@@ -308,6 +308,8 @@ def fsd_jump(args, projected_states):
     else:
         keys.send('HyperSuperCombination')
 
+    keys.send('SetSpeed100')
+
     return return_message + "Frame Shift Drive is now charging for a jump"
 
 def next_system_in_route(args, projected_states):
