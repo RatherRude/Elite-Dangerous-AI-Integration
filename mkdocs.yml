@@ -4,6 +4,7 @@ repo_url: https://github.com/RatherRude/Elite-Dangerous-AI-Integration
 
 theme:
     name: material
+    custom_dir: overrides   
     logo: screen/EDAI_logo_transparent.png
     favicon: screen/EDAI_logo_transparent.png
     palette:
