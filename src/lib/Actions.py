@@ -280,7 +280,7 @@ def toggle_cargo_scoop(args, projected_states):
     return f"Cargo scoop {'deployed ' if not projected_states.get('CurrentStatus').get('flags').get('CargoScoopDeployed') else 'retracted'}"
 
 
-def hyper_super_combination(args, projected_states):
+def fsd_jump(args, projected_states):
     checkStatus(projected_states, {'Docked':True,'Landed':True,'FsdMassLocked':True,'FsdCooldown':True,'FsdCharging':True})
     setGameWindowActive()
 
@@ -296,7 +296,18 @@ def hyper_super_combination(args, projected_states):
         keys.send('DeployHardpointToggle')
         return_message += "Hardpoints Retracted. "
 
-    keys.send('HyperSuperCombination')
+    jump_type = args.get('jump_type', 'auto')
+    
+    if jump_type == 'next_system':
+        if projected_states.get('NavInfo').get('NextJumpTarget'):
+            keys.send('Hyperspace')
+        else:
+            return "No system targeted for hyperjump"
+    elif jump_type == 'supercruise':
+        keys.send('Supercruise')
+    else:
+        keys.send('HyperSuperCombination')
+
     return return_message + "Frame Shift Drive is now charging for a jump"
 
 def next_system_in_route(args, projected_states):
@@ -370,12 +381,6 @@ def request_docking(args, projected_states):
 
 
 # Ship Launched Fighter Actions
-def order_request_dock(args, projected_states):
-    setGameWindowActive()
-    keys.send('OrderRequestDock')
-    return f"Fighter has been ordered to dock"
-
-# Ship Launched Fighter Actions
 def fighter_request_dock(args, projected_states):
     setGameWindowActive()
     keys.send('OrderRequestDock')
@@ -388,7 +393,7 @@ def npc_order(args, projected_states):
     setGameWindowActive()
     if 'orders' in args:
         for order in args['orders']:
-            keys.send(order)
+            keys.send(f"Order{order}")
     return f"Orders {', '.join(str(x) for x in args['orders'])} have been transmitted."
 
 
@@ -2803,12 +2808,13 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "items": {
                     "type": "string",
                     "enum": [
-                        "OrderDefensiveBehaviour",
-                        "OrderAggressiveBehaviour",
-                        "OrderFocusTarget",
-                        "OrderHoldFire",
-                        "OrderHoldPosition",
-                        "OrderFollow",
+                        "DefensiveBehaviour",
+                        "AggressiveBehaviour",
+                        "FocusTarget",
+                        "HoldFire",
+                        "HoldPosition",
+                        "Follow",
+                        "RequestDock",
                     ]
                 }
             }
@@ -2816,18 +2822,24 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     }, npc_order, 'ship')
 
     # Register actions - Mainship Actions
-    actionManager.registerAction('hyperSuperCombination',
-                                 "initiate FSD Jump, required to jump to the next system or to enter supercruise", {
-                                     "type": "object",
-                                     "properties": {}
-                                 }, hyper_super_combination, 'mainship')
+    actionManager.registerAction('FsdJump',
+        "initiate FSD jump (jump to the next system or enter supercruise)", {
+        "type": "object",
+        "properties": {
+            "jump_type": {
+                "type": "string",
+                "description": "Jump to next system, enter supercruise or auto if unspecified",
+                "enum": ["next_system", "supercruise", "auto"]
+            }
+        }
+    }, fsd_jump, 'mainship')
 
     actionManager.registerAction('target_next_system_in_route',
-                                 "When we have a nav route set, this will automatically target the next system in the route",
-                                 {
-                                     "type": "object",
-                                     "properties": {}
-                                 }, next_system_in_route, 'mainship')
+        "When we have a nav route set, this will automatically target the next system in the route",
+        {
+        "type": "object",
+        "properties": {}
+    }, next_system_in_route, 'mainship')
 
     actionManager.registerAction('toggleCargoScoop', "Toggles cargo scoop", {
         "type": "object",
@@ -2858,12 +2870,6 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "type": "object",
         "properties": {}
     }, undock, 'mainship')
-
-    # Register actions - Ship Launched Fighter Actions
-    actionManager.registerAction('OrderRequestDock', "Order fighter to dock with main ship.", {
-        "type": "object",
-        "properties": {}
-    }, order_request_dock, 'mainship')
 
     # Register actions - Ship Launched Fighter Actions
     actionManager.registerAction('fighterRequestDock', "Request docking for Ship Launched Fighter", {

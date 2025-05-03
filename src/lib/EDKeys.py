@@ -38,6 +38,8 @@ class EDKeys:
             'PrimaryFire',
             'SecondaryFire',
             'HyperSuperCombination',
+            'Supercruise',
+            'Hyperspace',
             'TargetNextRouteSystem',
             'SetSpeedZero',
             'SetSpeed25',

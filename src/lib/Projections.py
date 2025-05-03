@@ -584,6 +584,9 @@ class NavInfo(Projection[NavInfoState]):
                     self.state['NavRoute'] = self.state['NavRoute'][index+1:]
                     break
 
+            if len(self['NavRoute']) == 0:
+                self.state.pop('NextJumpTarget')
+
         # Process FSDTarget
         if isinstance(event, GameEvent) and event.content.get('event') == 'FSDTarget':
             if 'Name' in event.content:
