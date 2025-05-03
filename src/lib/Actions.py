@@ -150,7 +150,7 @@ def charge_ecm(args, projected_states):
     return "ECM is attempting to charge"
 
 
-def galaxy_map_open(args, projected_states):
+def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
     # Trigger the GUI open
     setGameWindowActive()
     current_gui = projected_states.get('CurrentStatus', {}).get('GuiFocus', '')
@@ -162,7 +162,7 @@ def galaxy_map_open(args, projected_states):
         if not 'system_name' in args:
             return "Galaxy map is already open"
     else:
-        keys.send('GalaxyMapOpen')
+        keys.send(galaxymap_key)
 
     #Poll live value - we want to block here
     gm_focus = False
@@ -227,7 +227,7 @@ def galaxy_map_open(args, projected_states):
 
             sleep(0.05)
             if not current_gui == "GalaxyMap":  # if we are already in the galaxy map we don't want to close it
-                keys.send("GalaxyMapOpen")
+                keys.send(galaxymap_key)
 
             return ((f"Best location found: {json.dumps(args['details'])}. " if 'details' in args else '') +
                     f"Plotting a route to {args['system_name']} has been attempted. Check event history to see if it was successful, if you see no event it has failed.")
@@ -238,17 +238,17 @@ def galaxy_map_open(args, projected_states):
 
 
 
-def galaxy_map_close(args, projected_states):
+def galaxy_map_close(args, projected_states, galaxymap_key):
 
     if projected_states.get('CurrentStatus').get('GuiFocus') == 'GalaxyMap':
-        keys.send("GalaxyMapOpen")
+        keys.send(galaxymap_key)
     else:
         return "Galaxy map is already closed"
 
     return "Galaxy map closed"
 
 
-def system_map_open_or_close(args, projected_states):
+def system_map_open_or_close(args, projected_states, sys_map_key = 'SystemMapOpen'):
     # Trigger the GUI open
     setGameWindowActive()
 
@@ -256,7 +256,7 @@ def system_map_open_or_close(args, projected_states):
 
     if args['open_or_close'] == "close":
         if  current_gui == "SystemMap":
-            keys.send('SystemMapOpen')
+            keys.send(sys_map_key)
             return "System map has been closed."
         else:
             return "System map is not open, nothing to close."
@@ -268,7 +268,7 @@ def system_map_open_or_close(args, projected_states):
     if current_gui == 'SystemMap':
             return "System map is already open"
 
-    keys.send('SystemMapOpen')
+    keys.send(sys_map_key)
 
     # Poll live value - we want to block here
     sm_focus = False
@@ -496,13 +496,34 @@ def recall_dismiss_ship_buggy(args, projected_states):
 
 def galaxy_map_open_buggy(args, projected_states):
     setGameWindowActive()
-    keys.send('GalaxyMapOpen_Buggy')
-    return "Galaxy map opened or closed."
+    if args['open_or_close'] == "open":
+        response = galaxy_map_open(args, projected_states, "GalaxyMapOpen_Buggy")
+    else:
+        response = galaxy_map_close(args, projected_states, "GalaxyMapOpen_Buggy")
+
+    return response
 
 def system_map_open_buggy(args, projected_states):
     setGameWindowActive()
-    keys.send('SystemMapOpen_Buggy')
-    return "System map opened or closed"
+    current_gui = projected_states.get('CurrentStatus', {}).get('GuiFocus', '')
+
+    msg = ""
+
+    if args['open_or_close'] == "close":
+        if current_gui == "SystemMap":
+            keys.send("SystemMapOpen_Buggy")
+            msg = "System map has been closed."
+        else:
+            return "System map is not open, nothing to close."
+    else:
+        if current_gui == "SystemMap":
+            msg = "System map is already open"
+
+        else:
+            keys.send("SystemMapOpen_Buggy")
+            msg = "System map opened."
+
+    return msg
 
 # On-Foot Actions (Odyssey)
 def primary_interact_humanoid(args, projected_states):
@@ -2988,14 +3009,34 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, recall_dismiss_ship_buggy, 'buggy')
 
-    actionManager.registerAction('galaxyMapOpenBuggy', "Open/close galaxy map", {
+    actionManager.registerAction('galaxyMapOpenBuggy', "Open/close galaxy map. optionally focus on a system or start a navigation route to a system", {
         "type": "object",
-        "properties": {}
+        "properties": {
+            "open_or_close": {
+                "type": "string",
+                "enum": ["open", "close"],
+                "description": "Open or close galaxy map",
+            },
+            "system_name": {
+                "type": "string",
+                "description": "System to display or plot to.",
+            },
+            "start_navigation": {
+                "type": "boolean",
+                "description": "Start navigation route to the system",
+            }
+        },
     }, galaxy_map_open_buggy, 'buggy')
 
-    actionManager.registerAction('systemMapOpenBuggy', "Open/close system map", {
+    actionManager.registerAction('systemMapOpenBuggy', "Open/close system map.", {
         "type": "object",
-        "properties": {}
+        "properties": {
+            "open_or_close": {
+                "type": "string",
+                "enum": ["open", "close"],
+                "description": "Open or close system map",
+            },
+        },
     }, system_map_open_buggy, 'buggy')
 
     # Register actions - On-Foot Actions

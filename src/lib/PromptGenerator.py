@@ -2767,7 +2767,7 @@ class PromptGenerator:
 
         guifocus = projected_states.get('CurrentStatus', {}).get('GuiFocus', '')
 
-        status_entries.append(("GuiFocus: ", guifocus))
+        status_entries.append(("Current active window: ", guifocus))
 
         # Get ship and cargo info
         ship_info: ShipInfoState = projected_states.get('ShipInfo', {})  # pyright: ignore[reportAssignmentType]
