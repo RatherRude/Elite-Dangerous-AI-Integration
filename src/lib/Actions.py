@@ -238,7 +238,7 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
 
 
 
-def galaxy_map_close(args, projected_states, galaxymap_key):
+def galaxy_map_close(args, projected_states, galaxymap_key="GalaxyMapOpen"):
 
     if projected_states.get('CurrentStatus').get('GuiFocus') == 'GalaxyMap':
         keys.send(galaxymap_key)
