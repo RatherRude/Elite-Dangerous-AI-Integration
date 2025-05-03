@@ -108,6 +108,8 @@ class Chat:
             continue_conversation=self.config["continue_conversation_var"],
         )
 
+        self.event_manager.status_parser = self.status_parser
+
         self.is_replying = False
         self.reply_pending = False
         self.pending: list[Event] = []

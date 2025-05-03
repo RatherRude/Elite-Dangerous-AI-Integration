@@ -4,6 +4,7 @@ import threading
 from time import sleep
 import traceback
 from typing import Optional
+from pyautogui import typewrite
 
 import openai
 import requests
@@ -150,38 +151,56 @@ def charge_ecm(args, projected_states):
 
 
 def galaxy_map_open(args, projected_states):
-    from pyautogui import typewrite
-
+    # Trigger the GUI open
     setGameWindowActive()
+    current_gui = projected_states.get('CurrentStatus', {}).get('GuiFocus', '')
 
-
-    if projected_states.get('CurrentStatus', {}).get('GuiFocus', '') in ['SAA','FSS','Codex']:
+    if current_gui in ['SAA', 'FSS', 'Codex']:
         raise Exception('Galaxy map can not be opened currently, the active GUI needs to be closed first')
-    # Galaxy map already open, so we close it
-    if projected_states.get('CurrentStatus').get('GuiFocus') == 'GalaxyMap':
-        keys.send('GalaxyMapOpen')
-        sleep(1)
 
-    # Freshly open the galaxy map
-    keys.send('GalaxyMapOpen')
-    
+    if current_gui == 'GalaxyMap':
+        if not 'system_name' in args:
+            return "Galaxy map is already open"
+    else:
+        keys.send('GalaxyMapOpen')
+
+    #Poll live value - we want to block here
+    gm_focus = False
+    for loop in range(16):
+        live_status = event_manager.status_parser.current_status
+        if live_status.get('GuiFocus','') == 'GalaxyMap':
+            gm_focus = True
+            break
+        sleep(0.25)
+
+    if not gm_focus:
+        return "Galaxy map can not be opened currently, the current GUI needs to be closed first"
+
     if 'system_name' in args:
-        # Check if UI keys have a collition with CamTranslate
+
+        # Check if UI keys have a collision with CamTranslate
         collisions = keys.get_collisions('UI_Up')
 
         if 'CamTranslateForward' in collisions:
-            raise Exception("Unable to enter system name due to a collision between the 'UI Panel Up' and 'Galaxy Cam Translate Forward' keys. "
-                            +"Please change the keybinding for 'Galaxy Cam Translate' to Shift + WASD under General Controls > Galaxy Map.")
-        
+            raise Exception(
+                "Unable to enter system name due to a collision between the 'UI Panel Up' and 'Galaxy Cam Translate Forward' keys. "
+                + "Please change the keybinding for 'Galaxy Cam Translate' to Shift + WASD under General Controls > Galaxy Map.")
+
         collisions = keys.get_collisions('UI_Right')
 
-
         if 'CamTranslateRight' in collisions:
-            raise Exception("Unable to enter system name due to a collision between the 'UI Panel Right' and 'Galaxy Cam Translate Right' keys. "
-                            +"Please change the keybinding for 'Galaxy Cam Translate' to Shift + WASD under General Controls > Galaxy Map.")
-        
-        sleep(2)
+            raise Exception(
+                "Unable to enter system name due to a collision between the 'UI Panel Right' and 'Galaxy Cam Translate Right' keys. "
+                + "Please change the keybinding for 'Galaxy Cam Translate' to Shift + WASD under General Controls > Galaxy Map.")
+
+        keys.send('CamZoomOut')
+        sleep(0.05)
+
         keys.send('UI_Up')
+        sleep(.05)
+        keys.send('UI_Left', repeat=3)
+        sleep(.05)
+        keys.send('UI_Right')
         sleep(.05)
         keys.send('UI_Select')
         sleep(.05)
@@ -197,40 +216,73 @@ def galaxy_map_open(args, projected_states):
 
         sleep(.05)
         keys.send('UI_Right')
-        sleep(.15)
-        keys.send('UI_Select')
+        sleep(.2)
+        keys.send('UI_Select', repeat=2)
+        sleep(.05)
 
         if 'start_navigation' in args and args['start_navigation']:
             keys.send('CamYawLeft')
             sleep(0.05)
-            keys.send('UI_Select',hold=0.75)
+            keys.send('UI_Select', hold=0.75)
 
             sleep(0.05)
-            keys.send('GalaxyMapOpen')
+            if not current_gui == "GalaxyMap":  # if we are already in the galaxy map we don't want to close it
+                keys.send("GalaxyMapOpen")
 
             return ((f"Best location found: {json.dumps(args['details'])}. " if 'details' in args else '') +
                     f"Plotting a route to {args['system_name']} has been attempted. Check event history to see if it was successful, if you see no event it has failed.")
 
         return f"The galaxy map has opened. It is now zoomed in on \"{args['system_name']}\". No route was plotted yet, only the commander can do that."
 
-    return f"Galaxy map opened/closed"
+    return "Galaxy map opened"
+
 
 
 def galaxy_map_close(args, projected_states):
-    setGameWindowActive()
 
     if projected_states.get('CurrentStatus').get('GuiFocus') == 'GalaxyMap':
-        keys.send('GalaxyMapOpen')
+        keys.send("GalaxyMapOpen")
+    else:
+        return "Galaxy map is already closed"
 
-    return f"Galaxy map closed"
+    return "Galaxy map closed"
 
 
-def system_map_open(args, projected_states):
-    if projected_states.get('CurrentStatus', {}).get('GuiFocus', '') in ['SAA', 'FSS', 'Codex']:
-        raise Exception('System map can not be opened currently, the active GUI needs to be closed first')
+def system_map_open_or_close(args, projected_states):
+    # Trigger the GUI open
     setGameWindowActive()
+
+    current_gui = projected_states.get('CurrentStatus', {}).get('GuiFocus', '')
+
+    if args['open_or_close'] == "close":
+        if  current_gui == "SystemMap":
+            keys.send('SystemMapOpen')
+            return "System map has been closed."
+        else:
+            return "System map is not open, nothing to close."
+
+
+    if current_gui in ['SAA', 'FSS', 'Codex']:
+        raise Exception('System map can not be opened currently, the active GUI needs to be closed first')
+
+    if current_gui == 'SystemMap':
+            return "System map is already open"
+
     keys.send('SystemMapOpen')
-    return f"System map opened/closed"
+
+    # Poll live value - we want to block here
+    sm_focus = False
+    for loop in range(16):
+        live_status = event_manager.status_parser.current_status
+        if live_status.get('GuiFocus', '') == 'SystemMap':
+            sm_focus = True
+            break
+        sleep(0.25)
+
+    if not sm_focus:
+        return "System map can not be opened currently, the current GUI needs to be closed first"
+
+    return f"System map opened"
 
 
 # Mainship Actions
@@ -445,12 +497,12 @@ def recall_dismiss_ship_buggy(args, projected_states):
 def galaxy_map_open_buggy(args, projected_states):
     setGameWindowActive()
     keys.send('GalaxyMapOpen_Buggy')
-    return "Galaxy map opened."
+    return "Galaxy map opened or closed."
 
 def system_map_open_buggy(args, projected_states):
     setGameWindowActive()
     keys.send('SystemMapOpen_Buggy')
-    return "System map opened."
+    return "System map opened or closed"
 
 # On-Foot Actions (Odyssey)
 def primary_interact_humanoid(args, projected_states):
@@ -507,12 +559,12 @@ def battery_humanoid(args, projected_states):
 def galaxy_map_open_humanoid(args, projected_states):
     setGameWindowActive()
     keys.send('GalaxyMapOpen_Humanoid')
-    return "Galaxy map opened."
+    return "Galaxy map opened or closed."
 
 def system_map_open_humanoid(args, projected_states):
     setGameWindowActive()
     keys.send('SystemMapOpen_Humanoid')
-    return "System map opened."
+    return "System map opened or closed."
 
 def recall_dismiss_ship_humanoid(args, projected_states):
     checkStatus(projected_states, {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
@@ -2707,8 +2759,14 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
 
     actionManager.registerAction('systemMapOpen', "Open or close system map", {
         "type": "object",
-        "properties": {}
-    }, system_map_open, 'ship')
+        "properties": {
+            "open_or_close": {
+                "type": "string",
+                "enum": ["open", "close"],
+                "description": "Open or close system map",
+            },
+        },
+    }, system_map_open_or_close, 'ship')
 
     actionManager.registerAction('cycleNextTarget', "Cycle to next target", {
         "type": "object",
