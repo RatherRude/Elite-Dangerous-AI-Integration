@@ -18,3 +18,7 @@ node_modules
 .angular
 .venv
 venv
+
+# Ignore all files in the plugins folder except HelloWorld.py
+plugins/*
+!plugins/HelloWorld.py
