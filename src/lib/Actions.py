@@ -88,27 +88,51 @@ def deploy_hardpoint_toggle(args, projected_states):
 
 
 def manage_power_distribution(args, projected_states):
-    setGameWindowActive()
-    
-    system = args.get('system', 'balance').lower()
-    
-    if system == 'balance':
-        keys.send('ResetPowerDistribution')
-        return "Power distribution balanced"
-    
-    pips = args.get('pips', 1)
-    
-    if system == 'engines':
-        keys.send('IncreaseEnginesPower', None, pips)
-        return f"Engine power increased by {pips} pips"
-    elif system == 'weapons':
-        keys.send('IncreaseWeaponsPower', None, pips)
-        return f"Weapon power increased by {pips} pips"
-    elif system == 'systems':
-        keys.send('IncreaseSystemsPower', None, pips)
-        return f"Systems power increased by {pips} pips"
+    """
+    Handle power distribution between ship systems.
+
+    Args:
+        args (dict): {
+            "power_category": ["engines", "weapons"],
+            "balance_power": True/False,
+            "pips": [3, 2]  # only if balance_power is False
+        }
+        projected_states (dict): (optional, can be used for context)
+
+    Returns:
+        str: A summary message for the tool response.
+    """
+    power_categories = args.get("power_category", [])
+    balance_power = args.get("balance_power", False)
+    pips = args.get("pips", [])
+    message = ""
+
+    if balance_power:
+        # Balance power across all systems
+        if power_categories == [] or len(power_categories) == 3:
+            keys.send("ResetPowerDistribution")
+            message = "Power balanced."
+        else:
+            message = f"Balancing power equally across {', '.join(power_categories)}."
+            keys.send("ResetPowerDistribution")
+            for _ in range(2):
+                for pwr_system in power_categories:
+                    keys.send(f"Increase{pwr_system.capitalize()}Power")
+
     else:
-        return f"Unknown system: {system}. Valid options are 'engines', 'weapons', 'systems', or 'balance'."
+        # Apply specific pips per system
+        if len(power_categories) != len(pips):
+            return "ERROR: Number of pips does not match number of power categories."
+
+        assignments = []
+        for pwr_system, pip_count in zip(power_categories, pips):
+            assignments.append(f"{pip_count} pips to {pwr_system}")
+            for _ in range(pip_count):
+                keys.send(f"Increase{pwr_system.capitalize()}Power")
+
+        message = f"Applied: {', '.join(assignments)}."
+
+    return message
 
 def cycle_target(args, projected_states):
     setGameWindowActive()
@@ -2599,24 +2623,37 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, deploy_hardpoint_toggle, 'ship')
 
-
-    actionManager.registerAction('managePower', "Manage power distribution between ship systems", {
-        "type": "object",
-        "properties": {
-            "system": {
-                "type": "string", 
-                "description": "Which system to adjust power for (engines, weapons, systems, balance)",
-                "enum": ["engines", "weapons", "systems", "balance"]
-            },
-            "pips": {
-                "type": "integer", 
-                "description": "Number of pips to allocate (ignored for balance)",
-                "minimum": 1,
-                "maximum": 4
-            }
-        },
-        "required": ["system"]
-    }, manage_power_distribution, 'ship')
+    actionManager.registerAction('managePowerDistribution',
+     "Manage power distribution between ship systems. Apply pips to one or more power systems or balance the power across two or if unspecified, across all 3",
+     {
+         "type": "object",
+         "properties": {
+             "power_category": {
+                 "type": "array",
+                 "description": "Array of the system(s) being asked to change. if not specified return default",
+                 "items": {
+                     "type": "string",
+                     "enum": ["Engines", "Weapons", "Systems"],
+                     "default":["Engines", "Weapons", "Systems"]
+                 }
+             },
+             "balance_power": {
+                 "type": "boolean",
+                 "description": "Whether the user asks to balance power"
+             },
+             "pips": {
+                 "type": "array",
+                 "description": "Number of pips to allocate (ignored for balance), one per power_category",
+                 "items": {
+                     "type": "integer",
+                     "minimum": 1,
+                     "maximum": 4,
+                     "default": 1
+                 }
+             }
+         },
+         "required": ["power_category"]
+     }, manage_power_distribution, 'ship')
 
     actionManager.registerAction('galaxyMapOpen', "Open galaxy map. Focus on a system or start a navigation route", {
         "type": "object",
