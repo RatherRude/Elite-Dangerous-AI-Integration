@@ -164,17 +164,17 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
     else:
         keys.send(galaxymap_key)
 
-    #Poll live value - we want to block here
-    gm_focus = False
-    for loop in range(16):
-        live_status = event_manager.status_parser.current_status
-        if live_status.get('GuiFocus','') == 'GalaxyMap':
-            gm_focus = True
-            break
-        sleep(0.25)
+    try:
+        event_manager.wait_for_condition('CurrentStatus', lambda s: s.get('GuiFocus') == "GalaxyMap", 4)
+        gm_open = True
+    except TimeoutError:
+        keys.send("UI_Back", repeat=10, repeat_delay=0.05)
+        keys.send(galaxymap_key)
+        try:
+            event_manager.wait_for_condition('CurrentStatus', lambda s: s.get('GuiFocus') == "GalaxyMap", 5)
+        except TimeoutError:
+            return "Galaxy map can not be opened currently, the current GUI needs to be closed first"
 
-    if not gm_focus:
-        return "Galaxy map can not be opened currently, the current GUI needs to be closed first"
 
     if 'system_name' in args:
 
@@ -201,6 +201,8 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
         keys.send('UI_Left', repeat=3)
         sleep(.05)
         keys.send('UI_Right')
+        sleep(.05)
+        keys.send('UI_Up')
         sleep(.05)
         keys.send('UI_Select')
         sleep(.05)
@@ -270,19 +272,17 @@ def system_map_open_or_close(args, projected_states, sys_map_key = 'SystemMapOpe
 
     keys.send(sys_map_key)
 
-    # Poll live value - we want to block here
-    sm_focus = False
-    for loop in range(16):
-        live_status = event_manager.status_parser.current_status
-        if live_status.get('GuiFocus', '') == 'SystemMap':
-            sm_focus = True
-            break
-        sleep(0.25)
+    try:
+        event_manager.wait_for_condition('CurrentStatus', lambda s: s.get('GuiFocus') == "SystemMap", 4)
+    except TimeoutError:
+        keys.send("UI_Back", repeat=10, repeat_delay=0.05)
+        keys.send(sys_map_key)
+        try:
+            event_manager.wait_for_condition('CurrentStatus', lambda s: s.get('GuiFocus') == "SystemMap", 4)
+        except TimeoutError:
+            return "System map can not be opened currently, the current GUI needs to be closed first"
 
-    if not sm_focus:
-        return "System map can not be opened currently, the current GUI needs to be closed first"
-
-    return f"System map opened"
+    return "System map opened"
 
 
 # Mainship Actions
@@ -291,7 +291,6 @@ def eject_all_cargo(args, projected_states):
     setGameWindowActive()
     keys.send('EjectAllCargo')
     return f"All cargo ejected"
-
 
 def landing_gear_toggle(args, projected_states):
     checkStatus(projected_states, {'Docked':True,'Landed':True,'Supercruise':True})

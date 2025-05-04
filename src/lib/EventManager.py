@@ -41,7 +41,6 @@ class EventManager:
         self.pending: list[Event] = []
         self.processed: list[Event] = []
         self.game_events = game_events
-        self.status_parser = None
         #self.react_to_text_local = react_to_text_local
         #self.react_to_text_starsystem = react_to_text_starsystem
         #self.react_to_text_npc = react_to_text_npc
