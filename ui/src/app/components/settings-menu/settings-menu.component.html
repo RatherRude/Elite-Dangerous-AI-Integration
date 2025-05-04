@@ -1127,5 +1127,75 @@
             </div>
         </mat-tab>
     }
+
+    @for (plugin_settings_config of plugin_settings_configs; track plugin_settings_config.key) {
+        <mat-tab>
+            <ng-template mat-tab-label>
+                <mat-icon class="tab-icon">{{ plugin_settings_config.icon }}</mat-icon>
+                {{ plugin_settings_config.label }}
+            </ng-template>
+            <div class="tab-content">
+                @if (config) {
+                    @for (grid of plugin_settings_config.grids; track grid.key) {
+                        <div class="settings-grid">
+                            <h2>{{ grid.label }}</h2>
+                            @for (field of grid.fields; track field.key) {
+                                @switch (field.type) {
+                                    @case ('toggle') {
+                                        <mat-slide-toggle [ngModel]="getPluginSetting(plugin_settings_config.key, grid.key, field.key, field.default_value)"
+                                                        (ngModelChange)="setPluginSetting(plugin_settings_config.key, grid.key, field.key, $event)">
+                                            {{  field.label }}
+                                        </mat-slide-toggle>
+                                    }
+                                    @case ('paragraph') {
+                                        <div>
+                                            <h2>{{ field.label }}</h2>
+                                            <p>{{ field.content }}</p>
+                                        </div>
+                                    }
+                                    @case ('text') {
+                                        <mat-form-field>
+                                            <mat-label>{{ field.label }}</mat-label>
+                                            <input matInput [ngModel]="getPluginSetting(plugin_settings_config.key, grid.key, field.key, field.default_value)"
+                                                (ngModelChange)="setPluginSetting(plugin_settings_config.key, grid.key, field.key, $event)"
+                                                [readonly]="field.readonly" [minlength]="field.min_length" [maxlength]="field.max_length" [hidden]="field.hidden">
+                                        </mat-form-field>
+                                    }
+                                    @case ('number') {
+                                        <mat-form-field>
+                                            <mat-label>{{ field.label }}</mat-label>
+                                            <input matInput type="number" [ngModel]="getPluginSetting(plugin_settings_config.key, grid.key, field.key, field.default_value)"
+                                                (ngModelChange)="setPluginSetting(plugin_settings_config.key, grid.key, field.key, $event)" [min]="field.min_value" [max]="field.max_value" [step]="field.step" [readonly]="field.readonly">
+                                        </mat-form-field>
+                                    }
+                                    @case ('textarea') {
+                                        <mat-form-field>
+                                            <mat-label>{{ field.label }}</mat-label>
+                                            <textarea matInput [ngModel]="getPluginSetting(plugin_settings_config.key, grid.key, field.key, field.default_value)"
+                                                (ngModelChange)="setPluginSetting(plugin_settings_config.key, grid.key, field.key, $event)" [rows]="field.rows" [cols]="field.cols" [readonly]="field.readonly"></textarea>
+                                        </mat-form-field>
+                                    }
+                                    @case ('select') {
+                                        <mat-form-field appearance="fill">
+                                            <mat-label>{{ field.label }}</mat-label>
+                                            <mat-select [ngModel]="getPluginSetting(plugin_settings_config.key, grid.key, field.key, field.default_value)"
+                                                (ngModelChange)="setPluginSetting(plugin_settings_config.key, grid.key, field.key, $event)" [disabled]="field.readonly || false" [multiple]="field.multi_select">
+                                                @for (option of field.select_options; track option.key) {
+                                                    <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                                                }
+                                            </mat-select>
+                                        </mat-form-field>
+                                    }
+                                    @default {
+                                        <p>Unknown field type: {{ field.type }}</p>
+                                    }
+                                }
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </mat-tab>
+    }
 </mat-tab-group>
 

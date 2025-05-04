@@ -7,6 +7,7 @@ from openai import OpenAI
 from openai.types.chat import ChatCompletion
 from openai.types.chat import ChatCompletionMessageToolCall
 
+from lib.PluginDependencies import PluginDependencies
 from lib.Config import Config, assign_ptt, get_ed_appdata_path, get_ed_journals_path, get_system_info, load_config, save_config, update_config, update_event_config, validate_config
 from lib.PluginManager import PluginManager
 from lib.ActionManager import ActionManager
@@ -31,8 +32,9 @@ sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
 
 @final
 class Chat:
-    def __init__(self, config: Config):
+    def __init__(self, config: Config, plugin_manager: PluginManager):
         self.config = config # todo: remove
+        self.plugin_manager = plugin_manager
         if self.config["api_key"] == '':
             self.config["api_key"] = '-'
 
@@ -112,11 +114,15 @@ class Chat:
         self.is_replying = False
         self.reply_pending = False
         self.pending: list[Event] = []
+        
+        self.plugin_dependencies = PluginDependencies(config, self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.system_database, self.ed_keys)
+        log("debug", "Plugin dependencies ready...")
+
         log("debug", "Registering side effect...")
         self.event_manager.register_sideeffect(self.on_event)
         
-        log("debug", "Loading plugins...")
-        self.plugin_manager = PluginManager().load_plugins(self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.ed_keys)
+        log("debug", "Registering plugin provided side effect...")
+        self.plugin_manager.register_sideeffects(self.plugin_dependencies)
 
     def on_event(self, event: Event, projected_states: dict[str, Any]):
         send_message({
@@ -334,11 +340,12 @@ class Chat:
         log('info', "Voice interface ready.")
 
         registerProjections(self.event_manager, self.system_database)
+        self.plugin_manager.register_projections(self.plugin_dependencies)
 
         if self.config['tools_var']:
             register_actions(self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.ed_keys)
             log('info', "Built-in Actions ready.")
-            self.plugin_manager.register_actions()
+            self.plugin_manager.register_actions(self.plugin_dependencies)
             log('info', "Plugin provided Actions ready.")
         
         if not self.config["continue_conversation_var"]:
@@ -435,6 +442,12 @@ def read_stdin(chat: Chat):
 if __name__ == "__main__":
     try:
         print(json.dumps({"type": "ready"})+'\n')
+        # Load plugins.
+        log('info', "Loading plugins...")
+        plugin_manager = PluginManager()
+        plugin_manager.load_plugins()
+        log('debug', "Loading plugin settings for UI...")
+        plugin_manager.register_settings()
         # Wait for start signal on stdin
         config = load_config()
         print(json.dumps({"type": "config", "config": config})+'\n', flush=True)
@@ -458,7 +471,7 @@ if __name__ == "__main__":
                         if new_config:
                             config = new_config
                             break
-                if data.get("type") == "assign_ptt":
+                if data.get("type") == "assign_ptt": 
                     config = assign_ptt(config, ControllerManager())
                 if data.get("type") == "change_config":
                     config = update_config(config, data["config"])
@@ -472,7 +485,7 @@ if __name__ == "__main__":
         save_config(config)
         print(json.dumps({"type": "start"})+'\n', flush=True)
         
-        chat = Chat(config)
+        chat = Chat(config, plugin_manager)
         # run chat in a thread
         stdin_thread = threading.Thread(target=read_stdin, args=(chat,), daemon=True)
         stdin_thread.start()
