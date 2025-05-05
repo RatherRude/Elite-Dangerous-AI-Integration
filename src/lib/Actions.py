@@ -465,25 +465,53 @@ def select_target_buggy(args, projected_states):
     keys.send('SelectTarget_Buggy')
     return "Buggy target selection activated."
 
-def increase_engines_power_buggy(args, projected_states):
-    setGameWindowActive()
-    keys.send('IncreaseEnginesPower_Buggy', None, args['pips'])
-    return "Buggy engine power increased."
+def manage_power_distribution_buggy(args, projected_states):
+    """
+    Handle power distribution between buggy systems.
 
-def increase_weapons_power_buggy(args, projected_states):
-    setGameWindowActive()
-    keys.send('IncreaseWeaponsPower_Buggy', None, args['pips'])
-    return "Buggy weapons power increased."
+    Args:
+        args (dict): {
+            "power_category": ["engines", "weapons"],
+            "balance_power": True/False,
+            "pips": [3, 2]  # only if balance_power is False
+        }
+        projected_states (dict): (optional, can be used for context)
 
-def increase_systems_power_buggy(args, projected_states):
-    setGameWindowActive()
-    keys.send('IncreaseSystemsPower_Buggy', None, args['pips'])
-    return "Buggy systems power increased."
+    Returns:
+        str: A summary message for the tool response.
+    """
+    power_categories = args.get("power_category", [])
+    balance_power = args.get("balance_power", False)
+    pips = args.get("pips", [])
+    message = ""
 
-def reset_power_distribution_buggy(args, projected_states):
-    setGameWindowActive()
-    keys.send('ResetPowerDistribution_Buggy')
-    return "Buggy power distribution reset."
+    if balance_power:
+        # Balance power across all systems
+        if power_categories == [] or len(power_categories) == 3:
+            keys.send("ResetPowerDistribution_Buggy")
+            message = "Power balanced."
+        else:
+            message = f"Balancing power equally across {', '.join(power_categories)}."
+            keys.send("ResetPowerDistribution_Buggy")
+            for _ in range(2):
+                for pwr_system in power_categories:
+                    keys.send(f"Increase{pwr_system.capitalize()}Power_Buggy")
+
+    else:
+        # Apply specific pips per system
+        if len(power_categories) != len(pips):
+            return "ERROR: Number of pips does not match number of power categories."
+
+        assignments = []
+        for pwr_system, pip_count in zip(power_categories, pips):
+            assignments.append(f"{pip_count} pips to {pwr_system}")
+            for _ in range(pip_count):
+                keys.send(f"Increase{pwr_system.capitalize()}Power_Buggy")
+
+        message = f"Applied: {', '.join(assignments)}."
+
+    return message
+
 
 def toggle_cargo_scoop_buggy(args, projected_states):
     setGameWindowActive()
@@ -2869,43 +2897,39 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, select_target_buggy, 'buggy')
 
-    actionManager.registerAction('increaseEnginesPowerBuggy', "Increase engines power, can be done multiple times", {
-        "type": "object",
-        "properties": {
-            "pips": {
-                "type": "integer",
-                "description": "Amount of pips to increase engines power, default: 1, maximum: 4",
-            },
-        },
-        "required": ["pips"]
-    }, increase_engines_power_buggy, 'buggy')
 
-    actionManager.registerAction('increaseWeaponsPowerBuggy', "Increase weapons power, can be done multiple times", {
-        "type": "object",
-        "properties": {
-            "pips": {
-                "type": "integer",
-                "description": "Amount of pips to increase weapons power, default: 1, maximum: 4",
-            },
-        },
-        "required": ["pips"]
-    }, increase_weapons_power_buggy, 'buggy')
+    actionManager.registerAction('managePowerDistributionBuggy',
+     "Manage power distribution between buggy power systems. Apply pips to one or more power systems or balance the power across two or if unspecified, across all 3",
+     {
+         "type": "object",
+         "properties": {
+             "power_category": {
+                 "type": "array",
+                 "description": "Array of the system(s) being asked to change. if not specified return default",
+                 "items": {
+                     "type": "string",
+                     "enum": ["Engines", "Weapons", "Systems"],
+                     "default": ["Engines", "Weapons", "Systems"]
+                 }
+             },
+             "balance_power": {
+                 "type": "boolean",
+                 "description": "Whether the user asks to balance power"
+             },
+             "pips": {
+                 "type": "array",
+                 "description": "Number of pips to allocate (ignored for balance), one per power_category",
+                 "items": {
+                     "type": "integer",
+                     "minimum": 1,
+                     "maximum": 4,
+                     "default": 1
+                 }
+             }
+         },
+         "required": ["power_category"]
+     }, manage_power_distribution_buggy, 'buggy')
 
-    actionManager.registerAction('increaseSystemsPowerBuggy', "Increase systems power, can be done multiple times", {
-        "type": "object",
-        "properties": {
-            "pips": {
-                "type": "integer",
-                "description": "Amount of pips to increase systems power, default: 1, maximum: 4",
-            },
-        },
-        "required": ["pips"]
-    }, increase_systems_power_buggy, 'buggy')
-
-    actionManager.registerAction('resetPowerDistributionBuggy', "Reset power distribution", {
-        "type": "object",
-        "properties": {}
-    }, reset_power_distribution_buggy, 'buggy')
 
     actionManager.registerAction('toggleCargoScoopBuggy', "Toggle cargo scoop", {
         "type": "object",
