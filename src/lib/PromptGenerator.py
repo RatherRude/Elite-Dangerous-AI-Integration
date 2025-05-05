@@ -1,6 +1,6 @@
 from datetime import timedelta, datetime
 from functools import lru_cache
-from typing import Any, cast, Dict
+from typing import Any, cast, Dict, Union
 
 import yaml
 import requests
@@ -40,347 +40,6 @@ from .Event import (
 )
 from .Logger import log
 
-# Game events categorized according to Config.py structure
-systemEvents = {
-    # "Cargo": "Commander {commanderName} has updated their cargo inventory.",
-    # "ClearSavedGame": "Commander {commanderName} has reset their game.",
-    "LoadGame": "Commander {commanderName} has loaded the game.",
-    "NewCommander": "Commander {commanderName} has started a new game.",
-    # "Materials": "Commander {commanderName} has updated their materials inventory.",
-    "Missions": "Commander {commanderName} has updated their missions.",
-    # "Progress": "Commander {commanderName} has made progress in various activities.",
-    # "Rank": "Commander {commanderName} has updated their ranks.",
-    # "Reputation": "Commander {commanderName} has updated their reputation.",
-    "Statistics": "Commander {commanderName} has updated their statistics.",
-    "Shutdown": "Commander {commanderName} has initiated a shutdown.",
-    # "SquadronStartup": "Commander {commanderName} is a member of a squadron.",
-    # "EngineerProgress": "Commander {commanderName} has made progress with an engineer.",
-}
-
-combatEvents = {
-    "Bounty": "Commander {commanderName} has eliminated a hostile.",
-    "Died": "Commander {commanderName} has lost consciousness.",
-    "Resurrect": "Commander {commanderName} has resurrected.",
-    "WeaponSelected": "Commander {commanderName} has selected a weapon.",
-    "OutofDanger": "Commander {commanderName} is no longer in danger.",
-    "InDanger": "Commander {commanderName} is in danger.",
-    "LegalStateChanged": "Commander {commanderName}'s legal state has changed.",
-    "CommitCrime": "Commander {commanderName} has committed a crime.",
-    "CapShipBond": "Commander {commanderName} has been rewarded for taking part in a capital ship combat.",
-    "Interdiction": "Commander {commanderName} has attempted an interdiction.",
-    "Interdicted": "Commander {commanderName} is being interdicted.",
-    "EscapeInterdiction": "Commander {commanderName} has escaped the interdiction.",
-    "FactionKillBond": "Commander {commanderName} has eliminated a hostile.",
-    "FighterDestroyed": "A ship-launched fighter was destroyed.",
-    "HeatDamage": "Commander {commanderName} is taking heat damage.",
-    "HeatWarning": "Commander {commanderName}'s ship's heat has exceeded 100%.",
-    "HullDamage": "Commander {commanderName} is taking hull damage.",
-    "PVPKill": "Commander {commanderName} has eliminated another commander.",
-    "ShieldState": "Commander {commanderName}'s shield state has changed.",
-    "ShipTargetted": "Commander {commanderName} is targeting a ship.",
-    "UnderAttack": "Commander {commanderName} is under attack.",
-    "CockpitBreached": "Commander {commanderName} has experienced a cockpit breach.",
-    "CrimeVictim": "Commander {commanderName} has been victimized.",
-    "SystemsShutdown": "Commander {commanderName}'s systems have been shut down forcefully.",
-    "SelfDestruct": "Commander {commanderName} has initiated self destruct.",
-}
-
-tradingEvents = {
-    "Trade": "Commander {commanderName} has performed a trade.",
-    "BuyTradeData": "Commander {commanderName} has bought trade data.",
-    "CollectCargo": "Commander {commanderName} has collected cargo.",
-    "EjectCargo": "Commander {commanderName} has ejected cargo.",
-    "MarketBuy": "Commander {commanderName} has bought market goods.",
-    "MarketSell": "Commander {commanderName} has sold market goods.",
-    "CargoTransfer": "Commander {commanderName} has transferred cargo.",
-    "Market": "Commander {commanderName} has interacted with a market.",
-}
-
-miningEvents = {
-    "AsteroidCracked": "Commander {commanderName} has cracked an asteroid.",
-    "MiningRefined": "Commander {commanderName} has refined a resource.",
-    "ProspectedAsteroid": "Commander {commanderName} has prospected an asteroid. Only inform about the most interesting material.",
-    "LaunchDrone": "Commander {commanderName} has launched a drone.",
-}
-
-shipUpdateEvents = {
-    "FSDJump": "Commander {commanderName} has initiated a hyperjump to another system.",
-    "FSDTarget": "Commander {commanderName} has selected a star system to jump to.",
-    "StartJump": "Commander {commanderName} starts the hyperjump.",
-    "FsdCharging": "Commander {commanderName}'s FSD is charging.",
-    "SupercruiseEntry": "Commander {commanderName} has entered supercruise from normal space.",
-    "SupercruiseExit": "Commander {commanderName} has exited supercruise and returned to normal space.",
-    "ApproachSettlement": "Commander {commanderName} is approaching settlement.",
-    "Docked": "Commander {commanderName} has docked with a station.",
-    "Undocked": "Commander {commanderName} has undocked from a station.",
-    "DockingCanceled": "Commander {commanderName} has canceled the docking request.",
-    "DockingDenied": "Commander {commanderName}'s request to dock with a station has been denied.",
-    "DockingGranted": "Commander {commanderName}'s request to dock with a station has been granted.",
-    "DockingRequested": "Commander {commanderName} has sent a request to dock with a station.",
-    "DockingTimeout": "Commander {commanderName}'s request to dock with a station has timed out.",
-    "NavRoute": "Commander {commanderName} has planned a new nav route.",
-    "NavRouteClear": "Commander {commanderName} has cleared the nav route.",
-    "CrewLaunchFighter": "Commander {commanderName} has launched a fighter.",
-    "VehicleSwitch": "Commander {commanderName} has switched vehicle.",
-    "LaunchFighter": "Commander {commanderName} has launched a fighter.",
-    "DockFighter": "Commander {commanderName} has docked a fighter.",
-    "FighterRebuilt": "Commander {commanderName} has rebuilt a fighter.",
-    "FuelScoop": "Commander {commanderName} has scooped fuel.",
-    "RebootRepair": "Commander {commanderName} has initiated a reboot/repair.",
-    "RepairDrone": "Commander {commanderName} has repaired using a drone.",
-    "AfmuRepairs": "Commander {commanderName} has conducted repairs.",
-    "ModuleInfo": "Commander {commanderName} has received module info.",
-    "Synthesis": "Commander {commanderName} has performed synthesis.",
-    "JetConeBoost": "Commander {commanderName} has executed a jet cone boost.",
-    "JetConeDamage": "Commander {commanderName} has received damage from a jet cone.",
-    "LandingGearUp": "Commander {commanderName} has raised the landing gear.",
-    "LandingGearDown": "Commander {commanderName} has lowered the landing gear.",
-    "FlightAssistOn": "Commander {commanderName} has turned flight assist on.",
-    "FlightAssistOff": "Commander {commanderName} has turned flight assist off.",
-    "HardpointsRetracted": "Commander {commanderName} has retracted hardpoints.",
-    "HardpointsDeployed": "Commander {commanderName} has deployed hardpoints.",
-    "LightsOff": "Commander {commanderName} has turned off the lights.",
-    "LightsOn": "Commander {commanderName} has turned on the lights.",
-    "CargoScoopRetracted": "Commander {commanderName} has retracted the cargo scoop.",
-    "CargoScoopDeployed": "Commander {commanderName} has deployed the cargo scoop.",
-    "SilentRunningOff": "Commander {commanderName} has turned off silent running.",
-    "SilentRunningOn": "Commander {commanderName} has turned on silent running.",
-    "FuelScoopStarted": "Commander {commanderName} has started scooping fuel.",
-    "FuelScoopEnded": "Commander {commanderName} has stopped scooping fuel.",
-    "FsdMassLockEscaped": "Commander {commanderName} has escaped mass lock.",
-    "FsdMassLocked": "Commander {commanderName} is mass locked.",
-    "LowFuelWarningCleared": "Commander {commanderName}'s low fuel warning has cleared.",
-    "LowFuelWarning": "Commander {commanderName} is running low on fuel.",
-    "NightVisionOff": "Commander {commanderName} has turned off night vision.",
-    "NightVisionOn": "Commander {commanderName} has turned on night vision.",
-    "SupercruiseDestinationDrop": "Commander {commanderName} has dropped out at a supercruise destination.",
-}
-
-srvUpdateEvents = {
-    "LaunchSRV": "Commander {commanderName} has launched an SRV.",
-    "DockSRV": "Commander {commanderName} has docked an SRV.",
-    "SRVDestroyed": "Commander {commanderName}'s SRV was destroyed.",
-    "SrvHandbrakeOff": "Commander {commanderName} has released the SRV handbrake.",
-    "SrvHandbrakeOn": "Commander {commanderName} has applied the SRV handbrake.",
-    "SrvTurretViewConnected": "Commander {commanderName} has connected to the SRV turret view.",
-    "SrvTurretViewDisconnected": "Commander {commanderName} has disconnected from the SRV turret view.",
-    "SrvDriveAssistOff": "Commander {commanderName} has turned off SRV drive assist.",
-    "SrvDriveAssistOn": "Commander {commanderName} has turned on SRV drive assist.",
-}
-
-onFootUpdateEvents = {
-    "Disembark": "Commander {commanderName} has disembarked.",
-    "Embark": "Commander {commanderName} has embarked.",
-    "BookDropship": "Commander {commanderName} has booked a dropship.",
-    "BookTaxi": "Commander {commanderName} has booked a taxi.",
-    "CancelDropship": "Commander {commanderName} has cancelled a dropship booking.",
-    "CancelTaxi": "Commander {commanderName} has cancelled a taxi booking.",
-    "CollectItems": "Commander {commanderName} has collected items.",
-    "DropItems": "Commander {commanderName} has dropped items.",
-    "BackpackChange": "Commander {commanderName} has changed items in their backpack.",
-    "BuyMicroResources": "Commander {commanderName} has bought micro resources.",
-    "SellMicroResources": "Commander {commanderName} has sold micro resources.",
-    "TransferMicroResources": "Commander {commanderName} has transferred micro resources.",
-    "TradeMicroResources": "Commander {commanderName} has traded micro resources.",
-    "BuySuit": "Commander {commanderName} has bought a suit.",
-    "BuyWeapon": "Commander {commanderName} has bought a weapon.",
-    "SellWeapon": "Commander {commanderName} has sold a weapon.",
-    "UpgradeSuit": "Commander {commanderName} has upgraded a suit.",
-    "UpgradeWeapon": "Commander {commanderName} has upgraded a weapon.",
-    "CreateSuitLoadout": "Commander {commanderName} has created a suit loadout.",
-    "DeleteSuitLoadout": "Commander {commanderName} has deleted a suit loadout.",
-    "RenameSuitLoadout": "Commander {commanderName} has renamed a suit loadout.",
-    "SwitchSuitLoadout": "Commander {commanderName} has switched to suit loadout.",
-    "UseConsumable": "Commander {commanderName} has used a consumable.",
-    "FCMaterials": "Commander {commanderName} has managed fleet carrier materials.",
-    "LoadoutEquipModule": "Commander {commanderName} has equipped a module in suit loadout.",
-    "LoadoutRemoveModule": "Commander {commanderName} has removed a module from suit loadout.",
-    "ScanOrganic": "Commander {commanderName} has scanned organic life.",
-    "SellOrganicData": "Commander {commanderName} has sold organic data.",
-    "LowOxygenWarningCleared": "Commander {commanderName}'s low oxygen warning has cleared.",
-    "LowOxygenWarning": "Commander {commanderName} is running low on oxygen.",
-    "LowHealthWarningCleared": "Commander {commanderName}'s low health warning has cleared.", 
-    "LowHealthWarning": "Commander {commanderName}'s health is critically low.",
-    "BreathableAtmosphereExited": "Commander {commanderName} has exited breathable atmosphere.",
-    "BreathableAtmosphereEntered": "Commander {commanderName} has entered breathable atmosphere.",
-    "GlideModeExited": "Commander {commanderName} has exited glide mode.",
-    "GlideModeEntered": "Commander {commanderName} has entered glide mode.",
-    "DropShipDeploy": "Commander {commanderName} has deployed their dropship.",
-}
-
-stationEvents = {
-    "MissionAbandoned": "Commander {commanderName} has abandoned a mission.",
-    "MissionAccepted": "Commander {commanderName} has accepted a mission.",
-    "MissionCompleted": "Commander {commanderName} has completed a mission.",
-    "MissionFailed": "Commander {commanderName} has failed a mission.",
-    "MissionRedirected": "Commander {commanderName}'s mission is now completed. Rewards are now available.",
-    "StationServices": "Commander {commanderName} has accessed station services.",
-    "ShipyardBuy": "Commander {commanderName} has bought a ship.",
-    "ShipyardNew": "Commander {commanderName} has acquired a new ship.",
-    "ShipyardSell": "Commander {commanderName} has sold a ship.",
-    "ShipyardTransfer": "Commander {commanderName} has transferred a ship.",
-    "ShipyardSwap": "Commander {commanderName} has swapped ships.",
-    "StoredShips": "Commander {commanderName} has stored ships.",
-    "ModuleBuy": "Commander {commanderName} has bought a module.",
-    "ModuleRetrieve": "Commander {commanderName} has retrieved a module.",
-    "ModuleSell": "Commander {commanderName} has sold a module.",
-    "ModuleSellRemote": "Commander {commanderName} has sold a remote module.",
-    "ModuleStore": "Commander {commanderName} has stored a module.",
-    "ModuleSwap": "Commander {commanderName} has swapped modules.",
-    "Outfitting": "Commander {commanderName} has visited an outfitting station.",
-    "BuyAmmo": "Commander {commanderName} has bought ammunition.",
-    "BuyDrones": "Commander {commanderName} has bought drones.",
-    "RefuelAll": "Commander {commanderName} has refueled all.",
-    "RefuelPartial": "Commander {commanderName} has partially refueled.",
-    "Repair": "Commander {commanderName} has repaired.",
-    "RepairAll": "Commander {commanderName} has repaired all.",
-    "RestockVehicle": "Commander {commanderName} has restocked vehicle.",
-    "FetchRemoteModule": "Commander {commanderName} has fetched a remote module.",
-    "MassModuleStore": "Commander {commanderName} has mass stored modules.",
-    "ClearImpound": "Commander {commanderName} has cleared an impound.",
-    "CargoDepot": "Commander {commanderName} has completed a cargo depot operation.",
-    "CommunityGoal": "Commander {commanderName} has engaged in a community goal.",
-    "CommunityGoalDiscard": "Commander {commanderName} has discarded a community goal.",
-    "CommunityGoalJoin": "Commander {commanderName} has joined a community goal.",
-    "CommunityGoalReward": "Commander {commanderName} has received a reward for a community goal.",
-    "EngineerContribution": "Commander {commanderName} has made a contribution to an engineer.",
-    "EngineerCraft": "Commander {commanderName} has crafted a blueprint at an engineer.",
-    "EngineerLegacyConvert": "Commander {commanderName} has converted a legacy blueprint at an engineer.",
-    "MaterialTrade": "Commander {commanderName} has conducted a material trade.",
-    "TechnologyBroker": "Commander {commanderName} has accessed a technology broker.",
-    "PayBounties": "Commander {commanderName} has paid bounties.",
-    "PayFines": "Commander {commanderName} has paid fines.",
-    "PayLegacyFines": "Commander {commanderName} has paid legacy fines.",
-    "RedeemVoucher": "Commander {commanderName} has redeemed a voucher.",
-    "ScientificResearch": "Commander {commanderName} has conducted scientific research.",
-    "Shipyard": "Commander {commanderName} has visited a shipyard.",
-    "StoredModules": "Commander {commanderName} has stored modules.",
-    "CarrierJump": "Commander {commanderName} has performed a carrier jump.",
-    "CarrierBuy": "Commander {commanderName} has purchased a carrier.",
-    "CarrierStats": "Commander {commanderName} has updated carrier stats.",
-    "CarrierJumpRequest": "Commander {commanderName} has requested a carrier jump.",
-    "CarrierDecommission": "Commander {commanderName} has decommissioned a carrier.",
-    "CarrierCancelDecommission": "Commander {commanderName} has canceled the decommission of a carrier.",
-    "CarrierBankTransfer": "Commander {commanderName} has performed a bank transfer for carrier.",
-    "CarrierDepositFuel": "Commander {commanderName} has deposited fuel to carrier.",
-    "CarrierCrewServices": "Commander {commanderName} has performed crew services on carrier.",
-    "CarrierFinance": "Commander {commanderName} has reviewed finance details for carrier.",
-    "CarrierShipPack": "Commander {commanderName} has managed ship pack for carrier.",
-    "CarrierModulePack": "Commander {commanderName} has managed module pack for carrier.",
-    "CarrierTradeOrder": "Commander {commanderName} has placed a trade order on carrier.",
-    "CarrierDockingPermission": "Commander {commanderName} has updated docking permissions for carrier.",
-    "CarrierNameChanged": "Commander {commanderName} has changed the name of carrier.",
-    "CarrierJumpCancelled": "Commander {commanderName} has canceled a jump request for carrier.",
-    "ColonisationConstructionDepot": "Commander {commanderName} is at a colonisation depot",
-
-}
-
-socialEvents = {
-    "CrewAssign": "Commander {commanderName} has assigned a crew member.",
-    "CrewFire": "Commander {commanderName} has fired a crew member.",
-    "CrewHire": "Commander {commanderName} has hired a crew member.",
-    "ChangeCrewRole": "Commander {commanderName} has changed crew role.",
-    "CrewMemberJoins": "Commander {commanderName} has a new crew member.",
-    "CrewMemberQuits": "Commander {commanderName} has lost a crew member.",
-    "CrewMemberRoleChange": "Commander {commanderName} has changed a crew member's role.",
-    "EndCrewSession": "Commander {commanderName} has ended a crew session.",
-    "JoinACrew": "Commander {commanderName} has joined a crew.",
-    "KickCrewMember": "Commander {commanderName} has kicked a crew member.",
-    "QuitACrew": "Commander {commanderName} has quit a crew.",
-    "NpcCrewPaidWage": "Commander {commanderName} has paid an NPC crew member.",
-    "NpcCrewRank": "Commander {commanderName} has received NPC crew rank update.",
-    "Promotion": "Commander {commanderName} has received a promotion.",
-    "Friends": "The status of a friend of Commander {commanderName} has changed.",
-    "WingAdd": "Commander {commanderName} has added to a wing.",
-    "WingInvite": "Commander {commanderName} has received a wing invite.",
-    "WingJoin": "Commander {commanderName} has joined a wing.",
-    "WingLeave": "Commander {commanderName} has left a wing.",
-    "SendText": "Commander {commanderName} has sent a text message.",
-    "ReceiveText": "Commander {commanderName} has received a text message.",
-    "AppliedToSquadron": "Commander {commanderName} applied to a squadron.",
-    "DisbandedSquadron": "Commander {commanderName} disbanded a squadron.",
-    "InvitedToSquadron": "Commander {commanderName} was invited to a squadron.",
-    "JoinedSquadron": "Commander {commanderName} joined a squadron.",
-    "KickedFromSquadron": "Commander {commanderName} was kicked from a squadron.",
-    "LeftSquadron": "Commander {commanderName} left a squadron.",
-    "SharedBookmarkToSquadron": "Commander {commanderName} shared a bookmark with a squadron.",
-    "SquadronCreated": "A squadron was created by commander {commanderName}.",
-    "SquadronDemotion": "Commander {commanderName} was demoted in a squadron.",
-    "SquadronPromotion": "Commander {commanderName} was promoted in a squadron.",
-    "WonATrophyForSquadron": "Commander {commanderName} won a trophy for a squadron.",
-    "PowerplayCollect": "Commander {commanderName} collected powerplay commodities.",
-    "PowerplayDefect": "Commander {commanderName} defected from one power to another.",
-    "PowerplayDeliver": "Commander {commanderName} delivered powerplay commodities.",
-    "PowerplayFastTrack": "Commander {commanderName} fast-tracked powerplay allocation.",
-    "PowerplayJoin": "Commander {commanderName} joined a power.",
-    "PowerplayLeave": "Commander {commanderName} left a power.",
-    "PowerplaySalary": "Commander {commanderName} received salary payment from a power.",
-    "PowerplayVote": "Commander {commanderName} voted for system expansion.",
-    "PowerplayVoucher": "Commander {commanderName} received payment for powerplay combat.",
-}
-
-explorationEvents = {
-    "CodexEntry": "Commander {commanderName} has logged a Codex entry.",
-    "DiscoveryScan": "Commander {commanderName} has performed a discovery scan.",
-    "Scan": "Commander {commanderName} has conducted a scan.",
-    "FSSAllBodiesFound": "Commander {commanderName} has identified all bodies in the system.",
-    "FSSBodySignals": "Commander {commanderName} has completed a full spectrum scan of the systems, detecting signals.",
-    "FSSDiscoveryScan": "Commander {commanderName} has performed a full system scan.",
-    "FSSSignalDiscovered": "Commander {commanderName} has discovered a signal using the FSS scanner.",
-    "MaterialCollected": "Commander {commanderName} has collected materials.",
-    "MaterialDiscarded": "Commander {commanderName} has discarded materials.",
-    "MaterialDiscovered": "Commander {commanderName} has discovered a new material.",
-    "MultiSellExplorationData": "Commander {commanderName} has sold exploration data.",
-    "NavBeaconScan": "Commander {commanderName} has scanned a navigation beacon.",
-    "BuyExplorationData": "Commander {commanderName} has bought exploration data.",
-    "SAAScanComplete": "Commander {commanderName} has completed a surface area analysis scan.",
-    "SAASignalsFound": "Commander {commanderName} has found signals using the SAA scanner.",
-    "ScanBaryCentre": "Commander {commanderName} has scanned a BaryCentre.",
-    "SellExplorationData": "Commander {commanderName} has sold exploration data in Cartographics.",
-    "Screenshot": "Commander {commanderName} has taken a screenshot.",
-    "ApproachBody": "Commander {commanderName} is entering an orbit.",
-    "LeaveBody": "Commander {commanderName} is exiting an orbit.",
-    "Liftoff": "Commander {commanderName}'s ship has lifted off.",
-    "Touchdown": "Commander {commanderName}'s ship has touched down on a planet surface.",
-    "DatalinkScan": "Commander {commanderName} has scanned a datalink.",
-    "DatalinkVoucher": "Commander {commanderName} has received a datalink voucher.",
-    "DataScanned": "Commander {commanderName} has scanned data.",
-    "Scanned": "Commander {commanderName} has been scanned.",
-    "USSDrop": "Commander {commanderName} has encountered a USS drop.",
-}
-
-projectedEvents = {
-    'ScanOrganicTooClose': "Commander {commanderName} is now too close to take another sample. Distance must be increased.",
-    'ScanOrganicFarEnough': "Commander {commanderName} is now far enough away to take another sample.",
-    'ScanOrganicFirst': "Commander {commanderName} took the first of three biological samples. New sample distance acquired.",
-    'ScanOrganicSecond': "Commander {commanderName} took the second of three biological samples.",
-    'ScanOrganicThird': "Commander {commanderName} took the third and final biological samples.",
-}
-
-allGameEvents = {
-    **systemEvents,
-    **combatEvents,
-    **tradingEvents,
-    **miningEvents,
-    **shipUpdateEvents,
-    **srvUpdateEvents,
-    **onFootUpdateEvents,
-    **stationEvents,
-    **socialEvents,
-    **explorationEvents,
-    **projectedEvents,
-}
-
-externalEvents = {
-    "SpanshTradePlanner": "The Spansh API has suggested a Trade Planner route for Commander {commanderName}.",
-    "SpanshTradePlannerFailed": "The Spansh API has failed to retrieve a Trade Planner route for Commander {commanderName}.",
-    "ExternalTwitchNotification": "[Twitch Alert]",
-    "ExternalTwitchMessage": "[Twitch Message]",
-    "ExternalDiscordNotification": "Commander {commanderName} has received a Discord notification.",
-    # "SpanshNeutronPlotter": "The Spansh API has suggested a Neutron Plotter router for Commander {commanderName}.",
-    # "SpanshRoadToRiches": "The Spansh API has suggested a Road-to-Riches route for Commander {commanderName}.",
-}
-
 # Add these new type definitions along with the other existing types
 DockingCancelledEvent = dict
 DockingTimeoutEvent = dict
@@ -394,7 +53,7 @@ class PromptGenerator:
         self.important_game_events = important_game_events
         self.system_db = system_db
 
-    def get_event_template(self, event: GameEvent):
+    def get_event_template(self, event: Union[GameEvent, ProjectedEvent, ExternalEvent]):
         content: Any = event.content
         event_name = content.get('event')
         
@@ -502,26 +161,7 @@ class PromptGenerator:
         # Station events
 
         if event_name == "ColonisationConstructionDepot":
-            construction = cast(ColonisationConstructionDepotEvent, content)
-            progress = construction.get("ConstructionProgress", 0.0) * 100
-
-            provided = []
-            missing = []
-
-            for res in construction.get("ResourcesRequired", []):
-                name = res.get("Name_Localised", res.get("Name"))
-                provided_amt = res.get("ProvidedAmount", 0)
-                required_amt = res.get("RequiredAmount", 0)
-                if provided_amt < required_amt:
-                    missing.append(f"{name} ({required_amt - provided_amt} tonnes left to deliver)")
-                else:
-                    provided.append(name)
-
-            return (
-                f"{self.commander_name} is at a colonisation project that is {progress:.1f}% complete. "
-                f"Resources delivered: {len(provided)} types. "
-                f"Still needed: {missing if missing else 'none'}."
-            )
+            return None
 
         if event_name == 'Docked':
             docked_event = cast(DockedEvent, content)
@@ -648,54 +288,9 @@ class PromptGenerator:
                 return f"{self.commander_name} has lifted off from {liftoff_event.get('Body')}{coordinates}{station_info}."
             else:
                 return f"{self.commander_name}'s ship has auto-lifted off from {liftoff_event.get('Body')}{station_info}."
-                
-        # if event_name == 'Location':
-        #     location_event = cast(LocationEvent, content)
-        #     location_details = []
-        #
-        #     if location_event.get('Docked'):
-        #         station_type = f"{location_event.get('StationType')} " if location_event.get('StationType') else ""
-        #         location_details.append(f"docked at {station_type}{location_event.get('StationName')}")
-        #     elif location_event.get('BodyName'):
-        #         if location_event.get('Latitude') is not None and location_event.get('Longitude') is not None:
-        #             location_details.append(f"on {location_event.get('BodyName')} at coordinates {location_event.get('Latitude'):.4f}, {location_event.get('Longitude'):.4f}")
-        #         else:
-        #             location_details.append(f"near {location_event.get('BodyName')}")
-        #             if location_event.get('DistFromStarLS'):
-        #                 location_details.append(f"{location_event.get('DistFromStarLS'):.2f} ls from main star")
-        #
-        #     system_details = []
-        #     if location_event.get('SystemAllegiance'):
-        #         system_details.append(f"allegiance: {location_event.get('SystemAllegiance')}")
-        #     if location_event.get('SystemEconomy'):
-        #         economy = location_event.get('SystemEconomy_Localised', location_event.get('SystemEconomy'))
-        #         system_details.append(f"economy: {economy}")
-        #     if location_event.get('SystemGovernment'):
-        #         government = location_event.get('SystemGovernment_Localised', location_event.get('SystemGovernment'))
-        #         system_details.append(f"government: {government}")
-        #     if location_event.get('SystemSecurity'):
-        #         security = location_event.get('SystemSecurity_Localised', location_event.get('SystemSecurity'))
-        #         system_details.append(f"security: {security}")
-        #
-        #     population = f", population: {location_event.get('Population'):,}" if location_event.get('Population') else ""
-        #
-        #     status_info = []
-        #     if location_event.get('Wanted'):
-        #         status_info.append("WANTED in this system")
-        #     if location_event.get('Taxi'):
-        #         status_info.append("in a taxi")
-        #     elif location_event.get('Multicrew'):
-        #         status_info.append("in multicrew session")
-        #     elif location_event.get('InSRV'):
-        #         status_info.append("in SRV")
-        #     elif location_event.get('OnFoot'):
-        #         status_info.append("on foot")
-        #
-        #     location_str = f" {', '.join(location_details)}" if location_details else ""
-        #     system_details_str = f" ({', '.join(system_details)})" if system_details else ""
-        #     status_str = f" ({', '.join(status_info)})" if status_info else ""
-        #
-        #     return f"{self.commander_name} is in the {location_event.get('StarSystem')} system{location_str}{system_details_str}{population}{status_str}."
+
+        if event_name == 'Location':
+            return None
 
         if event_name == 'NavRoute':
             nav_route_event = cast(NavRouteEvent, content)
@@ -870,6 +465,8 @@ class PromptGenerator:
             return f"{self.commander_name} has been promoted. New ranks: {', '.join(ranks)}"
         
         # Powerplay events
+        if event_name == 'Powerplay':
+            return None
         if event_name == 'PowerplayJoin':
             powerplay_join_event = cast(PowerplayJoinEvent, content)
             return f"{self.commander_name} has pledged allegiance to {powerplay_join_event.get('Power')}."
@@ -1547,6 +1144,9 @@ class PromptGenerator:
             else:
                 return f"{self.commander_name} has renamed their {ship_type} to '{ship_name}'."
 
+        if event_name == 'Loadout':
+            return None
+
         # If we don't have a specific handler for this event
         # Trade events
         if event_name == 'AsteroidCracked':
@@ -1814,7 +1414,7 @@ class PromptGenerator:
             else:
                 action = "scanned"
                 
-            return f"{self.commander_name} has {action} a {life_form} on planet {scan_event.get('Body', 'unknown body')}."
+            return f"{self.commander_name} has {action} a {life_form} on planet {scan_event.get('Body', 'unknown body')}. {' The scan data can now be sold at the next station featuing a Vista Genomics.' if scan_type == 'Analyse' else ''}"
             
         if event_name == 'SellMicroResources':
             sell_event = cast(Dict[str, Any], content)
@@ -1865,8 +1465,7 @@ class PromptGenerator:
             return f"{self.commander_name} has sold their {weapon_name} for {price:,} credits."
             
         if event_name == 'ShipLocker':
-            # This is primarily for the ShipLocker.json file, but we'll report it in the journal too
-            return f"{self.commander_name}'s ship locker inventory has been updated."
+            return None
             
         if event_name == 'SuitLoadout':
             loadout_event = cast(Dict[str, Any], content)
@@ -2088,15 +1687,15 @@ class PromptGenerator:
         if event_name == 'ModuleInfo':
             return f"{self.commander_name} has viewed their module information."
 
-        # if event_name == 'Music':
-        #     music_event = cast(Dict[str, Any], content)
-        #     track = music_event.get('MusicTrack', 'unknown track')
-        #     return f"Music has changed to: {track}."
+        if event_name == 'Music':
+            return None
 
         if event_name == 'NpcCrewPaidWage':
             wage_event = cast(Dict[str, Any], content)
             name = wage_event.get('NpcCrewName', 'An NPC crew member')
             amount = wage_event.get('Amount', 0)
+            if amount == 0:
+                return None
             return f"{self.commander_name} has paid {name} a wage of {amount:,} credits."
 
         if event_name == 'NpcCrewRank':
@@ -2234,7 +1833,9 @@ class PromptGenerator:
         if event_name == 'WingLeave':
             wing_leave_event = cast(WingLeaveEvent, content)
             return f"{self.commander_name} has left their wing."
-            
+
+        if event_name == 'Cargo':
+            return None
         if event_name == 'CargoTransfer':
             cargo_transfer_event = cast(Dict[str, Any], content)
             transfers = cargo_transfer_event.get('Transfers', [])
@@ -2490,7 +2091,7 @@ class PromptGenerator:
             return f"{self.commander_name}'s {srv_type} has been destroyed."
 
         if event_name == 'Statistics':
-            return f"{self.commander_name}'s game statistics have been updated."
+            return f"{self.commander_name}'s game statistics have been reported:\n{yaml.dump(content)}"
 
         if event_name == 'Trade':
             trade_event = cast(Dict[str, Any], content)
@@ -2518,9 +2119,126 @@ class PromptGenerator:
             system = claim_event.get('StarSystem', '')
             return f"{self.commander_name}'s claim on system {system} has been canceled."
 
-        return f"Event: {event_name} occurred."
+        # Synthetic Events
+        if event_name == 'ScanOrganicTooClose':
+            return f"{self.commander_name} is now too close to take another sample. Distance must be increased.",
+        if event_name == 'ScanOrganicFarEnough':
+            return f"{self.commander_name} is now far enough away to take another sample.",
+        if event_name == 'ScanOrganicFirst':
+            scan_event = cast(Dict[str, Any], content)
+            new_distance = scan_event.get('NewSampleDistance', 'unknown')
+            return f"{self.commander_name} took the first of three biological samples. New sample distance acquired: {new_distance}",
+        if event_name == 'ScanOrganicSecond':
+            return f"{self.commander_name} took the second of three biological samples.",
+        if event_name == 'ScanOrganicThird':
+            return f"{self.commander_name} took the third and final biological sample.",
+        # if event_name == 'ExternalDiscordNotification':
+        #     twitch_event = cast(Dict[str, Any], content)
+        #     return f"Twitch Alert! {twitch_event.get('text','')}",
+        # "SpanshTradePlanner": "The Spansh API has suggested a Trade Planner route for Commander {commanderName}.",
+        # "SpanshNeutronPlotter": "The Spansh API has suggested a Neutron Plotter router for Commander {commanderName}.",
+        # "SpanshRoadToRiches": "The Spansh API has suggested a Road-to-Riches route for Commander {commanderName}.",
+        if event_name == 'ExternalTwitchMessage':
+            twitch_event = cast(Dict[str, Any], content)
+            return f"Message received from {twitch_event.get('username','')} on Twitch Chat: {twitch_event.get('text','')}",
+        if event_name == 'ExternalTwitchNotification':
+            twitch_event = cast(Dict[str, Any], content)
+            return f"{self.commander_name} has received a Discord notification.",
 
-    def full_event_message(self, event: GameEvent, timeoffset: str, is_important: bool):
+        log('debug', f'fallback for event', event_name, content)
+
+        return f"Event: {event_name}\n{yaml.dump(content)}"
+
+    def get_status_event_template(self, event: StatusEvent):
+        status: Any = event.status
+        event_name = status.get('event')
+
+        # System events
+        if event_name == 'Status':
+            return None
+        if event_name == 'LegalStateChanged':
+            return f"Legal state is now {status['LegalState']}"
+        if event_name == 'WeaponSelected':
+            return f"Selected weapon {status['SelectedWeapon']}"
+
+        if event_name == 'LandingGearUp':
+            return 'Landing gear has been retracted'
+        if event_name == 'LandingGearDown':
+            return 'Landing gear has been deployed'
+        if event_name == 'FlightAssistOn':
+            return 'Flight stabilizer engaged, drift ending'
+        if event_name == 'FlightAssistOff':
+            return 'Flight stabilizer disengaged, drift starting'
+        if event_name == 'HardpointsRetracted':
+            return 'Hardpoints retracted'
+        if event_name == 'HardpointsDeployed':
+            return 'Hardpoints (Weapons/Scanners) deployed and ready'
+        if event_name == 'SilentRunningOff':
+            return 'Silent running mode deactivated, thermal signature normalized'
+        if event_name == 'SilentRunningOn':
+            return 'Silent running mode activated, suppressing thermal signature'
+        if event_name == 'FuelScoopEnded':
+            return 'Fuel collection complete, fuel scoop disengaged'
+        if event_name == 'FuelScoopStarted':
+            return 'Fuel scoop engaged, collecting stellar material'
+        if event_name == 'LightsOff':
+            return 'External lighting systems powered down'
+        if event_name == 'LightsOn':
+            return 'External lighting systems activated'
+        if event_name == 'CargoScoopRetracted':
+            return 'Cargo scoop retracted, collection systems offline'
+        if event_name == 'CargoScoopDeployed':
+            return 'Cargo scoop deployed, ready to collect materials'
+        if event_name == 'FsdMassLockEscaped':
+            return 'Frame Shift Drive mass lock released, hyperspace available'
+        if event_name == 'FsdMassLocked':
+            return 'Frame Shift Drive mass locked by nearby objects, hyperspace restricted'
+        if event_name == 'GlideModeExited':
+            return 'Glide mode disengaged, returned to normal flight'
+        if event_name == 'GlideModeEntered':
+            return 'Entered atmospheric glide mode, maintaining controlled descent'
+        if event_name == 'LowFuelWarningCleared':
+            return 'Fuel levels restored to acceptable levels'
+        if event_name == 'LowFuelWarning':
+            return 'Warning: Fuel reserves critically low, refueling recommended'
+        if event_name == 'FsdCharging':
+            return 'Frame Shift Drive charging, preparing for jump'
+        if event_name == 'SrvHandbrakeOff':
+            return 'SRV handbrake released, free to move'
+        if event_name == 'SrvHandbrakeOn':
+            return 'SRV handbrake engaged, vehicle secured'
+        if event_name == 'SrvTurretViewDisconnected':
+            return 'SRV turret view disconnected, returning to normal operation'
+        if event_name == 'SrvTurretViewConnected':
+            return 'SRV turret view connected, weapon systems accessible'
+        if event_name == 'SrvDriveAssistOff':
+            return 'SRV drive assist disabled, manual control active'
+        if event_name == 'SrvDriveAssistOn':
+            return 'SRV drive assist enabled, terrain compensation active'
+        if event_name == 'LowOxygenWarningCleared':
+            return 'Oxygen levels returned to normal parameters'
+        if event_name == 'LowOxygenWarning':
+            return 'Warning: Life support oxygen reserves critically low'
+        if event_name == 'LowHealthWarningCleared':
+            return 'Hull integrity stabilized, critical damage repaired'
+        if event_name == 'LowHealthWarning':
+            return 'Warning: Hull integrity critical, immediate repairs recommended'
+        if event_name == 'BreathableAtmosphereExited':
+            return 'Exited breathable atmosphere, life support systems active'
+        if event_name == 'BreathableAtmosphereEntered':
+            return 'Entered breathable atmosphere, external oxygen available'
+        if event_name == 'OutofDanger':
+            return 'No potential danger detected by scanners anymore. All clear.'
+        if event_name == 'InDanger':
+            return 'Potentially dangerous situation detected by scanners.'
+        if event_name == 'NightVisionOff':
+            return 'Night vision system deactivated'
+        if event_name == 'NightVisionOn':
+            return 'Night vision system activated'
+
+        return None
+
+    def event_message(self, event: Union[GameEvent, ProjectedEvent, ExternalEvent], timeoffset: str, is_important: bool):
         message = self.get_event_template(event)
         if message:
             return {
@@ -2528,36 +2246,21 @@ class PromptGenerator:
                 "content": f"[{'IMPORTANT ' if is_important else ''}Game Event, {timeoffset}] {message}",
             }
 
-        return {
-            "role": "user",
-            "content": f"[{'IMPORTANT ' if is_important else ''}Game Event, {timeoffset}] {allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)}\n{yaml.dump(event.content)}",
-        }
+        # Deliberately ignored events
+        # log('info', f'ignored event', event)
+        return None
 
-    def simple_event_message(self, event: GameEvent, timeoffset: str):
-        return {
-            "role": "user",
-            "content": f"[Game Event, {timeoffset}] {allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)}",
-        }
-
-    def full_projectedevent_message(self, event: ProjectedEvent, timeoffset: str, is_important: bool):
-        return {
-            "role": "user",
-            "content": f"[{'IMPORTANT ' if is_important else ''}Game Event, {timeoffset}] {allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)}\n{yaml.dump(event.content)}",
-        }
-
-    def simple_projectedevent_message(self, event: ProjectedEvent, timeoffset: str):
-        return {
-            "role": "user",
-            "content": f"[Game Event, {timeoffset}] {allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)}",
-        }
-
-    def status_messages(self, event: StatusEvent):
-        if event.status.get('event'):
-            return [{
+    def status_messages(self, event: StatusEvent, timeoffset: str, is_important: bool):
+        message = self.get_status_event_template(event)
+        if message:
+            return {
                 "role": "user",
-                "content": f"(Status changed: {event.status.get('event')} Details: {json.dumps(event.status)})",
-            }]
-        return []
+                "content": f"[{'IMPORTANT ' if is_important else ''}Game Event, {timeoffset}] {message}",
+            }
+
+        # Deliberately ignored events
+        # log('info', f'ignored event', event)
+        return None
 
     def conversation_message(self, event: ConversationEvent):
         return {"role": event.kind, "content": event.content}
@@ -3267,28 +2970,15 @@ class PromptGenerator:
 
             time_offset = humanize.naturaltime(reference_time - event_time)
 
-            if isinstance(event, GameEvent):
-                if event.content.get('event') in allGameEvents:
-                    if len(conversational_pieces) < 20 or is_pending:
-                        is_important = is_pending and event.content.get('event') in self.important_game_events
-                        conversational_pieces.append(self.full_event_message(event, time_offset, is_important))
-                    else:
-                        pass
-                else: 
-                    log('debug', "PromptGenerator ignoring event", event.content.get('event'))
-
-            if isinstance(event, ProjectedEvent):
-                if event.content.get('event') in allGameEvents:
-                    if len(conversational_pieces) < 5 or is_pending:
-                        is_important = is_pending and event.content.get('event') in self.important_game_events
-                        conversational_pieces.append(self.full_projectedevent_message(event, time_offset, is_important))
-                    elif len(conversational_pieces) < 20:
-                        conversational_pieces.append(self.simple_projectedevent_message(event, time_offset))
-                    else:
-                        pass
+            if isinstance(event, GameEvent) or isinstance(event, ProjectedEvent) or isinstance(event, ExternalEvent):
+                if len(conversational_pieces) < 20 or is_pending:
+                    is_important = is_pending and event.content.get('event') in self.important_game_events
+                    message = self.event_message(event, time_offset, is_important)
+                    if message:
+                        conversational_pieces.append(message)
                 else:
-                    log('debug', "PromptGenerator ignoring event", event.content.get('event'))
-            
+                    pass
+
             if isinstance(event, StatusEvent):
                 if (
                     len(conversational_pieces) < 20
@@ -3301,10 +2991,6 @@ class PromptGenerator:
 
             if isinstance(event, ToolEvent):
                 conversational_pieces += self.tool_messages(event)
-
-            if isinstance(event, ExternalEvent):
-                if event.content.get('event') in externalEvents:
-                    conversational_pieces.append(self.external_event_message(event))
 
         conversational_pieces.append(
             {
