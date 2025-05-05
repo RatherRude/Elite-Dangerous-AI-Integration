@@ -71,21 +71,25 @@ class PluginManager:
         return self
 
     def register_actions(self, deps: PluginDependencies) -> None:
+        """Register all actions for each plugin."""
         for module in self.plugin_list.values():
             log('info', f"Registering Actions for {module.plugin_name}")
             module.register_actions(deps)
 
     def register_projections(self, deps: PluginDependencies):
+        """Register all projections for each plugin."""
         for module in self.plugin_list.values():
             log('info', f"Registering Projections for {module.plugin_name}")
             module.register_projections(deps)
     
     def register_sideeffects(self, deps: PluginDependencies):
+        """Register all side effects for each plugin."""
         for module in self.plugin_list.values():
             log('info', f"Registering Side-Effects for {module.plugin_name}")
             module.register_sideeffects(deps)
     
     def register_settings(self):
+        """Register all settings for each plugin."""
         for module in self.plugin_list.values():
             log('info', f"Registering Settings for {module.plugin_name}")
             if module.settings_config is not None:

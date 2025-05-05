@@ -1,3 +1,4 @@
+from typing import Any
 import openai
 
 from .EDKeys import EDKeys
@@ -7,6 +8,7 @@ from .SystemDatabase import SystemDatabase
 from .Config import Config
 
 class PluginDependencies():
+    """Contains all built-inservices and managers that can be used by plugins"""
 
     keys: EDKeys
     vision_client: openai.OpenAI | None = None
@@ -30,3 +32,14 @@ class PluginDependencies():
         self.event_manager = event_manager
         self.action_manager = action_manager
         self.config = config
+    
+    # Plugin helper functions
+    def get_plugin_settings(self, *key_paths: str) -> Any:
+        """Get a plugin setting, from a number of keys forming a path"""
+        cur_setting: dict[str, Any] = self.config.get('plugin_settings', {})
+        
+        # Recursively search for key paths
+        for key_path in key_paths:
+            cur_setting = cur_setting.get(key_path, {})
+        
+        return cur_setting
