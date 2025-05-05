@@ -2162,79 +2162,79 @@ class PromptGenerator:
             return f"Selected weapon {status['SelectedWeapon']}"
 
         if event_name == 'LandingGearUp':
-            return 'LandingGearUp'
+            return 'Landing gear has been retracted'
         if event_name == 'LandingGearDown':
-            return 'LandingGearDown'
+            return 'Landing gear has been deployed'
         if event_name == 'FlightAssistOn':
-            return 'FlightAssistOn'
+            return 'Flight stabilizer engaged, drift ending'
         if event_name == 'FlightAssistOff':
-            return 'FlightAssistOff'
+            return 'Flight stabilizer disengaged, drift starting'
         if event_name == 'HardpointsRetracted':
-            return 'HardpointsRetracted'
+            return 'Hardpoints retracted'
         if event_name == 'HardpointsDeployed':
-            return 'HardpointsDeployed'
+            return 'Hardpoints (Weapons/Scanners) deployed and ready'
         if event_name == 'SilentRunningOff':
-            return 'SilentRunningOff'
+            return 'Silent running mode deactivated, thermal signature normalized'
         if event_name == 'SilentRunningOn':
-            return 'SilentRunningOn'
+            return 'Silent running mode activated, suppressing thermal signature'
         if event_name == 'FuelScoopEnded':
-            return 'FuelScoopEnded'
+            return 'Fuel collection complete, fuel scoop disengaged'
         if event_name == 'FuelScoopStarted':
-            return 'FuelScoopStarted'
+            return 'Fuel scoop engaged, collecting stellar material'
         if event_name == 'LightsOff':
-            return 'LightsOff'
+            return 'External lighting systems powered down'
         if event_name == 'LightsOn':
-            return 'LightsOn'
+            return 'External lighting systems activated'
         if event_name == 'CargoScoopRetracted':
-            return 'CargoScoopRetracted'
+            return 'Cargo scoop retracted, collection systems offline'
         if event_name == 'CargoScoopDeployed':
-            return 'CargoScoopDeployed'
+            return 'Cargo scoop deployed, ready to collect materials'
         if event_name == 'FsdMassLockEscaped':
-            return 'FsdMassLockEscaped'
+            return 'Frame Shift Drive mass lock released, hyperspace available'
         if event_name == 'FsdMassLocked':
-            return 'FsdMassLocked'
+            return 'Frame Shift Drive mass locked by nearby objects, hyperspace restricted'
         if event_name == 'GlideModeExited':
-            return 'GlideModeExited'
+            return 'Glide mode disengaged, returned to normal flight'
         if event_name == 'GlideModeEntered':
-            return 'GlideModeEntered'
+            return 'Entered atmospheric glide mode, maintaining controlled descent'
         if event_name == 'LowFuelWarningCleared':
-            return 'LowFuelWarningCleared'
+            return 'Fuel levels restored to acceptable levels'
         if event_name == 'LowFuelWarning':
-            return 'LowFuelWarning'
+            return 'Warning: Fuel reserves critically low, refueling recommended'
         if event_name == 'FsdCharging':
-            return 'FsdCharging'
+            return 'Frame Shift Drive charging, preparing for jump'
         if event_name == 'SrvHandbrakeOff':
-            return 'SrvHandbrakeOff'
+            return 'SRV handbrake released, free to move'
         if event_name == 'SrvHandbrakeOn':
-            return 'SrvHandbrakeOn'
+            return 'SRV handbrake engaged, vehicle secured'
         if event_name == 'SrvTurretViewDisconnected':
-            return 'SrvTurretViewDisconnected'
+            return 'SRV turret view disconnected, returning to normal operation'
         if event_name == 'SrvTurretViewConnected':
-            return 'SrvTurretViewConnected'
+            return 'SRV turret view connected, weapon systems accessible'
         if event_name == 'SrvDriveAssistOff':
-            return 'SrvDriveAssistOff'
+            return 'SRV drive assist disabled, manual control active'
         if event_name == 'SrvDriveAssistOn':
-            return 'SrvDriveAssistOn'
+            return 'SRV drive assist enabled, terrain compensation active'
         if event_name == 'LowOxygenWarningCleared':
-            return 'LowOxygenWarningCleared'
+            return 'Oxygen levels returned to normal parameters'
         if event_name == 'LowOxygenWarning':
-            return 'LowOxygenWarning'
+            return 'Warning: Life support oxygen reserves critically low'
         if event_name == 'LowHealthWarningCleared':
-            return 'LowHealthWarningCleared'
+            return 'Hull integrity stabilized, critical damage repaired'
         if event_name == 'LowHealthWarning':
-            return 'LowHealthWarning'
+            return 'Warning: Hull integrity critical, immediate repairs recommended'
         if event_name == 'BreathableAtmosphereExited':
-            return 'BreathableAtmosphereExited'
+            return 'Exited breathable atmosphere, life support systems active'
         if event_name == 'BreathableAtmosphereEntered':
-            return 'BreathableAtmosphereEntered'
+            return 'Entered breathable atmosphere, external oxygen available'
         if event_name == 'OutofDanger':
             return 'No potential danger detected by scanners anymore. All clear.'
         if event_name == 'InDanger':
             return 'Potentially dangerous situation detected by scanners.'
         if event_name == 'NightVisionOff':
-            return 'NightVisionOff'
+            return 'Night vision system deactivated'
         if event_name == 'NightVisionOn':
-            return 'NightVisionOn'
+            return 'Night vision system activated'
 
         return None
 
