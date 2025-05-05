@@ -77,9 +77,9 @@ class HelloWorld(PluginBase):
                         placeholder = "Select an option",
                         default_value = "option_2",
                         select_options=[
-                            SelectOption(key="option_1", label="Option 1", value="option_1"),
-                            SelectOption(key="option_2", label="Option 2", value="option_2"),
-                            SelectOption(key="option_3", label="Option 3", value="option_3"),
+                            SelectOption(key="option_1", label="Option 1", value="option_1", disabled=False),
+                            SelectOption(key="option_2", label="Option 2", value="option_2", disabled=False),
+                            SelectOption(key="option_3", label="Option 3", value="option_3", disabled=False),
                         ],
                         multi_select = False
                     ),
@@ -100,9 +100,9 @@ class HelloWorld(PluginBase):
                         default_value = ["option_2", "option_3"],
                         multi_select = True,
                         select_options=[
-                            SelectOption(key="option_1", label="Option 1", value="option_1"),
-                            SelectOption(key="option_2", label="Option 2", value="option_2"),
-                            SelectOption(key="option_3", label="Option 3", value="option_3"),
+                            SelectOption(key="option_1", label="Option 1", value="option_1", disabled=False),
+                            SelectOption(key="option_2", label="Option 2", value="option_2", disabled=False),
+                            SelectOption(key="option_3", label="Option 3", value="option_3", disabled=False),
                         ]
                     ),
                 ]

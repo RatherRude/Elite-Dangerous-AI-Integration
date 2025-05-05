@@ -1181,7 +1181,7 @@
                                             <mat-select [ngModel]="getPluginSetting(plugin_settings_config.key, grid.key, field.key, field.default_value)"
                                                 (ngModelChange)="setPluginSetting(plugin_settings_config.key, grid.key, field.key, $event)" [disabled]="field.readonly || false" [multiple]="field.multi_select">
                                                 @for (option of field.select_options; track option.key) {
-                                                    <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                                                    <mat-option [value]="option.value" [disabled]="option.disabled">{{ option.label }}</mat-option>
                                                 }
                                             </mat-select>
                                         </mat-form-field>

@@ -66,6 +66,7 @@ export interface SelectOption {
     key: string;
     label: string;
     value: object | string | number | boolean;
+    disabled: boolean;
 }
 
 export interface PluginSettingsMessage extends BaseMessage {

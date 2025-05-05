@@ -12,6 +12,7 @@ class SelectOption(TypedDict):
     key: str
     label: str
     value: object | str | int | float | bool
+    disabled: bool
 
 class SelectSetting(SettingBase):
     default_value: str | list[str] | None
