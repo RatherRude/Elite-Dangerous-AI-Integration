@@ -34,10 +34,11 @@ class Chat:
         self.config = config # todo: remove
         if self.config["api_key"] == '':
             self.config["api_key"] = '-'
+        character = self.config['characters'][self.config['active_character_index']]
 
-        self.voice_instructions = self.config["tts_prompt"]
+        self.voice_instructions = character["tts_prompt"]
 
-        self.backstory = self.config["character"].replace("{commander_name}", self.config['commander_name'])
+        self.backstory = character["character"].replace("{commander_name}", self.config['commander_name'])
 
         self.enabled_game_events: list[str] = []
         if self.config["event_reaction_enabled_var"]:
@@ -91,7 +92,7 @@ class Chat:
             )
             
         tts_provider = 'none' if self.config["edcopilot_dominant"] else self.config["tts_provider"]
-        self.tts = TTS(openai_client=self.ttsClient, provider=tts_provider, model=self.config["tts_model_name"], voice=self.config["tts_voice"], voice_instructions=self.config["tts_prompt"], speed=self.config["tts_speed"], output_device=self.config["output_device_name"])
+        self.tts = TTS(openai_client=self.ttsClient, provider=tts_provider, model=self.config["tts_model_name"], voice=character["tts_voice"], voice_instructions=character["tts_prompt"], speed=character["tts_speed"], output_device=self.config["output_device_name"])
         self.stt = STT(openai_client=self.sttClient, provider=self.config["stt_provider"], input_device_name=self.config["input_device_name"], model=self.config["stt_model_name"], custom_prompt=self.config["stt_custom_prompt"], required_word=self.config["stt_required_word"])
 
         log("debug", "Initializing SystemDatabase...")
@@ -101,7 +102,7 @@ class Chat:
         log("debug", "Initializing status parser...")
         self.status_parser = StatusParser(get_ed_journals_path(config))
         log("debug", "Initializing prompt generator...")
-        self.prompt_generator = PromptGenerator(self.config["commander_name"], self.config["character"], important_game_events=self.enabled_game_events, system_db=self.system_database)
+        self.prompt_generator = PromptGenerator(self.config["commander_name"], character["character"], important_game_events=self.enabled_game_events, system_db=self.system_database)
         log("debug", "Initializing event manager...")
         self.event_manager = EventManager(
             game_events=self.enabled_game_events,
