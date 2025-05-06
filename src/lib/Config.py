@@ -337,23 +337,6 @@ class Config(TypedDict):
     llm_api_key: str
     llm_endpoint: str
     commander_name: str
-    # Active character properties (kept for backward compatibility)
-    character: str
-    personality_preset: str
-    personality_verbosity: int
-    personality_vulgarity: int
-    personality_empathy: int
-    personality_formality: int
-    personality_confidence: int
-    personality_ethical_alignment: str
-    personality_moral_alignment: str
-    personality_tone: str
-    personality_character_inspiration: str
-    personality_language: str
-    personality_name: str
-    personality_knowledge_pop_culture: bool
-    personality_knowledge_scifi: bool
-    personality_knowledge_history: bool
     # Stored characters
     characters: List[Character]
     active_character_index: int
@@ -375,7 +358,6 @@ class Config(TypedDict):
     tts_model_name: str
     tts_api_key: str
     tts_endpoint: str
-    tts_prompt: str
     tools_var: bool
     vision_var: bool
     ptt_var: bool
@@ -395,8 +377,6 @@ class Config(TypedDict):
     react_to_danger_supercruise_var: bool
     edcopilot: bool
     edcopilot_dominant: bool
-    tts_voice: str
-    tts_speed: str
     ptt_key: str
     input_device_name: str
     output_device_name: str
