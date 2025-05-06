@@ -487,8 +487,43 @@
                             </mat-form-field>
                         </div>
                     </div>
+                </div>
+            }
+        </div>
+    </mat-tab>
 
-                                        <h2>Reactions</h2>
+    <mat-tab>
+        <ng-template mat-tab-label>
+            <mat-icon class="tab-icon">psychology</mat-icon>
+            Behavior
+        </ng-template>
+        <div class="tab-content">
+            @if (config) {
+                <div class="settings-grid">
+                    <h2>Actions</h2>
+                    <mat-slide-toggle [ngModel]="config.tools_var && config.game_actions_var"
+                                      (ngModelChange)="onConfigChange({game_actions_var: $event})"
+                                      [disabled]="!config.tools_var">
+                        Enable Game Actions
+                    </mat-slide-toggle>
+                    <p>Game actions are performed by the AI on your behalf, like deploying the landing gear or opening
+                        the galaxy map.</p>
+                    <mat-slide-toggle [ngModel]="config.tools_var && config.web_search_actions_var"
+                                      (ngModelChange)="onConfigChange({web_search_actions_var: $event})"
+                                      [disabled]="!config.tools_var">
+                        Enable Web Actions
+                    </mat-slide-toggle>
+                    <p>Web actions are performed by the AI on your behalf and allow you to search the web for
+                        information, like searching for stations selling a specific commodity or material.</p>
+
+                    <mat-slide-toggle [ngModel]="config.tools_var && config.use_action_cache_var"
+                                      (ngModelChange)="onConfigChange({use_action_cache_var: $event})"
+                                      [disabled]="!config.tools_var">
+                        Enable Action Cache
+                    </mat-slide-toggle>
+                    <p>The action cache allows the AI to learn from previous interactions and reuse actions for similar
+                        inputs, making responses faster and more consistent.</p>
+                    <h2>Reactions</h2>
                     <mat-slide-toggle [(ngModel)]="config.event_reaction_enabled_var"
                                       (ngModelChange)="onConfigChange({event_reaction_enabled_var: $event})">
                         Enable Event Reactions
@@ -513,7 +548,7 @@
                                     <mat-icon>close</mat-icon>
                                 </button>
                             </mat-form-field>
-
+                            
                             <button mat-raised-button color="warn" (click)="resetGameEvents()">
                                 <mat-icon>restart_alt</mat-icon> Reset to Defaults
                             </button>
@@ -594,42 +629,6 @@
                             }
                         </mat-accordion>
                     }
-                </div>
-            }
-        </div>
-    </mat-tab>
-
-    <mat-tab>
-        <ng-template mat-tab-label>
-            <mat-icon class="tab-icon">psychology</mat-icon>
-            Behavior
-        </ng-template>
-        <div class="tab-content">
-            @if (config) {
-                <div class="settings-grid">
-                    <h2>Actions</h2>
-                    <mat-slide-toggle [ngModel]="config.tools_var && config.game_actions_var"
-                                      (ngModelChange)="onConfigChange({game_actions_var: $event})"
-                                      [disabled]="!config.tools_var">
-                        Enable Game Actions
-                    </mat-slide-toggle>
-                    <p>Game actions are performed by the AI on your behalf, like deploying the landing gear or opening
-                        the galaxy map.</p>
-                    <mat-slide-toggle [ngModel]="config.tools_var && config.web_search_actions_var"
-                                      (ngModelChange)="onConfigChange({web_search_actions_var: $event})"
-                                      [disabled]="!config.tools_var">
-                        Enable Web Actions
-                    </mat-slide-toggle>
-                    <p>Web actions are performed by the AI on your behalf and allow you to search the web for
-                        information, like searching for stations selling a specific commodity or material.</p>
-
-                    <mat-slide-toggle [ngModel]="config.tools_var && config.use_action_cache_var"
-                                      (ngModelChange)="onConfigChange({use_action_cache_var: $event})"
-                                      [disabled]="!config.tools_var">
-                        Enable Action Cache
-                    </mat-slide-toggle>
-                    <p>The action cache allows the AI to learn from previous interactions and reuse actions for similar
-                        inputs, making responses faster and more consistent.</p>
                 </div>
             }
         </div>
