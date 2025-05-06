@@ -89,6 +89,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   filteredGameEvents: Record<string, Record<string, boolean>> = {};
   eventSearchQuery: string = "";
   voiceInstructionSupportedModels: string[] = ['gpt-4o-mini-tts'];
+  isApplyingChange: boolean = false;
 
   gameEventCategories = GameEventCategories;
   settings: PromptSettings = {
@@ -256,14 +257,29 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    // Flag to track if we're in the middle of applying a change
+    this.isApplyingChange = false;
+    
     this.configSubscription = this.configService.config$.subscribe(
       (config) => {
         if (config) {
+          console.log('New config received from backend');
+          
+          // Skip processing if we're in the middle of applying our own changes
+          if (this.isApplyingChange) {
+            console.log('Skipping config update as we are applying our own changes');
+            return;
+          }
+          
           // Store the new config
+          const previousConfig = this.config;
           this.config = config;
           
           // Set the selected character to match active_character_index
-          this.selectedCharacterIndex = config.active_character_index;
+          if (previousConfig?.active_character_index !== config.active_character_index) {
+            console.log(`Active character index changed from ${previousConfig?.active_character_index} to ${config.active_character_index}`);
+            this.selectedCharacterIndex = config.active_character_index;
+          }
 
           // Reset edit mode when receiving a new config, but only if not actively editing
           if (!this.editMode) {
@@ -346,10 +362,33 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
 
   async onConfigChange(partialConfig: Partial<Config>) {
     if (this.config) {
+      console.log('Sending config update to backend:', partialConfig);
+      
+      // Create a copy for error handling
+      const originalConfig = { ...this.config };
+      
       try {
+        // We need to prevent the subscription from overriding our changes immediately
+        // Temporarily unsubscribe from config changes
+        const tempSub = this.configSubscription;
+        this.configSubscription = undefined;
+        
         await this.configService.changeConfig(partialConfig);
+        
+        // Wait a bit for the change to propagate
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
+        // Manually update the local copy to match what we've just sent
+        this.config = { ...this.config, ...partialConfig };
+        
+        // Resubscribe after a short delay
+        setTimeout(() => {
+          this.configSubscription = tempSub;
+        }, 100);
       } catch (error) {
         console.error('Error updating config:', error);
+        // Restore the original config if there was an error
+        this.config = originalConfig;
         this.snackBar.open('Error updating configuration', 'OK', { duration: 5000 });
       }
     }
@@ -526,34 +565,52 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
 
   // Add method to load settings from config
   loadSettingsFromConfig(config: Config): void {
-    const activeChar = this.getActiveCharacter();
+    console.log('Loading settings from config');
     
-    if (activeChar && activeChar.personality_preset !== 'custom') {
-      // Use stored values from the active character
-      this.settings = {
-        verbosity: activeChar.personality_verbosity ?? 50,
-        tone: activeChar.personality_tone as 'serious' | 'humorous' | 'sarcastic' ?? 'serious',
-        knowledge: {
-          popCulture: activeChar.personality_knowledge_pop_culture ?? false,
-          scifi: activeChar.personality_knowledge_scifi ?? false,
-          history: activeChar.personality_knowledge_history ?? false
-        },
-        characterInspiration: activeChar.personality_character_inspiration ?? '',
-        vulgarity: activeChar.personality_vulgarity ?? 0,
-        empathy: activeChar.personality_empathy ?? 50,
-        formality: activeChar.personality_formality ?? 50,
-        confidence: activeChar.personality_confidence ?? 50,
-        ethicalAlignment: activeChar.personality_ethical_alignment as 'lawful' | 'neutral' | 'chaotic' ?? 'neutral',
-        moralAlignment: activeChar.personality_moral_alignment as 'good' | 'neutral' | 'evil' ?? 'neutral',
-      };
+    const activeChar = this.getActiveCharacter();
+    console.log('Active character:', activeChar);
+    
+    if (activeChar) {
+      console.log('Loading settings from active character');
+      
+      // Get the preset to determine default settings
+      const preset = activeChar.personality_preset || 'default';
+      
+      // First load the preset default settings to the UI
+      if (preset !== 'custom') {
+        this.applySettingsFromPreset(preset);
+      }
+      
+      // Then override with any custom values from the character
+      // This ensures UI shows actual character values
+      // We don't actually modify the character properties
+      if (activeChar.personality_verbosity !== undefined) this.settings.verbosity = activeChar.personality_verbosity;
+      if (activeChar.personality_tone !== undefined) this.settings.tone = activeChar.personality_tone as any;
+      if (activeChar.personality_knowledge_pop_culture !== undefined) this.settings.knowledge.popCulture = activeChar.personality_knowledge_pop_culture;
+      if (activeChar.personality_knowledge_scifi !== undefined) this.settings.knowledge.scifi = activeChar.personality_knowledge_scifi;
+      if (activeChar.personality_knowledge_history !== undefined) this.settings.knowledge.history = activeChar.personality_knowledge_history;
+      if (activeChar.personality_character_inspiration !== undefined) this.settings.characterInspiration = activeChar.personality_character_inspiration;
+      if (activeChar.personality_vulgarity !== undefined) this.settings.vulgarity = activeChar.personality_vulgarity;
+      if (activeChar.personality_empathy !== undefined) this.settings.empathy = activeChar.personality_empathy;
+      if (activeChar.personality_formality !== undefined) this.settings.formality = activeChar.personality_formality;
+      if (activeChar.personality_confidence !== undefined) this.settings.confidence = activeChar.personality_confidence;
+      if (activeChar.personality_ethical_alignment !== undefined) this.settings.ethicalAlignment = activeChar.personality_ethical_alignment as any;
+      if (activeChar.personality_moral_alignment !== undefined) this.settings.moralAlignment = activeChar.personality_moral_alignment as any;
+      
+      console.log('Loaded UI settings:', this.settings);
     } else {
+      console.log('No active character, loading from preset');
       // Fallback to preset defaults if no active character or missing properties
-      this.applySettingsFromPreset(activeChar?.personality_preset || 'default');
+      const preset = config.personality_preset || 'default';
+      console.log('Using preset:', preset);
+      this.applySettingsFromPreset(preset);
     }
   }
 
   // Modify applySettingsFromPreset to work with the new approach
   applySettingsFromPreset(preset: string): void {
+    console.log('Applying settings from preset:', preset);
+    
     if (preset !== 'custom'){
       // Apply preset settings without saving
       switch (preset) {
@@ -1047,26 +1104,25 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             moralAlignment: 'neutral',
           };
           break;
+        default:
+          // If the preset doesn't exist, use the default
+          console.warn(`Preset '${preset}' not found, using default`);
+          this.settings = {
+            verbosity: 50,
+            tone: 'serious',
+            knowledge: { popCulture: false, scifi: false, history: false },
+            characterInspiration: '',
+            vulgarity: 0,
+            empathy: 50,
+            formality: 50,
+            confidence: 50,
+            ethicalAlignment: 'neutral',
+            moralAlignment: 'neutral',
+          };
+          break;
       }
       
-      // Also update the config object if it exists
-      if (this.config) {
-        // Directly update the config object with the new values
-        this.config.personality_verbosity = this.settings.verbosity;
-        this.config.personality_tone = this.settings.tone;
-        this.config.personality_knowledge_pop_culture = this.settings.knowledge.popCulture;
-        this.config.personality_knowledge_scifi = this.settings.knowledge.scifi;
-        this.config.personality_knowledge_history = this.settings.knowledge.history;
-        this.config.personality_character_inspiration = this.settings.characterInspiration;
-        this.config.personality_vulgarity = this.settings.vulgarity;
-        this.config.personality_empathy = this.settings.empathy;
-        this.config.personality_formality = this.settings.formality;
-        this.config.personality_confidence = this.settings.confidence;
-        this.config.personality_ethical_alignment = this.settings.ethicalAlignment;
-        this.config.personality_moral_alignment = this.settings.moralAlignment;
-      }
-      
-      // Don't call updatePrompt() here to avoid infinite loops
+      console.log('Applied settings from preset:', this.settings);
     }
   }
 
@@ -1078,23 +1134,41 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // Set the flag to prevent overriding
+    this.isApplyingChange = true;
+
     const activeChar = this.getActiveCharacter();
     const personalityPreset = activeChar?.personality_preset || this.config.personality_preset || 'default';
 
-    // For custom mode, don't overwrite the existing character text
+    console.log('Updating prompt for preset:', personalityPreset);
+
+    // For custom mode, don't overwrite the existing character text unless it's empty
     if (personalityPreset === 'custom') {
       // If there's no character text at all, generate one so there's something to edit
       if (!activeChar?.character || activeChar.character.trim() === '') {
         const charName = activeChar?.name || this.config.personality_name || 'your AI assistant';
         const character = `I am ${charName}. I am here to assist you with Elite Dangerous. {commander_name} is the commander of this ship.`;
         
+        console.log('No character text found in custom mode, generating default text');
+        
         if (activeChar) {
           // Update character in the array
           this.updateActiveCharacterProperty('character', character);
         } else {
           // Fallback for transition
-          this.onConfigChange({character: character});
+          this.onConfigChange({character: character}).finally(() => {
+            // Reset the flag after a delay
+            setTimeout(() => {
+              this.isApplyingChange = false;
+            }, 200);
+          });
         }
+      } else {
+        console.log('Custom mode with existing character text - preserving it');
+        // Reset the flag if we don't make any changes
+        setTimeout(() => {
+          this.isApplyingChange = false;
+        }, 200);
       }
       return;
     }
@@ -1145,37 +1219,88 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       ? character + " I am serving {commander_name}, pilot of this ship."
       : character;
     
+    console.log('Generated character prompt:', finalCharacter.substring(0, 100) + '...');
+    
     // Update the character in the active character or config
     if (activeChar) {
+      // Just update the character property - updateActiveCharacterProperty will reset the flag
       this.updateActiveCharacterProperty('character', finalCharacter);
     } else {
       // Fallback for transition
-      this.onConfigChange({character: finalCharacter});
+      this.onConfigChange({character: finalCharacter}).finally(() => {
+        // Reset the flag after a delay
+        setTimeout(() => {
+          this.isApplyingChange = false;
+        }, 200);
+      });
     }
   }
 
   // Helper method to update a property on the active character
   updateActiveCharacterProperty(propName: string, value: any): void {
-    if (!this.config || !this.config.characters || this.config.active_character_index < 0) {
+    if (!this.config) {
+      console.error('Cannot update character property: config is null');
+      return;
+    }
+    
+    console.log(`Updating character property: ${propName} =`, value);
+    
+    // Set the flag to prevent overriding
+    this.isApplyingChange = true;
+    
+    // We're no longer auto-switching to custom mode
+    // Instead, just update the specific property while preserving the preset name
+    
+    if (!this.config.characters || this.config.active_character_index < 0) {
       // Fallback during transition
-      const update = {};
-      update[propName] = value;
-      this.onConfigChange(update);
+      console.log('No active character, updating config property directly');
+      const update: Partial<Config> = {};
+      update[propName as keyof Config] = value;
+      this.onConfigChange(update).finally(() => {
+        // Reset the flag after a delay
+        setTimeout(() => {
+          this.isApplyingChange = false;
+        }, 200);
+      });
       return;
     }
 
-    // Update the property on the active character
-    const updatedChar = {
-      ...this.config.characters[this.config.active_character_index],
-      [propName]: value
-    };
+    // Get the active character
+    const activeIndex = this.config.active_character_index;
+    const activeChar = this.config.characters[activeIndex];
+    
+    if (!activeChar) {
+      console.error(`Active character at index ${activeIndex} not found`);
+      this.isApplyingChange = false;
+      return;
+    }
+    
+    // Create an updatedChar with the new property value
+    const updatedChar: Character = { ...activeChar };
+    
+    // Explicitly set the property
+    (updatedChar as any)[propName] = value;
+    
+    console.log('Updated character:', updatedChar);
 
     // Create a new characters array with the updated character
     const updatedCharacters = [...this.config.characters];
-    updatedCharacters[this.config.active_character_index] = updatedChar;
+    updatedCharacters[activeIndex] = updatedChar;
 
-    // Update the config
-    this.onConfigChange({characters: updatedCharacters});
+    // Update the config with the entire characters array
+    this.onConfigChange({characters: updatedCharacters}).finally(() => {
+      // Reset the flag after a delay
+      setTimeout(() => {
+        this.isApplyingChange = false;
+      }, 200);
+    });
+    
+    // If we're updating a preset property, refresh the UI
+    if (propName === 'personality_preset') {
+      setTimeout(() => {
+        this.loadSettingsFromConfig(this.config!);
+      }, 100);
+    }
   }
 
   // Add new methods to use config values
@@ -1495,6 +1620,8 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   private performCharacterSelection(index: number) {
     if (!this.config) return;
     
+    console.log(`Selecting character at index ${index}`);
+    
     // Exit edit mode directly
     this.editMode = false;
     
@@ -1503,22 +1630,38 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     
     // For saved characters
     if (index >= 0) {
-      // Set the active character in the backend
-      this.configService.setActiveCharacter(index);
+      console.log('Selecting saved character');
       
-      // Load character data
-      this.loadCharacter(index);
+      // Set the active character in the backend
+      this.configService.setActiveCharacter(index).then(() => {
+        console.log('Active character set in backend');
+        
+        // Load character data with a slight delay to ensure the config update is processed
+        setTimeout(() => {
+          this.loadCharacter(index);
+        }, 100);
+      });
     } 
     // For the default character
     else if (index === -1) {
+      console.log('Selecting default character');
+      
       // Reset to default settings
-      this.configService.setActiveCharacter(-1);
+      this.configService.setActiveCharacter(-1).then(() => {
+        console.log('Default character set in backend');
+        
+        // Reset UI to default with a slight delay
+        setTimeout(() => {
+          this.loadSettingsFromConfig(this.config!);
+          this.updatePrompt();
+        }, 100);
+      });
     }
 
     // Ensure edit mode is still off after all operations
     setTimeout(() => {
       this.editMode = false;
-    }, 0);
+    }, 200);
   }
 
   toggleEditMode() {
@@ -1695,51 +1838,49 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
 
   // Helper method to load a character
   private loadCharacter(index: number) {
+    console.log(`Loading character at index ${index}`);
+    
     // Make sure we have a config and the index is valid
     if (!this.config || !this.config.characters || index < 0 || index >= this.config.characters.length) {
+      console.error('Cannot load character: invalid index or missing data');
       return;
     }
     
+    // Set the flag to prevent overriding
+    this.isApplyingChange = true;
+    
     const character = this.config.characters[index];
+    console.log('Character to load:', character);
+    
+    // First, set active_character_index directly in our local config
+    // to prevent race conditions with the backend
+    this.config.active_character_index = index;
     
     // Update the UI to show the character's settings
-    // Create an update object with the character's properties
-    const updateObj: Partial<Config> = {
-      character: character.character,
-      personality_preset: character.personality_preset,
-      personality_verbosity: character.personality_verbosity,
-      personality_vulgarity: character.personality_vulgarity,
-      personality_empathy: character.personality_empathy,
-      personality_formality: character.personality_formality,
-      personality_confidence: character.personality_confidence,
-      personality_ethical_alignment: character.personality_ethical_alignment,
-      personality_moral_alignment: character.personality_moral_alignment,
-      personality_tone: character.personality_tone,
-      personality_character_inspiration: character.personality_character_inspiration,
-      personality_name: character.name,
-      personality_language: character.personality_language,
-      personality_knowledge_pop_culture: character.personality_knowledge_pop_culture,
-      personality_knowledge_scifi: character.personality_knowledge_scifi,
-      personality_knowledge_history: character.personality_knowledge_history
-    };
-    
-    // Also load the TTS voice if it exists in the character config
-    if ('tts_voice' in character) {
-      updateObj.tts_voice = character.tts_voice;
-    }
-    
-    // Also load the TTS speed if it exists in the character config
-    if ('tts_speed' in character) {
-      updateObj.tts_speed = character.tts_speed;
-    }
-    
-    // Also load the TTS prompt if it exists in the character config
-    if ('tts_prompt' in character) {
-      updateObj.tts_prompt = character.tts_prompt;
-    }
-    
-    // Update the config
-    this.onConfigChange(updateObj);
+    // Set only the active_character_index to the backend first
+    this.onConfigChange({active_character_index: index}).then(() => {
+      console.log('Active character index updated in backend');
+      
+      // Now load the settings into the UI model
+      this.loadSettingsFromConfig(this.config!);
+      
+      // For custom preset, don't update the character value
+      if (character.personality_preset !== 'custom') {
+        // Generate a new prompt based on these settings
+        // This will update the character text in the UI
+        setTimeout(() => {
+          this.updatePrompt();
+        }, 100);
+      }
+      
+      // Reset the flag after a delay
+      setTimeout(() => {
+        this.isApplyingChange = false;
+      }, 300);
+    }).catch(error => {
+      console.error('Error loading character:', error);
+      this.isApplyingChange = false;
+    });
   }
 
   // Modify cancelEditMode method for reliability
@@ -1881,76 +2022,134 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   getCharacterProperty<T>(propName: string, defaultValue: T): T {
     const activeChar = this.getActiveCharacter();
     if (activeChar && propName in activeChar) {
-      return activeChar[propName] as unknown as T;
+      // For string type properties, ensure we return the value as a string type
+      // which will make TypeScript happy with string literal comparisons
+      return (activeChar as any)[propName] as T;
     }
     // Fallback to direct config property during transition period
     if (this.config && propName in this.config) {
-      return this.config[propName] as unknown as T;
+      return (this.config as any)[propName] as T;
     }
     return defaultValue;
+  }
+
+  // Helper method to check if personality preset is custom
+  isCustomPreset(): boolean {
+    // Get the value and convert it to string explicitly for comparison
+    const value = this.getCharacterProperty('personality_preset', 'default');
+    // Use String() to ensure we're working with a string type
+    return String(value) === 'custom';
+  }
+  
+  // Add a method to handle trait changes that will update the character prompt
+  onTraitChange(traitName: string, value: any): void {
+    if (!this.config) return;
+    
+    console.log(`Trait changed: ${traitName} = ${value}`);
+    
+    // Determine if this is a personality trait that should update the prompt
+    const isPersonalityTrait = traitName.startsWith('personality_') || 
+      ['verbosity', 'tone', 'vulgarity', 'empathy', 'formality', 'confidence', 
+       'ethical_alignment', 'moral_alignment', 'character_inspiration',
+       'knowledge_pop_culture', 'knowledge_scifi', 'knowledge_history'].includes(traitName);
+    
+    // Special case for 'name' which should be handled differently
+    if (traitName === 'name') {
+      this.updateActiveCharacterProperty('name', value);
+      return;
+    }
+    
+    // For traits that might not be prefixed with 'personality_'
+    let propName = traitName;
+    if (isPersonalityTrait && !traitName.startsWith('personality_')) {
+      propName = `personality_${traitName}`;
+    }
+    
+    // Update the property
+    this.updateActiveCharacterProperty(propName, value);
+    
+    // Only update the prompt automatically for personality traits that affect the character's behavior
+    if (isPersonalityTrait) {
+      // Then update the prompt with a slight delay to ensure the property is saved first
+      setTimeout(() => {
+        this.updatePrompt();
+      }, 100);
+    }
   }
 
   // Modify applyPersonalityPreset to work with the active character
   applyPersonalityPreset(preset: string): void {
     if (!this.config) return;
     
-    // First update the settings in the UI
-    this.applySettingsFromPreset(preset);
+    console.log('Applying personality preset:', preset);
     
-    // Then save the preset selection and all the updated values
-    if (preset !== 'custom') {
-      // Use the active character if available
-      const activeChar = this.getActiveCharacter();
+    // Set the flag to prevent overriding
+    this.isApplyingChange = true;
+    
+    // First update the UI settings model to show preset defaults
+    this.applySettingsFromPreset(preset);
+    console.log('Applied preset to UI settings:', this.settings);
+    
+    // Then save the preset selection to the character
+    const activeChar = this.getActiveCharacter();
+    const activeIndex = this.config.active_character_index;
+    
+    if (activeChar && activeIndex >= 0) {
+      // Update all the personality properties based on the preset
+      const updatedCharacter = { ...activeChar };
+      updatedCharacter.personality_preset = preset;
       
-      if (activeChar && this.config.active_character_index >= 0) {
-        // Create a copy of the active character with updated values
-        const updatedChar: Character = {
-          ...activeChar,
-          personality_preset: preset,
-          personality_verbosity: this.settings.verbosity,
-          personality_tone: this.settings.tone,
-          personality_knowledge_pop_culture: this.settings.knowledge.popCulture,
-          personality_knowledge_scifi: this.settings.knowledge.scifi,
-          personality_knowledge_history: this.settings.knowledge.history,
-          personality_character_inspiration: this.settings.characterInspiration,
-          personality_vulgarity: this.settings.vulgarity,
-          personality_empathy: this.settings.empathy,
-          personality_formality: this.settings.formality,
-          personality_confidence: this.settings.confidence,
-          personality_ethical_alignment: this.settings.ethicalAlignment,
-          personality_moral_alignment: this.settings.moralAlignment
-        };
-        
-        // Create a new characters array with the updated character
-        const updatedCharacters = [...this.config.characters];
-        updatedCharacters[this.config.active_character_index] = updatedChar;
-        
-        // Update the config
-        this.onConfigChange({characters: updatedCharacters});
-      } else {
-        // Fallback for transition: update top-level properties
-        this.onConfigChange({
-          personality_preset: preset,
-          personality_verbosity: this.settings.verbosity,
-          personality_tone: this.settings.tone,
-          personality_knowledge_pop_culture: this.settings.knowledge.popCulture,
-          personality_knowledge_scifi: this.settings.knowledge.scifi,
-          personality_knowledge_history: this.settings.knowledge.history,
-          personality_character_inspiration: this.settings.characterInspiration,
-          personality_vulgarity: this.settings.vulgarity,
-          personality_empathy: this.settings.empathy,
-          personality_formality: this.settings.formality,
-          personality_confidence: this.settings.confidence,
-          personality_ethical_alignment: this.settings.ethicalAlignment,
-          personality_moral_alignment: this.settings.moralAlignment
-        });
+      // Only update these properties if we're not in custom mode
+      if (preset !== 'custom') {
+        updatedCharacter.personality_verbosity = this.settings.verbosity;
+        updatedCharacter.personality_tone = this.settings.tone;
+        updatedCharacter.personality_knowledge_pop_culture = this.settings.knowledge.popCulture;
+        updatedCharacter.personality_knowledge_scifi = this.settings.knowledge.scifi;
+        updatedCharacter.personality_knowledge_history = this.settings.knowledge.history;
+        updatedCharacter.personality_character_inspiration = this.settings.characterInspiration;
+        updatedCharacter.personality_vulgarity = this.settings.vulgarity;
+        updatedCharacter.personality_empathy = this.settings.empathy;
+        updatedCharacter.personality_formality = this.settings.formality;
+        updatedCharacter.personality_confidence = this.settings.confidence;
+        updatedCharacter.personality_ethical_alignment = this.settings.ethicalAlignment;
+        updatedCharacter.personality_moral_alignment = this.settings.moralAlignment;
       }
       
-      // Generate a new prompt when explicitly changing presets
-      this.updatePrompt();
+      // Create a new characters array with the updated character
+      const updatedCharacters = [...this.config.characters];
+      updatedCharacters[activeIndex] = updatedCharacter;
+      
+      // Update the config with all character properties at once
+      this.onConfigChange({characters: updatedCharacters}).then(() => {
+        // Generate the character prompt after the properties are updated
+        if (preset !== 'custom') {
+          setTimeout(() => {
+            this.updatePrompt();
+            this.isApplyingChange = false;
+          }, 200);
+        } else {
+          this.isApplyingChange = false;
+        }
+      });
     } else {
-      // Save the preset selection for custom mode
-      this.updateActiveCharacterProperty('personality_preset', preset);
+      // Fallback for transition: update top-level property
+      if (preset !== 'custom') {
+        this.onConfigChange({
+          personality_preset: preset
+        }).then(() => {
+          // Wait for the change to apply, then update the prompt
+          setTimeout(() => {
+            this.updatePrompt();
+            this.isApplyingChange = false;
+          }, 200);
+        });
+      } else {
+        this.onConfigChange({
+          personality_preset: preset
+        }).finally(() => {
+          this.isApplyingChange = false;
+        });
+      }
     }
   }
 }

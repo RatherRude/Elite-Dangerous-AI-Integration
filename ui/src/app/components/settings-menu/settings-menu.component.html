@@ -187,7 +187,7 @@
                                             <input matInput
                                                 [ngModel]="getCharacterProperty('personality_language', 'English')"
                                                 [ngModelOptions]="{updateOn: 'blur'}"
-                                                (ngModelChange)="updateActiveCharacterProperty('personality_language', $event)">
+                                                (ngModelChange)="onTraitChange('personality_language', $event)">
                                         </mat-form-field>
                                     </div>
                                     <div class="trait-select">
@@ -196,7 +196,7 @@
                                             <mat-label>Voice</mat-label>
                                             @if (config.tts_provider === 'openai') {
                                                 <mat-select [ngModel]="getCharacterProperty('tts_voice', config.tts_voice)"
-                                                        (ngModelChange)="updateActiveCharacterProperty('tts_voice', $event)">
+                                                        (ngModelChange)="onTraitChange('tts_voice', $event)">
                                                     <mat-option value="alloy">Alloy - Neutral, versatile voice</mat-option>
                                                     <mat-option value="ash">Ash - New voice</mat-option>
                                                     <mat-option value="ballad">Ballad - New voice</mat-option>
@@ -245,7 +245,7 @@
                                                 </mat-select>
                                             } @else {
                                                 <input matInput [ngModel]="getCharacterProperty('tts_voice', config.tts_voice)"
-                                                    (ngModelChange)="updateActiveCharacterProperty('tts_voice', $event)">
+                                                    (ngModelChange)="onTraitChange('tts_voice', $event)">
                                             }
                                         </mat-form-field>
                                     </div>
@@ -256,7 +256,7 @@
                                                 <mat-form-field>
                                                     <mat-label>Speed</mat-label>
                                                     <input matInput [ngModel]="getCharacterProperty('tts_speed', config.tts_speed)"
-                                                           (ngModelChange)="updateActiveCharacterProperty('tts_speed', $event)">
+                                                           (ngModelChange)="onTraitChange('tts_speed', $event)">
                                                 </mat-form-field>
                                             </div>
                                         }
@@ -269,7 +269,7 @@
                                                 <mat-form-field>
                                                     <mat-label>Voice Tone Instructions</mat-label>
                                                     <textarea matInput [ngModel]="getCharacterProperty('tts_prompt', config.tts_prompt)"
-                                                            (ngModelChange)="updateActiveCharacterProperty('tts_prompt', $event)"></textarea>
+                                                            (ngModelChange)="onTraitChange('tts_prompt', $event)"></textarea>
 
                                                 </mat-form-field>
                                             </div>
@@ -328,7 +328,7 @@
                             </div>
                             
                             <!-- Character settings when preset is not custom -->
-                            @if (getCharacterProperty('personality_preset', 'default') !== 'custom') {
+                            @if (!isCustomPreset()) {
                                 <div class="personality-settings">
                                     <div class="trait-container">
                                         <!-- Character Inspiration -->
@@ -338,7 +338,7 @@
                                                 <input matInput
                                                     [ngModel]="getCharacterProperty('personality_character_inspiration', '')"
                                                     [ngModelOptions]="{updateOn: 'blur'}"
-                                                    (ngModelChange)="updateActiveCharacterProperty('personality_character_inspiration', $event); updatePrompt()">
+                                                    (ngModelChange)="onTraitChange('character_inspiration', $event)">
                                             </mat-form-field>
                                         </div>
                                     </div>
@@ -349,7 +349,7 @@
                                             <mat-form-field appearance="outline">
                                                 <mat-label>Verbosity</mat-label>
                                                 <mat-select [ngModel]="getCharacterProperty('personality_verbosity', 50)"
-                                                    (ngModelChange)="updateActiveCharacterProperty('personality_verbosity', $event); updatePrompt()">
+                                                    (ngModelChange)="onTraitChange('verbosity', $event)">
                                                     <mat-option [value]="0">Minimal</mat-option>
                                                     <mat-option [value]="25">Brief</mat-option>
                                                     <mat-option [value]="50">Balanced</mat-option>
@@ -364,7 +364,7 @@
                                             <mat-form-field appearance="outline">
                                                 <mat-label>Tone</mat-label>
                                                 <mat-select [ngModel]="getCharacterProperty('personality_tone', 'serious')"
-                                                    (ngModelChange)="updateActiveCharacterProperty('personality_tone', $event); updatePrompt()">
+                                                    (ngModelChange)="onTraitChange('tone', $event)">
                                                     <mat-option value="serious">Serious</mat-option>
                                                     <mat-option value="humorous">Humorous</mat-option>
                                                     <mat-option value="sarcastic">Sarcastic</mat-option>
@@ -377,7 +377,7 @@
                                             <mat-form-field appearance="outline">
                                                 <mat-label>Vulgarity</mat-label>
                                                 <mat-select [ngModel]="getCharacterProperty('personality_vulgarity', 0)"
-                                                    (ngModelChange)="updateActiveCharacterProperty('personality_vulgarity', $event); updatePrompt()">
+                                                    (ngModelChange)="onTraitChange('vulgarity', $event)">
                                                     <mat-option [value]="0">None</mat-option>
                                                     <mat-option [value]="25">Mild</mat-option>
                                                     <mat-option [value]="50">Moderate</mat-option>
@@ -394,7 +394,7 @@
                                             <mat-form-field appearance="outline">
                                                 <mat-label>Empathy</mat-label>
                                                 <mat-select [ngModel]="getCharacterProperty('personality_empathy', 50)"
-                                                    (ngModelChange)="updateActiveCharacterProperty('personality_empathy', $event); updatePrompt()">
+                                                    (ngModelChange)="onTraitChange('empathy', $event)">
                                                     <mat-option [value]="0">Cold</mat-option>
                                                     <mat-option [value]="25">Detached</mat-option>
                                                     <mat-option [value]="50">Balanced</mat-option>
@@ -409,7 +409,7 @@
                                             <mat-form-field appearance="outline">
                                                 <mat-label>Formality</mat-label>
                                                 <mat-select [ngModel]="getCharacterProperty('personality_formality', 50)"
-                                                    (ngModelChange)="updateActiveCharacterProperty('personality_formality', $event); updatePrompt()">
+                                                    (ngModelChange)="onTraitChange('formality', $event)">
                                                     <mat-option [value]="0">Casual</mat-option>
                                                     <mat-option [value]="25">Relaxed</mat-option>
                                                     <mat-option [value]="50">Balanced</mat-option>
@@ -424,7 +424,7 @@
                                             <mat-form-field appearance="outline">
                                                 <mat-label>Confidence</mat-label>
                                                 <mat-select [ngModel]="getCharacterProperty('personality_confidence', 50)"
-                                                    (ngModelChange)="updateActiveCharacterProperty('personality_confidence', $event); updatePrompt()">
+                                                    (ngModelChange)="onTraitChange('confidence', $event)">
                                                     <mat-option [value]="0">Uncertain</mat-option>
                                                     <mat-option [value]="25">Tentative</mat-option>
                                                     <mat-option [value]="50">Balanced</mat-option>
@@ -441,7 +441,7 @@
                                             <mat-form-field appearance="outline">
                                                 <mat-label>Ethical Alignment</mat-label>
                                                 <mat-select [ngModel]="getCharacterProperty('personality_ethical_alignment', 'neutral')"
-                                                    (ngModelChange)="updateActiveCharacterProperty('personality_ethical_alignment', $event); updatePrompt()">
+                                                    (ngModelChange)="onTraitChange('ethical_alignment', $event)">
                                                     <mat-option value="lawful">Lawful (Order, Rules, Structure)</mat-option>
                                                     <mat-option value="neutral">Neutral (Balance, Pragmatism)</mat-option>
                                                     <mat-option value="chaotic">Chaotic (Freedom, Flexibility, Spontaneity)</mat-option>
@@ -454,7 +454,7 @@
                                             <mat-form-field appearance="outline">
                                                 <mat-label>Moral Alignment</mat-label>
                                                 <mat-select [ngModel]="getCharacterProperty('personality_moral_alignment', 'neutral')"
-                                                    (ngModelChange)="updateActiveCharacterProperty('personality_moral_alignment', $event); updatePrompt()">
+                                                    (ngModelChange)="onTraitChange('moral_alignment', $event)">
                                                     <mat-option value="good">Good (Altruism, Compassion)</mat-option>
                                                     <mat-option value="neutral">Neutral (Self-Interest, Balance)</mat-option>
                                                     <mat-option value="evil">Evil (Selfishness, Ruthlessness)</mat-option>
@@ -468,11 +468,11 @@
                                         <label class="knowledge-label">Knowledge Areas</label>
                                         <div class="knowledge-checkboxes">
                                             <mat-checkbox [ngModel]="getCharacterProperty('personality_knowledge_pop_culture', false)"
-                                                        (ngModelChange)="updateActiveCharacterProperty('personality_knowledge_pop_culture', $event); updatePrompt()">Pop Culture</mat-checkbox>
+                                                        (ngModelChange)="onTraitChange('knowledge_pop_culture', $event)">Pop Culture</mat-checkbox>
                                             <mat-checkbox [ngModel]="getCharacterProperty('personality_knowledge_scifi', false)"
-                                                        (ngModelChange)="updateActiveCharacterProperty('personality_knowledge_scifi', $event); updatePrompt()">Sci-Fi</mat-checkbox>
+                                                        (ngModelChange)="onTraitChange('knowledge_scifi', $event)">Sci-Fi</mat-checkbox>
                                             <mat-checkbox [ngModel]="getCharacterProperty('personality_knowledge_history', false)"
-                                                        (ngModelChange)="updateActiveCharacterProperty('personality_knowledge_history', $event); updatePrompt()">History</mat-checkbox>
+                                                        (ngModelChange)="onTraitChange('knowledge_history', $event)">History</mat-checkbox>
                                         </div>
                                     </div>
                                 </div>
@@ -482,8 +482,8 @@
                             <mat-form-field>
                                 <mat-label>Character</mat-label>
                                 <textarea matInput [ngModel]="getCharacterProperty('character', '')"
-                                        (ngModelChange)="updateActiveCharacterProperty('character', $event)"
-                                        [readonly]="getCharacterProperty('personality_preset', 'default') !== 'custom'"
+                                        (ngModelChange)="onTraitChange('character', $event)"
+                                        [readonly]="!isCustomPreset()"
                                         rows="10"></textarea>
                             </mat-form-field>
                         </div>
@@ -858,7 +858,7 @@
                         <mat-form-field>
                             <mat-label>TTS Voice</mat-label>
                             <mat-select [ngModel]="getCharacterProperty('tts_voice', config.tts_voice)"
-                                      (ngModelChange)="updateActiveCharacterProperty('tts_voice', $event)">
+                                      (ngModelChange)="onTraitChange('tts_voice', $event)">
                                 <mat-option value="alloy">Alloy - Neutral, versatile voice</mat-option>
                                 <mat-option value="ash">Ash - New voice</mat-option>
                                 <mat-option value="ballad">Ballad - New voice</mat-option>
@@ -875,7 +875,7 @@
                         <mat-form-field>
                             <mat-label>TTS Speed</mat-label>
                             <input matInput [ngModel]="getCharacterProperty('tts_speed', config.tts_speed)"
-                                   (ngModelChange)="updateActiveCharacterProperty('tts_speed', $event)">
+                                   (ngModelChange)="onTraitChange('tts_speed', $event)">
                         </mat-form-field>
                         }
                         <mat-form-field>
@@ -889,7 +889,7 @@
                         <mat-form-field>
                             <mat-label>Voice Tone Instructions</mat-label>
                             <textarea matInput [ngModel]="getCharacterProperty('tts_prompt', config.tts_prompt)"
-                                   (ngModelChange)="updateActiveCharacterProperty('tts_prompt', $event)"></textarea>
+                                   (ngModelChange)="onTraitChange('tts_prompt', $event)"></textarea>
 
                         </mat-form-field>
                         }
@@ -935,7 +935,7 @@
                         <mat-form-field>
                             <mat-label>TTS Speed</mat-label>
                             <input matInput [ngModel]="getCharacterProperty('tts_speed', config.tts_speed)"
-                                   (ngModelChange)="updateActiveCharacterProperty('tts_speed', $event)">
+                                   (ngModelChange)="onTraitChange('tts_speed', $event)">
                         </mat-form-field>
                     }
                     @if (config.tts_provider === "local-ai-server") {
@@ -947,12 +947,12 @@
                         <mat-form-field>
                             <mat-label>TTS Voice</mat-label>
                             <input matInput [ngModel]="getCharacterProperty('tts_voice', config.tts_voice)"
-                                   (ngModelChange)="updateActiveCharacterProperty('tts_voice', $event)">
+                                   (ngModelChange)="onTraitChange('tts_voice', $event)">
                         </mat-form-field>
                         <mat-form-field>
                             <mat-label>TTS Speed</mat-label>
                             <input matInput [ngModel]="getCharacterProperty('tts_speed', config.tts_speed)"
-                                   (ngModelChange)="updateActiveCharacterProperty('tts_speed', $event)">
+                                   (ngModelChange)="onTraitChange('tts_speed', $event)">
                         </mat-form-field>
                     }
                     @if (config.tts_provider === "custom") {
@@ -969,12 +969,12 @@
                         <mat-form-field>
                             <mat-label>TTS Voice</mat-label>
                             <input matInput [ngModel]="getCharacterProperty('tts_voice', config.tts_voice)"
-                                   (ngModelChange)="updateActiveCharacterProperty('tts_voice', $event)">
+                                   (ngModelChange)="onTraitChange('tts_voice', $event)">
                         </mat-form-field>
                         <mat-form-field>
                             <mat-label>TTS Speed</mat-label>
                             <input matInput [ngModel]="getCharacterProperty('tts_speed', config.tts_speed)"
-                                   (ngModelChange)="updateActiveCharacterProperty('tts_speed', $event)">
+                                   (ngModelChange)="onTraitChange('tts_speed', $event)">
                         </mat-form-field>
                         <mat-form-field>
                             <mat-label>Override TTS API Key</mat-label>

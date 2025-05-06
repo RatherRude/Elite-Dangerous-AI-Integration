@@ -70,6 +70,9 @@ export interface Character {
     tts_voice?: string;
     tts_speed?: string;
     tts_prompt?: string;
+    
+    // Add index signature to allow string indexing
+    [key: string]: string | number | boolean | undefined;
 }
 
 export interface Config {
@@ -144,6 +147,9 @@ export interface Config {
     ed_journal_path: string;
     ed_appdata_path: string;
     reset_game_events?: boolean; // Flag to request resetting game events to defaults
+    
+    // Add index signature to allow string indexing
+    [key: string]: string | number | boolean | Character[] | { [key: string]: boolean } | undefined;
 }
 
 @Injectable({

@@ -337,10 +337,8 @@ class Config(TypedDict):
     llm_api_key: str
     llm_endpoint: str
     commander_name: str
-    # Stored characters
     characters: List[Character]
     active_character_index: int
-    # Other config settings
     llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom', 'local-ai-server']
     llm_model_name: str
     llm_custom: dict[str, str]
@@ -443,7 +441,7 @@ def migrate(data: dict) -> dict:
         
         # If we have a character name, create a character entry
         character = {
-            "name": data.get('personality_name', 'Custom'),
+            "name": 'Migrated',
             "character": data.get('character', ''),
             "personality_preset": data.get('personality_preset', 'custom'),
             "personality_verbosity": data.get('personality_verbosity', 50),
