@@ -2069,9 +2069,9 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       personality_knowledge_pop_culture: false,
       personality_knowledge_scifi: false,
       personality_knowledge_history: false,
-      tts_voice: this.config.tts_voice || '', 
-      tts_speed: this.config.tts_speed || '1.2',
-      tts_prompt: this.config.tts_prompt || ''
+      tts_voice: this.config.tts_voice == 'en-GB-SoniaNeural' ? 'en-US-AvaMultilingualNeural' : this.config.tts_voice || '',
+      tts_speed: '1.2',
+      tts_prompt: ''
     };
     
     // Add event reaction properties with defaults using bracket notation
@@ -2456,4 +2456,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       this.snackBar.open('Error duplicating character', 'OK', { duration: 5000 });
     });
   }
+
+    protected readonly String = String;
 }

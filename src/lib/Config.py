@@ -330,6 +330,16 @@ class Character(TypedDict, total=False):
     tts_voice: str
     tts_speed: str
     tts_prompt: str
+    game_events: dict[str, bool]
+    event_reaction_enabled_var: bool
+    react_to_text_local_var: bool
+    react_to_text_starsystem_var: bool
+    react_to_text_npc_var: bool
+    react_to_text_squadron_var: bool
+    react_to_material: str
+    react_to_danger_mining_var: bool
+    react_to_danger_onfoot_var: bool
+    react_to_danger_supercruise_var: bool
 
 
 class Config(TypedDict):
@@ -361,24 +371,14 @@ class Config(TypedDict):
     ptt_var: bool
     mute_during_response_var: bool
     continue_conversation_var: bool
-    event_reaction_enabled_var: bool
     game_actions_var: bool
     web_search_actions_var: bool
     use_action_cache_var: bool
-    react_to_text_local_var: bool
-    react_to_text_starsystem_var: bool
-    react_to_text_npc_var: bool
-    react_to_text_squadron_var: bool
-    react_to_material: str
-    react_to_danger_mining_var: bool
-    react_to_danger_onfoot_var: bool
-    react_to_danger_supercruise_var: bool
     edcopilot: bool
     edcopilot_dominant: bool
     ptt_key: str
     input_device_name: str
     output_device_name: str
-    game_events: dict[str, bool]
     cn_autostart: bool
     ed_journal_path: str
     ed_appdata_path: str
@@ -459,12 +459,38 @@ def migrate(data: dict) -> dict:
             "personality_knowledge_history": data.get('personality_knowledge_history', False),
             "tts_voice": data.get('tts_voice', 'en-US-AvaMultilingualNeural'),
             "tts_speed": data.get('tts_speed', "1.2"),
-            "tts_prompt": data.get('tts_prompt', "")
+            "tts_prompt": data.get('tts_prompt', ""),
+            "game_events": game_events,
+            "event_reaction_enabled_var": True,
+            "react_to_text_local_var": True,
+            "react_to_text_starsystem_var": True,
+            "react_to_text_npc_var": False,
+            "react_to_text_squadron_var": True,
+            "react_to_material": 'opal, diamond, alexandrite',
+            "react_to_danger_mining_var": False,
+            "react_to_danger_onfoot_var": False,
+            "react_to_danger_supercruise_var": False
         }
         print(f"Created character from existing settings: {character['name']}")
         data['characters'].append(character)
         data['active_character_index'] = 0
-        data['personality_preset'] = 'custom'
+
+        data.pop('character', None)
+        data.pop('personality_preset', None)
+        data.pop('personality_verbosity', None)
+        data.pop('personality_vulgarity', None)
+        data.pop('personality_empathy', None)
+        data.pop('personality_formality', None)
+        data.pop('personality_confidence', None)
+        data.pop('personality_ethical_alignment', None)
+        data.pop('personality_moral_alignment', None)
+        data.pop('personality_tone', None)
+        data.pop('personality_character_inspiration', None)
+        data.pop('personality_language', None)
+        data.pop('personality_name', None)
+        data.pop('personality_knowledge_pop_culture', None)
+        data.pop('personality_knowledge_scifi', None)
+        data.pop('personality_knowledge_history', None)
 
     # Ensure default values are properly set
     if 'commander_name' not in data or data['commander_name'] is None:

@@ -34,15 +34,15 @@ class Chat:
         self.config = config # todo: remove
         if self.config["api_key"] == '':
             self.config["api_key"] = '-'
-        character = self.config['characters'][self.config['active_character_index']]
+        self.character = self.config['characters'][self.config['active_character_index']]
 
-        self.voice_instructions = character["tts_prompt"]
+        self.voice_instructions = self.character["tts_prompt"]
 
-        self.backstory = character["character"].replace("{commander_name}", self.config['commander_name'])
+        self.backstory = self.character["character"].replace("{commander_name}", self.config['commander_name'])
 
         self.enabled_game_events: list[str] = []
-        if self.config["event_reaction_enabled_var"]:
-            for event, state in self.config["game_events"].items():
+        if self.character["event_reaction_enabled_var"]:
+            for event, state in self.character["game_events"].items():
                 if state:
                     self.enabled_game_events.append(event)
 
@@ -92,7 +92,7 @@ class Chat:
             )
             
         tts_provider = 'none' if self.config["edcopilot_dominant"] else self.config["tts_provider"]
-        self.tts = TTS(openai_client=self.ttsClient, provider=tts_provider, model=self.config["tts_model_name"], voice=character["tts_voice"], voice_instructions=character["tts_prompt"], speed=character["tts_speed"], output_device=self.config["output_device_name"])
+        self.tts = TTS(openai_client=self.ttsClient, provider=tts_provider, model=self.config["tts_model_name"], voice=self.character["tts_voice"], voice_instructions=self.character["tts_prompt"], speed=self.character["tts_speed"], output_device=self.config["output_device_name"])
         self.stt = STT(openai_client=self.sttClient, provider=self.config["stt_provider"], input_device_name=self.config["input_device_name"], model=self.config["stt_model_name"], custom_prompt=self.config["stt_custom_prompt"], required_word=self.config["stt_required_word"])
 
         log("debug", "Initializing SystemDatabase...")
@@ -102,7 +102,7 @@ class Chat:
         log("debug", "Initializing status parser...")
         self.status_parser = StatusParser(get_ed_journals_path(config))
         log("debug", "Initializing prompt generator...")
-        self.prompt_generator = PromptGenerator(self.config["commander_name"], character["character"], important_game_events=self.enabled_game_events, system_db=self.system_database)
+        self.prompt_generator = PromptGenerator(self.config["commander_name"], self.character["character"], important_game_events=self.enabled_game_events, system_db=self.system_database)
         log("debug", "Initializing event manager...")
         self.event_manager = EventManager(
             game_events=self.enabled_game_events,
@@ -249,14 +249,14 @@ class Chat:
             if isinstance(event, GameEvent) and event.content.get("event") in self.enabled_game_events:
                 if event.content.get("event") == "ReceiveText":
                     if event.content.get("Channel") not in ['wing', 'voicechat', 'friend', 'player'] and (
-                        (not self.config["react_to_text_local_var"] and event.content.get("Channel") == 'local') or
-                        (not self.config["react_to_text_starsystem_var"] and event.content.get("Channel") == 'starsystem') or
-                        (not self.config["react_to_text_npc_var"] and event.content.get("Channel") == 'npc') or
-                        (not self.config["react_to_text_squadron_var"] and event.content.get("Channel") == 'squadron')):
+                        (not self.character["react_to_text_local_var"] and event.content.get("Channel") == 'local') or
+                        (not self.character["react_to_text_starsystem_var"] and event.content.get("Channel") == 'starsystem') or
+                        (not self.character["react_to_text_npc_var"] and event.content.get("Channel") == 'npc') or
+                        (not self.character["react_to_text_squadron_var"] and event.content.get("Channel") == 'squadron')):
                         continue
 
                 if event.content.get("event") == "ProspectedAsteroid":
-                    chunks = [chunk.strip() for chunk in self.config["react_to_material"].split(",")]
+                    chunks = [chunk.strip() for chunk in self.character["react_to_material"].split(",")]
                     contains_material = False
                     for chunk in chunks:
                         for material in event.content.get("Materials"):
@@ -276,13 +276,13 @@ class Chat:
 
             if isinstance(event, StatusEvent) and event.status.get("event") in self.enabled_game_events:
                 if event.status.get("event") in ["InDanger", "OutOfDanger"]:
-                    if not self.config["react_to_danger_mining_var"]:
+                    if not self.character["react_to_danger_mining_var"]:
                         if states.get('ShipInfo', {}).get('IsMiningShip', False) and states.get('Location', {}).get('PlanetaryRing', False):
                             continue
-                    if not self.config["react_to_danger_onfoot_var"]:
+                    if not self.character["react_to_danger_onfoot_var"]:
                         if states.get('CurrentStatus', {}).get('flags2').get('OnFoot'):
                             continue
-                    if not self.config["react_to_danger_supercruise_var"]:
+                    if not self.character["react_to_danger_supercruise_var"]:
                         if states.get('CurrentStatus', {}).get('flags').get('Supercruise') and len(states.get('NavInfo', {"NavRoute": []}).get('NavRoute', [])):
                             continue
                 return True
@@ -309,8 +309,8 @@ class Chat:
         log('info', f"Using Push-to-Talk: {self.config['ptt_var']}")
         log('info', f"Using Function Calling: {self.config['tools_var']}")
         log('info', f"Current model: {self.config['llm_model_name']}")
-        log('info', f"Current TTS voice: {self.config['tts_voice']}")
-        log('info', f"Current TTS Speed: {self.config['tts_speed']}")
+        log('info', f"Current TTS voice: {self.character['tts_voice']}")
+        log('info', f"Current TTS Speed: {self.character['tts_speed']}")
         log('info', "Current backstory: " + self.backstory)
 
         # TTS Setup

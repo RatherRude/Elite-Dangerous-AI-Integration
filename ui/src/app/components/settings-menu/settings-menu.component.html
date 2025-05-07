@@ -129,10 +129,10 @@
                                         <mat-option [value]="-1">Default Character</mat-option>
                                         <mat-divider *ngIf="config.characters && config.characters.length > 0"></mat-divider>
                                         <mat-option *ngFor="let character of config.characters; let i = index" [value]="i">
-                                            {{ character.name }} 
+                                            {{ character.name }} ({{ character.tts_voice }})
                                             <span class="char-details">
-                                                ({{ character.personality_preset }} - 
-                                                {{ countActiveEvents(character) }} active events)
+                                                {{ character.personality_preset | slice:0:1 | uppercase }}{{ character.personality_preset | slice:1 }} -
+                                                {{ countActiveEvents(character) }} active events
                                             </span>
                                         </mat-option>
                                     </mat-select>

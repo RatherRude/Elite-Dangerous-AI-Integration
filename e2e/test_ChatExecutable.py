@@ -40,7 +40,7 @@ default_config = {
     'tts_model_name': "edge-tts",
     'tts_endpoint': "",
     'tts_api_key': "",
-    'tts_voice': "en-GB-SoniaNeural",
+    'tts_voice': "en-US-AvaMultilingualNeural",
     'tts_speed': "1.2",
     'react_to_text_local_var': True,
     'react_to_text_npc_var': False,
