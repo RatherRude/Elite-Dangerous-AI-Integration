@@ -382,6 +382,8 @@ class Config(TypedDict):
     cn_autostart: bool
     ed_journal_path: str
     ed_appdata_path: str
+    qol_autobrak: bool  # Quality of life: Auto brake when approaching stations
+    qol_autoscan: bool  # Quality of life: Auto scan when entering new systems
 
 
 def get_cn_appdata_path() -> str:
@@ -607,7 +609,9 @@ def load_config() -> Config:
         'react_to_danger_onfoot_var': False,
         'react_to_danger_supercruise_var': False,
         "ed_journal_path": "",
-        "ed_appdata_path": ""
+        "ed_appdata_path": "",
+        "qol_autobrak": False,  # Quality of life: Auto brake when approaching stations
+        "qol_autoscan": False   # Quality of life: Auto scan when entering new systems
     }
     try:
         print("Loading configuration file")

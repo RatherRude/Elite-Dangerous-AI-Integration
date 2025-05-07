@@ -149,6 +149,8 @@ export interface Config {
     ed_journal_path: string;
     ed_appdata_path: string;
     reset_game_events?: boolean; // Flag to request resetting game events to defaults
+    qol_autobrak: boolean; // Quality of life: Auto brake when approaching stations
+    qol_autoscan: boolean; // Quality of life: Auto scan when entering new systems
     
     // Add index signature to allow string indexing
     [key: string]: string | number | boolean | Character[] | { [key: string]: boolean } | undefined;

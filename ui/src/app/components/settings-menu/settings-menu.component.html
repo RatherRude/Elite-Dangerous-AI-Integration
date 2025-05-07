@@ -638,7 +638,6 @@
                     </mat-slide-toggle>
                     <p>Web actions are performed by the AI on your behalf and allow you to search the web for
                         information, like searching for stations selling a specific commodity or material.</p>
-
                     <mat-slide-toggle [ngModel]="config.tools_var && config.use_action_cache_var"
                                       (ngModelChange)="onConfigChange({use_action_cache_var: $event})"
                                       [disabled]="!config.tools_var">
@@ -646,6 +645,17 @@
                     </mat-slide-toggle>
                     <p>The action cache allows the AI to learn from previous interactions and reuse actions for similar
                         inputs, making responses faster and more consistent.</p>
+                    <!--<h2>Quality of Life</h2>
+                    <mat-slide-toggle [ngModel]="config.qol_autobrak"
+                                      (ngModelChange)="onConfigChange({qol_autobrak: $event})">
+                        Auto Brake
+                    </mat-slide-toggle>
+                    <p>Automatically brake when when entering a new star system.</p>
+                    <mat-slide-toggle [ngModel]="config.qol_autoscan"
+                                      (ngModelChange)="onConfigChange({qol_autoscan: $event})">
+                        Auto Scan
+                    </mat-slide-toggle>
+                    <p>Automatically perform a system scan when entering a new star system.</p>-->
                 </div>
             }
         </div>
