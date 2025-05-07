@@ -2985,7 +2985,7 @@ class PromptGenerator:
                     is_important = is_pending and event.status.get('event') in self.important_game_events
                     message = self.status_messages(event, time_offset, is_important)
                     if message:
-                        conversational_pieces.append()
+                        conversational_pieces.append(message)
 
             if isinstance(event, ConversationEvent) and event.kind in ['user', 'assistant']:
                 conversational_pieces.append(self.conversation_message(event))
