@@ -394,10 +394,67 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Update event config for specific game events
   async onEventConfigChange(section: string, event: string, enabled: boolean) {
-    if (this.config) {
-      console.log("onEventConfigChange", section, event, enabled);
-      await this.configService.changeEventConfig(section, event, enabled);
+    if (!this.config) return;
+    
+    console.log(`Changing event: ${event} to ${enabled}`);
+    
+    const activeChar = this.getActiveCharacter();
+    const activeIndex = this.config.active_character_index;
+    
+    if (activeChar && activeIndex >= 0) {
+      try {
+        // Get the current game events or create a new empty object
+        let gameEvents: Record<string, boolean> = {};
+        
+        // If character already has game_events, make a deep copy
+        if (activeChar['game_events']) {
+          gameEvents = JSON.parse(JSON.stringify(activeChar['game_events']));
+          console.log('Existing game events before update:', gameEvents);
+        } else {
+          console.log('No existing game events, creating a new object');
+        }
+        
+        // Update the specific event without section prefix
+        gameEvents[event] = enabled;
+        console.log(`Updated game events:`, gameEvents);
+        
+        // Create a deep copy of the character
+        const updatedChar = JSON.parse(JSON.stringify(activeChar));
+        
+        // Set the updated game_events object
+        updatedChar['game_events'] = gameEvents;
+        
+        // Create a new characters array with the updated character
+        const updatedCharacters = [...this.config.characters];
+        updatedCharacters[activeIndex] = updatedChar;
+        
+        // Update the config with the entire characters array
+        await this.configService.updateCharacter(activeIndex, updatedChar);
+        console.log(`Character saved with updated game events:`, updatedChar['game_events']);
+        
+        // Update our local config to match
+        this.config.characters = updatedCharacters;
+        
+        // Directly refresh the UI to reflect the change
+        this.filterEvents(this.eventSearchQuery);
+        
+        this.snackBar.open(`Event setting saved for ${activeChar.name}`, 'OK', { duration: 2000 });
+      } catch (error) {
+        console.error('Error updating game events:', error);
+        this.snackBar.open('Error saving game events', 'Close', {
+          duration: 3000
+        });
+      }
+    } else {
+      // Fallback to old method during transition
+      try {
+        await this.configService.changeEventConfig(section, event, enabled);
+        console.log(`Using legacy method to update event: ${event} to ${enabled}`);
+      } catch (error) {
+        console.error('Error updating game event via legacy method:', error);
+      }
     }
   }
 
@@ -420,11 +477,13 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   }
 
   filterEvents(query: string) {
+    // Get the current game events, with improved logging
+    const gameEvents = this.getEventProperty('game_events', {});
+    console.log('Current game events for filtering:', gameEvents);
+    
     if (!query && this.eventSearchQuery) {
       this.eventSearchQuery = "";
-      this.filteredGameEvents = this.categorizeEvents(
-        this.config?.game_events || {},
-      );
+      this.filteredGameEvents = this.categorizeEvents(gameEvents);
       this.expandedSection = null; // Collapse all sections when search is empty
       return;
     }
@@ -433,9 +492,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     // Only filter and expand if search term is 3 or more characters
     if (query.length >= 3) {
       this.filteredGameEvents = {};
-      const all_game_events = this.categorizeEvents(
-        this.config?.game_events || {},
-      );
+      const all_game_events = this.categorizeEvents(gameEvents);
       const searchTerm = query.toLowerCase();
 
       for (
@@ -455,15 +512,15 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
         }
       }
     } else {
-      this.filteredGameEvents = this.categorizeEvents(
-        this.config?.game_events || {},
-      );
+      this.filteredGameEvents = this.categorizeEvents(gameEvents);
     }
+    
+    console.log('Filtered game events:', this.filteredGameEvents);
   }
 
   clearEventSearch() {
     this.eventSearchQuery = "";
-    this.filteredGameEvents = this.categorizeEvents(this.config?.game_events || {});
+    this.filteredGameEvents = this.categorizeEvents(this.getEventProperty('game_events', {}));
   }
 
   async resetGameEvents() {
@@ -479,11 +536,26 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     dialogRef.subscribe(async (result: boolean) => {
       if (result) {
         try {
-          // Send the reset request to the backend
-          await this.configService.resetGameEvents();
+          // For character-specific events
+          const activeChar = this.getActiveCharacter();
+          const activeIndex = this.config?.active_character_index;
           
-          // The backend will send back the updated config, which will be reflected in our UI
-          // through the existing subscription to config changes
+          if (activeChar && activeIndex !== undefined && activeIndex >= 0) {
+            // Get the default game events from the backend
+            await this.configService.resetGameEvents();
+            
+            // The backend will send back the updated config
+            // Now we need to copy the reset events to the character
+            setTimeout(() => {
+              if (this.config && this.config['game_events']) {
+                // Copy the reset events to the character
+                this.updateEventProperty('game_events', this.config['game_events']);
+              }
+            }, 300);
+          } else {
+            // Send the reset request to the backend as normal for global config
+            await this.configService.resetGameEvents();
+          }
           
           this.snackBar.open('Game events have been reset to default values', 'Close', {
             duration: 3000
@@ -508,10 +580,15 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
 
   // Handle material selection changes
   async onMaterialsChange(selectedMaterials: string[]) {
-    if (this.config) {
-      const materialsString = selectedMaterials.join(", ");
-      await this.onConfigChange({ react_to_material: materialsString });
-    }
+    if (!this.config) return;
+    
+    const materialsString = selectedMaterials.join(", ");
+    this.updateEventProperty('react_to_material', materialsString);
+  }
+  
+  // Update an event reaction feature toggle
+  onEventReactionFeatureToggle(propName: string, value: boolean): void {
+    this.updateEventProperty(propName, value);
   }
 
   async onApiKeyChange(apiKey: string) {
@@ -1793,8 +1870,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     }
     
     const activeChar = this.getActiveCharacter();
-    
-    return {
+    const character: Character = {
       name: activeChar?.name || this.getCharacterProperty('personality_name', 'New Character'),
       character: this.getCharacterProperty('character', ''),
       personality_preset: this.getCharacterProperty('personality_preset', 'custom'),
@@ -1815,6 +1891,20 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       tts_speed: this.getCharacterProperty('tts_speed', this.config.tts_speed || '1.2'),
       tts_prompt: this.getCharacterProperty('tts_prompt', this.config.tts_prompt || '')
     };
+    
+    // Event reaction settings using bracket notation
+    character['event_reaction_enabled_var'] = this.getEventProperty('event_reaction_enabled_var', true);
+    character['react_to_text_local_var'] = this.getEventProperty('react_to_text_local_var', true);
+    character['react_to_text_starsystem_var'] = this.getEventProperty('react_to_text_starsystem_var', true);
+    character['react_to_text_squadron_var'] = this.getEventProperty('react_to_text_squadron_var', true);
+    character['react_to_text_npc_var'] = this.getEventProperty('react_to_text_npc_var', true);
+    character['react_to_material'] = this.getEventProperty('react_to_material', '');
+    character['react_to_danger_mining_var'] = this.getEventProperty('react_to_danger_mining_var', true);
+    character['react_to_danger_onfoot_var'] = this.getEventProperty('react_to_danger_onfoot_var', true);
+    character['react_to_danger_supercruise_var'] = this.getEventProperty('react_to_danger_supercruise_var', true);
+    character['game_events'] = this.getEventProperty('game_events', {});
+    
+    return character;
   }
 
   // Helper method to save characters
@@ -1851,18 +1941,21 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     
     const character = this.config.characters[index];
     console.log('Character to load:', character);
+    console.log('Character game events:', character['game_events']);
     
     // First, set active_character_index directly in our local config
     // to prevent race conditions with the backend
     this.config.active_character_index = index;
     
-    // Update the UI to show the character's settings
     // Set only the active_character_index to the backend first
     this.onConfigChange({active_character_index: index}).then(() => {
       console.log('Active character index updated in backend');
       
       // Now load the settings into the UI model
       this.loadSettingsFromConfig(this.config!);
+      
+      // Initialize event-related settings if needed
+      this.ensureEventSettingsInitialized();
       
       // For custom preset, don't update the character value
       if (character.personality_preset !== 'custom') {
@@ -1875,12 +1968,59 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       
       // Reset the flag after a delay
       setTimeout(() => {
+        // Refresh game events list
+        this.filterEvents(this.eventSearchQuery);
+        
+        // Log the currently loaded game events to help with debugging
+        const currentEvents = this.getEventProperty('game_events', {});
+        console.log('Currently loaded game events:', currentEvents);
+        console.log('Event reaction enabled:', this.getEventProperty('event_reaction_enabled_var', false));
+        
         this.isApplyingChange = false;
       }, 300);
     }).catch(error => {
       console.error('Error loading character:', error);
       this.isApplyingChange = false;
     });
+  }
+  
+  // Ensure character has all needed event reaction settings
+  private ensureEventSettingsInitialized() {
+    const activeChar = this.getActiveCharacter();
+    const activeIndex = this.config?.active_character_index;
+    
+    if (!activeChar || activeIndex === undefined || activeIndex < 0 || !this.config) {
+      return;
+    }
+    
+    // Check if the character already has event settings
+    if (activeChar['event_reaction_enabled_var'] !== undefined) {
+      // Already has event settings, nothing to do
+      return;
+    }
+    
+    console.log('Initializing event settings for character');
+    
+    // Create an updated character with event settings initialized with defaults
+    const updatedChar = { ...activeChar };
+    updatedChar['event_reaction_enabled_var'] = true;
+    updatedChar['react_to_text_local_var'] = true;
+    updatedChar['react_to_text_starsystem_var'] = true;
+    updatedChar['react_to_text_squadron_var'] = true;
+    updatedChar['react_to_text_npc_var'] = true;
+    updatedChar['react_to_material'] = '';
+    updatedChar['react_to_danger_mining_var'] = true;
+    updatedChar['react_to_danger_onfoot_var'] = true;
+    updatedChar['react_to_danger_supercruise_var'] = true;
+    updatedChar['game_events'] = {};
+    
+    // Update the character
+    const updatedCharacters = [...this.config.characters];
+    updatedCharacters[activeIndex] = updatedChar;
+    
+    // Apply the update
+    this.config.characters = updatedCharacters;
+    this.onConfigChange({characters: updatedCharacters});
   }
 
   // Modify cancelEditMode method for reliability
@@ -1933,6 +2073,18 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       tts_speed: this.config.tts_speed || '1.2',
       tts_prompt: this.config.tts_prompt || ''
     };
+    
+    // Add event reaction properties with defaults using bracket notation
+    newCharacter['event_reaction_enabled_var'] = true;
+    newCharacter['react_to_text_local_var'] = true;
+    newCharacter['react_to_text_starsystem_var'] = true; 
+    newCharacter['react_to_text_squadron_var'] = true;
+    newCharacter['react_to_text_npc_var'] = true;
+    newCharacter['react_to_material'] = '';
+    newCharacter['react_to_danger_mining_var'] = true;
+    newCharacter['react_to_danger_onfoot_var'] = true;
+    newCharacter['react_to_danger_supercruise_var'] = true;
+    newCharacter['game_events'] = {};
     
     // Add the new character to the config
     if (!this.config.characters) {
@@ -2031,6 +2183,110 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       return (this.config as any)[propName] as T;
     }
     return defaultValue;
+  }
+
+  // Get event reaction property with fallback to global config
+  getEventProperty<T>(propName: string, defaultValue: T): T {
+    const activeChar = this.getActiveCharacter();
+    
+    // Log the active character for debugging
+    console.log(`Getting event property ${propName} for character:`, 
+                activeChar ? activeChar.name : 'No active character');
+    
+    // Special handling for game_events
+    if (propName === 'game_events') {
+      if (activeChar && activeChar['game_events']) {
+        console.log(`Found game_events in character ${activeChar.name}:`, activeChar['game_events']);
+        return activeChar['game_events'] as unknown as T;
+      }
+      
+      // Fallback to config game_events
+      if (this.config && this.config['game_events']) {
+        console.log('Using global config game_events as fallback');
+        return this.config['game_events'] as unknown as T;
+      }
+      
+      console.log(`No game_events found, using default:`, defaultValue);
+      return defaultValue;
+    }
+    
+    // For other event properties
+    if (activeChar && propName in activeChar) {
+      console.log(`Found ${propName} in character:`, (activeChar as any)[propName]);
+      return (activeChar as any)[propName] as T;
+    }
+    
+    // Fallback to direct config property
+    if (this.config && propName in this.config) {
+      console.log(`Using global config for ${propName}:`, (this.config as any)[propName]);
+      return (this.config as any)[propName] as T;
+    }
+    
+    return defaultValue;
+  }
+
+  // Update an event-related property on the active character
+  async updateEventProperty(propName: string, value: any): Promise<void> {
+    if (!this.config) {
+      console.error('Cannot update event property: config is null');
+      return;
+    }
+    
+    console.log(`Updating event property: ${propName} =`, value);
+    
+    // Set the flag to prevent overriding
+    this.isApplyingChange = true;
+    
+    const activeChar = this.getActiveCharacter();
+    const activeIndex = this.config.active_character_index;
+    
+    if (activeChar && activeIndex >= 0) {
+      try {
+        // Create an updatedChar with the new property value
+        const updatedChar = { ...activeChar };
+        
+        // If it's game_events, we need special handling since it's an object
+        if (propName === 'game_events' && typeof value === 'object') {
+          updatedChar['game_events'] = { ...value };
+          console.log('Updated game_events object:', updatedChar['game_events']);
+        } else {
+          // For all other properties
+          updatedChar[propName] = value;
+        }
+        
+        // Create a new characters array with the updated character
+        const updatedCharacters = [...this.config.characters];
+        updatedCharacters[activeIndex] = updatedChar;
+        
+        // Update the config with the entire characters array
+        await this.onConfigChange({characters: updatedCharacters});
+        console.log(`Successfully updated ${propName} for character: ${activeChar.name}`);
+      } catch (error) {
+        console.error(`Error updating ${propName}:`, error);
+        this.snackBar.open(`Error saving ${propName}`, 'Close', {
+          duration: 3000
+        });
+      } finally {
+        // Reset the flag after a delay
+        setTimeout(() => {
+          this.isApplyingChange = false;
+        }, 200);
+      }
+    } else {
+      try {
+        // Fallback to updating global config during transition
+        const update: Partial<Config> = {};
+        update[propName as keyof Config] = value;
+        await this.onConfigChange(update);
+        console.log(`Updated global config property: ${propName}`);
+      } catch (error) {
+        console.error(`Error updating global property ${propName}:`, error);
+      } finally {
+        setTimeout(() => {
+          this.isApplyingChange = false;
+        }, 200);
+      }
+    }
   }
 
   // Helper method to check if personality preset is custom
@@ -2151,5 +2407,15 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
         });
       }
     }
+  }
+
+  // Count the number of active events for a character
+  countActiveEvents(character: Character): number {
+    if (!character['game_events']) {
+      return 0;
+    }
+    
+    // Count the number of true entries in the game_events object
+    return Object.values(character['game_events']).filter(value => value === true).length;
   }
 }

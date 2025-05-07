@@ -71,8 +71,20 @@ export interface Character {
     tts_speed?: string;
     tts_prompt?: string;
     
+    // Event reaction properties
+    event_reaction_enabled_var?: boolean;
+    react_to_text_local_var?: boolean;
+    react_to_text_starsystem_var?: boolean;
+    react_to_text_npc_var?: boolean;
+    react_to_text_squadron_var?: boolean;
+    react_to_material?: string;
+    react_to_danger_mining_var?: boolean;
+    react_to_danger_onfoot_var?: boolean;
+    react_to_danger_supercruise_var?: boolean;
+    game_events?: { [key: string]: boolean };
+    
     // Add index signature to allow string indexing
-    [key: string]: string | number | boolean | undefined;
+    [key: string]: string | number | boolean | { [key: string]: boolean } | undefined;
 }
 
 export interface Config {
@@ -123,18 +135,9 @@ export interface Config {
     ptt_var: boolean;
     mute_during_response_var: boolean;
     continue_conversation_var: boolean;
-    event_reaction_enabled_var: boolean;
     game_actions_var: boolean;
     web_search_actions_var: boolean;
     use_action_cache_var: boolean;
-    react_to_text_local_var: boolean;
-    react_to_text_starsystem_var: boolean;
-    react_to_text_npc_var: boolean;
-    react_to_text_squadron_var: boolean;
-    react_to_material: string;
-    react_to_danger_mining_var: boolean;
-    react_to_danger_onfoot_var: boolean;
-    react_to_danger_supercruise_var: boolean;
     edcopilot: boolean;
     edcopilot_dominant: boolean;
     tts_voice: string;
@@ -142,7 +145,6 @@ export interface Config {
     ptt_key: string;
     input_device_name: string;
     output_device_name: string;
-    game_events: { [key: string]: boolean };
     cn_autostart: boolean;
     ed_journal_path: string;
     ed_appdata_path: string;

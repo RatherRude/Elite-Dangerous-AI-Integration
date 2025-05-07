@@ -1043,7 +1043,24 @@ def update_config(config: Config, data: dict) -> Config:
 
 
 def update_event_config(config: Config, section: str, event: str, value: bool) -> Config:
-    config.get("game_events", {})[event] = value
+    # Check if we're dealing with a character's game events
+    active_index = config.get("active_character_index", -1)
+    if active_index >= 0 and "characters" in config:
+        # Update character's game events
+        if active_index < len(config["characters"]):
+            if "game_events" not in config["characters"][active_index]:
+                config["characters"][active_index]["game_events"] = {}
+            
+            # Update the event with clean name
+            config["characters"][active_index]["game_events"][event] = value
+    else:
+        # Update global game events
+        if "game_events" not in config:
+            config["game_events"] = {}
+        
+        # Update the event with clean name
+        config["game_events"][event] = value
+    
     print(json.dumps({"type": "config", "config": config}) + '\n', flush=True)
     save_config(config)
     return config
@@ -1051,8 +1068,16 @@ def update_event_config(config: Config, section: str, event: str, value: bool) -
 
 def reset_game_events(config: Config) -> Config:
     """Reset game events to the default values defined in the game_events dictionary"""
-    # Replace the current game_events with the default game_events dictionary
-    config["game_events"] = {k: v for k, v in game_events.items()}
+    # Check if we're dealing with a character's game events
+    active_index = config.get("active_character_index", -1)
+    if active_index >= 0 and "characters" in config:
+        # Reset game events for the active character
+        if active_index < len(config["characters"]):
+            config["characters"][active_index]["game_events"] = {k: v for k, v in game_events.items()}
+    else:
+        # Reset global game events
+        config["game_events"] = {k: v for k, v in game_events.items()}
+    
     print(json.dumps({"type": "config", "config": config}) + '\n', flush=True)
     save_config(config)
     return config
