@@ -1,6 +1,7 @@
 import { Injectable } from "@angular/core";
 import { BehaviorSubject, filter, Observable } from "rxjs";
 import { type BaseMessage, TauriService } from "./tauri.service";
+import { PluginSettings, PluginSettingsMessage } from "./plugin-settings";
 
 export interface ConfigMessage extends BaseMessage {
     type: "config";
@@ -144,6 +145,7 @@ export interface Config {
     ed_journal_path: string;
     ed_appdata_path: string;
     reset_game_events?: boolean; // Flag to request resetting game events to defaults
+    plugin_settings: { [key: string]: any };
 }
 
 @Injectable({
@@ -161,6 +163,9 @@ export class ConfigService {
     >(null);
     public validation$ = this.validationSubject.asObservable();
 
+    private plugin_settings_configs_subject = new BehaviorSubject<PluginSettings[] | null>(null);
+    public plugin_settings_configs$ = this.plugin_settings_configs_subject.asObservable();
+
     constructor(private tauriService: TauriService) {
         // Subscribe to config messages from the TauriService
         this.tauriService.output$.pipe(
@@ -170,10 +175,12 @@ export class ConfigService {
                 | ConfigMessage
                 | SystemInfoMessage
                 | ModelValidationMessage
+                | PluginSettingsMessage
                 | StartMessage =>
                 message.type === "config" ||
                 message.type === "system" ||
                 message.type === "model_validation" ||
+                message.type === "plugin_settings_configs" ||
                 message.type === "start"
             ),
         ).subscribe((message) => {
@@ -183,6 +190,8 @@ export class ConfigService {
                 this.systemSubject.next(message.system);
             } else if (message.type === "model_validation") {
                 this.validationSubject.next(message);
+            } else if (message.type === "plugin_settings_configs") {
+                this.plugin_settings_configs_subject.next(message.plugin_settings_configs);
             } else if (message.type === "start") {
                 this.validationSubject.next(null);
             }
@@ -224,6 +233,31 @@ export class ConfigService {
         };
 
         await this.tauriService.send_message(message);
+    }
+
+    public async setPluginSetting(key: string, value: any): Promise<void> {
+        const currentConfig = this.getCurrentConfig();
+        if (!currentConfig) {
+            throw new Error("Cannot update config before it is initialized");
+        }
+
+        const updatedPluginSettings = {
+            ...currentConfig.plugin_settings,
+            [key]: value,
+        };
+
+        const message: ChangeConfigMessage = {
+            type: "change_config",
+            timestamp: new Date().toISOString(),
+            config: { plugin_settings: updatedPluginSettings },
+        };
+
+        await this.tauriService.send_message(message);
+    }
+
+    public getPluginSetting(key: string): any | null {
+        const currentConfig = this.getCurrentConfig();
+        return currentConfig?.plugin_settings?.[key] ?? null;
     }
 
     public async addCharacter(character: Character, setActive: boolean = false): Promise<void> {

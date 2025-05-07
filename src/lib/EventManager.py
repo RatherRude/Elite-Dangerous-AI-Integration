@@ -252,6 +252,9 @@ class EventManager:
             # Only keep conditions that are still not satisfied
             self._conditions_registry[projection_name] = still_waiting
 
+    def get_projection(self, projection_type: type) -> Projection[object] | None:
+        return next((proj for proj in self.projections if isinstance(proj, projection_type)), None)
+
     def save_incoming_history(self, incoming: list[Event]):
         for event in incoming:
             self.event_store.insert_event(event, event.processed_at)
