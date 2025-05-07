@@ -149,6 +149,12 @@
                                             <mat-icon>add</mat-icon> New
                                         </button>
 
+                                        <button mat-raised-button color="accent" 
+                                                [disabled]="selectedCharacterIndex < 0"
+                                                (click)="duplicateSelectedCharacter()">
+                                            <mat-icon>content_copy</mat-icon> Duplicate
+                                        </button>
+
                                         <button mat-raised-button color="warn"
                                                 [disabled]="selectedCharacterIndex < 0"
                                                 (click)="deleteSelectedCharacter()">

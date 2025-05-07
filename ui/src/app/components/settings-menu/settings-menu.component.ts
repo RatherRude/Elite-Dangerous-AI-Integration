@@ -2097,23 +2097,15 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     // Save the initial character to the configuration
     this.configService.changeConfig({ characters: this.config.characters }).then(() => {
       // Select the new character
+      const newIndex = this.config!.characters!.length - 1;
       this.selectedCharacterIndex = newIndex;
       
       // Set this as the active character
       this.configService.setActiveCharacter(newIndex);
       
-      // Wait for the config update to be processed
-      setTimeout(() => {
-        // Apply the default preset settings to the character
-        this.applyPersonalityPreset('default');
-        
-        // Generate the character prompt
-        this.updatePrompt();
-        
-        // Enter edit mode
-        this.editMode = true;
-      }, 100);
-    }).catch((error: Error) => {
+      // Show success message
+      this.snackBar.open(`Character "${newCharacter.name}" created`, 'OK', { duration: 3000 });
+    }).catch(error => {
       console.error('Error adding new character:', error);
       this.snackBar.open('Error adding new character', 'OK', { duration: 5000 });
     });
@@ -2417,5 +2409,51 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     
     // Count the number of true entries in the game_events object
     return Object.values(character['game_events']).filter(value => value === true).length;
+  }
+
+  duplicateSelectedCharacter(): void {
+    if (!this.config || this.selectedCharacterIndex < 0) return;
+    
+    // Make sure we have a characters array and the selected index is valid
+    if (!this.config.characters || !this.config.characters[this.selectedCharacterIndex]) {
+      this.snackBar.open('Error: Character not found', 'OK', { duration: 5000 });
+      return;
+    }
+    
+    const config = this.config; // Store in local variable
+    const originalChar = config.characters[this.selectedCharacterIndex];
+    
+    // Create a deep copy of the character
+    const duplicatedChar = JSON.parse(JSON.stringify(originalChar));
+    
+    // Modify the name to indicate it's a copy
+    let newName = `${originalChar.name} (Copy)`;
+    let counter = 1;
+    
+    // Check if a character with this name already exists
+    while (config.characters.some(char => char.name === newName)) {
+      counter++;
+      newName = `${originalChar.name} (Copy ${counter})`;
+    }
+    
+    duplicatedChar.name = newName;
+    
+    // Add the duplicated character to the config
+    config.characters.push(duplicatedChar);
+    
+    // Save the updated characters array
+    this.configService.changeConfig({ characters: config.characters }).then(() => {
+      const newIndex = config.characters.length - 1;
+      this.selectedCharacterIndex = newIndex;
+      
+      // Set this as the active character
+      this.configService.setActiveCharacter(newIndex);
+      
+      // Show success message
+      this.snackBar.open(`Character "${newName}" created`, 'OK', { duration: 3000 });
+    }).catch(error => {
+      console.error('Error duplicating character:', error);
+      this.snackBar.open('Error duplicating character', 'OK', { duration: 5000 });
+    });
   }
 }
