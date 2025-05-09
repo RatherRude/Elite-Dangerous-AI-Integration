@@ -1,8 +1,10 @@
 import queue
 import threading
 import time
-from typing import final
+import traceback
+from typing import final, Optional
 from .Logger import log
+from .ActionManager import ActionManager
 
 from EDMesg.CovasNext import (
     ExternalChatNotification,
@@ -13,12 +15,12 @@ from EDMesg.CovasNext import (
     CovasReplied,
     ConfigurationUpdated
 )
-from EDMesg.EDCoPilot import create_edcopilot_client
+from EDMesg.EDCoPilot import create_edcopilot_client, OpenPanelAction
 from EDMesg.base import EDMesgWelcomeAction
 
 @final
 class EDCoPilot:
-    def __init__(self, is_enabled: bool, is_edcopilot_dominant: bool=False, enabled_game_events: list[str]=[]):
+    def __init__(self, is_enabled: bool, is_edcopilot_dominant: bool=False, enabled_game_events: list[str]=[], action_manager: Optional[ActionManager]=None):
         self.install_path = self.get_install_path()
         self.proc_id = self.get_process_id()
         self.is_enabled = is_enabled and self.is_installed()
@@ -26,6 +28,7 @@ class EDCoPilot:
         self.provider = None
         self.is_edcopilot_dominant = is_edcopilot_dominant
         self.enabled_game_events = enabled_game_events
+        self.action_manager = action_manager
         self.event_publication_queue: queue.Queue[ExternalChatNotification|ExternalBackgroundChatNotification] = queue.Queue()
 
         try:
@@ -41,10 +44,14 @@ class EDCoPilot:
             thread = threading.Thread(target=self.listen_actions)
             thread.daemon = True
             thread.start()
+            
+        # Register EDCoPilot-specific actions if action_manager is provided
+        if self.action_manager:
+            self.register_actions()
 
     def listen_actions(self):
         while True:
-            if not self.provider.pending_actions.empty():
+            if self.provider and not self.provider.pending_actions.empty():
                 action = self.provider.pending_actions.get()
                 if isinstance(action, EDMesgWelcomeAction):
                     self.share_config()
@@ -116,6 +123,64 @@ class EDCoPilot:
                 )
             )
 
+
+    def edcopilot_open_panel(self, args: dict, projected_states: dict) -> str:
+        """Open a specific panel in EDCoPilot"""
+        panel_name = args.get("panelName", "")
+        if not panel_name or not self.provider:
+            return "Failed to open panel: No panel specified or EDCoPilot provider not available"
+            
+        try:
+            # Log the request for debugging
+            log('info', f'Opening EDCoPilot panel: {panel_name}')
+            
+            # For now, we'll use CovasReplied to send a message to show the panel
+            # This is a temporary solution until we have a proper OpenPanelCommand
+            # Implementation might vary based on the actual EDCoPilot API
+            
+            # ToDo: Send OpenPanelAction
+            self.client.publish(OpenPanelAction(panelName=panel_name))
+         
+
+            return f"Successfully requested to open {panel_name} panel in EDCoPilot"
+        except Exception as e:
+            return f"Failed to open panel: {str(e)}{traceback.format_exc()}"
+
+    def register_actions(self):
+        log('info', 'register actions')
+        """Register EDCoPilot-specific actions with the action_manager"""
+        if not self.action_manager:
+            return
+       
+        # Register the open panel action
+        self.action_manager.registerAction(
+            "edcopilot_open_panel",
+            "Open a specific panel in EDCoPilot",
+            {
+                "type": "object",
+                "properties": {
+                    "panelName": {
+                        "type": "string",
+                        "enum": [
+                            "bookmarks", "voicelog", "activity"
+                            # "bookmarks", "bookmarkgroups", "voicelog", "eventlog", "sessionprogress",
+                            # "systemhistory", "traderoute", "discoveryestimator", "miningstats", "miningprices",
+                            # "placesofinterest", "locationsearch", "locationresults", "guidancecomputer", "timetrials",
+                            # "systeminfo", "stations", "bodies", "factionsystems", "miningprices",
+                            # "stationfacts", "bodydata", "blueprints", "shiplist", "storedmodules",
+                            # "materials", "shiplocker", "suitlist", "weaponlist", "aboutedcopilot", "permits",
+                            # "messages", "prospectorannouncements", "music", "historyrefresh",
+                            # "commandreference", "settings"
+                        ],
+                        "description": "The name of the panel to open in EDCoPilot"
+                    }
+                },
+                "required": ["panelName"]
+            },
+            self.edcopilot_open_panel,
+            "global",  # Make this action available in all modes
+            lambda args, _: f"Opening EDCoPilot panel: {args.get('panelName', '')}"
+        )
 
 if __name__ == "__main__":
     client = create_covasnext_client()
