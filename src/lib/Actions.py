@@ -262,7 +262,7 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
         sleep(.05)
         keys.send('UI_Right')
         sleep(.2)
-        keys.send('UI_Select', repeat=2)
+        keys.send('UI_Select')
         sleep(.05)
 
         if 'start_navigation' in args and args['start_navigation']:
