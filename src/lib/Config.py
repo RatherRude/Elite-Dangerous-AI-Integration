@@ -333,6 +333,7 @@ class Character(TypedDict, total=False):
 
 
 class Config(TypedDict):
+    config_version: int
     api_key: str
     llm_api_key: str
     llm_endpoint: str
@@ -494,6 +495,13 @@ def migrate(data: dict) -> dict:
     
     if 'personality_name' not in data or data['personality_name'] is None:
         data['personality_name'] = 'COVAS:NEXT'
+    
+    if 'config_version' not in data or data['config_version'] is None:
+        data['config_version'] = 1
+        
+        if 'llm_provider' in data and data['llm_provider'] == 'google-ai-studio':
+            if 'llm_model_name' in data and data['llm_model_name'] == 'gemini-2.0-flash':
+                data['llm_model_name'] = 'gemini-2.5-flash-preview-04-17'
         
     return data
 
@@ -536,6 +544,7 @@ def merge_config_data(defaults: dict, user: dict):
 
 def load_config() -> Config:
     defaults: Config = {
+        'config_version': 1,
         'commander_name': "",
         'character': "Keep your responses extremely brief and minimal. Maintain a professional and serious tone in all responses. Stick to factual information and avoid references to specific domains. Your responses should be inspired by the character or persona of COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal). Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS:NEXT. Show some consideration for emotions while maintaining focus on information. Maintain a friendly yet respectful conversational style. Project an air of expertise and certainty when providing information. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.",
         'personality_preset': 'default',
@@ -571,17 +580,17 @@ def load_config() -> Config:
         'input_device_name': get_default_input_device_name(),
         'output_device_name': get_default_output_device_name(),
         'llm_provider': "openai",
-        'llm_model_name': "gpt-4o-mini",
+        'llm_model_name': "gpt-4.1-mini",
         'llm_endpoint': "https://api.openai.com/v1",
         'llm_api_key': "",
         'llm_custom': {},
         'ptt_key': '',
         'vision_provider': "none",
-        'vision_model_name': "gpt-4o-mini",
+        'vision_model_name': "gpt-4.1-mini",
         'vision_endpoint': "https://api.openai.com/v1",
         'vision_api_key': "",
         'stt_provider': "openai",
-        'stt_model_name': "whisper-1",
+        'stt_model_name': "gpt-4o-mini-transcribe",
         'stt_endpoint': "https://api.openai.com/v1",
         'stt_api_key': "",
         'stt_custom_prompt': '',
@@ -772,7 +781,7 @@ def check_and_upgrade_model(config: Config) -> ModelValidationResult:
     llm_model_name = config['llm_model_name']
 
     if llm_endpoint == "https://api.openai.com/v1":
-        available_models, err = validate_model_availability([llm_model_name, 'gpt-4o-mini', 'gpt-3.5-turbo'], llm_api_key, llm_endpoint)
+        available_models, err = validate_model_availability([llm_model_name, 'gpt-4.1-mini', 'gpt-4o-mini', 'gpt-3.5-turbo'], llm_api_key, llm_endpoint)
         if not available_models or err:
             return {
                 'skipped': False,
@@ -781,9 +790,9 @@ def check_and_upgrade_model(config: Config) -> ModelValidationResult:
                 'message': err
             }
         
-        [current_model, main_model, fallback_model] = available_models
+        [current_model, main_model, fallback_model_1, fallback_model_2] = available_models
         
-        if not current_model and not main_model and not fallback_model:
+        if not current_model and not main_model and not fallback_model_1 and not fallback_model_2:
             return {
                 'skipped': False,
                 'success': False,
@@ -791,7 +800,16 @@ def check_and_upgrade_model(config: Config) -> ModelValidationResult:
                 'message': f'Your model provider doesn\'t serve any model to you. Please check your model name.'
             }
         
-        if llm_model_name == 'gpt-4o-mini' and not main_model and fallback_model:
+        if llm_model_name == 'gpt-4.1-mini' and not main_model and fallback_model_1:
+            updated_config['llm_model_name'] = 'gpt-3.5-turbo'
+            return {
+                'skipped': False,
+                'success': True,
+                'config': updated_config,
+                'message': f'Your model provider doesn\'t serve "{llm_model_name}" to you. Falling back to "gpt-3.5-turbo".'
+            }
+        
+        if llm_model_name == 'gpt-4o-mini' and not fallback_model_1 and fallback_model_2:
             updated_config['llm_model_name'] = 'gpt-3.5-turbo'
             return {
                 'skipped': False,
@@ -801,12 +819,12 @@ def check_and_upgrade_model(config: Config) -> ModelValidationResult:
             }
         
         if llm_model_name == 'gpt-3.5-turbo' and main_model:
-            updated_config['llm_model_name'] = 'gpt-4o-mini'
+            updated_config['llm_model_name'] = 'gpt-4.1-mini'
             return {
                 'skipped': False,
                 'success': True,
                 'config': updated_config,
-                'message': f'Your model provider now serves "gpt-4o-mini". Upgrading to "gpt-4o-mini".'
+                'message': f'Your model provider now serves "gpt-4.1-mini". Upgrading to "gpt-4o-mini".'
             }
         
         if not current_model:
@@ -942,13 +960,13 @@ def update_config(config: Config, data: dict) -> Config:
     if data.get("llm_provider"):
       if data["llm_provider"] == "openai":
         data["llm_endpoint"] = "https://api.openai.com/v1"
-        data["llm_model_name"] = "gpt-4o-mini"
+        data["llm_model_name"] = "gpt-4.1-mini"
         data["llm_api_key"] = ""
         data["tools_var"] = True
 
       elif data["llm_provider"] == "openrouter":
         data["llm_endpoint"] = "https://openrouter.ai/api/v1/"
-        data["llm_model_name"] = "llama-3.3-70b-instruct:free"
+        data["llm_model_name"] = "meta-llama/llama-3.3-70b-instruct:free"
         data["llm_api_key"] = ""
         data["tools_var"] = False
 
@@ -973,7 +991,7 @@ def update_config(config: Config, data: dict) -> Config:
     if data.get("vision_provider"):
       if data["vision_provider"] == "openai":
         data["vision_endpoint"] = "https://api.openai.com/v1"
-        data["vision_model_name"] = "gpt-4o-mini"
+        data["vision_model_name"] = "gpt-4.1-mini"
         data["vision_api_key"] = ""
         data["vision_var"] = True
 
@@ -998,7 +1016,7 @@ def update_config(config: Config, data: dict) -> Config:
     if data.get("stt_provider"):
       if data["stt_provider"] == "openai":
         data["stt_endpoint"] = "https://api.openai.com/v1"
-        data["stt_model_name"] = "whisper-1"
+        data["stt_model_name"] = "gpt-4o-mini-transcribe"
         data["stt_api_key"] = ""
 
       if data["stt_provider"] == "local-ai-server":
