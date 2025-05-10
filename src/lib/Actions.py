@@ -2757,7 +2757,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
          "required": ["power_category"]
      }, manage_power_distribution, 'ship')
 
-    actionManager.registerAction('galaxyMapOpen', "Open galaxy map. Optionally, if asked, focus on a system or start a navigation route", {
+    actionManager.registerAction('galaxyMapOpen', "Open galaxy map. If asked, also focus on a system or start a navigation route", {
         "type": "object",
         "properties": {
             "system_name": {
@@ -3026,7 +3026,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, recall_dismiss_ship_buggy, 'buggy')
 
-    actionManager.registerAction('galaxyMapOpenOrCloseBuggy', "Open/close galaxy map. optionally, when asked, focus on a system or start a navigation route to a system", {
+    actionManager.registerAction('galaxyMapOpenOrCloseBuggy', "Open galaxy map. If asked, also focus on a system or start a navigation route", {
         "type": "object",
         "properties": {
             "desired_state": {
