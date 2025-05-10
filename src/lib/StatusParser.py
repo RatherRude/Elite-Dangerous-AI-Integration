@@ -300,9 +300,9 @@ class StatusParser:
         gui_event = ""
         if old_status["GuiFocus"] != new_status["GuiFocus"]:
             if old_status["GuiFocus"] in ["GalaxyMap", "SystemMap"]:
-                gui_event = old_status["GuiFocus"]+" closed. "
+                gui_event = old_status["GuiFocus"]+"Closed"
             if new_status["GuiFocus"] in ["GalaxyMap", "SystemMap"]:
-                gui_event += new_status["GuiFocus"]+" opened"
+                gui_event += new_status["GuiFocus"]+"Opened"
             if gui_event != "":
                 events.append({"event": gui_event})
 
