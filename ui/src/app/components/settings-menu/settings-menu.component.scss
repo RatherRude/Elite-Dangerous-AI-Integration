@@ -1,3 +1,14 @@
+.char-details {
+  font-size: 0.85em;
+  color: #a0a0a0;
+  margin-left: 4px;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
 .tab-content {
   padding: 20px;
   background: transparent;
@@ -95,6 +106,7 @@ mat-slide-toggle {
   flex: 1;
   margin: 0;
 }
+
 .ptt-container mat-slide-toggle {
   flex: 1;
   padding-bottom: 1rem;
@@ -105,7 +117,7 @@ ul {
 }
 
 .settings-menu {
-  min-height:100%;
+  min-height: 100%;
   background: transparent;
 }
 
@@ -139,6 +151,7 @@ ul {
 ::ng-deep .mat-mdc-tab .mdc-tab__text-label {
   color: rgba(255, 255, 255, 0.7);
 }
+
 /* Trait containers and selectors styling */
 .trait-container {
   display: flex;
@@ -148,16 +161,14 @@ ul {
   margin: 0 15px 16px;
 }
 
-.trait-select, .trait-input {
+.trait-select,
+.trait-input {
   flex: 1;
 }
-
 
 .knowledge-areas {
   margin: 0;
   padding: 0;
-
-  label {}
 }
 
 .knowledge-label {
@@ -175,10 +186,10 @@ ul {
   margin: 8px 0;
 }
 
-.editing-active {}
 .lowWidth {
   max-width: 60px;
 }
+
 .event-search-and-reset {
   display: flex;
   align-items: center;
@@ -189,8 +200,9 @@ ul {
     flex: 1;
     margin-bottom: 0;
   }
+
   button {
     padding: 25px 10px;
     margin: 0;
   }
-}
+} 
