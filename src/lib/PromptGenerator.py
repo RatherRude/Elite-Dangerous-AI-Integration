@@ -2161,6 +2161,9 @@ class PromptGenerator:
         if event_name == 'WeaponSelected':
             return f"Selected weapon {status['SelectedWeapon']}"
 
+        if "SystemMap" in event_name or "GalaxyMap" in event_name:
+            return event_name
+
         if event_name == 'LandingGearUp':
             return 'Landing gear has been retracted'
         if event_name == 'LandingGearDown':
