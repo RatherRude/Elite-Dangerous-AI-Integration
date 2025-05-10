@@ -1366,7 +1366,7 @@ class PromptGenerator:
             else:
                 location = ""
                 
-            return f"{self.commander_name} has embarked into their {vehicle} {location}."
+            return f"{self.commander_name} has boarded their {vehicle} {location}."
             
         if event_name == 'FCMaterials':
             fc_event = cast(Dict[str, Any], content)
@@ -2467,6 +2467,11 @@ class PromptGenerator:
 
         active_mode, vehicle_status = self.generate_vehicle_status(projected_states.get('CurrentStatus', {}))
         status_entries.append((active_mode+" status", vehicle_status))
+
+
+        guifocus = projected_states.get('CurrentStatus', {}).get('GuiFocus', '')
+        if guifocus != "NoFocus":
+            status_entries.append(("Current active window: ", guifocus))
 
         # Get ship and cargo info
         ship_info: ShipInfoState = projected_states.get('ShipInfo', {})  # pyright: ignore[reportAssignmentType]
