@@ -7,7 +7,6 @@ Additionally, the AI can fetch internet data if it deems it relevant for the con
 ## Keyboard Bindings
 
 In order to perform actions in Elite: Dangerous, COVAS:NEXT requires assigned keyboard buttons to be set up in the game. These keybindings are used to emulate button presses, allowing the AI to control various ship/srv/suit operations.
-The game's keyboard bindings are automatically read on COVAS:NEXT's start-up, if you change a setting you will have to restart the integration for it to be registered.
 If there are multiple keyboard buttons assigned for one game action, COVAS:NEXT will prefer the secondary binding.
 
 *If you run out of keyboard buttons* keep in mind that you can not only assign a button as press, but also as hold. Keys are also combinable in Elite: Dangerous, so each key can be combined with one or multiple other keys.

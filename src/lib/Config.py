@@ -962,7 +962,7 @@ def update_config(config: Config, data: dict) -> Config:
 
       elif data["llm_provider"] == "google-ai-studio":
         data["llm_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
-        data["llm_model_name"] = "gemini-2.0-flash"
+        data["llm_model_name"] = "gemini-2.5-flash-preview-04-17"
         data["llm_api_key"] = ""
         data["tools_var"] = True
 
