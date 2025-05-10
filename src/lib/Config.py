@@ -502,6 +502,10 @@ def migrate(data: dict) -> dict:
         if 'llm_provider' in data and data['llm_provider'] == 'google-ai-studio':
             if 'llm_model_name' in data and data['llm_model_name'] == 'gemini-2.0-flash':
                 data['llm_model_name'] = 'gemini-2.5-flash-preview-04-17'
+                
+        if 'llm_provider' in data and data['llm_provider'] == 'openai':
+            if 'llm_model_name' in data and data['llm_model_name'] == 'gpt-4o-mini':
+                data['llm_model_name'] = 'gpt-4.1-mini'
         
     return data
 
@@ -790,17 +794,26 @@ def check_and_upgrade_model(config: Config) -> ModelValidationResult:
                 'message': err
             }
         
-        [current_model, main_model, fallback_model_1, fallback_model_2] = available_models
+        [current_model, gpt41mini, gpt4oMini, gpt35turbo] = available_models
         
-        if not current_model and not main_model and not fallback_model_1 and not fallback_model_2:
+        if not current_model and not gpt41mini and not gpt4oMini and not gpt35turbo:
             return {
                 'skipped': False,
                 'success': False,
                 'config': None,
-                'message': f'Your model provider doesn\'t serve any model to you. Please check your model name.'
+                'message': f'Your model provider doesn\'t serve any model to you. Please check your configuration.'
             }
         
-        if llm_model_name == 'gpt-4.1-mini' and not main_model and fallback_model_1:
+        if llm_model_name == 'gpt-4.1-mini' and not current_model and gpt4oMini:
+            updated_config['llm_model_name'] = 'gpt-4o-mini'
+            return {
+                'skipped': False,
+                'success': True,
+                'config': updated_config,
+                'message': f'Your model provider doesn\'t serve "{llm_model_name}" to you. Falling back to "gpt-4o-mini".'
+            }
+            
+        if llm_model_name == 'gpt-4.1-mini' and not current_model and gpt35turbo:
             updated_config['llm_model_name'] = 'gpt-3.5-turbo'
             return {
                 'skipped': False,
@@ -809,22 +822,39 @@ def check_and_upgrade_model(config: Config) -> ModelValidationResult:
                 'message': f'Your model provider doesn\'t serve "{llm_model_name}" to you. Falling back to "gpt-3.5-turbo".'
             }
         
-        if llm_model_name == 'gpt-4o-mini' and not fallback_model_1 and fallback_model_2:
-            updated_config['llm_model_name'] = 'gpt-3.5-turbo'
-            return {
-                'skipped': False,
-                'success': True,
-                'config': updated_config,
-                'message': f'Your model provider doesn\'t serve "{llm_model_name}" to you. Falling back to "gpt-3.5-turbo".'
-            }
-        
-        if llm_model_name == 'gpt-3.5-turbo' and main_model:
+        if llm_model_name == 'gpt-4o-mini' and not current_model and gpt41mini:
             updated_config['llm_model_name'] = 'gpt-4.1-mini'
             return {
                 'skipped': False,
                 'success': True,
                 'config': updated_config,
-                'message': f'Your model provider now serves "gpt-4.1-mini". Upgrading to "gpt-4o-mini".'
+                'message': f'Your model provider doesn\'t serve "{llm_model_name}" to you. Upgrading to "gpt-4.1-mini".'
+            }
+        
+        if llm_model_name == 'gpt-4o-mini' and not current_model and gpt35turbo:
+            updated_config['llm_model_name'] = 'gpt-3.5-turbo'
+            return {
+                'skipped': False,
+                'success': True,
+                'config': updated_config,
+                'message': f'Your model provider doesn\'t serve "{llm_model_name}" to you. Falling back to "gpt-3.5-turbo".'
+            }
+        
+        if llm_model_name == 'gpt-3.5-turbo' and gpt41mini:
+            updated_config['llm_model_name'] = 'gpt-4.1-mini'
+            return {
+                'skipped': False,
+                'success': True,
+                'config': updated_config,
+                'message': f'Your model provider now serves "gpt-4.1-mini". Upgrading to "gpt-4.1-mini".'
+            }
+        if llm_model_name == 'gpt-3.5-turbo' and gpt4oMini:
+            updated_config['llm_model_name'] = 'gpt-4o-mini'
+            return {
+                'skipped': False,
+                'success': True,
+                'config': updated_config,
+                'message': f'Your model provider now serves "gpt-4o-mini". Upgrading to "gpt-4o-mini".'
             }
         
         if not current_model:
