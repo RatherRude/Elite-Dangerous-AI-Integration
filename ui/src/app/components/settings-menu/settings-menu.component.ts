@@ -82,6 +82,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   apiKeyType: string | null = null;
   selectedCharacterIndex: number = -1;
   editMode: boolean = false;
+  private localCharacterCopy: Character | null = null;  // Add this line to store the original character state
   private configSubscription?: Subscription;
   private systemSubscription?: Subscription;
   private validationSubscription?: Subscription;
@@ -1746,7 +1747,10 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     
     // If not in edit mode, enter edit mode
     if (!this.editMode) {
-      // Simply enter edit mode
+      // Store a copy of the current character state before entering edit mode
+      if (this.selectedCharacterIndex >= 0 && this.config.characters) {
+        this.localCharacterCopy = JSON.parse(JSON.stringify(this.config.characters[this.selectedCharacterIndex]));
+      }
       this.editMode = true;
     } else {
       // If already in edit mode, exit with confirmation for unsaved changes
@@ -2023,28 +2027,29 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     this.onConfigChange({characters: updatedCharacters});
   }
 
-  // Modify cancelEditMode method for reliability
   cancelEditMode(): void {
     if (!this.config) return;
     
-    // If we were editing an existing character, reload it to discard changes
-    if (this.selectedCharacterIndex >= 0) {
+    // If we were editing an existing character, restore it from the local copy
+    if (this.selectedCharacterIndex >= 0 && this.config.characters && this.localCharacterCopy) {
+      // Restore the character from our local copy
+      this.config.characters[this.selectedCharacterIndex] = JSON.parse(JSON.stringify(this.localCharacterCopy));
+      
+      // Update the backend with the restored character
+      this.configService.updateCharacter(
+        this.selectedCharacterIndex,
+        this.config.characters[this.selectedCharacterIndex]
+      );
+      
+      // Reload the character to ensure UI is in sync
       this.loadCharacter(this.selectedCharacterIndex);
-    } else {
-      // If we were creating a new character, just reset to default
-      this.selectedCharacterIndex = -1;
     }
     
-    // Always exit edit mode directly
-    this.editMode = false;
+    // Clear the local copy
+    this.localCharacterCopy = null;
     
-    // Force change detection by adding a timeout
-    setTimeout(() => {
-      if (this.editMode) {
-        console.log('Edit mode still active after cancelEditMode, forcing to false');
-        this.editMode = false;
-      }
-    }, 0);
+    // Always exit edit mode
+    this.editMode = false;
   }
 
   // Update addNewCharacter method to properly initialize with the default preset
