@@ -262,7 +262,7 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
         sleep(.05)
         keys.send('UI_Right')
         sleep(.2)
-        keys.send('UI_Select', repeat=2)
+        keys.send('UI_Select')
         sleep(.05)
 
         if 'start_navigation' in args and args['start_navigation']:
@@ -416,9 +416,21 @@ def undock(args, projected_states):
 
     return 'The ship is now undocking'
 
+def docking_key_press_sequence(stop_event):
+    keys.send('UI_Left')
+    keys.send('UI_Right')
+    keys.send("UI_Select",hold = 0.2)
+    for _ in range(6):
+        if stop_event.is_set():
+            break
+        keys.send("CyclePreviousPanel")
+        keys.send('UI_Left')
+        keys.send('UI_Right')
+        keys.send("UI_Select",hold = 0.2)
+
+
 def request_docking(args, projected_states):
     checkStatus(projected_states, {'Supercruise':True})
-    screenreader = ScreenReader()
     setGameWindowActive()
     if projected_states.get('CurrentStatus').get('GuiFocus') in ['NoFocus', 'InternalPanel', 'CommsPanel', 'RolePanel']:
         keys.send('FocusLeftPanel')
@@ -428,33 +440,23 @@ def request_docking(args, projected_states):
     else:
         raise Exception('Docking menu not available in current UI Mode.')
 
-    mode = None
-    for x in range(4):
-        mode = screenreader.detect_lhs_screen_tab()
-        if mode:
-            break
-        keys.send('CycleNextPanel', None, 1)
+    previous_timestamp = (projected_states.get('DockingEvents') or {}).get('RequestDeliveredTimestamp')
 
-    log('debug', 'Docking request screen tab', mode)
-    if not mode:
-        raise Exception('Panel not found')
-    if mode == 'system':
-        keys.send('CycleNextPanel', None, 3)
-    elif mode == 'navigation':
-        keys.send('CycleNextPanel', None, 2)
-    elif mode == 'transactions':
-        keys.send('CycleNextPanel', None, 1)
+    stop_event = threading.Event()
+    t = threading.Thread(target=docking_key_press_sequence, args=(stop_event,))
+    t.start()
 
-    sleep(0.3)
-    keys.send('UI_Left')
-    keys.send('UI_Down')
-    keys.send('UI_Up', hold=1)
-    keys.send('UI_Right')
-    sleep(0.1)
-    keys.send('UI_Select')
+    try:
+        event_manager.wait_for_condition('DockingEvents', lambda s: s.get('RequestDeliveredTimestamp') != previous_timestamp , 10)
+        msg = ""
+    except:
+        msg = "Failed to request docking via menu"
+
+    stop_event.set() # stop the keypress thread
+
     keys.send('UIFocus')
+    return msg
 
-    return f"Docking has been requested"
 
 
 # Ship Launched Fighter Actions
@@ -2755,7 +2757,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
          "required": ["power_category"]
      }, manage_power_distribution, 'ship')
 
-    actionManager.registerAction('galaxyMapOpen', "Open galaxy map. Focus on a system or start a navigation route", {
+    actionManager.registerAction('galaxyMapOpen', "Open galaxy map. If asked, also focus on a system or start a navigation route", {
         "type": "object",
         "properties": {
             "system_name": {
@@ -2780,7 +2782,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             "desired_state": {
                 "type": "string",
                 "enum": ["open", "close"],
-                "description": "Open or close system map",
+                "description": "Desired state for the system map: open or close.",
             },
         },
     }, system_map_open_or_close, 'ship')
@@ -3024,7 +3026,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, recall_dismiss_ship_buggy, 'buggy')
 
-    actionManager.registerAction('galaxyMapOpenOrCloseBuggy', "Open/close galaxy map. optionally focus on a system or start a navigation route to a system", {
+    actionManager.registerAction('galaxyMapOpenOrCloseBuggy', "Open galaxy map. If asked, also focus on a system or start a navigation route", {
         "type": "object",
         "properties": {
             "desired_state": {
@@ -3049,7 +3051,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             "desired_state": {
                 "type": "string",
                 "enum": ["open", "close"],
-                "description": "Open or close system map",
+                "description": "Desired state for the system map: open or close.",
             },
         },
     }, system_map_open_buggy, 'buggy')
@@ -3118,12 +3120,12 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, battery_humanoid, 'humanoid')
 
-    actionManager.registerAction('galaxyMapOpenOrCloseHumanoid', "Open or CLose Galaxy Map", {
+    actionManager.registerAction('galaxyMapOpenOrCloseHumanoid', "Open or Close Galaxy Map", {
         "type": "object",
         "properties": {}
     }, galaxy_map_open_humanoid, 'humanoid')
 
-    actionManager.registerAction('systemMapOpenOrCloseHumanoid', "Open or CLose System Map", {
+    actionManager.registerAction('systemMapOpenOrCloseHumanoid', "Open or Close System Map", {
         "type": "object",
         "properties": {}
     }, system_map_open_humanoid, 'humanoid')
