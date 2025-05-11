@@ -21,9 +21,9 @@ export interface ChangeEventConfigMessage extends BaseMessage {
 export interface CharacterOperationMessage extends BaseMessage {
     type: "change_config";
     config: {
-        character_operation: "add" | "update" | "delete" | "set_active";
-        character_index?: number;
-        character_data?: Character;
+        operation: "add" | "update" | "delete" | "set_active";
+        index?: number;
+        character?: Character;
         set_active?: boolean;
     };
 }
@@ -241,8 +241,8 @@ export class ConfigService {
             type: "change_config",
             timestamp: new Date().toISOString(),
             config: {
-                character_operation: "add",
-                character_data: character,
+                operation: "add",
+                character: character,
                 set_active: setActive
             }
         };
@@ -255,9 +255,9 @@ export class ConfigService {
             type: "change_config",
             timestamp: new Date().toISOString(),
             config: {
-                character_operation: "update",
-                character_index: index,
-                character_data: character
+                operation: "update",
+                index: index,
+                character: character
             }
         };
         
@@ -269,8 +269,8 @@ export class ConfigService {
             type: "change_config",
             timestamp: new Date().toISOString(),
             config: {
-                character_operation: "delete",
-                character_index: index
+                operation: "delete",
+                index: index
             }
         };
         
@@ -282,8 +282,8 @@ export class ConfigService {
             type: "change_config",
             timestamp: new Date().toISOString(),
             config: {
-                character_operation: "set_active",
-                character_index: index
+                operation: "set_active",
+                index: index
             }
         };
         

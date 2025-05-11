@@ -1224,8 +1224,8 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     if (personalityPreset === 'custom') {
       // If there's no character text at all, generate one so there's something to edit
       if (!activeChar?.character || activeChar.character.trim() === '') {
-        const charName = activeChar?.name || this.config.personality_name || 'your AI assistant';
-        const character = `I am ${charName}. I am here to assist you with Elite Dangerous. {commander_name} is the commander of this ship.`;
+        const charName = activeChar?.name || 'COVAS:NEXT';
+        const character = `You are ${charName}. I am here to assist you with Elite Dangerous. {commander_name} is the commander of this ship.`;
         
         console.log('No character text found in custom mode, generating default text');
         
