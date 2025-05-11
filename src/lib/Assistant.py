@@ -43,7 +43,9 @@ class Assistant:
                 self.tts.say(action_input_desc)
             action_result = self.action_manager.runAction(action, projected_states)
             action_results.append(action_result)
-            self.event_manager.add_tool_call([action.model_dump()], [action_result], [action_input_desc] if action_input_desc else None)
+
+            if action_result['content'] != '': # We don't add a response if the return from an action is blank
+                self.event_manager.add_tool_call([action.model_dump()], [action_result], [action_input_desc] if action_input_desc else None)
 
 
     def verify_action(self, user_input: list[str], action: dict[str, Any], prompt: list, tools: list):
