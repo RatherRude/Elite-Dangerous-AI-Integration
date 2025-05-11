@@ -542,7 +542,9 @@ class NavInfo(Projection[NavInfoState]):
         }
 
     @override
-    def process(self, event: Event) -> None:
+    def process(self, event: Event) -> list[ProjectedEvent]:
+        projected_events: list[ProjectedEvent] = []
+
         # Process NavRoute event
         if isinstance(event, GameEvent) and event.content.get('event') == 'NavRoute':
             if event.content.get('Route', []):
@@ -587,6 +589,8 @@ class NavInfo(Projection[NavInfoState]):
             if len(self.state['NavRoute']) == 0 and 'NextJumpTarget' in self.state:
                 self.state.pop('NextJumpTarget')
 
+            projected_events.append(ProjectedEvent({"event": "NotEnoughFuel"}))
+
         # Process FSDTarget
         if isinstance(event, GameEvent) and event.content.get('event') == 'FSDTarget':
             if 'Name' in event.content:
@@ -601,6 +605,8 @@ class NavInfo(Projection[NavInfoState]):
             if star_system != 'Unknown':
                 # Fetch system data for the current system asynchronously
                 self.system_db.fetch_system_data_nonblocking(star_system)
+
+        return projected_events
 
 # Define types for Backpack Projection
 BackpackItem = TypedDict('BackpackItem', {

@@ -2121,17 +2121,19 @@ class PromptGenerator:
 
         # Synthetic Events
         if event_name == 'ScanOrganicTooClose':
-            return f"{self.commander_name} is now too close to take another sample. Distance must be increased.",
+            return f"{self.commander_name} is now too close to take another sample. Distance must be increased."
         if event_name == 'ScanOrganicFarEnough':
-            return f"{self.commander_name} is now far enough away to take another sample.",
+            return f"{self.commander_name} is now far enough away to take another sample."
         if event_name == 'ScanOrganicFirst':
             scan_event = cast(Dict[str, Any], content)
             new_distance = scan_event.get('NewSampleDistance', 'unknown')
-            return f"{self.commander_name} took the first of three biological samples. New sample distance acquired: {new_distance}",
+            return f"{self.commander_name} took the first of three biological samples. New sample distance acquired: {new_distance}"
         if event_name == 'ScanOrganicSecond':
-            return f"{self.commander_name} took the second of three biological samples.",
+            return f"{self.commander_name} took the second of three biological samples."
         if event_name == 'ScanOrganicThird':
-            return f"{self.commander_name} took the third and final biological sample.",
+            return f"{self.commander_name} took the third and final biological sample."
+        if event_name == 'NotEnoughFuel':
+            return f"{self.commander_name}'s fuel is insufficient to reach the destination."
         # if event_name == 'ExternalDiscordNotification':
         #     twitch_event = cast(Dict[str, Any], content)
         #     return f"Twitch Alert! {twitch_event.get('text','')}",
@@ -2247,7 +2249,7 @@ class PromptGenerator:
             }
 
         # Deliberately ignored events
-        # log('info', f'ignored event', event)
+        log('info', f'ignored event', event)
         return None
 
     def status_messages(self, event: StatusEvent, timeoffset: str, is_important: bool):
