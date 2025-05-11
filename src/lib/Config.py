@@ -495,6 +495,12 @@ def migrate(data: dict) -> dict:
         data.pop('personality_knowledge_scifi', None)
         data.pop('personality_knowledge_history', None)
 
+    if 'game_events' in data:
+        # iterate characters and migrate game_events
+        for character in data['characters']:
+            character['game_events'] = data['game_events']
+        data.pop('game_events', None)
+
     # Ensure default values are properly set
     if 'commander_name' not in data or data['commander_name'] is None:
         data['commander_name'] = ""
