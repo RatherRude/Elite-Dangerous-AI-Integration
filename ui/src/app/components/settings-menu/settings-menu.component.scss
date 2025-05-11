@@ -61,12 +61,6 @@ mat-slide-toggle {
   min-width: 100px;
 }
 
-/* Edit mode styling */
-.editing-active {
-  border: 1px solid rgba(33, 150, 243, 0.5);
-  background-color: rgba(33, 150, 243, 0.05);
-}
-
 /* Loading state */
 .loading-overlay {
   position: absolute;
@@ -158,7 +152,6 @@ ul {
   flex-direction: row;
   flex-wrap: wrap;
   gap: 16px;
-  margin: 0 15px 16px;
 }
 
 .trait-select,

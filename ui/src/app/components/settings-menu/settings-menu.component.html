@@ -499,11 +499,9 @@
                         </div>
                     </div>
 
-                    <h2>Reactions</h2>
-                    @if (!editMode) {
-                        <p>Edit the character to customize event reactions.</p>
-                    }
                     @if (editMode) {
+                    <h2>Reactions</h2>
+
                         <mat-slide-toggle [ngModel]="getEventProperty('event_reaction_enabled_var', false)"
                                           (ngModelChange)="onEventReactionFeatureToggle('event_reaction_enabled_var', $event)">
                             Enable Event Reactions
