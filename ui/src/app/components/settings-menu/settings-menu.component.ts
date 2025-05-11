@@ -2012,7 +2012,11 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     updatedChar['react_to_danger_mining_var'] = true;
     updatedChar['react_to_danger_onfoot_var'] = true;
     updatedChar['react_to_danger_supercruise_var'] = true;
-    updatedChar['game_events'] = {};
+    
+    // Preserve existing game events if they exist
+    if (!updatedChar['game_events']) {
+      updatedChar['game_events'] = {};
+    }
     
     // Update the character
     const updatedCharacters = [...this.config.characters];
