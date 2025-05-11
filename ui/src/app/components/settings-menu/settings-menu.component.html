@@ -205,7 +205,7 @@
                                         <mat-form-field>
                                             <mat-label>Voice</mat-label>
                                             @if (config.tts_provider === 'openai') {
-                                                <mat-select [ngModel]="getCharacterProperty('tts_voice', config.tts_voice)"
+                                                <mat-select [ngModel]="getCharacterProperty('tts_voice', 'nova')"
                                                         (ngModelChange)="onTraitChange('tts_voice', $event)">
                                                     <mat-option value="alloy">Alloy - Neutral, versatile voice</mat-option>
                                                     <mat-option value="ash">Ash - New voice</mat-option>
@@ -219,11 +219,11 @@
                                                     <mat-option value="shimmer">Shimmer - Clear, warm voice</mat-option>
                                                 </mat-select>
                                             } @else if (config.tts_provider === 'edge-tts') {
-                                                <mat-select [ngModel]="getCharacterProperty('tts_voice', config.tts_voice)"
+                                                <mat-select [ngModel]="getCharacterProperty('tts_voice', 'en-US-AvaMultilingualNeural')"
                                                         (selectionChange)="onVoiceSelectionChange($event.value)">
-                                                    @if (isCustomVoice(getCharacterProperty('tts_voice', config.tts_voice))) {
-                                                        <mat-option [value]="getCharacterProperty('tts_voice', config.tts_voice)" style="font-style: italic">
-                                                            {{ getVoiceDisplayName(getCharacterProperty('tts_voice', config.tts_voice)) }}
+                                                    @if (isCustomVoice(getCharacterProperty('tts_voice', 'en-US-AvaMultilingualNeural'))) {
+                                                        <mat-option [value]="getCharacterProperty('tts_voice', 'en-US-AvaMultilingualNeural')" style="font-style: italic">
+                                                            {{ getVoiceDisplayName(getCharacterProperty('tts_voice', 'en-US-AvaMultilingualNeural')) }}
                                                         </mat-option>
                                                         <mat-divider class="custom-voice-divider"></mat-divider>
                                                     }
@@ -254,7 +254,7 @@
                                                     <mat-option value="show-all-voices">Show All Voices...</mat-option>
                                                 </mat-select>
                                             } @else {
-                                                <input matInput [ngModel]="getCharacterProperty('tts_voice', config.tts_voice)"
+                                                <input matInput [ngModel]="getCharacterProperty('tts_voice', 'nova')"
                                                     (ngModelChange)="onTraitChange('tts_voice', $event)">
                                             }
                                         </mat-form-field>
@@ -265,7 +265,7 @@
                                             <div class="trait-select lowWidth">
                                                 <mat-form-field>
                                                     <mat-label>Speed</mat-label>
-                                                    <input matInput [ngModel]="getCharacterProperty('tts_speed', config.tts_speed)"
+                                                    <input matInput [ngModel]="getCharacterProperty('tts_speed', '1,2')"
                                                            (ngModelChange)="onTraitChange('tts_speed', $event)">
                                                 </mat-form-field>
                                             </div>
@@ -278,7 +278,7 @@
                                                     Warning: This will increase the cost of each query!</mat-hint>
                                                 <mat-form-field>
                                                     <mat-label>Voice Tone Instructions</mat-label>
-                                                    <textarea matInput [ngModel]="getCharacterProperty('tts_prompt', config.tts_prompt)"
+                                                    <textarea matInput [ngModel]="getCharacterProperty('tts_prompt', '')"
                                                             (ngModelChange)="onTraitChange('tts_prompt', $event)"></textarea>
 
                                                 </mat-form-field>
@@ -883,7 +883,7 @@
                         </mat-form-field>
                         <mat-form-field>
                             <mat-label>TTS Voice</mat-label>
-                            <mat-select [ngModel]="getCharacterProperty('tts_voice', config.tts_voice)"
+                            <mat-select [ngModel]="getCharacterProperty('tts_voice', 'nova')"
                                       (ngModelChange)="onTraitChange('tts_voice', $event)">
                                 <mat-option value="alloy">Alloy - Neutral, versatile voice</mat-option>
                                 <mat-option value="ash">Ash - New voice</mat-option>
@@ -900,7 +900,7 @@
                         @if (!voiceInstructionSupportedModels.includes(config.tts_model_name)) {
                         <mat-form-field>
                             <mat-label>TTS Speed</mat-label>
-                            <input matInput [ngModel]="getCharacterProperty('tts_speed', config.tts_speed)"
+                            <input matInput [ngModel]="getCharacterProperty('tts_speed', '1,2')"
                                    (ngModelChange)="onTraitChange('tts_speed', $event)">
                         </mat-form-field>
                         }
@@ -914,7 +914,7 @@
                             Warning: This will increase the cost of each query!</mat-hint>
                         <mat-form-field>
                             <mat-label>Voice Tone Instructions</mat-label>
-                            <textarea matInput [ngModel]="getCharacterProperty('tts_prompt', config.tts_prompt)"
+                            <textarea matInput [ngModel]="getCharacterProperty('tts_prompt', '')"
                                    (ngModelChange)="onTraitChange('tts_prompt', $event)"></textarea>
 
                         </mat-form-field>
@@ -923,11 +923,11 @@
                     @if (config.tts_provider === "edge-tts") {
                         <mat-form-field>
                             <mat-label>TTS Voice</mat-label>
-                            <mat-select [ngModel]="getCharacterProperty('tts_voice', config.tts_voice)"
+                            <mat-select [ngModel]="getCharacterProperty('tts_voice', 'en-US-AvaMultilingualNeural')"
                                       (selectionChange)="onVoiceSelectionChange($event.value)">
-                                @if (isCustomVoice(getCharacterProperty('tts_voice', config.tts_voice))) {
-                                    <mat-option [value]="getCharacterProperty('tts_voice', config.tts_voice)" style="font-style: italic">
-                                        {{ getVoiceDisplayName(getCharacterProperty('tts_voice', config.tts_voice)) }}
+                                @if (isCustomVoice(getCharacterProperty('tts_voice', 'en-US-AvaMultilingualNeural'))) {
+                                    <mat-option [value]="getCharacterProperty('tts_voice', 'en-US-AvaMultilingualNeural')" style="font-style: italic">
+                                        {{ getVoiceDisplayName(getCharacterProperty('tts_voice', 'en-US-AvaMultilingualNeural')) }}
                                     </mat-option>
                                     <mat-divider class="custom-voice-divider"></mat-divider>
                                 }
@@ -960,7 +960,7 @@
                         </mat-form-field>
                         <mat-form-field>
                             <mat-label>TTS Speed</mat-label>
-                            <input matInput [ngModel]="getCharacterProperty('tts_speed', config.tts_speed)"
+                            <input matInput [ngModel]="getCharacterProperty('tts_speed', '1,2')"
                                    (ngModelChange)="onTraitChange('tts_speed', $event)">
                         </mat-form-field>
                     }
@@ -972,12 +972,12 @@
                         </mat-form-field>
                         <mat-form-field>
                             <mat-label>TTS Voice</mat-label>
-                            <input matInput [ngModel]="getCharacterProperty('tts_voice', config.tts_voice)"
+                            <input matInput [ngModel]="getCharacterProperty('tts_voice', 'nova')"
                                    (ngModelChange)="onTraitChange('tts_voice', $event)">
                         </mat-form-field>
                         <mat-form-field>
                             <mat-label>TTS Speed</mat-label>
-                            <input matInput [ngModel]="getCharacterProperty('tts_speed', config.tts_speed)"
+                            <input matInput [ngModel]="getCharacterProperty('tts_speed', '1,2')"
                                    (ngModelChange)="onTraitChange('tts_speed', $event)">
                         </mat-form-field>
                     }
@@ -994,12 +994,12 @@
                         </mat-form-field>
                         <mat-form-field>
                             <mat-label>TTS Voice</mat-label>
-                            <input matInput [ngModel]="getCharacterProperty('tts_voice', config.tts_voice)"
+                            <input matInput [ngModel]="getCharacterProperty('tts_voice', 'nova')"
                                    (ngModelChange)="onTraitChange('tts_voice', $event)">
                         </mat-form-field>
                         <mat-form-field>
                             <mat-label>TTS Speed</mat-label>
-                            <input matInput [ngModel]="getCharacterProperty('tts_speed', config.tts_speed)"
+                            <input matInput [ngModel]="getCharacterProperty('tts_speed', '1,2')"
                                    (ngModelChange)="onTraitChange('tts_speed', $event)">
                         </mat-form-field>
                         <mat-form-field>

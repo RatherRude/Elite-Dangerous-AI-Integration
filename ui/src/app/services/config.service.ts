@@ -90,23 +90,6 @@ export interface Character {
 export interface Config {
     api_key: string;
     commander_name: string;
-    // Active character properties (kept for backward compatibility)
-    character: string;
-    personality_preset: string;
-    personality_verbosity: number;
-    personality_vulgarity: number;
-    personality_empathy: number;
-    personality_formality: number;
-    personality_confidence: number;
-    personality_ethical_alignment: string;
-    personality_moral_alignment: string;
-    personality_tone: string;
-    personality_character_inspiration: string;
-    personality_language: string;
-    personality_name: string;
-    personality_knowledge_pop_culture: boolean;
-    personality_knowledge_scifi: boolean;
-    personality_knowledge_history: boolean;
     // Stored characters
     characters: Character[];
     active_character_index: number;
@@ -129,7 +112,6 @@ export interface Config {
     tts_model_name: string;
     tts_api_key: string;
     tts_endpoint: string;
-    tts_prompt: string;
     tools_var: boolean;
     vision_var: boolean;
     ptt_var: boolean;
@@ -140,8 +122,6 @@ export interface Config {
     use_action_cache_var: boolean;
     edcopilot: boolean;
     edcopilot_dominant: boolean;
-    tts_voice: string;
-    tts_speed: string;
     ptt_key: string;
     input_device_name: string;
     output_device_name: string;

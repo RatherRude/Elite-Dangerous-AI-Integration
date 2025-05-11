@@ -294,7 +294,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             // If the active character doesn't have a personality_preset, set a default
             if (activeChar && !activeChar.personality_preset) {
               this.updateActiveCharacterProperty('personality_preset', 'default');
-            } else if (!activeChar && !config.personality_preset) {
+            } else if (!activeChar) {
               // Fallback for transition: if no active character and no preset set at config level
               this.onConfigChange({personality_preset: 'default'});
             }
@@ -679,7 +679,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     } else {
       console.log('No active character, loading from preset');
       // Fallback to preset defaults if no active character or missing properties
-      const preset = config.personality_preset || 'default';
+      const preset = this.getCharacterProperty('personality_preset', 'default');
       console.log('Using preset:', preset);
       this.applySettingsFromPreset(preset);
     }
@@ -1207,16 +1207,12 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   // Modify the existing updatePrompt method to work with custom mode
   updatePrompt(): void {
     // Ensure config is initialized
-    if (!this.config) {
-      this.config = { character: '' } as Config;
-      return;
-    }
 
     // Set the flag to prevent overriding
     this.isApplyingChange = true;
 
     const activeChar = this.getActiveCharacter();
-    const personalityPreset = activeChar?.personality_preset || this.config.personality_preset || 'default';
+    const personalityPreset = activeChar?.personality_preset || 'default';
 
     console.log('Updating prompt for preset:', personalityPreset);
 
@@ -1259,17 +1255,17 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     promptParts.push(this.generateToneTextFromConfig());
     promptParts.push(this.generateKnowledgeTextFromConfig());
     
-    const charInspiration = activeChar?.personality_character_inspiration || this.config.personality_character_inspiration;
+    const charInspiration = activeChar?.personality_character_inspiration || '';
     if (charInspiration) {
       promptParts.push(this.generateCharacterInspirationTextFromConfig());
     }
     
-    const charName = activeChar?.name || this.config.personality_name;
+    const charName = activeChar?.name || 'COVAS:NEXT';
     if (charName) {
       promptParts.push(`Your name is ${charName}.`);
     }
     
-    const language = activeChar?.personality_language || this.config.personality_language;
+    const language = activeChar?.personality_language || 'english';
     if (language) {
       promptParts.push(`Always respond in ${language} regardless of the language spoken to you.`);
     }
@@ -1282,7 +1278,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     promptParts.push(this.generateMoralAlignmentTextFromConfig());
     
     // Add vulgarity with randomization
-    const vulgarity = activeChar?.personality_vulgarity || this.config.personality_vulgarity || 0;
+    const vulgarity = activeChar?.personality_vulgarity || 0;
     if (vulgarity > 0) {
       if (Math.random() * 100 <= vulgarity) {
         promptParts.push(this.generateVulgarityTextFromConfig());
@@ -1393,7 +1389,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     ];
     
     const activeChar = this.getActiveCharacter();
-    const verbosity = activeChar?.personality_verbosity ?? this.config?.personality_verbosity ?? 50;
+    const verbosity = activeChar?.personality_verbosity || 50;
     
     const index = Math.min(Math.floor(verbosity / 25), options.length - 1);
     return options[index];
@@ -1401,7 +1397,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   
   generateToneTextFromConfig(): string {
     const activeChar = this.getActiveCharacter();
-    const tone = activeChar?.personality_tone ?? this.config?.personality_tone ?? 'serious';
+    const tone = activeChar?.personality_tone || 'serious';
     
     switch (tone) {
       case 'serious':
@@ -1419,15 +1415,15 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     const activeChar = this.getActiveCharacter();
     const knowledgeAreas = [];
     
-    if (activeChar?.personality_knowledge_pop_culture ?? this.config?.personality_knowledge_pop_culture) {
+    if (activeChar?.personality_knowledge_pop_culture) {
       knowledgeAreas.push('pop culture references, movies, music, and celebrities');
     }
     
-    if (activeChar?.personality_knowledge_scifi ?? this.config?.personality_knowledge_scifi) {
+    if (activeChar?.personality_knowledge_scifi) {
       knowledgeAreas.push('science fiction concepts, popular sci-fi franchises, and futuristic ideas');
     }
     
-    if (activeChar?.personality_knowledge_history ?? this.config?.personality_knowledge_history) {
+    if (activeChar?.personality_knowledge_history) {
       knowledgeAreas.push('historical events, figures, and their significance');
     }
     
@@ -1440,7 +1436,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
 
   generateCharacterInspirationTextFromConfig(): string {
     const activeChar = this.getActiveCharacter();
-    const inspiration = activeChar?.personality_character_inspiration ?? this.config?.personality_character_inspiration ?? '';
+    const inspiration = activeChar?.personality_character_inspiration || '';
     return `Your responses should be inspired by the character or persona of ${inspiration}. Adopt their speech patterns, mannerisms, and viewpoints.`;
   }
 
@@ -1454,7 +1450,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     ];
     
     const activeChar = this.getActiveCharacter();
-    const vulgarity = activeChar?.personality_vulgarity ?? this.config?.personality_vulgarity ?? 0;
+    const vulgarity = activeChar?.personality_vulgarity || 0;
     
     const index = Math.min(Math.floor(vulgarity / 25), options.length - 1);
     return options[index];
@@ -1485,7 +1481,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     ];
     
     const activeChar = this.getActiveCharacter();
-    const empathy = activeChar?.personality_empathy ?? this.config?.personality_empathy ?? 50;
+    const empathy = activeChar?.personality_empathy || 50;
     
     const index = Math.min(Math.floor(empathy / 25), options.length - 1);
     return options[index][Math.floor(Math.random() * options[index].length)];
@@ -1516,7 +1512,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     ];
     
     const activeChar = this.getActiveCharacter();
-    const formality = activeChar?.personality_formality ?? this.config?.personality_formality ?? 50;
+    const formality = activeChar?.personality_formality || 50;
     
     const index = Math.min(Math.floor(formality / 25), options.length - 1);
     return options[index][Math.floor(Math.random() * options[index].length)];
@@ -1547,7 +1543,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     ];
     
     const activeChar = this.getActiveCharacter();
-    const confidence = activeChar?.personality_confidence ?? this.config?.personality_confidence ?? 50;
+    const confidence = activeChar?.personality_confidence || 50;
     
     const index = Math.min(Math.floor(confidence / 25), options.length - 1);
     return options[index][Math.floor(Math.random() * options[index].length)];
@@ -1555,7 +1551,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
 
   generateEthicalAlignmentTextFromConfig(): string {
     const activeChar = this.getActiveCharacter();
-    const alignment = activeChar?.personality_ethical_alignment ?? this.config?.personality_ethical_alignment ?? 'neutral';
+    const alignment = activeChar?.personality_ethical_alignment || 'neutral';
     
     switch (alignment) {
       case 'lawful':
@@ -1571,7 +1567,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
 
   generateMoralAlignmentTextFromConfig(): string {
     const activeChar = this.getActiveCharacter();
-    const alignment = activeChar?.personality_moral_alignment ?? this.config?.personality_moral_alignment ?? 'neutral';
+    const alignment = activeChar?.personality_moral_alignment || 'neutral';
     
     switch (alignment) {
       case 'good':
@@ -1587,12 +1583,12 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
 
   // Generate text for the name field
   generateNameTextFromConfig(): string {
-    return `Your name is ${this.config?.personality_name}.`;
+    return `Your name is ${this.getCharacterProperty('personality_name', 'COVAS:NEXT')}.`;
   }
 
   // Generate text for the language field
   generateLanguageTextFromConfig(): string {
-    return `Always respond in ${this.config?.personality_language} regardless of the language spoken to you.`;
+    return `Always respond in ${this.getCharacterProperty('personality_language', 'english')} regardless of the language spoken to you.`;
   }
 
   onVoiceSelectionChange(value: any) {
@@ -1605,7 +1601,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
 
   openEdgeTtsVoicesDialog() {
     const activeChar = this.getActiveCharacter();
-    const currentVoice = activeChar ? activeChar.tts_voice : this.config?.tts_voice || '';
+    const currentVoice = activeChar ? activeChar.tts_voice : 'en-US-AvaMultilingualNeural';
     
     const dialogRef = this.dialog.open(EdgeTtsVoicesDialogComponent, {
       width: '800px',
@@ -1891,9 +1887,9 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       personality_knowledge_pop_culture: this.getCharacterProperty('personality_knowledge_pop_culture', false),
       personality_knowledge_scifi: this.getCharacterProperty('personality_knowledge_scifi', false),
       personality_knowledge_history: this.getCharacterProperty('personality_knowledge_history', false),
-      tts_voice: this.getCharacterProperty('tts_voice', this.config.tts_voice || ''),
-      tts_speed: this.getCharacterProperty('tts_speed', this.config.tts_speed || '1.2'),
-      tts_prompt: this.getCharacterProperty('tts_prompt', this.config.tts_prompt || '')
+      tts_voice: this.getCharacterProperty('tts_voice', 'nova'),
+      tts_speed: this.getCharacterProperty('tts_speed', '1.2'),
+      tts_prompt: this.getCharacterProperty('tts_prompt', '')
     };
     
     // Event reaction settings using bracket notation
@@ -2074,9 +2070,9 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       personality_knowledge_pop_culture: false,
       personality_knowledge_scifi: false,
       personality_knowledge_history: false,
-      tts_voice: this.config.tts_voice == 'en-GB-SoniaNeural' ? 'en-US-AvaMultilingualNeural' : this.config.tts_voice || '',
-      tts_speed: this.config.tts_speed || '1.2',
-      tts_prompt: this.config.tts_prompt || '',
+      tts_voice: this.getCharacterProperty('tts_voice', 'nova'),
+      tts_speed: this.getCharacterProperty('tts_speed', '1.2'),
+      tts_prompt: this.getCharacterProperty('tts_prompt', ''),
       // Add default game events
       game_events: {
         "LoadGame": true,
@@ -2653,25 +2649,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
           this.isApplyingChange = false;
         }
       });
-    } else {
-      // Fallback for transition: update top-level property
-      if (preset !== 'custom') {
-        this.onConfigChange({
-          personality_preset: preset
-        }).then(() => {
-          // Wait for the change to apply, then update the prompt
-          setTimeout(() => {
-            this.updatePrompt();
-            this.isApplyingChange = false;
-          }, 200);
-        });
-      } else {
-        this.onConfigChange({
-          personality_preset: preset
-        }).finally(() => {
-          this.isApplyingChange = false;
-        });
-      }
     }
   }
 

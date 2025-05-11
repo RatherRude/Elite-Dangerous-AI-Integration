@@ -526,6 +526,8 @@ def merge_config_data(defaults: dict, user: dict):
     for key in defaults:
         merge[key] = defaults.get(key)
 
+    print(json.dumps(merge))
+
     # Remove personality-related keys from merge
     personality_keys = [
         'game_events',
@@ -552,13 +554,18 @@ def merge_config_data(defaults: dict, user: dict):
         'react_to_material',
         'react_to_danger_mining_var',
         'react_to_danger_onfoot_var',
-        'react_to_danger_supercruise_var'
+        'react_to_danger_supercruise_var',
+        'character_operation',
+        'character_index',
+        'character_data',
+        'reset_game_events'
     ]
     
     for key in personality_keys:
         if key in merge:
             merge.pop(key, None)
-    
+    print(json.dumps(merge))
+
     # Then, override with user values if they exist and are of the correct type
     for key in user:
         if key in defaults:
@@ -1039,46 +1046,3 @@ def set_active_character(self, index):
         
     # Set active character index
     self.data["active_character_index"] = index
-        
-    # Load character data into main settings
-    try:
-        character_data = characters[index]
-        # Apply all character fields
-        self.update_data("character", character_data.get("character", ""))
-        self.update_data("personality_preset", character_data.get("personality_preset", "default"))
-        self.update_data("personality_verbosity", character_data.get("personality_verbosity", 50))
-        self.update_data("personality_vulgarity", character_data.get("personality_vulgarity", 0))
-        self.update_data("personality_empathy", character_data.get("personality_empathy", 50))
-        self.update_data("personality_formality", character_data.get("personality_formality", 50))
-        self.update_data("personality_confidence", character_data.get("personality_confidence", 50))
-        self.update_data("personality_ethical_alignment", character_data.get("personality_ethical_alignment", "neutral"))
-        self.update_data("personality_moral_alignment", character_data.get("personality_moral_alignment", "neutral"))
-        self.update_data("personality_tone", character_data.get("personality_tone", "serious"))
-        self.update_data("personality_character_inspiration", character_data.get("personality_character_inspiration", ""))
-        self.update_data("personality_name", character_data.get("name", ""))
-        self.update_data("personality_language", character_data.get("personality_language", "English"))
-        self.update_data("personality_knowledge_pop_culture", character_data.get("personality_knowledge_pop_culture", False))
-        self.update_data("personality_knowledge_scifi", character_data.get("personality_knowledge_scifi", False))
-        self.update_data("personality_knowledge_history", character_data.get("personality_knowledge_history", False))
-        
-        # Also apply TTS voice if present
-        if "tts_voice" in character_data:
-            self.update_data("tts_voice", character_data.get("tts_voice", ""))
-            
-        # Apply TTS speed if present
-        if "tts_speed" in character_data:
-            self.update_data("tts_speed", character_data.get("tts_speed", "1.2"))
-            
-        # Apply TTS prompt if present
-        if "tts_prompt" in character_data:
-            self.update_data("tts_prompt", character_data.get("tts_prompt", ""))
-            
-        # Write the config to disk
-        self.write_config()
-        
-        # Notify listeners
-        #self.emit_config_change({"active_character_index": index})
-            
-    except Exception as e:
-        print(f"Error setting active character: {str(e)}")
-        return
