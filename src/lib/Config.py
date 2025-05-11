@@ -526,8 +526,7 @@ def merge_config_data(defaults: dict, user: dict):
     for key in defaults:
         merge[key] = defaults.get(key)
 
-    print(json.dumps(merge))
-
+    
     # Remove personality-related keys from merge
     personality_keys = [
         'game_events',
@@ -564,8 +563,7 @@ def merge_config_data(defaults: dict, user: dict):
     for key in personality_keys:
         if key in merge:
             merge.pop(key, None)
-    print(json.dumps(merge))
-
+    
     # Then, override with user values if they exist and are of the correct type
     for key in user:
         if key in defaults:
