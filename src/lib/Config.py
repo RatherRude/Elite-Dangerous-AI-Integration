@@ -424,88 +424,74 @@ def get_asset_path(filename: str) -> str:
 
 def migrate(data: dict) -> dict:
     events = data.get('game_events', {})
-    if 'Exploration' in events:
-        enabled_events = {}
-        for section in events.keys():
-            for name,value in events[section].items():
-                enabled_events[name] = value
-        data['game_events'] = enabled_events
-        
-    # Migrate vision_var to vision_provider
-    if 'vision_var' in data and not data.get('vision_var'):
-        data['vision_provider'] = 'none'
-    
-    # Migrate old character format to new characters array
-    if 'characters' not in data:
-        print("Migrating old character format to new characters array")
-        data['characters'] = []
-        data['active_character_index'] = -1
-        
-        # If we have a character name, create a character entry
-        character = {
-            "name": 'Migrated',
-            "character": data.get('character', ''),
-            "personality_preset": data.get('personality_preset', 'custom'),
-            "personality_verbosity": data.get('personality_verbosity', 50),
-            "personality_vulgarity": data.get('personality_vulgarity', 0),
-            "personality_empathy": data.get('personality_empathy', 50),
-            "personality_formality": data.get('personality_formality', 50),
-            "personality_confidence": data.get('personality_confidence', 50),
-            "personality_ethical_alignment": data.get('personality_ethical_alignment', 'neutral'),
-            "personality_moral_alignment": data.get('personality_moral_alignment', 'neutral'),
-            "personality_tone": data.get('personality_tone', 'serious'),
-            "personality_character_inspiration": data.get('personality_character_inspiration', ''),
-            "personality_language": data.get('personality_language', ''),
-            "personality_knowledge_pop_culture": data.get('personality_knowledge_pop_culture', False),
-            "personality_knowledge_scifi": data.get('personality_knowledge_scifi', False),
-            "personality_knowledge_history": data.get('personality_knowledge_history', False),
-            "tts_voice": data.get('tts_voice', 'en-US-AvaMultilingualNeural'),
-            "tts_speed": data.get('tts_speed', "1.2"),
-            "tts_prompt": data.get('tts_prompt', ""),
-            "game_events": game_events,
-            "event_reaction_enabled_var": True,
-            "react_to_text_local_var": True,
-            "react_to_text_starsystem_var": True,
-            "react_to_text_npc_var": False,
-            "react_to_text_squadron_var": True,
-            "react_to_material": 'opal, diamond, alexandrite',
-            "react_to_danger_mining_var": False,
-            "react_to_danger_onfoot_var": False,
-            "react_to_danger_supercruise_var": False
-        }
-        print(f"Created character from existing settings: {character['name']}")
-        data['characters'].append(character)
-        data['active_character_index'] = 0
 
-        data.pop('character', None)
-        data.pop('personality_preset', None)
-        data.pop('personality_verbosity', None)
-        data.pop('personality_vulgarity', None)
-        data.pop('personality_empathy', None)
-        data.pop('personality_formality', None)
-        data.pop('personality_confidence', None)
-        data.pop('personality_ethical_alignment', None)
-        data.pop('personality_moral_alignment', None)
-        data.pop('personality_tone', None)
-        data.pop('personality_character_inspiration', None)
-        data.pop('personality_language', None)
-        data.pop('personality_name', None)
-        data.pop('personality_knowledge_pop_culture', None)
-        data.pop('personality_knowledge_scifi', None)
-        data.pop('personality_knowledge_history', None)
-
-    if 'game_events' in data:
-        for character in data['characters']:
-            character['game_events'] = data['game_events']
-        data.pop('game_events', None)
-
-    # Ensure default values are properly set
-    if 'commander_name' not in data or data['commander_name'] is None:
-        data['commander_name'] = ""
     
     if 'config_version' not in data or data['config_version'] is None:
+
         data['config_version'] = 1
-        
+
+        if 'Exploration' in events:
+            enabled_events = {}
+            for section in events.keys():
+                for name, value in events[section].items():
+                    enabled_events[name] = value
+            data['game_events'] = enabled_events
+
+        # Migrate vision_var to vision_provider
+        if 'vision_var' in data and not data.get('vision_var'):
+            data['vision_provider'] = 'none'
+
+        # Migrate old character format to new characters array
+        if 'characters' not in data:
+            print("Migrating old character format to new characters array")
+            data['characters'] = []
+            data['active_character_index'] = -1
+
+            # If we have a character name, create a character entry
+            character = {
+                "name": 'Migrated',
+                "character": data.get('character', ''),
+                "personality_preset": data.get('personality_preset', 'custom'),
+                "personality_verbosity": data.get('personality_verbosity', 50),
+                "personality_vulgarity": data.get('personality_vulgarity', 0),
+                "personality_empathy": data.get('personality_empathy', 50),
+                "personality_formality": data.get('personality_formality', 50),
+                "personality_confidence": data.get('personality_confidence', 50),
+                "personality_ethical_alignment": data.get('personality_ethical_alignment', 'neutral'),
+                "personality_moral_alignment": data.get('personality_moral_alignment', 'neutral'),
+                "personality_tone": data.get('personality_tone', 'serious'),
+                "personality_character_inspiration": data.get('personality_character_inspiration', ''),
+                "personality_language": data.get('personality_language', ''),
+                "personality_knowledge_pop_culture": data.get('personality_knowledge_pop_culture', False),
+                "personality_knowledge_scifi": data.get('personality_knowledge_scifi', False),
+                "personality_knowledge_history": data.get('personality_knowledge_history', False),
+                "tts_voice": data.get('tts_voice', 'en-US-AvaMultilingualNeural'),
+                "tts_speed": data.get('tts_speed', "1.2"),
+                "tts_prompt": data.get('tts_prompt', ""),
+                "game_events": game_events,
+                "event_reaction_enabled_var": True,
+                "react_to_text_local_var": True,
+                "react_to_text_starsystem_var": True,
+                "react_to_text_npc_var": False,
+                "react_to_text_squadron_var": True,
+                "react_to_material": 'opal, diamond, alexandrite',
+                "react_to_danger_mining_var": False,
+                "react_to_danger_onfoot_var": False,
+                "react_to_danger_supercruise_var": False
+            }
+            print(f"Created character from existing settings: {character['name']}")
+            data['characters'].append(character)
+            data['active_character_index'] = 0
+
+        if 'game_events' in data:
+            for character in data['characters']:
+                character['game_events'] = data['game_events']
+            data.pop('game_events', None)
+
+        # Ensure default values are properly set
+        if 'commander_name' not in data or data['commander_name'] is None:
+            data['commander_name'] = ""
+
         if 'llm_provider' in data and data['llm_provider'] == 'google-ai-studio':
             if 'llm_model_name' in data and data['llm_model_name'] == 'gemini-2.0-flash':
                 data['llm_model_name'] = 'gemini-2.5-flash-preview-04-17'
@@ -526,44 +512,6 @@ def merge_config_data(defaults: dict, user: dict):
     for key in defaults:
         merge[key] = defaults.get(key)
 
-    
-    # Remove personality-related keys from merge
-    personality_keys = [
-        'game_events',
-        'character',
-        'personality_preset',
-        'personality_verbosity',
-        'personality_vulgarity',
-        'personality_empathy',
-        'personality_formality',
-        'personality_confidence',
-        'personality_ethical_alignment',
-        'personality_moral_alignment',
-        'personality_tone',
-        'personality_character_inspiration',
-        'personality_language',
-        'personality_name',
-        'personality_knowledge_pop_culture',
-        'personality_knowledge_scifi',
-        'personality_knowledge_history',
-        'react_to_text_local_var',
-        'react_to_text_npc_var',
-        'react_to_text_squadron_var',
-        'react_to_text_starsystem_var',
-        'react_to_material',
-        'react_to_danger_mining_var',
-        'react_to_danger_onfoot_var',
-        'react_to_danger_supercruise_var',
-        'character_operation',
-        'character_index',
-        'character_data',
-        'reset_game_events'
-    ]
-    
-    for key in personality_keys:
-        if key in merge:
-            merge.pop(key, None)
-    
     # Then, override with user values if they exist and are of the correct type
     for key in user:
         if key in defaults:
@@ -585,10 +533,7 @@ def merge_config_data(defaults: dict, user: dict):
                 merge[key] = user.get(key)
             else:
                 merge[key] = user.get(key)
-        else:
-            # Copy unknown keys from user config
-            merge[key] = user.get(key)
-            
+
     return merge
 
 
