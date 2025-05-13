@@ -191,18 +191,21 @@ class EventManager:
         projection_version = hashlib.sha256(projection_source.encode()).hexdigest()
         log('debug', 'Register projection', projection_class_name, 'version', projection_version)
         
-        state = self.projection_store.init(projection_class_name, projection_version, {"state": projection.get_default_state(), "last_processed": 0.0})
-        projection.state = state["state"]
-        projection.last_processed = state["last_processed"]
-        
-        for event in self.processed + self.pending:
-            if event.processed_at <= projection.last_processed:
-                continue
-            #log('debug', 'updating', projection_class_name, 'with', event, 'after starting from', projection.last_processed)
-            self.update_projection(projection, event, save_later=True)
-        
-        self.projections.append(projection)
-        self.save_projections()
+        try:
+            state = self.projection_store.init(projection_class_name, projection_version, {"state": projection.get_default_state(), "last_processed": 0.0})
+            projection.state = state["state"]
+            projection.last_processed = state["last_processed"]
+            
+            for event in self.processed + self.pending:
+                if event.processed_at <= projection.last_processed:
+                    continue
+                #log('debug', 'updating', projection_class_name, 'with', event, 'after starting from', projection.last_processed)
+                self.update_projection(projection, event, save_later=True)
+            
+            self.projections.append(projection)
+            self.save_projections()
+        except Exception as e:
+            log('error', 'Error registering projection', projection, e, traceback.format_exc())
 
     def wait_for_condition(self, projection_name: str, condition_fn, timeout=None):
         """

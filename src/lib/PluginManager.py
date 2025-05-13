@@ -53,40 +53,52 @@ class PluginManager:
     def load_plugins(self) -> Self:
         """Load all .py files in PLUGIN_FOLDER as plugins."""
         for file in os.listdir(self.PLUGIN_FOLDER):
-            # Check if the file is a folder
-            abs_subfolder_path =os.path.join(self.PLUGIN_FOLDER, file)
-            if os.path.isdir(abs_subfolder_path):
-                for file in os.listdir(abs_subfolder_path):
+            try:
+                # Check if the file is a folder
+                abs_subfolder_path =os.path.join(self.PLUGIN_FOLDER, file)
+                if os.path.isdir(abs_subfolder_path):
+                    for file in os.listdir(abs_subfolder_path):
+                        # Check if the file is a .py file
+                        if file.endswith(".py"):
+                            module_name = abs_subfolder_path[:-3]
+                            module = self.load_plugin_module(os.path.join(abs_subfolder_path, file))
+                            self.plugin_list[module_name] = module
+                else:
                     # Check if the file is a .py file
                     if file.endswith(".py"):
-                        module_name = abs_subfolder_path[:-3]
-                        module = self.load_plugin_module(os.path.join(abs_subfolder_path, file))
+                        module_name = file[:-3]
+                        module = self.load_plugin_module(os.path.join(self.PLUGIN_FOLDER, file))
                         self.plugin_list[module_name] = module
-            else:
-                # Check if the file is a .py file
-                if file.endswith(".py"):
-                    module_name = file[:-3]
-                    module = self.load_plugin_module(os.path.join(self.PLUGIN_FOLDER, file))
-                    self.plugin_list[module_name] = module
+            except Exception as e:
+                log('error', f"Failed to load plugin {file}: {e}")
         return self
 
     def register_actions(self, deps: PluginHelper) -> None:
         """Register all actions for each plugin."""
         for module in self.plugin_list.values():
             log('info', f"Registering Actions for {module.plugin_name}")
-            module.register_actions(deps)
+            try:
+                module.register_actions(deps)
+            except Exception as e:
+                log('error', f"Failed to register actions for {module.plugin_name}: {e}")
 
     def register_projections(self, deps: PluginHelper):
         """Register all projections for each plugin."""
         for module in self.plugin_list.values():
             log('info', f"Registering Projections for {module.plugin_name}")
-            module.register_projections(deps)
+            try:
+                module.register_projections(deps)
+            except Exception as e:
+                log('error', f"Failed to register projections for {module.plugin_name}: {e}")
     
     def register_sideeffects(self, deps: PluginHelper):
         """Register all side effects for each plugin."""
         for module in self.plugin_list.values():
             log('info', f"Registering Side-Effects for {module.plugin_name}")
-            module.register_sideeffects(deps)
+            try:
+                module.register_sideeffects(deps)
+            except Exception as e:
+                log('error', f"Failed to register side effects for {module.plugin_name}: {e}")
     
     def register_settings(self):
         """Register all settings for each plugin."""
