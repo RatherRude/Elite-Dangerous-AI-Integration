@@ -2145,6 +2145,16 @@ class PromptGenerator:
             twitch_event = cast(Dict[str, Any], content)
             return f"{self.commander_name} has received a Discord notification.",
 
+        if event_name == "DockingComputerDocking":
+            return f"{self.commander_name}'s ship has initiated automated docking computer"
+
+        if event_name == "DockingComputerUndocking":
+            # we know it's a station as we only trigger undking event if we are inside a station
+            return f"{self.commander_name}'s ship has initiated automated UnDocking computer, we are leaving the station"
+
+        if event_name == "DockingComputerDeactivated":
+            return f"{self.commander_name}'s ship has deactivated the docking computer"
+
         log('debug', f'fallback for event', event_name, content)
 
         return f"Event: {event_name}\n{yaml.dump(content)}"

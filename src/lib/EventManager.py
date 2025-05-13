@@ -145,7 +145,10 @@ class EventManager:
     def update_projections(self, event: Event, save_later: bool = False):
         for projection in self.projections:
             self.update_projection(projection, event, save_later=save_later)
-    
+
+    def get_projected_state_snapshot(self) -> dict[str, Any]:
+        return {p.__class__.__name__: p.state.copy() for p in self.projections}
+
     def update_projection(self, projection: Projection, event: Event, save_later: bool = False):
         projection_name = projection.__class__.__name__
         try:
@@ -155,6 +158,11 @@ class EventManager:
                 for e in projected_events:
                     self.add_projected_event(e, event)
                     self.event_store.insert_event(event, datetime.now(timezone.utc).timestamp())
+
+                    # Only trigger sideeffects if the source event is live
+                    if not event.historic:
+                        self.trigger_sideeffects(e, self.get_projected_state_snapshot())
+
         except Exception as e:
             log('error', 'Error processing event', event, 'with projection', projection, e, traceback.format_exc())
             return
