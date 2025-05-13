@@ -143,7 +143,7 @@ class EventManager:
     
     def register_sideeffect(self, sideeffect: Callable[[Event, dict[str, Any]], None]):
         self.sideeffects.append(sideeffect)
-
+        
     def get_current_state(self) -> tuple[list[Event], dict[str, Any]]:
         """
         Returns the current state of the event manager.
@@ -154,14 +154,13 @@ class EventManager:
             projected_states[projection.__class__.__name__] = projection.state.copy()
         return self.processed, projected_states
 
-
     def update_projections(self, event: Event, save_later: bool = False) -> list[ProjectedEvent]:
         projected_events: list[ProjectedEvent] = []
         for projection in self.projections:
             evts = self.update_projection(projection, event, save_later=save_later)
             projected_events.extend(evts)
         return projected_events
-
+    
     def update_projection(self, projection: Projection, event: Event, save_later: bool = False) -> list[ProjectedEvent]:
         projection_name = projection.__class__.__name__
         try:
