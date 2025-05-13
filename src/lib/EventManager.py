@@ -111,7 +111,7 @@ class EventManager:
             timestamp = datetime.now(timezone.utc).timestamp()
             event.processed_at = timestamp
             self.event_store.insert_event(event, timestamp, commit=False)
-            self.update_projections(event, save_later=True)
+            projected_events = self.update_projections(event, save_later=True)
             
             self.pending.append(event)
             
@@ -124,7 +124,9 @@ class EventManager:
                 projected_states[projection.__class__.__name__] = projection.state.copy()
             
             self.trigger_sideeffects(event, projected_states)
-            
+            for projected_event in projected_events:
+                self.trigger_sideeffects(projected_event, projected_states)
+
         self.event_store.commit()
         self.save_projections()
         self.processed += self.pending
@@ -142,14 +144,25 @@ class EventManager:
     def register_sideeffect(self, sideeffect: Callable[[Event, dict[str, Any]], None]):
         self.sideeffects.append(sideeffect)
 
-    def update_projections(self, event: Event, save_later: bool = False):
+    def get_current_state(self) -> tuple[list[Event], dict[str, Any]]:
+        """
+        Returns the current state of the event manager.
+        :return: A tuple containing the list of processed events and a dictionary of projection states.
+        """
+        projected_states = {}
         for projection in self.projections:
-            self.update_projection(projection, event, save_later=save_later)
+            projected_states[projection.__class__.__name__] = projection.state.copy()
+        return self.processed, projected_states
 
-    def get_projected_state_snapshot(self) -> dict[str, Any]:
-        return {p.__class__.__name__: p.state.copy() for p in self.projections}
 
-    def update_projection(self, projection: Projection, event: Event, save_later: bool = False):
+    def update_projections(self, event: Event, save_later: bool = False) -> list[ProjectedEvent]:
+        projected_events: list[ProjectedEvent] = []
+        for projection in self.projections:
+            evts = self.update_projection(projection, event, save_later=save_later)
+            projected_events.extend(evts)
+        return projected_events
+
+    def update_projection(self, projection: Projection, event: Event, save_later: bool = False) -> list[ProjectedEvent]:
         projection_name = projection.__class__.__name__
         try:
             projected_events = projection.process(event)
@@ -158,20 +171,16 @@ class EventManager:
                 for e in projected_events:
                     self.add_projected_event(e, event)
                     self.event_store.insert_event(event, datetime.now(timezone.utc).timestamp())
-
-                    # Only trigger sideeffects if the source event is live
-                    if not event.historic:
-                        self.trigger_sideeffects(e, self.get_projected_state_snapshot())
-
         except Exception as e:
             log('error', 'Error processing event', event, 'with projection', projection, e, traceback.format_exc())
-            return
+            return []
         if event.processed_at < projection.last_processed:
             log('warn', 'Projection', projection_name, 'is running backwards in time!', 'Event:', event.processed_at, 'Projection:', projection.last_processed)
         projection.last_processed = event.processed_at
         if not save_later:
             self.projection_store.set(projection_name, {"state": projection.state, "last_processed": projection.last_processed})
-    
+        return projected_events
+
     def save_projections(self):
         for projection in self.projections:
             self.projection_store.set(projection.__class__.__name__, {"state": projection.state, "last_processed": projection.last_processed})
