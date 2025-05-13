@@ -10,7 +10,7 @@ from typing import Any, Callable, Literal, Self, TypedDict, final
 import openai
 
 from .PluginBase import PluginBase
-from .PluginDependencies import PluginDependencies
+from .PluginHelper import PluginHelper
 from .PluginSettingDefinitions import PluginSettings
 from .ScreenReader import ScreenReader
 from .Logger import log
@@ -70,19 +70,19 @@ class PluginManager:
                     self.plugin_list[module_name] = module
         return self
 
-    def register_actions(self, deps: PluginDependencies) -> None:
+    def register_actions(self, deps: PluginHelper) -> None:
         """Register all actions for each plugin."""
         for module in self.plugin_list.values():
             log('info', f"Registering Actions for {module.plugin_name}")
             module.register_actions(deps)
 
-    def register_projections(self, deps: PluginDependencies):
+    def register_projections(self, deps: PluginHelper):
         """Register all projections for each plugin."""
         for module in self.plugin_list.values():
             log('info', f"Registering Projections for {module.plugin_name}")
             module.register_projections(deps)
     
-    def register_sideeffects(self, deps: PluginDependencies):
+    def register_sideeffects(self, deps: PluginHelper):
         """Register all side effects for each plugin."""
         for module in self.plugin_list.values():
             log('info', f"Registering Side-Effects for {module.plugin_name}")

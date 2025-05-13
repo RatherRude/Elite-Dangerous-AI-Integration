@@ -7,7 +7,7 @@ from openai import OpenAI
 from openai.types.chat import ChatCompletion
 from openai.types.chat import ChatCompletionMessageToolCall
 
-from lib.PluginDependencies import PluginDependencies
+from lib.PluginHelper import PluginHelper
 from lib.Config import Config, assign_ptt, get_ed_appdata_path, get_ed_journals_path, get_system_info, load_config, save_config, update_config, update_event_config, validate_config
 from lib.PluginManager import PluginManager
 from lib.ActionManager import ActionManager
@@ -127,7 +127,7 @@ class Chat:
         self.event_manager.register_sideeffect(self.on_event)
         self.event_manager.register_sideeffect(self.assistant.on_event)
         
-        self.plugin_dependencies = PluginDependencies(config, self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.system_database, self.ed_keys)
+        self.plugin_dependencies = PluginHelper(config, self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.system_database, self.ed_keys)
         log("debug", "Plugin dependencies ready...")
         
         log("debug", "Registering plugin provided side effect...")

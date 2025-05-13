@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 import openai
 
 from lib.Config import Config
-from lib.PluginDependencies import PluginDependencies
+from lib.PluginHelper import PluginHelper
 from lib.PluginSettingDefinitions import PluginSettings, SettingsGrid, SelectOption, TextAreaSetting, TextSetting, SelectSetting, NumericalSetting, ToggleSetting, ParagraphSetting
 from lib.ScreenReader import ScreenReader
 from lib.Logger import log
@@ -157,45 +157,45 @@ class HelloWorld(PluginBase):
     )
     
     @override
-    def register_actions(self, deps: PluginDependencies):
+    def register_actions(self, helper: PluginHelper):
         # Register actions
-        deps.action_manager.registerAction('helloWorld', "Say hello to the world.", {
+        helper.register_action('helloWorld', "Say hello to the world.", {
             "type": "object",
             "properties": {}
-        }, lambda args, projected_states: self.hello_world_action(args, projected_states, deps), 'global')
+        }, lambda args, projected_states: self.hello_world_action(args, projected_states, helper), 'global')
 
         log('debug', f"Actions registered for {self.plugin_name}")
         
     @override
-    def register_projections(self, deps: PluginDependencies):
+    def register_projections(self, helper: PluginHelper):
         # Register projections
-        deps.event_manager.register_projection(CurrentHelloWorldState())
+        helper.register_projection(CurrentHelloWorldState())
         
         log('debug', f"Projections registered for {self.plugin_name}")
 
     @override
-    def register_sideeffects(self, deps: PluginDependencies):
+    def register_sideeffects(self, helper: PluginHelper):
         # Register side effects
-        deps.event_manager.register_sideeffect(self.hello_world_sideeffect)
+        helper.register_sideeffect(self.hello_world_sideeffect)
 
         log('debug', f"Side effects registered for {self.plugin_name}")
 
     # Actions
-    def hello_world_action(self, args, projected_states, deps: PluginDependencies) -> str:
+    def hello_world_action(self, args, projected_states, helper: PluginHelper) -> str:
         log('info', 'Hello World!')
 
         # Toggle the boolean value
-        # Use deps.event_manager to get the current projection state.
-        projection: CurrentHelloWorldState | None = cast(CurrentHelloWorldState | None, deps.event_manager.get_projection(CurrentHelloWorldState))
+        # Use helper.event_manager to get the current projection state.
+        projection: CurrentHelloWorldState | None = cast(CurrentHelloWorldState | None, helper.get_projection(CurrentHelloWorldState))
         if projection is not None:
-            self.set_boolean(deps, projection.state['bool_value'])
+            self.set_boolean(helper, projection.state['bool_value'])
             
         return "This is the result of the hello World action."
 
     # Functions
-    def set_boolean(self, deps: PluginDependencies, new_bool_value: bool):
+    def set_boolean(self, helper: PluginHelper, new_bool_value: bool):
         event = BoolValueUpdatedEvent(new_bool_value)
-        deps.event_manager.incoming.put(event) # Updates the boolean in the projection state
+        helper.put_incoming_event(event) # Updates the boolean in the projection state
 
     def hello_world_sideeffect(self, event: Event, projected_states: dict[str, Any]):
         log('debug', f"Hello World side effect triggered by event: {event.__class__.__name__} event.")

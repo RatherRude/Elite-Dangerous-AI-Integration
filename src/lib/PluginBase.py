@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from .PluginDependencies import PluginDependencies
+from .PluginHelper import PluginHelper
 from .PluginSettingDefinitions import PluginSettings
 
 class PluginBase(ABC):
@@ -8,10 +8,15 @@ class PluginBase(ABC):
     Base class for all plugins.
     """
 
-    # Plugin name
     plugin_name: str
-    # Define the settings for this plugin. This is the settings that will be shown in the UI.
+    """
+    The name of the plugin.
+    """
+    
     settings_config: PluginSettings | None = None
+    """
+    Define the settings for this plugin. This is the settings that will be shown in the UI.
+    """
 
     @abstractmethod
     def __init__(self, plugin_name: str = "PluginBase"):
@@ -26,7 +31,7 @@ class PluginBase(ABC):
 
     # Register actions
     @abstractmethod
-    def register_actions(self, deps: PluginDependencies):
+    def register_actions(self, helper: PluginHelper):
         """
         Registers all actions for this plugin.
 
@@ -34,15 +39,14 @@ class PluginBase(ABC):
         will then register all actions, projections and side effects with the respective managers.
 
         Args:
-            deps (PluginDependencies): The dependencies object containing all services and managers
-                that can be used by plugins.
+            helper (PluginHelper): The helper class that can be used to register actions, projections, side effects and more.
         """
 
         pass
     
     # Register projections
     @abstractmethod
-    def register_projections(self, deps: PluginDependencies):
+    def register_projections(self, helper: PluginHelper):
         """
         Registers all projections for this plugin.
 
@@ -50,14 +54,13 @@ class PluginBase(ABC):
         will then register all actions, projections and side effects with the respective managers.
 
         Args:
-            deps (PluginDependencies): The dependencies object containing all services and managers
-                that can be used by plugins.
+            helper (PluginHelper): The helper class that can be used to register actions, projections, side effects and more.
         """
         pass
 
     # Register sideeffects
     @abstractmethod
-    def register_sideeffects(self, deps: PluginDependencies):
+    def register_sideeffects(self, helper: PluginHelper):
         """
         Registers all side effects for this plugin.
 
@@ -65,8 +68,7 @@ class PluginBase(ABC):
         will then register all actions, projections and side effects with the respective managers.
 
         Args:
-            deps (PluginDependencies): The dependencies object containing all services and managers
-                that can be used by plugins.
+            helper (PluginHelper): The helper class that can be used to register actions, projections, side effects and more.
         """
         pass
     
