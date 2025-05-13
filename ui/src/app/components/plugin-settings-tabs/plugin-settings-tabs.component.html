@@ -1,9 +1,9 @@
 @for (plugin_settings_config of plugin_settings_configs; track plugin_settings_config.key) {
-    <mat-tab>
-        <ng-template mat-tab-label>
+    <div class="plugin-settings-section">
+        <div class="plugin-settings-header">
             <mat-icon class="tab-icon">{{ plugin_settings_config.icon }}</mat-icon>
-            {{ plugin_settings_config.label }}
-        </ng-template>
+            <span class="plugin-settings-title">{{ plugin_settings_config.label }}</span>
+        </div>
         <div class="tab-content">
             @if (config) {
                 @for (grid of plugin_settings_config.grids; track grid.key) {
@@ -65,5 +65,5 @@
                 }
             }
         </div>
-    </mat-tab>
+    </div>
 }

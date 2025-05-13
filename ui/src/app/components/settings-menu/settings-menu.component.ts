@@ -27,7 +27,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { EdgeTtsVoicesDialogComponent } from '../edge-tts-voices-dialog';
 import { ConfirmationDialogComponent, ConfirmationDialogData } from '../../components/confirmation-dialog/confirmation-dialog.component';
 import { ConfirmationDialogService } from '../../services/confirmation-dialog.service';
-import { PluginSettingsTabComponent } from "../plugin-settings-tabs/plugin-settings-tabs.component";
+import { PluginSettingsTabsComponent } from "../plugin-settings-tabs/plugin-settings-tabs.component";
 
 interface PromptSettings {
   // Existing settings
@@ -72,7 +72,7 @@ interface PromptSettings {
     MatDialogModule,
     MatProgressSpinnerModule,
     EdgeTtsVoicesDialogComponent,
-    PluginSettingsTabComponent
+    PluginSettingsTabsComponent
   ],
   templateUrl: "./settings-menu.component.html",
   styleUrls: ["./settings-menu.component.scss"]

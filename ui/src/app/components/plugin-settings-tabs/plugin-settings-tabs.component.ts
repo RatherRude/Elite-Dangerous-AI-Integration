@@ -50,7 +50,7 @@ import { PluginSettings, SelectSetting, SettingBase, TextAreaSetting } from "../
   templateUrl: "./plugin-settings-tabs.component.html",
   styleUrls: ["../settings-menu/settings-menu.component.scss"]
 })
-export class PluginSettingsTabComponent implements OnInit, OnDestroy {
+export class PluginSettingsTabsComponent implements OnInit, OnDestroy {
   config: Config | null = null;
   private configSubscription?: Subscription;
   private plugin_settings_configs_subscription?: Subscription;
@@ -66,13 +66,13 @@ export class PluginSettingsTabComponent implements OnInit, OnDestroy {
   ) {}
   
   ngOnInit() {
+    console.log('PluginSettingsTabsComponent initialized');
     this.configSubscription = this.configService.config$.subscribe(
       (config) => {
         if (config) {
           // Store the new config
           this.config = config;
-          
-          console.log('Config loaded in plugin settings component');
+          console.log('Config loaded in plugin settings component:', config);
         } else {
           console.error('Received null config in plugin settings component');
         }
@@ -83,8 +83,9 @@ export class PluginSettingsTabComponent implements OnInit, OnDestroy {
         (plugin_settings_configs) => {
           this.plugin_settings_configs = plugin_settings_configs || [];
           if (plugin_settings_configs) {
-            console.log('Plugin settings loaded', {
+            console.log('Plugin settings loaded:', {
               plugin_settings_configs: plugin_settings_configs,
+              length: plugin_settings_configs.length
             });
           } else {
             console.error('Received null plugin settings');
