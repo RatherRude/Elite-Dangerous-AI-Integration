@@ -279,10 +279,11 @@ if __name__ == "__main__":
         plugin_manager.load_plugins()
         log('debug', "Loading plugin settings for UI...")
         plugin_manager.register_settings()
+        has_plugin_settings = len(plugin_manager.plugin_settings_configs) > 0
         # Wait for start signal on stdin
         config = load_config()
         print(json.dumps({"type": "config", "config": config})+'\n', flush=True)
-        system = get_system_info()
+        system = get_system_info(has_plugin_settings)
         print(json.dumps({"type": "system", "system": system})+'\n', flush=True)
         while True:
             # print(f"Waiting for command...")

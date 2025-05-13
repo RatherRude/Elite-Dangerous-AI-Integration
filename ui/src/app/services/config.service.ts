@@ -44,6 +44,7 @@ export interface SystemInfo {
     input_device_names: string[];
     output_device_names: string[];
     edcopilot_installed: boolean;
+    has_plugin_settings: boolean;
 }
 
 export interface SystemInfoMessage extends BaseMessage {

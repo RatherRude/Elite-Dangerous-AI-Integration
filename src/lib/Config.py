@@ -721,9 +721,10 @@ class SystemInfo(TypedDict):
     input_device_names: list[str]
     output_device_names: list[str]
     edcopilot_installed: bool
+    has_plugin_settings: bool
 
 
-def get_system_info() -> SystemInfo:
+def get_system_info(has_plugin_settings: bool) -> SystemInfo:
     from .EDCoPilot import EDCoPilot
     edcopilot: Any = EDCoPilot(False)  # this is only for the GUI, the actual EDCoPilot client is created in the Chat
     return {
@@ -731,6 +732,7 @@ def get_system_info() -> SystemInfo:
         "input_device_names": get_input_device_names(),
         "output_device_names": get_output_device_names(),
         "edcopilot_installed": edcopilot.is_installed(),
+        "has_plugin_settings": has_plugin_settings
     }
 
 
