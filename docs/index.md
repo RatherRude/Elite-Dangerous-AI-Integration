@@ -179,10 +179,10 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 
     - **Problem:** The AI acknowledges the command but does not perform it.**
     
-        **Solution:** Ensure that all keybindings are properly configured. See [Keybindings](./keybindings.md) for more information.
+        **Solution:** Check if the orange "action" line appears in the log window. If it does, but nothing happens, check your keybindings as described in the [Actions](./20_actions.md) documentation. If the orange line does not appear, the AI chose to pretend, which is a common issue for free, small or generally bad models. When using a paid OpenAI subscription, contact us to troubleshoot the issue.
 
     - **Problem:** The AI tells me to check the keybindings.
     
-        **Solution:** Check the [Keybindings](./keybindings.md) documentation for more information.
+        **Solution:** Check the [Actions](./20_actions.md) documentation for more information.
 
 ---

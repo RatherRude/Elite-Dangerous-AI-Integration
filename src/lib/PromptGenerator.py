@@ -1366,7 +1366,7 @@ class PromptGenerator:
             else:
                 location = ""
                 
-            return f"{self.commander_name} has embarked into their {vehicle} {location}."
+            return f"{self.commander_name} has boarded their {vehicle} {location}."
             
         if event_name == 'FCMaterials':
             fc_event = cast(Dict[str, Any], content)
@@ -2161,6 +2161,19 @@ class PromptGenerator:
         if event_name == 'WeaponSelected':
             return f"Selected weapon {status['SelectedWeapon']}"
 
+        if event_name == "SystemMapOpened":
+            return "System map opened"
+        if event_name == "SystemMapClosed":
+            return "System map closed"
+        if event_name == "GalaxyMapOpened":
+            return "Galaxy map opened"
+        if event_name == "GalaxyMapClosed":
+            return "Galaxy map closed"
+        if event_name == "SystemMapClosedGalaxyMapOpened":
+            return "System map closed, Galaxy map opened"
+        if event_name == "GalaxyMapClosedSystemMapOpened":
+            return "Galaxy map closed, System map opened"
+
         if event_name == 'LandingGearUp':
             return 'Landing gear has been retracted'
         if event_name == 'LandingGearDown':
@@ -2467,6 +2480,11 @@ class PromptGenerator:
 
         active_mode, vehicle_status = self.generate_vehicle_status(projected_states.get('CurrentStatus', {}))
         status_entries.append((active_mode+" status", vehicle_status))
+
+
+        guifocus = projected_states.get('CurrentStatus', {}).get('GuiFocus', '')
+        if guifocus != "NoFocus":
+            status_entries.append(("Current active window: ", guifocus))
 
         # Get ship and cargo info
         ship_info: ShipInfoState = projected_states.get('ShipInfo', {})  # pyright: ignore[reportAssignmentType]
@@ -2976,15 +2994,16 @@ class PromptGenerator:
                     message = self.event_message(event, time_offset, is_important)
                     if message:
                         conversational_pieces.append(message)
-                else:
-                    pass
 
             if isinstance(event, StatusEvent):
                 if (
                     len(conversational_pieces) < 20
                     and event.status.get("event") != "Status"
                 ):
-                    conversational_pieces += self.status_messages(event)
+                    is_important = is_pending and event.status.get('event') in self.important_game_events
+                    message = self.status_messages(event, time_offset, is_important)
+                    if message:
+                        conversational_pieces.append(message)
 
             if isinstance(event, ConversationEvent) and event.kind in ['user', 'assistant']:
                 conversational_pieces.append(self.conversation_message(event))
