@@ -2149,8 +2149,8 @@ class PromptGenerator:
             return f"{self.commander_name}'s ship has initiated automated docking computer"
 
         if event_name == "DockingComputerUndocking":
-            # we know it's a station as we only trigger undking event if we are inside a station
-            return f"{self.commander_name}'s ship has initiated automated UnDocking computer, we are leaving the station"
+            # we know it's a station as we only trigger undocking event if we are inside a station
+            return f"{self.commander_name}'s ship has initiated automated docking computer, we are leaving the station"
 
         if event_name == "DockingComputerDeactivated":
             return f"{self.commander_name}'s ship has deactivated the docking computer"

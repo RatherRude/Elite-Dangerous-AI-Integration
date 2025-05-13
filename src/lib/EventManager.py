@@ -179,7 +179,7 @@ class EventManager:
         projection.last_processed = event.processed_at
         if not save_later:
             self.projection_store.set(projection_name, {"state": projection.state, "last_processed": projection.last_processed})
-        return projected_events
+        return projected_events if projected_events else []
 
     def save_projections(self):
         for projection in self.projections:
