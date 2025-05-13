@@ -27,7 +27,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { EdgeTtsVoicesDialogComponent } from '../edge-tts-voices-dialog';
 import { ConfirmationDialogComponent, ConfirmationDialogData } from '../../components/confirmation-dialog/confirmation-dialog.component';
 import { ConfirmationDialogService } from '../../services/confirmation-dialog.service';
-import { PluginSettings, SelectSetting, SettingBase, TextAreaSetting } from "../../services/plugin-settings";
+import { PluginSettingsTabComponent } from "../plugin-settings-tabs/plugin-settings-tabs.component";
 
 interface PromptSettings {
   // Existing settings
@@ -72,6 +72,7 @@ interface PromptSettings {
     MatDialogModule,
     MatProgressSpinnerModule,
     EdgeTtsVoicesDialogComponent,
+    PluginSettingsTabComponent
   ],
   templateUrl: "./settings-menu.component.html",
   styleUrls: ["./settings-menu.component.scss"]
@@ -86,7 +87,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   private configSubscription?: Subscription;
   private systemSubscription?: Subscription;
   private validationSubscription?: Subscription;
-  private plugin_settings_configs_subscription?: Subscription;
   expandedSection: string | null = null;
   filteredGameEvents: Record<string, Record<string, boolean>> = {};
   eventSearchQuery: string = "";
@@ -112,9 +112,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     ethicalAlignment: 'neutral',
     moralAlignment: 'neutral',
   };
-
-  // Plugin settings
-  plugin_settings_configs: PluginSettings[] = []
 
   private initializing = true;
 
@@ -329,20 +326,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
           });
         }
       });
-
-      this.plugin_settings_configs_subscription = this.configService.plugin_settings_configs$
-        .subscribe(
-          (plugin_settings_configs) => {
-            this.plugin_settings_configs = plugin_settings_configs || [];
-            if (plugin_settings_configs) {
-              console.log('Plugin settings loaded', {
-                plugin_settings_configs: plugin_settings_configs,
-              });
-            } else {
-              console.error('Received null plugin settings');
-            }
-          },
-        );
   }
 
   ngOnDestroy() {
@@ -354,9 +337,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     }
     if (this.validationSubscription) {
       this.validationSubscription.unsubscribe();
-    }
-    if (this.plugin_settings_configs_subscription) {
-      this.plugin_settings_configs_subscription.unsubscribe();
     }
   }
 
@@ -1830,20 +1810,5 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
         this.saveCharacters();
       }
     });
-  }
-
-  getPluginSetting(pluginKey: string, gridKey: string, fieldKey: string, defaultValue: any): boolean {
-    return this.config?.plugin_settings?.[pluginKey]?.[gridKey]?.[fieldKey] ?? defaultValue;
-  }
-
-  setPluginSetting(pluginKey: string, gridKey: string, fieldKey: string, value: any): void {
-    if (this.config == null) {
-      return;
-    }
-    this.config.plugin_settings ??= {};
-    this.config.plugin_settings[pluginKey] ??= {};
-    this.config.plugin_settings[pluginKey][gridKey] ??= {};
-    this.config.plugin_settings[pluginKey][gridKey][fieldKey] = value;
-    this.onConfigChange({plugin_settings: this.config.plugin_settings});
   }
 }
