@@ -1,10 +1,10 @@
-# Plugin development for CORVAS:NEXT
+# Plugin development for COVAS:NEXT
 
-Wanna build a plugin, to expand on CORVAS' features? This page will help you get started.
+Wanna build a plugin, to expand on COVAS' features? This page will help you get started.
 
 ## Prerequisites
 
-*   **CORVAS:NEXT Project**: Ensure you have the project running from source, as described in [CONTRIBUTING.md](./CONTRIBUTING.md).
+*   **COVAS:NEXT Project**: Ensure you have the project running from source, as described in [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## Plugin structure
 Plugins are loaded from `./plugins` and its sub-folders, up to one level deep.  
