@@ -32,6 +32,7 @@ class Projection(ABC, Generic[ProjectedState]):
 @final
 class EventManager:
     def __init__(self, game_events: list[str],
+                 plugin_event_classes: list[type[Event]],
                  continue_conversation: bool = False, 
                  #react_to_text_local: bool = True, react_to_text_starsystem: bool = True, react_to_text_npc: bool = False,
                  #react_to_text_squadron: bool = True, react_to_material:str = '', react_to_danger_mining:bool = False,
@@ -53,6 +54,7 @@ class EventManager:
         self._registry_lock = threading.Lock()
 
         self.event_classes: list[type[Event]] = [ConversationEvent, ToolEvent, GameEvent, StatusEvent, ExternalEvent]
+        self.event_classes += plugin_event_classes # Adds the plugin provided event classes
         self.projections: list[Projection] = []
         self.sideeffects: list[Callable[[Event, dict[str, Any]], None]] = []
         
@@ -195,7 +197,7 @@ class EventManager:
             state = self.projection_store.init(projection_class_name, projection_version, {"state": projection.get_default_state(), "last_processed": 0.0})
             projection.state = state["state"]
             projection.last_processed = state["last_processed"]
-            
+
             for event in self.processed + self.pending:
                 if event.processed_at <= projection.last_processed:
                     continue

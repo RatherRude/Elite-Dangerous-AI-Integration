@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 
 from .PluginHelper import PluginHelper
 from .PluginSettingDefinitions import PluginSettings
+from .Event import Event
 
 class PluginBase(ABC):
     """
@@ -18,8 +19,13 @@ class PluginBase(ABC):
     Define the settings for this plugin. This is the settings that will be shown in the UI.
     """
 
+    event_classes: list[type[Event]] | None = None
+    """
+    Define the events for this plugin. This is used for deserializing stored events.
+    """
+
     @abstractmethod
-    def __init__(self, plugin_name: str = "PluginBase"):
+    def __init__(self, plugin_name: str = "PluginBase", event_classes: list[type[Event]] | None = None):
         """
         Initializes the plugin.
 
@@ -28,6 +34,7 @@ class PluginBase(ABC):
         """
 
         self.plugin_name = plugin_name
+        self.event_classes = event_classes
 
     # Register actions
     @abstractmethod

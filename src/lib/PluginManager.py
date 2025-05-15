@@ -5,7 +5,7 @@ import json
 import os
 
 import sys
-from typing import Any, Callable, Literal, Self, TypedDict, final
+from typing import Any, Callable, Literal, Self, TypedDict, cast, final
 
 import openai
 
@@ -129,3 +129,12 @@ class PluginManager:
                 module.on_chat_stop(helper)
             except Exception as e:
                 log('error', f"Failed to execute on_chat_stop hook for {module.plugin_name}: {e}")
+
+    def register_event_classes(self) -> list[type[Event]]:
+        plugin_event_classes: list[type[Event]] = []
+        for module in self.plugin_list.values():
+            log('info', f"Registering Event classes for {module.plugin_name}")
+            if module.event_classes is not None:
+                # Check if the settings config is already registered
+                plugin_event_classes += module.event_classes
+        return plugin_event_classes

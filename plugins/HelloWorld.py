@@ -48,8 +48,8 @@ class CurrentHelloWorldState(Projection[HelloWorldState]):
 class HelloWorld(PluginBase):
     settings_config: PluginSettings | None
     
-    def __init__(self, plugin_name: str = "Hello World - Example Plugin"): # This is the name that will be shown in the UI.
-        super().__init__(plugin_name)
+    def __init__(self): # This is the name that will be shown in the UI.
+        super().__init__(plugin_name="Hello World - Example Plugin", event_classes=[BoolValueUpdatedEvent])
 
         # Define the plugin settings
         # This is the settings that will be shown in the UI for this plugin.
