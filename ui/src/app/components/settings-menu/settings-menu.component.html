@@ -137,7 +137,60 @@
                                     </mat-select>
                                 </mat-form-field>
                                 @if (!editMode) {
-                                    {{getCharacterProperty('character', '')}}
+                                    <div class="character-display" [class.with-traits]="!isCustomPreset()">
+                                        <div class="character-content">
+                                            <span class="trait-label">{{getCharacterProperty('name', '')}}:</span>
+                                            {{getCharacterProperty('character', '')}}
+                                        </div>
+                                        @if (!isCustomPreset()) {
+                                            <div class="character-traits">
+                                                <div class="trait-item">
+                                                    <span class="trait-label">Inspiration:</span>
+                                                    <span class="trait-value">{{getCharacterProperty('personality_character_inspiration', '')}}</span>
+                                                </div>
+                                                <div class="trait-item">
+                                                    <span class="trait-label">Verbosity:</span>
+                                                    <span class="trait-value">{{getCharacterProperty('personality_verbosity', 50)}}%</span>
+                                                </div>
+                                                <div class="trait-item">
+                                                    <span class="trait-label">Vulgarity:</span>
+                                                    <span class="trait-value">{{getCharacterProperty('personality_vulgarity', 0)}}%</span>
+                                                </div>
+                                                <div class="trait-item">
+                                                    <span class="trait-label">Empathy:</span>
+                                                    <span class="trait-value">{{getCharacterProperty('personality_empathy', 50)}}%</span>
+                                                </div>
+                                                <div class="trait-item">
+                                                    <span class="trait-label">Formality:</span>
+                                                    <span class="trait-value">{{getCharacterProperty('personality_formality', 50)}}%</span>
+                                                </div>
+                                                <div class="trait-item">
+                                                    <span class="trait-label">Confidence:</span>
+                                                    <span class="trait-value">{{getCharacterProperty('personality_confidence', 50)}}%</span>
+                                                </div>
+                                                <div class="trait-item">
+                                                    <span class="trait-label">Tone:</span>
+                                                    <span class="trait-value">{{getCharacterProperty('personality_tone', 'serious')}}</span>
+                                                </div>
+                                                <div class="trait-item">
+                                                    <span class="trait-label">Ethical Alignment:</span>
+                                                    <span class="trait-value">{{getCharacterProperty('personality_ethical_alignment', 'neutral')}}</span>
+                                                </div>
+                                                <div class="trait-item">
+                                                    <span class="trait-label">Moral Alignment:</span>
+                                                    <span class="trait-value">{{getCharacterProperty('personality_moral_alignment', 'neutral')}}</span>
+                                                </div>
+                                                <div class="trait-item">
+                                                    <span class="trait-label">Knowledge:</span>
+                                                    <div class="trait-value">
+                                                        <span [class.active]="getCharacterProperty('personality_knowledge_pop_culture', false)">pop culture</span>
+                                                        <span [class.active]="getCharacterProperty('personality_knowledge_scifi', false)">sci-fi</span>
+                                                        <span [class.active]="getCharacterProperty('personality_knowledge_history', false)">history</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
                                 }
 
                                 <div class="character-buttons">
@@ -493,7 +546,10 @@
 
                             <!-- Character Textarea - always visible when editing -->
                             @if (!isCustomPreset()) {
-                                <span>{{getCharacterProperty('character', '')}}</span>
+                                <div class="character-display">
+                                    <h4>Character Prompt</h4>
+                                    <div class="character-content">{{getCharacterProperty('character', '')}}</div>
+                                </div>
                             } @else {
                                 <div class="trait-container">
                                 <mat-form-field>
