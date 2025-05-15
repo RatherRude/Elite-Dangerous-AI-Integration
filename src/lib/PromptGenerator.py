@@ -2132,6 +2132,10 @@ class PromptGenerator:
             return f"{self.commander_name} took the second of three biological samples.",
         if event_name == 'ScanOrganicThird':
             return f"{self.commander_name} took the third and final biological sample.",
+        if event_name == 'CombatEntered':
+            return f"{self.commander_name} is now in combat.",
+        if event_name == 'CombatExited':
+            return f"{self.commander_name} is no longer in combat.",
         # if event_name == 'ExternalDiscordNotification':
         #     twitch_event = cast(Dict[str, Any], content)
         #     return f"Twitch Alert! {twitch_event.get('text','')}",
@@ -2287,12 +2291,6 @@ class PromptGenerator:
         )
         return responses
 
-    def external_event_message(self, event: ExternalEvent):
-        return {
-            "role": "user",
-            "content": f"({externalEvents[event.content.get('event')]})",
-        }
-
     def tool_response_message(self, event: ToolEvent):
         return
 
@@ -2440,10 +2438,13 @@ class PromptGenerator:
             
         return normalized
 
-    def generate_vehicle_status(self, current_status:dict):
+    def generate_vehicle_status(self, current_status:dict, in_combat:dict):
         flags = [key for key, value in current_status["flags"].items() if value]
         if current_status.get("flags2"):
             flags += [key for key, value in current_status["flags2"].items() if value]
+
+        if in_combat.get("InCombat", False):
+            flags.append("InCombat")
 
         status_info = {
             "status": flags,
@@ -2478,7 +2479,7 @@ class PromptGenerator:
     def generate_status_message(self, projected_states: dict[str, dict]):
         status_entries: list[tuple[str, Any]] = []
 
-        active_mode, vehicle_status = self.generate_vehicle_status(projected_states.get('CurrentStatus', {}))
+        active_mode, vehicle_status = self.generate_vehicle_status(projected_states.get('CurrentStatus', {}), projected_states.get('InCombat', {}))
         status_entries.append((active_mode+" status", vehicle_status))
 
 
