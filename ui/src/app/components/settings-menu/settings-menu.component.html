@@ -126,7 +126,6 @@
                                 <mat-form-field appearance="fill">
                                     <mat-label>Select Character</mat-label>
                                     <mat-select [(value)]="selectedCharacterIndex" (selectionChange)="onCharacterSelect($event.value)" [disabled]="editMode">
-                                        <mat-option [value]="-1">Default Character</mat-option>
                                         <mat-divider *ngIf="config.characters && config.characters.length > 0"></mat-divider>
                                         <mat-option *ngFor="let character of config.characters; let i = index" [value]="i">
                                             {{ character.name }} ({{ character.tts_voice }})
@@ -137,12 +136,15 @@
                                         </mat-option>
                                     </mat-select>
                                 </mat-form-field>
+<!--                                @if (!editMode) {-->
+<!--                                    {{getCharacterProperty('character', '')}}-->
+<!--                                }-->
 
                                 <div class="character-buttons">
                                     <!-- When not in edit mode, show Edit and New buttons -->
                                     @if (!editMode) {
                                         <button mat-raised-button color="primary"
-                                                [disabled]="selectedCharacterIndex < 0"
+                                                [disabled]="selectedCharacterIndex <= 0"
                                                 (click)="toggleEditMode()">
                                             <mat-icon>edit</mat-icon> Edit
                                         </button>
@@ -152,13 +154,12 @@
                                         </button>
 
                                         <button mat-raised-button color="accent" 
-                                                [disabled]="selectedCharacterIndex < 0"
                                                 (click)="duplicateSelectedCharacter()">
                                             <mat-icon>content_copy</mat-icon> Duplicate
                                         </button>
 
                                         <button mat-raised-button color="warn"
-                                                [disabled]="selectedCharacterIndex < 0"
+                                                [disabled]="selectedCharacterIndex <= 0"
                                                 (click)="deleteSelectedCharacter()">
                                             <mat-icon>delete</mat-icon> Delete
                                         </button>

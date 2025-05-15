@@ -1290,7 +1290,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     
     // Ensure the commander_name format variable is preserved
     const finalCharacter = !character.includes('{commander_name}') 
-      ? character + " I am serving {commander_name}, pilot of this ship."
+      ? character + " I am {commander_name}, pilot of this ship."
       : character;
     
     console.log('Generated character prompt:', finalCharacter.substring(0, 100) + '...');
@@ -2055,21 +2055,21 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   // Update addNewCharacter method to properly initialize with the default preset
   addNewCharacter(): void {
     if (!this.config) return;
-    
+
     // Create a base character with default values
     const newCharacter: Character = {
       name: 'New Character',
-      character: '',
+      character: 'Provide concise answers that address the main points. Maintain a professional and serious tone in all responses. Stick to factual information and avoid references to specific domains. Your responses should be inspired by the character or persona of COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal). Adopt their speech patterns, mannerisms, and viewpoints. Your name is New Character. Always respond in English regardless of the language spoken to you. Balance emotional understanding with factual presentation. Maintain a friendly yet respectful conversational style. Speak with confidence and conviction in your responses. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.',
       personality_preset: 'default',
-      personality_verbosity: 50,
+      personality_verbosity: 0,
       personality_vulgarity: 0,
       personality_empathy: 50,
       personality_formality: 50,
-      personality_confidence: 50,
-      personality_ethical_alignment: 'neutral',
-      personality_moral_alignment: 'neutral',
+      personality_confidence: 75,
+      personality_ethical_alignment: 'lawful',
+      personality_moral_alignment: 'good',
       personality_tone: 'serious',
-      personality_character_inspiration: '',
+      personality_character_inspiration: 'COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal)',
       personality_language: 'English',
       personality_knowledge_pop_culture: false,
       personality_knowledge_scifi: false,
@@ -2358,7 +2358,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     newCharacter['react_to_text_starsystem_var'] = true;
     newCharacter['react_to_text_squadron_var'] = true;
     newCharacter['react_to_text_npc_var'] = true;
-    newCharacter['react_to_material'] = '';
+    newCharacter['react_to_material'] = 'opal, diamond, alexandrite';
     newCharacter['react_to_danger_mining_var'] = true;
     newCharacter['react_to_danger_onfoot_var'] = true;
     newCharacter['react_to_danger_supercruise_var'] = true;
