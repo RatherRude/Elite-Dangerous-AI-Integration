@@ -136,9 +136,9 @@
                                         </mat-option>
                                     </mat-select>
                                 </mat-form-field>
-<!--                                @if (!editMode) {-->
-<!--                                    {{getCharacterProperty('character', '')}}-->
-<!--                                }-->
+                                @if (!editMode) {
+                                    {{getCharacterProperty('character', '')}}
+                                }
 
                                 <div class="character-buttons">
                                     <!-- When not in edit mode, show Edit and New buttons -->
@@ -492,13 +492,19 @@
                             }
 
                             <!-- Character Textarea - always visible when editing -->
-                            <mat-form-field>
-                                <mat-label>Character</mat-label>
-                                <textarea matInput [ngModel]="getCharacterProperty('character', '')"
-                                        (ngModelChange)="onTraitChange('character', $event)"
-                                        [readonly]="!isCustomPreset()"
-                                        rows="10"></textarea>
-                            </mat-form-field>
+                            @if (!isCustomPreset()) {
+                                <span>{{getCharacterProperty('character', '')}}</span>
+                            } @else {
+                                <div class="trait-container">
+                                <mat-form-field>
+                                    <mat-label>Character</mat-label>
+                                    <textarea matInput [ngModel]="getCharacterProperty('character', '')"
+                                            (ngModelChange)="onTraitChange('character', $event)"
+                                            [readonly]="!isCustomPreset()"
+                                            rows="10"></textarea>
+                                </mat-form-field>
+                            </div>
+                            }
                         </div>
                     </div>
 
