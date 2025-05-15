@@ -44,7 +44,6 @@ export interface SystemInfo {
     input_device_names: string[];
     output_device_names: string[];
     edcopilot_installed: boolean;
-    has_plugin_settings: boolean;
 }
 
 export interface SystemInfoMessage extends BaseMessage {
@@ -164,8 +163,8 @@ export class ConfigService {
     >(null);
     public validation$ = this.validationSubject.asObservable();
 
-    private plugin_settings_configs_subject = new BehaviorSubject<PluginSettings[] | null>(null);
-    public plugin_settings_configs$ = this.plugin_settings_configs_subject.asObservable();
+    private plugin_settings_message_subject = new BehaviorSubject<PluginSettingsMessage | null>(null);
+    public plugin_settings_message$ = this.plugin_settings_message_subject.asObservable();
 
     constructor(private tauriService: TauriService) {
         // Subscribe to config messages from the TauriService
@@ -192,7 +191,7 @@ export class ConfigService {
             } else if (message.type === "model_validation") {
                 this.validationSubject.next(message);
             } else if (message.type === "plugin_settings_configs") {
-                this.plugin_settings_configs_subject.next(message.plugin_settings_configs);
+                this.plugin_settings_message_subject.next(message);
             } else if (message.type === "start") {
                 this.validationSubject.next(null);
             }

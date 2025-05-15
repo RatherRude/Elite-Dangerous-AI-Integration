@@ -72,4 +72,5 @@ export interface SelectOption {
 export interface PluginSettingsMessage extends BaseMessage {
     type: "plugin_settings_configs";
     plugin_settings_configs: PluginSettings[];
+    has_plugin_settings: boolean;
 }

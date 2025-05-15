@@ -53,7 +53,7 @@ import { PluginSettings, SelectSetting, SettingBase, TextAreaSetting } from "../
 export class PluginSettingsComponent implements OnInit, OnDestroy {
   config: Config | null = null;
   private configSubscription?: Subscription;
-  private plugin_settings_configs_subscription?: Subscription;
+  private plugin_settings_message_subscription?: Subscription;
 
   // Plugin settings
   plugin_settings_configs: PluginSettings[] = []
@@ -78,13 +78,13 @@ export class PluginSettingsComponent implements OnInit, OnDestroy {
         }
       },
     );
-    this.plugin_settings_configs_subscription = this.configService.plugin_settings_configs$
+    this.plugin_settings_message_subscription = this.configService.plugin_settings_message$
       .subscribe(
-        (plugin_settings_configs) => {
-          this.plugin_settings_configs = plugin_settings_configs || [];
-          if (plugin_settings_configs) {
+        (plugin_settings_message) => {
+          this.plugin_settings_configs = plugin_settings_message?.plugin_settings_configs || [];
+          if (plugin_settings_message?.plugin_settings_configs) {
             console.log('Plugin settings loaded', {
-              plugin_settings_configs: plugin_settings_configs,
+              plugin_settings_configs: plugin_settings_message.plugin_settings_configs,
             });
           } else {
             console.error('Received null plugin settings');
@@ -97,8 +97,8 @@ export class PluginSettingsComponent implements OnInit, OnDestroy {
     if (this.configSubscription) {
       this.configSubscription.unsubscribe();
     }
-    if (this.plugin_settings_configs_subscription) {
-      this.plugin_settings_configs_subscription.unsubscribe();
+    if (this.plugin_settings_message_subscription) {
+      this.plugin_settings_message_subscription.unsubscribe();
     }
   }
 

@@ -107,7 +107,7 @@ class PluginManager:
             if module.settings_config is not None:
                 # Check if the settings config is already registered
                 self.plugin_settings_configs.append(module.settings_config)
-        print(json.dumps({"type": "plugin_settings_configs", "plugin_settings_configs": self.plugin_settings_configs})+'\n', flush=True)
+        print(json.dumps({"type": "plugin_settings_configs", "plugin_settings_configs": self.plugin_settings_configs, "has_plugin_settings": (len(self.plugin_settings_configs) > 0)})+'\n', flush=True)
 
     
     def register_prompt_generators(self, deps: PluginHelper):
