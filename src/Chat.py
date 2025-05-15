@@ -230,15 +230,13 @@ class Chat:
                         self.event_manager.add_external_event('External' + event.service.capitalize() + 'Message',
                                                           event.model_dump())
 
+                self.event_manager.process()
 
-                projected_states = self.event_manager.process()
-
-                if projected_states and self.assistant.reply_pending and not self.tts.get_is_playing() and not self.stt.recording:
-                    all_events = self.event_manager.processed + self.event_manager.pending
-                    # TODO thread this
+                if self.assistant.reply_pending and not self.tts.get_is_playing() and not self.stt.recording:
+                    all_events, projected_states = self.event_manager.get_current_state()
                     self.is_replying = True
                     self.assistant.reply(all_events, projected_states)
-
+                    
                 # Infinite loops are bad for processors, must sleep.
                 sleep(0.25)
             except KeyboardInterrupt:

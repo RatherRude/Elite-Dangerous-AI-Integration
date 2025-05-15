@@ -75,6 +75,7 @@ class EDKeys:
             'ToggleCargoScoop',
             'ChargeECM',
             'CycleNextPanel',
+            'CyclePreviousPanel',
             'FocusLeftPanel',
             'UI_Up',
             'UI_Down',

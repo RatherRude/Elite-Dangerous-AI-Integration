@@ -2163,6 +2163,19 @@ class PromptGenerator:
         if event_name == 'WeaponSelected':
             return f"Selected weapon {status['SelectedWeapon']}"
 
+        if event_name == "SystemMapOpened":
+            return "System map opened"
+        if event_name == "SystemMapClosed":
+            return "System map closed"
+        if event_name == "GalaxyMapOpened":
+            return "Galaxy map opened"
+        if event_name == "GalaxyMapClosed":
+            return "Galaxy map closed"
+        if event_name == "SystemMapClosedGalaxyMapOpened":
+            return "System map closed, Galaxy map opened"
+        if event_name == "GalaxyMapClosedSystemMapOpened":
+            return "Galaxy map closed, System map opened"
+
         if event_name == 'LandingGearUp':
             return 'Landing gear has been retracted'
         if event_name == 'LandingGearDown':
@@ -2852,7 +2865,7 @@ class PromptGenerator:
 
         # Add colonisation construction status if available
         colonisation_info = projected_states.get('ColonisationConstruction', {})
-        if colonisation_info and any(colonisation_info.values()):
+        if colonisation_info and colonisation_info.get('Location', 'Unknown') != 'Unknown':
             progress = colonisation_info.get('ConstructionProgress', 0.0)
             complete = colonisation_info.get('ConstructionComplete', False)
             failed = colonisation_info.get('ConstructionFailed', False)

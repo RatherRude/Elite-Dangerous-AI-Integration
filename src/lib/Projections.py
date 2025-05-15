@@ -996,6 +996,25 @@ class ColonisationConstruction(Projection[ColonisationConstructionState]):
             self.state["StarSystemRecall"] = event.content.get('StarSystem', 'Unknown')
 
 
+DockingEventsState = TypedDict('DockingEventsState', {
+    "RequestDeliveredTimestamp": str
+})
+
+@final
+class DockingEvents(Projection[DockingEventsState]):
+    @override
+    def get_default_state(self) -> DockingEventsState:
+        return {
+            "RequestDeliveredTimestamp": ''
+        }
+
+    def process(self, event: Event):
+
+        if isinstance(event, GameEvent) and event.content.get('event') in ['DockingRequested','DockingDenied']:
+            # Provides a reliable timestamp string for condition checking. DockingRequested events are not always sent after a docking request if it's denied
+            self.state['RequestDeliveredTimestamp'] = event.content.get('timestamp','')
+
+
 
 def registerProjections(event_manager: EventManager, system_db: SystemDatabase):
 
@@ -1012,6 +1031,7 @@ def registerProjections(event_manager: EventManager, system_db: SystemDatabase):
     event_manager.register_projection(SuitLoadout())
     event_manager.register_projection(Friends())
     event_manager.register_projection(ColonisationConstruction())
+    event_manager.register_projection(DockingEvents())
 
     # ToDo: SLF, SRV,
     for proj in [
