@@ -141,7 +141,9 @@
                                 <div class="character-buttons">
                                     <!-- When not in edit mode, show Edit and New buttons -->
                                     @if (!editMode) {
-                                        <button mat-raised-button color="primary" (click)="toggleEditMode()">
+                                        <button mat-raised-button color="primary"
+                                                [disabled]="selectedCharacterIndex < 0"
+                                                (click)="toggleEditMode()">
                                             <mat-icon>edit</mat-icon> Edit
                                         </button>
 

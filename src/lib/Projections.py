@@ -597,7 +597,7 @@ class NavInfo(Projection[NavInfoState]):
 
                 # Only warn if we can't reach any scoopable stars
                 if scoopable_stars == 0:
-                    projected_events.append(ProjectedEvent({"event": "NotEnoughFuel"}))
+                    projected_events.append(ProjectedEvent({"event": "NoScoopableStars"}))
 
             for index, entry in enumerate(self.state['NavRoute']):
                 if entry['StarSystem'] == event.content.get('StarSystem'):

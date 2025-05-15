@@ -110,6 +110,7 @@ export const GameEventCategories: Record<string, string[]> = {
         "FsdMassLocked",
         "LowFuelWarningCleared",
         "LowFuelWarning",
+        "NoScoopableStars",
         "NightVisionOff",
         "NightVisionOn",
         "SupercruiseDestinationDrop",

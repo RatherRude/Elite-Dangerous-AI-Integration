@@ -121,6 +121,7 @@ game_events = {
     'FsdMassLocked': False,
     'LowFuelWarningCleared': True,
     'LowFuelWarning': True,
+    'NoScoopableStars': True,
     'NightVisionOff': False,
     'NightVisionOn': False,
     'SupercruiseDestinationDrop': False,

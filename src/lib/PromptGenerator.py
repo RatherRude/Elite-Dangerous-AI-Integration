@@ -2132,8 +2132,8 @@ class PromptGenerator:
             return f"{self.commander_name} took the second of three biological samples."
         if event_name == 'ScanOrganicThird':
             return f"{self.commander_name} took the third and final biological sample."
-        if event_name == 'NotEnoughFuel':
-            return f"{self.commander_name}'s fuel is insufficient to reach the destination."
+        if event_name == 'NoScoopableStars':
+            return f"{self.commander_name}'s fuel is insufficient to reach the destination and there are not enough scoopable stars on the route. Alternative route required."
         if event_name == 'CombatEntered':
             return f"{self.commander_name} is now in combat."
         if event_name == 'CombatExited':
