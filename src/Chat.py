@@ -127,11 +127,14 @@ class Chat:
         self.event_manager.register_sideeffect(self.on_event)
         self.event_manager.register_sideeffect(self.assistant.on_event)
         
-        self.plugin_dependencies = PluginHelper(config, self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.system_database, self.ed_keys)
-        log("debug", "Plugin dependencies ready...")
+        self.plugin_helper = PluginHelper(self.prompt_generator, config, self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.system_database, self.ed_keys)
+        log("debug", "Plugin helper initialized...")
         
         log("debug", "Registering plugin provided side effect...")
-        self.plugin_manager.register_sideeffects(self.plugin_dependencies)
+        self.plugin_manager.register_sideeffects(self.plugin_helper)
+        
+        log("debug", "Registering plugin provided prompt generators...")
+        self.plugin_manager.register_prompt_generators(self.plugin_helper)
 
     def on_event(self, event: Event, projected_states: dict[str, Any]):
         send_message({
@@ -174,12 +177,12 @@ class Chat:
         log('info', "Voice interface ready.")
 
         registerProjections(self.event_manager, self.system_database)
-        self.plugin_manager.register_projections(self.plugin_dependencies)
+        self.plugin_manager.register_projections(self.plugin_helper)
 
         if self.config['tools_var']:
             register_actions(self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.ed_keys)
             log('info', "Built-in Actions ready.")
-            self.plugin_manager.register_actions(self.plugin_dependencies)
+            self.plugin_manager.register_actions(self.plugin_helper)
             log('info', "Plugin provided Actions ready.")
         
         if not self.config["continue_conversation_var"]:

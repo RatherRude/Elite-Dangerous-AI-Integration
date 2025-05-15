@@ -1,5 +1,6 @@
 from typing import Any, Callable
 import openai
+from openai.types.chat import ChatCompletionMessageParam
 
 from .EDKeys import EDKeys
 from .EventManager import EventManager, Projection
@@ -7,10 +8,12 @@ from .ActionManager import ActionManager
 from .SystemDatabase import SystemDatabase
 from .Config import Config
 from .Event import Event
+from .PromptGenerator import PromptGenerator
 
 class PluginHelper():
     """Contains all built-inservices and managers that can be used by plugins"""
 
+    _prompt_generator: PromptGenerator
     _keys: EDKeys
     _vision_client: openai.OpenAI | None = None
     _llm_client: openai.OpenAI
@@ -21,9 +24,10 @@ class PluginHelper():
     _config: Config
     _system_db: SystemDatabase
 
-    def __init__(self, config: Config, action_manager: ActionManager, event_manager: EventManager, llm_client: openai.OpenAI,
+    def __init__(self, prompt_generator: PromptGenerator, config: Config, action_manager: ActionManager, event_manager: EventManager, llm_client: openai.OpenAI,
                      llm_model_name: str, vision_client: openai.OpenAI | None, vision_model_name: str | None,
                      system_db: SystemDatabase, ed_keys: EDKeys):
+        self._prompt_generator = prompt_generator
         self._keys = ed_keys
         self._system_db = system_db
         self._vision_client = vision_client
@@ -72,3 +76,7 @@ class PluginHelper():
     def send_key(self, key_name: str):
         """Send a key"""
         self._keys.send(key_name)
+        
+    def register_prompt_generator(self, prompt_generator: Callable[[Event], list[ChatCompletionMessageParam]]):
+        """Register a prompt generator callback"""
+        self._prompt_generator.register_prompt_generator(prompt_generator)

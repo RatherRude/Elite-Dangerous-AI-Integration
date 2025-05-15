@@ -1,7 +1,8 @@
 from datetime import timedelta, datetime
 from functools import lru_cache
-from typing import Any, cast, Dict, Union
+from typing import Any, Callable, cast, Dict, Union
 
+from openai.types.chat import ChatCompletionMessageParam
 import yaml
 import requests
 import humanize
@@ -48,6 +49,7 @@ NavRouteEvent = dict
 
 class PromptGenerator:
     def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str], system_db: SystemDatabase):
+        self.registered_prompt_generators: list[Callable[[Event], list[ChatCompletionMessageParam]]] = []
         self.commander_name = commander_name
         self.character_prompt = character_prompt
         self.important_game_events = important_game_events
@@ -3011,6 +3013,12 @@ class PromptGenerator:
             if isinstance(event, ToolEvent):
                 conversational_pieces += self.tool_messages(event)
 
+            for generator in self.registered_prompt_generators:
+                try:
+                    conversational_pieces += generator(event)
+                except Exception as e:
+                    log('error', f"Error executing prompt generator for {event}: {e}", traceback.format_exc())
+
         conversational_pieces.append(
             {
                 "role": "user",
@@ -3042,6 +3050,9 @@ class PromptGenerator:
         log('debug', 'conversation', json.dumps(conversational_pieces))
 
         return conversational_pieces
+    
+    def register_prompt_generator(self, prompt_generator: Callable[[Event], list[ChatCompletionMessageParam]]):
+        self.registered_prompt_generators.append(prompt_generator)
 
     def format_system_info(self, system_info: dict) -> dict:
         """

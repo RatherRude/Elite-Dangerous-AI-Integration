@@ -108,3 +108,13 @@ class PluginManager:
                 # Check if the settings config is already registered
                 self.plugin_settings_configs.append(module.settings_config)
         print(json.dumps({"type": "plugin_settings_configs", "plugin_settings_configs": self.plugin_settings_configs})+'\n', flush=True)
+
+    
+    def register_prompt_generators(self, deps: PluginHelper):
+        """Register all promp generators for each plugin."""
+        for module in self.plugin_list.values():
+            log('info', f"Registering Prompt Generators for {module.plugin_name}")
+            try:
+                module.register_prompt_generators(deps)
+            except Exception as e:
+                log('error', f"Failed to register prompt generators for {module.plugin_name}: {e}")

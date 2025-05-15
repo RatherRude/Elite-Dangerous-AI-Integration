@@ -179,6 +179,11 @@ class HelloWorld(PluginBase):
         helper.register_sideeffect(self.hello_world_sideeffect)
 
         log('debug', f"Side effects registered for {self.plugin_name}")
+        
+    @override
+    def register_prompt_generators(self, helper: PluginHelper):
+        # Register prompt generators
+        helper.register_prompt_generator(self.bool_value_prompt_generator)
 
     # Actions
     def hello_world_action(self, args, projected_states, helper: PluginHelper) -> str:
@@ -199,3 +204,8 @@ class HelloWorld(PluginBase):
 
     def hello_world_sideeffect(self, event: Event, projected_states: dict[str, Any]):
         log('debug', f"Hello World side effect triggered by event: {event.__class__.__name__} event.")
+
+    def bool_value_prompt_generator(self, event: Event) -> list[str]:
+        if isinstance(event, BoolValueUpdatedEvent):
+            return ['The boolean value is now {}.'.format(event.new_bool_value)]
+        return []
