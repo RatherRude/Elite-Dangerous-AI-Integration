@@ -87,3 +87,11 @@ class PluginBase(ABC):
 
         pass
     
+    @abstractmethod
+    def on_chat_stop(self, helper: PluginHelper):
+        """
+        Executed when the chat is stopped
+        """
+
+        pass
+    

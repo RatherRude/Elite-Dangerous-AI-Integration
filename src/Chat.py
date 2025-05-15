@@ -263,6 +263,9 @@ class Chat:
         # Teardown TTS
         self.tts.quit()
 
+        # Execute plugin chat stop hooks
+        self.plugin_manager.on_chat_stop(self.plugin_helper)
+
 
 def read_stdin(chat: Chat):
     log("debug", "Reading stdin...")

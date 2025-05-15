@@ -118,3 +118,14 @@ class PluginManager:
                 module.register_prompt_generators(deps)
             except Exception as e:
                 log('error', f"Failed to register prompt generators for {module.plugin_name}: {e}")
+    
+    def on_chat_stop(self, helper: PluginHelper):
+        """
+        Executed when the chat is stopped, and will call the on_chat_stop hook for each plugin.
+        """
+        for module in self.plugin_list.values():
+            log('info', f"Executing on_chat_stop hook for {module.plugin_name}")
+            try:
+                module.on_chat_stop(helper)
+            except Exception as e:
+                log('error', f"Failed to execute on_chat_stop hook for {module.plugin_name}: {e}")

@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
 import openai
+from openai.types.chat import ChatCompletionMessageParam
 
 from lib.Config import Config
 from lib.PluginHelper import PluginHelper
@@ -184,6 +185,11 @@ class HelloWorld(PluginBase):
     def register_prompt_generators(self, helper: PluginHelper):
         # Register prompt generators
         helper.register_prompt_generator(self.bool_value_prompt_generator)
+    
+    @override
+    def on_chat_stop(self, helper: PluginHelper):
+        # Executed when the chat is stopped
+        log('debug', f"Executed on_chat_stop hook for {self.plugin_name}")
 
     # Actions
     def hello_world_action(self, args, projected_states, helper: PluginHelper) -> str:
@@ -205,7 +211,12 @@ class HelloWorld(PluginBase):
     def hello_world_sideeffect(self, event: Event, projected_states: dict[str, Any]):
         log('debug', f"Hello World side effect triggered by event: {event.__class__.__name__} event.")
 
-    def bool_value_prompt_generator(self, event: Event) -> list[str]:
+    def bool_value_prompt_generator(self, event: Event) -> list[ChatCompletionMessageParam]:
         if isinstance(event, BoolValueUpdatedEvent):
-            return ['The boolean value is now {}.'.format(event.new_bool_value)]
+            return [
+                {
+                    "role": "system",
+                    "content": 'The boolean value is now {}.'.format(event.new_bool_value),
+                }
+            ]
         return []
