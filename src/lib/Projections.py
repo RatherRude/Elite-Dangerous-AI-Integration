@@ -1041,17 +1041,17 @@ class DockingEvents(Projection[DockingEventsState]):
                 self.last_music_track = "DockingComputer"
                 if self.latest_docking_event['event'] == "DockingGranted" and time_difference < timedelta(seconds=60):
                     self.state['DockingComputerState'] = "auto-docking"
-                    projected_events.append(ProjectedEvent({"event": "DockingComputerDocking", "seconds_since_granted": str(time_difference)}))
+                    projected_events.append(ProjectedEvent({"event": "DockingComputerDocking",}))
 
                 elif self.latest_docking_event['event'] == "Undocked" and self.latest_docking_event["stationtype"] in ['Coriolis', 'Orbis', 'Ocellus'] and time_difference < timedelta(seconds=60):
                     # We don't want an DockingComputerUndocking event for stations without an interior as it happens very quickly
                     self.state['DockingComputerState'] = "auto-undocking"
-                    projected_events.append(ProjectedEvent({"event": "DockingComputerUndocking", "seconds_since_undocked": str(time_difference)}))
+                    projected_events.append(ProjectedEvent({"event": "DockingComputerUndocking"}))
 
             elif self.last_music_track == "DockingComputer":
                 self.state['DockingComputerState'] = "deactivated"
                 projected_events.append(ProjectedEvent(
-                    {"event": "DockingComputerDeactivated", "seconds_since_undocked": str(time_difference)}))
+                    {"event": "DockingComputerDeactivated"}))
                 self.last_music_track = musictrack
 
         if event_type == "DockingGranted":
