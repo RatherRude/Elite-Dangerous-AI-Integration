@@ -580,25 +580,6 @@ class NavInfo(Projection[NavInfoState]):
             
         # Process FSDJump - remove visited systems from route
         if isinstance(event, GameEvent) and event.content.get('event') == 'FSDJump':
-            # Calculate remaining jumps based on fuel
-            fuel_level = event.content.get('FuelLevel', 0)
-            fuel_used = event.content.get('FuelUsed', 0)
-            remaining_jumps = int(fuel_level / fuel_used)
-
-            # Check if we have enough scoopable stars between current and destination system)
-            if remaining_jumps < len(self.state['NavRoute'])-1:
-                if remaining_jumps == 0:
-                    remaining_jumps = 1
-                # Count scoopable stars in the remaining jumps
-                scoopable_stars = sum(
-                    1 for entry in self.state['NavRoute'][:remaining_jumps][:-1]
-                    if entry.get('Scoopable', False)
-                )
-
-                # Only warn if we can't reach any scoopable stars
-                if scoopable_stars == 0:
-                    projected_events.append(ProjectedEvent({"event": "NoScoopableStars"}))
-
             for index, entry in enumerate(self.state['NavRoute']):
                 if entry['StarSystem'] == event.content.get('StarSystem'):
                     self.state['NavRoute'] = self.state['NavRoute'][index+1:]
@@ -606,6 +587,23 @@ class NavInfo(Projection[NavInfoState]):
 
             if len(self.state['NavRoute']) == 0 and 'NextJumpTarget' in self.state:
                 self.state.pop('NextJumpTarget')
+
+            # Calculate remaining jumps based on fuel
+            fuel_level = event.content.get('FuelLevel', 0)
+            fuel_used = event.content.get('FuelUsed', 0)
+            remaining_jumps = int(fuel_level / fuel_used)
+
+            # Check if we have enough scoopable stars between current and destination system)
+            if not len(self.state['NavRoute']) == 0 and remaining_jumps < len(self.state['NavRoute']) - 1:
+                # Count scoopable stars in the remaining jumps
+                scoopable_stars = sum(
+                    1 for entry in self.state['NavRoute'][:remaining_jumps]
+                    if entry.get('Scoopable', False)
+                )
+
+                # Only warn if we can't reach any scoopable stars
+                if scoopable_stars == 0:
+                    projected_events.append(ProjectedEvent({"event": "NoScoopableStars"}))
 
         # Process FSDTarget
         if isinstance(event, GameEvent) and event.content.get('event') == 'FSDTarget':
