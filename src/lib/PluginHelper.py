@@ -91,3 +91,16 @@ class PluginHelper():
     def register_should_reply_handler(self, should_reply_handler: Callable[[Event, dict[str, Any]], bool | None]):
         """Register a handler that will decide wether the assistant should reply to any given event. False means no reply, True means reply, None means no decision, leaving it to the assistant"""
         self._assistant.register_should_reply_handler(should_reply_handler)
+
+    def wait_for_condition(self, projection_name: str, condition_fn, timeout=None):
+        """Block until `condition_fn` is satisfied by the current or future
+        state of the specified projection.
+
+        :param projection_name: Name/identifier of the projection to watch.
+        :param condition_fn: A callable that takes a dict (the current projection state)
+                             and returns True/False.
+        :param timeout: Optional timeout (seconds).
+        :return: The state dict that satisfied the condition.
+        :raises TimeoutError: If the condition isn't met within `timeout`.
+        """
+        return self._event_manager.wait_for_condition(projection_name, condition_fn, timeout)
