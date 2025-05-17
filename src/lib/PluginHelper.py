@@ -9,10 +9,12 @@ from .SystemDatabase import SystemDatabase
 from .Config import Config
 from .Event import Event
 from .PromptGenerator import PromptGenerator
+from .Assistant import Assistant
 
 class PluginHelper():
     """Contains all built-inservices and managers that can be used by plugins"""
 
+    _assistant: Assistant
     _prompt_generator: PromptGenerator
     _keys: EDKeys
     _vision_client: openai.OpenAI | None = None
@@ -26,7 +28,7 @@ class PluginHelper():
 
     def __init__(self, prompt_generator: PromptGenerator, config: Config, action_manager: ActionManager, event_manager: EventManager, llm_client: openai.OpenAI,
                      llm_model_name: str, vision_client: openai.OpenAI | None, vision_model_name: str | None,
-                     system_db: SystemDatabase, ed_keys: EDKeys):
+                     system_db: SystemDatabase, ed_keys: EDKeys, assistant: Assistant):
         self._prompt_generator = prompt_generator
         self._keys = ed_keys
         self._system_db = system_db
@@ -37,6 +39,7 @@ class PluginHelper():
         self._event_manager = event_manager
         self._action_manager = action_manager
         self._config = config
+        self._assistant = assistant
     
     # Plugin helper functions
     def get_plugin_settings(self, *key_paths: str) -> Any:
@@ -84,3 +87,7 @@ class PluginHelper():
     def register_status_generator(self, status_generator: Callable[[dict[str, dict]], list[tuple[str, Any]]]):
         """Register a status generator callback, for adding stuff to the models status context (Like ship info)."""
         self._prompt_generator.register_status_generator(status_generator)
+        
+    def register_should_reply_handler(self, should_reply_handler: Callable[[Event, dict[str, Any]], bool | None]):
+        """Register a handler that will decide wether the assistant should reply to any given event. False means no reply, True means reply, None means no decision, leaving it to the assistant"""
+        self._assistant.register_should_reply_handler(should_reply_handler)

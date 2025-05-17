@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Any
 
 from .PluginHelper import PluginHelper
 from .PluginSettingDefinitions import PluginSettings
@@ -107,6 +108,15 @@ class PluginBase(ABC):
 
         Args:
             helper (PluginHelper): The helper class that can be used to register actions, projections, side effects and more.
+        """
+
+        pass
+    
+    @abstractmethod
+    def register_should_reply_handlers(self, helper: PluginHelper):
+        """
+        Registers handlers that will decide wether the assistant should reply to any given event.
+        False means no reply, True means reply, None means no decision, leaving it to the assistant
         """
 
         pass

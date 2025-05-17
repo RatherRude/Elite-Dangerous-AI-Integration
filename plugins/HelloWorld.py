@@ -190,6 +190,10 @@ class HelloWorld(PluginBase):
     def register_status_generators(self, helper: PluginHelper):
         # Register prompt generators
         helper.register_status_generator(self.bool_value_prompt_status_generator)
+
+    @override
+    def register_should_reply_handlers(self, helper: PluginHelper):
+        helper.register_should_reply_handler(self.hw_should_reply_handler)
     
     @override
     def on_chat_stop(self, helper: PluginHelper):
@@ -230,3 +234,8 @@ class HelloWorld(PluginBase):
         return [
             ('Current boolean value', projected_states['CurrentHelloWorldState']['bool_value'])
         ]
+
+    def hw_should_reply_handler(self, event: Event, projected_states: dict[str, dict]) -> bool | None:
+        if isinstance(event, BoolValueUpdatedEvent):
+            return False # Never reply to BoolValueUpdatedEvents
+        return None

@@ -132,8 +132,11 @@ class Chat:
         self.event_manager.register_sideeffect(self.on_event)
         self.event_manager.register_sideeffect(self.assistant.on_event)
         
-        self.plugin_helper = PluginHelper(self.prompt_generator, config, self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.system_database, self.ed_keys)
-        log("debug", "Plugin helper initialized...")
+        self.plugin_helper = PluginHelper(self.prompt_generator, config, self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.system_database, self.ed_keys, self.assistant)
+        log("debug", "Plugin helper is ready...")
+
+        log("debug", "Registering plugin provided should_reply event handlers...")
+        self.plugin_manager.register_should_reply_handlers(self.plugin_helper)
         
         log("debug", "Registering plugin provided side effect...")
         self.plugin_manager.register_sideeffects(self.plugin_helper)

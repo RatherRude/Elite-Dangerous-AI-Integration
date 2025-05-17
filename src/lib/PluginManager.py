@@ -73,30 +73,30 @@ class PluginManager:
                 log('error', f"Failed to load plugin {file}: {e}")
         return self
 
-    def register_actions(self, deps: PluginHelper) -> None:
+    def register_actions(self, helper: PluginHelper) -> None:
         """Register all actions for each plugin."""
         for module in self.plugin_list.values():
             log('info', f"Registering Actions for {module.plugin_name}")
             try:
-                module.register_actions(deps)
+                module.register_actions(helper)
             except Exception as e:
                 log('error', f"Failed to register actions for {module.plugin_name}: {e}")
 
-    def register_projections(self, deps: PluginHelper):
+    def register_projections(self, helper: PluginHelper):
         """Register all projections for each plugin."""
         for module in self.plugin_list.values():
             log('info', f"Registering Projections for {module.plugin_name}")
             try:
-                module.register_projections(deps)
+                module.register_projections(helper)
             except Exception as e:
                 log('error', f"Failed to register projections for {module.plugin_name}: {e}")
     
-    def register_sideeffects(self, deps: PluginHelper):
+    def register_sideeffects(self, helper: PluginHelper):
         """Register all side effects for each plugin."""
         for module in self.plugin_list.values():
             log('info', f"Registering Side-Effects for {module.plugin_name}")
             try:
-                module.register_sideeffects(deps)
+                module.register_sideeffects(helper)
             except Exception as e:
                 log('error', f"Failed to register side effects for {module.plugin_name}: {e}")
     
@@ -109,21 +109,21 @@ class PluginManager:
                 self.plugin_settings_configs.append(module.settings_config)
         print(json.dumps({"type": "plugin_settings_configs", "plugin_settings_configs": self.plugin_settings_configs, "has_plugin_settings": (len(self.plugin_settings_configs) > 0)})+'\n', flush=True)
     
-    def register_prompt_event_handlers(self, deps: PluginHelper):
+    def register_prompt_event_handlers(self, helper: PluginHelper):
         """Register all prompt event handlers for each plugin. Used to add to the prompt in response to events."""
         for module in self.plugin_list.values():
             log('info', f"Registering Prompt Generators for {module.plugin_name}")
             try:
-                module.register_prompt_event_handlers(deps)
+                module.register_prompt_event_handlers(helper)
             except Exception as e:
                 log('error', f"Failed to register prompt generators for {module.plugin_name}: {e}")
     
-    def register_status_generators(self, deps: PluginHelper):
+    def register_status_generators(self, helper: PluginHelper):
         """Register all status generators for each plugin. Used to add to the prompt context, much like ship info."""
         for module in self.plugin_list.values():
             log('info', f"Registering status Generators for {module.plugin_name}")
             try:
-                module.register_status_generators(deps)
+                module.register_status_generators(helper)
             except Exception as e:
                 log('error', f"Failed to register status generators for {module.plugin_name}: {e}")
     
@@ -146,3 +146,11 @@ class PluginManager:
                 # Check if the settings config is already registered
                 plugin_event_classes += module.event_classes
         return plugin_event_classes
+
+    def register_should_reply_handlers(self, helper: PluginHelper):
+        for module in self.plugin_list.values():
+            log('info', f"Registering should_reply handlers for {module.plugin_name}")
+            try:
+                module.register_should_reply_handlers(helper)
+            except Exception as e:
+                log('error', f"Failed to register should_reply handlers for {module.plugin_name}: {e}")
