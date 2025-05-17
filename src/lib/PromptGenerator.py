@@ -2124,17 +2124,23 @@ class PromptGenerator:
 
         # Synthetic Events
         if event_name == 'ScanOrganicTooClose':
-            return f"{self.commander_name} is now too close to take another sample. Distance must be increased.",
+            return f"{self.commander_name} is now too close to take another sample. Distance must be increased."
         if event_name == 'ScanOrganicFarEnough':
-            return f"{self.commander_name} is now far enough away to take another sample.",
+            return f"{self.commander_name} is now far enough away to take another sample."
         if event_name == 'ScanOrganicFirst':
             scan_event = cast(Dict[str, Any], content)
             new_distance = scan_event.get('NewSampleDistance', 'unknown')
-            return f"{self.commander_name} took the first of three biological samples. New sample distance acquired: {new_distance}",
+            return f"{self.commander_name} took the first of three biological samples. New sample distance acquired: {new_distance}"
         if event_name == 'ScanOrganicSecond':
-            return f"{self.commander_name} took the second of three biological samples.",
+            return f"{self.commander_name} took the second of three biological samples."
         if event_name == 'ScanOrganicThird':
-            return f"{self.commander_name} took the third and final biological sample.",
+            return f"{self.commander_name} took the third and final biological sample."
+        if event_name == 'NotEnoughFuel':
+            return f"{self.commander_name}'s fuel is insufficient to reach the destination."
+        if event_name == 'CombatEntered':
+            return f"{self.commander_name} is now in combat."
+        if event_name == 'CombatExited':
+            return f"{self.commander_name} is no longer in combat."
         # if event_name == 'ExternalDiscordNotification':
         #     twitch_event = cast(Dict[str, Any], content)
         #     return f"Twitch Alert! {twitch_event.get('text','')}",
@@ -2290,12 +2296,6 @@ class PromptGenerator:
         )
         return responses
 
-    def external_event_message(self, event: ExternalEvent):
-        return {
-            "role": "user",
-            "content": f"({externalEvents[event.content.get('event')]})",
-        }
-
     def tool_response_message(self, event: ToolEvent):
         return
 
@@ -2443,10 +2443,13 @@ class PromptGenerator:
             
         return normalized
 
-    def generate_vehicle_status(self, current_status:dict):
+    def generate_vehicle_status(self, current_status:dict, in_combat:dict):
         flags = [key for key, value in current_status["flags"].items() if value]
         if current_status.get("flags2"):
             flags += [key for key, value in current_status["flags2"].items() if value]
+
+        if in_combat.get("InCombat", False):
+            flags.append("InCombat")
 
         status_info = {
             "status": flags,
@@ -2481,7 +2484,7 @@ class PromptGenerator:
     def generate_status_message(self, projected_states: dict[str, dict]):
         status_entries: list[tuple[str, Any]] = []
 
-        active_mode, vehicle_status = self.generate_vehicle_status(projected_states.get('CurrentStatus', {}))
+        active_mode, vehicle_status = self.generate_vehicle_status(projected_states.get('CurrentStatus', {}), projected_states.get('InCombat', {}))
         status_entries.append((active_mode+" status", vehicle_status))
 
 
@@ -2866,7 +2869,7 @@ class PromptGenerator:
 
         # Add colonisation construction status if available
         colonisation_info = projected_states.get('ColonisationConstruction', {})
-        if colonisation_info and any(colonisation_info.values()):
+        if colonisation_info and colonisation_info.get('Location', 'Unknown') != 'Unknown':
             progress = colonisation_info.get('ConstructionProgress', 0.0)
             complete = colonisation_info.get('ConstructionComplete', False)
             failed = colonisation_info.get('ConstructionFailed', False)
