@@ -32,6 +32,7 @@ class Projection(ABC, Generic[ProjectedState]):
 @final
 class EventManager:
     def __init__(self, game_events: list[str],
+                 plugin_event_classes: list[type[Event]],
                  continue_conversation: bool = False, 
                  #react_to_text_local: bool = True, react_to_text_starsystem: bool = True, react_to_text_npc: bool = False,
                  #react_to_text_squadron: bool = True, react_to_material:str = '', react_to_danger_mining:bool = False,
@@ -53,6 +54,7 @@ class EventManager:
         self._registry_lock = threading.Lock()
 
         self.event_classes: list[type[Event]] = [ConversationEvent, ToolEvent, GameEvent, StatusEvent, ExternalEvent]
+        self.event_classes += plugin_event_classes # Adds the plugin provided event classes
         self.projections: list[Projection] = []
         self.sideeffects: list[Callable[[Event, dict[str, Any]], None]] = []
         
@@ -191,18 +193,21 @@ class EventManager:
         projection_version = hashlib.sha256(projection_source.encode()).hexdigest()
         log('debug', 'Register projection', projection_class_name, 'version', projection_version)
         
-        state = self.projection_store.init(projection_class_name, projection_version, {"state": projection.get_default_state(), "last_processed": 0.0})
-        projection.state = state["state"]
-        projection.last_processed = state["last_processed"]
-        
-        for event in self.processed + self.pending:
-            if event.processed_at <= projection.last_processed:
-                continue
-            #log('debug', 'updating', projection_class_name, 'with', event, 'after starting from', projection.last_processed)
-            self.update_projection(projection, event, save_later=True)
-        
-        self.projections.append(projection)
-        self.save_projections()
+        try:
+            state = self.projection_store.init(projection_class_name, projection_version, {"state": projection.get_default_state(), "last_processed": 0.0})
+            projection.state = state["state"]
+            projection.last_processed = state["last_processed"]
+
+            for event in self.processed + self.pending:
+                if event.processed_at <= projection.last_processed:
+                    continue
+                #log('debug', 'updating', projection_class_name, 'with', event, 'after starting from', projection.last_processed)
+                self.update_projection(projection, event, save_later=True)
+            
+            self.projections.append(projection)
+            self.save_projections()
+        except Exception as e:
+            log('error', 'Error registering projection', projection, e, traceback.format_exc())
 
     def wait_for_condition(self, projection_name: str, condition_fn, timeout=None):
         """
@@ -268,6 +273,9 @@ class EventManager:
 
             # Only keep conditions that are still not satisfied
             self._conditions_registry[projection_name] = still_waiting
+
+    def get_projection(self, projection_type: type) -> Projection[object] | None:
+        return next((proj for proj in self.projections if isinstance(proj, projection_type)), None)
 
     def save_incoming_history(self, incoming: list[Event]):
         for event in incoming:
