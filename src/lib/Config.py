@@ -524,6 +524,9 @@ def migrate(data: dict) -> dict:
             if 'active_character_index' in data:
                 data['active_character_index'] += 1
 
+        if data['active_character_index'] + 1 > len(data['characters']):
+            data['active_character_index'] = len(data['characters']) - 1
+
         if 'game_events' in data:
             for character in data['characters']:
                 character['game_events'] = data['game_events']
@@ -1093,31 +1096,36 @@ def update_config(config: Config, data: dict) -> Config:
         if data["tts_provider"] == "openai":
             data["tts_endpoint"] = "https://api.openai.com/v1"
             data["tts_model_name"] = "gpt-4o-mini-tts"
-            data["tts_voice"] = "nova"
+            for character in data["characters"]:
+                character["tts_voice"] = "nova"
             data["tts_api_key"] = ""
 
         if data["tts_provider"] == "local-ai-server":
             data["tts_endpoint"] = "http://localhost:8080"
             data["tts_model_name"] = "tts-1"
-            data["tts_voice"] = "nova"
+            for character in data["characters"]:
+                character["tts_voice"] = "nova"
             data["tts_api_key"] = ""
 
         if data["tts_provider"] == "edge-tts":
             data["tts_endpoint"] = ""
             data["tts_model_name"] = ""
-            data["tts_voice"] = "en-US-AvaMultilingualNeural"
+            for character in data["characters"]:
+                character["tts_voice"] = "en-US-AvaMultilingualNeural"
             data["tts_api_key"] = ""
 
         if data["tts_provider"] == "custom":
             data["tts_endpoint"] = "https://api.openai.com/v1"
             data["tts_model_name"] = "gpt-4o-mini-tts"
-            data["tts_voice"] = "nova"
+            for character in data["characters"]:
+                character["tts_voice"] = "nova"
             data["tts_api_key"] = ""
 
         if data["tts_provider"] == "none":
             data["tts_endpoint"] = ""
             data["tts_model_name"] = ""
-            data["tts_voice"] = ""
+            for character in data["characters"]:
+                character["tts_voice"] = ""
             data["tts_api_key"] = ""
 
     # Now merge and save as before
