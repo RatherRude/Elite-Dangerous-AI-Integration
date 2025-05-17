@@ -25,7 +25,7 @@ game_events = {
     # 'Rank': False,
     # 'Reputation': False,
     'Statistics': False,
-    # 'SquadronStartup': False
+    # 'SquadronStartup': False,
     # 'EngineerProgress': False,
 
     # Combat
@@ -541,6 +541,13 @@ def migrate(data: dict) -> dict:
             if 'llm_model_name' in data and data['llm_model_name'] == 'gpt-4o-mini':
                 data['llm_model_name'] = 'gpt-4.1-mini'
         
+    else:
+        # Check each character for empty game events and set defaults if needed
+        for character in data['characters']:
+            if not character.get('game_events'):
+                character['game_events'] = game_events
+                print(f"Set default game events for character: {character.get('name', 'Unknown')}")
+
     return data
 
 
