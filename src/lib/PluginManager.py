@@ -108,16 +108,24 @@ class PluginManager:
                 # Check if the settings config is already registered
                 self.plugin_settings_configs.append(module.settings_config)
         print(json.dumps({"type": "plugin_settings_configs", "plugin_settings_configs": self.plugin_settings_configs, "has_plugin_settings": (len(self.plugin_settings_configs) > 0)})+'\n', flush=True)
-
     
-    def register_prompt_generators(self, deps: PluginHelper):
-        """Register all promp generators for each plugin."""
+    def register_prompt_event_handlers(self, deps: PluginHelper):
+        """Register all prompt event handlers for each plugin. Used to add to the prompt in response to events."""
         for module in self.plugin_list.values():
             log('info', f"Registering Prompt Generators for {module.plugin_name}")
             try:
-                module.register_prompt_generators(deps)
+                module.register_prompt_event_handlers(deps)
             except Exception as e:
                 log('error', f"Failed to register prompt generators for {module.plugin_name}: {e}")
+    
+    def register_status_generators(self, deps: PluginHelper):
+        """Register all status generators for each plugin. Used to add to the prompt context, much like ship info."""
+        for module in self.plugin_list.values():
+            log('info', f"Registering status Generators for {module.plugin_name}")
+            try:
+                module.register_status_generators(deps)
+            except Exception as e:
+                log('error', f"Failed to register status generators for {module.plugin_name}: {e}")
     
     def on_chat_stop(self, helper: PluginHelper):
         """

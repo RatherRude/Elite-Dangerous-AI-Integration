@@ -77,6 +77,10 @@ class PluginHelper():
         """Send a key"""
         self._keys.send(key_name)
         
-    def register_prompt_generator(self, prompt_generator: Callable[[Event], list[ChatCompletionMessageParam]]):
-        """Register a prompt generator callback"""
-        self._prompt_generator.register_prompt_generator(prompt_generator)
+    def register_prompt_event_handler(self, prompt_event_handler: Callable[[Event], list[ChatCompletionMessageParam]]):
+        """Register a prompt generator callback, to respond to events"""
+        self._prompt_generator.register_prompt_event_handler(prompt_event_handler)
+        
+    def register_status_generator(self, status_generator: Callable[[dict[str, dict]], list[tuple[str, Any]]]):
+        """Register a status generator callback, for adding stuff to the models status context (Like ship info)."""
+        self._prompt_generator.register_status_generator(status_generator)

@@ -138,8 +138,11 @@ class Chat:
         log("debug", "Registering plugin provided side effect...")
         self.plugin_manager.register_sideeffects(self.plugin_helper)
         
-        log("debug", "Registering plugin provided prompt generators...")
-        self.plugin_manager.register_prompt_generators(self.plugin_helper)
+        log("debug", "Registering plugin provided prompt event handlers...")
+        self.plugin_manager.register_prompt_event_handlers(self.plugin_helper)
+        
+        log("debug", "Registering plugin provided status generators...")
+        self.plugin_manager.register_status_generators(self.plugin_helper)
 
     def on_event(self, event: Event, projected_states: dict[str, Any]):
         send_message({

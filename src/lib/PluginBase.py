@@ -78,15 +78,32 @@ class PluginBase(ABC):
             helper (PluginHelper): The helper class that can be used to register actions, projections, side effects and more.
         """
         pass
+
     @abstractmethod
-    def register_prompt_generators(self, helper: PluginHelper):
+    def register_prompt_event_handlers(self, helper: PluginHelper):
         """
-        Registers all prompt generators for this plugin.
+        Registers all prompt event handlers for this plugin.
 
         This is called by the PluginManager once all plugins have been loaded and the assistant has been started. The PluginManager
         will then register all actions, projections and side effects with the respective managers.
 
-        Prompt generators are used to generate prompts for the assistant, based on events.
+        Prompt event hanlderts are used to generate prompts for the assistant, based on events.
+
+        Args:
+            helper (PluginHelper): The helper class that can be used to register actions, projections, side effects and more.
+        """
+
+        pass
+    
+    @abstractmethod
+    def register_status_generators(self, helper: PluginHelper):
+        """
+        Registers all prompt status generators for this plugin.
+
+        This is called by the PluginManager once all plugins have been loaded and the assistant has been started. The PluginManager
+        will then register all actions, projections and side effects with the respective managers.
+
+        Status generators are used to add status information to the assistant prompt.
 
         Args:
             helper (PluginHelper): The helper class that can be used to register actions, projections, side effects and more.

@@ -182,9 +182,14 @@ class HelloWorld(PluginBase):
         log('debug', f"Side effects registered for {self.plugin_name}")
         
     @override
-    def register_prompt_generators(self, helper: PluginHelper):
+    def register_prompt_event_handlers(self, helper: PluginHelper):
         # Register prompt generators
-        helper.register_prompt_generator(self.bool_value_prompt_generator)
+        helper.register_prompt_event_handler(self.bool_value_prompt_event_handler)
+        
+    @override
+    def register_status_generators(self, helper: PluginHelper):
+        # Register prompt generators
+        helper.register_status_generator(self.bool_value_prompt_status_generator)
     
     @override
     def on_chat_stop(self, helper: PluginHelper):
@@ -211,7 +216,7 @@ class HelloWorld(PluginBase):
     def hello_world_sideeffect(self, event: Event, projected_states: dict[str, Any]):
         log('debug', f"Hello World side effect triggered by event: {event.__class__.__name__} event.")
 
-    def bool_value_prompt_generator(self, event: Event) -> list[ChatCompletionMessageParam]:
+    def bool_value_prompt_event_handler(self, event: Event) -> list[ChatCompletionMessageParam]:
         if isinstance(event, BoolValueUpdatedEvent):
             return [
                 {
@@ -220,3 +225,8 @@ class HelloWorld(PluginBase):
                 }
             ]
         return []
+
+    def bool_value_prompt_status_generator(self, projected_states: dict[str, dict]) -> list[tuple[str, Any]]:
+        return [
+            ('Current boolean value', projected_states['CurrentHelloWorldState']['bool_value'])
+        ]
