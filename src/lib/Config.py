@@ -449,39 +449,6 @@ def migrate(data: dict) -> dict:
             print("Migrating old character format to new characters array")
             data['characters'] = []
 
-            # Add default character before migrated character
-            data['characters'].append({
-                "name": 'Default',
-                "character": 'Provide concise answers that address the main points. Include humor and light-hearted elements in your responses when appropriate. Stick to factual information and avoid references to specific domains. Your responses should be inspired by the character or persona of COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal). Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS. Always respond in English regardless of the language spoken to you. Show some consideration for emotions while maintaining focus on information. Maintain a friendly yet respectful conversational style. Speak with confidence and conviction in your responses. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.',
-                "personality_preset": 'default',
-                "personality_verbosity": 0,
-                "personality_vulgarity": 0,
-                "personality_empathy": 50,
-                "personality_formality": 50,
-                "personality_confidence": 75,
-                "personality_ethical_alignment": 'lawful',
-                "personality_moral_alignment": 'good',
-                "personality_tone": 'serious',
-                "personality_character_inspiration": 'COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal)',
-                "personality_language": 'English',
-                "personality_knowledge_pop_culture": False,
-                "personality_knowledge_scifi": False,
-                "personality_knowledge_history": False,
-                "tts_voice": 'en-US-AvaMultilingualNeural',
-                "tts_speed": '1.2',
-                "tts_prompt": '',
-                "game_events": game_events,
-                "event_reaction_enabled_var": True,
-                "react_to_text_local_var": True,
-                "react_to_text_starsystem_var": True,
-                "react_to_text_npc_var": False,
-                "react_to_text_squadron_var": True,
-                "react_to_material": 'opal, diamond, alexandrite',
-                "react_to_danger_mining_var": False,
-                "react_to_danger_onfoot_var": False,
-                "react_to_danger_supercruise_var": False
-            })
-
             # If we have a character name, create a character entry
             character = {
                 "name": 'Migrated',
@@ -518,44 +485,44 @@ def migrate(data: dict) -> dict:
             data['characters'].append(character)
             data['active_character_index'] = 1
         else:
-            if len(data['characters']) > 0:
-                # Check if first character is not the default
-                if data['characters'][0]['name'] != 'Default':
-                    # Insert default character at beginning
-                    data['characters'].insert(0, {
-                        "name": 'Default',
-                        "character": 'Provide concise answers that address the main points. Include humor and light-hearted elements in your responses when appropriate. Stick to factual information and avoid references to specific domains. Your responses should be inspired by the character or persona of COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal). Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS. Always respond in English regardless of the language spoken to you. Show some consideration for emotions while maintaining focus on information. Maintain a friendly yet respectful conversational style. Speak with confidence and conviction in your responses. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.',
-                        "personality_preset": 'default',
-                        "personality_verbosity": 0,
-                        "personality_vulgarity": 0,
-                        "personality_empathy": 50,
-                        "personality_formality": 50,
-                        "personality_confidence": 75,
-                        "personality_ethical_alignment": 'lawful',
-                        "personality_moral_alignment": 'good',
-                        "personality_tone": 'serious',
-                        "personality_character_inspiration": 'COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal)',
-                        "personality_language": 'English',
-                        "personality_knowledge_pop_culture": False,
-                        "personality_knowledge_scifi": False,
-                        "personality_knowledge_history": False,
-                        "tts_voice": 'en-US-AvaMultilingualNeural',
-                        "tts_speed": '1.2',
-                        "tts_prompt": '',
-                        "game_events": game_events,
-                        "event_reaction_enabled_var": True,
-                        "react_to_text_local_var": True,
-                        "react_to_text_starsystem_var": True,
-                        "react_to_text_npc_var": False,
-                        "react_to_text_squadron_var": True,
-                        "react_to_material": 'opal, diamond, alexandrite',
-                        "react_to_danger_mining_var": False,
-                        "react_to_danger_onfoot_var": False,
-                        "react_to_danger_supercruise_var": False
-                    })
-                    # Adjust active character index if it exists
-                    if 'active_character_index' in data:
-                        data['active_character_index'] += 1
+            # data['characters'] 
+            pass
+        if data['characters'][0]['name'] != 'Default':
+            # Insert default character at beginning
+            data['characters'].insert(0, {
+                "name": 'Default',
+                "character": 'Provide concise answers that address the main points. Include humor and light-hearted elements in your responses when appropriate. Stick to factual information and avoid references to specific domains. Your responses should be inspired by the character or persona of COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal). Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS. Always respond in English regardless of the language spoken to you. Show some consideration for emotions while maintaining focus on information. Maintain a friendly yet respectful conversational style. Speak with confidence and conviction in your responses. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.',
+                "personality_preset": 'default',
+                "personality_verbosity": 0,
+                "personality_vulgarity": 0,
+                "personality_empathy": 50,
+                "personality_formality": 50,
+                "personality_confidence": 75,
+                "personality_ethical_alignment": 'lawful',
+                "personality_moral_alignment": 'good',
+                "personality_tone": 'serious',
+                "personality_character_inspiration": 'COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal)',
+                "personality_language": 'English',
+                "personality_knowledge_pop_culture": False,
+                "personality_knowledge_scifi": False,
+                "personality_knowledge_history": False,
+                "tts_voice": 'en-US-AvaMultilingualNeural',
+                "tts_speed": '1.2',
+                "tts_prompt": '',
+                "game_events": game_events,
+                "event_reaction_enabled_var": True,
+                "react_to_text_local_var": True,
+                "react_to_text_starsystem_var": True,
+                "react_to_text_npc_var": False,
+                "react_to_text_squadron_var": True,
+                "react_to_material": 'opal, diamond, alexandrite',
+                "react_to_danger_mining_var": False,
+                "react_to_danger_onfoot_var": False,
+                "react_to_danger_supercruise_var": False
+            })
+            # Adjust active character index if it exists
+            if 'active_character_index' in data:
+                data['active_character_index'] += 1
 
         if 'game_events' in data:
             for character in data['characters']:
