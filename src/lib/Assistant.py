@@ -211,9 +211,9 @@ class Assistant:
                 return True
 
             if isinstance(event, ProjectedEvent):
-                if event.content.get("event").startswith('ScanOrganic'):
-                    if not 'ScanOrganic' in self.enabled_game_events:
-                        continue
-                return True
+                if event.content.get("event").startswith('ScanOrganic') and 'ScanOrganic' in self.enabled_game_events:
+                    return True
+                if event.content.get("event") in self.enabled_game_events:
+                    return True
 
         return False
