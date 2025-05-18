@@ -11,7 +11,6 @@ import {
   Character,
   Config,
   ConfigService,
-  SystemInfo,
 } from "../../services/config.service";
 import { Subscription } from "rxjs";
 import { MatButtonModule } from "@angular/material/button";
@@ -27,6 +26,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { EdgeTtsVoicesDialogComponent } from '../edge-tts-voices-dialog';
 import { ConfirmationDialogComponent, ConfirmationDialogData } from '../../components/confirmation-dialog/confirmation-dialog.component';
 import { ConfirmationDialogService } from '../../services/confirmation-dialog.service';
+import { SystemInfo } from "../../types/models";
 
 interface PromptSettings {
   // Existing settings

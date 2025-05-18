@@ -9,6 +9,7 @@ import sys
 from openai import OpenAI, APIError
 
 from .Logger import log
+from .shared.SystemTypes import SystemInfo
 
 # List of game events categorized
 game_events = {
@@ -714,14 +715,6 @@ def get_output_device_names() -> list[str]:
 def get_default_output_device_name() -> str:
     devices = get_output_device_names()
     return devices[0] if devices else ""
-
-
-class SystemInfo(TypedDict):
-    os: str
-    input_device_names: list[str]
-    output_device_names: list[str]
-    edcopilot_installed: bool
-
 
 def get_system_info() -> SystemInfo:
     from .EDCoPilot import EDCoPilot

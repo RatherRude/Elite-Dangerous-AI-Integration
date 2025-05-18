@@ -1,6 +1,7 @@
 import { Injectable } from "@angular/core";
 import { BehaviorSubject, filter, Observable } from "rxjs";
 import { type BaseMessage, TauriService } from "./tauri.service";
+import { SystemInfo } from "../types/models";
 
 export interface ConfigMessage extends BaseMessage {
     type: "config";
@@ -36,13 +37,6 @@ export interface ModelValidationMessage extends BaseMessage {
 
 export interface StartMessage extends BaseMessage {
     type: "start";
-}
-
-export interface SystemInfo {
-    os: string;
-    input_device_names: string[];
-    output_device_names: string[];
-    edcopilot_installed: boolean;
 }
 
 export interface SystemInfoMessage extends BaseMessage {
