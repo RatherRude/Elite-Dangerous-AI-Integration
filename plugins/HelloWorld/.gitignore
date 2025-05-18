@@ -1,0 +1,5 @@
+__pycache__
+# dist is the output directory for the packaged plugin.
+dist/*
+# deps contains Python dependencies
+deps/*
