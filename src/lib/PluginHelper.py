@@ -60,7 +60,7 @@ class PluginHelper():
 
     def register_projection(self, projection: Projection):
         """Register a projection"""
-        self._event_manager.register_projection(projection)
+        self._event_manager.register_projection(projection, raise_error = False)
         
     def register_sideeffect(self, sideeffect: Callable[[Event, dict[str, Any]], None]):
         """Register a sideeffect"""

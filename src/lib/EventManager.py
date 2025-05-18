@@ -187,7 +187,7 @@ class EventManager:
         for projection in self.projections:
             self.projection_store.set(projection.__class__.__name__, {"state": projection.state, "last_processed": projection.last_processed})
     
-    def register_projection(self, projection: Projection):
+    def register_projection(self, projection: Projection, raise_error: bool = True):
         projection_class_name = projection.__class__.__name__
         projection_source = inspect.getsource(projection.__class__)
         projection_version = hashlib.sha256(projection_source.encode()).hexdigest()
@@ -207,6 +207,8 @@ class EventManager:
             self.projections.append(projection)
             self.save_projections()
         except Exception as e:
+            if raise_error:
+                raise
             log('error', 'Error registering projection', projection, e, traceback.format_exc())
 
     def wait_for_condition(self, projection_name: str, condition_fn, timeout=None):
