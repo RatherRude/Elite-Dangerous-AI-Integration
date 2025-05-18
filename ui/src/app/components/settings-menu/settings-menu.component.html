@@ -666,6 +666,16 @@
                                                     React to NPC text
                                                 </mat-slide-toggle><br/>
                                             }
+                                            @if (e.key === "Idle") {
+                                                <mat-form-field>
+                                                    <mat-label>Idle Timeout (seconds)</mat-label>
+                                                    <input matInput type="number" 
+                                                           [ngModel]="getEventProperty('idle_timeout_var', 300)"
+                                                           (ngModelChange)="onEventPropertyChange('idle_timeout_var', $event)"
+                                                           min="60">
+                                                    <mat-hint>Time in seconds before AI considers you idle (min 60)</mat-hint>
+                                                </mat-form-field>
+                                            }
                                             <br/>
                                         }
                                     </mat-expansion-panel>

@@ -1100,6 +1100,10 @@ IdleState = TypedDict('IdleState', {
 
 @final
 class Idle(Projection[IdleState]):
+    def __init__(self, idle_timeout: int):
+        super().__init__()
+        self.idle_timeout = idle_timeout
+
     @override
     def get_default_state(self) -> IdleState:
         return {
@@ -1124,16 +1128,14 @@ class Idle(Projection[IdleState]):
             last_dt = datetime.fromisoformat(last_interaction.replace('Z', '+00:00'))
             time_delta = (current_dt - last_dt).total_seconds()
             
-            # If more than 5 minutes (300 seconds) have passed since last interaction
-            log('info', 'current delta', time_delta, self.state["IsIdle"])
-            if time_delta > 30:
-                log('info', 'idle')
+            # If more than idle_timeout seconds have passed since last interaction
+            if time_delta > self.idle_timeout:
                 self.state["IsIdle"] = True
                 projected_events.append(ProjectedEvent({"event": "Idle"}))
 
         return projected_events
 
-def registerProjections(event_manager: EventManager, system_db: SystemDatabase):
+def registerProjections(event_manager: EventManager, system_db: SystemDatabase, idle_timeout: int):
 
     event_manager.register_projection(EventCounter())
     event_manager.register_projection(CurrentStatus())
@@ -1150,7 +1152,7 @@ def registerProjections(event_manager: EventManager, system_db: SystemDatabase):
     event_manager.register_projection(ColonisationConstruction())
     event_manager.register_projection(DockingEvents())
     event_manager.register_projection(InCombat())
-    event_manager.register_projection(Idle())
+    event_manager.register_projection(Idle(idle_timeout))
 
     # ToDo: SLF, SRV,
     for proj in [

@@ -345,6 +345,7 @@ class Character(TypedDict, total=False):
     react_to_danger_mining_var: bool
     react_to_danger_onfoot_var: bool
     react_to_danger_supercruise_var: bool
+    idle_timeout_var: int
 
 
 class Config(TypedDict):

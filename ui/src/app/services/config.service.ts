@@ -78,6 +78,7 @@ export interface Character {
     react_to_text_npc_var?: boolean;
     react_to_text_squadron_var?: boolean;
     react_to_material?: string;
+    idle_timeout_var?: number;
     react_to_danger_mining_var?: boolean;
     react_to_danger_onfoot_var?: boolean;
     react_to_danger_supercruise_var?: boolean;

@@ -592,6 +592,10 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     this.updateEventProperty(propName, value);
   }
 
+  onEventPropertyChange(propName: string, value: any): void {
+    this.updateEventProperty(propName, value);
+  }
+
   async onApiKeyChange(apiKey: string) {
     if (!this.config) return;
     
@@ -1899,6 +1903,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     character['react_to_text_squadron_var'] = this.getEventProperty('react_to_text_squadron_var', true);
     character['react_to_text_npc_var'] = this.getEventProperty('react_to_text_npc_var', true);
     character['react_to_material'] = this.getEventProperty('react_to_material', '');
+    character['idle_timeout_var'] = this.getEventProperty('idle_timeout_var', 60);
     character['react_to_danger_mining_var'] = this.getEventProperty('react_to_danger_mining_var', true);
     character['react_to_danger_onfoot_var'] = this.getEventProperty('react_to_danger_onfoot_var', true);
     character['react_to_danger_supercruise_var'] = this.getEventProperty('react_to_danger_supercruise_var', true);
@@ -2012,7 +2017,8 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     updatedChar['react_to_danger_mining_var'] = true;
     updatedChar['react_to_danger_onfoot_var'] = true;
     updatedChar['react_to_danger_supercruise_var'] = true;
-    
+    updatedChar['idle_timeout_var'] = 60;
+
     // Preserve existing game events if they exist
     if (!updatedChar['game_events']) {
       updatedChar['game_events'] = {};
@@ -2364,7 +2370,8 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     newCharacter['react_to_danger_mining_var'] = true;
     newCharacter['react_to_danger_onfoot_var'] = true;
     newCharacter['react_to_danger_supercruise_var'] = true;
-    
+    newCharacter['idle_timeout_var'] = 60;
+
     // Add the new character to the config
     if (!this.config.characters) {
       this.config.characters = [];

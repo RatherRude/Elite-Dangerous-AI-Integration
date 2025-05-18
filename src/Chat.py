@@ -165,7 +165,7 @@ class Chat:
             self.stt.listen_continuous()
         log('info', "Voice interface ready.")
 
-        registerProjections(self.event_manager, self.system_database)
+        registerProjections(self.event_manager, self.system_database, self.character.get('idle_timeout_var', 60))
 
         if self.config['tools_var']:
             register_actions(self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.ed_keys)
