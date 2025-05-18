@@ -1129,7 +1129,7 @@ class Idle(Projection[IdleState]):
     def get_default_state(self) -> IdleState:
         return {
             "LastInteraction": "1970-01-01T00:00:00Z",  # Default to Unix epoch
-            "IsIdle": False
+            "IsIdle": True
         }
 
     @override
@@ -1142,7 +1142,7 @@ class Idle(Projection[IdleState]):
             self.state["IsIdle"] = False
 
         # Check for idle status on Status events
-        if (isinstance(event, StatusEvent) or isinstance(event, GameEvent)):
+        if (isinstance(event, StatusEvent) or isinstance(event, GameEvent)) and self.state["IsIdle"] == False:
             current_time = event.timestamp
             current_dt = datetime.fromisoformat(current_time.replace('Z', '+00:00'))
             last_interaction = self.state["LastInteraction"]
