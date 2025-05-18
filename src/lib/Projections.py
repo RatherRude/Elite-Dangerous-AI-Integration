@@ -1,5 +1,5 @@
 import math
-from typing import Any, Literal, TypedDict, final,
+from typing import Any, Literal, TypedDict, final
 from datetime import datetime, timezone, timedelta
 
 from typing_extensions import NotRequired, override
@@ -1014,75 +1014,42 @@ class ColonisationConstruction(Projection[ColonisationConstructionState]):
 
 
 DockingEventsState = TypedDict('DockingEventsState', {
-    "RequestDeliveredTimestamp": str,
+    "StationType": str,
+    "LastEventType": str,
     "DockingComputerState": str
-
 })
 
 @final
 class DockingEvents(Projection[DockingEventsState]):
-
-    latest_docking_event = {"event": "None", "timestamp": datetime(1970, 1, 1, tzinfo=timezone.utc), "StationType":''}
-    last_music_track = ''
-
     @override
     def get_default_state(self) -> DockingEventsState:
         return {
-            "RequestDeliveredTimestamp": '',
+            "StationType": 'Unknown',
+            "LastEventType": 'Unknown',
             "DockingComputerState": 'deactivated'
         }
 
-    def process(self, event: Event):
-
+    @override
+    def process(self, event: Event) -> list[ProjectedEvent] | None:
         projected_events: list[ProjectedEvent] = []
+        if isinstance(event, GameEvent) and event.content.get('event') in ['DockingGranted', 'Undocked'] :
+            self.state['StationType'] = event.content.get("StationType", "Unknown")
+            self.state['LastEventType'] = event.content.get("event", "Unknown")
 
-        if not isinstance(event, GameEvent):
-            return  # Ignore non-GameEvent types
-
-        timestamp_str = event.content.get('timestamp')
-        event_type = event.content.get('event')
-
-        event_timestamp = None
-        if timestamp_str:
-            try:
-                event_timestamp = datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
-            except ValueError:
-               return
-
-        time_difference = event_timestamp - self.latest_docking_event['timestamp']
-
-        if event_type in ['DockingRequested', 'DockingDenied']:
-            # Reliable timestamp for docking state tracking - used in docking request actions macro
-            self.state['RequestDeliveredTimestamp'] = timestamp_str or ''
-
-        self.state['DockingComputerState'] = "off"
-
-        if event_type == "Music":
-            musictrack = event.content.get('MusicTrack')
-            if musictrack == "DockingComputer":
-                self.last_music_track = "DockingComputer"
-                if self.latest_docking_event['event'] == "DockingGranted" and time_difference < timedelta(seconds=60):
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Music':
+            if event.content.get('MusicTrack', "Unknown") == "DockingComputer":
+                self.state['DockingComputerState'] = 'activated'
+                if self.state['LastEventType'] == "DockingGranted":
                     self.state['DockingComputerState'] = "auto-docking"
-                    projected_events.append(ProjectedEvent({"event": "DockingComputerDocking", "seconds_since_granted": str(time_difference)}))
+                    projected_events.append(ProjectedEvent({"event": "DockingComputerDocking"}))
 
-                elif self.latest_docking_event['event'] == "Undocked" and self.latest_docking_event["stationtype"] in ['Coriolis', 'Orbis', 'Ocellus'] and time_difference < timedelta(seconds=60):
-                    # We don't want an DockingComputerUndocking event for stations without an interior as it happens very quickly
-                    self.state['DockingComputerState'] = "auto-undocking"
-                    projected_events.append(ProjectedEvent({"event": "DockingComputerUndocking", "seconds_since_undocked": str(time_difference)}))
+                elif self.state['LastEventType'] == "Undocked" and self.state['StationType'] in ['Coriolis', 'Orbis', 'Ocellus']:
+                    self.state['DockingComputerState'] = "auto-docking"
+                    projected_events.append(ProjectedEvent({"event": "DockingComputerUndocking"}))
 
-            elif self.last_music_track == "DockingComputer":
+            elif self.state['DockingComputerState'] == "auto-docking":
                 self.state['DockingComputerState'] = "deactivated"
-                projected_events.append(ProjectedEvent(
-                    {"event": "DockingComputerDeactivated", "seconds_since_undocked": str(time_difference)}))
-                self.last_music_track = musictrack
-
-        if event_type == "DockingGranted":
-            if event_timestamp > self.latest_docking_event['timestamp']:
-                self.latest_docking_event = {"event": event_type, "timestamp": event_timestamp, "stationtype": event.content.get("StationType")}
-
-        if event_type == "Undocked":
-            if event_timestamp > self.latest_docking_event['timestamp']:
-                self.latest_docking_event = {"event": event_type, "timestamp": event_timestamp, "stationtype": event.content.get("StationType")}
+                projected_events.append(ProjectedEvent({"event": "DockingComputerDeactivated"}))
 
         return projected_events
 
