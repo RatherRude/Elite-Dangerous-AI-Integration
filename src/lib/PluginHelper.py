@@ -1,6 +1,8 @@
-from typing import Any, Callable
+import json
+from typing import Any, Callable, TypedDict, cast
 import openai
 from openai.types.chat import ChatCompletionMessageParam
+from requests import auth
 
 from .EDKeys import EDKeys
 from .EventManager import EventManager, Projection
@@ -104,3 +106,14 @@ class PluginHelper():
         :raises TimeoutError: If the condition isn't met within `timeout`.
         """
         return self._event_manager.wait_for_condition(projection_name, condition_fn, timeout)
+
+class PluginManifest(object):
+    guid: str = ""
+    name: str = ""
+    author: str = ""
+    version: str = ""
+    description: str = ""
+    entrypoint: str = ""
+
+    def __init__(self, j: str) -> None:
+        self.__dict__.update(cast(dict[str, str], json.loads(j)))

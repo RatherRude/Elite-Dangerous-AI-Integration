@@ -291,10 +291,10 @@ if __name__ == "__main__":
     try:
         print(json.dumps({"type": "ready"})+'\n')
         # Load plugins.
-        log('info', "Loading plugins...")
+        log('debug', "Loading plugins...")
         plugin_manager = PluginManager()
         plugin_manager.load_plugins()
-        log('debug', "Loading plugin settings for UI...")
+        log('debug', "Registering plugin settings for the UI...")
         plugin_manager.register_settings()
         # Wait for start signal on stdin
         config = load_config()

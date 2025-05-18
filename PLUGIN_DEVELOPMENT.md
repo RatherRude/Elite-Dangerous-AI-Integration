@@ -7,13 +7,14 @@ Wanna build a plugin, to expand on COVAS' features? This page will help you get 
 * **COVAS:NEXT Project**: Ensure you have the project running from source, as described in [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## Plugin structure
-Plugins are loaded from `./plugins` and its sub-folders, up to one level deep.  
-Create a new sub-folder for your plugin, and create a new Python script. Any class inheriting from `PluginBase` will be treated as a plugin.  
+Plugins are loaded from sub-folders of `./plugins`, up to one level deep.  
+Create a new sub-folder for your plugin, and create a new Python script and a `manifest.json` file. Both of these are described below. 
 You can create a git repository, and even include other assets or libraries in this subfolder.
 
 ### Folder structure:
 * `/plugins`
     * `/YourPlugin`
+        * `/manifest.json` <- The plugin manifest, which defines meta data and the entrypoint.
         * `/deps` <- Python dependencies.
         * `/YourPlugin.py` <- Contains class inplementing `PluginBase` base class.
         * `/requirements.txt` <- Only used when packaging additional Python dependencies. Not needed when distributing.
@@ -25,12 +26,12 @@ Create a new class implementing `PluginBase` like this:
 # Main plugin class
 # This is the class that will be loaded by the PluginManager.
 class ExamplePlugin(PluginBase):
-    def __init__(self): # This is the name that will be shown in the UI.
-        super().__init__(plugin_name = "Example Plugin")
+    def __init__(self, plugin_manifest: PluginManifest):
+        super().__init__(plugin_manifest)
 
         # Define the plugin settings
         # This is the settings that will be shown in the UI for this plugin.
-        self.settings_config = PluginSettings(
+        self.settings_config: PluginSettings | None = PluginSettings(
         key="MediaPlayerPlugin",
         label="Example Plugin Settings",
         icon="wrench", # Uses Material Icons, like the built-in settings-tabs.
@@ -67,10 +68,22 @@ class ExamplePlugin(PluginBase):
         pass
 ```
 
+And a manifest file like this: (**The GUID must be unique. Generate a new one for your project**)
+```json
+{
+    "guid": "babe1f36-bc38-4b62-8cda-80a7a68835f6",
+    "name": "Hello World - Example Plugin",
+    "version": "0.0.1",
+    "author": "John Doe",
+    "description": "A sample plugin",
+    "entrypoint": "HelloWorld.py"
+}
+```
+
 The registration functions (`register_actions`, `register_projections` and `register_sideeffects`, etc.) are where most of the magic happens.  
 You can access most of the internal features you need from the `helper` object, such as the `send_key()`, various event handler registrations and more.
 
-For further details, see [HelloWorld.py](./plugins/HelloWorld.py) for more examples, or [Join our Discord](https://discord.gg/9c58jxVuAT).
+For further details, see the [HelloWorld example plugin](./plugins/HelloWorld) for more examples, or [Join our Discord](https://discord.gg/9c58jxVuAT).
 
 ## Python Dependencies
 If your plugin needs additional 3rd party Python modules, then you need to package them along with your plugin.  

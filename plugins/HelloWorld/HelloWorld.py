@@ -7,7 +7,7 @@ import openai
 from openai.types.chat import ChatCompletionMessageParam
 
 from lib.Config import Config
-from lib.PluginHelper import PluginHelper
+from lib.PluginHelper import PluginHelper, PluginManifest
 from lib.PluginSettingDefinitions import PluginSettings, SettingsGrid, SelectOption, TextAreaSetting, TextSetting, SelectSetting, NumericalSetting, ToggleSetting, ParagraphSetting
 from lib.ScreenReader import ScreenReader
 from lib.Logger import log
@@ -46,12 +46,12 @@ class CurrentHelloWorldState(Projection[HelloWorldState]):
 # Main plugin class
 # This is the class that will be loaded by the PluginManager.
 class HelloWorld(PluginBase):
-    def __init__(self): # This is the name that will be shown in the UI.
-        super().__init__(plugin_name="Hello World - Example Plugin", event_classes=[BoolValueUpdatedEvent])
+    def __init__(self, plugin_manifest: PluginManifest):
+        super().__init__(plugin_manifest, event_classes=[BoolValueUpdatedEvent])
 
         # Define the plugin settings
         # This is the settings that will be shown in the UI for this plugin.
-        self.settings_config = PluginSettings(
+        self.settings_config: PluginSettings | None = PluginSettings(
         key="HelloWorldPlugin",
         label="Hello World Plugin",
         icon="waving_hand", # Uses Material Icons, like the built-in settings-tabs.
@@ -163,21 +163,21 @@ class HelloWorld(PluginBase):
             "properties": {}
         }, lambda args, projected_states: self.hello_world_action(args, projected_states, helper), 'global')
 
-        log('debug', f"Actions registered for {self.plugin_name}")
+        log('debug', f"Actions registered for {self.plugin_manifest.name}")
         
     @override
     def register_projections(self, helper: PluginHelper):
         # Register projections
         helper.register_projection(CurrentHelloWorldState())
         
-        log('debug', f"Projections registered for {self.plugin_name}")
+        log('debug', f"Projections registered for {self.plugin_manifest.name}")
 
     @override
     def register_sideeffects(self, helper: PluginHelper):
         # Register side effects
         helper.register_sideeffect(self.hello_world_sideeffect)
 
-        log('debug', f"Side effects registered for {self.plugin_name}")
+        log('debug', f"Side effects registered for {self.plugin_manifest.name}")
         
     @override
     def register_prompt_event_handlers(self, helper: PluginHelper):
@@ -196,7 +196,7 @@ class HelloWorld(PluginBase):
     @override
     def on_chat_stop(self, helper: PluginHelper):
         # Executed when the chat is stopped
-        log('debug', f"Executed on_chat_stop hook for {self.plugin_name}")
+        log('debug', f"Executed on_chat_stop hook for {self.plugin_manifest.name}")
 
     # Actions
     def hello_world_action(self, args, projected_states, helper: PluginHelper) -> str:

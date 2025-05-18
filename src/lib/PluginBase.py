@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-from .PluginHelper import PluginHelper
+from .PluginHelper import PluginHelper, PluginManifest
 from .PluginSettingDefinitions import PluginSettings
 from .Event import Event
 
@@ -10,9 +10,9 @@ class PluginBase(ABC):
     Base class for all plugins.
     """
 
-    plugin_name: str
+    plugin_manifest: PluginManifest
     """
-    The name of the plugin.
+    The manifest of the plugin.
     """
     
     settings_config: PluginSettings | None = None
@@ -26,15 +26,15 @@ class PluginBase(ABC):
     """
 
     @abstractmethod
-    def __init__(self, plugin_name: str = "PluginBase", event_classes: list[type[Event]] | None = None):
+    def __init__(self, plugin_manifest: PluginManifest, event_classes: list[type[Event]] | None = None):
         """
         Initializes the plugin.
 
         Args:
-            plugin_name (str, optional): The name of the plugin. Defaults to "PluginBase".
+            plugin_manifest (PluginManifest): The manifest of the plugin. This is used to get metadata about the plugin.
         """
 
-        self.plugin_name = plugin_name
+        self.plugin_manifest = plugin_manifest
         self.event_classes = event_classes
 
     # Register actions
