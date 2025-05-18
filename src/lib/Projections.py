@@ -1121,7 +1121,7 @@ class Idle(Projection[IdleState]):
             self.state["IsIdle"] = False
 
         # Check for idle status on Status events
-        if (isinstance(event, StatusEvent) or isinstance(event, GameEvent)) and not self.state["IsIdle"]:
+        if (isinstance(event, StatusEvent) or isinstance(event, GameEvent)):
             current_time = event.timestamp
             current_dt = datetime.fromisoformat(current_time.replace('Z', '+00:00'))
             last_interaction = self.state["LastInteraction"]
