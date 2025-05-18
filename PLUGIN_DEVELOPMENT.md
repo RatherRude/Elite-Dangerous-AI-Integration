@@ -92,4 +92,11 @@ Only modules already used in COVAS:NEXT, and those placed inside the `deps` subf
 **The `deps` sub-folder should be included when you distribute your plugin.**
 
 ## Plugin Lifecycle
-The lifecycle of plugins will be described here soon<sup>tm</sup>.
+Below is a list of plugin functions and when they are called.
+
+| Function                                                                                                                                                                                   | Execution time                                                                                                                           |
+|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|
+| `__init__`                                                                                                                                                                                 | The constructor is executed imediately upon loading the entrypoint file.                                                                 |
+| `register_settings()`                                                                                                                                                                      | Settings are registered right after all plugins have been loaded.                                                                        |
+| `register_actions()`<br>`register_projections()`<br>`register_sideeffects()`<br>`register_should_reply_handlers()`<br>`register_prompt_event_handlers()`<br>`register_status_generators()` | These functions are executed once the chat assistant is started.<br>The order in which these functions are called can not be guaranteed. |
+| `on_chat_stop()`                                                                                                                                                                           | This function runs once the user stops the chat assistant. Use this for any cleanup between chat sessions.                               |

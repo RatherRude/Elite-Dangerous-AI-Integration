@@ -32,6 +32,7 @@ class PluginBase(ABC):
 
         Args:
             plugin_manifest (PluginManifest): The manifest of the plugin. This is used to get metadata about the plugin.
+            event_classes (list[type[Event]] | None, optional): The event classes for this plugin. This is used for deserializing stored events.
         """
 
         self.plugin_manifest = plugin_manifest
