@@ -15,7 +15,8 @@ game_events = {
     # System
     # 'Cargo': False,
     # 'ClearSavedGame': False,
-    'Idle': False,
+    'Idle': False
+    ,
     'LoadGame': True,
     'Shutdown': True,
     'NewCommander': True,
@@ -432,23 +433,15 @@ def get_asset_path(filename: str) -> str:
 
 
 def migrate(data: dict) -> dict:
-    events = data.get('game_events', {})
-
+    # Migrate vision_var to vision_provider
+    if 'vision_var' in data and not data.get('vision_var'):
+        data['vision_provider'] = 'none'
     
     if 'config_version' not in data or data['config_version'] is None:
 
         data['config_version'] = 1
 
-        if 'Exploration' in events:
-            enabled_events = {}
-            for section in events.keys():
-                for name, value in events[section].items():
-                    enabled_events[name] = value
-            data['game_events'] = enabled_events
 
-        # Migrate vision_var to vision_provider
-        if 'vision_var' in data and not data.get('vision_var'):
-            data['vision_provider'] = 'none'
 
         # Migrate old character format to new characters array
         if 'characters' not in data:
@@ -473,7 +466,7 @@ def migrate(data: dict) -> dict:
                 "personality_knowledge_pop_culture": data.get('personality_knowledge_pop_culture', False),
                 "personality_knowledge_scifi": data.get('personality_knowledge_scifi', False),
                 "personality_knowledge_history": data.get('personality_knowledge_history', False),
-                "tts_voice": data.get('tts_voice', 'en-US-AvaMultilingualNeural'),
+                "tts_voice": 'en-US-AvaMultilingualNeural' if data.get('tts_voice', 'en-US-AvaMultilingualNeural') == 'en-GB-SoniaNeural' else data.get('tts_voice', 'en-US-AvaMultilingualNeural'),
                 "tts_speed": data.get('tts_speed', "1.2"),
                 "tts_prompt": data.get('tts_prompt', ""),
                 "game_events": game_events,
@@ -550,12 +543,7 @@ def migrate(data: dict) -> dict:
             if 'llm_model_name' in data and data['llm_model_name'] == 'gpt-4o-mini':
                 data['llm_model_name'] = 'gpt-4.1-mini'
         
-    else:
-        # Check each character for empty game events and set defaults if needed
-        for character in data['characters']:
-            if not character.get('game_events'):
-                character['game_events'] = game_events
-                print(f"Set default game events for character: {character.get('name', 'Unknown')}")
+    data['characters'][0]['game_events'] = game_events
 
     return data
 
