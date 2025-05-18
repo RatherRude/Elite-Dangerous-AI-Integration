@@ -27,10 +27,18 @@ class PluginManager:
         self.plugin_list: dict[str, PluginBase] = {}
         self.plugin_settings_configs: list[PluginSettings] = []
         self.PLUGIN_FOLDER: str = "plugins"
+        self.PLUGIN_DEPENDENCIES_FOLDER: str = "deps"
 
     def load_plugin_module(self, file_path: str) -> PluginBase:
         # Get the module name from file name
         module_name = os.path.splitext(os.path.basename(file_path))[0]
+        
+        # Add deps folder to sys.path, if it exists
+        plugin_folder = os.path.abspath(os.path.dirname(file_path))
+        deps_folder = os.path.join(plugin_folder, self.PLUGIN_DEPENDENCIES_FOLDER)
+        if os.path.exists(deps_folder):
+            log('debug', f"Adding {deps_folder} to sys.path")
+            sys.path.insert(0, deps_folder)
 
         # Load module from file
         spec = importlib.util.spec_from_file_location(module_name, file_path)
@@ -52,6 +60,11 @@ class PluginManager:
 
     def load_plugins(self) -> Self:
         """Load all .py files in PLUGIN_FOLDER as plugins."""
+        
+        # Create PLUGIN_FOLDER if it doesn't exist
+        if not os.path.exists(self.PLUGIN_FOLDER):
+            os.makedirs(self.PLUGIN_FOLDER)
+
         for file in os.listdir(self.PLUGIN_FOLDER):
             try:
                 # Check if the file is a folder

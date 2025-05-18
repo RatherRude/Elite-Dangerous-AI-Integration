@@ -46,8 +46,6 @@ class CurrentHelloWorldState(Projection[HelloWorldState]):
 # Main plugin class
 # This is the class that will be loaded by the PluginManager.
 class HelloWorld(PluginBase):
-    settings_config: PluginSettings | None
-    
     def __init__(self): # This is the name that will be shown in the UI.
         super().__init__(plugin_name="Hello World - Example Plugin", event_classes=[BoolValueUpdatedEvent])
 
