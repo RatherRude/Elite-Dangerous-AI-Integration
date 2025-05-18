@@ -467,6 +467,12 @@ class ShipInfo(Projection[ShipInfoState]):
             self.state['Cargo'] = event.content.get('Cargo', 0)
             self.state['CargoCapacity'] = len(event.content.get('Inventory', []))
 
+        if isinstance(event, GameEvent) and event.content.get('event') == 'SetUserShipName':
+            if 'UserShipName' in event.content:
+                self.state['Name'] = event.content.get('UserShipName', 'Unknown')
+            if 'UserShipId' in event.content:
+                self.state['ShipIdent'] = event.content.get('UserShipId', 'Unknown')
+
         if self.state['Type'] != 'Unknown':
             self.state['LandingPadSize'] = ship_sizes.get(self.state['Type'], 'Unknown')
 
