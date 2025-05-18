@@ -1,7 +1,6 @@
 import math
-from typing import Any, Literal, TypedDict, final
+from typing import Any, Literal, TypedDict, final,
 from datetime import datetime, timezone, timedelta
-
 
 from typing_extensions import NotRequired, override
 
@@ -543,7 +542,9 @@ class NavInfo(Projection[NavInfoState]):
         }
 
     @override
-    def process(self, event: Event) -> None:
+    def process(self, event: Event) -> list[ProjectedEvent]:
+        projected_events: list[ProjectedEvent] = []
+
         # Process NavRoute event
         if isinstance(event, GameEvent) and event.content.get('event') == 'NavRoute':
             if event.content.get('Route', []):
@@ -580,6 +581,25 @@ class NavInfo(Projection[NavInfoState]):
             
         # Process FSDJump - remove visited systems from route
         if isinstance(event, GameEvent) and event.content.get('event') == 'FSDJump':
+            # Calculate remaining jumps based on fuel
+            fuel_level = event.content.get('FuelLevel', 0)
+            fuel_used = event.content.get('FuelUsed', 0)
+            remaining_jumps = int(fuel_level / fuel_used)
+
+            # Check if we have enough scoopable stars between current and destination system)
+            if remaining_jumps < len(self.state['NavRoute'])-1:
+                if remaining_jumps == 0:
+                    remaining_jumps = 1
+                # Count scoopable stars in the remaining jumps
+                scoopable_stars = sum(
+                    1 for entry in self.state['NavRoute'][:remaining_jumps][:-1]
+                    if entry.get('Scoopable', False)
+                )
+
+                # Only warn if we can't reach any scoopable stars
+                if scoopable_stars == 0:
+                    projected_events.append(ProjectedEvent({"event": "NotEnoughFuel"}))
+
             for index, entry in enumerate(self.state['NavRoute']):
                 if entry['StarSystem'] == event.content.get('StarSystem'):
                     self.state['NavRoute'] = self.state['NavRoute'][index+1:]
@@ -602,6 +622,8 @@ class NavInfo(Projection[NavInfoState]):
             if star_system != 'Unknown':
                 # Fetch system data for the current system asynchronously
                 self.system_db.fetch_system_data_nonblocking(star_system)
+
+        return projected_events
 
 # Define types for Backpack Projection
 BackpackItem = TypedDict('BackpackItem', {
@@ -1064,6 +1086,47 @@ class DockingEvents(Projection[DockingEventsState]):
 
         return projected_events
 
+# Define types for InCombat Projection
+InCombatState = TypedDict('InCombatState', {
+    "InCombat": bool  # Current combat status
+})
+
+
+@final
+class InCombat(Projection[InCombatState]):
+    @override
+    def get_default_state(self) -> InCombatState:
+        return {
+            "InCombat": False
+        }
+
+    @override
+    def process(self, event: Event) -> list[ProjectedEvent] | None:
+        projected_events: list[ProjectedEvent] = []
+
+        # Process Music events
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Music':
+            music_track = event.content.get('MusicTrack', '')
+
+            # Skip if missing music track information
+            if not music_track:
+                return None
+
+            # Determine if this is a combat music track (starts with "combat")
+            is_combat_music = music_track.lower().startswith('combat')
+
+            # Check for transition from combat to non-combat
+            if self.state["InCombat"] and not is_combat_music:
+                # Generate a projected event for leaving combat
+                projected_events.append(ProjectedEvent({"event": "CombatExited"}))
+                self.state["InCombat"] = False
+            # Check for transition from non-combat to combat
+            elif not self.state["InCombat"] and is_combat_music:
+                # Generate a projected event for entering combat
+                projected_events.append(ProjectedEvent({"event": "CombatEntered"}))
+                self.state["InCombat"] = True
+
+        return projected_events
 
 def registerProjections(event_manager: EventManager, system_db: SystemDatabase):
 
@@ -1081,6 +1144,7 @@ def registerProjections(event_manager: EventManager, system_db: SystemDatabase):
     event_manager.register_projection(Friends())
     event_manager.register_projection(ColonisationConstruction())
     event_manager.register_projection(DockingEvents())
+    event_manager.register_projection(InCombat())
 
     # ToDo: SLF, SRV,
     for proj in [

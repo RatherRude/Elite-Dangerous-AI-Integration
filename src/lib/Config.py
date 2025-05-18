@@ -27,13 +27,15 @@ game_events = {
     'Statistics': False,
     # 'SquadronStartup': False
     # 'EngineerProgress': False,
-    
+
     # Combat
     'Died': True,
     'Resurrect': True,
     'WeaponSelected': False,
-    'OutofDanger': True,
     'InDanger': True,
+    'OutofDanger': True,
+    'CombatEntered': True,
+    'CombatExited': True,
     'LegalStateChanged': True,
     'CommitCrime': False,
     'Bounty': False,
@@ -54,7 +56,7 @@ game_events = {
     'CrimeVictim': True,
     'SystemsShutdown': True,
     'SelfDestruct': True,
-    
+
     # Trading
     'Trade': False,
     'BuyTradeData': False,
@@ -64,13 +66,13 @@ game_events = {
     'MarketSell': False,
     'CargoTransfer': False,
     'Market': False,
-    
+
     # Mining
     'AsteroidCracked': False,
     'MiningRefined': False,
     'ProspectedAsteroid': True,
     'LaunchDrone': False,
-    
+
     # Ship Updates
     'FSDJump': False,
     'FSDTarget': False,
@@ -125,7 +127,7 @@ game_events = {
     'NightVisionOff': False,
     'NightVisionOn': False,
     'SupercruiseDestinationDrop': False,
-    
+
     # SRV Updates
     'LaunchSRV': True,
     'DockSRV': True,
@@ -136,7 +138,7 @@ game_events = {
     'SrvTurretViewDisconnected': False,
     'SrvDriveAssistOff': False,
     'SrvDriveAssistOn': False,
-    
+
     # On-Foot Updates
     'Disembark': True,
     'Embark': True,
@@ -175,7 +177,7 @@ game_events = {
     'GlideModeExited': False,
     'GlideModeEntered': False,
     'DropShipDeploy': False,
-    
+
     # Stations
     'MissionAbandoned': True,
     'MissionAccepted': True,
@@ -281,7 +283,7 @@ game_events = {
     'PowerplaySalary': False,
     'PowerplayVote': False,
     'PowerplayVoucher': False,
-    
+
     # Exploration
     'CodexEntry': False,
     'DiscoveryScan': False,
