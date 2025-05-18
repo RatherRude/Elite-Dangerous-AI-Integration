@@ -15,7 +15,7 @@ game_events = {
     # System
     # 'Cargo': False,
     # 'ClearSavedGame': False,
-    'Idle': True,
+    'Idle': False,
     'LoadGame': True,
     'Shutdown': True,
     'NewCommander': True,
