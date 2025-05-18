@@ -718,13 +718,8 @@ def get_default_output_device_name() -> str:
 
 def get_system_info() -> SystemInfo:
     from .EDCoPilot import EDCoPilot
-    edcopilot: Any = EDCoPilot(False)  # this is only for the GUI, the actual EDCoPilot client is created in the Chat
-    return {
-        "os": platform.system(),
-        "input_device_names": get_input_device_names(),
-        "output_device_names": get_output_device_names(),
-        "edcopilot_installed": edcopilot.is_installed(),
-    }
+    edcopilot = EDCoPilot(False)  # this is only for the GUI, the actual EDCoPilot client is created in the Chat
+    return SystemInfo(os = platform.system(), input_device_names = get_input_device_names(), output_device_names = get_output_device_names(), edcopilot_installed = edcopilot.is_installed())
 
 
 def validate_model_availability(
