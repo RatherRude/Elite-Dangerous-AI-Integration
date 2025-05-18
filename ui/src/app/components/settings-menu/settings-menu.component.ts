@@ -8,8 +8,6 @@ import { MatSelectModule } from "@angular/material/select";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { FormsModule } from "@angular/forms";
 import {
-  Character,
-  Config,
   ConfigService,
 } from "../../services/config.service";
 import { Subscription } from "rxjs";
@@ -26,7 +24,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { EdgeTtsVoicesDialogComponent } from '../edge-tts-voices-dialog';
 import { ConfirmationDialogComponent, ConfirmationDialogData } from '../../components/confirmation-dialog/confirmation-dialog.component';
 import { ConfirmationDialogService } from '../../services/confirmation-dialog.service';
-import { SystemInfo } from "../../types/models";
+import { Config, Character, SystemInfo } from "../../types/models";
 
 interface PromptSettings {
   // Existing settings
@@ -1378,7 +1376,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   /**
    * Check if the voice is not in the predefined list of common voices
    */
-  isCustomVoice(voice: string | undefined): boolean {
+  isCustomVoice(voice: string | null): boolean {
     if (!voice) return false;
     
     // Get the list of voices in the dropdowns
@@ -1397,7 +1395,9 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   /**
    * Get a readable display name for a voice ID
    */
-  getVoiceDisplayName(voice: string): string {
+  getVoiceDisplayName(voice: string | null): string | null {
+    if (!voice) return null; // Return null if voice is null
+
     // First check if it's in our full list of voices
     const foundVoice = this.edgeTtsVoices.find(v => v.value === voice);
     if (foundVoice) {
