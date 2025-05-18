@@ -2156,6 +2156,16 @@ class PromptGenerator:
         if event_name == 'Idle':
             return f"{self.commander_name} hasn't been responding for 5 minutes. Ponder about your current situation.",
 
+        if event_name == "DockingComputerDocking":
+            return f"{self.commander_name}'s ship has initiated automated docking computer"
+
+        if event_name == "DockingComputerUndocking":
+            # we know it's a station as we only trigger undocking event if we are inside a station
+            return f"{self.commander_name}'s ship has initiated automated docking computer, we are leaving the station"
+
+        if event_name == "DockingComputerDeactivated":
+            return f"{self.commander_name}'s ship has deactivated the docking computer"
+
         log('debug', f'fallback for event', event_name, content)
 
         return f"Event: {event_name}\n{yaml.dump(content)}"
