@@ -1,10 +1,12 @@
 import math
 from typing import Any, Literal, TypedDict, final
+from datetime import datetime
 
 from typing_extensions import NotRequired, override
 
-from .Event import Event, StatusEvent, GameEvent, ProjectedEvent
+from .Event import Event, StatusEvent, GameEvent, ProjectedEvent, ExternalEvent, ConversationEvent, ToolEvent
 from .EventManager import EventManager, Projection
+from .Logger import log
 from .StatusParser import parse_status_flags, parse_status_json, Status
 from .SystemDatabase import SystemDatabase
 
@@ -1090,6 +1092,47 @@ class InCombat(Projection[InCombatState]):
 
         return projected_events
 
+# Define types for Idle Projection
+IdleState = TypedDict('IdleState', {
+    "LastInteraction": str,  # ISO timestamp of last interaction
+    "IsIdle": bool  # Whether the user is currently idle
+})
+
+@final
+class Idle(Projection[IdleState]):
+    @override
+    def get_default_state(self) -> IdleState:
+        return {
+            "LastInteraction": "1970-01-01T00:00:00Z",  # Default to Unix epoch
+            "IsIdle": False
+        }
+
+    @override
+    def process(self, event: Event) -> list[ProjectedEvent]:
+        projected_events: list[ProjectedEvent] = []
+
+        # Update last interaction time for any event
+        if isinstance(event, ConversationEvent) and event.kind == 'user':
+            self.state["LastInteraction"] = event.timestamp
+            self.state["IsIdle"] = False
+
+        # Check for idle status on Status events
+        if (isinstance(event, StatusEvent) or isinstance(event, GameEvent)) and not self.state["IsIdle"]:
+            current_time = event.timestamp
+            current_dt = datetime.fromisoformat(current_time.replace('Z', '+00:00'))
+            last_interaction = self.state["LastInteraction"]
+            last_dt = datetime.fromisoformat(last_interaction.replace('Z', '+00:00'))
+            time_delta = (current_dt - last_dt).total_seconds()
+            
+            # If more than 5 minutes (300 seconds) have passed since last interaction
+            log('info', 'current delta', time_delta, self.state["IsIdle"])
+            if time_delta > 30:
+                log('info', 'idle')
+                self.state["IsIdle"] = True
+                projected_events.append(ProjectedEvent({"event": "Idle"}))
+
+        return projected_events
+
 def registerProjections(event_manager: EventManager, system_db: SystemDatabase):
 
     event_manager.register_projection(EventCounter())
@@ -1107,6 +1150,7 @@ def registerProjections(event_manager: EventManager, system_db: SystemDatabase):
     event_manager.register_projection(ColonisationConstruction())
     event_manager.register_projection(DockingEvents())
     event_manager.register_projection(InCombat())
+    event_manager.register_projection(Idle())
 
     # ToDo: SLF, SRV,
     for proj in [

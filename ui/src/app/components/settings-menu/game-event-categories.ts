@@ -230,6 +230,7 @@ export const GameEventCategories: Record<string, string[]> = {
         "ColonisationConstructionDepot",
     ],
     "Social": [
+        "Idle",
         "CrewAssign",
         "CrewFire",
         "CrewHire",

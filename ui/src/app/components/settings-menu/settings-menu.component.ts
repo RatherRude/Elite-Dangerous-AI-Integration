@@ -2079,6 +2079,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       tts_prompt: this.getCharacterProperty('tts_prompt', ''),
       // Add default game events
       game_events: {
+        "Idle": true,
         "LoadGame": true,
         "Shutdown": true,
         "NewCommander": true,

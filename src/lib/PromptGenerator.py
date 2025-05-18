@@ -2152,6 +2152,9 @@ class PromptGenerator:
         if event_name == 'ExternalTwitchNotification':
             twitch_event = cast(Dict[str, Any], content)
             return f"{self.commander_name} has received a Discord notification.",
+        if event_name == 'Idle':
+            twitch_event = cast(Dict[str, Any], content)
+            return f"{self.commander_name} hasn't been responding for 5 minutes. Start to get bored.",
 
         log('debug', f'fallback for event', event_name, content)
 
