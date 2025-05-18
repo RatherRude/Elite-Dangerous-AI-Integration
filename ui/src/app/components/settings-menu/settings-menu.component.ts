@@ -2171,6 +2171,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
         "LowFuelWarningCleared": true,
         "LowFuelWarning": true,
         "NoScoopableStars": true,
+        "RememberLimpets": true,
         "NightVisionOff": false,
         "NightVisionOn": false,
         "SupercruiseDestinationDrop": false,

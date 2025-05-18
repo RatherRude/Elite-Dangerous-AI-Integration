@@ -82,17 +82,16 @@ class Cargo(Projection[CargoState]):
         if isinstance(event, GameEvent) and event.content.get('event') == 'Cargo':
             if 'Inventory' in event.content:
                 self.state['Inventory'] = []
-                total_items = 0
-                
+
                 for item in event.content.get('Inventory', []):
                     self.state['Inventory'].append({
                         "Name": item.get('Name_Localised', item.get('Name', 'Unknown')),
                         "Count": item.get('Count', 0),
                         "Stolen": item.get('Stolen', 0) > 0
                     })
-                    total_items += item.get('Count', 0)
-                
-                self.state['TotalItems'] = total_items
+
+            if 'Count' in event.content:
+                self.state['TotalItems'] = event.content.get('Count', 0)
 
         # Get cargo capacity from Loadout event
         if isinstance(event, GameEvent) and event.content.get('event') == 'Loadout':
@@ -339,23 +338,6 @@ class Missions(Projection[MissionsState]):
                     self.state.pop("Unknown", None)
 
 
-ShipInfoState = TypedDict('ShipInfoState', {
-    "Name": str,
-    "Type": str,
-    "ShipIdent": str,
-    "UnladenMass": float,
-    "Cargo": float,
-    "CargoCapacity": float,
-    "FuelMain": float,
-    "FuelMainCapacity": float,
-    "FuelReservoir": float,
-    "FuelReservoirCapacity": float,
-    "MaximumJumpRange": float,
-    #"CurrentJumpRange": float,
-    "LandingPadSize": Literal['S', 'M', 'L', 'Unknown'],
-    "IsMiningShip": bool,
-})
-
 ship_sizes: dict[str, Literal['S', 'M', 'L', 'Unknown']] = {
     'adder':                         'S',
     'anaconda':                      'L',
@@ -407,6 +389,24 @@ ship_sizes: dict[str, Literal['S', 'M', 'L', 'Unknown']] = {
     'vulture':                       'S',
 }
 
+ShipInfoState = TypedDict('ShipInfoState', {
+    "Name": str,
+    "Type": str,
+    "ShipIdent": str,
+    "UnladenMass": float,
+    "Cargo": float,
+    "CargoCapacity": float,
+    "FuelMain": float,
+    "FuelMainCapacity": float,
+    "FuelReservoir": float,
+    "FuelReservoirCapacity": float,
+    "MaximumJumpRange": float,
+    #"CurrentJumpRange": float,
+    "LandingPadSize": Literal['S', 'M', 'L', 'Unknown'],
+    "IsMiningShip": bool,
+    "hasLimpets": bool,
+})
+
 @final
 class ShipInfo(Projection[ShipInfoState]):
     @override
@@ -425,11 +425,13 @@ class ShipInfo(Projection[ShipInfoState]):
             "MaximumJumpRange": 0,
             #"CurrentJumpRange": 0,
             "IsMiningShip": False,
+            "hasLimpets": False,
             "LandingPadSize": 'Unknown',
         }
     
     @override
-    def process(self, event: Event) -> None:
+    def process(self, event: Event) -> list[ProjectedEvent]:
+        projected_events: list[ProjectedEvent] = []
         if isinstance(event, StatusEvent) and event.status.get('event') == 'Status':
             status: Status = event.status  # pyright: ignore[reportAssignmentType]
             if 'Cargo' in event.status:
@@ -463,9 +465,18 @@ class ShipInfo(Projection[ShipInfoState]):
                 else:
                     self.state['IsMiningShip'] = False
 
+                has_limpets = any(module["Item"].startswith("int_dronecontrol") for module in event.content["Modules"])
+                if has_limpets:
+                    self.state['hasLimpets'] = True
+                else:
+                    self.state['hasLimpets'] = False
+
         if isinstance(event, GameEvent) and event.content.get('event') == 'Cargo':
-            self.state['Cargo'] = event.content.get('Cargo', 0)
-            self.state['CargoCapacity'] = len(event.content.get('Inventory', []))
+            self.state['Cargo'] = event.content.get('Count', 0)
+
+        if isinstance(event, GameEvent) and event.content.get('event') in ['RefuelAll','RepairAll','BuyAmmo']:
+            if self.state['hasLimpets'] and self.state['Cargo'] < self.state['CargoCapacity']:
+                projected_events.append(ProjectedEvent({"event": "RememberLimpets"}))
 
         if isinstance(event, GameEvent) and event.content.get('event') == 'SetUserShipName':
             if 'UserShipName' in event.content:
@@ -475,6 +486,8 @@ class ShipInfo(Projection[ShipInfoState]):
 
         if self.state['Type'] != 'Unknown':
             self.state['LandingPadSize'] = ship_sizes.get(self.state['Type'], 'Unknown')
+
+        return projected_events
 
 TargetState = TypedDict('TargetState', {
     "EventID": NotRequired[str],

@@ -72,6 +72,7 @@ game_events = {
     'MiningRefined': False,
     'ProspectedAsteroid': True,
     'LaunchDrone': False,
+    'RememberLimpets': True,
 
     # Ship Updates
     'FSDJump': False,

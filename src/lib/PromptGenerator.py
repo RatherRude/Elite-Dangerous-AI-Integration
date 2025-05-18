@@ -2134,6 +2134,8 @@ class PromptGenerator:
             return f"{self.commander_name} took the third and final biological sample."
         if event_name == 'NoScoopableStars':
             return f"{self.commander_name}'s fuel is insufficient to reach the destination and there are not enough scoopable stars on the route. Alternative route required."
+        if event_name == 'RememberLimpets':
+            return f"{self.commander_name} has cargo capacity available to buy limpets. Remember to buy more."
         if event_name == 'CombatEntered':
             return f"{self.commander_name} is now in combat."
         if event_name == 'CombatExited':
@@ -2495,7 +2497,9 @@ class PromptGenerator:
         
         # Create a copy of ship_info so we don't modify the original
         ship_display = dict(ship_info)
-        
+        ship_display.pop('IsMiningShip', None)
+        ship_display.pop('hasLimpets', None)
+
         # Add cargo inventory in a more efficient format if available
 
         if cargo_info and cargo_info.get('Inventory'):

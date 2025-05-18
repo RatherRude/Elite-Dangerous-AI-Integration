@@ -59,6 +59,7 @@ export const GameEventCategories: Record<string, string[]> = {
         "MiningRefined",
         "ProspectedAsteroid",
         "LaunchDrone",
+        "RememberLimpets",
     ],
     "Ship Updates": [
         "FSDJump",
