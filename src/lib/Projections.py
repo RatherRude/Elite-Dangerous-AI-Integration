@@ -1016,7 +1016,8 @@ class ColonisationConstruction(Projection[ColonisationConstructionState]):
 DockingEventsState = TypedDict('DockingEventsState', {
     "StationType": str,
     "LastEventType": str,
-    "DockingComputerState": str
+    "DockingComputerState": str,
+    "Timestamp": str
 })
 
 @final
@@ -1026,16 +1027,20 @@ class DockingEvents(Projection[DockingEventsState]):
         return {
             "StationType": 'Unknown',
             "LastEventType": 'Unknown',
-            "DockingComputerState": 'deactivated'
+            "DockingComputerState": 'deactivated',
+            "Timestamp": "1970-01-01T00:00:00Z"
         }
 
     @override
     def process(self, event: Event) -> list[ProjectedEvent] | None:
         projected_events: list[ProjectedEvent] = []
+        
         if isinstance(event, GameEvent) and event.content.get('event') in ['Docked', 'Undocked', 'DockingGranted', 'DockingRequested', 'DockingCanceled', 'DockingDenied', 'DockingTimeout']:
             self.state['DockingComputerState'] = "deactivated"
             self.state['StationType'] = event.content.get("StationType", "Unknown")
             self.state['LastEventType'] = event.content.get("event", "Unknown")
+            if 'timestamp' in event.content:
+                self.state['Timestamp'] = event.content['timestamp']
 
         if isinstance(event, GameEvent) and event.content.get('event') == 'Music':
             if event.content.get('MusicTrack', "Unknown") == "DockingComputer":

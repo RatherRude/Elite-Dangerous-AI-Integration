@@ -5,6 +5,7 @@ from time import sleep
 import traceback
 from typing import Optional
 from pyautogui import typewrite
+from datetime import datetime, timezone
 
 import openai
 import requests
@@ -440,12 +441,17 @@ def request_docking(args, projected_states):
     else:
         raise Exception('Docking menu not available in current UI Mode.')
 
+    # Start the key press sequence
     stop_event = threading.Event()
     t = threading.Thread(target=docking_key_press_sequence, args=(stop_event,))
     t.start()
 
     try:
-        event_manager.wait_for_condition('DockingEvents', lambda s: s.get('LastEventType') in ['DockingGranted', 'DockingRequested', 'DockingCanceled', 'DockingDenied', 'DockingTimeout'] , 10)
+        old_timestamp = projected_states.get('DockingEvents').get('Timestamp', "1970-01-01T00:00:01Z")
+        # Wait for a docking event with a timestamp newer than when we started
+        event_manager.wait_for_condition('DockingEvents', 
+            lambda s: ((s.get('LastEventType') in ['DockingGranted', 'DockingRequested', 'DockingCanceled', 'DockingDenied', 'DockingTimeout']) 
+                      and (s.get('Timestamp', "1970-01-01T00:00:02Z") != old_timestamp)), 10)
         msg = ""
     except:
         msg = "Failed to request docking via menu"
