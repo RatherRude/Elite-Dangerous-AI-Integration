@@ -128,7 +128,7 @@ class EventManager:
             self.trigger_sideeffects(event, projected_states)
             for projected_event in projected_events:
                 self.trigger_sideeffects(projected_event, projected_states)
-            
+
         self.event_store.commit()
         self.save_projections()
         self.processed += self.pending
@@ -155,7 +155,6 @@ class EventManager:
         for projection in self.projections:
             projected_states[projection.__class__.__name__] = projection.state.copy()
         return self.processed, projected_states
-        
 
     def update_projections(self, event: Event, save_later: bool = False) -> list[ProjectedEvent]:
         projected_events: list[ProjectedEvent] = []
@@ -182,7 +181,7 @@ class EventManager:
         if not save_later:
             self.projection_store.set(projection_name, {"state": projection.state, "last_processed": projection.last_processed})
         return projected_events if projected_events else []
-    
+
     def save_projections(self):
         for projection in self.projections:
             self.projection_store.set(projection.__class__.__name__, {"state": projection.state, "last_processed": projection.last_processed})

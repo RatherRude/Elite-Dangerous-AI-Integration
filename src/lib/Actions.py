@@ -440,14 +440,12 @@ def request_docking(args, projected_states):
     else:
         raise Exception('Docking menu not available in current UI Mode.')
 
-    previous_timestamp = (projected_states.get('DockingEvents') or {}).get('RequestDeliveredTimestamp')
-
     stop_event = threading.Event()
     t = threading.Thread(target=docking_key_press_sequence, args=(stop_event,))
     t.start()
 
     try:
-        event_manager.wait_for_condition('DockingEvents', lambda s: s.get('RequestDeliveredTimestamp') != previous_timestamp , 10)
+        event_manager.wait_for_condition('DockingEvents', lambda s: s.get('LastEventType') in ['DockingGranted', 'DockingRequested', 'DockingCanceled', 'DockingDenied', 'DockingTimeout'] , 10)
         msg = ""
     except:
         msg = "Failed to request docking via menu"

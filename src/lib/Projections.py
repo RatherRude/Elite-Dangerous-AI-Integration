@@ -1,5 +1,6 @@
 import math
 from typing import Any, Literal, TypedDict, final
+from datetime import datetime, timezone, timedelta
 
 from typing_extensions import NotRequired, override
 
@@ -1013,7 +1014,9 @@ class ColonisationConstruction(Projection[ColonisationConstructionState]):
 
 
 DockingEventsState = TypedDict('DockingEventsState', {
-    "RequestDeliveredTimestamp": str
+    "StationType": str,
+    "LastEventType": str,
+    "DockingComputerState": str
 })
 
 @final
@@ -1021,15 +1024,35 @@ class DockingEvents(Projection[DockingEventsState]):
     @override
     def get_default_state(self) -> DockingEventsState:
         return {
-            "RequestDeliveredTimestamp": ''
+            "StationType": 'Unknown',
+            "LastEventType": 'Unknown',
+            "DockingComputerState": 'deactivated'
         }
 
-    def process(self, event: Event):
+    @override
+    def process(self, event: Event) -> list[ProjectedEvent] | None:
+        projected_events: list[ProjectedEvent] = []
+        if isinstance(event, GameEvent) and event.content.get('event') in ['Docked', 'Undocked', 'DockingGranted', 'DockingRequested', 'DockingCanceled', 'DockingDenied', 'DockingTimeout']:
+            self.state['DockingComputerState'] = "deactivated"
+            self.state['StationType'] = event.content.get("StationType", "Unknown")
+            self.state['LastEventType'] = event.content.get("event", "Unknown")
 
-        if isinstance(event, GameEvent) and event.content.get('event') in ['DockingRequested','DockingDenied']:
-            # Provides a reliable timestamp string for condition checking. DockingRequested events are not always sent after a docking request if it's denied
-            self.state['RequestDeliveredTimestamp'] = event.content.get('timestamp','')
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Music':
+            if event.content.get('MusicTrack', "Unknown") == "DockingComputer":
+                self.state['DockingComputerState'] = 'activated'
+                if self.state['LastEventType'] == "DockingGranted":
+                    self.state['DockingComputerState'] = "auto-docking"
+                    projected_events.append(ProjectedEvent({"event": "DockingComputerDocking"}))
 
+                elif self.state['LastEventType'] == "Undocked" and self.state['StationType'] in ['Coriolis', 'Orbis', 'Ocellus']:
+                    self.state['DockingComputerState'] = "auto-docking"
+                    projected_events.append(ProjectedEvent({"event": "DockingComputerUndocking"}))
+
+            elif self.state['DockingComputerState'] == "auto-docking":
+                self.state['DockingComputerState'] = "deactivated"
+                projected_events.append(ProjectedEvent({"event": "DockingComputerDeactivated"}))
+
+        return projected_events
 
 # Define types for InCombat Projection
 InCombatState = TypedDict('InCombatState', {
