@@ -263,9 +263,9 @@ if __name__ == "__main__":
         print(json.dumps({"type": "ready"})+'\n')
         # Wait for start signal on stdin
         config = load_config()
-        print(json.dumps({"type": "config", "config": config})+'\n', flush=True)
+        print(json.dumps({"type": "config", "config": config.model_dump()})+'\n', flush=True)
         system = get_system_info()
-        print(json.dumps({"type": "system", "system": system})+'\n', flush=True)
+        print(json.dumps({"type": "system", "system": system.model_dump()})+'\n', flush=True)
         while True:
             # print(f"Waiting for command...")
             line = sys.stdin.readline().strip()

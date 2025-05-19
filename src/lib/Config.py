@@ -9,6 +9,8 @@ import sys
 from openai import OpenAI, APIError
 
 from .Logger import log
+from .shared.SystemTypes import SystemInfo
+from .shared.ConfigTypes import Config
 
 # List of game events categorized
 game_events = {
@@ -314,112 +316,14 @@ game_events = {
     'USSDrop': False,
 }
 
-
-class Character(TypedDict, total=False):
-    name: str
-    character: str
-    personality_preset: str
-    personality_verbosity: int
-    personality_vulgarity: int
-    personality_empathy: int
-    personality_formality: int
-    personality_confidence: int
-    personality_ethical_alignment: str
-    personality_moral_alignment: str
-    personality_tone: str
-    personality_character_inspiration: str
-    personality_language: str
-    personality_knowledge_pop_culture: bool
-    personality_knowledge_scifi: bool
-    personality_knowledge_history: bool
-    tts_voice: str
-    tts_speed: str
-    tts_prompt: str
-
-
-class Config(TypedDict):
-    config_version: int
-    api_key: str
-    llm_api_key: str
-    llm_endpoint: str
-    commander_name: str
-    # Active character properties (kept for backward compatibility)
-    character: str
-    personality_preset: str
-    personality_verbosity: int
-    personality_vulgarity: int
-    personality_empathy: int
-    personality_formality: int
-    personality_confidence: int
-    personality_ethical_alignment: str
-    personality_moral_alignment: str
-    personality_tone: str
-    personality_character_inspiration: str
-    personality_language: str
-    personality_name: str
-    personality_knowledge_pop_culture: bool
-    personality_knowledge_scifi: bool
-    personality_knowledge_history: bool
-    # Stored characters
-    characters: List[Character]
-    active_character_index: int
-    # Other config settings
-    llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom', 'local-ai-server']
-    llm_model_name: str
-    llm_custom: dict[str, str]
-    vision_provider: Literal['openai', 'google-ai-studio', 'custom', 'none']
-    vision_model_name: str
-    vision_endpoint: str
-    vision_api_key: str
-    stt_provider: Literal['openai', 'custom', 'custom-multi-modal', 'google-ai-studio', 'none']
-    stt_model_name: str
-    stt_api_key: str
-    stt_endpoint: str
-    stt_custom_prompt: str
-    stt_required_word: str
-    tts_provider: Literal['openai', 'edge-tts', 'custom', 'none', 'local-ai-server']
-    tts_model_name: str
-    tts_api_key: str
-    tts_endpoint: str
-    tts_prompt: str
-    tools_var: bool
-    vision_var: bool
-    ptt_var: bool
-    mute_during_response_var: bool
-    continue_conversation_var: bool
-    event_reaction_enabled_var: bool
-    game_actions_var: bool
-    web_search_actions_var: bool
-    use_action_cache_var: bool
-    react_to_text_local_var: bool
-    react_to_text_starsystem_var: bool
-    react_to_text_npc_var: bool
-    react_to_text_squadron_var: bool
-    react_to_material: str
-    react_to_danger_mining_var: bool
-    react_to_danger_onfoot_var: bool
-    react_to_danger_supercruise_var: bool
-    edcopilot: bool
-    edcopilot_dominant: bool
-    tts_voice: str
-    tts_speed: str
-    ptt_key: str
-    input_device_name: str
-    output_device_name: str
-    game_events: dict[str, bool]
-    cn_autostart: bool
-    ed_journal_path: str
-    ed_appdata_path: str
-
-
 def get_cn_appdata_path() -> str:
     return os.getcwd()
 
 
 def get_ed_journals_path(config: Config) -> str:
     """Returns the path of the Elite Dangerous journal and state files"""
-    if config.get('ed_journal_path'):
-        path = os.path.abspath(config['ed_journal_path'])
+    if config.ed_journal_path:
+        path = os.path.abspath(config.ed_journal_path)
         return path
 
     from . import WindowsKnownPaths as winpaths
@@ -431,8 +335,8 @@ def get_ed_journals_path(config: Config) -> str:
 
 def get_ed_appdata_path(config: Config) -> str:
     """Returns the path of the Elite Dangerous appdata folder"""
-    if config.get('ed_appdata_path'):
-        path = os.path.abspath(config['ed_appdata_path'])
+    if config.ed_appdata_path:
+        path = os.path.abspath(config.ed_appdata_path)
         return path
 
     from os import environ
@@ -537,7 +441,7 @@ def merge_config_data(defaults: dict, user: dict):
                 
             # Handle dict type specially
             if isinstance(defaults.get(key), dict) and isinstance(user.get(key), dict):
-                merge[key] = merge_config_data(defaults.get(key), user.get(key))
+                merge[key] = merge_config_data(defaults.get(key, {}), user.get(key, {}))
             # Skip list type (not supported in merge)
             elif isinstance(defaults.get(key), list):
                 # Just copy the user list directly
@@ -552,77 +456,77 @@ def merge_config_data(defaults: dict, user: dict):
 
 
 def load_config() -> Config:
-    defaults: Config = {
-        'config_version': 1,
-        'commander_name': "",
-        'character': "Keep your responses extremely brief and minimal. Maintain a professional and serious tone in all responses. Stick to factual information and avoid references to specific domains. Your responses should be inspired by the character or persona of COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal). Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS:NEXT. Show some consideration for emotions while maintaining focus on information. Maintain a friendly yet respectful conversational style. Project an air of expertise and certainty when providing information. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.",
-        'personality_preset': 'default',
-        'personality_verbosity': 0,
-        'personality_vulgarity': 0,
-        'personality_empathy': 50,
-        'personality_formality': 50,
-        'personality_confidence': 75,
-        'personality_ethical_alignment': 'lawful',
-        'personality_moral_alignment': 'good',
-        'personality_tone': 'serious',
-        'personality_character_inspiration': 'COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal)',
-        'personality_language': '',
-        'personality_name': 'COVAS:NEXT',
-        'personality_knowledge_pop_culture': False,
-        'personality_knowledge_scifi': False,
-        'personality_knowledge_history': False,
-        'characters': [],
-        'active_character_index': -1,  # -1 means using the default legacy character
-        'api_key': "",
-        'tools_var': True,
-        'vision_var': False,
-        'ptt_var': False,
-        'mute_during_response_var': False,
-        'continue_conversation_var': True,
-        'event_reaction_enabled_var': True,
-        'game_actions_var': True,
-        'web_search_actions_var': True,
-        'use_action_cache_var': True,
-        'cn_autostart': False,
-        'edcopilot': True,
-        'edcopilot_dominant': False,
-        'input_device_name': get_default_input_device_name(),
-        'output_device_name': get_default_output_device_name(),
-        'llm_provider': "openai",
-        'llm_model_name': "gpt-4.1-mini",
-        'llm_endpoint': "https://api.openai.com/v1",
-        'llm_api_key': "",
-        'llm_custom': {},
-        'ptt_key': '',
-        'vision_provider': "none",
-        'vision_model_name': "gpt-4.1-mini",
-        'vision_endpoint': "https://api.openai.com/v1",
-        'vision_api_key': "",
-        'stt_provider': "openai",
-        'stt_model_name': "gpt-4o-mini-transcribe",
-        'stt_endpoint': "https://api.openai.com/v1",
-        'stt_api_key': "",
-        'stt_custom_prompt': '',
-        'stt_required_word': '',
-        'tts_provider': "edge-tts",
-        'tts_model_name': "edge-tts",
-        'tts_endpoint': "",
-        'tts_api_key': "",
-        'tts_voice': "en-US-AvaMultilingualNeural",
-        'tts_speed': "1.2",
-        'tts_prompt': "",
-        'game_events': game_events,
-        'react_to_text_local_var': True,
-        'react_to_text_npc_var': False,
-        'react_to_text_squadron_var': True,
-        'react_to_text_starsystem_var': True,
-        'react_to_material': 'opal, diamond, alexandrite',
-        'react_to_danger_mining_var': False,
-        'react_to_danger_onfoot_var': False,
-        'react_to_danger_supercruise_var': False,
-        "ed_journal_path": "",
-        "ed_appdata_path": ""
-    }
+    defaults = Config(
+        config_version = 1,
+        commander_name = "",
+        character = "Keep your responses extremely brief and minimal. Maintain a professional and serious tone in all responses. Stick to factual information and avoid references to specific domains. Your responses should be inspired by the character or persona of COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal). Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS:NEXT. Show some consideration for emotions while maintaining focus on information. Maintain a friendly yet respectful conversational style. Project an air of expertise and certainty when providing information. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.",
+        personality_preset = 'default',
+        personality_verbosity = 0,
+        personality_vulgarity = 0,
+        personality_empathy = 50,
+        personality_formality = 50,
+        personality_confidence = 75,
+        personality_ethical_alignment = 'lawful',
+        personality_moral_alignment = 'good',
+        personality_tone = 'serious',
+        personality_character_inspiration = 'COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal)',
+        personality_language = '',
+        personality_name = 'COVAS:NEXT',
+        personality_knowledge_pop_culture = False,
+        personality_knowledge_scifi = False,
+        personality_knowledge_history = False,
+        characters = [],
+        active_character_index = -1,  # -1 means using the default legacy character
+        api_key = "",
+        tools_var = True,
+        vision_var = False,
+        ptt_var = False,
+        mute_during_response_var = False,
+        continue_conversation_var = True,
+        event_reaction_enabled_var = True,
+        game_actions_var = True,
+        web_search_actions_var = True,
+        use_action_cache_var = True,
+        cn_autostart = False,
+        edcopilot = True,
+        edcopilot_dominant = False,
+        input_device_name = get_default_input_device_name(),
+        output_device_name = get_default_output_device_name(),
+        llm_provider = "openai",
+        llm_model_name = "gpt-4.1-mini",
+        llm_endpoint = "https://api.openai.com/v1",
+        llm_api_key = "",
+        llm_custom = {},
+        ptt_key = '',
+        vision_provider = "none",
+        vision_model_name = "gpt-4.1-mini",
+        vision_endpoint = "https://api.openai.com/v1",
+        vision_api_key = "",
+        stt_provider = "openai",
+        stt_model_name = "gpt-4o-mini-transcribe",
+        stt_endpoint = "https://api.openai.com/v1",
+        stt_api_key = "",
+        stt_custom_prompt = '',
+        stt_required_word = '',
+        tts_provider = "edge-tts",
+        tts_model_name = "edge-tts",
+        tts_endpoint = "",
+        tts_api_key = "",
+        tts_voice = "en-US-AvaMultilingualNeural",
+        tts_speed = "1.2",
+        tts_prompt = "",
+        game_events = game_events,
+        react_to_text_local_var = True,
+        react_to_text_npc_var = False,
+        react_to_text_squadron_var = True,
+        react_to_text_starsystem_var = True,
+        react_to_material = 'opal, diamond, alexandrite',
+        react_to_danger_mining_var = False,
+        react_to_danger_onfoot_var = False,
+        react_to_danger_supercruise_var = False,
+        ed_journal_path = "",
+        ed_appdata_path = ""
+    )
     try:
         print("Loading configuration file")
         config_exists = os.path.exists('config.json')
@@ -636,9 +540,9 @@ def load_config() -> Config:
             data = json.load(file)
             if data:
                 data = migrate(data)
-                merged_config = merge_config_data(defaults, data)
+                merged_config = merge_config_data(defaults.model_dump(), data)
                 print(f"Configuration loaded successfully. Commander: {merged_config.get('commander_name')}, Characters: {len(merged_config.get('characters', []))}")
-                return cast(Config, merged_config)  # pyright: ignore[reportInvalidCast]
+                return Config.model_validate(merged_config)
             else:
                 print("Empty config file, using defaults")
                 return defaults
@@ -652,7 +556,7 @@ def load_config() -> Config:
 def save_config(config: Config):
     config_file = Path("config.json")
     with open(config_file, 'w', encoding='utf-8') as f:
-        json.dump(config, f)
+        json.dump(config.model_dump(), f)
 
 
 def assign_ptt(config: Config, controller_manager):
@@ -666,7 +570,7 @@ def assign_ptt(config: Config, controller_manager):
     semaphore.acquire()
     controller_manager.listen_hotkey(on_hotkey_detected)
     semaphore.acquire()
-    print(json.dumps({"type": "config", "config": config}) + '\n')
+    print(json.dumps({"type": "config", "config": config.model_dump()}) + '\n')
     save_config(config)
     return config
 
@@ -718,23 +622,10 @@ def get_default_output_device_name() -> str:
     devices = get_output_device_names()
     return devices[0] if devices else ""
 
-
-class SystemInfo(TypedDict):
-    os: str
-    input_device_names: list[str]
-    output_device_names: list[str]
-    edcopilot_installed: bool
-
-
 def get_system_info() -> SystemInfo:
     from .EDCoPilot import EDCoPilot
-    edcopilot: Any = EDCoPilot(False)  # this is only for the GUI, the actual EDCoPilot client is created in the Chat
-    return {
-        "os": platform.system(),
-        "input_device_names": get_input_device_names(),
-        "output_device_names": get_output_device_names(),
-        "edcopilot_installed": edcopilot.is_installed(),
-    }
+    edcopilot = EDCoPilot(False)  # this is only for the GUI, the actual EDCoPilot client is created in the Chat
+    return SystemInfo(os = platform.system(), input_device_names = get_input_device_names(), output_device_names = get_output_device_names(), edcopilot_installed = edcopilot.is_installed())
 
 
 def validate_model_availability(
@@ -782,12 +673,12 @@ def check_and_upgrade_model(config: Config) -> ModelValidationResult:
         A ModelValidationResult object containing validation results and messages
     """
     # Make a copy of the config to avoid modifying the original
-    updated_config = cast(Config, {k: v for k, v in config.items()})
+    updated_config = config.model_copy()
     
     # Check LLM model
-    llm_endpoint = config['llm_endpoint'] if config['llm_endpoint'] else "https://api.openai.com/v1"
-    llm_api_key = config['llm_api_key'] if config['llm_api_key'] else config['api_key']
-    llm_model_name = config['llm_model_name']
+    llm_endpoint = config.llm_endpoint if config.llm_endpoint else "https://api.openai.com/v1"
+    llm_api_key = config.llm_api_key if config.llm_api_key else config.api_key
+    llm_model_name = config.llm_model_name
 
     if llm_endpoint == "https://api.openai.com/v1":
         available_models, err = validate_model_availability([llm_model_name, 'gpt-4.1-mini', 'gpt-4o-mini', 'gpt-3.5-turbo'], llm_api_key, llm_endpoint)
@@ -810,7 +701,7 @@ def check_and_upgrade_model(config: Config) -> ModelValidationResult:
             }
         
         if llm_model_name == 'gpt-4.1-mini' and not current_model and gpt4oMini:
-            updated_config['llm_model_name'] = 'gpt-4o-mini'
+            updated_config.llm_model_name = 'gpt-4o-mini'
             return {
                 'skipped': False,
                 'success': True,
@@ -819,7 +710,7 @@ def check_and_upgrade_model(config: Config) -> ModelValidationResult:
             }
             
         if llm_model_name == 'gpt-4.1-mini' and not current_model and gpt35turbo:
-            updated_config['llm_model_name'] = 'gpt-3.5-turbo'
+            updated_config.llm_model_name = 'gpt-3.5-turbo'
             return {
                 'skipped': False,
                 'success': True,
@@ -828,7 +719,7 @@ def check_and_upgrade_model(config: Config) -> ModelValidationResult:
             }
         
         if llm_model_name == 'gpt-4o-mini' and not current_model and gpt41mini:
-            updated_config['llm_model_name'] = 'gpt-4.1-mini'
+            updated_config.llm_model_name = 'gpt-4.1-mini'
             return {
                 'skipped': False,
                 'success': True,
@@ -837,7 +728,7 @@ def check_and_upgrade_model(config: Config) -> ModelValidationResult:
             }
         
         if llm_model_name == 'gpt-4o-mini' and not current_model and gpt35turbo:
-            updated_config['llm_model_name'] = 'gpt-3.5-turbo'
+            updated_config.llm_model_name = 'gpt-3.5-turbo'
             return {
                 'skipped': False,
                 'success': True,
@@ -846,7 +737,7 @@ def check_and_upgrade_model(config: Config) -> ModelValidationResult:
             }
         
         if llm_model_name == 'gpt-3.5-turbo' and gpt41mini:
-            updated_config['llm_model_name'] = 'gpt-4.1-mini'
+            updated_config.llm_model_name = 'gpt-4.1-mini'
             return {
                 'skipped': False,
                 'success': True,
@@ -854,7 +745,7 @@ def check_and_upgrade_model(config: Config) -> ModelValidationResult:
                 'message': f'Your model provider now serves "gpt-4.1-mini". Upgrading to "gpt-4.1-mini".'
             }
         if llm_model_name == 'gpt-3.5-turbo' and gpt4oMini:
-            updated_config['llm_model_name'] = 'gpt-4o-mini'
+            updated_config.llm_model_name = 'gpt-4o-mini'
             return {
                 'skipped': False,
                 'success': True,
@@ -880,7 +771,7 @@ def check_and_upgrade_model(config: Config) -> ModelValidationResult:
 
 def validate_config(config: Config) -> Config | None:
 
-    validation_result = check_and_upgrade_model({**config})
+    validation_result = check_and_upgrade_model(config)
 
     # Send validation result message
     if not validation_result['skipped']:
@@ -915,81 +806,81 @@ def update_config(config: Config, data: dict) -> Config:
         if operation == "add":
             # Add a new character
             if data.get("character_data"):
-                config["characters"] = config.get("characters", [])
-                config["characters"].append(data["character_data"])
+                config.characters = config.characters or []
+                config.characters.append(data["character_data"])
                 print(f"Added new character: {data['character_data'].get('name')}")
                 # Set as active character if requested
                 if data.get("set_active", False):
-                    config["active_character_index"] = len(config["characters"]) - 1
-                    print(f"Set active character index to {config['active_character_index']}")
+                    config.active_character_index = len(config.characters) - 1
+                    print(f"Set active character index to {config.active_character_index}")
         
         elif operation == "update":
             # Update an existing character
             if data.get("character_index") is not None and data.get("character_data"):
                 index = int(data["character_index"])
-                if 0 <= index < len(config.get("characters", [])):
-                    config["characters"][index] = data["character_data"]
+                if 0 <= index < len(config.characters or []):
+                    config.characters[index] = data["character_data"]
                     print(f"Updated character at index {index}: {data['character_data'].get('name')}")
         
         elif operation == "delete":
             # Delete a character
             if data.get("character_index") is not None:
                 index = int(data["character_index"])
-                if 0 <= index < len(config.get("characters", [])):
-                    deleted_name = config["characters"][index].get("name", "unknown")
-                    config["characters"].pop(index)
+                if 0 <= index < len(config.characters or []):
+                    deleted_name = config.characters[index].name or "unknown"
+                    config.characters.pop(index)
                     print(f"Deleted character at index {index}: {deleted_name}")
                     # Adjust active index if needed
-                    if config["active_character_index"] == index:
-                        config["active_character_index"] = -1
+                    if config.active_character_index == index:
+                        config.active_character_index = -1
                         print("Reset active character index to -1")
-                    elif config["active_character_index"] > index:
-                        config["active_character_index"] -= 1
-                        print(f"Adjusted active character index to {config['active_character_index']}")
+                    elif config.active_character_index > index:
+                        config.active_character_index -= 1
+                        print(f"Adjusted active character index to {config.active_character_index}")
         
         elif operation == "set_active":
             # Set the active character
             if data.get("character_index") is not None:
                 index = int(data["character_index"])
-                if -1 <= index < len(config.get("characters", [])):
-                    config["active_character_index"] = index
+                if -1 <= index < len(config.characters or []):
+                    config.active_character_index = index
                     print(f"Set active character index to {index}")
                     
                     # Copy character properties to top-level config
                     if index >= 0:
-                        character_data = config["characters"][index]
+                        character_data = config.characters[index]
                         # Apply all character fields
-                        config["character"] = character_data.get("character", "")
-                        print(f"Setting active character preset to: {character_data.get('personality_preset', 'unknown')}")
-                        config["personality_preset"] = character_data.get("personality_preset", "custom")
-                        config["personality_verbosity"] = character_data.get("personality_verbosity", 50)
-                        config["personality_vulgarity"] = character_data.get("personality_vulgarity", 0)
-                        config["personality_empathy"] = character_data.get("personality_empathy", 50)
-                        config["personality_formality"] = character_data.get("personality_formality", 50)
-                        config["personality_confidence"] = character_data.get("personality_confidence", 50)
-                        config["personality_ethical_alignment"] = character_data.get("personality_ethical_alignment", "neutral")
-                        config["personality_moral_alignment"] = character_data.get("personality_moral_alignment", "neutral")
-                        config["personality_tone"] = character_data.get("personality_tone", "serious")
-                        config["personality_character_inspiration"] = character_data.get("personality_character_inspiration", "")
-                        config["personality_language"] = character_data.get("personality_language", "English")
-                        config["personality_knowledge_pop_culture"] = character_data.get("personality_knowledge_pop_culture", False)
-                        config["personality_knowledge_scifi"] = character_data.get("personality_knowledge_scifi", False)
-                        config["personality_knowledge_history"] = character_data.get("personality_knowledge_history", False)
+                        config.character = character_data.character or ""
+                        print(f"Setting active character preset to: {character_data.personality_preset or 'unknown'}")
+                        config.personality_preset = character_data.personality_preset or "custom"
+                        config.personality_verbosity = character_data.personality_verbosity or 50
+                        config.personality_vulgarity = character_data.personality_vulgarity or 0
+                        config.personality_empathy = character_data.personality_empathy or 50
+                        config.personality_formality = character_data.personality_formality or 50
+                        config.personality_confidence = character_data.personality_confidence or 50
+                        config.personality_ethical_alignment = character_data.personality_ethical_alignment or "neutral"
+                        config.personality_moral_alignment = character_data.personality_moral_alignment or "neutral"
+                        config.personality_tone = character_data.personality_tone or "serious"
+                        config.personality_character_inspiration = character_data.personality_character_inspiration or ""
+                        config.personality_language = character_data.personality_language or "English"
+                        config.personality_knowledge_pop_culture = character_data.personality_knowledge_pop_culture or False
+                        config.personality_knowledge_scifi = character_data.personality_knowledge_scifi or False
+                        config.personality_knowledge_history = character_data.personality_knowledge_history or False
                         
                         # Also apply TTS voice if present
-                        if "tts_voice" in character_data:
-                            config["tts_voice"] = character_data.get("tts_voice", "")
+                        if character_data.tts_voice is not None:
+                            config.tts_voice = character_data.tts_voice or ""
                             
                         # Apply TTS speed if present
-                        if "tts_speed" in character_data:
-                            config["tts_speed"] = character_data.get("tts_speed", "1.2")
+                        if character_data.tts_speed is not None:
+                            config.tts_speed = character_data.tts_speed or "1.2"
                             
                         # Apply TTS prompt if present
-                        if "tts_prompt" in character_data:
-                            config["tts_prompt"] = character_data.get("tts_prompt", "")
+                        if character_data.tts_prompt is not None:
+                            config.tts_prompt = character_data.tts_prompt or ""
                             
                         # Write the config to disk
-                        save_config(config)
+                        save_config(Config.model_validate(config))
 
     # Update provider-specific settings
     if data.get("llm_provider"):
@@ -1111,15 +1002,15 @@ def update_config(config: Config, data: dict) -> Config:
         data["tts_api_key"] = ""
     
     # Regular config updates
-    new_config = cast(Config, {**config, **data}) # pyright: ignore[reportInvalidCast]
-    print(json.dumps({"type": "config", "config": new_config}) + '\n')
+    new_config = Config.model_validate({**config.model_dump(), **data})
+    print(json.dumps({"type": "config", "config": new_config.model_dump()}) + '\n')
     save_config(new_config)
     return new_config
 
 
 def update_event_config(config: Config, section: str, event: str, value: bool) -> Config:
-    config.get("game_events", {})[event] = value
-    print(json.dumps({"type": "config", "config": config}) + '\n', flush=True)
+    config.game_events[event] = value
+    print(json.dumps({"type": "config", "config": config.model_dump()}) + '\n', flush=True)
     save_config(config)
     return config
 
@@ -1127,8 +1018,8 @@ def update_event_config(config: Config, section: str, event: str, value: bool) -
 def reset_game_events(config: Config) -> Config:
     """Reset game events to the default values defined in the game_events dictionary"""
     # Replace the current game_events with the default game_events dictionary
-    config["game_events"] = {k: v for k, v in game_events.items()}
-    print(json.dumps({"type": "config", "config": config}) + '\n', flush=True)
+    config.game_events = {k: v for k, v in game_events.items()}
+    print(json.dumps({"type": "config", "config": config.model_dump()}) + '\n', flush=True)
     save_config(config)
     return config
 
