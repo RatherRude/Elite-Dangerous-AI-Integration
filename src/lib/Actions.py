@@ -445,7 +445,7 @@ def request_docking(args, projected_states):
     t.start()
 
     try:
-        event_manager.wait_for_condition('DockingEvents', lambda s: s.get('LastEventType') == 'DockingRequested' , 10)
+        event_manager.wait_for_condition('DockingEvents', lambda s: s.get('LastEventType') in ['DockingRequested', 'DockingGranted'] , 10)
         msg = ""
     except:
         msg = "Failed to request docking via menu"
