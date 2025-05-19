@@ -1032,7 +1032,8 @@ class DockingEvents(Projection[DockingEventsState]):
     @override
     def process(self, event: Event) -> list[ProjectedEvent] | None:
         projected_events: list[ProjectedEvent] = []
-        if isinstance(event, GameEvent) and event.content.get('event') in ['DockingGranted', 'Undocked', 'DockingRequested']:
+        if isinstance(event, GameEvent) and event.content.get('event') in ['DockingGranted', 'Undocked', 'DockingRequested', 'DockingCanceled', 'DockingDenied', 'DockingTimeout']:
+            self.state['DockingComputerState'] = "deactivated"
             self.state['StationType'] = event.content.get("StationType", "Unknown")
             self.state['LastEventType'] = event.content.get("event", "Unknown")
 
