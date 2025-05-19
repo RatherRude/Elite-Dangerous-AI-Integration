@@ -1090,35 +1090,35 @@ def update_config(config: Config, data: dict) -> Config:
         if data["tts_provider"] == "openai":
             data["tts_endpoint"] = "https://api.openai.com/v1"
             data["tts_model_name"] = "gpt-4o-mini-tts"
-            for character in data["characters"]:
+            for character in config["characters"]:
                 character["tts_voice"] = "nova"
             data["tts_api_key"] = ""
 
         if data["tts_provider"] == "local-ai-server":
             data["tts_endpoint"] = "http://localhost:8080"
             data["tts_model_name"] = "tts-1"
-            for character in data["characters"]:
+            for character in config["characters"]:
                 character["tts_voice"] = "nova"
             data["tts_api_key"] = ""
 
         if data["tts_provider"] == "edge-tts":
             data["tts_endpoint"] = ""
             data["tts_model_name"] = ""
-            for character in data["characters"]:
+            for character in config["characters"]:
                 character["tts_voice"] = "en-US-AvaMultilingualNeural"
             data["tts_api_key"] = ""
 
         if data["tts_provider"] == "custom":
             data["tts_endpoint"] = "https://api.openai.com/v1"
             data["tts_model_name"] = "gpt-4o-mini-tts"
-            for character in data["characters"]:
+            for character in config["characters"]:
                 character["tts_voice"] = "nova"
             data["tts_api_key"] = ""
 
         if data["tts_provider"] == "none":
             data["tts_endpoint"] = ""
             data["tts_model_name"] = ""
-            for character in data["characters"]:
+            for character in config["characters"]:
                 character["tts_voice"] = ""
             data["tts_api_key"] = ""
 
