@@ -35,25 +35,26 @@ class ExamplePlugin(PluginBase):
         # Define the plugin settings
         # This is the settings that will be shown in the UI for this plugin.
         self.settings_config: PluginSettings | None = PluginSettings(
-        key="MediaPlayerPlugin",
-        label="Example Plugin Settings",
-        icon="wrench", # Uses Material Icons, like the built-in settings-tabs.
-        grids=[
-            SettingsGrid(
-                key="general",
-                label="General",
-                fields=[
-                    ToggleSetting(
-                        key="bool_setting",
-                        label="Boolean Setting",
-                        type="toggle",
-                        readonly = False,
-                        placeholder = None,
-                        default_value = False
-                    ),
-                ]
-            ),
-        ]
+            key="MediaPlayerPlugin",
+            label="Example Plugin Settings",
+            icon="wrench", # Uses Material Icons, like the built-in settings-tabs.
+            grids=[
+                SettingsGrid(
+                    key="general",
+                    label="General",
+                    fields=[
+                        ToggleSetting(
+                            key="bool_setting",
+                            label="Boolean Setting",
+                            type="toggle",
+                            readonly = False,
+                            placeholder = None,
+                            default_value = False
+                        ),
+                    ]
+                ),
+            ]
+        )
 
     # Register actions
     @override
