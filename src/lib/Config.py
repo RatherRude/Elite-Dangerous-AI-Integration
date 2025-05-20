@@ -727,13 +727,12 @@ class SystemInfo(TypedDict):
 
 
 def get_system_info() -> SystemInfo:
-    from .EDCoPilot import EDCoPilot
-    edcopilot: Any = EDCoPilot(False)  # this is only for the GUI, the actual EDCoPilot client is created in the Chat
+    from .EDCoPilot import get_install_path
     return {
         "os": platform.system(),
         "input_device_names": get_input_device_names(),
         "output_device_names": get_output_device_names(),
-        "edcopilot_installed": edcopilot.is_installed(),
+        "edcopilot_installed": get_install_path() is not None,
     }
 
 
