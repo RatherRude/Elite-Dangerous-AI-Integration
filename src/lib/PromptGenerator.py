@@ -3034,11 +3034,11 @@ class PromptGenerator:
             if isinstance(event, ToolEvent):
                 conversational_pieces += self.tool_messages(event)
 
-            for generator in self.registered_prompt_event_handlers:
+            for handler in self.registered_prompt_event_handlers:
                 try:
-                    conversational_pieces += generator(event)
+                    conversational_pieces += handler(event)
                 except Exception as e:
-                    log('error', f"Error executing prompt generator for {event}: {e}", traceback.format_exc())
+                    log('error', f"Error executing prompt event handler for {event}: {e}", traceback.format_exc())
 
         conversational_pieces.append(
             {

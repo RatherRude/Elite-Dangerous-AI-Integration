@@ -135,6 +135,9 @@ class Chat:
         self.plugin_helper = PluginHelper(self.prompt_generator, config, self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.system_database, self.ed_keys, self.assistant)
         log("debug", "Plugin helper is ready...")
 
+        # Execute plugin helper ready hooks
+        self.plugin_manager.on_plugin_helper_ready(self.plugin_helper)
+
         log("debug", "Registering plugin provided should_reply event handlers...")
         self.plugin_manager.register_should_reply_handlers(self.plugin_helper)
         

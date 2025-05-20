@@ -123,6 +123,15 @@ class PluginBase(ABC):
         pass
     
     @abstractmethod
+    def on_plugin_helper_ready(self, helper: PluginHelper):
+        """
+        Executed when the chat is started and the PluginHelper is ready. At this point, all managers are ready, although not all actions and such are registered yet.
+        This is a good time to do any additional setup that requires the PluginHelper.
+        """
+
+        pass
+
+    @abstractmethod
     def on_chat_stop(self, helper: PluginHelper):
         """
         Executed when the chat is stopped

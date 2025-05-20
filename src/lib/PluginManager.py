@@ -183,3 +183,16 @@ class PluginManager:
                 module.register_should_reply_handlers(helper)
             except Exception as e:
                 log('error', f"Failed to register should_reply handlers for {module.plugin_manifest.name}: {e}")
+
+    
+    def on_plugin_helper_ready(self, helper: PluginHelper):
+        """
+        Executed when the chat is started and the PluginHelper is ready. At this point, all managers are ready, although not all actions and such are registered yet.
+        This is a good time to do any additional setup that requires the PluginHelper.
+        """
+        for module in self.plugin_list.values():
+            log('debug', f"Executing on_plugin_helper_ready hook for {module.plugin_manifest.name}")
+            try:
+                module.on_plugin_helper_ready(helper)
+            except Exception as e:
+                log('error', f"Failed to execute on_plugin_helper_ready hook for {module.plugin_manifest.name}: {e}")

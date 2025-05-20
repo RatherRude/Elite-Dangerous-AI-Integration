@@ -1,4 +1,5 @@
 import json
+import os
 from typing import Any, Callable, TypedDict, cast
 import openai
 from openai.types.chat import ChatCompletionMessageParam
@@ -12,6 +13,18 @@ from .Config import Config
 from .Event import Event
 from .PromptGenerator import PromptGenerator
 from .Assistant import Assistant
+
+class PluginManifest(object):
+    guid: str = ""
+    name: str = ""
+    author: str = ""
+    version: str = ""
+    repository: str = ""
+    description: str = ""
+    entrypoint: str = ""
+
+    def __init__(self, j: str) -> None:
+        self.__dict__.update(cast(dict[str, str], json.loads(j)))
 
 class PluginHelper():
     """Contains all built-inservices and managers that can be used by plugins"""
@@ -27,6 +40,7 @@ class PluginHelper():
     _action_manager: ActionManager
     _config: Config
     _system_db: SystemDatabase
+    PLUGIN_DATA_PATH: str = "plugin_data"
 
     def __init__(self, prompt_generator: PromptGenerator, config: Config, action_manager: ActionManager, event_manager: EventManager, llm_client: openai.OpenAI,
                      llm_model_name: str, vision_client: openai.OpenAI | None, vision_model_name: str | None,
@@ -53,6 +67,13 @@ class PluginHelper():
             cur_setting = cur_setting.get(key_path, {})
         
         return cur_setting
+
+    def get_plugin_data_path(self, plugin_manifest: PluginManifest) -> str:
+        """Get a plugin data path, from the plugin data folder"""
+        plugin_data_path = os.path.abspath(os.path.join(self.PLUGIN_DATA_PATH, plugin_manifest.guid))
+        if not os.path.exists(plugin_data_path):
+            os.makedirs(plugin_data_path, exist_ok=True)
+        return plugin_data_path
 
     def register_action(self, name, description, parameters, method: Callable[[dict, dict], str], action_type="ship", input_template: Callable[[dict, dict], str]|None=None):
         """Register an action"""
@@ -106,15 +127,3 @@ class PluginHelper():
         :raises TimeoutError: If the condition isn't met within `timeout`.
         """
         return self._event_manager.wait_for_condition(projection_name, condition_fn, timeout)
-
-class PluginManifest(object):
-    guid: str = ""
-    name: str = ""
-    author: str = ""
-    version: str = ""
-    repository: str = ""
-    description: str = ""
-    entrypoint: str = ""
-
-    def __init__(self, j: str) -> None:
-        self.__dict__.update(cast(dict[str, str], json.loads(j)))
