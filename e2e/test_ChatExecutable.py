@@ -366,7 +366,7 @@ def test_chat_executable():
     # create plugin folder
     os.mkdir(f"{temp_dir}/plugins")
     # Copy HelloWorld plugin to temp dir
-    shutil.copyfile("plugins/HelloWorld.py", f"{temp_dir}/plugins/HelloWorld.py")
+    shutil.copytree("plugins/HelloWorld", f"{temp_dir}/plugins/HelloWorld")
     
     print('Temp dir:', temp_dir)
         
