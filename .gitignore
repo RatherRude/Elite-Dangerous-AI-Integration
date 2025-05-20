@@ -22,3 +22,6 @@ venv
 # Ignore all files in the plugins folder except HelloWorld.py
 plugins/*
 !plugins/HelloWorld
+
+# Ignore all files in the plugin_data folder
+plugin_data/*

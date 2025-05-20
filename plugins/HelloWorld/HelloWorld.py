@@ -194,6 +194,11 @@ class HelloWorld(PluginBase):
         helper.register_should_reply_handler(self.hw_should_reply_handler)
     
     @override
+    def on_plugin_helper_ready(self, helper: PluginHelper):
+        # Executed when the plugin helper is ready
+        log('debug', f"Executed on_plugin_helper_ready hook for {self.plugin_manifest.name}")
+    
+    @override
     def on_chat_stop(self, helper: PluginHelper):
         # Executed when the chat is stopped
         log('debug', f"Executed on_chat_stop hook for {self.plugin_manifest.name}")
