@@ -6,6 +6,9 @@ Wanna build a plugin, to expand on COVAS' features? This page will help you get 
 
 * **COVAS:NEXT Project**: Ensure you have the project running from source, as described in [CONTRIBUTING.md](./CONTRIBUTING.md).
 
+# The easy way to get started
+To quickly create a starting point, we suggest using [this cookiecutter template](http://github.com/MaverickMartyn/COVAS-NEXT-Plugin-Template). 
+
 ## Plugin structure
 Plugins are loaded from sub-folders of `./plugins`, up to one level deep.  
 Create a new sub-folder for your plugin, and create a new Python script and a `manifest.json` file. Both of these are described below. 

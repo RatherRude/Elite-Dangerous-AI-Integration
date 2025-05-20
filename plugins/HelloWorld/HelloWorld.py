@@ -203,7 +203,7 @@ class HelloWorld(PluginBase):
         log('info', 'Hello World!')
 
         # Toggle the boolean value
-        # Use helper.event_manager to get the current projection state.
+        # Use helper.get_projection to get the current projection state of a given type.
         projection: CurrentHelloWorldState | None = cast(CurrentHelloWorldState | None, helper.get_projection(CurrentHelloWorldState))
         if projection is not None:
             self.set_boolean(helper, projection.state['bool_value'])
