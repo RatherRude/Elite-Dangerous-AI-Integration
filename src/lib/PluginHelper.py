@@ -112,6 +112,7 @@ class PluginManifest(object):
     name: str = ""
     author: str = ""
     version: str = ""
+    repository: str = ""
     description: str = ""
     entrypoint: str = ""
 
