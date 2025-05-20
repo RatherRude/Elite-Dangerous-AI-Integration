@@ -52,108 +52,108 @@ class HelloWorld(PluginBase):
         # Define the plugin settings
         # This is the settings that will be shown in the UI for this plugin.
         self.settings_config: PluginSettings | None = PluginSettings(
-        key="HelloWorldPlugin",
-        label="Hello World Plugin",
-        icon="waving_hand", # Uses Material Icons, like the built-in settings-tabs.
-        grids=[
-            SettingsGrid(
-                key="general",
-                label="General",
-                fields=[
-                    ToggleSetting(
-                        key="bool_setting",
-                        label="Boolean Setting",
-                        type="toggle",
-                        readonly = False,
-                        placeholder = None,
-                        default_value = False
-                    ),
-                    SelectSetting(
-                        key="select_setting",
-                        label="Select Setting",
-                        type="select",
-                        readonly = False,
-                        placeholder = "Select an option",
-                        default_value = "option_2",
-                        select_options=[
-                            SelectOption(key="option_1", label="Option 1", value="option_1", disabled=False),
-                            SelectOption(key="option_2", label="Option 2", value="option_2", disabled=False),
-                            SelectOption(key="option_3", label="Option 3", value="option_3", disabled=False),
-                        ],
-                        multi_select = False
-                    ),
-                    ParagraphSetting(
-                        key="info_box",
-                        label="Information Box",
-                        readonly = False,
-                        placeholder = None,
-                        type="paragraph",
-                        content="This is just a text block.\nIt is not a setting."
-                    ),
-                    SelectSetting(
-                        key="multiselect_setting",
-                        label="Multi-Select Setting",
-                        type="select",
-                        readonly = False,
-                        placeholder = "Select an option",
-                        default_value = ["option_2", "option_3"],
-                        multi_select = True,
-                        select_options=[
-                            SelectOption(key="option_1", label="Option 1", value="option_1", disabled=False),
-                            SelectOption(key="option_2", label="Option 2", value="option_2", disabled=False),
-                            SelectOption(key="option_3", label="Option 3", value="option_3", disabled=False),
-                        ]
-                    ),
-                ]
-            ),
-            SettingsGrid(
-                key="another_grid",
-                label="Another Grid",
-                fields=[
-                    ToggleSetting(
-                        key="second_bool_setting",
-                        label="Boolean Setting with true default",
-                        type="toggle",
-                        readonly = False,
-                        placeholder = None,
-                        default_value = True,
-                    ),
-                    NumericalSetting(
-                        key="number_setting",
-                        label="A number goes in here",
-                        type="number",
-                        readonly = False,
-                        placeholder = None, # Doesn't really work with number inputs.
-                        default_value = None,
-                        min_value = 0,
-                        max_value = 100,
-                        step = 0.2
-                    ),
-                    TextSetting(
-                        key="text_setting",
-                        label="This is a single-line text input",
-                        type="text",
-                        readonly = False,
-                        placeholder = "This is a placeholder",
-                        default_value = None,
-                        max_length = None,
-                        min_length = None,
-                        hidden = False
-                    ),
-                    TextAreaSetting(
-                        key="textarea_setting",
-                        label="Multi-line Text Input",
-                        type="textarea",
-                        readonly = False,
-                        placeholder = None,
-                        default_value = "This is a multi-line plain-text field.\nThis is a second line.",
-                        rows = None,
-                        cols = None,
-                    ),
-                ]
-            ),
-        ]
-    )
+            key="HelloWorldPlugin",
+            label="Hello World Plugin",
+            icon="waving_hand", # Uses Material Icons, like the built-in settings-tabs.
+            grids=[
+                SettingsGrid(
+                    key="general",
+                    label="General",
+                    fields=[
+                        ToggleSetting(
+                            key="bool_setting",
+                            label="Boolean Setting",
+                            type="toggle",
+                            readonly = False,
+                            placeholder = None,
+                            default_value = False
+                        ),
+                        SelectSetting(
+                            key="select_setting",
+                            label="Select Setting",
+                            type="select",
+                            readonly = False,
+                            placeholder = "Select an option",
+                            default_value = "option_2",
+                            select_options=[
+                                SelectOption(key="option_1", label="Option 1", value="option_1", disabled=False),
+                                SelectOption(key="option_2", label="Option 2", value="option_2", disabled=False),
+                                SelectOption(key="option_3", label="Option 3", value="option_3", disabled=False),
+                            ],
+                            multi_select = False
+                        ),
+                        ParagraphSetting(
+                            key="info_box",
+                            label="Information Box",
+                            readonly = False,
+                            placeholder = None,
+                            type="paragraph",
+                            content="This is just a text block.\nIt is not a setting."
+                        ),
+                        SelectSetting(
+                            key="multiselect_setting",
+                            label="Multi-Select Setting",
+                            type="select",
+                            readonly = False,
+                            placeholder = "Select an option",
+                            default_value = ["option_2", "option_3"],
+                            multi_select = True,
+                            select_options=[
+                                SelectOption(key="option_1", label="Option 1", value="option_1", disabled=False),
+                                SelectOption(key="option_2", label="Option 2", value="option_2", disabled=False),
+                                SelectOption(key="option_3", label="Option 3", value="option_3", disabled=False),
+                            ]
+                        ),
+                    ]
+                ),
+                SettingsGrid(
+                    key="another_grid",
+                    label="Another Grid",
+                    fields=[
+                        ToggleSetting(
+                            key="second_bool_setting",
+                            label="Boolean Setting with true default",
+                            type="toggle",
+                            readonly = False,
+                            placeholder = None,
+                            default_value = True,
+                        ),
+                        NumericalSetting(
+                            key="number_setting",
+                            label="A number goes in here",
+                            type="number",
+                            readonly = False,
+                            placeholder = None, # Doesn't really work with number inputs.
+                            default_value = None,
+                            min_value = 0,
+                            max_value = 100,
+                            step = 0.2
+                        ),
+                        TextSetting(
+                            key="text_setting",
+                            label="This is a single-line text input",
+                            type="text",
+                            readonly = False,
+                            placeholder = "This is a placeholder",
+                            default_value = None,
+                            max_length = None,
+                            min_length = None,
+                            hidden = False
+                        ),
+                        TextAreaSetting(
+                            key="textarea_setting",
+                            label="Multi-line Text Input",
+                            type="textarea",
+                            readonly = False,
+                            placeholder = None,
+                            default_value = "This is a multi-line plain-text field.\nThis is a second line.",
+                            rows = None,
+                            cols = None,
+                        ),
+                    ]
+                ),
+            ]
+        )
     
     @override
     def register_actions(self, helper: PluginHelper):
