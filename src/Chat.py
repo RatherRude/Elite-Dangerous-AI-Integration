@@ -135,6 +135,8 @@ class Chat:
             "event": event,
         })
 
+
+
     def submit_input(self, input: str):
         self.event_manager.add_conversation_event('user', input)
         
