@@ -410,6 +410,7 @@ class Config(TypedDict):
     cn_autostart: bool
     ed_journal_path: str
     ed_appdata_path: str
+    plugin_settings: dict[str, Any]
 
 
 def get_cn_appdata_path() -> str:
@@ -621,7 +622,8 @@ def load_config() -> Config:
         'react_to_danger_onfoot_var': False,
         'react_to_danger_supercruise_var': False,
         "ed_journal_path": "",
-        "ed_appdata_path": ""
+        "ed_appdata_path": "",
+        "plugin_settings": {}
     }
     try:
         print("Loading configuration file")
