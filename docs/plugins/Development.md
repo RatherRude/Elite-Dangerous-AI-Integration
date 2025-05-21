@@ -21,6 +21,7 @@ You can create a git repository, and even include other assets or libraries in t
         * `/deps` <- Python dependencies.
         * `/YourPlugin.py` <- Contains at least one class implementing the `PluginBase` base class.
         * `/requirements.txt` <- Only used when packaging additional Python dependencies. Not needed when distributing.
+        * `__init__.py` <- This is optional and empty, but required to use relative imports´(like `from .PackageName import ClassName`).
     * `/AnotherPlugin`
 * `plugin_data` <- For user data. These folders are created at runtime and are not part of your plugin source code.
     * `5b68272b-9949-4cad-b7c4-14da97a7f1c2` <- Plugin guid from metadata. This is your plugins data folder, which is used for persistent user data.
