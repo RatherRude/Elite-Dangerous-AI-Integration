@@ -28,6 +28,12 @@ class PluginManager:
         self.plugin_settings_configs: list[PluginSettings] = []
         self.PLUGIN_FOLDER: str = "plugins"
         self.PLUGIN_DEPENDENCIES_FOLDER: str = "deps"
+        
+        # Add the plugin folder to sys.path
+        # This allows us to import plugins as packages.
+        plugin_folder = os.path.abspath(os.path.join('.', self.PLUGIN_FOLDER))
+        log('debug', f"Plugins folder ({plugin_folder}) added to path.")
+        sys.path.insert(0, plugin_folder)
 
     def load_plugin_module(self, manifest: PluginManifest, file_path: str) -> PluginBase:
         # Get the module name from file name
@@ -35,20 +41,17 @@ class PluginManager:
         
         # Add deps folder to sys.path, if it exists
         plugin_folder = os.path.abspath(os.path.dirname(file_path))
+        plugin_name = os.path.basename(plugin_folder)
+        dotted_module = f"{plugin_name}.{module_name}"
+
+        # sys.path.insert(0, plugin_folder)
         deps_folder = os.path.join(plugin_folder, self.PLUGIN_DEPENDENCIES_FOLDER)
         if os.path.exists(deps_folder):
             log('debug', f"Adding {deps_folder} to sys.path")
             sys.path.insert(0, deps_folder)
 
-        # Load module from file
-        spec = importlib.util.spec_from_file_location(module_name, file_path)
-        if spec is None or spec.loader is None:
-            raise ImportError(f"Could not load spec for {file_path}")
-        
-        module = importlib.util.module_from_spec(spec)
-        module.__file__ = os.path.abspath(file_path) # Set the __file__ attribute to the file path, since otherwise inspect will fail to find the source code later.
-        sys.modules[module_name] = module
-        spec.loader.exec_module(module)
+        # Import module as package. This is better than the old way because it allows for relative imports.
+        module = importlib.import_module(dotted_module)
 
         # Find a subclass of PluginBase
         for attr in dir(module):

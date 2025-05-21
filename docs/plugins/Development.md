@@ -16,16 +16,16 @@ You can create a git repository, and even include other assets or libraries in t
 
 ### Folder structure:
 * `/plugins`
-    * `/YourPlugin`
+    * `/YourPlugin` <- Main folder for your plugin. Contains source code and assets.
         * `/manifest.json` <- The plugin manifest, which defines meta data and the entrypoint.
         * `/deps` <- Python dependencies.
-        * `/YourPlugin.py` <- Contains class inplementing `PluginBase` base class.
+        * `/YourPlugin.py` <- Contains at least one class implementing the `PluginBase` base class.
         * `/requirements.txt` <- Only used when packaging additional Python dependencies. Not needed when distributing.
     * `/AnotherPlugin`
-* `plugin_data` <- These folders are created at runtime and are not part of your plugin source code.
-    * `5b68272b-9949-4cad-b7c4-14da97a7f1c2` <- Plugin guid from metadata. This is your plugins data folder, which is used for persistent data.
+* `plugin_data` <- For user data. These folders are created at runtime and are not part of your plugin source code.
+    * `5b68272b-9949-4cad-b7c4-14da97a7f1c2` <- Plugin guid from metadata. This is your plugins data folder, which is used for persistent user data.
         * `YourPluginData.db` <- This means all data in this folder persists when updating and replacing the plugin.
-    * `fc8a17ce-91ba-4dc7-819e-e65b02326244` <- Use `helper.get_plugin_data_path()` to get the path.
+    * `fc8a17ce-91ba-4dc7-819e-e65b02326244` <- Use `helper.get_plugin_data_path()` to get the path to your plugins dedicated data folder.
 
 Create a new class implementing `PluginBase` like this:  
 **All members have to be overriden in your implementation, even if you don't need them, and even if they're not listed here. Just use `pass` as a placeholder.**  
@@ -100,7 +100,9 @@ Only modules already used in COVAS:NEXT, and those placed inside the `deps` subf
 **The `deps` sub-folder should be included when you distribute your plugin.**
 
 ## Plugin Lifecycle
-Below is a list of plugin functions and when they are called.
+Below is a list of plugin functions and when they are called.  
+Initialization is best done either in the cosntructor for stuff that should persist between chat sessions, and in the `on_plugin_helper_ready()` function for other stuff.  
+Remember to clean up references etc. in `on_chat_stop()`.
 
 | Function                                                                                                                                                                                   | Execution time                                                                                                                           |
 |--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|
