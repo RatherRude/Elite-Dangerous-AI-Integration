@@ -2091,6 +2091,10 @@ class PromptGenerator:
             return f"{self.commander_name}'s {srv_type} has been destroyed."
 
         if event_name == 'Statistics':
+            # AI thinks wealth is credits when it's total assets so renaming it
+            if "Bank_Account" in content and "Current_Wealth" in content["Bank_Account"]:
+                content["Bank_Account"]["Total_Asset_Value"] = content["Bank_Account"].pop("Current_Wealth")
+
             return f"{self.commander_name}'s game statistics have been reported:\n{yaml.dump(content)}"
 
         if event_name == 'Trade':
@@ -2455,9 +2459,6 @@ class PromptGenerator:
         if current_status.get("flags2"):
             flags += [key for key, value in current_status["flags2"].items() if value]
 
-        if in_combat.get("InCombat", False):
-            flags.append("InCombat")
-
         status_info = {
             "status": flags,
             "balance": current_status.get("Balance", None),
@@ -2703,6 +2704,13 @@ class PromptGenerator:
                 stations_data = self.system_db.get_stations(system_name)
                 if stations_data:
                     stations_info = self.format_stations_data(stations_data)
+
+            if location_info.get('Station'):
+                if not location_info.get('Docked'):
+                    location_info["Station"] = f"Outside {location_info['Station']}"
+
+            altitude = projected_states.get('CurrentStatus', {}).get('Altitude') or ""
+            location_info["Altitude"] = f"{altitude} km"
 
             status_entries.append(("Location", location_info))
             status_entries.append(("Local system", system_info))
