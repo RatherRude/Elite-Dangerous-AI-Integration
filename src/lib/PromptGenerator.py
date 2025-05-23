@@ -2712,8 +2712,9 @@ class PromptGenerator:
                 if not location_info.get('Docked'):
                     location_info["Station"] = f"Outside {location_info['Station']}"
 
-            altitude = projected_states.get('CurrentStatus', {}).get('Altitude') or ""
-            location_info["Altitude"] = f"{altitude} km"
+            altitude = projected_states.get('CurrentStatus', {}).get('Altitude') or None
+            if altitude:
+                location_info["Altitude"] = f"{altitude} km"
 
             status_entries.append(("Location", location_info))
             status_entries.append(("Local system", system_info))
