@@ -442,7 +442,7 @@ def migrate(data: dict) -> dict:
 
         # Migrate old character format to new characters array
         if 'characters' in data and len(data['characters']) > 0:
-            for i, character in data['characters']:
+            for i, character in enumerate(data['characters']):
                 if character['name'] != 'Default':
                     #merge character attributes
                     new_attributes = {
