@@ -2459,6 +2459,9 @@ class PromptGenerator:
         if current_status.get("flags2"):
             flags += [key for key, value in current_status["flags2"].items() if value]
 
+        if in_combat.get("InCombat", False):
+            flags.append("InCombat")
+
         status_info = {
             "status": flags,
             "balance": current_status.get("Balance", None),
