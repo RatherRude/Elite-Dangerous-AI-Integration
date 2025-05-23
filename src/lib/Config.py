@@ -444,7 +444,7 @@ def migrate(data: dict) -> dict:
 
 
         # Migrate old character format to new characters array
-        if 'characters' not in data:
+        if 'characters' not in data or len(data.get('characters', [])) == 0:
             print("Migrating old character format to new characters array")
             data['characters'] = []
 
@@ -483,10 +483,7 @@ def migrate(data: dict) -> dict:
             print(f"Created character from existing settings: {character['name']}")
             data['characters'].append(character)
             data['active_character_index'] = 1
-        else:
-            # data['characters'] 
-            pass
-        if data['characters'][0]['name'] != 'Default':
+        if len(data['characters']) > 0 and data['characters'][0]['name'] != 'Default':
             # Insert default character at beginning
             data['characters'].insert(0, {
                 "name": 'Default',
@@ -543,7 +540,8 @@ def migrate(data: dict) -> dict:
             if 'llm_model_name' in data and data['llm_model_name'] == 'gpt-4o-mini':
                 data['llm_model_name'] = 'gpt-4.1-mini'
         
-    data['characters'][0]['game_events'] = game_events
+    if len(data.get('characters', [])) > 0:
+        data['characters'][0]['game_events'] = game_events
 
     return data
 
