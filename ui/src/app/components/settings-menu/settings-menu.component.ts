@@ -1901,12 +1901,12 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     character['react_to_text_local_var'] = this.getEventProperty('react_to_text_local_var', true);
     character['react_to_text_starsystem_var'] = this.getEventProperty('react_to_text_starsystem_var', true);
     character['react_to_text_squadron_var'] = this.getEventProperty('react_to_text_squadron_var', true);
-    character['react_to_text_npc_var'] = this.getEventProperty('react_to_text_npc_var', true);
+    character['react_to_text_npc_var'] = this.getEventProperty('react_to_text_npc_var', false);
     character['react_to_material'] = this.getEventProperty('react_to_material', '');
-    character['idle_timeout_var'] = this.getEventProperty('idle_timeout_var', 60);
-    character['react_to_danger_mining_var'] = this.getEventProperty('react_to_danger_mining_var', true);
-    character['react_to_danger_onfoot_var'] = this.getEventProperty('react_to_danger_onfoot_var', true);
-    character['react_to_danger_supercruise_var'] = this.getEventProperty('react_to_danger_supercruise_var', true);
+    character['idle_timeout_var'] = this.getEventProperty('idle_timeout_var', 300);
+    character['react_to_danger_mining_var'] = this.getEventProperty('react_to_danger_mining_var', false);
+    character['react_to_danger_onfoot_var'] = this.getEventProperty('react_to_danger_onfoot_var', false);
+    character['react_to_danger_supercruise_var'] = this.getEventProperty('react_to_danger_supercruise_var', false);
     character['game_events'] = this.getEventProperty('game_events', {});
     
     return character;
@@ -2017,7 +2017,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     updatedChar['react_to_danger_mining_var'] = true;
     updatedChar['react_to_danger_onfoot_var'] = true;
     updatedChar['react_to_danger_supercruise_var'] = true;
-    updatedChar['idle_timeout_var'] = 60;
+    updatedChar['idle_timeout_var'] = 300;
 
     // Preserve existing game events if they exist
     if (!updatedChar['game_events']) {
@@ -2370,7 +2370,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     newCharacter['react_to_danger_mining_var'] = true;
     newCharacter['react_to_danger_onfoot_var'] = true;
     newCharacter['react_to_danger_supercruise_var'] = true;
-    newCharacter['idle_timeout_var'] = 60;
+    newCharacter['idle_timeout_var'] = 300;
 
     // Add the new character to the config
     if (!this.config.characters) {

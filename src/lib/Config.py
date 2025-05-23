@@ -438,12 +438,27 @@ def migrate(data: dict) -> dict:
         data['vision_provider'] = 'none'
     
     if 'config_version' not in data or data['config_version'] is None:
-
         data['config_version'] = 1
 
-
-
         # Migrate old character format to new characters array
+        if 'characters' in data and len(data['characters']) > 0:
+            for i, character in data['characters']:
+                if character['name'] != 'Default':
+                    #merge character attributes
+                    new_attributes = {
+                        "event_reaction_enabled_var": data.get('event_reaction_enabled_var', True),
+                        "react_to_text_local_var": data.get('react_to_text_local_var', True),
+                        "react_to_text_starsystem_var": data.get('react_to_text_starsystem_var', True),
+                        "react_to_text_npc_var": data.get('react_to_text_npc_var', False),
+                        "react_to_text_squadron_var": data.get('react_to_text_squadron_var', True),
+                        "react_to_material": data.get('react_to_material', 'opal, diamond, alexandrite'),
+                        "react_to_danger_mining_var": data.get('react_to_danger_mining_var', False),
+                        "react_to_danger_onfoot_var": data.get('react_to_danger_onfoot_var', False),
+                        "react_to_danger_supercruise_var": data.get('react_to_danger_supercruise_var', False),
+                        "idle_timeout_var": data.get('idle_timeout_var', 300)
+                    }
+
+                    data['characters'][i] = {**character, **new_attributes}
         if 'characters' not in data or len(data.get('characters', [])) == 0:
             print("Migrating old character format to new characters array")
             data['characters'] = []
@@ -470,19 +485,21 @@ def migrate(data: dict) -> dict:
                 "tts_speed": data.get('tts_speed', "1.2"),
                 "tts_prompt": data.get('tts_prompt', ""),
                 "game_events": game_events,
-                "event_reaction_enabled_var": True,
-                "react_to_text_local_var": True,
-                "react_to_text_starsystem_var": True,
-                "react_to_text_npc_var": False,
-                "react_to_text_squadron_var": True,
-                "react_to_material": 'opal, diamond, alexandrite',
-                "react_to_danger_mining_var": False,
-                "react_to_danger_onfoot_var": False,
-                "react_to_danger_supercruise_var": False
+                "event_reaction_enabled_var": data.get('event_reaction_enabled_var', True),
+                "react_to_text_local_var": data.get('react_to_text_local_var', True),
+                "react_to_text_starsystem_var": data.get('react_to_text_starsystem_var', True),
+                "react_to_text_npc_var": data.get('react_to_text_npc_var', False),
+                "react_to_text_squadron_var": data.get('react_to_text_squadron_var', True),
+                "react_to_material": data.get('react_to_material', 'opal, diamond, alexandrite'),
+                "react_to_danger_mining_var": data.get('react_to_danger_mining_var', False),
+                "react_to_danger_onfoot_var": data.get('react_to_danger_onfoot_var', False),
+                "react_to_danger_supercruise_var": data.get('react_to_danger_supercruise_var', False),
+                "idle_timeout_var": data.get('idle_timeout_var', 300)
             }
             print(f"Created character from existing settings: {character['name']}")
             data['characters'].append(character)
             data['active_character_index'] = 1
+
         if len(data['characters']) > 0 and data['characters'][0]['name'] != 'Default':
             # Insert default character at beginning
             data['characters'].insert(0, {
@@ -514,7 +531,8 @@ def migrate(data: dict) -> dict:
                 "react_to_material": 'opal, diamond, alexandrite',
                 "react_to_danger_mining_var": False,
                 "react_to_danger_onfoot_var": False,
-                "react_to_danger_supercruise_var": False
+                "react_to_danger_supercruise_var": False,
+                "idle_timeout_var": data.get('idle_timeout_var', 300)
             })
             # Adjust active character index if it exists
             if 'active_character_index' in data:
