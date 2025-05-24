@@ -36,30 +36,52 @@ def checkStatus(projected_states: dict[str, dict], blocked_status_dict: dict[str
 
 # Define functions for each action
 # General Ship Actions
-def fire_primary_weapon(args, projected_states):
+def fire_weapons(args, projected_states):
+    """
+    Unified weapon firing action that can handle primary/secondary weapons,
+    toggle states, duration firing, and repetitions.
+    """
     checkStatus(projected_states, {'Docked':True,'Landed':True,'HudInAnalysisMode':True})
     setGameWindowActive()
-    keys.send('PrimaryFire', state=1)
-    return f"successfully opened fire with primary weapons."
-
-
-def hold_fire_primary_weapon(args, projected_states):
-    setGameWindowActive()
-    keys.send('PrimaryFire', state=0)
-    return f"successfully stopped firing with primary weapons."
-
-
-def fire_secondary_weapon(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True,'HudInAnalysisMode':True})
-    setGameWindowActive()
-    keys.send('SecondaryFire', state=1)
-    return f"successfully opened fire with secondary weapons."
-
-
-def hold_fire_secondary_weapon(args, projected_states):
-    setGameWindowActive()
-    keys.send('SecondaryFire', state=0)
-    return f"successfully stopped firing with secondary weapons."
+    
+    # Parse arguments with defaults
+    weapon_type = args.get('weaponType', 'primary').lower()
+    action = args.get('action', 'fire').lower()
+    duration = args.get('duration', None)
+    repetitions = args.get('repetitions', 1)
+    repeat_delay = args.get('repeatDelay', None)
+    
+    # Determine key mapping
+    if weapon_type == 'secondary':
+        key_name = 'SecondaryFire'
+        weapon_desc = 'secondary weapons'
+    else:  # default to primary
+        key_name = 'PrimaryFire'
+        weapon_desc = 'primary weapons'
+    
+    # Handle different actions
+    if action in ['toggle_on', 'start', 'fire']:
+        keys.send(key_name, state=1)
+        return f"Successfully started firing {weapon_desc}."
+    elif action in ['toggle_off', 'stop', 'hold']:
+        keys.send(key_name, state=0)
+        return f"Successfully stopped firing {weapon_desc}."
+    elif action in ['burst', 'fire_burst']:
+        # Fire for specified duration or default burst
+        if duration is None:
+            duration = 0.5  # Default half-second burst
+        keys.send(key_name, hold=duration, repeat=repetitions, repeat_delay=repeat_delay)
+        if repetitions > 1:
+            return f"Successfully fired {repetitions} bursts of {weapon_desc} for {duration}s each."
+        else:
+            return f"Successfully fired burst of {weapon_desc} for {duration}s."
+    else:
+        # Default to toggle behavior
+        keys.send(key_name, hold=duration, repeat=repetitions, repeat_delay=repeat_delay)
+        if duration:
+            return f"Successfully fired {weapon_desc} for {duration}s with {repetitions} repetition(s)."
+        else:
+            return f"Successfully fired {weapon_desc} with {repetitions} repetition(s)."
 
 
 def set_speed(args, projected_states):
@@ -2718,25 +2740,42 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     setGameWindowActive()
 
     # Register actions - General Ship Actions
-    actionManager.registerAction('fire', "start firing primary weapons", {
+    actionManager.registerAction('fireWeapons', "Fire weapons with advanced options for duration, repetition and weapon type", {
         "type": "object",
-        "properties": {}
-    }, fire_primary_weapon, 'ship')
-
-    actionManager.registerAction('holdFire', "stop firing primary weapons", {
-        "type": "object",
-        "properties": {}
-    }, hold_fire_primary_weapon, 'ship')
-
-    actionManager.registerAction('fireSecondary', "start secondary primary weapons", {
-        "type": "object",
-        "properties": {}
-    }, fire_secondary_weapon, 'ship')
-
-    actionManager.registerAction('holdFireSecondary', "stop secondary primary weapons", {
-        "type": "object",
-        "properties": {}
-    }, hold_fire_secondary_weapon, 'ship')
+        "properties": {
+            "weaponType": {
+                "type": "string",
+                "description": "Type of weapons to fire",
+                "enum": ["primary", "secondary"],
+                "default": "primary"
+            },
+            "action": {
+                "type": "string", 
+                "description": "Action to perform with weapons",
+                "enum": ["fire", "start", "toggle_on", "stop", "hold", "toggle_off", "burst", "fire_burst"],
+                "default": "fire"
+            },
+            "duration": {
+                "type": "number",
+                "description": "Duration to fire in seconds (for burst mode or timed firing)",
+                "minimum": 0.1,
+                "maximum": 30.0
+            },
+            "repetitions": {
+                "type": "integer",
+                "description": "Number of times to repeat the action",
+                "minimum": 1,
+                "maximum": 10,
+                "default": 1
+            },
+            "repeatDelay": {
+                "type": "number",
+                "description": "Delay between repetitions in seconds",
+                "minimum": 0.1,
+                "maximum": 10.0
+            }
+        }
+    }, fire_weapons, 'ship')
 
     actionManager.registerAction('setSpeed', "Change flight thrust", {
         "type": "object",
