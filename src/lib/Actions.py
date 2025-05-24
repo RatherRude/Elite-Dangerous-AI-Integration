@@ -513,6 +513,62 @@ def toggle_drive_assist(args, projected_states):
     # return f"Landing gear {'deployed ' if not projected_states.get('CurrentStatus').get('flags').get('HardpointsDeployed') else 'retracted'}"
     return f"Drive assist has been {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('SrvDriveAssist') else 'deactivated'}."
 
+def fire_weapons_buggy(args, projected_states):
+    """
+    Simple buggy weapon firing action with three clear controls.
+    Actions:
+    - fire: Single shot (with optional duration and repetitions)
+    - start: Begin continuous firing
+    - stop: Stop continuous firing
+    """
+    checkStatus(projected_states, {'SrvTurretRetracted':True})
+    setGameWindowActive()
+    
+    # Parse arguments with defaults
+    weapon_type = args.get('weaponType', 'primary').lower()
+    action = args.get('action', 'fire').lower()
+    duration = args.get('duration', None)  # Duration to hold fire button
+    repetitions = args.get('repetitions', 0)  # 0 = one action, 1+ = repeat
+    
+    # Determine key mapping
+    if weapon_type == 'secondary':
+        key_name = 'BuggySecondaryFireButton'
+        weapon_desc = 'buggy secondary weapons'
+    else:  # default to primary
+        key_name = 'BuggyPrimaryFireButton'
+        weapon_desc = 'buggy primary weapons'
+    
+    # Handle different actions
+    if action == 'fire':
+        # Single shot with optional duration and repetitions
+        repeat_count = repetitions + 1  # 0 repetitions = 1 shot total
+        
+        if duration:
+            keys.send(key_name, hold=duration, repeat=repeat_count)
+            if repetitions > 0:
+                return f"Fired {weapon_desc} {repeat_count} times, {duration}s each."
+            else:
+                return f"Fired {weapon_desc} for {duration}s."
+        else:
+            keys.send(key_name, repeat=repeat_count)
+            if repetitions > 0:
+                return f"Fired {weapon_desc} {repeat_count} times."
+            else:
+                return f"Fired {weapon_desc}."
+        
+    elif action == 'start':
+        # Start continuous firing
+        keys.send(key_name, state=1)
+        return f"Started continuous firing with {weapon_desc}."
+        
+    elif action == 'stop':
+        # Stop continuous firing
+        keys.send(key_name, state=0)
+        return f"Stopped firing {weapon_desc}."
+        
+    else:
+        return f"Invalid action '{action}'. Use: fire, start, or stop."
+
 def buggy_primary_fire(args, projected_states):
     checkStatus(projected_states, {'SrvTurretRetracted':True})
     setGameWindowActive()
@@ -3030,15 +3086,47 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, toggle_drive_assist, 'buggy')
 
-    actionManager.registerAction('primaryFireBuggy', "Primary fire", {
+    actionManager.registerAction('fireWeaponsBuggy', "Fire buggy weapons with simple controls: single shot, start continuous, or stop", {
         "type": "object",
-        "properties": {}
-    }, buggy_primary_fire, 'buggy')
-
-    actionManager.registerAction('secondaryFireBuggy', "Secondary fire", {
-        "type": "object",
-        "properties": {}
-    }, buggy_secondary_fire, 'buggy')
+        "properties": {
+            "weaponType": {
+                "type": "string",
+                "description": "Type of weapons to fire",
+                "enum": [
+                    "primary",
+                    "secondary"
+                ],
+                "default": "primary"
+            },
+            "action": {
+                "type": "string",
+                "description": "Action to perform with weapons",
+                "enum": [
+                    "fire",
+                    "start",
+                    "stop"
+                ],
+                "default": "fire"
+            },
+            "duration": {
+                "type": "number",
+                "description": "Duration to hold fire button in seconds (for fire action only)",
+                "minimum": 0.1,
+                "maximum": 30.0
+            },
+            "repetitions": {
+                "type": "integer",
+                "description": "Number of additional repetitions (0 = single action, 1+ = repeat that many extra times)",
+                "minimum": 0,
+                "maximum": 10,
+                "default": 0
+            }
+        },
+        "required": [
+            "weaponType",
+            "action"
+        ]
+    }, fire_weapons_buggy, 'buggy')
 
     actionManager.registerAction('autoBreak', "Toggle auto-brake", {
         "type": "object",
