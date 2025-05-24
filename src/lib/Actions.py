@@ -4,6 +4,8 @@ import threading
 from time import sleep
 import traceback
 from typing import Optional
+from pyautogui import typewrite
+from datetime import datetime, timezone
 
 import openai
 import requests
@@ -87,35 +89,78 @@ def deploy_hardpoint_toggle(args, projected_states):
     return f"Hardpoints {'deployed ' if not projected_states.get('CurrentStatus').get('flags').get('HardpointsDeployed') else 'retracted'}"
 
 
-def increase_engines_power(args, projected_states):
+def manage_power_distribution(args, projected_states):
+    """
+    Handle power distribution between ship systems.
+
+    Args:
+        args (dict): {
+            "power_category": ["engines", "weapons"],
+            "balance_power": True/False,
+            "pips": [3, 2]  # only if balance_power is False
+        }
+        projected_states (dict): (optional, can be used for context)
+
+    Returns:
+        str: A summary message for the tool response.
+    """
+    power_categories = args.get("power_category", [])
+    balance_power = args.get("balance_power", False)
+    pips = args.get("pips", [])
+    message = ""
+
+    if balance_power:
+        # Balance power across all systems
+        if power_categories == [] or len(power_categories) == 3:
+            keys.send("ResetPowerDistribution")
+            message = "Power balanced."
+        else:
+            message = f"Balancing power equally across {', '.join(power_categories)}."
+            keys.send("ResetPowerDistribution")
+            for _ in range(2):
+                for pwr_system in power_categories:
+                    keys.send(f"Increase{pwr_system.capitalize()}Power")
+
+    else:
+        # Apply specific pips per system
+        if len(power_categories) != len(pips):
+            return "ERROR: Number of pips does not match number of power categories."
+
+        assignments = []
+        for pwr_system, pip_count in zip(power_categories, pips):
+            assignments.append(f"{pip_count} pips to {pwr_system}")
+            for _ in range(pip_count):
+                keys.send(f"Increase{pwr_system.capitalize()}Power")
+
+        message = f"Applied: {', '.join(assignments)}."
+
+    return message
+
+def cycle_target(args, projected_states):
     setGameWindowActive()
-    keys.send('IncreaseEnginesPower', None, args['pips'])
-    return f"Engine power increased"
+    
+    direction = args.get('direction', 'next').lower()
+    
+    if direction == 'previous':
+        keys.send('CyclePreviousTarget')
+        return "Selected previous target"
+    else:
+        # Default to 'next' for any invalid direction
+        keys.send('CycleNextTarget')
+        return "Selected next target"
 
-
-def increase_weapons_power(args, projected_states):
+def cycle_fire_group(args, projected_states):
     setGameWindowActive()
-    keys.send('IncreaseWeaponsPower', None, args['pips'])
-    return f"Weapon power increased"
-
-
-def increase_systems_power(args, projected_states):
-    setGameWindowActive()
-    keys.send('IncreaseSystemsPower', None, args['pips'])
-    return f"Systems power increased"
-
-
-def cycle_next_target(args, projected_states):
-    setGameWindowActive()
-    keys.send('CycleNextTarget')
-    return f"Next target cycled"
-
-
-def cycle_fire_group_next(args, projected_states):
-    setGameWindowActive()
-    keys.send('CycleFireGroupNext')
-    # return f"New active fire group {projected_states.get('CurrentStatus').get('Firegroup')}" @ToDo: Firegoup not set in status projection?
-    return f"Fire group cycled"
+    
+    direction = args.get('direction', 'next').lower()
+    
+    if direction == 'previous':
+        keys.send('CycleFireGroupPrevious')
+        return "Cycled to previous fire group"
+    else:
+        # Default to 'next' for any invalid direction
+        keys.send('CycleFireGroupNext')
+        return "Cycled to next fire group"
 
 def ship_spot_light_toggle(args, projected_states):
     setGameWindowActive()
@@ -149,40 +194,61 @@ def charge_ecm(args, projected_states):
     return "ECM is attempting to charge"
 
 
-def galaxy_map_open(args, projected_states):
-    from pyautogui import typewrite
-
+def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
+    # Trigger the GUI open
     setGameWindowActive()
+    current_gui = projected_states.get('CurrentStatus', {}).get('GuiFocus', '')
 
-
-    if projected_states.get('CurrentStatus', {}).get('GuiFocus', '') in ['SAA','FSS','Codex','StationServices']:
+    if current_gui in ['SAA', 'FSS', 'Codex']:
         raise Exception('Galaxy map can not be opened currently, the active GUI needs to be closed first')
-    # Galaxy map already open, so we close it
-    if projected_states.get('CurrentStatus').get('GuiFocus') == 'GalaxyMap':
-        keys.send('GalaxyMapOpen')
-        sleep(1)
 
-    # Freshly open the galaxy map
-    keys.send('GalaxyMapOpen')
-    
+    if current_gui == 'GalaxyMap':
+        if not 'system_name' in args:
+            return "Galaxy map is already open"
+    else:
+        keys.send(galaxymap_key)
+
+    try:
+        event_manager.wait_for_condition('CurrentStatus', lambda s: s.get('GuiFocus') == "GalaxyMap", 4)
+        gm_open = True
+    except TimeoutError:
+        keys.send("UI_Back", repeat=10, repeat_delay=0.05)
+        keys.send(galaxymap_key)
+        try:
+            event_manager.wait_for_condition('CurrentStatus', lambda s: s.get('GuiFocus') == "GalaxyMap", 5)
+        except TimeoutError:
+            return "Galaxy map can not be opened currently, the current GUI needs to be closed first"
+
+
     if 'system_name' in args:
-        # Check if UI keys have a collition with CamTranslate
+
+        # Check if UI keys have a collision with CamTranslate
         collisions = keys.get_collisions('UI_Up')
 
         if 'CamTranslateForward' in collisions:
-            raise Exception("Unable to enter system name due to a collision between the 'UI Panel Up' and 'Galaxy Cam Translate Forward' keys. "
-                            +"Please change the keybinding for 'Galaxy Cam Translate' to Shift + WASD under General Controls > Galaxy Map.")
-        
+            raise Exception(
+                "Unable to enter system name due to a collision between the 'UI Panel Up' and 'Galaxy Cam Translate Forward' keys. "
+                + "Please change the keybinding for 'Galaxy Cam Translate' to Shift + WASD under General Controls > Galaxy Map.")
+
         collisions = keys.get_collisions('UI_Right')
 
-
         if 'CamTranslateRight' in collisions:
-            raise Exception("Unable to enter system name due to a collision between the 'UI Panel Right' and 'Galaxy Cam Translate Right' keys. "
-                            +"Please change the keybinding for 'Galaxy Cam Translate' to Shift + WASD under General Controls > Galaxy Map.")
-        
-        sleep(2)
+            raise Exception(
+                "Unable to enter system name due to a collision between the 'UI Panel Right' and 'Galaxy Cam Translate Right' keys. "
+                + "Please change the keybinding for 'Galaxy Cam Translate' to Shift + WASD under General Controls > Galaxy Map.")
+
+        keys.send('CamZoomOut')
+        sleep(0.05)
+
         keys.send('UI_Up')
         sleep(.05)
+        if current_gui == "GalaxyMap":
+            keys.send('UI_Left', repeat=3)
+            sleep(.05)
+            keys.send('UI_Right')
+            sleep(.05)
+            keys.send('UI_Up')
+            sleep(.05)
         keys.send('UI_Select')
         sleep(.05)
 
@@ -195,42 +261,73 @@ def galaxy_map_open(args, projected_states):
         sleep(0.05)
         keys.send_key('Up', 'Key_Enter')
 
-        sleep(.05)
+        sleep(0.05)
         keys.send('UI_Right')
-        sleep(.15)
+        sleep(.5)
         keys.send('UI_Select')
+        sleep(.5)
 
         if 'start_navigation' in args and args['start_navigation']:
-            keys.send('CamYawLeft')
-            sleep(0.05)
-            keys.send('UI_Select',hold=0.75)
+            keys.send('CamZoomOut')
+            sleep(0.15)
+            keys.send('UI_Select', hold=0.75)
 
             sleep(0.05)
-            keys.send('GalaxyMapOpen')
+            if not current_gui == "GalaxyMap":  # if we are already in the galaxy map we don't want to close it
+                keys.send(galaxymap_key)
 
             return ((f"Best location found: {json.dumps(args['details'])}. " if 'details' in args else '') +
                     f"Plotting a route to {args['system_name']} has been attempted. Check event history to see if it was successful, if you see no event it has failed.")
 
         return f"The galaxy map has opened. It is now zoomed in on \"{args['system_name']}\". No route was plotted yet, only the commander can do that."
 
-    return f"Galaxy map opened/closed"
+    return "Galaxy map opened"
 
 
-def galaxy_map_close(args, projected_states):
-    setGameWindowActive()
+
+def galaxy_map_close(args, projected_states, galaxymap_key="GalaxyMapOpen"):
 
     if projected_states.get('CurrentStatus').get('GuiFocus') == 'GalaxyMap':
-        keys.send('GalaxyMapOpen')
+        keys.send(galaxymap_key)
+    else:
+        return "Galaxy map is already closed"
 
-    return f"Galaxy map closed"
+    return "Galaxy map closed"
 
 
-def system_map_open(args, projected_states):
-    if projected_states.get('CurrentStatus', {}).get('GuiFocus', '') in ['SAA', 'FSS', 'Codex', 'StationServices']:
-        raise Exception('System map can not be opened currently, the active GUI needs to be closed first')
+def system_map_open_or_close(args, projected_states, sys_map_key = 'SystemMapOpen'):
+    # Trigger the GUI open
     setGameWindowActive()
-    keys.send('SystemMapOpen')
-    return f"System map opened/closed"
+
+    current_gui = projected_states.get('CurrentStatus', {}).get('GuiFocus', '')
+
+    if args['desired_state'] == "close":
+        if  current_gui == "SystemMap":
+            keys.send(sys_map_key)
+            return "System map has been closed."
+        else:
+            return "System map is not open, nothing to close."
+
+
+    if current_gui in ['SAA', 'FSS', 'Codex']:
+        raise Exception('System map can not be opened currently, the active GUI needs to be closed first')
+
+    if current_gui == 'SystemMap':
+            return "System map is already open"
+
+    keys.send(sys_map_key)
+
+    try:
+        event_manager.wait_for_condition('CurrentStatus', lambda s: s.get('GuiFocus') == "SystemMap", 4)
+    except TimeoutError:
+        keys.send("UI_Back", repeat=10, repeat_delay=0.05)
+        keys.send(sys_map_key)
+        try:
+            event_manager.wait_for_condition('CurrentStatus', lambda s: s.get('GuiFocus') == "SystemMap", 4)
+        except TimeoutError:
+            return "System map can not be opened currently, the current GUI needs to be closed first"
+
+    return "System map opened"
 
 
 # Mainship Actions
@@ -239,7 +336,6 @@ def eject_all_cargo(args, projected_states):
     setGameWindowActive()
     keys.send('EjectAllCargo')
     return f"All cargo ejected"
-
 
 def landing_gear_toggle(args, projected_states):
     checkStatus(projected_states, {'Docked':True,'Landed':True,'Supercruise':True})
@@ -261,7 +357,7 @@ def toggle_cargo_scoop(args, projected_states):
     return f"Cargo scoop {'deployed ' if not projected_states.get('CurrentStatus').get('flags').get('CargoScoopDeployed') else 'retracted'}"
 
 
-def hyper_super_combination(args, projected_states):
+def fsd_jump(args, projected_states):
     checkStatus(projected_states, {'Docked':True,'Landed':True,'FsdMassLocked':True,'FsdCooldown':True,'FsdCharging':True})
     setGameWindowActive()
 
@@ -277,8 +373,29 @@ def hyper_super_combination(args, projected_states):
         keys.send('DeployHardpointToggle')
         return_message += "Hardpoints Retracted. "
 
-    keys.send('HyperSuperCombination')
+    jump_type = args.get('jump_type', 'auto')
+    
+    if jump_type == 'next_system':
+        if projected_states.get('NavInfo').get('NextJumpTarget'):
+            keys.send('Hyperspace')
+        else:
+            return "No system targeted for hyperjump"
+    elif jump_type == 'supercruise':
+        keys.send('Supercruise')
+    else:
+        keys.send('HyperSuperCombination')
+
+    keys.send('SetSpeed100')
+
     return return_message + "Frame Shift Drive is now charging for a jump"
+
+def next_system_in_route(args, projected_states):
+    nav_info = projected_states.get('NavInfo', {})
+    if not nav_info['NextJumpTarget']:
+        return "a target next system in route as no navigation route is currently set set"
+
+    keys.send('TargetNextRouteSystem')
+    return "Targeting next system in route"
 
 def undock(args, projected_states):
     setGameWindowActive()
@@ -301,9 +418,21 @@ def undock(args, projected_states):
 
     return 'The ship is now undocking'
 
+def docking_key_press_sequence(stop_event):
+    keys.send('UI_Left')
+    keys.send('UI_Right')
+    keys.send("UI_Select",hold = 0.2)
+    for _ in range(6):
+        if stop_event.is_set():
+            break
+        keys.send("CyclePreviousPanel")
+        keys.send('UI_Left')
+        keys.send('UI_Right')
+        keys.send("UI_Select",hold = 0.2)
+
+
 def request_docking(args, projected_states):
     checkStatus(projected_states, {'Supercruise':True})
-    screenreader = ScreenReader()
     setGameWindowActive()
     if projected_states.get('CurrentStatus').get('GuiFocus') in ['NoFocus', 'InternalPanel', 'CommsPanel', 'RolePanel']:
         keys.send('FocusLeftPanel')
@@ -313,40 +442,27 @@ def request_docking(args, projected_states):
     else:
         raise Exception('Docking menu not available in current UI Mode.')
 
-    mode = None
-    for x in range(4):
-        mode = screenreader.detect_lhs_screen_tab()
-        if mode:
-            break
-        keys.send('CycleNextPanel', None, 1)
+    # Start the key press sequence
+    stop_event = threading.Event()
+    t = threading.Thread(target=docking_key_press_sequence, args=(stop_event,))
+    t.start()
 
-    log('debug', 'Docking request screen tab', mode)
-    if not mode:
-        raise Exception('Panel not found')
-    if mode == 'system':
-        keys.send('CycleNextPanel', None, 3)
-    elif mode == 'navigation':
-        keys.send('CycleNextPanel', None, 2)
-    elif mode == 'transactions':
-        keys.send('CycleNextPanel', None, 1)
+    try:
+        old_timestamp = projected_states.get('DockingEvents').get('Timestamp', "1970-01-01T00:00:01Z")
+        # Wait for a docking event with a timestamp newer than when we started
+        event_manager.wait_for_condition('DockingEvents', 
+            lambda s: ((s.get('LastEventType') in ['DockingGranted', 'DockingRequested', 'DockingCanceled', 'DockingDenied', 'DockingTimeout']) 
+                      and (s.get('Timestamp', "1970-01-01T00:00:02Z") != old_timestamp)), 10)
+        msg = ""
+    except:
+        msg = "Failed to request docking via menu"
 
-    sleep(0.3)
-    keys.send('UI_Left')
-    keys.send('UI_Down')
-    keys.send('UI_Up', hold=1)
-    keys.send('UI_Right')
-    sleep(0.1)
-    keys.send('UI_Select')
+    stop_event.set() # stop the keypress thread
+
     keys.send('UIFocus')
+    return msg
 
-    return f"Docking has been requested"
 
-
-# Ship Launched Fighter Actions
-def order_request_dock(args, projected_states):
-    setGameWindowActive()
-    keys.send('OrderRequestDock')
-    return f"Fighter has been ordered to dock"
 
 # Ship Launched Fighter Actions
 def fighter_request_dock(args, projected_states):
@@ -361,7 +477,7 @@ def npc_order(args, projected_states):
     setGameWindowActive()
     if 'orders' in args:
         for order in args['orders']:
-            keys.send(order)
+            keys.send(f"Order{order}")
     return f"Orders {', '.join(str(x) for x in args['orders'])} have been transmitted."
 
 
@@ -392,9 +508,49 @@ def auto_break_buggy(args, projected_states):
 
 def headlights_buggy(args, projected_states):
     setGameWindowActive()
-    keys.send('HeadlightsBuggyButton')
-    return ("Buggy headlights {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('LightsOn') else 'deactivated'} ."
-            +"Buggy high beam headlights {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('SrvHighBeam') else 'deactivated'}")
+    
+    # Get current state
+    current_flags = projected_states.get('CurrentStatus', {}).get('flags', {})
+    lights_on = current_flags.get('LightsOn', False)
+    high_beam = current_flags.get('SrvHighBeam', False)
+    
+    # Determine current mode: 0=off, 1=low, 2=high
+    if not lights_on:
+        current_mode = 0  # off
+    elif lights_on and not high_beam:
+        current_mode = 1  # low
+    else:  # lights_on and high_beam
+        current_mode = 2  # high
+    
+    # If no desired state specified, just toggle once
+    desired_state = args.get('desired_state', 'toggle')
+    
+    if desired_state == 'toggle':
+        keys.send('HeadlightsBuggyButton')
+        key_presses = 1
+    else:
+        # Map desired state to mode number
+        state_to_mode = {'off': 0, 'low': 1, 'high': 2}
+        desired_mode = state_to_mode.get(desired_state.lower())
+        
+        if desired_mode is None:
+            return f"Invalid desired state '{desired_state}'. Valid options: off, low, high, toggle"
+        
+        # Calculate number of key presses needed (cycling: off->low->high->off...)
+        key_presses = (desired_mode - current_mode) % 3
+        
+        # Send the appropriate number of key presses
+        for _ in range(key_presses):
+            keys.send('HeadlightsBuggyButton')
+    
+    # Generate response message based on final state
+    mode_names = ['off', 'low beam', 'high beam']
+    final_mode = (current_mode + key_presses) % 3
+    
+    if desired_state == 'toggle':
+        return f"Buggy headlights toggled to {mode_names[final_mode]} mode."
+    else:
+        return f"Buggy headlights set to {mode_names[final_mode]} mode."
 
 def toggle_buggy_turret(args, projected_states):
     checkStatus(projected_states, {'SrvTurretRetracted':True})
@@ -407,25 +563,53 @@ def select_target_buggy(args, projected_states):
     keys.send('SelectTarget_Buggy')
     return "Buggy target selection activated."
 
-def increase_engines_power_buggy(args, projected_states):
-    setGameWindowActive()
-    keys.send('IncreaseEnginesPower_Buggy', None, args['pips'])
-    return "Buggy engine power increased."
+def manage_power_distribution_buggy(args, projected_states):
+    """
+    Handle power distribution between buggy systems.
 
-def increase_weapons_power_buggy(args, projected_states):
-    setGameWindowActive()
-    keys.send('IncreaseWeaponsPower_Buggy', None, args['pips'])
-    return "Buggy weapons power increased."
+    Args:
+        args (dict): {
+            "power_category": ["engines", "weapons"],
+            "balance_power": True/False,
+            "pips": [3, 2]  # only if balance_power is False
+        }
+        projected_states (dict): (optional, can be used for context)
 
-def increase_systems_power_buggy(args, projected_states):
-    setGameWindowActive()
-    keys.send('IncreaseSystemsPower_Buggy', None, args['pips'])
-    return "Buggy systems power increased."
+    Returns:
+        str: A summary message for the tool response.
+    """
+    power_categories = args.get("power_category", [])
+    balance_power = args.get("balance_power", False)
+    pips = args.get("pips", [])
+    message = ""
 
-def reset_power_distribution_buggy(args, projected_states):
-    setGameWindowActive()
-    keys.send('ResetPowerDistribution_Buggy')
-    return "Buggy power distribution reset."
+    if balance_power:
+        # Balance power across all systems
+        if power_categories == [] or len(power_categories) == 3:
+            keys.send("ResetPowerDistribution_Buggy")
+            message = "Power balanced."
+        else:
+            message = f"Balancing power equally across {', '.join(power_categories)}."
+            keys.send("ResetPowerDistribution_Buggy")
+            for _ in range(2):
+                for pwr_system in power_categories:
+                    keys.send(f"Increase{pwr_system.capitalize()}Power_Buggy")
+
+    else:
+        # Apply specific pips per system
+        if len(power_categories) != len(pips):
+            return "ERROR: Number of pips does not match number of power categories."
+
+        assignments = []
+        for pwr_system, pip_count in zip(power_categories, pips):
+            assignments.append(f"{pip_count} pips to {pwr_system}")
+            for _ in range(pip_count):
+                keys.send(f"Increase{pwr_system.capitalize()}Power_Buggy")
+
+        message = f"Applied: {', '.join(assignments)}."
+
+    return message
+
 
 def toggle_cargo_scoop_buggy(args, projected_states):
     setGameWindowActive()
@@ -444,13 +628,34 @@ def recall_dismiss_ship_buggy(args, projected_states):
 
 def galaxy_map_open_buggy(args, projected_states):
     setGameWindowActive()
-    keys.send('GalaxyMapOpen_Buggy')
-    return "Galaxy map opened."
+    if args['desired_state'] == "open":
+        response = galaxy_map_open(args, projected_states, "GalaxyMapOpen_Buggy")
+    else:
+        response = galaxy_map_close(args, projected_states, "GalaxyMapOpen_Buggy")
+
+    return response
 
 def system_map_open_buggy(args, projected_states):
     setGameWindowActive()
-    keys.send('SystemMapOpen_Buggy')
-    return "System map opened."
+    current_gui = projected_states.get('CurrentStatus', {}).get('GuiFocus', '')
+
+    msg = ""
+
+    if args['desired_state'] == "close":
+        if current_gui == "SystemMap":
+            keys.send("SystemMapOpen_Buggy")
+            msg = "System map has been closed."
+        else:
+            return "System map is not open, nothing to close."
+    else:
+        if current_gui == "SystemMap":
+            msg = "System map is already open"
+
+        else:
+            keys.send("SystemMapOpen_Buggy")
+            msg = "System map opened."
+
+    return msg
 
 # On-Foot Actions (Odyssey)
 def primary_interact_humanoid(args, projected_states):
@@ -507,12 +712,12 @@ def battery_humanoid(args, projected_states):
 def galaxy_map_open_humanoid(args, projected_states):
     setGameWindowActive()
     keys.send('GalaxyMapOpen_Humanoid')
-    return "Galaxy map opened."
+    return "Galaxy map opened or closed."
 
 def system_map_open_humanoid(args, projected_states):
     setGameWindowActive()
     keys.send('SystemMapOpen_Humanoid')
-    return "System map opened."
+    return "System map opened or closed."
 
 def recall_dismiss_ship_humanoid(args, projected_states):
     checkStatus(projected_states, {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
@@ -669,94 +874,6 @@ def get_galnet_news(obj, projected_states):
 
     except:
         return "News feed currently unavailable"
-
-
-# Region: Trade Planner Start
-def check_trade_planner_job(job_id):
-    url = "https://spansh.co.uk/api/results/" + job_id
-    retries = 60
-
-    for i in range(retries):
-        try:
-            response = requests.get(url)
-            response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
-
-            data = response.json()
-
-            if data['status'] == 'queued':
-                # wait 5 seconds and then continue fetching
-                sleep(5)
-            if data['status'] == 'ok':
-                # Filtering the list
-                filtered_data = [
-                    {
-                        **item,
-                        "destination": {k: item["destination"][k] for k in
-                                        ["system", "station", "distance_to_arrival"]},
-                        "source": {k: item["source"][k] for k in ["system", "station", "distance_to_arrival"]}
-                    }
-                    for item in data['result']
-                ]
-                # add conversational piece - here is your trade route!
-                event_manager.add_external_event('SpanshTradePlanner', {'result': filtered_data})
-
-                # persist route as optional piece
-                return
-        except Exception as e:
-            log('error', e, traceback.format_exc())
-            # add conversational piece - error request
-            event_manager.add_external_event('SpanshTradePlannerFailed', {
-                                              'reason': 'The Spansh API has encountered an error! Please try at a later point in time!',
-                                              'error': f'{e}'})
-            return
-
-    event_manager.add_external_event('SpanshTradePlannerFailed', {
-                                      'reason': 'The Spansh API took longer than 5 minutes to find a trade route. That should not happen, try again at a later point in time!'})
-
-
-def trade_planner_create_thread(obj, projected_states):
-    requires_large_pad = projected_states.get('ShipInfo').get('LandingPadSize') == 'L'
-    dict = {'max_system_distance': 10000000,
-            'allow_prohibited': False,
-            'allow_planetary': False,
-            'allow_player_owned': False,
-            'unique': False,
-            'permit': False,
-            'requires_large_pad': requires_large_pad}
-
-    dict.update(obj)
-
-    log('debug', 'Request data', dict)
-    # send request with obj, will return a queue id
-    url = "https://spansh.co.uk/api/trade/route"
-
-    try:
-        response = requests.post(url, data=dict)
-        response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
-
-        data = response.json()
-
-        job_id = data['job']
-
-        # start checking job status
-        check_trade_planner_job(job_id)
-
-
-    except Exception as e:
-        log('error', e, traceback.format_exc())
-        event_manager.add_external_event('SpanshTradePlannerFailed', {
-                                          'reason': 'The request to the Spansh API wasn\'t successful! Please try at a later point in time!',
-                                          'error': f'{e}'})
-
-
-def trade_planner(obj, projected_states):
-    # start thread with first request
-    threading.Thread(target=trade_planner_create_thread, args=(obj,projected_states), daemon=True).start()
-
-    return 'The information has been requested from the Spansh API. An answer will be provided once available. Please be patient.'
-
-
-# Region: Trade Planner End
 
 
 def send_message(obj, projected_states):
@@ -2653,40 +2770,39 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, deploy_hardpoint_toggle, 'ship')
 
-    actionManager.registerAction('increaseEnginesPower', "Increase engine power, can be done multiple times", {
-        "type": "object",
-        "properties": {
-            "pips": {
-                "type": "integer",
-                "description": "Amount of pips to increase engine power, default: 1, maximum: 4",
-            },
-        },
-        "required": ["pips"]
-    }, increase_engines_power, 'ship')
+    actionManager.registerAction('managePowerDistribution',
+     "Manage power distribution between ship systems. Apply pips to one or more power systems or balance the power across two or if unspecified, across all 3",
+     {
+         "type": "object",
+         "properties": {
+             "power_category": {
+                 "type": "array",
+                 "description": "Array of the system(s) being asked to change. if not specified return default",
+                 "items": {
+                     "type": "string",
+                     "enum": ["Engines", "Weapons", "Systems"],
+                     "default":["Engines", "Weapons", "Systems"]
+                 }
+             },
+             "balance_power": {
+                 "type": "boolean",
+                 "description": "Whether the user asks to balance power"
+             },
+             "pips": {
+                 "type": "array",
+                 "description": "Number of pips to allocate (ignored for balance), one per power_category",
+                 "items": {
+                     "type": "integer",
+                     "minimum": 1,
+                     "maximum": 4,
+                     "default": 1
+                 }
+             }
+         },
+         "required": ["power_category"]
+     }, manage_power_distribution, 'ship')
 
-    actionManager.registerAction('increaseWeaponsPower', "Increase weapon power, can be done multiple times", {
-        "type": "object",
-        "properties": {
-            "pips": {
-                "type": "integer",
-                "description": "Amount of pips to increase weapon power, default: 1, maximum: 4",
-            },
-        },
-        "required": ["pips"]
-    }, increase_weapons_power, 'ship')
-
-    actionManager.registerAction('increaseSystemsPower', "Increase systems power, can be done multiple times", {
-        "type": "object",
-        "properties": {
-            "pips": {
-                "type": "integer",
-                "description": "Amount of pips to increase systems power, default: 1, maximum: 4",
-            },
-        },
-        "required": ["pips"]
-    }, increase_systems_power, 'ship')
-
-    actionManager.registerAction('galaxyMapOpen', "Open galaxy map. Focus on a system or start a navigation route", {
+    actionManager.registerAction('galaxyMapOpen', "Open galaxy map. If asked, also focus on a system or start a navigation route", {
         "type": "object",
         "properties": {
             "system_name": {
@@ -2705,20 +2821,41 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {},
     }, galaxy_map_close, 'ship')
 
-    actionManager.registerAction('systemMapOpen', "Open or close system map", {
+    actionManager.registerAction('systemMapOpenOrClose', "Open or close system map", {
         "type": "object",
-        "properties": {}
-    }, system_map_open, 'ship')
+        "properties": {
+            "desired_state": {
+                "type": "string",
+                "enum": ["open", "close"],
+                "description": "Desired state for the system map: open or close.",
+            },
+        },
+    }, system_map_open_or_close, 'ship')
 
-    actionManager.registerAction('cycleNextTarget', "Cycle to next target", {
+    actionManager.registerAction('cycleTarget', "Cycle to next target", {
         "type": "object",
-        "properties": {}
-    }, cycle_next_target, 'ship')
+        "properties": {
+            "direction": {
+                "type": "string", 
+                "description": "Direction to cycle (next or previous)",
+                "enum": ["next", "previous"],
+                "default": "next"
+            }
+        }
+    }, cycle_target, 'ship')
 
-    actionManager.registerAction('cycleFireGroupNext', "Cycle to next fire group", {
+
+    actionManager.registerAction('cycleFireGroup', "Cycle to next fire group", {
         "type": "object",
-        "properties": {}
-    }, cycle_fire_group_next, 'ship')
+        "properties": {
+            "direction": {
+                "type": "string", 
+                "description": "Direction to cycle (next or previous)",
+                "enum": ["next", "previous"],
+            }
+        }
+    }, cycle_fire_group, 'ship')
+
 
     actionManager.registerAction('shipSpotLightToggle', "Toggle ship spotlight", {
         "type": "object",
@@ -2775,12 +2912,13 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "items": {
                     "type": "string",
                     "enum": [
-                        "OrderDefensiveBehaviour",
-                        "OrderAggressiveBehaviour",
-                        "OrderFocusTarget",
-                        "OrderHoldFire",
-                        "OrderHoldPosition",
-                        "OrderFollow",
+                        "DefensiveBehaviour",
+                        "AggressiveBehaviour",
+                        "FocusTarget",
+                        "HoldFire",
+                        "HoldPosition",
+                        "Follow",
+                        "RequestDock",
                     ]
                 }
             }
@@ -2788,11 +2926,24 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     }, npc_order, 'ship')
 
     # Register actions - Mainship Actions
-    actionManager.registerAction('hyperSuperCombination',
-                                 "initiate FSD Jump, required to jump to the next system or to enter supercruise", {
-                                     "type": "object",
-                                     "properties": {}
-                                 }, hyper_super_combination, 'mainship')
+    actionManager.registerAction('FsdJump',
+        "initiate FSD jump (jump to the next system or enter supercruise)", {
+        "type": "object",
+        "properties": {
+            "jump_type": {
+                "type": "string",
+                "description": "Jump to next system, enter supercruise or auto if unspecified",
+                "enum": ["next_system", "supercruise", "auto"]
+            }
+        }
+    }, fsd_jump, 'mainship')
+
+    actionManager.registerAction('target_next_system_in_route',
+        "When we have a nav route set, this will automatically target the next system in the route",
+        {
+        "type": "object",
+        "properties": {}
+    }, next_system_in_route, 'mainship')
 
     actionManager.registerAction('toggleCargoScoop', "Toggles cargo scoop", {
         "type": "object",
@@ -2825,12 +2976,6 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     }, undock, 'mainship')
 
     # Register actions - Ship Launched Fighter Actions
-    actionManager.registerAction('OrderRequestDock', "Order fighter to dock with main ship.", {
-        "type": "object",
-        "properties": {}
-    }, order_request_dock, 'mainship')
-
-    # Register actions - Ship Launched Fighter Actions
     actionManager.registerAction('fighterRequestDock', "Request docking for Ship Launched Fighter", {
         "type": "object",
         "properties": {}
@@ -2857,9 +3002,16 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, auto_break_buggy, 'buggy')
 
-    actionManager.registerAction('headlights', "Toggle headlights", {
+    actionManager.registerAction('headlights', "Control SRV headlights - toggle or set to specific mode (off/low/high)", {
         "type": "object",
-        "properties": {}
+        "properties": {
+            "desired_state": {
+                "type": "string",
+                "enum": ["off", "low", "high", "toggle"],
+                "description": "Desired headlight mode. 'toggle' cycles to next mode, or specify exact mode (off/low/high)",
+                "default": "toggle"
+            }
+        }
     }, headlights_buggy, 'buggy')
 
     actionManager.registerAction('nightVisionToggleBuggy', "Toggle night vision", {
@@ -2877,43 +3029,39 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, select_target_buggy, 'buggy')
 
-    actionManager.registerAction('increaseEnginesPowerBuggy', "Increase engines power, can be done multiple times", {
-        "type": "object",
-        "properties": {
-            "pips": {
-                "type": "integer",
-                "description": "Amount of pips to increase engines power, default: 1, maximum: 4",
-            },
-        },
-        "required": ["pips"]
-    }, increase_engines_power_buggy, 'buggy')
 
-    actionManager.registerAction('increaseWeaponsPowerBuggy', "Increase weapons power, can be done multiple times", {
-        "type": "object",
-        "properties": {
-            "pips": {
-                "type": "integer",
-                "description": "Amount of pips to increase weapons power, default: 1, maximum: 4",
-            },
-        },
-        "required": ["pips"]
-    }, increase_weapons_power_buggy, 'buggy')
+    actionManager.registerAction('managePowerDistributionBuggy',
+     "Manage power distribution between buggy power systems. Apply pips to one or more power systems or balance the power across two or if unspecified, across all 3",
+     {
+         "type": "object",
+         "properties": {
+             "power_category": {
+                 "type": "array",
+                 "description": "Array of the system(s) being asked to change. if not specified return default",
+                 "items": {
+                     "type": "string",
+                     "enum": ["Engines", "Weapons", "Systems"],
+                     "default": ["Engines", "Weapons", "Systems"]
+                 }
+             },
+             "balance_power": {
+                 "type": "boolean",
+                 "description": "Whether the user asks to balance power"
+             },
+             "pips": {
+                 "type": "array",
+                 "description": "Number of pips to allocate (ignored for balance), one per power_category",
+                 "items": {
+                     "type": "integer",
+                     "minimum": 1,
+                     "maximum": 4,
+                     "default": 1
+                 }
+             }
+         },
+         "required": ["power_category"]
+     }, manage_power_distribution_buggy, 'buggy')
 
-    actionManager.registerAction('increaseSystemsPowerBuggy', "Increase systems power, can be done multiple times", {
-        "type": "object",
-        "properties": {
-            "pips": {
-                "type": "integer",
-                "description": "Amount of pips to increase systems power, default: 1, maximum: 4",
-            },
-        },
-        "required": ["pips"]
-    }, increase_systems_power_buggy, 'buggy')
-
-    actionManager.registerAction('resetPowerDistributionBuggy', "Reset power distribution", {
-        "type": "object",
-        "properties": {}
-    }, reset_power_distribution_buggy, 'buggy')
 
     actionManager.registerAction('toggleCargoScoopBuggy', "Toggle cargo scoop", {
         "type": "object",
@@ -2930,14 +3078,34 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, recall_dismiss_ship_buggy, 'buggy')
 
-    actionManager.registerAction('galaxyMapOpenBuggy', "Open/close galaxy map", {
+    actionManager.registerAction('galaxyMapOpenOrCloseBuggy', "Open galaxy map. If asked, also focus on a system or start a navigation route", {
         "type": "object",
-        "properties": {}
+        "properties": {
+            "desired_state": {
+                "type": "string",
+                "enum": ["open", "close"],
+                "description": "Open or close galaxy map",
+            },
+            "system_name": {
+                "type": "string",
+                "description": "System to display or plot to.",
+            },
+            "start_navigation": {
+                "type": "boolean",
+                "description": "Start navigation route to the system",
+            }
+        },
     }, galaxy_map_open_buggy, 'buggy')
 
-    actionManager.registerAction('systemMapOpenBuggy', "Open/close system map", {
+    actionManager.registerAction('systemMapOpenOrCloseBuggy', "Open/close system map.", {
         "type": "object",
-        "properties": {}
+        "properties": {
+            "desired_state": {
+                "type": "string",
+                "enum": ["open", "close"],
+                "description": "Desired state for the system map: open or close.",
+            },
+        },
     }, system_map_open_buggy, 'buggy')
 
     # Register actions - On-Foot Actions
@@ -3004,12 +3172,12 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, battery_humanoid, 'humanoid')
 
-    actionManager.registerAction('galaxyMapOpenHumanoid', "Open Galaxy Map", {
+    actionManager.registerAction('galaxyMapOpenOrCloseHumanoid', "Open or Close Galaxy Map", {
         "type": "object",
         "properties": {}
     }, galaxy_map_open_humanoid, 'humanoid')
 
-    actionManager.registerAction('systemMapOpenHumanoid', "Open System Map", {
+    actionManager.registerAction('systemMapOpenOrCloseHumanoid', "Open or Close System Map", {
         "type": "object",
         "properties": {}
     }, system_map_open_humanoid, 'humanoid')
@@ -3038,50 +3206,6 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     )
 
     # if ARC:
-    actionManager.registerAction(
-        'trade_plotter',
-        "Retrieve a trade route from the trade plotter. Ask for unknown values and make sure they are known.",
-        {
-            "type": "object",
-            "properties": {
-                "system": {
-                    "type": "string",
-                    "description": "Name of the current system. Example: 'Sol'"
-                },
-                "station": {
-                    "type": "string",
-                    "description": "Name of the current station. Example: 'Wakata Station'"
-                },
-                "max_hops": {
-                    "type": "integer",
-                    "description": "Maximum number of hops (jumps) allowed for the route."
-                },
-                "max_hop_distance": {
-                    "type": "number",
-                    "description": "Maximum distance in light-years for a single hop."
-                },
-                "starting_capital": {
-                    "type": "number",
-                    "description": "Available starting capital in credits."
-                },
-                "max_cargo": {
-                    "type": "integer",
-                    "description": "Maximum cargo capacity in tons."
-                },
-            },
-            "required": [
-                "system",
-                "station",
-                "max_hops",
-                "max_hop_distance",
-                "starting_capital",
-                "max_cargo",
-            ]
-        },
-        trade_planner,
-        'web'
-    )
-
     # Register AI action for system finder
     actionManager.registerAction(
         'system_finder',

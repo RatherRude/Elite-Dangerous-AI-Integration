@@ -17,7 +17,8 @@ def get_connection():
     # Check if this thread already has a connection
     if not hasattr(_thread_local, 'conn'):
         # Use sqlite3 module instead of sqlean for better type annotation support
-        _thread_local.conn = sqlite3.connect(get_db_path())
+        _thread_local.conn = sqlite3.connect(get_db_path(), timeout=3) # Added timeout
+        _thread_local.conn.execute("PRAGMA journal_mode=WAL;") # Enable WAL mode
         _thread_local.conn.enable_load_extension(True)
         sqlite_vec.load(_thread_local.conn)
         _thread_local.conn.enable_load_extension(False)

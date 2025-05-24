@@ -19,7 +19,7 @@ from EDMesg.base import EDMesgWelcomeAction
 @final
 class EDCoPilot:
     def __init__(self, is_enabled: bool, is_edcopilot_dominant: bool=False, enabled_game_events: list[str]=[]):
-        self.install_path = self.get_install_path()
+        self.install_path = get_install_path()
         self.proc_id = self.get_process_id()
         self.is_enabled = is_enabled and self.is_installed()
         self.client = None
@@ -69,18 +69,6 @@ class EDCoPilot:
         self.proc_id = self.get_process_id()
         return self.proc_id is not None
 
-    def get_install_path(self) -> (str | None):
-        """Check the windows registry for COMPUTER / HKEY_CURRENT_USER / SOFTWARE / EDCoPilot"""
-        try:
-            import winreg
-
-            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, "SOFTWARE\\EDCoPilot")
-            value, _ = winreg.QueryValueEx(key, "EDCoPilotLib")
-            winreg.CloseKey(key)
-            return value
-        except Exception:
-            return None
-
     def get_process_id(self) -> (int | None):
         """Check if EDCoPilot is running"""
         try:
@@ -116,6 +104,17 @@ class EDCoPilot:
                 )
             )
 
+def get_install_path() -> (str | None):
+    """Check the windows registry for COMPUTER / HKEY_CURRENT_USER / SOFTWARE / EDCoPilot"""
+    try:
+        import winreg
+
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, "SOFTWARE\\EDCoPilot")
+        value, _ = winreg.QueryValueEx(key, "EDCoPilotLib")
+        winreg.CloseKey(key)
+        return value
+    except Exception:
+        return None
 
 if __name__ == "__main__":
     client = create_covasnext_client()

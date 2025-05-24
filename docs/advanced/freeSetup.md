@@ -26,7 +26,7 @@ Once logged in you can create your API key and start using it with COVAS:NEXT:
 
 ```
 LLM Provider: Custom
-LLM Model Name: gemini-2.0-flash
+LLM Model Name: gemini-2.5-flash-preview-04-17
 LLM Endpoint URL: https://generativelanguage.googleapis.com/v1beta
 LLM API Key: <your API key>
 ```
