@@ -475,6 +475,7 @@ class ShipInfo(Projection[ShipInfoState]):
 
         if isinstance(event, GameEvent) and event.content.get('event') == 'Cargo':
             self.state['Cargo'] = event.content.get('Count', 0)
+            self.state['CargoCapacity'] = len(event.content.get('Inventory', []))
 
         if isinstance(event, GameEvent) and event.content.get('event') in ['RefuelAll','RepairAll','BuyAmmo']:
             if self.state['hasLimpets'] and self.state['Cargo'] < self.state['CargoCapacity']:
@@ -742,7 +743,7 @@ class ExobiologyScanStateScan(TypedDict):
 
 ExobiologyScanState = TypedDict('ExobiologyScanState', {
     "within_scan_radius": NotRequired[bool],
-    # "distance": NotRequired[float],
+    "distance": NotRequired[float],
     "scan_radius": NotRequired[int],
     "scans": list[ExobiologyScanStateScan],
     "lat": NotRequired[float],
@@ -811,7 +812,7 @@ class ExobiologyScan(Projection[ExobiologyScanState]):
                     distance_obj = {'lat': self.state["lat"], 'long': self.state["long"]}
                     for scan in self.state["scans"]:
                         distance = self.haversine_distance(scan, distance_obj, event.status['PlanetRadius'])
-                        # self.state["distance"] = distance
+                        self.state["distance"] = distance
                         # log('info', 'distance', distance)
                         if distance < self.state['scan_radius']:
                             in_scan_radius = True
@@ -1052,7 +1053,7 @@ class DockingEvents(Projection[DockingEventsState]):
     @override
     def process(self, event: Event) -> list[ProjectedEvent] | None:
         projected_events: list[ProjectedEvent] = []
-        
+
         if isinstance(event, GameEvent) and event.content.get('event') in ['Docked', 'Undocked', 'DockingGranted', 'DockingRequested', 'DockingCanceled', 'DockingDenied', 'DockingTimeout']:
             self.state['DockingComputerState'] = "deactivated"
             self.state['StationType'] = event.content.get("StationType", "Unknown")

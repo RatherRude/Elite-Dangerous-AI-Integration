@@ -644,20 +644,6 @@ def select_target_buggy(args, projected_states):
     return "Buggy target selection activated."
 
 def manage_power_distribution_buggy(args, projected_states):
-    """
-    Handle power distribution between buggy systems.
-
-    Args:
-        args (dict): {
-            "power_category": ["engines", "weapons"],
-            "balance_power": True/False,
-            "pips": [3, 2]  # only if balance_power is False
-        }
-        projected_states (dict): (optional, can be used for context)
-
-    Returns:
-        str: A summary message for the tool response.
-    """
     power_categories = args.get("power_category", [])
     balance_power = args.get("balance_power", False)
     pips = args.get("pips", [])
