@@ -508,9 +508,49 @@ def auto_break_buggy(args, projected_states):
 
 def headlights_buggy(args, projected_states):
     setGameWindowActive()
-    keys.send('HeadlightsBuggyButton')
-    return ("Buggy headlights {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('LightsOn') else 'deactivated'} ."
-            +"Buggy high beam headlights {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('SrvHighBeam') else 'deactivated'}")
+    
+    # Get current state
+    current_flags = projected_states.get('CurrentStatus', {}).get('flags', {})
+    lights_on = current_flags.get('LightsOn', False)
+    high_beam = current_flags.get('SrvHighBeam', False)
+    
+    # Determine current mode: 0=off, 1=low, 2=high
+    if not lights_on:
+        current_mode = 0  # off
+    elif lights_on and not high_beam:
+        current_mode = 1  # low
+    else:  # lights_on and high_beam
+        current_mode = 2  # high
+    
+    # If no desired state specified, just toggle once
+    desired_state = args.get('desired_state', 'toggle')
+    
+    if desired_state == 'toggle':
+        keys.send('HeadlightsBuggyButton')
+        key_presses = 1
+    else:
+        # Map desired state to mode number
+        state_to_mode = {'off': 0, 'low': 1, 'high': 2}
+        desired_mode = state_to_mode.get(desired_state.lower())
+        
+        if desired_mode is None:
+            return f"Invalid desired state '{desired_state}'. Valid options: off, low, high, toggle"
+        
+        # Calculate number of key presses needed (cycling: off->low->high->off...)
+        key_presses = (desired_mode - current_mode) % 3
+        
+        # Send the appropriate number of key presses
+        for _ in range(key_presses):
+            keys.send('HeadlightsBuggyButton')
+    
+    # Generate response message based on final state
+    mode_names = ['off', 'low beam', 'high beam']
+    final_mode = (current_mode + key_presses) % 3
+    
+    if desired_state == 'toggle':
+        return f"Buggy headlights toggled to {mode_names[final_mode]} mode."
+    else:
+        return f"Buggy headlights set to {mode_names[final_mode]} mode."
 
 def toggle_buggy_turret(args, projected_states):
     checkStatus(projected_states, {'SrvTurretRetracted':True})
@@ -2962,9 +3002,16 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, auto_break_buggy, 'buggy')
 
-    actionManager.registerAction('headlights', "Toggle headlights", {
+    actionManager.registerAction('headlights', "Control SRV headlights - toggle or set to specific mode (off/low/high)", {
         "type": "object",
-        "properties": {}
+        "properties": {
+            "desired_state": {
+                "type": "string",
+                "enum": ["off", "low", "high", "toggle"],
+                "description": "Desired headlight mode. 'toggle' cycles to next mode, or specify exact mode (off/low/high)",
+                "default": "toggle"
+            }
+        }
     }, headlights_buggy, 'buggy')
 
     actionManager.registerAction('nightVisionToggleBuggy', "Toggle night vision", {
