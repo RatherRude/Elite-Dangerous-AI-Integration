@@ -242,12 +242,13 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
 
         keys.send('UI_Up')
         sleep(.05)
-        keys.send('UI_Left', repeat=3)
-        sleep(.05)
-        keys.send('UI_Right')
-        sleep(.05)
-        keys.send('UI_Up')
-        sleep(.05)
+        if current_gui == "GalaxyMap":
+            keys.send('UI_Left', repeat=3)
+            sleep(.05)
+            keys.send('UI_Right')
+            sleep(.05)
+            keys.send('UI_Up')
+            sleep(.05)
         keys.send('UI_Select')
         sleep(.05)
 
@@ -260,15 +261,15 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
         sleep(0.05)
         keys.send_key('Up', 'Key_Enter')
 
-        sleep(.05)
+        sleep(0.05)
         keys.send('UI_Right')
-        sleep(.2)
+        sleep(.5)
         keys.send('UI_Select')
-        sleep(.05)
+        sleep(.5)
 
         if 'start_navigation' in args and args['start_navigation']:
-            keys.send('CamYawLeft')
-            sleep(0.05)
+            keys.send('CamZoomOut')
+            sleep(0.15)
             keys.send('UI_Select', hold=0.75)
 
             sleep(0.05)

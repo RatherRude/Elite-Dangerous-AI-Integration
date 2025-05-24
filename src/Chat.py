@@ -35,14 +35,15 @@ class Chat:
         self.config = config # todo: remove
         if self.config["api_key"] == '':
             self.config["api_key"] = '-'
+        self.character = self.config['characters'][self.config['active_character_index']]
 
-        self.voice_instructions = self.config["tts_prompt"]
+        self.voice_instructions = self.character["tts_prompt"]
 
-        self.backstory = self.config["character"].replace("{commander_name}", self.config['commander_name'])
+        self.backstory = self.character["character"].replace("{commander_name}", self.config['commander_name'])
 
         self.enabled_game_events: list[str] = []
-        if self.config["event_reaction_enabled_var"]:
-            for event, state in self.config["game_events"].items():
+        if self.character["event_reaction_enabled_var"]:
+            for event, state in self.character["game_events"].items():
                 if state:
                     self.enabled_game_events.append(event)
 
@@ -90,7 +91,7 @@ class Chat:
             )
             
         tts_provider = 'none' if self.config["edcopilot_dominant"] else self.config["tts_provider"]
-        self.tts = TTS(openai_client=self.ttsClient, provider=tts_provider, model=self.config["tts_model_name"], voice=self.config["tts_voice"], voice_instructions=self.config["tts_prompt"], speed=self.config["tts_speed"], output_device=self.config["output_device_name"])
+        self.tts = TTS(openai_client=self.ttsClient, provider=tts_provider, model=self.config["tts_model_name"], voice=self.character["tts_voice"], voice_instructions=self.character["tts_prompt"], speed=self.character["tts_speed"], output_device=self.config["output_device_name"])
         self.stt = STT(openai_client=self.sttClient, provider=self.config["stt_provider"], input_device_name=self.config["input_device_name"], model=self.config["stt_model_name"], custom_prompt=self.config["stt_custom_prompt"], required_word=self.config["stt_required_word"])
 
         log("debug", "Initializing SystemDatabase...")
@@ -100,7 +101,7 @@ class Chat:
         log("debug", "Initializing status parser...")
         self.status_parser = StatusParser(get_ed_journals_path(config))
         log("debug", "Initializing prompt generator...")
-        self.prompt_generator = PromptGenerator(self.config["commander_name"], self.config["character"], important_game_events=self.enabled_game_events, system_db=self.system_database)
+        self.prompt_generator = PromptGenerator(self.config["commander_name"], self.character["character"], important_game_events=self.enabled_game_events, system_db=self.system_database)
         log("debug", "Initializing event manager...")
         self.event_manager = EventManager(
             game_events=self.enabled_game_events,
@@ -143,8 +144,8 @@ class Chat:
         log('info', f"Using Push-to-Talk: {self.config['ptt_var']}")
         log('info', f"Using Function Calling: {self.config['tools_var']}")
         log('info', f"Current model: {self.config['llm_model_name']}")
-        log('info', f"Current TTS voice: {self.config['tts_voice']}")
-        log('info', f"Current TTS Speed: {self.config['tts_speed']}")
+        log('info', f"Current TTS voice: {self.character['tts_voice']}")
+        log('info', f"Current TTS Speed: {self.character['tts_speed']}")
         log('info', "Current backstory: " + self.backstory)
 
         # TTS Setup
@@ -164,7 +165,7 @@ class Chat:
             self.stt.listen_continuous()
         log('info', "Voice interface ready.")
 
-        registerProjections(self.event_manager, self.system_database)
+        registerProjections(self.event_manager, self.system_database, self.character.get('idle_timeout_var', 300))
 
         if self.config['tools_var']:
             register_actions(self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.ed_keys)

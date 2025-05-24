@@ -152,6 +152,7 @@ class Assistant:
 
 
     def should_reply(self, states:dict[str, Any]):
+        character = self.config['characters'][self.config['active_character_index']]
         if len(self.pending) == 0:
             return False
 
@@ -166,10 +167,10 @@ class Assistant:
             if isinstance(event, GameEvent) and event.content.get("event") in self.enabled_game_events:
                 if event.content.get("event") == "ReceiveText":
                     if event.content.get("Channel") not in ['wing', 'voicechat', 'friend', 'player'] and (
-                        (not self.config["react_to_text_local_var"] and event.content.get("Channel") == 'local') or
-                        (not self.config["react_to_text_starsystem_var"] and event.content.get("Channel") == 'starsystem') or
-                        (not self.config["react_to_text_npc_var"] and event.content.get("Channel") == 'npc') or
-                        (not self.config["react_to_text_squadron_var"] and event.content.get("Channel") == 'squadron')):
+                        (not character["react_to_text_local_var"] and event.content.get("Channel") == 'local') or
+                        (not character["react_to_text_starsystem_var"] and event.content.get("Channel") == 'starsystem') or
+                        (not character["react_to_text_npc_var"] and event.content.get("Channel") == 'npc') or
+                        (not character["react_to_text_squadron_var"] and event.content.get("Channel") == 'squadron')):
                         continue
 
                 if event.content.get("event") == "ProspectedAsteroid":
@@ -193,13 +194,13 @@ class Assistant:
 
             if isinstance(event, StatusEvent) and event.status.get("event") in self.enabled_game_events:
                 if event.status.get("event") in ["InDanger", "OutOfDanger"]:
-                    if not self.config["react_to_danger_mining_var"]:
+                    if not character["react_to_danger_mining_var"]:
                         if states.get('ShipInfo', {}).get('IsMiningShip', False) and states.get('Location', {}).get('PlanetaryRing', False):
                             continue
-                    if not self.config["react_to_danger_onfoot_var"]:
+                    if not character["react_to_danger_onfoot_var"]:
                         if states.get('CurrentStatus', {}).get('flags2').get('OnFoot'):
                             continue
-                    if not self.config["react_to_danger_supercruise_var"]:
+                    if not character["react_to_danger_supercruise_var"]:
                         if states.get('CurrentStatus', {}).get('flags').get('Supercruise') and len(states.get('NavInfo', {"NavRoute": []}).get('NavRoute', [])):
                             continue
                 return True
@@ -210,9 +211,9 @@ class Assistant:
                 return True
 
             if isinstance(event, ProjectedEvent):
-                if event.content.get("event").startswith('ScanOrganic'):
-                    if not 'ScanOrganic' in self.enabled_game_events:
-                        continue
-                return True
+                if event.content.get("event").startswith('ScanOrganic') and 'ScanOrganic' in self.enabled_game_events:
+                    return True
+                if event.content.get("event") in self.enabled_game_events:
+                    return True
 
         return False

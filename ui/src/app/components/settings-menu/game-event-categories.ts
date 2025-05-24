@@ -59,6 +59,7 @@ export const GameEventCategories: Record<string, string[]> = {
         "MiningRefined",
         "ProspectedAsteroid",
         "LaunchDrone",
+        "RememberLimpets",
     ],
     "Ship Updates": [
         "FSDJump",
@@ -113,6 +114,7 @@ export const GameEventCategories: Record<string, string[]> = {
         "FsdMassLocked",
         "LowFuelWarningCleared",
         "LowFuelWarning",
+        "NoScoopableStars",
         "NightVisionOff",
         "NightVisionOn",
         "SupercruiseDestinationDrop",
@@ -231,6 +233,7 @@ export const GameEventCategories: Record<string, string[]> = {
         "ColonisationConstructionDepot",
     ],
     "Social": [
+        "Idle",
         "CrewAssign",
         "CrewFire",
         "CrewHire",
