@@ -410,6 +410,11 @@ class StatusParser:
         if not old_status["flags"]["NightVision"] and new_status["flags"]["NightVision"]:
             events.append({"event": "NightVisionOn"})
 
+        if old_status["flags"]["HudInAnalysisMode"] and not new_status["flags"]["HudInAnalysisMode"]:
+            events.append({"event": "HudSwitchedToCombatMode"})
+        if not old_status["flags"]["HudInAnalysisMode"] and new_status["flags"]["HudInAnalysisMode"]:
+            events.append({"event": "HudSwitchedToAnalysisMode"})
+
         if (
             old_status["LegalState"] and new_status["LegalState"]
             and old_status["LegalState"] != new_status["LegalState"]

@@ -64,6 +64,7 @@ class EDKeys:
             'CycleNextSubsystem',
             'CycleFireGroupNext',
             'CycleFireGroupPrevious',
+            'PlayerHUDModeToggle',
             'ShipSpotLightToggle',
             'EjectAllCargo',
             'LandingGearToggle',
