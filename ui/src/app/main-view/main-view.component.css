@@ -27,7 +27,7 @@
   padding: 16px;
 }
 .input-container {
-  flex-grow: 0;
+  flex: 0 0 auto;
 }
 
 .settings-container {
@@ -40,6 +40,10 @@
 }
 
 .runtime-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 100px);
+  overflow: hidden;
   background: rgba(22, 22, 22, 0.7);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -61,4 +65,9 @@
   left: 0;
   right: 0;
   z-index: 1000;
+}
+
+.tab-container {
+  flex: 1;
+  overflow: hidden;
 } 
