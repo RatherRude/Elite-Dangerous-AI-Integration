@@ -210,7 +210,6 @@ def cycle_fire_group(args, projected_states):
         #handles case where we cycle back round to zero
         return "Failed to cycle to requested firegroup. Does that firegroup exists?"
 
-    log('info',f"new firegroup is {chr(65 + new_firegroup)}")
     return f"just say fire group {chr(65 + new_firegroup)} is now selected"
 
 
