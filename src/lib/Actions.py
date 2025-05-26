@@ -2970,7 +2970,8 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "description": "mode to switch to",
                 "enum": ["combat", "analysis", "toggle"],
             }
-        }
+        },
+        "required": ["hud mode"],
     }, change_hud_mode, 'mainship')
 
     actionManager.registerAction('cycleFireGroup', "Cycle to next fire group", {
