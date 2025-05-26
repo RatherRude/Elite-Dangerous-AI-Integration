@@ -175,16 +175,44 @@ def cycle_target(args, projected_states):
 
 def cycle_fire_group(args, projected_states):
     setGameWindowActive()
+    firegroup_ask = args.get('fire_group')
 
-    direction = args.get('direction', 'next').lower()
+    initial_firegroup = projected_states.get("CurrentStatus").get('FireGroup')
 
-    if direction == 'previous':
-        keys.send('CycleFireGroupPrevious')
-        return "Cycled to previous fire group"
+    if firegroup_ask is None:
+        direction = args.get('direction', 'next').lower()
+
+        if direction == 'previous':
+            keys.send('CycleFireGroupPrevious')
+            return "just say previous firegroup selected"
+        else:
+            keys.send('CycleFireGroupNext')
+            return "just say next firegroup selected"
+
+
+    elif firegroup_ask == initial_firegroup:
+        return f"Just say: Fire group {chr(65 + firegroup_ask)} is already selected"
+    elif firegroup_ask > 7:   # max allowed is up to H which is 7 starting with A=0
+        return f"Cannot switch to Firegroup {firegroup_ask} as it does not exists"
     else:
-        # Default to 'next' for any invalid direction
-        keys.send('CycleFireGroupNext')
-        return "Cycled to next fire group"
+        for loop in range(abs(firegroup_ask - initial_firegroup)):
+            if firegroup_ask > initial_firegroup:
+                keys.send("CycleFireGroupNext")
+            else:
+                keys.send("CycleFireGroupPrevious")
+
+    try:
+
+        status_event = event_manager.wait_for_condition('CurrentStatus',
+                                                            lambda s: s.get('FireGroup') == firegroup_ask, 2)
+        new_firegroup = status_event["FireGroup"]
+    except TimeoutError:
+        #handles case where we cycle back round to zero
+        return "Failed to cycle to requested firegroup. Does that firegroup exists?"
+
+    log('info',f"new firegroup is {chr(65 + new_firegroup)}")
+    return f"just say fire group {chr(65 + new_firegroup)} is now selected"
+
 
 def ship_spot_light_toggle(args, projected_states):
     setGameWindowActive()
@@ -416,7 +444,7 @@ def fsd_jump(args, projected_states):
 def next_system_in_route(args, projected_states):
     nav_info = projected_states.get('NavInfo', {})
     if not nav_info['NextJumpTarget']:
-        return "a target next system in route as no navigation route is currently set set"
+        return "cannot target next system in route as no navigation route is currently set"
 
     keys.send('TargetNextRouteSystem')
     return "Targeting next system in route"
@@ -2943,17 +2971,27 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         }
     }, cycle_target, 'ship')
 
-
-    actionManager.registerAction('cycleFireGroup', "Cycle to next fire group", {
-        "type": "object",
-        "properties": {
-            "direction": {
-                "type": "string",
-                "description": "Direction to cycle (next or previous)",
-                "enum": ["next", "previous"],
-            }
-        }
-    }, cycle_fire_group, 'ship')
+    actionManager.registerAction(
+        'cycle_fire_group',
+        "call this tool if the user asks to cycle, select or switch to specific firegroup, the the next firegroup or to the previous firegroup",
+        {
+            "type": "object",
+            "properties": {
+                "direction": {
+                    "type": "string",
+                    "description": "If next or previous is give: Cycle direction: 'next' or 'previous'.",
+                    "enum": ["next", "previous"]
+                },
+                "fire_group": {
+                    "type": "integer",
+                    "description": "Specific firegroup index to select. Letters A=0, B=1, C=2, etc.",
+                    "default": None
+                }
+            },
+        },
+        cycle_fire_group,
+        'mainship'
+    )
 
 
     actionManager.registerAction('shipSpotLightToggle', "Toggle ship spotlight", {
