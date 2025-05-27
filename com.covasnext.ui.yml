@@ -18,15 +18,11 @@ finish-args:
   # File access
   - --filesystem=home:ro
   - --filesystem=/tmp:rw
-  - --filesystem=xdg-documents:rw
-  - --filesystem=xdg-downloads:rw
   # OpenGL access
   - --device=dri
   # D-Bus access for notifications and system integration
   - --socket=session-bus
   - --socket=system-bus
-  # Allow access to hardware devices
-  - --device=all
   # Environment variables for better compatibility
   - --env=RUST_BACKTRACE=1
   - --env=WEBKIT_DISABLE_DMABUF_RENDERER=1
