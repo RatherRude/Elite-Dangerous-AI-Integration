@@ -163,8 +163,7 @@ jobs:
 
       - name: Setup flatpak remotes and runtimes
         run: |
-          # Add flathub repo for both system and user
-          sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+          # Add flathub repo
           flatpak --user remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
           # Install runtimes system-wide to avoid permission issues
