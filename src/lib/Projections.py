@@ -4,8 +4,9 @@ from datetime import datetime, timezone, timedelta
 
 from typing_extensions import NotRequired, override
 
-from .Event import Event, StatusEvent, GameEvent, ProjectedEvent
+from .Event import Event, StatusEvent, GameEvent, ProjectedEvent, ExternalEvent, ConversationEvent, ToolEvent
 from .EventManager import EventManager, Projection
+from .Logger import log
 from .StatusParser import parse_status_flags, parse_status_json, Status
 from .SystemDatabase import SystemDatabase
 
@@ -83,17 +84,16 @@ class Cargo(Projection[CargoState]):
         if isinstance(event, GameEvent) and event.content.get('event') == 'Cargo':
             if 'Inventory' in event.content:
                 self.state['Inventory'] = []
-                total_items = 0
-                
+
                 for item in event.content.get('Inventory', []):
                     self.state['Inventory'].append({
                         "Name": item.get('Name_Localised', item.get('Name', 'Unknown')),
                         "Count": item.get('Count', 0),
                         "Stolen": item.get('Stolen', 0) > 0
                     })
-                    total_items += item.get('Count', 0)
-                
-                self.state['TotalItems'] = total_items
+
+            if 'Count' in event.content:
+                self.state['TotalItems'] = event.content.get('Count', 0)
 
         # Get cargo capacity from Loadout event
         if isinstance(event, GameEvent) and event.content.get('event') == 'Loadout':
@@ -340,23 +340,6 @@ class Missions(Projection[MissionsState]):
                     self.state.pop("Unknown", None)
 
 
-ShipInfoState = TypedDict('ShipInfoState', {
-    "Name": str,
-    "Type": str,
-    "ShipIdent": str,
-    "UnladenMass": float,
-    "Cargo": float,
-    "CargoCapacity": float,
-    "FuelMain": float,
-    "FuelMainCapacity": float,
-    "FuelReservoir": float,
-    "FuelReservoirCapacity": float,
-    "MaximumJumpRange": float,
-    #"CurrentJumpRange": float,
-    "LandingPadSize": Literal['S', 'M', 'L', 'Unknown'],
-    "IsMiningShip": bool,
-})
-
 ship_sizes: dict[str, Literal['S', 'M', 'L', 'Unknown']] = {
     'adder':                         'S',
     'anaconda':                      'L',
@@ -408,6 +391,24 @@ ship_sizes: dict[str, Literal['S', 'M', 'L', 'Unknown']] = {
     'vulture':                       'S',
 }
 
+ShipInfoState = TypedDict('ShipInfoState', {
+    "Name": str,
+    "Type": str,
+    "ShipIdent": str,
+    "UnladenMass": float,
+    "Cargo": float,
+    "CargoCapacity": float,
+    "FuelMain": float,
+    "FuelMainCapacity": float,
+    "FuelReservoir": float,
+    "FuelReservoirCapacity": float,
+    "MaximumJumpRange": float,
+    #"CurrentJumpRange": float,
+    "LandingPadSize": Literal['S', 'M', 'L', 'Unknown'],
+    "IsMiningShip": bool,
+    "hasLimpets": bool,
+})
+
 @final
 class ShipInfo(Projection[ShipInfoState]):
     @override
@@ -426,11 +427,13 @@ class ShipInfo(Projection[ShipInfoState]):
             "MaximumJumpRange": 0,
             #"CurrentJumpRange": 0,
             "IsMiningShip": False,
+            "hasLimpets": False,
             "LandingPadSize": 'Unknown',
         }
     
     @override
-    def process(self, event: Event) -> None:
+    def process(self, event: Event) -> list[ProjectedEvent]:
+        projected_events: list[ProjectedEvent] = []
         if isinstance(event, StatusEvent) and event.status.get('event') == 'Status':
             status: Status = event.status  # pyright: ignore[reportAssignmentType]
             if 'Cargo' in event.status:
@@ -464,12 +467,29 @@ class ShipInfo(Projection[ShipInfoState]):
                 else:
                     self.state['IsMiningShip'] = False
 
+                has_limpets = any(module["Item"].startswith("int_dronecontrol") for module in event.content["Modules"])
+                if has_limpets:
+                    self.state['hasLimpets'] = True
+                else:
+                    self.state['hasLimpets'] = False
+
         if isinstance(event, GameEvent) and event.content.get('event') == 'Cargo':
-            self.state['Cargo'] = event.content.get('Cargo', 0)
-            self.state['CargoCapacity'] = len(event.content.get('Inventory', []))
+            self.state['Cargo'] = event.content.get('Count', 0)
+
+        if isinstance(event, GameEvent) and event.content.get('event') in ['RefuelAll','RepairAll','BuyAmmo']:
+            if self.state['hasLimpets'] and self.state['Cargo'] < self.state['CargoCapacity']:
+                projected_events.append(ProjectedEvent({"event": "RememberLimpets"}))
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'SetUserShipName':
+            if 'UserShipName' in event.content:
+                self.state['Name'] = event.content.get('UserShipName', 'Unknown')
+            if 'UserShipId' in event.content:
+                self.state['ShipIdent'] = event.content.get('UserShipId', 'Unknown')
 
         if self.state['Type'] != 'Unknown':
             self.state['LandingPadSize'] = ship_sizes.get(self.state['Type'], 'Unknown')
+
+        return projected_events
 
 TargetState = TypedDict('TargetState', {
     "EventID": NotRequired[str],
@@ -581,25 +601,6 @@ class NavInfo(Projection[NavInfoState]):
             
         # Process FSDJump - remove visited systems from route
         if isinstance(event, GameEvent) and event.content.get('event') == 'FSDJump':
-            # Calculate remaining jumps based on fuel
-            fuel_level = event.content.get('FuelLevel', 0)
-            fuel_used = event.content.get('FuelUsed', 0)
-            remaining_jumps = int(fuel_level / fuel_used)
-
-            # Check if we have enough scoopable stars between current and destination system)
-            if remaining_jumps < len(self.state['NavRoute'])-1:
-                if remaining_jumps == 0:
-                    remaining_jumps = 1
-                # Count scoopable stars in the remaining jumps
-                scoopable_stars = sum(
-                    1 for entry in self.state['NavRoute'][:remaining_jumps][:-1]
-                    if entry.get('Scoopable', False)
-                )
-
-                # Only warn if we can't reach any scoopable stars
-                if scoopable_stars == 0:
-                    projected_events.append(ProjectedEvent({"event": "NotEnoughFuel"}))
-
             for index, entry in enumerate(self.state['NavRoute']):
                 if entry['StarSystem'] == event.content.get('StarSystem'):
                     self.state['NavRoute'] = self.state['NavRoute'][index+1:]
@@ -607,6 +608,23 @@ class NavInfo(Projection[NavInfoState]):
 
             if len(self.state['NavRoute']) == 0 and 'NextJumpTarget' in self.state:
                 self.state.pop('NextJumpTarget')
+
+            # Calculate remaining jumps based on fuel
+            fuel_level = event.content.get('FuelLevel', 0)
+            fuel_used = event.content.get('FuelUsed', 0)
+            remaining_jumps = int(fuel_level / fuel_used)
+
+            # Check if we have enough scoopable stars between current and destination system)
+            if not len(self.state['NavRoute']) == 0 and remaining_jumps < len(self.state['NavRoute']) - 1:
+                # Count scoopable stars in the remaining jumps
+                scoopable_stars = sum(
+                    1 for entry in self.state['NavRoute'][:remaining_jumps]
+                    if entry.get('Scoopable', False)
+                )
+
+                # Only warn if we can't reach any scoopable stars
+                if scoopable_stars == 0:
+                    projected_events.append(ProjectedEvent({"event": "NoScoopableStars"}))
 
         # Process FSDTarget
         if isinstance(event, GameEvent) and event.content.get('event') == 'FSDTarget':
@@ -1101,7 +1119,50 @@ class InCombat(Projection[InCombatState]):
 
         return projected_events
 
-def registerProjections(event_manager: EventManager, system_db: SystemDatabase):
+# Define types for Idle Projection
+IdleState = TypedDict('IdleState', {
+    "LastInteraction": str,  # ISO timestamp of last interaction
+    "IsIdle": bool  # Whether the user is currently idle
+})
+
+@final
+class Idle(Projection[IdleState]):
+    def __init__(self, idle_timeout: int):
+        super().__init__()
+        self.idle_timeout = idle_timeout
+
+    @override
+    def get_default_state(self) -> IdleState:
+        return {
+            "LastInteraction": "1970-01-01T00:00:00Z",  # Default to Unix epoch
+            "IsIdle": True
+        }
+
+    @override
+    def process(self, event: Event) -> list[ProjectedEvent]:
+        projected_events: list[ProjectedEvent] = []
+
+        # Update last interaction time for any event
+        if isinstance(event, ConversationEvent) and event.kind == 'user':
+            self.state["LastInteraction"] = event.timestamp
+            self.state["IsIdle"] = False
+
+        # Check for idle status on Status events
+        if (isinstance(event, StatusEvent) or isinstance(event, GameEvent)) and self.state["IsIdle"] == False:
+            current_time = event.timestamp
+            current_dt = datetime.fromisoformat(current_time.replace('Z', '+00:00'))
+            last_interaction = self.state["LastInteraction"]
+            last_dt = datetime.fromisoformat(last_interaction.replace('Z', '+00:00'))
+            time_delta = (current_dt - last_dt).total_seconds()
+
+            # If more than idle_timeout seconds have passed since last interaction
+            if time_delta > self.idle_timeout:
+                self.state["IsIdle"] = True
+                projected_events.append(ProjectedEvent({"event": "Idle"}))
+
+        return projected_events
+
+def registerProjections(event_manager: EventManager, system_db: SystemDatabase, idle_timeout: int):
 
     event_manager.register_projection(EventCounter())
     event_manager.register_projection(CurrentStatus())
@@ -1118,6 +1179,7 @@ def registerProjections(event_manager: EventManager, system_db: SystemDatabase):
     event_manager.register_projection(ColonisationConstruction())
     event_manager.register_projection(DockingEvents())
     event_manager.register_projection(InCombat())
+    event_manager.register_projection(Idle(idle_timeout))
 
     # ToDo: SLF, SRV,
     for proj in [

@@ -36,30 +36,54 @@ def checkStatus(projected_states: dict[str, dict], blocked_status_dict: dict[str
 
 # Define functions for each action
 # General Ship Actions
-def fire_primary_weapon(args, projected_states):
+def fire_weapons(args, projected_states):
     checkStatus(projected_states, {'Docked':True,'Landed':True,'HudInAnalysisMode':True})
     setGameWindowActive()
-    keys.send('PrimaryFire', state=1)
-    return f"successfully opened fire with primary weapons."
 
+    # Parse arguments with defaults
+    weapon_type = args.get('weaponType', 'primary').lower()
+    action = args.get('action', 'fire').lower()
+    duration = args.get('duration', None)  # Duration to hold fire button
+    repetitions = args.get('repetitions', 0)  # 0 = one action, 1+ = repeat
 
-def hold_fire_primary_weapon(args, projected_states):
-    setGameWindowActive()
-    keys.send('PrimaryFire', state=0)
-    return f"successfully stopped firing with primary weapons."
+    # Determine key mapping
+    if weapon_type == 'secondary':
+        key_name = 'SecondaryFire'
+        weapon_desc = 'secondary weapons'
+    else:  # default to primary
+        key_name = 'PrimaryFire'
+        weapon_desc = 'primary weapons'
 
+    # Handle different actions
+    if action == 'fire':
+        # Single shot with optional duration and repetitions
+        repeat_count = repetitions + 1  # 0 repetitions = 1 shot total
 
-def fire_secondary_weapon(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True,'HudInAnalysisMode':True})
-    setGameWindowActive()
-    keys.send('SecondaryFire', state=1)
-    return f"successfully opened fire with secondary weapons."
+        if duration:
+            keys.send(key_name, hold=duration, repeat=repeat_count)
+            if repetitions > 0:
+                return f"Fired {weapon_desc} {repeat_count} times, {duration}s each."
+            else:
+                return f"Fired {weapon_desc} for {duration}s."
+        else:
+            keys.send(key_name, repeat=repeat_count)
+            if repetitions > 0:
+                return f"Fired {weapon_desc} {repeat_count} times."
+            else:
+                return f"Fired {weapon_desc}."
 
+    elif action == 'start':
+        # Start continuous firing
+        keys.send(key_name, state=1)
+        return f"Started continuous firing with {weapon_desc}."
 
-def hold_fire_secondary_weapon(args, projected_states):
-    setGameWindowActive()
-    keys.send('SecondaryFire', state=0)
-    return f"successfully stopped firing with secondary weapons."
+    elif action == 'stop':
+        # Stop continuous firing
+        keys.send(key_name, state=0)
+        return f"Stopped firing {weapon_desc}."
+
+    else:
+        return f"Invalid action '{action}'. Use: fire, start, or stop."
 
 
 def set_speed(args, projected_states):
@@ -138,9 +162,9 @@ def manage_power_distribution(args, projected_states):
 
 def cycle_target(args, projected_states):
     setGameWindowActive()
-    
+
     direction = args.get('direction', 'next').lower()
-    
+
     if direction == 'previous':
         keys.send('CyclePreviousTarget')
         return "Selected previous target"
@@ -151,9 +175,9 @@ def cycle_target(args, projected_states):
 
 def cycle_fire_group(args, projected_states):
     setGameWindowActive()
-    
+
     direction = args.get('direction', 'next').lower()
-    
+
     if direction == 'previous':
         keys.send('CycleFireGroupPrevious')
         return "Cycled to previous fire group"
@@ -242,12 +266,13 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
 
         keys.send('UI_Up')
         sleep(.05)
-        keys.send('UI_Left', repeat=3)
-        sleep(.05)
-        keys.send('UI_Right')
-        sleep(.05)
-        keys.send('UI_Up')
-        sleep(.05)
+        if current_gui == "GalaxyMap":
+            keys.send('UI_Left', repeat=3)
+            sleep(.05)
+            keys.send('UI_Right')
+            sleep(.05)
+            keys.send('UI_Up')
+            sleep(.05)
         keys.send('UI_Select')
         sleep(.05)
 
@@ -260,15 +285,15 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
         sleep(0.05)
         keys.send_key('Up', 'Key_Enter')
 
-        sleep(.05)
+        sleep(0.05)
         keys.send('UI_Right')
-        sleep(.2)
+        sleep(.5)
         keys.send('UI_Select')
-        sleep(.05)
+        sleep(.5)
 
         if 'start_navigation' in args and args['start_navigation']:
-            keys.send('CamYawLeft')
-            sleep(0.05)
+            keys.send('CamZoomOut')
+            sleep(0.15)
             keys.send('UI_Select', hold=0.75)
 
             sleep(0.05)
@@ -373,7 +398,7 @@ def fsd_jump(args, projected_states):
         return_message += "Hardpoints Retracted. "
 
     jump_type = args.get('jump_type', 'auto')
-    
+
     if jump_type == 'next_system':
         if projected_states.get('NavInfo').get('NextJumpTarget'):
             keys.send('Hyperspace')
@@ -449,8 +474,8 @@ def request_docking(args, projected_states):
     try:
         old_timestamp = projected_states.get('DockingEvents').get('Timestamp', "1970-01-01T00:00:01Z")
         # Wait for a docking event with a timestamp newer than when we started
-        event_manager.wait_for_condition('DockingEvents', 
-            lambda s: ((s.get('LastEventType') in ['DockingGranted', 'DockingRequested', 'DockingCanceled', 'DockingDenied', 'DockingTimeout']) 
+        event_manager.wait_for_condition('DockingEvents',
+            lambda s: ((s.get('LastEventType') in ['DockingGranted', 'DockingRequested', 'DockingCanceled', 'DockingDenied', 'DockingTimeout'])
                       and (s.get('Timestamp', "1970-01-01T00:00:02Z") != old_timestamp)), 10)
         msg = ""
     except:
@@ -488,6 +513,62 @@ def toggle_drive_assist(args, projected_states):
     # return f"Landing gear {'deployed ' if not projected_states.get('CurrentStatus').get('flags').get('HardpointsDeployed') else 'retracted'}"
     return f"Drive assist has been {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('SrvDriveAssist') else 'deactivated'}."
 
+def fire_weapons_buggy(args, projected_states):
+    """
+    Simple buggy weapon firing action with three clear controls.
+    Actions:
+    - fire: Single shot (with optional duration and repetitions)
+    - start: Begin continuous firing
+    - stop: Stop continuous firing
+    """
+    checkStatus(projected_states, {'SrvTurretRetracted':True})
+    setGameWindowActive()
+    
+    # Parse arguments with defaults
+    weapon_type = args.get('weaponType', 'primary').lower()
+    action = args.get('action', 'fire').lower()
+    duration = args.get('duration', None)  # Duration to hold fire button
+    repetitions = args.get('repetitions', 0)  # 0 = one action, 1+ = repeat
+    
+    # Determine key mapping
+    if weapon_type == 'secondary':
+        key_name = 'BuggySecondaryFireButton'
+        weapon_desc = 'buggy secondary weapons'
+    else:  # default to primary
+        key_name = 'BuggyPrimaryFireButton'
+        weapon_desc = 'buggy primary weapons'
+    
+    # Handle different actions
+    if action == 'fire':
+        # Single shot with optional duration and repetitions
+        repeat_count = repetitions + 1  # 0 repetitions = 1 shot total
+        
+        if duration:
+            keys.send(key_name, hold=duration, repeat=repeat_count)
+            if repetitions > 0:
+                return f"Fired {weapon_desc} {repeat_count} times, {duration}s each."
+            else:
+                return f"Fired {weapon_desc} for {duration}s."
+        else:
+            keys.send(key_name, repeat=repeat_count)
+            if repetitions > 0:
+                return f"Fired {weapon_desc} {repeat_count} times."
+            else:
+                return f"Fired {weapon_desc}."
+        
+    elif action == 'start':
+        # Start continuous firing
+        keys.send(key_name, state=1)
+        return f"Started continuous firing with {weapon_desc}."
+        
+    elif action == 'stop':
+        # Stop continuous firing
+        keys.send(key_name, state=0)
+        return f"Stopped firing {weapon_desc}."
+        
+    else:
+        return f"Invalid action '{action}'. Use: fire, start, or stop."
+
 def buggy_primary_fire(args, projected_states):
     checkStatus(projected_states, {'SrvTurretRetracted':True})
     setGameWindowActive()
@@ -507,9 +588,49 @@ def auto_break_buggy(args, projected_states):
 
 def headlights_buggy(args, projected_states):
     setGameWindowActive()
-    keys.send('HeadlightsBuggyButton')
-    return ("Buggy headlights {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('LightsOn') else 'deactivated'} ."
-            +"Buggy high beam headlights {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('SrvHighBeam') else 'deactivated'}")
+
+    # Get current state
+    current_flags = projected_states.get('CurrentStatus', {}).get('flags', {})
+    lights_on = current_flags.get('LightsOn', False)
+    high_beam = current_flags.get('SrvHighBeam', False)
+
+    # Determine current mode: 0=off, 1=low, 2=high
+    if not lights_on:
+        current_mode = 0  # off
+    elif lights_on and not high_beam:
+        current_mode = 1  # low
+    else:  # lights_on and high_beam
+        current_mode = 2  # high
+
+    # If no desired state specified, just toggle once
+    desired_state = args.get('desired_state', 'toggle')
+
+    if desired_state == 'toggle':
+        keys.send('HeadlightsBuggyButton')
+        key_presses = 1
+    else:
+        # Map desired state to mode number
+        state_to_mode = {'off': 0, 'low': 1, 'high': 2}
+        desired_mode = state_to_mode.get(desired_state.lower())
+
+        if desired_mode is None:
+            return f"Invalid desired state '{desired_state}'. Valid options: off, low, high, toggle"
+
+        # Calculate number of key presses needed (cycling: off->low->high->off...)
+        key_presses = (desired_mode - current_mode) % 3
+
+        # Send the appropriate number of key presses
+        for _ in range(key_presses):
+            keys.send('HeadlightsBuggyButton')
+
+    # Generate response message based on final state
+    mode_names = ['off', 'low beam', 'high beam']
+    final_mode = (current_mode + key_presses) % 3
+
+    if desired_state == 'toggle':
+        return f"Buggy headlights toggled to {mode_names[final_mode]} mode."
+    else:
+        return f"Buggy headlights set to {mode_names[final_mode]} mode."
 
 def toggle_buggy_turret(args, projected_states):
     checkStatus(projected_states, {'SrvTurretRetracted':True})
@@ -2660,7 +2781,7 @@ def target_subsystem(args, projected_states):
         raise Exception('Something went wrong!')
 
     threading.Thread(target=target_subsystem_thread, args=(current_target.get('Subsystem'), current_target.get('EventID'), args['subsystem'],), daemon=True).start()
-    
+
     return f"The submodule {args['subsystem']} is being targeted."
 
 def register_actions(actionManager: ActionManager, eventManager: EventManager, llmClient: openai.OpenAI,
@@ -2677,25 +2798,44 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     setGameWindowActive()
 
     # Register actions - General Ship Actions
-    actionManager.registerAction('fire', "start firing primary weapons", {
+    actionManager.registerAction('fireWeapons', "Fire weapons with simple controls: single shot, start continuous, or stop", {
         "type": "object",
-        "properties": {}
-    }, fire_primary_weapon, 'ship')
-
-    actionManager.registerAction('holdFire', "stop firing primary weapons", {
-        "type": "object",
-        "properties": {}
-    }, hold_fire_primary_weapon, 'ship')
-
-    actionManager.registerAction('fireSecondary', "start secondary primary weapons", {
-        "type": "object",
-        "properties": {}
-    }, fire_secondary_weapon, 'ship')
-
-    actionManager.registerAction('holdFireSecondary', "stop secondary primary weapons", {
-        "type": "object",
-        "properties": {}
-    }, hold_fire_secondary_weapon, 'ship')
+        "properties": {
+          "weaponType": {
+            "type": "string",
+            "description": "Type of weapons to fire",
+            "enum": [
+              "primary",
+              "secondary"
+            ],
+            "default": "primary"
+          },
+          "action": {
+            "type": "string",
+            "description": "Action to perform with weapons",
+            "enum": [
+              "fire",
+              "start",
+              "stop"
+            ],
+            "default": "fire"
+          },
+          "duration": {
+            "type": "number",
+            "description": "Duration to hold fire button in seconds (for fire action only)",
+            "minimum": 0.1,
+            "maximum": 30.0
+          },
+          "repetitions": {
+            "type": "integer",
+            "description": "Number of additional repetitions (0 = single action, 1+ = repeat that many extra times)",
+            "minimum": 0,
+            "maximum": 10,
+            "default": 0
+          }
+        },
+        "required": ["weaponType", "action"]
+    }, fire_weapons, 'ship')
 
     actionManager.registerAction('setSpeed', "Change flight thrust", {
         "type": "object",
@@ -2795,7 +2935,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "type": "object",
         "properties": {
             "direction": {
-                "type": "string", 
+                "type": "string",
                 "description": "Direction to cycle (next or previous)",
                 "enum": ["next", "previous"],
                 "default": "next"
@@ -2808,7 +2948,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "type": "object",
         "properties": {
             "direction": {
-                "type": "string", 
+                "type": "string",
                 "description": "Direction to cycle (next or previous)",
                 "enum": ["next", "previous"],
             }
@@ -2946,24 +3086,63 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, toggle_drive_assist, 'buggy')
 
-    actionManager.registerAction('primaryFireBuggy', "Primary fire", {
+    actionManager.registerAction('fireWeaponsBuggy', "Fire buggy weapons with simple controls: single shot, start continuous, or stop", {
         "type": "object",
-        "properties": {}
-    }, buggy_primary_fire, 'buggy')
-
-    actionManager.registerAction('secondaryFireBuggy', "Secondary fire", {
-        "type": "object",
-        "properties": {}
-    }, buggy_secondary_fire, 'buggy')
+        "properties": {
+            "weaponType": {
+                "type": "string",
+                "description": "Type of weapons to fire",
+                "enum": [
+                    "primary",
+                    "secondary"
+                ],
+                "default": "primary"
+            },
+            "action": {
+                "type": "string",
+                "description": "Action to perform with weapons",
+                "enum": [
+                    "fire",
+                    "start",
+                    "stop"
+                ],
+                "default": "fire"
+            },
+            "duration": {
+                "type": "number",
+                "description": "Duration to hold fire button in seconds (for fire action only)",
+                "minimum": 0.1,
+                "maximum": 30.0
+            },
+            "repetitions": {
+                "type": "integer",
+                "description": "Number of additional repetitions (0 = single action, 1+ = repeat that many extra times)",
+                "minimum": 0,
+                "maximum": 10,
+                "default": 0
+            }
+        },
+        "required": [
+            "weaponType",
+            "action"
+        ]
+    }, fire_weapons_buggy, 'buggy')
 
     actionManager.registerAction('autoBreak', "Toggle auto-brake", {
         "type": "object",
         "properties": {}
     }, auto_break_buggy, 'buggy')
 
-    actionManager.registerAction('headlights', "Toggle headlights", {
+    actionManager.registerAction('headlights', "Control SRV headlights - toggle or set to specific mode (off/low/high)", {
         "type": "object",
-        "properties": {}
+        "properties": {
+            "desired_state": {
+                "type": "string",
+                "enum": ["off", "low", "high", "toggle"],
+                "description": "Desired headlight mode. 'toggle' cycles to next mode, or specify exact mode (off/low/high)",
+                "default": "toggle"
+            }
+        }
     }, headlights_buggy, 'buggy')
 
     actionManager.registerAction('nightVisionToggleBuggy', "Toggle night vision", {
@@ -3173,7 +3352,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             {'in Thargoid war state ' + ' and '.join(i.get('thargoid_war_state', [])) if i.get('thargoid_war_state', []) else ''}
             {'with a population over ' + i.get('population', {}).get('comparison', '') + ' ' + str(i.get('population', {}).get('value', '')) if i.get('population', {}) else ''}
             near {i.get('reference_system', 'Sol')}.
-        """, 
+        """,
         parameters={
             "type": "object",
             "properties": {
@@ -3284,7 +3463,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             {'with a ' + ' and '.join([service['name'] for service in i.get('services', [])]) if i.get('services', []) else ''}
             near {i.get('reference_system', 'Sol')}
             {'within ' + str(i.get('distance', 50000)) + ' light years' if i.get('distance', 50000) else ''}.
-        """, 
+        """,
         parameters={
             "type": "object",
             "properties": {
@@ -3443,7 +3622,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             {'with a landmark of subtype ' + ', '.join(i.get('landmark_subtype', [])) if i.get('landmark_subtype', []) else ''}
             near {i.get('reference_system', 'Sol')}
             {'within ' + str(i.get('distance', 50000)) + ' light years.' if i.get('distance', 50000) else ''}.
-        """, 
+        """,
         parameters={
             "type": "object",
             "properties": {
@@ -3529,27 +3708,27 @@ def format_commodity_name(name: str) -> str:
     # Handle empty or single word cases
     if not name or ' ' not in name:
         return name.capitalize()
-    
+
     # Split by spaces and process each part
     parts = name.split()
     formatted_parts = []
-    
+
     for part in parts:
         # Handle acronyms (2-4 uppercase letters)
         if len(part) <= 4 and part.isalpha() and part.isupper():
             formatted_parts.append(part)
             continue
-            
+
         # Handle hyphenated words
         if '-' in part:
             hyphen_parts = part.split('-')
             formatted_hyphen_parts = [p.capitalize() for p in hyphen_parts]
             formatted_parts.append('-'.join(formatted_hyphen_parts))
             continue
-            
+
         # Handle regular words
         formatted_parts.append(part.capitalize())
-    
+
     return ' '.join(formatted_parts)
 
 def normalize_string(s: str) -> str:

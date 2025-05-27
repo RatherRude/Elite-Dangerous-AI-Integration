@@ -1,6 +1,7 @@
 from datetime import timedelta, datetime
 from functools import lru_cache
-from typing import Any, Callable, cast, Dict, Union
+from typing import Any, Callable, cast, Dict, Union, List, Optional
+import random
 
 from openai.types.chat import ChatCompletionMessageParam
 import yaml
@@ -2094,6 +2095,10 @@ class PromptGenerator:
             return f"{self.commander_name}'s {srv_type} has been destroyed."
 
         if event_name == 'Statistics':
+            # AI thinks wealth is credits when it's total assets so renaming it
+            if "Bank_Account" in content and "Current_Wealth" in content["Bank_Account"]:
+                content["Bank_Account"]["Total_Asset_Value"] = content["Bank_Account"].pop("Current_Wealth")
+
             return f"{self.commander_name}'s game statistics have been reported:\n{yaml.dump(content)}"
 
         if event_name == 'Trade':
@@ -2135,8 +2140,10 @@ class PromptGenerator:
             return f"{self.commander_name} took the second of three biological samples."
         if event_name == 'ScanOrganicThird':
             return f"{self.commander_name} took the third and final biological sample."
-        if event_name == 'NotEnoughFuel':
-            return f"{self.commander_name}'s fuel is insufficient to reach the destination."
+        if event_name == 'NoScoopableStars':
+            return f"{self.commander_name}'s fuel is insufficient to reach the destination and there are not enough scoopable stars on the route. Alternative route required."
+        if event_name == 'RememberLimpets':
+            return f"{self.commander_name} has cargo capacity available to buy limpets. Remember to buy more."
         if event_name == 'CombatEntered':
             return f"{self.commander_name} is now in combat."
         if event_name == 'CombatExited':
@@ -2149,10 +2156,12 @@ class PromptGenerator:
         # "SpanshRoadToRiches": "The Spansh API has suggested a Road-to-Riches route for Commander {commanderName}.",
         if event_name == 'ExternalTwitchMessage':
             twitch_event = cast(Dict[str, Any], content)
-            return f"Message received from {twitch_event.get('username','')} on Twitch Chat: {twitch_event.get('text','')}",
+            return f"Message received from {twitch_event.get('username','')} on Twitch Chat: {twitch_event.get('text','')}"
         if event_name == 'ExternalTwitchNotification':
             twitch_event = cast(Dict[str, Any], content)
-            return f"{self.commander_name} has received a Discord notification.",
+            return f"{self.commander_name} has received a Discord notification."
+        if event_name == 'Idle':
+            return f"{self.commander_name} hasn't been responding for 5 minutes. Ponder about your current situation.",
 
         if event_name == "DockingComputerDocking":
             return f"{self.commander_name}'s ship has initiated automated docking computer"
@@ -2508,7 +2517,9 @@ class PromptGenerator:
         
         # Create a copy of ship_info so we don't modify the original
         ship_display = dict(ship_info)
-        
+        ship_display.pop('IsMiningShip', None)
+        ship_display.pop('hasLimpets', None)
+
         # Add cargo inventory in a more efficient format if available
 
         if cargo_info and cargo_info.get('Inventory'):
@@ -2706,6 +2717,14 @@ class PromptGenerator:
                 stations_data = self.system_db.get_stations(system_name)
                 if stations_data:
                     stations_info = self.format_stations_data(stations_data)
+
+            if location_info.get('Station'):
+                if not location_info.get('Docked'):
+                    location_info["Station"] = f"Outside {location_info['Station']}"
+
+            altitude = projected_states.get('CurrentStatus', {}).get('Altitude') or None
+            if altitude:
+                location_info["Altitude"] = f"{altitude} km"
 
             status_entries.append(("Location", location_info))
             status_entries.append(("Local system", system_info))

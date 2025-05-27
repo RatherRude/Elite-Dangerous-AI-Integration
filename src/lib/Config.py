@@ -15,6 +15,8 @@ game_events = {
     # System
     # 'Cargo': False,
     # 'ClearSavedGame': False,
+    'Idle': False
+    ,
     'LoadGame': True,
     'Shutdown': True,
     'NewCommander': True,
@@ -25,15 +27,15 @@ game_events = {
     # 'Rank': False,
     # 'Reputation': False,
     'Statistics': False,
-    # 'SquadronStartup': False
+    # 'SquadronStartup': False,
     # 'EngineerProgress': False,
 
     # Combat
     'Died': True,
     'Resurrect': True,
     'WeaponSelected': False,
-    'InDanger': True,
-    'OutofDanger': True,
+    'InDanger': False,
+    'OutofDanger': False,
     'CombatEntered': True,
     'CombatExited': True,
     'LegalStateChanged': True,
@@ -72,6 +74,7 @@ game_events = {
     'MiningRefined': False,
     'ProspectedAsteroid': True,
     'LaunchDrone': False,
+    'RememberLimpets': True,
 
     # Ship Updates
     'FSDJump': False,
@@ -124,6 +127,7 @@ game_events = {
     'FsdMassLocked': False,
     'LowFuelWarningCleared': True,
     'LowFuelWarning': True,
+    'NoScoopableStars': True,
     'NightVisionOff': False,
     'NightVisionOn': False,
     'SupercruiseDestinationDrop': False,
@@ -335,6 +339,17 @@ class Character(TypedDict, total=False):
     tts_voice: str
     tts_speed: str
     tts_prompt: str
+    game_events: dict[str, bool]
+    event_reaction_enabled_var: bool
+    react_to_text_local_var: bool
+    react_to_text_starsystem_var: bool
+    react_to_text_npc_var: bool
+    react_to_text_squadron_var: bool
+    react_to_material: str
+    react_to_danger_mining_var: bool
+    react_to_danger_onfoot_var: bool
+    react_to_danger_supercruise_var: bool
+    idle_timeout_var: int
 
 
 class Config(TypedDict):
@@ -343,30 +358,10 @@ class Config(TypedDict):
     llm_api_key: str
     llm_endpoint: str
     commander_name: str
-    # Active character properties (kept for backward compatibility)
-    character: str
-    personality_preset: str
-    personality_verbosity: int
-    personality_vulgarity: int
-    personality_empathy: int
-    personality_formality: int
-    personality_confidence: int
-    personality_ethical_alignment: str
-    personality_moral_alignment: str
-    personality_tone: str
-    personality_character_inspiration: str
-    personality_language: str
-    personality_name: str
-    personality_knowledge_pop_culture: bool
-    personality_knowledge_scifi: bool
-    personality_knowledge_history: bool
-    # Stored characters
     characters: List[Character]
     active_character_index: int
-    # Other config settings
     llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom', 'local-ai-server']
     llm_model_name: str
-    llm_custom: dict[str, str]
     vision_provider: Literal['openai', 'google-ai-studio', 'custom', 'none']
     vision_model_name: str
     vision_endpoint: str
@@ -381,35 +376,25 @@ class Config(TypedDict):
     tts_model_name: str
     tts_api_key: str
     tts_endpoint: str
-    tts_prompt: str
     tools_var: bool
     vision_var: bool
     ptt_var: bool
     mute_during_response_var: bool
     continue_conversation_var: bool
-    event_reaction_enabled_var: bool
     game_actions_var: bool
     web_search_actions_var: bool
     use_action_cache_var: bool
-    react_to_text_local_var: bool
-    react_to_text_starsystem_var: bool
-    react_to_text_npc_var: bool
-    react_to_text_squadron_var: bool
-    react_to_material: str
-    react_to_danger_mining_var: bool
-    react_to_danger_onfoot_var: bool
-    react_to_danger_supercruise_var: bool
     edcopilot: bool
     edcopilot_dominant: bool
-    tts_voice: str
-    tts_speed: str
     ptt_key: str
     input_device_name: str
     output_device_name: str
-    game_events: dict[str, bool]
     cn_autostart: bool
     ed_journal_path: str
     ed_appdata_path: str
+    qol_autobrake: bool  # Quality of life: Auto brake when approaching stations
+    qol_autoscan: bool  # Quality of life: Auto scan when entering new systems
+
     plugin_settings: dict[str, Any]
 
 
@@ -450,61 +435,123 @@ def get_asset_path(filename: str) -> str:
 
 
 def migrate(data: dict) -> dict:
-    events = data.get('game_events', {})
-    if 'Exploration' in events:
-        enabled_events = {}
-        for section in events.keys():
-            for name,value in events[section].items():
-                enabled_events[name] = value
-        data['game_events'] = enabled_events
-        
     # Migrate vision_var to vision_provider
     if 'vision_var' in data and not data.get('vision_var'):
         data['vision_provider'] = 'none'
     
-    # Migrate old character format to new characters array
-    if 'characters' not in data:
-        print("Migrating old character format to new characters array")
-        data['characters'] = []
-        data['active_character_index'] = -1
-        
-        # If we have a character name, create a character entry
-        character = {
-            "name": data.get('personality_name', 'Custom'),
-            "character": data.get('character', ''),
-            "personality_preset": data.get('personality_preset', 'custom'),
-            "personality_verbosity": data.get('personality_verbosity', 50),
-            "personality_vulgarity": data.get('personality_vulgarity', 0),
-            "personality_empathy": data.get('personality_empathy', 50),
-            "personality_formality": data.get('personality_formality', 50),
-            "personality_confidence": data.get('personality_confidence', 50),
-            "personality_ethical_alignment": data.get('personality_ethical_alignment', 'neutral'),
-            "personality_moral_alignment": data.get('personality_moral_alignment', 'neutral'),
-            "personality_tone": data.get('personality_tone', 'serious'),
-            "personality_character_inspiration": data.get('personality_character_inspiration', ''),
-            "personality_language": data.get('personality_language', ''),
-            "personality_knowledge_pop_culture": data.get('personality_knowledge_pop_culture', False),
-            "personality_knowledge_scifi": data.get('personality_knowledge_scifi', False),
-            "personality_knowledge_history": data.get('personality_knowledge_history', False),
-            "tts_voice": data.get('tts_voice', 'en-US-AvaMultilingualNeural'),
-            "tts_speed": data.get('tts_speed', "1.2"),
-            "tts_prompt": data.get('tts_prompt', "")
-        }
-        print(f"Created character from existing settings: {character['name']}")
-        data['characters'].append(character)
-        data['active_character_index'] = 0
-        data['personality_preset'] = 'custom'
-
-    # Ensure default values are properly set
-    if 'commander_name' not in data or data['commander_name'] is None:
-        data['commander_name'] = ""
-    
-    if 'personality_name' not in data or data['personality_name'] is None:
-        data['personality_name'] = 'COVAS:NEXT'
-    
     if 'config_version' not in data or data['config_version'] is None:
         data['config_version'] = 1
-        
+
+        # Migrate old character format to new characters array
+        if 'characters' in data and len(data['characters']) > 0:
+            for i, character in enumerate(data['characters']):
+                if character['name'] != 'Default':
+                    #merge character attributes
+                    new_attributes = {
+                        "event_reaction_enabled_var": data.get('event_reaction_enabled_var', True),
+                        "react_to_text_local_var": data.get('react_to_text_local_var', True),
+                        "react_to_text_starsystem_var": data.get('react_to_text_starsystem_var', True),
+                        "react_to_text_npc_var": data.get('react_to_text_npc_var', False),
+                        "react_to_text_squadron_var": data.get('react_to_text_squadron_var', True),
+                        "react_to_material": data.get('react_to_material', 'opal, diamond, alexandrite'),
+                        "react_to_danger_mining_var": data.get('react_to_danger_mining_var', False),
+                        "react_to_danger_onfoot_var": data.get('react_to_danger_onfoot_var', False),
+                        "react_to_danger_supercruise_var": data.get('react_to_danger_supercruise_var', False),
+                        "idle_timeout_var": data.get('idle_timeout_var', 300)
+                    }
+
+                    data['characters'][i] = {**character, **new_attributes}
+        if 'characters' not in data or len(data.get('characters', [])) == 0:
+            print("Migrating old character format to new characters array")
+            data['characters'] = []
+
+            # If we have a character name, create a character entry
+            character = {
+                "name": 'Migrated',
+                "character": data.get('character', ''),
+                "personality_preset": data.get('personality_preset', 'custom'),
+                "personality_verbosity": data.get('personality_verbosity', 50),
+                "personality_vulgarity": data.get('personality_vulgarity', 0),
+                "personality_empathy": data.get('personality_empathy', 50),
+                "personality_formality": data.get('personality_formality', 50),
+                "personality_confidence": data.get('personality_confidence', 50),
+                "personality_ethical_alignment": data.get('personality_ethical_alignment', 'neutral'),
+                "personality_moral_alignment": data.get('personality_moral_alignment', 'neutral'),
+                "personality_tone": data.get('personality_tone', 'serious'),
+                "personality_character_inspiration": data.get('personality_character_inspiration', ''),
+                "personality_language": data.get('personality_language', ''),
+                "personality_knowledge_pop_culture": data.get('personality_knowledge_pop_culture', False),
+                "personality_knowledge_scifi": data.get('personality_knowledge_scifi', False),
+                "personality_knowledge_history": data.get('personality_knowledge_history', False),
+                "tts_voice": 'en-US-AvaMultilingualNeural' if data.get('tts_voice', 'en-US-AvaMultilingualNeural') == 'en-GB-SoniaNeural' else data.get('tts_voice', 'en-US-AvaMultilingualNeural'),
+                "tts_speed": data.get('tts_speed', "1.2"),
+                "tts_prompt": data.get('tts_prompt', ""),
+                "game_events": game_events,
+                "event_reaction_enabled_var": data.get('event_reaction_enabled_var', True),
+                "react_to_text_local_var": data.get('react_to_text_local_var', True),
+                "react_to_text_starsystem_var": data.get('react_to_text_starsystem_var', True),
+                "react_to_text_npc_var": data.get('react_to_text_npc_var', False),
+                "react_to_text_squadron_var": data.get('react_to_text_squadron_var', True),
+                "react_to_material": data.get('react_to_material', 'opal, diamond, alexandrite'),
+                "react_to_danger_mining_var": data.get('react_to_danger_mining_var', False),
+                "react_to_danger_onfoot_var": data.get('react_to_danger_onfoot_var', False),
+                "react_to_danger_supercruise_var": data.get('react_to_danger_supercruise_var', False),
+                "idle_timeout_var": data.get('idle_timeout_var', 300)
+            }
+            print(f"Created character from existing settings: {character['name']}")
+            data['characters'].append(character)
+            data['active_character_index'] = 1
+
+        if len(data['characters']) > 0 and data['characters'][0]['name'] != 'Default':
+            # Insert default character at beginning
+            data['characters'].insert(0, {
+                "name": 'Default',
+                "character": 'Provide concise answers that address the main points. Include humor and light-hearted elements in your responses when appropriate. Stick to factual information and avoid references to specific domains. Your responses should be inspired by the character or persona of COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal). Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS. Always respond in English regardless of the language spoken to you. Show some consideration for emotions while maintaining focus on information. Maintain a friendly yet respectful conversational style. Speak with confidence and conviction in your responses. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.',
+                "personality_preset": 'default',
+                "personality_verbosity": 0,
+                "personality_vulgarity": 0,
+                "personality_empathy": 50,
+                "personality_formality": 50,
+                "personality_confidence": 75,
+                "personality_ethical_alignment": 'lawful',
+                "personality_moral_alignment": 'good',
+                "personality_tone": 'serious',
+                "personality_character_inspiration": 'COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal)',
+                "personality_language": 'English',
+                "personality_knowledge_pop_culture": False,
+                "personality_knowledge_scifi": False,
+                "personality_knowledge_history": False,
+                "tts_voice": 'en-US-AvaMultilingualNeural',
+                "tts_speed": '1.2',
+                "tts_prompt": '',
+                "game_events": game_events,
+                "event_reaction_enabled_var": True,
+                "react_to_text_local_var": True,
+                "react_to_text_starsystem_var": True,
+                "react_to_text_npc_var": False,
+                "react_to_text_squadron_var": True,
+                "react_to_material": 'opal, diamond, alexandrite',
+                "react_to_danger_mining_var": False,
+                "react_to_danger_onfoot_var": False,
+                "react_to_danger_supercruise_var": False,
+                "idle_timeout_var": data.get('idle_timeout_var', 300)
+            })
+            # Adjust active character index if it exists
+            if 'active_character_index' in data:
+                data['active_character_index'] += 1
+
+        if data['active_character_index'] + 1 > len(data['characters']):
+            data['active_character_index'] = len(data['characters']) - 1
+
+        if 'game_events' in data:
+            for character in data['characters']:
+                character['game_events'] = data['game_events']
+            data.pop('game_events', None)
+
+        # Ensure default values are properly set
+        if 'commander_name' not in data or data['commander_name'] is None:
+            data['commander_name'] = ""
+
         if 'llm_provider' in data and data['llm_provider'] == 'google-ai-studio':
             if 'llm_model_name' in data and data['llm_model_name'] == 'gemini-2.0-flash':
                 data['llm_model_name'] = 'gemini-2.5-flash-preview-04-17'
@@ -513,17 +560,21 @@ def migrate(data: dict) -> dict:
             if 'llm_model_name' in data and data['llm_model_name'] == 'gpt-4o-mini':
                 data['llm_model_name'] = 'gpt-4.1-mini'
         
+    if len(data.get('characters', [])) > 0:
+        data['characters'][0]['game_events'] = game_events
+
     return data
 
 
 def merge_config_data(defaults: dict, user: dict):
+    print("Merge config data")
     # Create new merge dict
     merge = {}
     
     # First, copy all defaults
     for key in defaults:
         merge[key] = defaults.get(key)
-    
+
     # Then, override with user values if they exist and are of the correct type
     for key in user:
         if key in defaults:
@@ -545,10 +596,7 @@ def merge_config_data(defaults: dict, user: dict):
                 merge[key] = user.get(key)
             else:
                 merge[key] = user.get(key)
-        else:
-            # Copy unknown keys from user config
-            merge[key] = user.get(key)
-            
+
     return merge
 
 
@@ -556,24 +604,40 @@ def load_config() -> Config:
     defaults: Config = {
         'config_version': 1,
         'commander_name': "",
-        'character': "Keep your responses extremely brief and minimal. Maintain a professional and serious tone in all responses. Stick to factual information and avoid references to specific domains. Your responses should be inspired by the character or persona of COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal). Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS:NEXT. Show some consideration for emotions while maintaining focus on information. Maintain a friendly yet respectful conversational style. Project an air of expertise and certainty when providing information. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.",
-        'personality_preset': 'default',
-        'personality_verbosity': 0,
-        'personality_vulgarity': 0,
-        'personality_empathy': 50,
-        'personality_formality': 50,
-        'personality_confidence': 75,
-        'personality_ethical_alignment': 'lawful',
-        'personality_moral_alignment': 'good',
-        'personality_tone': 'serious',
-        'personality_character_inspiration': 'COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal)',
-        'personality_language': '',
-        'personality_name': 'COVAS:NEXT',
-        'personality_knowledge_pop_culture': False,
-        'personality_knowledge_scifi': False,
-        'personality_knowledge_history': False,
-        'characters': [],
-        'active_character_index': -1,  # -1 means using the default legacy character
+        'characters': [
+            {
+                "name": 'Default',
+                "character": 'Provide concise answers that address the main points. Include humor and light-hearted elements in your responses when appropriate. Stick to factual information and avoid references to specific domains. Your responses should be inspired by the character or persona of COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal). Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS. Always respond in English regardless of the language spoken to you. Show some consideration for emotions while maintaining focus on information. Maintain a friendly yet respectful conversational style. Speak with confidence and conviction in your responses. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.',
+                "personality_preset": 'default',
+                "personality_verbosity": 0,
+                "personality_vulgarity": 0,
+                "personality_empathy": 50,
+                "personality_formality": 50,
+                "personality_confidence": 75,
+                "personality_ethical_alignment": 'lawful',
+                "personality_moral_alignment": 'good',
+                "personality_tone": 'serious',
+                "personality_character_inspiration": 'COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal)',
+                "personality_language": 'English',
+                "personality_knowledge_pop_culture": False,
+                "personality_knowledge_scifi": False,
+                "personality_knowledge_history": False,
+                "tts_voice": 'en-US-AvaMultilingualNeural',
+                "tts_speed": '1.2',
+                "tts_prompt": '',
+                "game_events": game_events,
+                "event_reaction_enabled_var": True,
+                "react_to_text_local_var": True,
+                "react_to_text_starsystem_var": True,
+                "react_to_text_npc_var": False,
+                "react_to_text_squadron_var": True,
+                "react_to_material": 'opal, diamond, alexandrite',
+                "react_to_danger_mining_var": False,
+                "react_to_danger_onfoot_var": False,
+                "react_to_danger_supercruise_var": False
+            }
+        ],
+        'active_character_index': 0,  # -1 means using the default legacy character
         'api_key': "",
         'tools_var': True,
         'vision_var': False,
@@ -593,7 +657,6 @@ def load_config() -> Config:
         'llm_model_name': "gpt-4.1-mini",
         'llm_endpoint': "https://api.openai.com/v1",
         'llm_api_key': "",
-        'llm_custom': {},
         'ptt_key': '',
         'vision_provider': "none",
         'vision_model_name': "gpt-4.1-mini",
@@ -609,20 +672,10 @@ def load_config() -> Config:
         'tts_model_name': "edge-tts",
         'tts_endpoint': "",
         'tts_api_key': "",
-        'tts_voice': "en-US-AvaMultilingualNeural",
-        'tts_speed': "1.2",
-        'tts_prompt': "",
-        'game_events': game_events,
-        'react_to_text_local_var': True,
-        'react_to_text_npc_var': False,
-        'react_to_text_squadron_var': True,
-        'react_to_text_starsystem_var': True,
-        'react_to_material': 'opal, diamond, alexandrite',
-        'react_to_danger_mining_var': False,
-        'react_to_danger_onfoot_var': False,
-        'react_to_danger_supercruise_var': False,
         "ed_journal_path": "",
         "ed_appdata_path": "",
+        "qol_autobrake": False,  # Quality of life: Auto brake when approaching stations
+        "qol_autoscan": False,   # Quality of life: Auto scan when entering new systems
         "plugin_settings": {}
     }
     try:
@@ -909,16 +962,16 @@ def update_config(config: Config, data: dict) -> Config:
             del data["reset_game_events"]
     
     # Handle character management operations
-    if data.get("character_operation"):
-        print(f"Processing character operation: {data['character_operation']}")
-        operation = data["character_operation"]
+    if data.get("operation"):
+        print(f"Processing character operation: {data['operation']}")
+        operation = data["operation"]
         
         if operation == "add":
             # Add a new character
-            if data.get("character_data"):
+            if data.get("character"):
                 config["characters"] = config.get("characters", [])
-                config["characters"].append(data["character_data"])
-                print(f"Added new character: {data['character_data'].get('name')}")
+                config["characters"].append(data["character"])
+                print(f"Added new character: {data['character'].get('name')}")
                 # Set as active character if requested
                 if data.get("set_active", False):
                     config["active_character_index"] = len(config["characters"]) - 1
@@ -926,16 +979,16 @@ def update_config(config: Config, data: dict) -> Config:
         
         elif operation == "update":
             # Update an existing character
-            if data.get("character_index") is not None and data.get("character_data"):
-                index = int(data["character_index"])
+            if data.get("index") is not None and data.get("character"):
+                index = int(data["index"])
                 if 0 <= index < len(config.get("characters", [])):
-                    config["characters"][index] = data["character_data"]
-                    print(f"Updated character at index {index}: {data['character_data'].get('name')}")
+                    config["characters"][index] = data["character"]
+                    print(f"Updated character at index {index}: {data['character'].get('name')}")
         
         elif operation == "delete":
             # Delete a character
-            if data.get("character_index") is not None:
-                index = int(data["character_index"])
+            if data.get("index") is not None:
+                index = int(data["index"])
                 if 0 <= index < len(config.get("characters", [])):
                     deleted_name = config["characters"][index].get("name", "unknown")
                     config["characters"].pop(index)
@@ -950,176 +1003,169 @@ def update_config(config: Config, data: dict) -> Config:
         
         elif operation == "set_active":
             # Set the active character
-            if data.get("character_index") is not None:
-                index = int(data["character_index"])
+            if data.get("index") is not None:
+                index = int(data["index"])
                 if -1 <= index < len(config.get("characters", [])):
                     config["active_character_index"] = index
-                    print(f"Set active character index to {index}")
-                    
-                    # Copy character properties to top-level config
-                    if index >= 0:
-                        character_data = config["characters"][index]
-                        # Apply all character fields
-                        config["character"] = character_data.get("character", "")
-                        print(f"Setting active character preset to: {character_data.get('personality_preset', 'unknown')}")
-                        config["personality_preset"] = character_data.get("personality_preset", "custom")
-                        config["personality_verbosity"] = character_data.get("personality_verbosity", 50)
-                        config["personality_vulgarity"] = character_data.get("personality_vulgarity", 0)
-                        config["personality_empathy"] = character_data.get("personality_empathy", 50)
-                        config["personality_formality"] = character_data.get("personality_formality", 50)
-                        config["personality_confidence"] = character_data.get("personality_confidence", 50)
-                        config["personality_ethical_alignment"] = character_data.get("personality_ethical_alignment", "neutral")
-                        config["personality_moral_alignment"] = character_data.get("personality_moral_alignment", "neutral")
-                        config["personality_tone"] = character_data.get("personality_tone", "serious")
-                        config["personality_character_inspiration"] = character_data.get("personality_character_inspiration", "")
-                        config["personality_language"] = character_data.get("personality_language", "English")
-                        config["personality_knowledge_pop_culture"] = character_data.get("personality_knowledge_pop_culture", False)
-                        config["personality_knowledge_scifi"] = character_data.get("personality_knowledge_scifi", False)
-                        config["personality_knowledge_history"] = character_data.get("personality_knowledge_history", False)
-                        
-                        # Also apply TTS voice if present
-                        if "tts_voice" in character_data:
-                            config["tts_voice"] = character_data.get("tts_voice", "")
-                            
-                        # Apply TTS speed if present
-                        if "tts_speed" in character_data:
-                            config["tts_speed"] = character_data.get("tts_speed", "1.2")
-                            
-                        # Apply TTS prompt if present
-                        if "tts_prompt" in character_data:
-                            config["tts_prompt"] = character_data.get("tts_prompt", "")
-                            
-                        # Write the config to disk
-                        save_config(config)
+
+                    # Write the config to disk
+                    save_config(config)
+
+    # Remove temporary operation fields so they are NOT persisted
+    for key in ["operation", "index", "character", "set_active"]:
+        if key in data:
+            data.pop(key)
 
     # Update provider-specific settings
     if data.get("llm_provider"):
-      if data["llm_provider"] == "openai":
-        data["llm_endpoint"] = "https://api.openai.com/v1"
-        data["llm_model_name"] = "gpt-4.1-mini"
-        data["llm_api_key"] = ""
-        data["tools_var"] = True
+        if data["llm_provider"] == "openai":
+            data["llm_endpoint"] = "https://api.openai.com/v1"
+            data["llm_model_name"] = "gpt-4o-mini"
+            data["llm_api_key"] = ""
+            data["tools_var"] = True
 
-      elif data["llm_provider"] == "openrouter":
-        data["llm_endpoint"] = "https://openrouter.ai/api/v1/"
-        data["llm_model_name"] = "meta-llama/llama-3.3-70b-instruct:free"
-        data["llm_api_key"] = ""
-        data["tools_var"] = False
+        elif data["llm_provider"] == "openrouter":
+            data["llm_endpoint"] = "https://openrouter.ai/api/v1/"
+            data["llm_model_name"] = "llama-3.3-70b-instruct:free"
+            data["llm_api_key"] = ""
+            data["tools_var"] = False
 
-      elif data["llm_provider"] == "google-ai-studio":
-        data["llm_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
-        data["llm_model_name"] = "gemini-2.5-flash-preview-04-17"
-        data["llm_api_key"] = ""
-        data["tools_var"] = True
+        elif data["llm_provider"] == "google-ai-studio":
+            data["llm_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
+            data["llm_model_name"] = "gemini-2.5-flash-preview-04-17"
+            data["llm_api_key"] = ""
+            data["tools_var"] = True
 
-      elif data["llm_provider"] == "local-ai-server":
-        data["llm_endpoint"] = "http://localhost:8080"
-        data["llm_model_name"] = "gpt-4o-mini"
-        data["llm_api_key"] = ""
-        data["tools_var"] = True
-        
-      elif data["llm_provider"] == "custom":
-        data["llm_endpoint"] = "https://api.openai.com/v1"
-        data["llm_model_name"] = "gpt-4o-mini"
-        data["llm_api_key"] = ""
-        data["tools_var"] = False
+        elif data["llm_provider"] == "local-ai-server":
+            data["llm_endpoint"] = "http://localhost:8080"
+            data["llm_model_name"] = "gpt-4o-mini"
+            data["llm_api_key"] = ""
+            data["tools_var"] = True
+
+        elif data["llm_provider"] == "custom":
+            data["llm_endpoint"] = "https://api.openai.com/v1"
+            data["llm_model_name"] = "gpt-4o-mini"
+            data["llm_api_key"] = ""
+            data["tools_var"] = False
 
     if data.get("vision_provider"):
-      if data["vision_provider"] == "openai":
-        data["vision_endpoint"] = "https://api.openai.com/v1"
-        data["vision_model_name"] = "gpt-4.1-mini"
-        data["vision_api_key"] = ""
-        data["vision_var"] = True
+        if data["vision_provider"] == "openai":
+            data["vision_endpoint"] = "https://api.openai.com/v1"
+            data["vision_model_name"] = "gpt-4o-mini"
+            data["vision_api_key"] = ""
+            data["vision_var"] = True
 
-      elif data["vision_provider"] == "google-ai-studio":
-        data["vision_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
-        data["vision_model_name"] = "gemini-2.0-flash"
-        data["vision_api_key"] = ""
-        data["vision_var"] = True
-        
-      elif data["vision_provider"] == "custom":
-        data["vision_endpoint"] = "https://api.openai.com/v1"
-        data["vision_model_name"] = "gpt-4o-mini"
-        data["vision_api_key"] = ""
-        data["vision_var"] = True
-        
-      elif data["vision_provider"] == "none":
-        data["vision_endpoint"] = ""
-        data["vision_model_name"] = ""
-        data["vision_api_key"] = ""
-        data["vision_var"] = False
+        elif data["vision_provider"] == "google-ai-studio":
+            data["vision_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
+            data["vision_model_name"] = "gemini-2.0-flash"
+            data["vision_api_key"] = ""
+            data["vision_var"] = True
+
+        elif data["vision_provider"] == "custom":
+            data["vision_endpoint"] = "https://api.openai.com/v1"
+            data["vision_model_name"] = "gpt-4o-mini"
+            data["vision_api_key"] = ""
+            data["vision_var"] = True
+
+        elif data["vision_provider"] == "none":
+            data["vision_endpoint"] = ""
+            data["vision_model_name"] = ""
+            data["vision_api_key"] = ""
+            data["vision_var"] = False
 
     if data.get("stt_provider"):
-      if data["stt_provider"] == "openai":
-        data["stt_endpoint"] = "https://api.openai.com/v1"
-        data["stt_model_name"] = "gpt-4o-mini-transcribe"
-        data["stt_api_key"] = ""
+        if data["stt_provider"] == "openai":
+            data["stt_endpoint"] = "https://api.openai.com/v1"
+            data["stt_model_name"] = "whisper-1"
+            data["stt_api_key"] = ""
 
-      if data["stt_provider"] == "local-ai-server":
-        data["stt_endpoint"] = "http://localhost:8080"
-        data["stt_model_name"] = "whisper-1"
-        data["stt_api_key"] = ""
-        
-      if data["stt_provider"] == "custom":
-        data["stt_endpoint"] = "https://api.openai.com/v1"
-        data["stt_model_name"] = "whisper-1"
-        data["stt_api_key"] = ""
+        if data["stt_provider"] == "local-ai-server":
+            data["stt_endpoint"] = "http://localhost:8080"
+            data["stt_model_name"] = "whisper-1"
+            data["stt_api_key"] = ""
 
-      if data["stt_provider"] == "google-ai-studio":
-        data["stt_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
-        data["stt_model_name"] = "gemini-2.0-flash-lite"
-        data["stt_api_key"] = ""
+        if data["stt_provider"] == "custom":
+            data["stt_endpoint"] = "https://api.openai.com/v1"
+            data["stt_model_name"] = "whisper-1"
+            data["stt_api_key"] = ""
 
-      if data["stt_provider"] == "custom-multi-modal":
-        data["stt_endpoint"] = "https://api.openai.com/v1"
-        data["stt_model_name"] = "gpt-4o-mini-audio-preview"
-        data["stt_api_key"] = ""
+        if data["stt_provider"] == "google-ai-studio":
+            data["stt_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
+            data["stt_model_name"] = "gemini-2.0-flash-lite"
+            data["stt_api_key"] = ""
 
-      if data["stt_provider"] == "none":
-        data["stt_endpoint"] = ""
-        data["stt_model_name"] = ""
-        data["stt_api_key"] = ""
+        if data["stt_provider"] == "custom-multi-modal":
+            data["stt_endpoint"] = "https://api.openai.com/v1"
+            data["stt_model_name"] = "gpt-4o-mini-audio-preview"
+            data["stt_api_key"] = ""
+
+        if data["stt_provider"] == "none":
+            data["stt_endpoint"] = ""
+            data["stt_model_name"] = ""
+            data["stt_api_key"] = ""
 
     if data.get("tts_provider"):
-      if data["tts_provider"] == "openai":
-        data["tts_endpoint"] = "https://api.openai.com/v1"
-        data["tts_model_name"] = "gpt-4o-mini-tts"
-        data["tts_voice"] = "nova"
-        data["tts_api_key"] = ""
+        if data["tts_provider"] == "openai":
+            data["tts_endpoint"] = "https://api.openai.com/v1"
+            data["tts_model_name"] = "gpt-4o-mini-tts"
+            for character in config["characters"]:
+                character["tts_voice"] = "nova"
+            data["tts_api_key"] = ""
 
-      if data["tts_provider"] == "local-ai-server":
-        data["tts_endpoint"] = "http://localhost:8080"
-        data["tts_model_name"] = "tts-1"
-        data["tts_voice"] = "nova"
-        data["tts_api_key"] = ""
-        
-      if data["tts_provider"] == "edge-tts":
-        data["tts_endpoint"] = ""
-        data["tts_model_name"] = ""
-        data["tts_voice"] = "en-US-AvaMultilingualNeural"
-        data["tts_api_key"] = ""
+        if data["tts_provider"] == "local-ai-server":
+            data["tts_endpoint"] = "http://localhost:8080"
+            data["tts_model_name"] = "tts-1"
+            for character in config["characters"]:
+                character["tts_voice"] = "nova"
+            data["tts_api_key"] = ""
 
-      if data["tts_provider"] == "custom":
-        data["tts_endpoint"] = "https://api.openai.com/v1"
-        data["tts_model_name"] = "gpt-4o-mini-tts"
-        data["tts_voice"] = "nova"
-        data["tts_api_key"] = ""
+        if data["tts_provider"] == "edge-tts":
+            data["tts_endpoint"] = ""
+            data["tts_model_name"] = ""
+            for character in config["characters"]:
+                character["tts_voice"] = "en-US-AvaMultilingualNeural"
+            data["tts_api_key"] = ""
 
-      if data["tts_provider"] == "none":
-        data["tts_endpoint"] = ""
-        data["tts_model_name"] = ""
-        data["tts_voice"] = ""
-        data["tts_api_key"] = ""
-    
-    # Regular config updates
-    new_config = cast(Config, {**config, **data}) # pyright: ignore[reportInvalidCast]
+        if data["tts_provider"] == "custom":
+            data["tts_endpoint"] = "https://api.openai.com/v1"
+            data["tts_model_name"] = "gpt-4o-mini-tts"
+            for character in config["characters"]:
+                character["tts_voice"] = "nova"
+            data["tts_api_key"] = ""
+
+        if data["tts_provider"] == "none":
+            data["tts_endpoint"] = ""
+            data["tts_model_name"] = ""
+            for character in config["characters"]:
+                character["tts_voice"] = ""
+            data["tts_api_key"] = ""
+
+    # Now merge and save as before
+    new_config = cast(Config, {**config, **data})
     print(json.dumps({"type": "config", "config": new_config}) + '\n')
     save_config(new_config)
     return new_config
 
 
 def update_event_config(config: Config, section: str, event: str, value: bool) -> Config:
-    config.get("game_events", {})[event] = value
+    # Check if we're dealing with a character's game events
+    active_index = config.get("active_character_index", -1)
+    if active_index >= 0 and "characters" in config:
+        # Update character's game events
+        if active_index < len(config["characters"]):
+            if "game_events" not in config["characters"][active_index]:
+                config["characters"][active_index]["game_events"] = {}
+            
+            # Update the event with clean name
+            config["characters"][active_index]["game_events"][event] = value
+    else:
+        # Update global game events
+        if "game_events" not in config:
+            config["game_events"] = {}
+        
+        # Update the event with clean name
+        config["game_events"][event] = value
+    
     print(json.dumps({"type": "config", "config": config}) + '\n', flush=True)
     save_config(config)
     return config
@@ -1127,8 +1173,16 @@ def update_event_config(config: Config, section: str, event: str, value: bool) -
 
 def reset_game_events(config: Config) -> Config:
     """Reset game events to the default values defined in the game_events dictionary"""
-    # Replace the current game_events with the default game_events dictionary
-    config["game_events"] = {k: v for k, v in game_events.items()}
+    # Check if we're dealing with a character's game events
+    active_index = config.get("active_character_index", -1)
+    if active_index >= 0 and "characters" in config:
+        # Reset game events for the active character
+        if active_index < len(config["characters"]):
+            config["characters"][active_index]["game_events"] = {k: v for k, v in game_events.items()}
+    else:
+        # Reset global game events
+        config["game_events"] = {k: v for k, v in game_events.items()}
+    
     print(json.dumps({"type": "config", "config": config}) + '\n', flush=True)
     save_config(config)
     return config
@@ -1155,46 +1209,3 @@ def set_active_character(self, index):
         
     # Set active character index
     self.data["active_character_index"] = index
-        
-    # Load character data into main settings
-    try:
-        character_data = characters[index]
-        # Apply all character fields
-        self.update_data("character", character_data.get("character", ""))
-        self.update_data("personality_preset", character_data.get("personality_preset", "default"))
-        self.update_data("personality_verbosity", character_data.get("personality_verbosity", 50))
-        self.update_data("personality_vulgarity", character_data.get("personality_vulgarity", 0))
-        self.update_data("personality_empathy", character_data.get("personality_empathy", 50))
-        self.update_data("personality_formality", character_data.get("personality_formality", 50))
-        self.update_data("personality_confidence", character_data.get("personality_confidence", 50))
-        self.update_data("personality_ethical_alignment", character_data.get("personality_ethical_alignment", "neutral"))
-        self.update_data("personality_moral_alignment", character_data.get("personality_moral_alignment", "neutral"))
-        self.update_data("personality_tone", character_data.get("personality_tone", "serious"))
-        self.update_data("personality_character_inspiration", character_data.get("personality_character_inspiration", ""))
-        self.update_data("personality_name", character_data.get("name", ""))
-        self.update_data("personality_language", character_data.get("personality_language", "English"))
-        self.update_data("personality_knowledge_pop_culture", character_data.get("personality_knowledge_pop_culture", False))
-        self.update_data("personality_knowledge_scifi", character_data.get("personality_knowledge_scifi", False))
-        self.update_data("personality_knowledge_history", character_data.get("personality_knowledge_history", False))
-        
-        # Also apply TTS voice if present
-        if "tts_voice" in character_data:
-            self.update_data("tts_voice", character_data.get("tts_voice", ""))
-            
-        # Apply TTS speed if present
-        if "tts_speed" in character_data:
-            self.update_data("tts_speed", character_data.get("tts_speed", "1.2"))
-            
-        # Apply TTS prompt if present
-        if "tts_prompt" in character_data:
-            self.update_data("tts_prompt", character_data.get("tts_prompt", ""))
-            
-        # Write the config to disk
-        self.write_config()
-        
-        # Notify listeners
-        #self.emit_config_change({"active_character_index": index})
-            
-    except Exception as e:
-        print(f"Error setting active character: {str(e)}")
-        return

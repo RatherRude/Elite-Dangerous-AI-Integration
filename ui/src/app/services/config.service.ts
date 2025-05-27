@@ -22,9 +22,9 @@ export interface ChangeEventConfigMessage extends BaseMessage {
 export interface CharacterOperationMessage extends BaseMessage {
     type: "change_config";
     config: {
-        character_operation: "add" | "update" | "delete" | "set_active";
-        character_index?: number;
-        character_data?: Character;
+        operation: "add" | "update" | "delete" | "set_active";
+        index?: number;
+        character?: Character;
         set_active?: boolean;
     };
 }
@@ -71,28 +71,27 @@ export interface Character {
     tts_voice?: string;
     tts_speed?: string;
     tts_prompt?: string;
+    
+    // Event reaction properties
+    event_reaction_enabled_var?: boolean;
+    react_to_text_local_var?: boolean;
+    react_to_text_starsystem_var?: boolean;
+    react_to_text_npc_var?: boolean;
+    react_to_text_squadron_var?: boolean;
+    react_to_material?: string;
+    idle_timeout_var?: number;
+    react_to_danger_mining_var?: boolean;
+    react_to_danger_onfoot_var?: boolean;
+    react_to_danger_supercruise_var?: boolean;
+    game_events?: { [key: string]: boolean };
+    
+    // Add index signature to allow string indexing
+    [key: string]: string | number | boolean | { [key: string]: boolean } | undefined;
 }
 
 export interface Config {
     api_key: string;
     commander_name: string;
-    // Active character properties (kept for backward compatibility)
-    character: string;
-    personality_preset: string;
-    personality_verbosity: number;
-    personality_vulgarity: number;
-    personality_empathy: number;
-    personality_formality: number;
-    personality_confidence: number;
-    personality_ethical_alignment: string;
-    personality_moral_alignment: string;
-    personality_tone: string;
-    personality_character_inspiration: string;
-    personality_language: string;
-    personality_name: string;
-    personality_knowledge_pop_culture: boolean;
-    personality_knowledge_scifi: boolean;
-    personality_knowledge_history: boolean;
     // Stored characters
     characters: Character[];
     active_character_index: number;
@@ -115,36 +114,29 @@ export interface Config {
     tts_model_name: string;
     tts_api_key: string;
     tts_endpoint: string;
-    tts_prompt: string;
     tools_var: boolean;
     vision_var: boolean;
     ptt_var: boolean;
     mute_during_response_var: boolean;
     continue_conversation_var: boolean;
-    event_reaction_enabled_var: boolean;
     game_actions_var: boolean;
     web_search_actions_var: boolean;
     use_action_cache_var: boolean;
-    react_to_text_local_var: boolean;
-    react_to_text_starsystem_var: boolean;
-    react_to_text_npc_var: boolean;
-    react_to_text_squadron_var: boolean;
-    react_to_material: string;
-    react_to_danger_mining_var: boolean;
-    react_to_danger_onfoot_var: boolean;
-    react_to_danger_supercruise_var: boolean;
     edcopilot: boolean;
     edcopilot_dominant: boolean;
-    tts_voice: string;
-    tts_speed: string;
     ptt_key: string;
     input_device_name: string;
     output_device_name: string;
-    game_events: { [key: string]: boolean };
     cn_autostart: boolean;
     ed_journal_path: string;
     ed_appdata_path: string;
     reset_game_events?: boolean; // Flag to request resetting game events to defaults
+    qol_autobrake: boolean; // Quality of life: Auto brake when approaching stations
+    qol_autoscan: boolean; // Quality of life: Auto scan when entering new systems
+    
+    // Add index signature to allow string indexing
+    [key: string]: string | number | boolean | Character[] | { [key: string]: boolean } | undefined;
+    
     plugin_settings: { [key: string]: any };
 }
 
@@ -265,8 +257,8 @@ export class ConfigService {
             type: "change_config",
             timestamp: new Date().toISOString(),
             config: {
-                character_operation: "add",
-                character_data: character,
+                operation: "add",
+                character: character,
                 set_active: setActive
             }
         };
@@ -279,9 +271,9 @@ export class ConfigService {
             type: "change_config",
             timestamp: new Date().toISOString(),
             config: {
-                character_operation: "update",
-                character_index: index,
-                character_data: character
+                operation: "update",
+                index: index,
+                character: character
             }
         };
         
@@ -293,8 +285,8 @@ export class ConfigService {
             type: "change_config",
             timestamp: new Date().toISOString(),
             config: {
-                character_operation: "delete",
-                character_index: index
+                operation: "delete",
+                index: index
             }
         };
         
@@ -306,8 +298,8 @@ export class ConfigService {
             type: "change_config",
             timestamp: new Date().toISOString(),
             config: {
-                character_operation: "set_active",
-                character_index: index
+                operation: "set_active",
+                index: index
             }
         };
         

@@ -348,10 +348,10 @@ class StatusParser:
             if not old_status["flags"]["FsdMassLocked"] and new_status["flags"]["FsdMassLocked"]:
                 events.append({"event": "FsdMassLocked"})
 
-            if old_status["flags2"] and not new_status["flags2"]:
-                if old_status["flags2"]["GlideMode"] and not new_status["flags2"]["GlideMode"]:
+            if old_status["flags2"] and new_status["flags2"]:
+                if old_status.get("flags2", {}).get("GlideMode") and not new_status.get("flags2", {}).get("GlideMode"):
                     events.append({"event": "GlideModeExited"})
-                if not old_status["flags2"]["GlideMode"] and new_status["flags2"]["GlideMode"]:
+                if not old_status.get("flags2", {}).get("GlideMode") and new_status.get("flags2", {}).get("GlideMode"):
                     events.append({"event": "GlideModeEntered"})
 
             if old_status["flags"]["LowFuel"] and not new_status["flags"]["LowFuel"]:

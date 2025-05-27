@@ -85,6 +85,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   apiKeyType: string | null = null;
   selectedCharacterIndex: number = -1;
   editMode: boolean = false;
+  private localCharacterCopy: Character | null = null;  // Add this line to store the original character state
   private configSubscription?: Subscription;
   private plugin_settings_message_subscription?: Subscription;
   private systemSubscription?: Subscription;
@@ -93,6 +94,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   filteredGameEvents: Record<string, Record<string, boolean>> = {};
   eventSearchQuery: string = "";
   voiceInstructionSupportedModels: string[] = ['gpt-4o-mini-tts'];
+  isApplyingChange: boolean = false;
 
   gameEventCategories = GameEventCategories;
   settings: PromptSettings = {
@@ -260,29 +262,49 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
+    // Flag to track if we're in the middle of applying a change
+    this.isApplyingChange = false;
+    
     this.configSubscription = this.configService.config$.subscribe(
       (config) => {
         if (config) {
+          console.log('New config received from backend');
+          
+          // Skip processing if we're in the middle of applying our own changes
+          if (this.isApplyingChange) {
+            console.log('Skipping config update as we are applying our own changes');
+            return;
+          }
+          
           // Store the new config
+          const previousConfig = this.config;
           this.config = config;
           
           // Set the selected character to match active_character_index
-          this.selectedCharacterIndex = config.active_character_index;
+          if (previousConfig?.active_character_index !== config.active_character_index) {
+            console.log(`Active character index changed from ${previousConfig?.active_character_index} to ${config.active_character_index}`);
+            this.selectedCharacterIndex = config.active_character_index;
+          }
 
           // Reset edit mode when receiving a new config, but only if not actively editing
           if (!this.editMode) {
             this.editMode = false;
           }
 
-          // If initializing, load settings from the config
+          // If initializing, load settings from the active character
           if (this.initializing) {
-            // If personality_preset isn't set, default to "default"
-            if (!config.personality_preset) {
+            const activeChar = this.getActiveCharacter();
+            
+            // If the active character doesn't have a personality_preset, set a default
+            if (activeChar && !activeChar.personality_preset) {
+              this.updateActiveCharacterProperty('personality_preset', 'default');
+            } else if (!activeChar) {
+              // Fallback for transition: if no active character and no preset set at config level
               this.onConfigChange({personality_preset: 'default'});
-            } else {
-              // Apply the saved preset to initialize settings
-              this.loadSettingsFromConfig(config);
             }
+            
+            // Load settings from the config or active character
+            this.loadSettingsFromConfig(config);
             this.initializing = false;
           }
 
@@ -291,9 +313,9 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
           // Log key properties to debug config loading issues
           console.log('Config loaded:', {
             commander_name: config.commander_name,
-            personality_name: config.personality_name,
             active_character_index: config.active_character_index,
-            character_count: config.characters?.length || 0
+            character_count: config.characters?.length || 0,
+            active_character: this.getActiveCharacter()?.name || 'None'
           });
         } else {
           console.error('Received null config');
@@ -301,6 +323,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       },
     );
 
+    // The rest of ngOnInit remains the same
     this.systemSubscription = this.configService.system$
       .subscribe(
         (system) => {
@@ -357,19 +380,99 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
 
   async onConfigChange(partialConfig: Partial<Config>) {
     if (this.config) {
+      console.log('Sending config update to backend:', partialConfig);
+      
+      // Create a copy for error handling
+      const originalConfig = { ...this.config };
+      
       try {
+        // We need to prevent the subscription from overriding our changes immediately
+        // Temporarily unsubscribe from config changes
+        const tempSub = this.configSubscription;
+        this.configSubscription = undefined;
+        
         await this.configService.changeConfig(partialConfig);
+        
+        // Wait a bit for the change to propagate
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
+        // Manually update the local copy to match what we've just sent
+        this.config = { ...this.config, ...partialConfig };
+        
+        // Resubscribe after a short delay
+        setTimeout(() => {
+          this.configSubscription = tempSub;
+        }, 100);
       } catch (error) {
         console.error('Error updating config:', error);
+        // Restore the original config if there was an error
+        this.config = originalConfig;
         this.snackBar.open('Error updating configuration', 'OK', { duration: 5000 });
       }
     }
   }
 
+  // Update event config for specific game events
   async onEventConfigChange(section: string, event: string, enabled: boolean) {
-    if (this.config) {
-      console.log("onEventConfigChange", section, event, enabled);
-      await this.configService.changeEventConfig(section, event, enabled);
+    if (!this.config) return;
+    
+    console.log(`Changing event: ${event} to ${enabled}`);
+    
+    const activeChar = this.getActiveCharacter();
+    const activeIndex = this.config.active_character_index;
+    
+    if (activeChar && activeIndex >= 0) {
+      try {
+        // Get the current game events or create a new empty object
+        let gameEvents: Record<string, boolean> = {};
+        
+        // If character already has game_events, make a deep copy
+        if (activeChar['game_events']) {
+          gameEvents = JSON.parse(JSON.stringify(activeChar['game_events']));
+          console.log('Existing game events before update:', gameEvents);
+        } else {
+          console.log('No existing game events, creating a new object');
+        }
+        
+        // Update the specific event without section prefix
+        gameEvents[event] = enabled;
+        console.log(`Updated game events:`, gameEvents);
+        
+        // Create a deep copy of the character
+        const updatedChar = JSON.parse(JSON.stringify(activeChar));
+        
+        // Set the updated game_events object
+        updatedChar['game_events'] = gameEvents;
+        
+        // Create a new characters array with the updated character
+        const updatedCharacters = [...this.config.characters];
+        updatedCharacters[activeIndex] = updatedChar;
+        
+        // Update the config with the entire characters array
+        await this.configService.updateCharacter(activeIndex, updatedChar);
+        console.log(`Character saved with updated game events:`, updatedChar['game_events']);
+        
+        // Update our local config to match
+        this.config.characters = updatedCharacters;
+        
+        // Directly refresh the UI to reflect the change
+        this.filterEvents(this.eventSearchQuery);
+        
+        this.snackBar.open(`Event setting saved for ${activeChar.name}`, 'OK', { duration: 2000 });
+      } catch (error) {
+        console.error('Error updating game events:', error);
+        this.snackBar.open('Error saving game events', 'Close', {
+          duration: 3000
+        });
+      }
+    } else {
+      // Fallback to old method during transition
+      try {
+        await this.configService.changeEventConfig(section, event, enabled);
+        console.log(`Using legacy method to update event: ${event} to ${enabled}`);
+      } catch (error) {
+        console.error('Error updating game event via legacy method:', error);
+      }
     }
   }
 
@@ -392,11 +495,13 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   }
 
   filterEvents(query: string) {
+    // Get the current game events, with improved logging
+    const gameEvents = this.getEventProperty('game_events', {});
+    console.log('Current game events for filtering:', gameEvents);
+    
     if (!query && this.eventSearchQuery) {
       this.eventSearchQuery = "";
-      this.filteredGameEvents = this.categorizeEvents(
-        this.config?.game_events || {},
-      );
+      this.filteredGameEvents = this.categorizeEvents(gameEvents);
       this.expandedSection = null; // Collapse all sections when search is empty
       return;
     }
@@ -405,9 +510,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     // Only filter and expand if search term is 3 or more characters
     if (query.length >= 3) {
       this.filteredGameEvents = {};
-      const all_game_events = this.categorizeEvents(
-        this.config?.game_events || {},
-      );
+      const all_game_events = this.categorizeEvents(gameEvents);
       const searchTerm = query.toLowerCase();
 
       for (
@@ -427,15 +530,15 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
         }
       }
     } else {
-      this.filteredGameEvents = this.categorizeEvents(
-        this.config?.game_events || {},
-      );
+      this.filteredGameEvents = this.categorizeEvents(gameEvents);
     }
+    
+    console.log('Filtered game events:', this.filteredGameEvents);
   }
 
   clearEventSearch() {
     this.eventSearchQuery = "";
-    this.filteredGameEvents = this.categorizeEvents(this.config?.game_events || {});
+    this.filteredGameEvents = this.categorizeEvents(this.getEventProperty('game_events', {}));
   }
 
   async resetGameEvents() {
@@ -451,11 +554,26 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     dialogRef.subscribe(async (result: boolean) => {
       if (result) {
         try {
-          // Send the reset request to the backend
-          await this.configService.resetGameEvents();
+          // For character-specific events
+          const activeChar = this.getActiveCharacter();
+          const activeIndex = this.config?.active_character_index;
           
-          // The backend will send back the updated config, which will be reflected in our UI
-          // through the existing subscription to config changes
+          if (activeChar && activeIndex !== undefined && activeIndex >= 0) {
+            // Get the default game events from the backend
+            await this.configService.resetGameEvents();
+            
+            // The backend will send back the updated config
+            // Now we need to copy the reset events to the character
+            setTimeout(() => {
+              if (this.config && this.config['game_events']) {
+                // Copy the reset events to the character
+                this.updateEventProperty('game_events', this.config['game_events']);
+              }
+            }, 300);
+          } else {
+            // Send the reset request to the backend as normal for global config
+            await this.configService.resetGameEvents();
+          }
           
           this.snackBar.open('Game events have been reset to default values', 'Close', {
             duration: 3000
@@ -480,10 +598,19 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
 
   // Handle material selection changes
   async onMaterialsChange(selectedMaterials: string[]) {
-    if (this.config) {
-      const materialsString = selectedMaterials.join(", ");
-      await this.onConfigChange({ react_to_material: materialsString });
-    }
+    if (!this.config) return;
+    
+    const materialsString = selectedMaterials.join(", ");
+    this.updateEventProperty('react_to_material', materialsString);
+  }
+  
+  // Update an event reaction feature toggle
+  onEventReactionFeatureToggle(propName: string, value: boolean): void {
+    this.updateEventProperty(propName, value);
+  }
+
+  onEventPropertyChange(propName: string, value: any): void {
+    this.updateEventProperty(propName, value);
   }
 
   async onApiKeyChange(apiKey: string) {
@@ -537,35 +664,52 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
 
   // Add method to load settings from config
   loadSettingsFromConfig(config: Config): void {
-    // Load settings from config if available, otherwise use preset
-    if (config.personality_preset !== 'custom') {
-      // Use stored values when available
-      this.settings = {
-        verbosity: config.personality_verbosity ?? 50,
-        tone: config.personality_tone as 'serious' | 'humorous' | 'sarcastic' ?? 'serious',
-        knowledge: {
-          popCulture: config.personality_knowledge_pop_culture ?? false,
-          scifi: config.personality_knowledge_scifi ?? false,
-          history: config.personality_knowledge_history ?? false
-        },
-        characterInspiration: config.personality_character_inspiration ?? '',
-        vulgarity: config.personality_vulgarity ?? 0,
-        empathy: config.personality_empathy ?? 50,
-        formality: config.personality_formality ?? 50,
-        confidence: config.personality_confidence ?? 50,
-        ethicalAlignment: config.personality_ethical_alignment as 'lawful' | 'neutral' | 'chaotic' ?? 'neutral',
-        moralAlignment: config.personality_moral_alignment as 'good' | 'neutral' | 'evil' ?? 'neutral',
-      };
-    }
+    console.log('Loading settings from config');
     
-    // If no stored values or missing some, fallback to preset defaults
-    if (config.personality_preset !== 'custom' && (!config.personality_verbosity || !config.personality_tone)) {
-      this.applySettingsFromPreset(config.personality_preset);
+    const activeChar = this.getActiveCharacter();
+    console.log('Active character:', activeChar);
+    
+    if (activeChar) {
+      console.log('Loading settings from active character');
+      
+      // Get the preset to determine default settings
+      const preset = activeChar.personality_preset || 'default';
+      
+      // First load the preset default settings to the UI
+      if (preset !== 'custom') {
+        this.applySettingsFromPreset(preset);
+      }
+      
+      // Then override with any custom values from the character
+      // This ensures UI shows actual character values
+      // We don't actually modify the character properties
+      if (activeChar.personality_verbosity !== undefined) this.settings.verbosity = activeChar.personality_verbosity;
+      if (activeChar.personality_tone !== undefined) this.settings.tone = activeChar.personality_tone as any;
+      if (activeChar.personality_knowledge_pop_culture !== undefined) this.settings.knowledge.popCulture = activeChar.personality_knowledge_pop_culture;
+      if (activeChar.personality_knowledge_scifi !== undefined) this.settings.knowledge.scifi = activeChar.personality_knowledge_scifi;
+      if (activeChar.personality_knowledge_history !== undefined) this.settings.knowledge.history = activeChar.personality_knowledge_history;
+      if (activeChar.personality_character_inspiration !== undefined) this.settings.characterInspiration = activeChar.personality_character_inspiration;
+      if (activeChar.personality_vulgarity !== undefined) this.settings.vulgarity = activeChar.personality_vulgarity;
+      if (activeChar.personality_empathy !== undefined) this.settings.empathy = activeChar.personality_empathy;
+      if (activeChar.personality_formality !== undefined) this.settings.formality = activeChar.personality_formality;
+      if (activeChar.personality_confidence !== undefined) this.settings.confidence = activeChar.personality_confidence;
+      if (activeChar.personality_ethical_alignment !== undefined) this.settings.ethicalAlignment = activeChar.personality_ethical_alignment as any;
+      if (activeChar.personality_moral_alignment !== undefined) this.settings.moralAlignment = activeChar.personality_moral_alignment as any;
+      
+      console.log('Loaded UI settings:', this.settings);
+    } else {
+      console.log('No active character, loading from preset');
+      // Fallback to preset defaults if no active character or missing properties
+      const preset = this.getCharacterProperty('personality_preset', 'default');
+      console.log('Using preset:', preset);
+      this.applySettingsFromPreset(preset);
     }
   }
 
   // Modify applySettingsFromPreset to work with the new approach
   applySettingsFromPreset(preset: string): void {
+    console.log('Applying settings from preset:', preset);
+    
     if (preset !== 'custom'){
       // Apply preset settings without saving
       switch (preset) {
@@ -1059,101 +1203,95 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             moralAlignment: 'neutral',
           };
           break;
+        default:
+          // If the preset doesn't exist, use the default
+          console.warn(`Preset '${preset}' not found, using default`);
+          this.settings = {
+            verbosity: 50,
+            tone: 'serious',
+            knowledge: { popCulture: false, scifi: false, history: false },
+            characterInspiration: '',
+            vulgarity: 0,
+            empathy: 50,
+            formality: 50,
+            confidence: 50,
+            ethicalAlignment: 'neutral',
+            moralAlignment: 'neutral',
+          };
+          break;
       }
       
-      // Also update the config object if it exists
-      if (this.config) {
-        // Directly update the config object with the new values
-        this.config.personality_verbosity = this.settings.verbosity;
-        this.config.personality_tone = this.settings.tone;
-        this.config.personality_knowledge_pop_culture = this.settings.knowledge.popCulture;
-        this.config.personality_knowledge_scifi = this.settings.knowledge.scifi;
-        this.config.personality_knowledge_history = this.settings.knowledge.history;
-        this.config.personality_character_inspiration = this.settings.characterInspiration;
-        this.config.personality_vulgarity = this.settings.vulgarity;
-        this.config.personality_empathy = this.settings.empathy;
-        this.config.personality_formality = this.settings.formality;
-        this.config.personality_confidence = this.settings.confidence;
-        this.config.personality_ethical_alignment = this.settings.ethicalAlignment;
-        this.config.personality_moral_alignment = this.settings.moralAlignment;
-      }
-      
-      // Don't call updatePrompt() here to avoid infinite loops
-    }
-  }
-
-  applyPersonalityPreset(preset: string): void {
-    if (!this.config) return;
-    
-    // First update the settings in the UI
-    this.applySettingsFromPreset(preset);
-    
-    // Then save the preset selection and all the updated values to config
-    if (preset !== 'custom') {
-      this.onConfigChange({
-        personality_preset: preset,
-        personality_verbosity: this.config.personality_verbosity,
-        personality_tone: this.config.personality_tone,
-        personality_knowledge_pop_culture: this.config.personality_knowledge_pop_culture,
-        personality_knowledge_scifi: this.config.personality_knowledge_scifi,
-        personality_knowledge_history: this.config.personality_knowledge_history,
-        personality_character_inspiration: this.config.personality_character_inspiration,
-        personality_vulgarity: this.config.personality_vulgarity,
-        personality_empathy: this.config.personality_empathy,
-        personality_formality: this.config.personality_formality,
-        personality_confidence: this.config.personality_confidence,
-        personality_ethical_alignment: this.config.personality_ethical_alignment,
-        personality_moral_alignment: this.config.personality_moral_alignment
-      });
-      
-      // Generate a new prompt when explicitly changing presets
-      this.updatePrompt();
-    } else {
-      // Just save the preset selection for custom mode
-      this.onConfigChange({personality_preset: preset});
+      console.log('Applied settings from preset:', this.settings);
     }
   }
 
   // Modify the existing updatePrompt method to work with custom mode
   updatePrompt(): void {
     // Ensure config is initialized
-    if (!this.config) {
-      this.config = { character: '' } as Config;
-      return;
-    }
 
-    // For custom mode, don't overwrite the existing character text
-    if (this.config.personality_preset === 'custom') {
+    // Set the flag to prevent overriding
+    this.isApplyingChange = true;
+
+    const activeChar = this.getActiveCharacter();
+    const personalityPreset = activeChar?.personality_preset || 'default';
+
+    console.log('Updating prompt for preset:', personalityPreset);
+
+    // For custom mode, don't overwrite the existing character text unless it's empty
+    if (personalityPreset === 'custom') {
       // If there's no character text at all, generate one so there's something to edit
-      if (!this.config.character || this.config.character.trim() === '') {
-        // Generate a very minimal prompt for custom mode
-        this.config.character = `I am ${this.config.personality_name || 'your AI assistant'}. I am here to assist you with Elite Dangerous. {commander_name} is the commander of this ship.`;
-        this.onConfigChange({character: this.config.character});
+      if (!activeChar?.character || activeChar.character.trim() === '') {
+        const charName = activeChar?.name || 'COVAS:NEXT';
+        const character = `You are ${charName}. I am here to assist you with Elite Dangerous. {commander_name} is the commander of this ship.`;
+        
+        console.log('No character text found in custom mode, generating default text');
+        
+        if (activeChar) {
+          // Update character in the array
+          this.updateActiveCharacterProperty('character', character);
+        } else {
+          // Fallback for transition
+          this.onConfigChange({character: character}).finally(() => {
+            // Reset the flag after a delay
+            setTimeout(() => {
+              this.isApplyingChange = false;
+            }, 200);
+          });
+        }
+      } else {
+        console.log('Custom mode with existing character text - preserving it');
+        // Reset the flag if we don't make any changes
+        setTimeout(() => {
+          this.isApplyingChange = false;
+        }, 200);
       }
       return;
     }
 
-    // Generate prompt based on config values, not settings
-    let promptParts: string[] = [];
+    // Generate prompt based on active character values
+    const promptParts: string[] = [];
     
-    // Add existing prompt parts using config values instead of settings
+    // Add prompt parts using active character properties
     promptParts.push(this.generateVerbosityTextFromConfig());
     promptParts.push(this.generateToneTextFromConfig());
     promptParts.push(this.generateKnowledgeTextFromConfig());
     
-    if (this.config.personality_character_inspiration) {
+    const charInspiration = activeChar?.personality_character_inspiration || '';
+    if (charInspiration) {
       promptParts.push(this.generateCharacterInspirationTextFromConfig());
     }
     
-    if (this.config.personality_name) {
-      promptParts.push(this.generateNameTextFromConfig());
+    const charName = activeChar?.name || 'COVAS:NEXT';
+    if (charName) {
+      promptParts.push(`Your name is ${charName}.`);
     }
     
-    if (this.config.personality_language) {
-      promptParts.push(this.generateLanguageTextFromConfig());
+    const language = activeChar?.personality_language || 'english';
+    if (language) {
+      promptParts.push(`Always respond in ${language} regardless of the language spoken to you.`);
     }
     
-    // Add new character traits using config values
+    // Add character traits
     promptParts.push(this.generateEmpathyTextFromConfig());
     promptParts.push(this.generateFormalityTextFromConfig());
     promptParts.push(this.generateConfidenceTextFromConfig());
@@ -1161,26 +1299,105 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     promptParts.push(this.generateMoralAlignmentTextFromConfig());
     
     // Add vulgarity with randomization
-    if (this.config.personality_vulgarity > 0) {
-      if (Math.random() * 100 <= this.config.personality_vulgarity) {
+    const vulgarity = activeChar?.personality_vulgarity || 0;
+    if (vulgarity > 0) {
+      if (Math.random() * 100 <= vulgarity) {
         promptParts.push(this.generateVulgarityTextFromConfig());
       }
     }
     
-    // Combine all parts with randomization where appropriate
-    this.config.character = promptParts.join(' ');
+    // Combine all parts
+    const character = promptParts.join(' ');
     
     // Ensure the commander_name format variable is preserved
-    // Check if it doesn't already contain the variable
-    if (!this.config.character.includes('{commander_name}')) {
-      // Add a reference to commander_name in a natural way
-      this.config.character += " I am {commander_name}, pilot of this ship.";
+    const finalCharacter = !character.includes('{commander_name}') 
+      ? character + " I am {commander_name}, pilot of this ship."
+      : character;
+    
+    console.log('Generated character prompt:', finalCharacter.substring(0, 100) + '...');
+    
+    // Update the character in the active character or config
+    if (activeChar) {
+      // Just update the character property - updateActiveCharacterProperty will reset the flag
+      this.updateActiveCharacterProperty('character', finalCharacter);
+    } else {
+      // Fallback for transition
+      this.onConfigChange({character: finalCharacter}).finally(() => {
+        // Reset the flag after a delay
+        setTimeout(() => {
+          this.isApplyingChange = false;
+        }, 200);
+      });
+    }
+  }
+
+  // Helper method to update a property on the active character
+  updateActiveCharacterProperty(propName: string, value: any): void {
+    if (!this.config) {
+      console.error('Cannot update character property: config is null');
+      return;
     }
     
-    // Notify parent component
-    this.onConfigChange({character: this.config.character});
+    console.log(`Updating character property: ${propName} =`, value);
+    
+    // Set the flag to prevent overriding
+    this.isApplyingChange = true;
+    
+    // We're no longer auto-switching to custom mode
+    // Instead, just update the specific property while preserving the preset name
+    
+    if (!this.config.characters || this.config.active_character_index < 0) {
+      // Fallback during transition
+      console.log('No active character, updating config property directly');
+      const update: Partial<Config> = {};
+      update[propName as keyof Config] = value;
+      this.onConfigChange(update).finally(() => {
+        // Reset the flag after a delay
+        setTimeout(() => {
+          this.isApplyingChange = false;
+        }, 200);
+      });
+      return;
+    }
+
+    // Get the active character
+    const activeIndex = this.config.active_character_index;
+    const activeChar = this.config.characters[activeIndex];
+    
+    if (!activeChar) {
+      console.error(`Active character at index ${activeIndex} not found`);
+      this.isApplyingChange = false;
+      return;
+    }
+    
+    // Create an updatedChar with the new property value
+    const updatedChar: Character = { ...activeChar };
+    
+    // Explicitly set the property
+    (updatedChar as any)[propName] = value;
+    
+    console.log('Updated character:', updatedChar);
+
+    // Create a new characters array with the updated character
+    const updatedCharacters = [...this.config.characters];
+    updatedCharacters[activeIndex] = updatedChar;
+
+    // Update the config with the entire characters array
+    this.onConfigChange({characters: updatedCharacters}).finally(() => {
+      // Reset the flag after a delay
+      setTimeout(() => {
+        this.isApplyingChange = false;
+      }, 200);
+    });
+    
+    // If we're updating a preset property, refresh the UI
+    if (propName === 'personality_preset') {
+      setTimeout(() => {
+        this.loadSettingsFromConfig(this.config!);
+      }, 100);
+    }
   }
-  
+
   // Add new methods to use config values
 
   generateVerbosityTextFromConfig(): string {
@@ -1192,12 +1409,18 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       'Be comprehensive in your explanations and provide abundant details.'
     ];
     
-    const index = Math.min(Math.floor((this.config?.personality_verbosity ?? 0) / 25), options.length - 1);
+    const activeChar = this.getActiveCharacter();
+    const verbosity = activeChar?.personality_verbosity || 50;
+    
+    const index = Math.min(Math.floor(verbosity / 25), options.length - 1);
     return options[index];
   }
   
   generateToneTextFromConfig(): string {
-    switch (this.config?.personality_tone) {
+    const activeChar = this.getActiveCharacter();
+    const tone = activeChar?.personality_tone || 'serious';
+    
+    switch (tone) {
       case 'serious':
         return 'Maintain a professional and serious tone in all responses.';
       case 'humorous':
@@ -1210,17 +1433,18 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   }
   
   generateKnowledgeTextFromConfig(): string {
+    const activeChar = this.getActiveCharacter();
     const knowledgeAreas = [];
     
-    if (this.config?.personality_knowledge_pop_culture) {
+    if (activeChar?.personality_knowledge_pop_culture) {
       knowledgeAreas.push('pop culture references, movies, music, and celebrities');
     }
     
-    if (this.config?.personality_knowledge_scifi) {
+    if (activeChar?.personality_knowledge_scifi) {
       knowledgeAreas.push('science fiction concepts, popular sci-fi franchises, and futuristic ideas');
     }
     
-    if (this.config?.personality_knowledge_history) {
+    if (activeChar?.personality_knowledge_history) {
       knowledgeAreas.push('historical events, figures, and their significance');
     }
     
@@ -1232,7 +1456,9 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   }
 
   generateCharacterInspirationTextFromConfig(): string {
-    return `Your responses should be inspired by the character or persona of ${this.config?.personality_character_inspiration}. Adopt their speech patterns, mannerisms, and viewpoints.`;
+    const activeChar = this.getActiveCharacter();
+    const inspiration = activeChar?.personality_character_inspiration || '';
+    return `Your responses should be inspired by the character or persona of ${inspiration}. Adopt their speech patterns, mannerisms, and viewpoints.`;
   }
 
   generateVulgarityTextFromConfig(): string {
@@ -1244,7 +1470,10 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       'Use explicit language and profanity freely in your responses.'
     ];
     
-    const index = Math.min(Math.floor((this.config?.personality_vulgarity ?? 0) / 25), options.length - 1);
+    const activeChar = this.getActiveCharacter();
+    const vulgarity = activeChar?.personality_vulgarity || 0;
+    
+    const index = Math.min(Math.floor(vulgarity / 25), options.length - 1);
     return options[index];
   }
 
@@ -1272,7 +1501,10 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       ]
     ];
     
-    const index = Math.min(Math.floor((this.config?.personality_empathy ?? 0) / 25), options.length - 1);
+    const activeChar = this.getActiveCharacter();
+    const empathy = activeChar?.personality_empathy || 50;
+    
+    const index = Math.min(Math.floor(empathy / 25), options.length - 1);
     return options[index][Math.floor(Math.random() * options[index].length)];
   }
   
@@ -1300,7 +1532,10 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       ]
     ];
     
-    const index = Math.min(Math.floor((this.config?.personality_formality ?? 0) / 25), options.length - 1);
+    const activeChar = this.getActiveCharacter();
+    const formality = activeChar?.personality_formality || 50;
+    
+    const index = Math.min(Math.floor(formality / 25), options.length - 1);
     return options[index][Math.floor(Math.random() * options[index].length)];
   }
   
@@ -1328,12 +1563,18 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       ]
     ];
     
-    const index = Math.min(Math.floor((this.config?.personality_confidence ?? 0) / 25), options.length - 1);
+    const activeChar = this.getActiveCharacter();
+    const confidence = activeChar?.personality_confidence || 50;
+    
+    const index = Math.min(Math.floor(confidence / 25), options.length - 1);
     return options[index][Math.floor(Math.random() * options[index].length)];
   }
 
   generateEthicalAlignmentTextFromConfig(): string {
-    switch (this.config?.personality_ethical_alignment) {
+    const activeChar = this.getActiveCharacter();
+    const alignment = activeChar?.personality_ethical_alignment || 'neutral';
+    
+    switch (alignment) {
       case 'lawful':
         return 'Adhere strictly to rules, regulations, and established protocols.';
       case 'neutral':
@@ -1346,7 +1587,10 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   }
 
   generateMoralAlignmentTextFromConfig(): string {
-    switch (this.config?.personality_moral_alignment) {
+    const activeChar = this.getActiveCharacter();
+    const alignment = activeChar?.personality_moral_alignment || 'neutral';
+    
+    switch (alignment) {
       case 'good':
         return 'Prioritize helping others and promoting positive outcomes in all situations.';
       case 'neutral':
@@ -1360,35 +1604,38 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
 
   // Generate text for the name field
   generateNameTextFromConfig(): string {
-    return `Your name is ${this.config?.personality_name}.`;
+    return `Your name is ${this.getCharacterProperty('personality_name', 'COVAS:NEXT')}.`;
   }
 
   // Generate text for the language field
   generateLanguageTextFromConfig(): string {
-    return `Always respond in ${this.config?.personality_language} regardless of the language spoken to you.`;
+    return `Always respond in ${this.getCharacterProperty('personality_language', 'english')} regardless of the language spoken to you.`;
   }
 
-  onVoiceSelectionChange(event: any) {
-    if (event === 'show-all-voices') {
-        this.openEdgeTtsVoicesDialog();
+  onVoiceSelectionChange(value: any) {
+    if (value === 'show-all-voices') {
+      this.openEdgeTtsVoicesDialog();
     } else {
-        this.onConfigChange({tts_voice: event});
+      this.updateActiveCharacterProperty('tts_voice', value);
     }
   }
 
   openEdgeTtsVoicesDialog() {
+    const activeChar = this.getActiveCharacter();
+    const currentVoice = activeChar ? activeChar.tts_voice : 'en-US-AvaMultilingualNeural';
+    
     const dialogRef = this.dialog.open(EdgeTtsVoicesDialogComponent, {
-        width: '800px',
-        data: {
-            voices: this.edgeTtsVoices,
-            selectedVoice: this.config?.tts_voice || ''
-        }
+      width: '800px',
+      data: {
+        voices: this.edgeTtsVoices,
+        selectedVoice: currentVoice
+      }
     });
 
     dialogRef.afterClosed().subscribe(result => {
-        if (result) {
-            this.onConfigChange({tts_voice: result});
-        }
+      if (result) {
+        this.updateActiveCharacterProperty('tts_voice', result);
+      }
     });
   }
 
@@ -1468,6 +1715,8 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   private performCharacterSelection(index: number) {
     if (!this.config) return;
     
+    console.log(`Selecting character at index ${index}`);
+    
     // Exit edit mode directly
     this.editMode = false;
     
@@ -1476,22 +1725,38 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     
     // For saved characters
     if (index >= 0) {
-      // Set the active character in the backend
-      this.configService.setActiveCharacter(index);
+      console.log('Selecting saved character');
       
-      // Load character data
-      this.loadCharacter(index);
+      // Set the active character in the backend
+      this.configService.setActiveCharacter(index).then(() => {
+        console.log('Active character set in backend');
+        
+        // Load character data with a slight delay to ensure the config update is processed
+        setTimeout(() => {
+          this.loadCharacter(index);
+        }, 100);
+      });
     } 
     // For the default character
     else if (index === -1) {
+      console.log('Selecting default character');
+      
       // Reset to default settings
-      this.configService.setActiveCharacter(-1);
+      this.configService.setActiveCharacter(-1).then(() => {
+        console.log('Default character set in backend');
+        
+        // Reset UI to default with a slight delay
+        setTimeout(() => {
+          this.loadSettingsFromConfig(this.config!);
+          this.updatePrompt();
+        }, 100);
+      });
     }
 
     // Ensure edit mode is still off after all operations
     setTimeout(() => {
       this.editMode = false;
-    }, 0);
+    }, 200);
   }
 
   toggleEditMode() {
@@ -1499,7 +1764,10 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     
     // If not in edit mode, enter edit mode
     if (!this.editMode) {
-      // Simply enter edit mode
+      // Store a copy of the current character state before entering edit mode
+      if (this.selectedCharacterIndex >= 0 && this.config.characters) {
+        this.localCharacterCopy = JSON.parse(JSON.stringify(this.config.characters[this.selectedCharacterIndex]));
+      }
       this.editMode = true;
     } else {
       // If already in edit mode, exit with confirmation for unsaved changes
@@ -1541,10 +1809,10 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       // Save the characters
       this.saveCharacters();
       
-      // Always set edit mode to false directly after a successful save
+      // Exit edit mode after successful save
       this.editMode = false;
     } else if (this.selectedCharacterIndex === -1) {
-      // We're saving the default character as a new character
+      // We're saving as a new character
       if (!this.config.characters) {
         this.config.characters = [];
       }
@@ -1568,7 +1836,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             this.saveCharacters();
             this.snackBar.open(`Character "${newCharacter.name}" updated successfully`, 'Close', { duration: 3000 });
             
-            // Always set edit mode to false directly after a successful save
+            // Exit edit mode after successful save
             this.editMode = false;
           }
         });
@@ -1581,7 +1849,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
         this.saveCharacters();
         this.snackBar.open(`Character "${newCharacter.name}" saved successfully`, 'Close', { duration: 3000 });
         
-        // Always set edit mode to false directly after a successful save
+        // Exit edit mode after successful save
         this.editMode = false;
       }
     } else {
@@ -1622,27 +1890,43 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       throw new Error('Cannot create character: Config is not loaded.');
     }
     
-    return {
-      name: this.config.personality_name || "New Character",
-      character: this.config.character || "",
-      personality_preset: this.config.personality_preset || "custom",
-      personality_verbosity: this.config.personality_verbosity || 50,
-      personality_vulgarity: this.config.personality_vulgarity || 0,
-      personality_empathy: this.config.personality_empathy || 50,
-      personality_formality: this.config.personality_formality || 50,
-      personality_confidence: this.config.personality_confidence || 50,
-      personality_ethical_alignment: this.config.personality_ethical_alignment || "neutral",
-      personality_moral_alignment: this.config.personality_moral_alignment || "neutral",
-      personality_tone: this.config.personality_tone || "serious", 
-      personality_character_inspiration: this.config.personality_character_inspiration || "",
-      personality_language: this.config.personality_language || "English",
-      personality_knowledge_pop_culture: this.config.personality_knowledge_pop_culture || false,
-      personality_knowledge_scifi: this.config.personality_knowledge_scifi || false,
-      personality_knowledge_history: this.config.personality_knowledge_history || false,
-      tts_voice: this.config.tts_voice || '',
-      tts_speed: this.config.tts_speed || '1.2',
-      tts_prompt: this.config.tts_prompt || ''
+    const activeChar = this.getActiveCharacter();
+    const character: Character = {
+      name: activeChar?.name || this.getCharacterProperty('personality_name', 'New Character'),
+      character: this.getCharacterProperty('character', ''),
+      personality_preset: this.getCharacterProperty('personality_preset', 'custom'),
+      personality_verbosity: this.getCharacterProperty('personality_verbosity', 50),
+      personality_vulgarity: this.getCharacterProperty('personality_vulgarity', 0),
+      personality_empathy: this.getCharacterProperty('personality_empathy', 50),
+      personality_formality: this.getCharacterProperty('personality_formality', 50),
+      personality_confidence: this.getCharacterProperty('personality_confidence', 50),
+      personality_ethical_alignment: this.getCharacterProperty('personality_ethical_alignment', 'neutral'),
+      personality_moral_alignment: this.getCharacterProperty('personality_moral_alignment', 'neutral'),
+      personality_tone: this.getCharacterProperty('personality_tone', 'serious'), 
+      personality_character_inspiration: this.getCharacterProperty('personality_character_inspiration', ''),
+      personality_language: this.getCharacterProperty('personality_language', 'English'),
+      personality_knowledge_pop_culture: this.getCharacterProperty('personality_knowledge_pop_culture', false),
+      personality_knowledge_scifi: this.getCharacterProperty('personality_knowledge_scifi', false),
+      personality_knowledge_history: this.getCharacterProperty('personality_knowledge_history', false),
+      tts_voice: this.getCharacterProperty('tts_voice', 'nova'),
+      tts_speed: this.getCharacterProperty('tts_speed', '1.2'),
+      tts_prompt: this.getCharacterProperty('tts_prompt', '')
     };
+    
+    // Event reaction settings using bracket notation
+    character['event_reaction_enabled_var'] = this.getEventProperty('event_reaction_enabled_var', true);
+    character['react_to_text_local_var'] = this.getEventProperty('react_to_text_local_var', true);
+    character['react_to_text_starsystem_var'] = this.getEventProperty('react_to_text_starsystem_var', true);
+    character['react_to_text_squadron_var'] = this.getEventProperty('react_to_text_squadron_var', true);
+    character['react_to_text_npc_var'] = this.getEventProperty('react_to_text_npc_var', false);
+    character['react_to_material'] = this.getEventProperty('react_to_material', '');
+    character['idle_timeout_var'] = this.getEventProperty('idle_timeout_var', 300);
+    character['react_to_danger_mining_var'] = this.getEventProperty('react_to_danger_mining_var', false);
+    character['react_to_danger_onfoot_var'] = this.getEventProperty('react_to_danger_onfoot_var', false);
+    character['react_to_danger_supercruise_var'] = this.getEventProperty('react_to_danger_supercruise_var', false);
+    character['game_events'] = this.getEventProperty('game_events', {});
+    
+    return character;
   }
 
   // Helper method to save characters
@@ -1666,104 +1950,445 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
 
   // Helper method to load a character
   private loadCharacter(index: number) {
+    console.log(`Loading character at index ${index}`);
+    
     // Make sure we have a config and the index is valid
     if (!this.config || !this.config.characters || index < 0 || index >= this.config.characters.length) {
+      console.error('Cannot load character: invalid index or missing data');
       return;
     }
     
+    // Set the flag to prevent overriding
+    this.isApplyingChange = true;
+    
     const character = this.config.characters[index];
+    console.log('Character to load:', character);
+    console.log('Character game events:', character['game_events']);
     
-    // Update the UI to show the character's settings
-    // Create an update object with the character's properties
-    const updateObj: Partial<Config> = {
-      character: character.character,
-      personality_preset: character.personality_preset,
-      personality_verbosity: character.personality_verbosity,
-      personality_vulgarity: character.personality_vulgarity,
-      personality_empathy: character.personality_empathy,
-      personality_formality: character.personality_formality,
-      personality_confidence: character.personality_confidence,
-      personality_ethical_alignment: character.personality_ethical_alignment,
-      personality_moral_alignment: character.personality_moral_alignment,
-      personality_tone: character.personality_tone,
-      personality_character_inspiration: character.personality_character_inspiration,
-      personality_name: character.name,
-      personality_language: character.personality_language,
-      personality_knowledge_pop_culture: character.personality_knowledge_pop_culture,
-      personality_knowledge_scifi: character.personality_knowledge_scifi,
-      personality_knowledge_history: character.personality_knowledge_history
-    };
+    // First, set active_character_index directly in our local config
+    // to prevent race conditions with the backend
+    this.config.active_character_index = index;
     
-    // Also load the TTS voice if it exists in the character config
-    if ('tts_voice' in character) {
-      updateObj.tts_voice = character.tts_voice;
+    // Set only the active_character_index to the backend first
+    this.onConfigChange({active_character_index: index}).then(() => {
+      console.log('Active character index updated in backend');
+      
+      // Now load the settings into the UI model
+      this.loadSettingsFromConfig(this.config!);
+      
+      // Initialize event-related settings if needed
+      this.ensureEventSettingsInitialized();
+      
+      // For custom preset, don't update the character value
+      if (character.personality_preset !== 'custom') {
+        // Generate a new prompt based on these settings
+        // This will update the character text in the UI
+        setTimeout(() => {
+          this.updatePrompt();
+        }, 100);
+      }
+      
+      // Reset the flag after a delay
+      setTimeout(() => {
+        // Refresh game events list
+        this.filterEvents(this.eventSearchQuery);
+        
+        // Log the currently loaded game events to help with debugging
+        const currentEvents = this.getEventProperty('game_events', {});
+        console.log('Currently loaded game events:', currentEvents);
+        console.log('Event reaction enabled:', this.getEventProperty('event_reaction_enabled_var', false));
+        
+        this.isApplyingChange = false;
+      }, 300);
+    }).catch(error => {
+      console.error('Error loading character:', error);
+      this.isApplyingChange = false;
+    });
+  }
+  
+  // Ensure character has all needed event reaction settings
+  private ensureEventSettingsInitialized() {
+    const activeChar = this.getActiveCharacter();
+    const activeIndex = this.config?.active_character_index;
+    
+    if (!activeChar || activeIndex === undefined || activeIndex < 0 || !this.config) {
+      return;
     }
     
-    // Also load the TTS speed if it exists in the character config
-    if ('tts_speed' in character) {
-      updateObj.tts_speed = character.tts_speed;
+    // Check if the character already has event settings
+    if (activeChar['event_reaction_enabled_var'] !== undefined) {
+      // Already has event settings, nothing to do
+      return;
     }
     
-    // Also load the TTS prompt if it exists in the character config
-    if ('tts_prompt' in character) {
-      updateObj.tts_prompt = character.tts_prompt;
+    console.log('Initializing event settings for character');
+    
+    // Create an updated character with event settings initialized with defaults
+    const updatedChar = { ...activeChar };
+    updatedChar['event_reaction_enabled_var'] = true;
+    updatedChar['react_to_text_local_var'] = true;
+    updatedChar['react_to_text_starsystem_var'] = true;
+    updatedChar['react_to_text_squadron_var'] = true;
+    updatedChar['react_to_text_npc_var'] = true;
+    updatedChar['react_to_material'] = '';
+    updatedChar['react_to_danger_mining_var'] = true;
+    updatedChar['react_to_danger_onfoot_var'] = true;
+    updatedChar['react_to_danger_supercruise_var'] = true;
+    updatedChar['idle_timeout_var'] = 300;
+
+    // Preserve existing game events if they exist
+    if (!updatedChar['game_events']) {
+      updatedChar['game_events'] = {};
     }
     
-    // Update the config
-    this.onConfigChange(updateObj);
+    // Update the character
+    const updatedCharacters = [...this.config.characters];
+    updatedCharacters[activeIndex] = updatedChar;
+    
+    // Apply the update
+    this.config.characters = updatedCharacters;
+    this.onConfigChange({characters: updatedCharacters});
   }
 
-  // Modify cancelEditMode method for reliability
   cancelEditMode(): void {
     if (!this.config) return;
     
-    // If we were editing an existing character, reload it to discard changes
-    if (this.selectedCharacterIndex >= 0) {
+    // If we were editing an existing character, restore it from the local copy
+    if (this.selectedCharacterIndex >= 0 && this.config.characters && this.localCharacterCopy) {
+      // Restore the character from our local copy
+      this.config.characters[this.selectedCharacterIndex] = JSON.parse(JSON.stringify(this.localCharacterCopy));
+      
+      // Update the backend with the restored character
+      this.configService.updateCharacter(
+        this.selectedCharacterIndex,
+        this.config.characters[this.selectedCharacterIndex]
+      );
+      
+      // Reload the character to ensure UI is in sync
       this.loadCharacter(this.selectedCharacterIndex);
-    } else {
-      // If we were creating a new character, just reset to default
-      this.selectedCharacterIndex = -1;
     }
     
-    // Always exit edit mode directly
-    this.editMode = false;
+    // Clear the local copy
+    this.localCharacterCopy = null;
     
-    // Force change detection by adding a timeout
-    setTimeout(() => {
-      if (this.editMode) {
-        console.log('Edit mode still active after cancelEditMode, forcing to false');
-        this.editMode = false;
-      }
-    }, 0);
+    // Always exit edit mode
+    this.editMode = false;
   }
 
   // Update addNewCharacter method to properly initialize with the default preset
   addNewCharacter(): void {
     if (!this.config) return;
-    
-    // Create a base character first
+
+    // Create a base character with default values
     const newCharacter: Character = {
       name: 'New Character',
-      character: '',
+      character: 'Provide concise answers that address the main points. Maintain a professional and serious tone in all responses. Stick to factual information and avoid references to specific domains. Your responses should be inspired by the character or persona of COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal). Adopt their speech patterns, mannerisms, and viewpoints. Your name is New Character. Always respond in English regardless of the language spoken to you. Balance emotional understanding with factual presentation. Maintain a friendly yet respectful conversational style. Speak with confidence and conviction in your responses. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.',
       personality_preset: 'default',
-      personality_verbosity: 50,
+      personality_verbosity: 0,
       personality_vulgarity: 0,
       personality_empathy: 50,
       personality_formality: 50,
-      personality_confidence: 50,
-      personality_ethical_alignment: 'neutral',
-      personality_moral_alignment: 'neutral',
+      personality_confidence: 75,
+      personality_ethical_alignment: 'lawful',
+      personality_moral_alignment: 'good',
       personality_tone: 'serious',
-      personality_character_inspiration: '',
+      personality_character_inspiration: 'COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal)',
       personality_language: 'English',
       personality_knowledge_pop_culture: false,
       personality_knowledge_scifi: false,
       personality_knowledge_history: false,
-      tts_voice: this.config.tts_voice || '', // Include current TTS voice
-      tts_speed: this.config.tts_speed || '1.2', // Include current TTS speed
-      tts_prompt: this.config.tts_prompt || '' // Include current TTS prompt
+      tts_voice: this.getCharacterProperty('tts_voice', 'nova'),
+      tts_speed: this.getCharacterProperty('tts_speed', '1.2'),
+      tts_prompt: this.getCharacterProperty('tts_prompt', ''),
+      // Add default game events
+      game_events: {
+        "Idle": false,
+        "LoadGame": true,
+        "Shutdown": true,
+        "NewCommander": true,
+        "Missions": true,
+        "Statistics": false,
+        "Died": true,
+        "Resurrect": true,
+        "WeaponSelected": false,
+        "OutofDanger": false,
+        "InDanger": false,
+        "CombatEntered": true,
+        "CombatExited": true,
+        "LegalStateChanged": true,
+        "CommitCrime": false,
+        "Bounty": false,
+        "CapShipBond": false,
+        "Interdiction": false,
+        "Interdicted": false,
+        "EscapeInterdiction": false,
+        "FactionKillBond": false,
+        "FighterDestroyed": true,
+        "HeatDamage": true,
+        "HeatWarning": false,
+        "HullDamage": false,
+        "PVPKill": true,
+        "ShieldState": true,
+        "ShipTargetted": false,
+        "UnderAttack": false,
+        "CockpitBreached": true,
+        "CrimeVictim": true,
+        "SystemsShutdown": true,
+        "SelfDestruct": true,
+        "Trade": false,
+        "BuyTradeData": false,
+        "CollectCargo": false,
+        "EjectCargo": true,
+        "MarketBuy": false,
+        "MarketSell": false,
+        "CargoTransfer": false,
+        "Market": false,
+        "AsteroidCracked": false,
+        "MiningRefined": false,
+        "ProspectedAsteroid": true,
+        "LaunchDrone": false,
+        "FSDJump": false,
+        "FSDTarget": false,
+        "StartJump": false,
+        "FsdCharging": true,
+        "SupercruiseEntry": true,
+        "SupercruiseExit": true,
+        "ApproachSettlement": true,
+        "Docked": true,
+        "Undocked": true,
+        "DockingCanceled": false,
+        "DockingDenied": true,
+        "DockingGranted": false,
+        "DockingRequested": false,
+        "DockingTimeout": true,
+        "NavRoute": false,
+        "NavRouteClear": false,
+        "CrewLaunchFighter": true,
+        "VehicleSwitch": false,
+        "LaunchFighter": true,
+        "DockFighter": true,
+        "FighterRebuilt": true,
+        "FuelScoop": false,
+        "RebootRepair": true,
+        "RepairDrone": false,
+        "AfmuRepairs": false,
+        "ModuleInfo": false,
+        "Synthesis": false,
+        "JetConeBoost": false,
+        "JetConeDamage": false,
+        "LandingGearUp": false,
+        "LandingGearDown": false,
+        "FlightAssistOn": false,
+        "FlightAssistOff": false,
+        "HardpointsRetracted": false,
+        "HardpointsDeployed": false,
+        "LightsOff": false,
+        "LightsOn": false,
+        "CargoScoopRetracted": false,
+        "CargoScoopDeployed": false,
+        "SilentRunningOff": false,
+        "SilentRunningOn": false,
+        "FuelScoopStarted": false,
+        "FuelScoopEnded": false,
+        "FsdMassLockEscaped": false,
+        "FsdMassLocked": false,
+        "LowFuelWarningCleared": true,
+        "LowFuelWarning": true,
+        "NoScoopableStars": true,
+        "RememberLimpets": true,
+        "NightVisionOff": false,
+        "NightVisionOn": false,
+        "SupercruiseDestinationDrop": false,
+        "LaunchSRV": true,
+        "DockSRV": true,
+        "SRVDestroyed": true,
+        "SrvHandbrakeOff": false,
+        "SrvHandbrakeOn": false,
+        "SrvTurretViewConnected": false,
+        "SrvTurretViewDisconnected": false,
+        "SrvDriveAssistOff": false,
+        "SrvDriveAssistOn": false,
+        "Disembark": true,
+        "Embark": true,
+        "BookDropship": true,
+        "BookTaxi": true,
+        "CancelDropship": true,
+        "CancelTaxi": true,
+        "CollectItems": false,
+        "DropItems": false,
+        "BackpackChange": false,
+        "BuyMicroResources": false,
+        "SellMicroResources": false,
+        "TransferMicroResources": false,
+        "TradeMicroResources": false,
+        "BuySuit": true,
+        "BuyWeapon": true,
+        "SellWeapon": false,
+        "UpgradeSuit": false,
+        "UpgradeWeapon": false,
+        "CreateSuitLoadout": true,
+        "DeleteSuitLoadout": false,
+        "RenameSuitLoadout": true,
+        "SwitchSuitLoadout": true,
+        "UseConsumable": false,
+        "FCMaterials": false,
+        "LoadoutEquipModule": false,
+        "LoadoutRemoveModule": false,
+        "ScanOrganic": true,
+        "SellOrganicData": true,
+        "LowOxygenWarningCleared": true,
+        "LowOxygenWarning": true,
+        "LowHealthWarningCleared": true,
+        "LowHealthWarning": true,
+        "BreathableAtmosphereExited": false,
+        "BreathableAtmosphereEntered": false,
+        "GlideModeExited": false,
+        "GlideModeEntered": false,
+        "DropShipDeploy": false,
+        "MissionAbandoned": true,
+        "MissionAccepted": true,
+        "MissionCompleted": true,
+        "MissionFailed": true,
+        "MissionRedirected": true,
+        "StationServices": false,
+        "ShipyardBuy": true,
+        "ShipyardNew": false,
+        "ShipyardSell": false,
+        "ShipyardTransfer": false,
+        "ShipyardSwap": false,
+        "StoredShips": false,
+        "ModuleBuy": false,
+        "ModuleRetrieve": false,
+        "ModuleSell": false,
+        "ModuleSellRemote": false,
+        "ModuleStore": false,
+        "ModuleSwap": false,
+        "Outfitting": false,
+        "BuyAmmo": false,
+        "BuyDrones": false,
+        "RefuelAll": false,
+        "RefuelPartial": false,
+        "Repair": false,
+        "RepairAll": false,
+        "RestockVehicle": false,
+        "FetchRemoteModule": false,
+        "MassModuleStore": false,
+        "ClearImpound": true,
+        "CargoDepot": false,
+        "CommunityGoal": false,
+        "CommunityGoalDiscard": false,
+        "CommunityGoalJoin": false,
+        "CommunityGoalReward": false,
+        "EngineerContribution": false,
+        "EngineerCraft": false,
+        "EngineerLegacyConvert": false,
+        "MaterialTrade": false,
+        "TechnologyBroker": false,
+        "PayBounties": true,
+        "PayFines": true,
+        "PayLegacyFines": true,
+        "RedeemVoucher": true,
+        "ScientificResearch": false,
+        "Shipyard": false,
+        "CarrierJump": true,
+        "CarrierBuy": true,
+        "CarrierStats": false,
+        "CarrierJumpRequest": true,
+        "CarrierDecommission": true,
+        "CarrierCancelDecommission": true,
+        "CarrierBankTransfer": false,
+        "CarrierDepositFuel": false,
+        "CarrierCrewServices": false,
+        "CarrierFinance": false,
+        "CarrierShipPack": false,
+        "CarrierModulePack": false,
+        "CarrierTradeOrder": false,
+        "CarrierDockingPermission": false,
+        "CarrierNameChanged": true,
+        "CarrierJumpCancelled": true,
+        "ColonisationConstructionDepot": false,
+        "CrewAssign": true,
+        "CrewFire": true,
+        "CrewHire": true,
+        "ChangeCrewRole": false,
+        "CrewMemberJoins": true,
+        "CrewMemberQuits": true,
+        "CrewMemberRoleChange": true,
+        "EndCrewSession": true,
+        "JoinACrew": true,
+        "KickCrewMember": true,
+        "QuitACrew": true,
+        "NpcCrewRank": false,
+        "Promotion": true,
+        "Friends": true,
+        "WingAdd": true,
+        "WingInvite": true,
+        "WingJoin": true,
+        "WingLeave": true,
+        "SendText": false,
+        "ReceiveText": false,
+        "AppliedToSquadron": true,
+        "DisbandedSquadron": true,
+        "InvitedToSquadron": true,
+        "JoinedSquadron": true,
+        "KickedFromSquadron": true,
+        "LeftSquadron": true,
+        "SharedBookmarkToSquadron": false,
+        "SquadronCreated": true,
+        "SquadronDemotion": true,
+        "SquadronPromotion": true,
+        "WonATrophyForSquadron": false,
+        "PowerplayCollect": false,
+        "PowerplayDefect": true,
+        "PowerplayDeliver": false,
+        "PowerplayFastTrack": false,
+        "PowerplayJoin": true,
+        "PowerplayLeave": true,
+        "PowerplaySalary": false,
+        "PowerplayVote": false,
+        "PowerplayVoucher": false,
+        "CodexEntry": false,
+        "DiscoveryScan": false,
+        "Scan": false,
+        "FSSAllBodiesFound": false,
+        "FSSBodySignals": false,
+        "FSSDiscoveryScan": false,
+        "FSSSignalDiscovered": false,
+        "MaterialCollected": false,
+        "MaterialDiscarded": false,
+        "MaterialDiscovered": false,
+        "MultiSellExplorationData": false,
+        "NavBeaconScan": true,
+        "BuyExplorationData": false,
+        "SAAScanComplete": false,
+        "SAASignalsFound": false,
+        "ScanBaryCentre": false,
+        "SellExplorationData": false,
+        "Screenshot": true,
+        "ApproachBody": true,
+        "LeaveBody": true,
+        "Liftoff": true,
+        "Touchdown": true,
+        "DatalinkScan": false,
+        "DatalinkVoucher": false,
+        "DataScanned": true,
+        "Scanned": false,
+        "USSDrop": false
+      }
     };
     
+    // Add default event reaction settings
+    newCharacter['event_reaction_enabled_var'] = true;
+    newCharacter['react_to_text_local_var'] = true;
+    newCharacter['react_to_text_starsystem_var'] = true;
+    newCharacter['react_to_text_squadron_var'] = true;
+    newCharacter['react_to_text_npc_var'] = true;
+    newCharacter['react_to_material'] = 'opal, diamond, alexandrite';
+    newCharacter['react_to_danger_mining_var'] = true;
+    newCharacter['react_to_danger_onfoot_var'] = true;
+    newCharacter['react_to_danger_supercruise_var'] = true;
+    newCharacter['idle_timeout_var'] = 300;
+
     // Add the new character to the config
     if (!this.config.characters) {
       this.config.characters = [];
@@ -1775,30 +2400,15 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     // Save the initial character to the configuration
     this.configService.changeConfig({ characters: this.config.characters }).then(() => {
       // Select the new character
+      const newIndex = this.config!.characters!.length - 1;
       this.selectedCharacterIndex = newIndex;
       
       // Set this as the active character
       this.configService.setActiveCharacter(newIndex);
       
-      // Apply the default preset to properly initialize the character
-      this.onConfigChange({
-        personality_preset: 'default',
-        personality_name: 'New Character',
-        personality_language: 'English'
-      });
-      
-      // Allow the component to process the config update
-      setTimeout(() => {
-        // Apply the default preset settings to the character
-        this.applyPersonalityPreset('default');
-        
-        // Generate the character prompt
-        this.updatePrompt();
-        
-        // Finally, enter edit mode
-        this.editMode = true;
-      }, 100); // Small delay to ensure settings are applied
-    }).catch((error: Error) => {
+      // Show success message
+      this.snackBar.open(`Character "${newCharacter.name}" created`, 'OK', { duration: 3000 });
+    }).catch(error => {
       console.error('Error adding new character:', error);
       this.snackBar.open('Error adding new character', 'OK', { duration: 5000 });
     });
@@ -1820,10 +2430,316 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
       cancelButtonText: 'Cancel'
     }).subscribe(confirmed => {
       if (confirmed && this.config && this.config.characters) {
+        // Get the current character name for the message
+        const charName = this.config.characters[this.selectedCharacterIndex].name;
+        
+        // Remove the character
         this.config.characters.splice(this.selectedCharacterIndex, 1);
+        
+        // Reset selection to default
         this.selectedCharacterIndex = -1;
+        
+        // Save the updated characters array
         this.saveCharacters();
+        
+        // Set active_character_index to -1 (default)
+        this.configService.setActiveCharacter(-1);
+        
+        // Show success message
+        this.snackBar.open(`Character "${charName}" deleted successfully`, 'Close', { duration: 3000 });
       }
     });
   }
+
+  // Helper method to get the active character
+  getActiveCharacter(): Character | null {
+    if (!this.config) return null;
+    
+    // If we're selecting from saved characters
+    if (this.config.active_character_index >= 0 && this.config.characters && 
+        this.config.characters.length > this.config.active_character_index) {
+      return this.config.characters[this.config.active_character_index];
+    }
+    
+    // If we're in edit mode for a new character or one that doesn't exist yet
+    return null;
+  }
+
+  // Helper to safely get character property with fallback to default
+  getCharacterProperty<T>(propName: string, defaultValue: T): T {
+    const activeChar = this.getActiveCharacter();
+    if (activeChar && propName in activeChar) {
+      // For string type properties, ensure we return the value as a string type
+      // which will make TypeScript happy with string literal comparisons
+      return (activeChar as any)[propName] as T;
+    }
+    // Fallback to direct config property during transition period
+    if (this.config && propName in this.config) {
+      return (this.config as any)[propName] as T;
+    }
+    return defaultValue;
+  }
+
+  // Get event reaction property with fallback to global config
+  getEventProperty<T>(propName: string, defaultValue: T): T {
+    const activeChar = this.getActiveCharacter();
+    
+    // Log the active character for debugging
+    console.log(`Getting event property ${propName} for character:`, 
+                activeChar ? activeChar.name : 'No active character');
+    
+    // Special handling for game_events
+    if (propName === 'game_events') {
+      if (activeChar && activeChar['game_events']) {
+        console.log(`Found game_events in character ${activeChar.name}:`, activeChar['game_events']);
+        return activeChar['game_events'] as unknown as T;
+      }
+      
+      // Fallback to config game_events
+      if (this.config && this.config['game_events']) {
+        console.log('Using global config game_events as fallback');
+        return this.config['game_events'] as unknown as T;
+      }
+      
+      console.log(`No game_events found, using default:`, defaultValue);
+      return defaultValue;
+    }
+    
+    // For other event properties
+    if (activeChar && propName in activeChar) {
+      console.log(`Found ${propName} in character:`, (activeChar as any)[propName]);
+      return (activeChar as any)[propName] as T;
+    }
+    
+    // Fallback to direct config property
+    if (this.config && propName in this.config) {
+      console.log(`Using global config for ${propName}:`, (this.config as any)[propName]);
+      return (this.config as any)[propName] as T;
+    }
+    
+    return defaultValue;
+  }
+
+  // Update an event-related property on the active character
+  async updateEventProperty(propName: string, value: any): Promise<void> {
+    if (!this.config) {
+      console.error('Cannot update event property: config is null');
+      return;
+    }
+    
+    console.log(`Updating event property: ${propName} =`, value);
+    
+    // Set the flag to prevent overriding
+    this.isApplyingChange = true;
+    
+    const activeChar = this.getActiveCharacter();
+    const activeIndex = this.config.active_character_index;
+    
+    if (activeChar && activeIndex >= 0) {
+      try {
+        // Create an updatedChar with the new property value
+        const updatedChar = { ...activeChar };
+        
+        // If it's game_events, we need special handling since it's an object
+        if (propName === 'game_events' && typeof value === 'object') {
+          updatedChar['game_events'] = { ...value };
+          console.log('Updated game_events object:', updatedChar['game_events']);
+        } else {
+          // For all other properties
+          updatedChar[propName] = value;
+        }
+        
+        // Create a new characters array with the updated character
+        const updatedCharacters = [...this.config.characters];
+        updatedCharacters[activeIndex] = updatedChar;
+        
+        // Update the config with the entire characters array
+        await this.onConfigChange({characters: updatedCharacters});
+        console.log(`Successfully updated ${propName} for character: ${activeChar.name}`);
+      } catch (error) {
+        console.error(`Error updating ${propName}:`, error);
+        this.snackBar.open(`Error saving ${propName}`, 'Close', {
+          duration: 3000
+        });
+      } finally {
+        // Reset the flag after a delay
+        setTimeout(() => {
+          this.isApplyingChange = false;
+        }, 200);
+      }
+    } else {
+      try {
+        // Fallback to updating global config during transition
+        const update: Partial<Config> = {};
+        update[propName as keyof Config] = value;
+        await this.onConfigChange(update);
+        console.log(`Updated global config property: ${propName}`);
+      } catch (error) {
+        console.error(`Error updating global property ${propName}:`, error);
+      } finally {
+        setTimeout(() => {
+          this.isApplyingChange = false;
+        }, 200);
+      }
+    }
+  }
+
+  // Helper method to check if personality preset is custom
+  isCustomPreset(): boolean {
+    // Get the value and convert it to string explicitly for comparison
+    const value = this.getCharacterProperty('personality_preset', 'default');
+    // Use String() to ensure we're working with a string type
+    return String(value) === 'custom';
+  }
+  
+  // Add a method to handle trait changes that will update the character prompt
+  onTraitChange(traitName: string, value: any): void {
+    if (!this.config) return;
+    
+    console.log(`Trait changed: ${traitName} = ${value}`);
+    
+    // Determine if this is a personality trait that should update the prompt
+    const isPersonalityTrait = traitName.startsWith('personality_') || 
+      ['verbosity', 'tone', 'vulgarity', 'empathy', 'formality', 'confidence', 
+       'ethical_alignment', 'moral_alignment', 'character_inspiration',
+       'knowledge_pop_culture', 'knowledge_scifi', 'knowledge_history'].includes(traitName);
+    
+    // Special case for 'name' which should be handled differently
+    if (traitName === 'name') {
+      this.updateActiveCharacterProperty('name', value);
+      return;
+    }
+    
+    // For traits that might not be prefixed with 'personality_'
+    let propName = traitName;
+    if (isPersonalityTrait && !traitName.startsWith('personality_')) {
+      propName = `personality_${traitName}`;
+    }
+    
+    // Update the property
+    this.updateActiveCharacterProperty(propName, value);
+    
+    // Only update the prompt automatically for personality traits that affect the character's behavior
+    if (isPersonalityTrait) {
+      // Then update the prompt with a slight delay to ensure the property is saved first
+      setTimeout(() => {
+        this.updatePrompt();
+      }, 100);
+    }
+  }
+
+  // Modify applyPersonalityPreset to work with the active character
+  applyPersonalityPreset(preset: string): void {
+    if (!this.config) return;
+    
+    console.log('Applying personality preset:', preset);
+    
+    // Set the flag to prevent overriding
+    this.isApplyingChange = true;
+    
+    // First update the UI settings model to show preset defaults
+    this.applySettingsFromPreset(preset);
+    console.log('Applied preset to UI settings:', this.settings);
+    
+    // Then save the preset selection to the character
+    const activeChar = this.getActiveCharacter();
+    const activeIndex = this.config.active_character_index;
+    
+    if (activeChar && activeIndex >= 0) {
+      // Update all the personality properties based on the preset
+      const updatedCharacter = { ...activeChar };
+      updatedCharacter.personality_preset = preset;
+      
+      // Only update these properties if we're not in custom mode
+      if (preset !== 'custom') {
+        updatedCharacter.personality_verbosity = this.settings.verbosity;
+        updatedCharacter.personality_tone = this.settings.tone;
+        updatedCharacter.personality_knowledge_pop_culture = this.settings.knowledge.popCulture;
+        updatedCharacter.personality_knowledge_scifi = this.settings.knowledge.scifi;
+        updatedCharacter.personality_knowledge_history = this.settings.knowledge.history;
+        updatedCharacter.personality_character_inspiration = this.settings.characterInspiration;
+        updatedCharacter.personality_vulgarity = this.settings.vulgarity;
+        updatedCharacter.personality_empathy = this.settings.empathy;
+        updatedCharacter.personality_formality = this.settings.formality;
+        updatedCharacter.personality_confidence = this.settings.confidence;
+        updatedCharacter.personality_ethical_alignment = this.settings.ethicalAlignment;
+        updatedCharacter.personality_moral_alignment = this.settings.moralAlignment;
+      }
+      
+      // Create a new characters array with the updated character
+      const updatedCharacters = [...this.config.characters];
+      updatedCharacters[activeIndex] = updatedCharacter;
+      
+      // Update the config with all character properties at once
+      this.onConfigChange({characters: updatedCharacters}).then(() => {
+        // Generate the character prompt after the properties are updated
+        if (preset !== 'custom') {
+          setTimeout(() => {
+            this.updatePrompt();
+            this.isApplyingChange = false;
+          }, 200);
+        } else {
+          this.isApplyingChange = false;
+        }
+      });
+    }
+  }
+
+  // Count the number of active events for a character
+  countActiveEvents(character: Character): number {
+    if (!character['game_events']) {
+      return 0;
+    }
+    
+    // Count the number of true entries in the game_events object
+    return Object.values(character['game_events']).filter(value => value === true).length;
+  }
+
+  duplicateSelectedCharacter(): void {
+    if (!this.config || this.selectedCharacterIndex < 0) return;
+    
+    // Make sure we have a characters array and the selected index is valid
+    if (!this.config.characters || !this.config.characters[this.selectedCharacterIndex]) {
+      this.snackBar.open('Error: Character not found', 'OK', { duration: 5000 });
+      return;
+    }
+    
+    const config = this.config; // Store in local variable
+    const originalChar = config.characters[this.selectedCharacterIndex];
+    
+    // Create a deep copy of the character
+    const duplicatedChar = JSON.parse(JSON.stringify(originalChar));
+    
+    // Modify the name to indicate it's a copy
+    let newName = `${originalChar.name} (Copy)`;
+    let counter = 1;
+    
+    // Check if a character with this name already exists
+    while (config.characters.some(char => char.name === newName)) {
+      counter++;
+      newName = `${originalChar.name} (Copy ${counter})`;
+    }
+    
+    duplicatedChar.name = newName;
+    
+    // Add the duplicated character to the config
+    config.characters.push(duplicatedChar);
+    
+    // Save the updated characters array
+    this.configService.changeConfig({ characters: config.characters }).then(() => {
+      const newIndex = config.characters.length - 1;
+      this.selectedCharacterIndex = newIndex;
+      
+      // Set this as the active character
+      this.configService.setActiveCharacter(newIndex);
+      
+      // Show success message
+      this.snackBar.open(`Character "${newName}" created`, 'OK', { duration: 3000 });
+    }).catch(error => {
+      console.error('Error duplicating character:', error);
+      this.snackBar.open('Error duplicating character', 'OK', { duration: 5000 });
+    });
+  }
+
+    protected readonly String = String;
 }
