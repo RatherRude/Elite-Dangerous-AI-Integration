@@ -5,7 +5,7 @@ on: [push, pull_request]
 jobs:
   pyinstaller-build:
     name: Build Executable
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out the repository
         uses: actions/checkout@v2
@@ -70,7 +70,7 @@ jobs:
   tauri-build:
     name: Build Tauri App
     needs: pyinstaller-build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out the repository
         uses: actions/checkout@v2
@@ -146,7 +146,7 @@ jobs:
   flatpak-bundle:
     name: Build Flatpak Bundle
     needs: tauri-build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out the repository
         uses: actions/checkout@v2
@@ -188,16 +188,13 @@ jobs:
           # Verify flatpak manifest exists
           ls -la com.covasnext.ui.yml
 
-          # Build the flatpak with verbose output, using system runtimes
-          sudo flatpak-builder --verbose --force-clean --install-deps-from=flathub \
+          # Build the flatpak with verbose output
+          flatpak-builder --verbose --force-clean --install-deps-from=flathub \
             --repo=flatpak-repo flatpak-build com.covasnext.ui.yml
 
           # Create flatpak bundle
-          sudo flatpak build-bundle flatpak-repo covas-next-ui-$SHORT_HASH.flatpak \
+          flatpak build-bundle flatpak-repo covas-next-ui-$SHORT_HASH.flatpak \
             com.covasnext.ui --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
-
-          # Change ownership back to current user
-          sudo chown $(whoami):$(whoami) covas-next-ui-*.flatpak
 
           # Verify the bundle was created
           ls -la covas-next-ui-*.flatpak

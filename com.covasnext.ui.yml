@@ -1,6 +1,6 @@
 app-id: com.covasnext.ui
 runtime: org.gnome.Platform
-runtime-version: '46'
+runtime-version: '48'
 sdk: org.gnome.Sdk
 command: covas-next-ui-wrapper
 finish-args:
@@ -16,7 +16,7 @@ finish-args:
   # Audio access
   - --socket=pulseaudio
   # File access
-  - --filesystem=home:ro
+  - --filesystem=home:rw
   - --filesystem=/tmp:rw
   # OpenGL access
   - --device=dri
