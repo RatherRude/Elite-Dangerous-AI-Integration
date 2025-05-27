@@ -186,15 +186,15 @@ jobs:
           mkdir -p flatpak-build
 
           # Verify flatpak manifest exists
-          ls -la com.covas-next.ui.yml
+          ls -la com.covas-next.yml
 
           # Build the flatpak with verbose output, using system runtimes
           sudo flatpak-builder --verbose --force-clean --install-deps-from=flathub \
-            --repo=flatpak-repo flatpak-build com.covas-next.ui.yml
+            --repo=flatpak-repo flatpak-build com.covas-next.yml
 
           # Create flatpak bundle
           sudo flatpak build-bundle flatpak-repo covas-next-ui-$SHORT_HASH.flatpak \
-            com.covas-next.ui --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
+            com.covas-next --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
 
           # Change ownership back to current user
           sudo chown $(whoami):$(whoami) covas-next-ui-*.flatpak
@@ -210,10 +210,10 @@ jobs:
           flatpak install --user --bundle covas-next-ui-$SHORT_HASH.flatpak -y
 
           # Check if the app was installed correctly
-          flatpak list --user | grep com.covas-next.ui
+          flatpak list --user | grep com.covas-next
 
           # Get app info
-          flatpak info --user com.covas-next.ui
+          flatpak info --user com.covas-next
 
           echo "Flatpak bundle validation completed successfully"
 
