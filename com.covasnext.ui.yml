@@ -35,8 +35,8 @@ modules:
         path: covas-next-ui-linux.tar.gz
         strip-components: 0
       - type: file
-        path: ui/src-tauri/icons/EDAI_logo_transparent.png
-        dest-filename: EDAI_logo_transparent.png
+        path: ui/src-tauri/icons/EDAI_logo_transparent_512.png
+        dest-filename: EDAI_logo_transparent_512.png
     build-commands:
       # Create directories
       - mkdir -p /app/bin
@@ -67,8 +67,8 @@ modules:
       - chmod +x /app/bin/covas-next-ui-wrapper
       
       # Install icon
-      - install -Dm644 EDAI_logo_transparent.png /app/share/icons/hicolor/128x128/apps/com.covasnext.ui.png
-      - install -Dm644 EDAI_logo_transparent.png /app/share/icons/hicolor/256x256/apps/com.covasnext.ui.png
+      - install -Dm644 EDAI_logo_transparent_512.png /app/share/icons/hicolor/128x128/apps/com.covasnext.ui.png
+      - install -Dm644 EDAI_logo_transparent_512.png /app/share/icons/hicolor/256x256/apps/com.covasnext.ui.png
       
       # Create desktop file
       - |
