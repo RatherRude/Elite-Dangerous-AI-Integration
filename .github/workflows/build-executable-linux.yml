@@ -161,12 +161,13 @@ jobs:
           sudo apt update
           sudo apt install -y flatpak flatpak-builder
 
-      - name: Add flathub repo
+      - name: Setup flatpak remotes and runtimes
         run: |
+          # Add flathub repo for both system and user
           sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+          flatpak --user remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
-      - name: Install required flatpak runtimes
-        run: |
+          # Install runtimes system-wide to avoid permission issues
           sudo flatpak install -y flathub org.freedesktop.Platform//23.08
           sudo flatpak install -y flathub org.freedesktop.Sdk//23.08
 
@@ -187,13 +188,16 @@ jobs:
           # Verify flatpak manifest exists
           ls -la com.covas-next.ui.yml
 
-          # Build the flatpak with verbose output
-          flatpak-builder --verbose --force-clean --user --install-deps-from=flathub \
+          # Build the flatpak with verbose output, using system runtimes
+          sudo flatpak-builder --verbose --force-clean --install-deps-from=flathub \
             --repo=flatpak-repo flatpak-build com.covas-next.ui.yml
 
           # Create flatpak bundle
-          flatpak build-bundle flatpak-repo covas-next-ui-$SHORT_HASH.flatpak \
+          sudo flatpak build-bundle flatpak-repo covas-next-ui-$SHORT_HASH.flatpak \
             com.covas-next.ui --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
+
+          # Change ownership back to current user
+          sudo chown $(whoami):$(whoami) covas-next-ui-*.flatpak
 
           # Verify the bundle was created
           ls -la covas-next-ui-*.flatpak
