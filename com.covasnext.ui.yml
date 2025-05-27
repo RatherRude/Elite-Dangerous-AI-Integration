@@ -1,7 +1,7 @@
 app-id: com.covasnext.ui
-runtime: org.freedesktop.Platform
-runtime-version: '23.08'
-sdk: org.freedesktop.Sdk
+runtime: org.gnome.Platform
+runtime-version: '46'
+sdk: org.gnome.Sdk
 command: covas-next-ui-wrapper
 finish-args:
   # X11 + XShm access (forced, no Wayland)
