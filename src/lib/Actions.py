@@ -173,6 +173,25 @@ def cycle_target(args, projected_states):
         keys.send('CycleNextTarget')
         return "Selected next target"
 
+def change_hud_mode(args, projected_states):
+
+    mode = args.get('hud mode', 'toggle').lower()
+    if projected_states.get('CurrentStatus').get('flags').get('HudInAnalysisMode'):
+        current_hud_mode = "analysis"
+    else:
+        current_hud_mode = "combat"
+
+    if mode == "toggle":
+        keys.send('PlayerHUDModeToggle')
+        return "combat mode activated" if current_hud_mode == "analysis" else "analysis mode activated"
+
+    if mode == current_hud_mode:
+        return f"hud already in {current_hud_mode}"
+    else:
+        keys.send('PlayerHUDModeToggle')
+        return f"{mode} mode activated"
+
+
 def cycle_fire_group(args, projected_states):
     setGameWindowActive()
 
@@ -2864,7 +2883,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, deploy_heat_sink, 'ship')
 
-    actionManager.registerAction('deployHardpointToggle', "Deploy or retract hardpoints", {
+    actionManager.registerAction('deployHardpointToggle', "Deploy or retract hardpoints. Do not call this action when asked to switch hud mode", {
         "type": "object",
         "properties": {}
     }, deploy_hardpoint_toggle, 'ship')
@@ -2943,6 +2962,17 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         }
     }, cycle_target, 'ship')
 
+    actionManager.registerAction('Change_ship_HUD_mode', "Switch to combat or analysis mode", {
+        "type": "object",
+        "properties": {
+            "hud mode": {
+                "type": "string",
+                "description": "mode to switch to",
+                "enum": ["combat", "analysis", "toggle"],
+            }
+        },
+        "required": ["hud mode"],
+    }, change_hud_mode, 'mainship')
 
     actionManager.registerAction('cycleFireGroup', "Cycle to next fire group", {
         "type": "object",
