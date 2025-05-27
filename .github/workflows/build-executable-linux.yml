@@ -164,7 +164,7 @@ jobs:
       - name: Setup flatpak remotes and runtimes
         run: |
           # Add flathub repo
-          flatpak --user remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+          flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 
           # Install runtimes system-wide to avoid permission issues
           flatpak install -y flathub org.freedesktop.Platform//23.08
