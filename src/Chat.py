@@ -163,6 +163,13 @@ class Chat:
             )
         else:
             self.stt.listen_continuous()
+
+            # Utilize PTT key as mute key instead.            
+            self.controller_manager.register_hotkey(
+                self.config["ptt_key"], 
+                lambda _: _,
+                lambda _: self.stt.pause_continuous_listening(not self.stt.continuous_listening_paused)
+            )
         log('info', "Voice interface ready.")
 
         registerProjections(self.event_manager, self.system_database, self.character.get('idle_timeout_var', 300))

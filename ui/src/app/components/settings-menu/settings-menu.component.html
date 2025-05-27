@@ -70,15 +70,13 @@
                                 <mat-option value="ptt">Push-to-Talk</mat-option>
                             </mat-select>
                         </mat-form-field>
-                        @if (config.ptt_var) {
-                            <mat-form-field (click)="onAssignPTT()">
-                                <mat-label>Push-to-Talk Key</mat-label>
-                                <input required matInput [value]="config.ptt_key" readonly>
-                                <button matSuffix mat-icon-button>
-                                    <mat-icon>keyboard</mat-icon>
-                                </button>
-                            </mat-form-field>
-                        }
+                        <mat-form-field (click)="onAssignPTT()">
+                            <mat-label>{{config.ptt_var ? 'Push-to-Talk Key' : 'Toggle Mute Key'}}</mat-label>
+                            <input required matInput [value]="config.ptt_key" readonly>
+                            <button matSuffix mat-icon-button>
+                                <mat-icon>keyboard</mat-icon>
+                            </button>
+                        </mat-form-field>
                         @if (!config.ptt_var) {
                             <mat-slide-toggle [(ngModel)]="config.mute_during_response_var"
                                                 (ngModelChange)="onConfigChange({mute_during_response_var: $event})">
