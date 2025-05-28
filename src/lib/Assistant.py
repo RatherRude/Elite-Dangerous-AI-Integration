@@ -10,7 +10,7 @@ from .PromptGenerator import PromptGenerator
 from .TTS import TTS
 from .EDCoPilot import EDCoPilot
 from openai import OpenAI
-from typing import Any, final
+from typing import Any, Callable, final
 from threading import Thread
 
 @final
@@ -28,6 +28,7 @@ class Assistant:
         self.is_thinking = False
         self.reply_pending = False
         self.pending: list[Event] = []
+        self.registered_should_reply_handlers: list[Callable[[Event, dict[str, Any]], bool | None]] = []
     
     def on_event(self, event: Event, projected_states: dict[str, Any]):
         self.pending.append(event)
@@ -215,5 +216,18 @@ class Assistant:
                     return True
                 if event.content.get("event") in self.enabled_game_events:
                     return True
+            
+            # run should_reply handlers for each plugin
+            for handler in self.registered_should_reply_handlers:
+                should_reply_according_to_plugins = handler(event, states)
+                if should_reply_according_to_plugins :
+                    return True
+                elif should_reply_according_to_plugins is False:
+                    return False
+                else:
+                    continue
 
         return False
+    
+    def register_should_reply_handler(self, handler: Callable[[Event, dict[str, Any]], bool | None]):
+        self.registered_should_reply_handlers.append(handler)

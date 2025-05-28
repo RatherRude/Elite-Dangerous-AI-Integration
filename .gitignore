@@ -18,3 +18,9 @@ node_modules
 .angular
 .venv
 venv
+
+# Ignore all files in the plugins folder
+plugins/*
+
+# Ignore all files in the plugin_data folder
+plugin_data/*

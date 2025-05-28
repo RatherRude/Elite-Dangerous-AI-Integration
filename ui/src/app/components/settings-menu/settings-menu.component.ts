@@ -27,6 +27,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { EdgeTtsVoicesDialogComponent } from '../edge-tts-voices-dialog';
 import { ConfirmationDialogComponent, ConfirmationDialogData } from '../../components/confirmation-dialog/confirmation-dialog.component';
 import { ConfirmationDialogService } from '../../services/confirmation-dialog.service';
+import { PluginSettingsComponent } from "../plugin-settings/plugin-settings.component";
 
 interface PromptSettings {
   // Existing settings
@@ -70,13 +71,15 @@ interface PromptSettings {
     MatCheckboxModule,
     MatDialogModule,
     MatProgressSpinnerModule,
-    EdgeTtsVoicesDialogComponent
+    EdgeTtsVoicesDialogComponent,
+    PluginSettingsComponent
   ],
   templateUrl: "./settings-menu.component.html",
   styleUrls: ["./settings-menu.component.scss"]
 })
 export class SettingsMenuComponent implements OnInit, OnDestroy {
   config: Config | null = null;
+  has_plugin_settings: boolean = false
   system: SystemInfo | null = null;
   hideApiKey = true;
   apiKeyType: string | null = null;
@@ -84,6 +87,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   editMode: boolean = false;
   private localCharacterCopy: Character | null = null;  // Add this line to store the original character state
   private configSubscription?: Subscription;
+  private plugin_settings_message_subscription?: Subscription;
   private systemSubscription?: Subscription;
   private validationSubscription?: Subscription;
   expandedSection: string | null = null;
@@ -328,6 +332,19 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
             console.log('System info loaded');
           } else {
             console.error('Received null system info');
+          }
+        },
+      );
+    this.plugin_settings_message_subscription = this.configService.plugin_settings_message$
+      .subscribe(
+        (plugin_settings_message) => {
+          this.has_plugin_settings = plugin_settings_message?.has_plugin_settings || false;
+          if (plugin_settings_message?.plugin_settings_configs) {
+            console.log('Plugin settings count received', {
+              has_plugin_settings: plugin_settings_message.has_plugin_settings,
+            });
+          } else {
+            console.error('Received null plugin settings');
           }
         },
       );

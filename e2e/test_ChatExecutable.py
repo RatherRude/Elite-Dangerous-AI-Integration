@@ -1,5 +1,6 @@
 import json
 import platform
+import shutil
 import tempfile
 
 default_config = {
