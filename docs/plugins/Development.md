@@ -1,6 +1,6 @@
 # Plugin development for COVAS:NEXT
 
-Wanna build a plugin, to expand on COVAS' features? This page will help you get started.
+Do you want to build a plugin, to expand on COVAS' features? This page will help you get started.
 
 ## Prerequisites
 
@@ -8,6 +8,7 @@ Wanna build a plugin, to expand on COVAS' features? This page will help you get 
 
 # The easy way to get started
 To quickly create a starting point, we suggest using [this cookiecutter template](http://github.com/MaverickMartyn/COVAS-NEXT-Plugin-Template). 
+Use the template to create a project in a sub-folder of the `plugins` folder.
 
 ## Plugin structure
 Plugins are loaded from sub-folders of `./plugins`, up to one level deep.  
@@ -29,7 +30,6 @@ You can create a git repository, and even include other assets or libraries in t
     * `fc8a17ce-91ba-4dc7-819e-e65b02326244` <- Use `helper.get_plugin_data_path()` to get the path to your plugins dedicated data folder.
 
 Create a new class implementing `PluginBase` like this:  
-**All members have to be overriden in your implementation, even if you don't need them, and even if they're not listed here. Just use `pass` as a placeholder.**  
 ```python
 # Main plugin class
 # This is the class that will be loaded by the PluginManager.
@@ -89,6 +89,33 @@ And a manifest file like this: (**The GUID must be unique. Generate a new one fo
 }
 ```
 
+The `PluginBase` base class has several functions that can be overridden to extend plugin functionality:
+
+- `register_actions(self, helper: PluginHelper)`:  
+    Override this method to register all tool actions for your plugin. Actions are commands or operations for the AI to execute at will. This method is called by the `PluginManager` after all plugins have been loaded and the assistant has started.
+
+- `register_projections(self, helper: PluginHelper)`:  
+    Use this method to register projections. Projections are used to store state information, which is updated in response to events, and potentially exposed to the assistant.
+
+- `register_sideeffects(self, helper: PluginHelper)`:  
+    Override to register side effects. Side effects are executed when any events occur, and are provided the projected state.
+
+- `register_prompt_event_handlers(self, helper: PluginHelper)`:  
+    Use this to register handlers that add to the prompt for the assistant based on events. These handlers help the assistant respond contextually to different situations. This adds to the token count.
+
+- `register_status_generators(self, helper: PluginHelper)`:  
+    Register status generators to add status information to the assistant's prompt. This can be used to add information to prompt/context, such as persistent memory. Keep in mind that this adds to the token count.
+
+- `register_should_reply_handlers(self, helper: PluginHelper)`:  
+    Override to register handlers that determine whether the assistant should reply to a given event. Return `True` to force a reply, `False` to suppress it, or `None` to leave the decision to the assistant.
+
+- `on_plugin_helper_ready(self, helper: PluginHelper)`:  
+    Called when the chat is started and the `PluginHelper` is ready. Use this for any additional setup that requires access to the helper or other managers.
+
+- `on_chat_stop(self, helper: PluginHelper)`:  
+    Called when the chat is stopped. Use this to perform any cleanup or finalization needed by your plugin.
+
+Each of these methods receives a `PluginHelper` instance, which provides utilities for registering actions, projections, side effects, and more. Override only the methods relevant to your plugin's functionality.
 The registration functions (`register_actions`, `register_projections` and `register_sideeffects`, etc.) are where most of the magic happens.  
 You can access most of the internal features you need from the `helper` object, such as the `send_key()`, various event handler registrations and more.
 

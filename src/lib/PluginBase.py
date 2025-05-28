@@ -39,7 +39,6 @@ class PluginBase(ABC):
         self.event_classes = event_classes
 
     # Register actions
-    @abstractmethod
     def register_actions(self, helper: PluginHelper):
         """
         Registers all actions for this plugin.
@@ -54,7 +53,6 @@ class PluginBase(ABC):
         pass
     
     # Register projections
-    @abstractmethod
     def register_projections(self, helper: PluginHelper):
         """
         Registers all projections for this plugin.
@@ -68,7 +66,6 @@ class PluginBase(ABC):
         pass
 
     # Register sideeffects
-    @abstractmethod
     def register_sideeffects(self, helper: PluginHelper):
         """
         Registers all side effects for this plugin.
@@ -81,7 +78,6 @@ class PluginBase(ABC):
         """
         pass
 
-    @abstractmethod
     def register_prompt_event_handlers(self, helper: PluginHelper):
         """
         Registers all prompt event handlers for this plugin.
@@ -97,7 +93,6 @@ class PluginBase(ABC):
 
         pass
     
-    @abstractmethod
     def register_status_generators(self, helper: PluginHelper):
         """
         Registers all prompt status generators for this plugin.
@@ -113,7 +108,6 @@ class PluginBase(ABC):
 
         pass
     
-    @abstractmethod
     def register_should_reply_handlers(self, helper: PluginHelper):
         """
         Registers handlers that will decide wether the assistant should reply to any given event.
@@ -122,7 +116,6 @@ class PluginBase(ABC):
 
         pass
     
-    @abstractmethod
     def on_plugin_helper_ready(self, helper: PluginHelper):
         """
         Executed when the chat is started and the PluginHelper is ready. At this point, all managers are ready, although not all actions and such are registered yet.
@@ -131,7 +124,6 @@ class PluginBase(ABC):
 
         pass
 
-    @abstractmethod
     def on_chat_stop(self, helper: PluginHelper):
         """
         Executed when the chat is stopped
