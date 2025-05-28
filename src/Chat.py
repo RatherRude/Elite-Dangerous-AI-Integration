@@ -164,6 +164,7 @@ class Chat:
         else:
             self.stt.listen_continuous()
 
+            log('info', f"Setting push-to-mute hotkey {self.config['ptm_key']}.")
             # Utilize PTT key as mute key instead.
             if self.config['ptm_key']:
                 if self.config['ptm_toggle_var']:
