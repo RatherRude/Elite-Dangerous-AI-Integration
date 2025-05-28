@@ -2842,8 +2842,8 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
           "duration": {
             "type": "number",
             "description": "Duration to hold fire button in seconds (for fire action only)",
-            "minimum": 0.1,
-            "maximum": 30.0
+            "minimum": 0,
+            "maximum": 30
           },
           "repetitions": {
             "type": "integer",
