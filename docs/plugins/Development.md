@@ -60,6 +60,8 @@ class ExamplePlugin(PluginBase):
                 ),
             ]
         )
+    
+    # The following overrides are optional. Remove them if you don't need them.
 
     # Register actions
     @override
@@ -118,6 +120,15 @@ The `PluginBase` base class has several functions that can be overridden to exte
 Each of these methods receives a `PluginHelper` instance, which provides utilities for registering actions, projections, side effects, and more. Override only the methods relevant to your plugin's functionality.
 The registration functions (`register_actions`, `register_projections` and `register_sideeffects`, etc.) are where most of the magic happens.  
 You can access most of the internal features you need from the `helper` object, such as the `send_key()`, various event handler registrations and more.
+
+### A note on events
+For events to work properly, you need to register your event classes in the constructor, like this:
+```python
+class HelloWorld(PluginBase):
+    def __init__(self, plugin_manifest: PluginManifest):
+        super().__init__(plugin_manifest, [MyValueChangedEvent]) # Provide a list of event classes here. This is used for deserializing stored events.
+...
+```
 
 For further details, see the [HelloWorld example plugin](./plugins/HelloWorld) for more examples, or [Join our Discord](https://discord.gg/9c58jxVuAT).
 
