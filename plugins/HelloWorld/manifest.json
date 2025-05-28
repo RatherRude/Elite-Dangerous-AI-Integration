@@ -1,8 +1,0 @@
-{
-    "guid": "babe1f36-bc38-4b62-8cda-80a7a68835f6",
-    "name": "Hello World - Example Plugin",
-    "version": "0.0.1",
-    "author": "John Doe",
-    "description": "A sample plugin",
-    "entrypoint": "HelloWorld.py"
-}

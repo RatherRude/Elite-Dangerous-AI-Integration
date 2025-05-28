@@ -363,10 +363,6 @@ def test_chat_executable():
         f.write(json.dumps({"event": "Status", "timestamp": "2024-10-08T18:19:57Z"}))
     with open(f"{temp_dir}/Journal.2024-11-24T100000.01.log", "w") as f:
         f.write('')
-    # create plugin folder
-    os.mkdir(f"{temp_dir}/plugins")
-    # Copy HelloWorld plugin to temp dir
-    shutil.copytree("plugins/HelloWorld", f"{temp_dir}/plugins/HelloWorld")
     
     print('Temp dir:', temp_dir)
         

@@ -130,7 +130,7 @@ class HelloWorld(PluginBase):
 ...
 ```
 
-For further details, see the [HelloWorld example plugin](./plugins/HelloWorld) for more examples, or [Join our Discord](https://discord.gg/9c58jxVuAT).
+For further details or questions, [Join our Discord](https://discord.gg/9c58jxVuAT).
 
 ## Python Dependencies
 If your plugin needs additional 3rd party Python modules, then you need to package them along with your plugin.  
