@@ -387,6 +387,8 @@ class Config(TypedDict):
     edcopilot: bool
     edcopilot_dominant: bool
     ptt_key: str
+    ptm_key: str
+    ptm_toggle_var: bool
     input_device_name: str
     output_device_name: str
     cn_autostart: bool
@@ -656,6 +658,8 @@ def load_config() -> Config:
         'llm_endpoint': "https://api.openai.com/v1",
         'llm_api_key': "",
         'ptt_key': '',
+        'ptm_key': '',
+        'ptm_toggle_var': False,
         'vision_provider': "none",
         'vision_model_name': "gpt-4.1-mini",
         'vision_endpoint': "https://api.openai.com/v1",
@@ -713,6 +717,21 @@ def assign_ptt(config: Config, controller_manager):
     def on_hotkey_detected(key: str):
         # print(f"Received key: {key}")
         config["ptt_key"] = key
+        semaphore.release()
+
+    semaphore.acquire()
+    controller_manager.listen_hotkey(on_hotkey_detected)
+    semaphore.acquire()
+    print(json.dumps({"type": "config", "config": config}) + '\n')
+    save_config(config)
+    return config
+
+def assign_ptm(config: Config, controller_manager):
+    semaphore = Semaphore(1)
+
+    def on_hotkey_detected(key: str):
+        # print(f"Received key: {key}")
+        config["ptm_key"] = key
         semaphore.release()
 
     semaphore.acquire()
