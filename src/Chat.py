@@ -7,7 +7,7 @@ from openai import OpenAI
 from openai.types.chat import ChatCompletion
 from openai.types.chat import ChatCompletionMessageToolCall
 
-from lib.Config import Config, assign_ptt, get_ed_appdata_path, get_ed_journals_path, get_system_info, load_config, save_config, update_config, update_event_config, validate_config
+from lib.Config import Config, assign_ptt, assign_ptm, get_ed_appdata_path, get_ed_journals_path, get_system_info, load_config, save_config, update_config, update_event_config, validate_config
 from lib.ActionManager import ActionManager
 from lib.Actions import register_actions
 from lib.ControllerManager import ControllerManager
@@ -164,12 +164,20 @@ class Chat:
         else:
             self.stt.listen_continuous()
 
-            # Utilize PTT key as mute key instead.            
-            self.controller_manager.register_hotkey(
-                self.config["ptt_key"], 
-                lambda _: _,
-                lambda _: self.stt.pause_continuous_listening(not self.stt.continuous_listening_paused)
-            )
+            # Utilize PTT key as mute key instead.
+            if self.config['ptm_key']:
+                if self.config['ptm_toggle_var']:
+                    self.controller_manager.register_hotkey(
+                        self.config["ptm_key"], 
+                        lambda _: _,
+                        lambda _: self.stt.pause_continuous_listening(not self.stt.continuous_listening_paused)
+                    )
+                else:
+                    self.controller_manager.register_hotkey(
+                        self.config["ptm_key"], 
+                        lambda _: self.stt.pause_continuous_listening(True),
+                        lambda _: self.stt.pause_continuous_listening(False)
+                    )
         log('info', "Voice interface ready.")
 
         registerProjections(self.event_manager, self.system_database, self.character.get('idle_timeout_var', 300))
@@ -294,6 +302,8 @@ if __name__ == "__main__":
                             break
                 if data.get("type") == "assign_ptt":
                     config = assign_ptt(config, ControllerManager())
+                if data.get("type") == "assign_ptm":
+                    config = assign_ptm(config, ControllerManager())
                 if data.get("type") == "change_config":
                     config = update_config(config, data["config"])
                 if data.get("type") == "change_event_config":

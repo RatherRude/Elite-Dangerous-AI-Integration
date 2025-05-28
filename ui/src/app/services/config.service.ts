@@ -124,6 +124,8 @@ export interface Config {
     edcopilot: boolean;
     edcopilot_dominant: boolean;
     ptt_key: string;
+    ptm_key: string;
+    ptm_toggle_var: boolean;
     input_device_name: string;
     output_device_name: string;
     cn_autostart: boolean;
@@ -278,6 +280,14 @@ export class ConfigService {
     public async assignPTT(): Promise<void> {
         const message = {
             type: "assign_ptt",
+            timestamp: new Date().toISOString(),
+        };
+        await this.tauriService.send_message(message);
+    }
+
+    public async assignPTM(): Promise<void> {
+        const message = {
+            type: "assign_ptm",
             timestamp: new Date().toISOString(),
         };
         await this.tauriService.send_message(message);
