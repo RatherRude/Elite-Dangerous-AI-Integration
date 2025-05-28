@@ -764,6 +764,9 @@ def get_input_device_names() -> list[str]:
 
 def get_default_input_device_name() -> str:
     devices = get_input_device_names()
+    if 'pulse' in devices:
+        # If PulseAudio is available on linux, its a save bet
+        return 'pulse'
     return devices[0] if devices else ""
 
 
@@ -788,6 +791,9 @@ def get_output_device_names() -> list[str]:
 
 def get_default_output_device_name() -> str:
     devices = get_output_device_names()
+    if 'pulse' in devices:
+        # If PulseAudio is available on linux, its a save bet
+        return 'pulse'
     return devices[0] if devices else ""
 
 
