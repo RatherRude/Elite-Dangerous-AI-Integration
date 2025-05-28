@@ -2201,7 +2201,10 @@ class PromptGenerator:
             return "System map closed, Galaxy map opened"
         if event_name == "GalaxyMapClosedSystemMapOpened":
             return "Galaxy map closed, System map opened"
-
+        if event_name == "HudSwitchedToCombatMode":
+            return "Ship HUD is in combat mode"
+        if event_name == "HudSwitchedToAnalysisMode":
+            return "Ship HUD is in Analysis mode"
         if event_name == 'LandingGearUp':
             return 'Landing gear has been retracted'
         if event_name == 'LandingGearDown':
