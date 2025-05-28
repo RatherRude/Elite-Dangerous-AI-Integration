@@ -151,7 +151,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 
     Retrieves current interstellar news from Galnet. Answers the question that lead to tool usage.
 
-2. System Finder
+2. System Finder (utilizes [Spansh API](https://spansh.co.uk/systems))
 
     - `reference_system`: String (required)
     - `name`: String (optional)
@@ -167,7 +167,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 
     Find a star system based on various filters.
 
-3. Station Finder
+3. Station Finder (utilizes [Spansh API](https://spansh.co.uk/stations))
 
     - `reference_system`: String (required)
     - `name`: String (optional)
@@ -182,7 +182,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 
     Find a station based on various filters.
 
-4. Body Finder
+4. Body Finder (utilizes [Spansh API](https://spansh.co.uk/bodies))
 
     - `reference_system`: String (required)
     - `name`: String (optional)
