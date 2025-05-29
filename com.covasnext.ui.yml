@@ -26,6 +26,7 @@ finish-args:
   # Environment variables for better compatibility
   - --env=RUST_BACKTRACE=1
   - --env=WEBKIT_DISABLE_DMABUF_RENDERER=1
+  - --env=SSL_CERT_DIR=/etc/ssl/certs
 
 modules:
   - name: covas-next-ui
