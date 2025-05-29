@@ -308,12 +308,12 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
         keys.send('UI_Right')
         sleep(.5)
         keys.send('UI_Select')
-        sleep(.5)
+        sleep(1)
 
         if 'start_navigation' in args and args['start_navigation']:
             keys.send('CamZoomOut')
             sleep(0.15)
-            keys.send('UI_Select', hold=0.75)
+            keys.send('UI_Select', hold=1)
 
             sleep(0.05)
             if not current_gui == "GalaxyMap":  # if we are already in the galaxy map we don't want to close it
