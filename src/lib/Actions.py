@@ -1862,7 +1862,7 @@ def station_finder(obj,projected_states):
 
     url = "https://spansh.co.uk/api/stations/search"
     try:
-        response = requests.post(url, json=request_body)
+        response = requests.post(url, json=request_body, timeout=15)
         response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
 
         data = response.json()
@@ -2084,7 +2084,7 @@ def system_finder(obj, projected_states):
     url = "https://spansh.co.uk/api/systems/search"
 
     try:
-        response = requests.post(url, json=request_body)
+        response = requests.post(url, json=request_body, timeout=15)
         response.raise_for_status()
 
         data = response.json()
@@ -2750,7 +2750,7 @@ def body_finder(obj,projected_states):
     url = "https://spansh.co.uk/api/bodies/search"
 
     try:
-        response = requests.post(url, json=request_body)
+        response = requests.post(url, json=request_body, timeout=15)
         response.raise_for_status()
 
         data = response.json()
