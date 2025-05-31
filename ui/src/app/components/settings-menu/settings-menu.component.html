@@ -27,17 +27,6 @@
                                (ngModelChange)="onConfigChange({commander_name: $event})">
                     </mat-form-field>
 
-                    <p>This setting controls whether the AI will continue the conversation from the last message or
-                        start a new one. If you change the character, you may want to reset the conversation history, so
-                        the AI starts with a blank slate.</p>
-                    <mat-form-field>
-                        <mat-label>Conversation history</mat-label>
-                        <mat-select [value]="config.continue_conversation_var ? 'continue' : 'reset'"
-                                    (selectionChange)="onConfigChange({continue_conversation_var: $event.value === 'continue'})">
-                            <mat-option value="continue">Continue</mat-option>
-                            <mat-option value="reset">Reset</mat-option>
-                        </mat-select>
-                    </mat-form-field>
                     <p>Enter your API key from 
                         <a target="_blank" rel="noopener noreferrer" href="https://platform.openai.com/api-keys">OpenAI</a>, 
                         <a target="_blank" rel="noopener noreferrer" href="https://aistudio.google.com/app/apikey">Google AI Studio</a>, or 
@@ -683,6 +672,16 @@
                             </mat-accordion>
                         }
                     }
+
+                    <h2>Conversation History</h2>
+                    <div class="clear_history">
+                        <p>This will clear the entire conversation history with the AI. If you change the character, you may want to reset the conversation history, so
+                        the AI starts with a blank slate.</p>
+                        <button mat-stroked-button color="warn" (click)="onClearHistory()">
+                            <mat-icon>delete_sweep</mat-icon>
+                            Clear History
+                        </button>
+                    </div>
                 </div>
             }
         </div>
