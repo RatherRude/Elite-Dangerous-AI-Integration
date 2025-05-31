@@ -70,7 +70,7 @@ export interface Character {
     tts_voice?: string;
     tts_speed?: string;
     tts_prompt?: string;
-    
+
     // Event reaction properties
     event_reaction_enabled_var?: boolean;
     react_to_text_local_var?: boolean;
@@ -83,9 +83,14 @@ export interface Character {
     react_to_danger_onfoot_var?: boolean;
     react_to_danger_supercruise_var?: boolean;
     game_events?: { [key: string]: boolean };
-    
+
     // Add index signature to allow string indexing
-    [key: string]: string | number | boolean | { [key: string]: boolean } | undefined;
+    [key: string]:
+        | string
+        | number
+        | boolean
+        | { [key: string]: boolean }
+        | undefined;
 }
 
 export interface Config {
@@ -95,7 +100,12 @@ export interface Config {
     characters: Character[];
     active_character_index: number;
     // Other config settings
-    llm_provider: "openai" | "openrouter" | "google-ai-studio" | "custom" | "local-ai-server";
+    llm_provider:
+        | "openai"
+        | "openrouter"
+        | "google-ai-studio"
+        | "custom"
+        | "local-ai-server";
     llm_model_name: string;
     llm_api_key: string;
     llm_endpoint: string;
@@ -103,7 +113,13 @@ export interface Config {
     vision_model_name: string;
     vision_endpoint: string;
     vision_api_key: string;
-    stt_provider: "openai" | "custom" | "custom-multi-modal" | "google-ai-studio" | "none" | "local-ai-server";
+    stt_provider:
+        | "openai"
+        | "custom"
+        | "custom-multi-modal"
+        | "google-ai-studio"
+        | "none"
+        | "local-ai-server";
     stt_model_name: string;
     stt_api_key: string;
     stt_endpoint: string;
@@ -117,7 +133,6 @@ export interface Config {
     vision_var: boolean;
     ptt_var: boolean;
     mute_during_response_var: boolean;
-    continue_conversation_var: boolean;
     game_actions_var: boolean;
     web_search_actions_var: boolean;
     use_action_cache_var: boolean;
@@ -132,9 +147,11 @@ export interface Config {
     reset_game_events?: boolean; // Flag to request resetting game events to defaults
     qol_autobrake: boolean; // Quality of life: Auto brake when approaching stations
     qol_autoscan: boolean; // Quality of life: Auto scan when entering new systems
-    
+
     // Add index signature to allow string indexing
-    [key: string]: string | number | boolean | Character[] | { [key: string]: boolean } | undefined;
+    [key: string]: string | number | boolean | Character[] | {
+        [key: string]: boolean;
+    } | undefined;
 }
 
 @Injectable({
@@ -217,57 +234,63 @@ export class ConfigService {
         await this.tauriService.send_message(message);
     }
 
-    public async addCharacter(character: Character, setActive: boolean = false): Promise<void> {
+    public async addCharacter(
+        character: Character,
+        setActive: boolean = false,
+    ): Promise<void> {
         const message: CharacterOperationMessage = {
             type: "change_config",
             timestamp: new Date().toISOString(),
             config: {
                 operation: "add",
                 character: character,
-                set_active: setActive
-            }
+                set_active: setActive,
+            },
         };
-        
+
         await this.tauriService.send_message(message);
     }
-    
-    public async updateCharacter(index: number, character: Character): Promise<void> {
+
+    public async updateCharacter(
+        index: number,
+        character: Character,
+    ): Promise<void> {
         const message: CharacterOperationMessage = {
             type: "change_config",
             timestamp: new Date().toISOString(),
             config: {
                 operation: "update",
                 index: index,
-                character: character
-            }
+                character: character,
+            },
         };
-        
+
         await this.tauriService.send_message(message);
     }
-    
+
     public async deleteCharacter(index: number): Promise<void> {
         const message: CharacterOperationMessage = {
             type: "change_config",
             timestamp: new Date().toISOString(),
             config: {
                 operation: "delete",
-                index: index
-            }
+                index: index,
+            },
         };
-        
+
         await this.tauriService.send_message(message);
     }
-    
+
     public async setActiveCharacter(index: number): Promise<void> {
         const message: CharacterOperationMessage = {
             type: "change_config",
             timestamp: new Date().toISOString(),
             config: {
                 operation: "set_active",
-                index: index
-            }
+                index: index,
+            },
         };
-        
+
         await this.tauriService.send_message(message);
     }
 
@@ -288,14 +311,27 @@ export class ConfigService {
             type: "change_config",
             timestamp: new Date().toISOString(),
             config: {
-                reset_game_events: true
-            }
+                reset_game_events: true,
+            },
         };
 
         try {
             await this.tauriService.send_message(message);
         } catch (error) {
-            console.error('Error sending reset game events request:', error);
+            console.error("Error sending reset game events request:", error);
+        }
+    }
+
+    public async clearHistory(): Promise<void> {
+        const message: BaseMessage = {
+            type: "clear_history",
+            timestamp: new Date().toISOString(),
+        };
+
+        try {
+            await this.tauriService.send_message(message);
+        } catch (error) {
+            console.error("Error sending clear history request:", error);
         }
     }
 }

@@ -13,6 +13,12 @@ import traceback
 
 
 class ActionManager:
+    @staticmethod
+    def clear_action_cache():
+        """clear action cache"""
+        action_cache: KeyValueStore = KeyValueStore("action_cache")
+        action_cache.delete_all()
+    
     actions = {}
 
     def __init__(self):
@@ -97,8 +103,6 @@ class ActionManager:
             }
         }
         
-    def reset_action_cache(self):
-        self.action_cache.delete_all()
     
     def clean_user_input(self, user_input: list[str]) -> str:
         """

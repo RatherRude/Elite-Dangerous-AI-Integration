@@ -2,7 +2,6 @@ import hashlib
 import inspect
 from abc import ABC, abstractmethod
 from datetime import timezone, datetime
-import time
 from typing import Any, Generic, Literal, Callable, TypeVar, final
 
 from .Database import EventStore, KeyValueStore
@@ -31,24 +30,19 @@ class Projection(ABC, Generic[ProjectedState]):
 
 @final
 class EventManager:
+    @staticmethod
+    def clear_history():
+        event_store = EventStore('events', [])
+        event_store.delete_all()
+        projection_store = KeyValueStore('projections')
+        projection_store.delete_all()
+    
     def __init__(self, game_events: list[str],
-                 continue_conversation: bool = False, 
-                 #react_to_text_local: bool = True, react_to_text_starsystem: bool = True, react_to_text_npc: bool = False,
-                 #react_to_text_squadron: bool = True, react_to_material:str = '', react_to_danger_mining:bool = False,
-                 #react_to_danger_onfoot:bool = False, react_to_danger_supercruise:bool = False
                  ):
         self.incoming: Queue[Event] = Queue()
         self.pending: list[Event] = []
         self.processed: list[Event] = []
         self.game_events = game_events
-        #self.react_to_text_local = react_to_text_local
-        #self.react_to_text_starsystem = react_to_text_starsystem
-        #self.react_to_text_npc = react_to_text_npc
-        #self.react_to_text_squadron = react_to_text_squadron
-        #self.react_to_material = react_to_material
-        #self.react_to_danger_mining = react_to_danger_mining
-        #self.react_to_danger_onfoot = react_to_danger_onfoot
-        #self.react_to_danger_supercruise = react_to_danger_supercruise
         self._conditions_registry = defaultdict(list)
         self._registry_lock = threading.Lock()
 
@@ -58,13 +52,6 @@ class EventManager:
         
         self.event_store = EventStore('events', self.event_classes)
         self.projection_store = KeyValueStore('projections')
-
-        if continue_conversation:
-            self.load_history()
-            log('info', 'Continuing conversation with', len(self.processed), 'events.')
-        else:
-            self.clear_history()
-            log('info', 'Starting a new conversation.')
             
         
     def add_game_event(self, content: dict[str, Any]):
@@ -277,8 +264,3 @@ class EventManager:
         for event in reversed(events):
             self.processed.append(event)
     
-    def clear_history(self):
-        # TODO do we want to clear all events or just conversation?
-        self.event_store.delete_all()
-        # TODO do we want to clear projections as well?
-        self.projection_store.delete_all()
