@@ -2867,22 +2867,37 @@ class PromptGenerator:
         outfitting = projected_states.get('Outfitting', {})
         storedShips = projected_states.get('StoredShips', {})
         if current_station and current_station == market.get('StationName'):
-            status_entries.append(("Local market information", {
+            buy_items = {
                 item.get('Name_Localised'): {
-                    'Can i buy at this market?': 'yes',
                     'Category': item.get('Category_Localised'),
                     'BuyPrice': item.get('BuyPrice'),
                     'MeanPrice': item.get('MeanPrice'),
                     'Stock': item.get('Stock'),
-                } if item.get('Stock') > item.get('Demand') else {
-                    'Can i buy at this market?': 'no',
+                }
+                for item in market.get('Items', [])
+                if item.get('Stock', 0) > item.get('Demand', 0)
+            }
+
+            sell_items = {
+                item.get('Name_Localised'): {
                     'Category': item.get('Category_Localised'),
                     'SellPrice': item.get('SellPrice'),
                     'MeanPrice': item.get('MeanPrice'),
                     'Demand': item.get('Demand'),
                 }
-                for item in market.get('Items',[]) if item.get('Stock') or item.get('Demand')
-            }))
+                for item in market.get('Items', [])
+                if item.get('Demand', 0) > item.get('Stock', 0)
+            }
+
+            if buy_items or sell_items:
+                status_entries.append((
+                    "Local market information",
+                    {
+                        "Items I can buy from the market": buy_items,
+                        "Items I can sell to the market": sell_items
+                    }
+                ))
+
         if current_station and current_station == outfitting.get('StationName'):
             status_entries.append(("Local outfitting information", [
                 {"Name": item.get('Name'), "BuyPrice": item.get('BuyPrice')}
