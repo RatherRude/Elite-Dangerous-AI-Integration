@@ -1980,10 +1980,12 @@ class PromptGenerator:
             return f"No active Community Goals found."
 
         if event_name == 'CrimeVictim':
-            crime_victim_event = cast(Dict[str, Any], content)
-            offender = crime_victim_event.get('Offender', 'Unknown perpetrator')
-            crime_type = crime_victim_event.get('CrimeType', 'unknown crime')
-            return f"{self.commander_name} has been the victim of {crime_type} by {offender}."
+            # @ToDo: Filter only if offender isn't commander
+            # crime_victim_event = cast(Dict[str, Any], content)
+            # offender = crime_victim_event.get('Offender', 'Unknown perpetrator')
+            # crime_type = crime_victim_event.get('CrimeType', 'unknown crime')
+            # return f"{self.commander_name} has been the victim of {crime_type} by {offender}."
+            return None
 
         if event_name == 'Died':
             died_event = cast(DiedEvent, content)
