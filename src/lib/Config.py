@@ -394,6 +394,8 @@ class Config(TypedDict):
     qol_autobrake: bool  # Quality of life: Auto brake when approaching stations
     qol_autoscan: bool  # Quality of life: Auto scan when entering new systems
 
+    plugin_settings: dict[str, Any]
+
 
 def get_cn_appdata_path() -> str:
     return os.getcwd()
@@ -671,7 +673,8 @@ def load_config() -> Config:
         "ed_journal_path": "",
         "ed_appdata_path": "",
         "qol_autobrake": False,  # Quality of life: Auto brake when approaching stations
-        "qol_autoscan": False   # Quality of life: Auto scan when entering new systems
+        "qol_autoscan": False,   # Quality of life: Auto scan when entering new systems
+        "plugin_settings": {}
     }
     try:
         print("Loading configuration file")
