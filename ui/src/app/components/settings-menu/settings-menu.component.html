@@ -1238,56 +1238,63 @@
             }
         </div>
     </mat-tab>
-    @if (system?.edcopilot_installed) {
+    @if (system?.edcopilot_installed || has_plugin_settings) {
         <mat-tab>
             <ng-template mat-tab-label>
                 <mat-icon class="tab-icon">extension</mat-icon>
-                Third Party
+                Plugins
             </ng-template>
             <div class="tab-content">
-                <div class="settings-grid">
-                    @if (config && system) {
-                        @if (system.edcopilot_installed) {
-                            <mat-slide-toggle [(ngModel)]="config.edcopilot"
-                                              (ngModelChange)="onConfigChange({edcopilot: $event})">
-                                Enable EDCoPilot Integration
-                            </mat-slide-toggle>
-                            @if (config.edcopilot) {
-                                <p>
-                                    The EDCoPilot integration prevents both applications for talking at the same time.
-                                    There are two modes of operation. <br>
-                                    Learn more about this feature <a target="_blank" rel="noopener noreferrer"
-                                                                     href="https://ratherrude.github.io/Elite-Dangerous-AI-Integration/50_EDCoPilot/">here.</a>
-                                </p>
-                                <p>Enabled:</p>
-                                <ul>
-                                    <li>EDCoPilot will show COVAS:NEXT chat history</li>
-                                    <li>COVAS:NEXT will generate responses</li>
-                                </ul>
-                                <p>COVAS:NEXT Dominant:</p>
-                                <ul>
-                                    <li>EDCoPilot will be silent</li>
-                                    <li>COVAS:NEXT low-latency Text-to-Speech is used</li>
-                                </ul>
-                                <p>EDCoPilot Dominant:</p>
-                                <ul>
-                                    <li>EDCoPilot will generate responses</li>
-                                    <li>COVAS:NEXT Text-to-Speech is disabled</li>
-                                </ul>
+                @if (config && system) {
+                    @if (system.edcopilot_installed) {
+                        <mat-expansion-panel>
+                            <mat-expansion-panel-header>
+                                <mat-icon class="tab-icon">robot_2</mat-icon>
+                                EDCoPilot
+                            </mat-expansion-panel-header>
 
-                                <mat-form-field>
-                                    <mat-label>Speech Output Application</mat-label>
-                                    <mat-select [value]="config.edcopilot_dominant ? 'edcopilot' : 'covas'"
-                                                (selectionChange)="onConfigChange({edcopilot_dominant: $event.value === 'edcopilot'})">
-                                        <mat-option value="covas">COVAS:NEXT Dominant</mat-option>
-                                        <mat-option value="edcopilot">EDCoPilot Dominant</mat-option>
-                                    </mat-select>
-                                </mat-form-field>
-                            }
-                        }
+                            <div class="settings-grid">
+                                <mat-slide-toggle [(ngModel)]="config.edcopilot"
+                                                (ngModelChange)="onConfigChange({edcopilot: $event})">
+                                    Enable EDCoPilot Integration
+                                </mat-slide-toggle>
+                                @if (config.edcopilot) {
+                                    <p>
+                                        The EDCoPilot integration prevents both applications for talking at the same time.
+                                        There are two modes of operation. <br>
+                                        Learn more about this feature <a target="_blank" rel="noopener noreferrer"
+                                                                        href="https://ratherrude.github.io/Elite-Dangerous-AI-Integration/50_EDCoPilot/">here.</a>
+                                    </p>
+                                    <p>Enabled:</p>
+                                    <ul>
+                                        <li>EDCoPilot will show COVAS:NEXT chat history</li>
+                                        <li>COVAS:NEXT will generate responses</li>
+                                    </ul>
+                                    <p>COVAS:NEXT Dominant:</p>
+                                    <ul>
+                                        <li>EDCoPilot will be silent</li>
+                                        <li>COVAS:NEXT low-latency Text-to-Speech is used</li>
+                                    </ul>
+                                    <p>EDCoPilot Dominant:</p>
+                                    <ul>
+                                        <li>EDCoPilot will generate responses</li>
+                                        <li>COVAS:NEXT Text-to-Speech is disabled</li>
+                                    </ul>
+
+                                    <mat-form-field>
+                                        <mat-label>Speech Output Application</mat-label>
+                                        <mat-select [value]="config.edcopilot_dominant ? 'edcopilot' : 'covas'"
+                                                    (selectionChange)="onConfigChange({edcopilot_dominant: $event.value === 'edcopilot'})">
+                                            <mat-option value="covas">COVAS:NEXT Dominant</mat-option>
+                                            <mat-option value="edcopilot">EDCoPilot Dominant</mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                }
+                            </div>
+                        </mat-expansion-panel>
                     }
-                </div>
-
+                    <app-plugin-settings></app-plugin-settings>
+                }
             </div>
         </mat-tab>
     }
