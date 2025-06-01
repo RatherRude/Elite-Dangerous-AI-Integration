@@ -173,6 +173,25 @@ def cycle_target(args, projected_states):
         keys.send('CycleNextTarget')
         return "Selected next target"
 
+def change_hud_mode(args, projected_states):
+
+    mode = args.get('hud mode', 'toggle').lower()
+    if projected_states.get('CurrentStatus').get('flags').get('HudInAnalysisMode'):
+        current_hud_mode = "analysis"
+    else:
+        current_hud_mode = "combat"
+
+    if mode == "toggle":
+        keys.send('PlayerHUDModeToggle')
+        return "combat mode activated" if current_hud_mode == "analysis" else "analysis mode activated"
+
+    if mode == current_hud_mode:
+        return f"hud already in {current_hud_mode}"
+    else:
+        keys.send('PlayerHUDModeToggle')
+        return f"{mode} mode activated"
+
+
 def cycle_fire_group(args, projected_states):
     setGameWindowActive()
     firegroup_ask = args.get('fire_group')
@@ -1870,7 +1889,7 @@ def station_finder(obj,projected_states):
 
     url = "https://spansh.co.uk/api/stations/search"
     try:
-        response = requests.post(url, json=request_body)
+        response = requests.post(url, json=request_body, timeout=15)
         response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
 
         data = response.json()
@@ -2092,7 +2111,7 @@ def system_finder(obj, projected_states):
     url = "https://spansh.co.uk/api/systems/search"
 
     try:
-        response = requests.post(url, json=request_body)
+        response = requests.post(url, json=request_body, timeout=15)
         response.raise_for_status()
 
         data = response.json()
@@ -2758,7 +2777,7 @@ def body_finder(obj,projected_states):
     url = "https://spansh.co.uk/api/bodies/search"
 
     try:
-        response = requests.post(url, json=request_body)
+        response = requests.post(url, json=request_body, timeout=15)
         response.raise_for_status()
 
         data = response.json()
@@ -2850,8 +2869,8 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
           "duration": {
             "type": "number",
             "description": "Duration to hold fire button in seconds (for fire action only)",
-            "minimum": 0.1,
-            "maximum": 30.0
+            "minimum": 0,
+            "maximum": 30
           },
           "repetitions": {
             "type": "integer",
@@ -2891,7 +2910,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, deploy_heat_sink, 'ship')
 
-    actionManager.registerAction('deployHardpointToggle', "Deploy or retract hardpoints", {
+    actionManager.registerAction('deployHardpointToggle', "Deploy or retract hardpoints. Do not call this action when asked to switch hud mode", {
         "type": "object",
         "properties": {}
     }, deploy_hardpoint_toggle, 'ship')
@@ -2970,6 +2989,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         }
     }, cycle_target, 'ship')
 
+
     actionManager.registerAction(
         'cycle_fire_group',
         "call this tool if the user asks to cycle, select or switch to specific firegroup, the the next firegroup or to the previous firegroup",
@@ -2991,6 +3011,31 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         cycle_fire_group,
         'mainship'
     )
+
+    actionManager.registerAction('Change_ship_HUD_mode', "Switch to combat or analysis mode", {
+        "type": "object",
+        "properties": {
+            "hud mode": {
+                "type": "string",
+                "description": "mode to switch to",
+                "enum": ["combat", "analysis", "toggle"],
+            }
+        },
+        "required": ["hud mode"],
+    }, change_hud_mode, 'mainship')
+
+    actionManager.registerAction('cycleFireGroup', "Cycle to next fire group", {
+        "type": "object",
+        "properties": {
+            "direction": {
+                "type": "string",
+                "description": "Direction to cycle (next or previous)",
+                "enum": ["next", "previous"],
+            }
+        }
+    }, cycle_fire_group, 'ship')
+
+    
 
 
     actionManager.registerAction('shipSpotLightToggle', "Toggle ship spotlight", {
