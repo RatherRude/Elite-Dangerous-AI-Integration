@@ -586,6 +586,12 @@ def merge_config_data(defaults: dict, user: dict):
             if not isinstance(user.get(key), type(defaults.get(key))):
                 print(f"Warning: Config type mismatch for '{key}', using default")
                 continue
+
+            # Plugin settings
+            if key == "plugin_settings":
+                # Copy plugin settings directly, since we don't know what settings are supposed to be there.
+                merge[key] = user.get(key) or {}
+                continue
                 
             # Handle dict type specially
             if isinstance(defaults.get(key), dict) and isinstance(user.get(key), dict):
