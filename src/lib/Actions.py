@@ -242,6 +242,12 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
     setGameWindowActive()
     current_gui = projected_states.get('CurrentStatus', {}).get('GuiFocus', '')
 
+
+    if 'start_navigation' in args and args['start_navigation']:
+        nav_route = projected_states.get('NavInfo', {}).get('NavRoute', [])
+        if nav_route and nav_route[-1].get('StarSystem') == args.get('system_name'):
+            return f"The route to {args['system_name']} is already set"
+
     if current_gui in ['SAA', 'FSS', 'Codex']:
         raise Exception('Galaxy map can not be opened currently, the active GUI needs to be closed first')
 
@@ -253,7 +259,7 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
 
     try:
         event_manager.wait_for_condition('CurrentStatus', lambda s: s.get('GuiFocus') == "GalaxyMap", 4)
-        gm_open = True
+
     except TimeoutError:
         keys.send("UI_Back", repeat=10, repeat_delay=0.05)
         keys.send(galaxymap_key)
@@ -319,8 +325,11 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
             if not current_gui == "GalaxyMap":  # if we are already in the galaxy map we don't want to close it
                 keys.send(galaxymap_key)
 
-            return ((f"Best location found: {json.dumps(args['details'])}. " if 'details' in args else '') +
-                    f"Plotting a route to {args['system_name']} has been attempted. Check event history to see if it was successful, if you see no event it has failed.")
+            try:
+                event_manager.wait_for_condition('NavRoute', lambda s: s and s[-1].get('StarSystem') == args['system_name'], 3)
+                return (f"Best location found: {json.dumps(args['details'])}. " if 'details' in args else '') + f"Route to {args['system_name']} successfully plotted"
+            except TimeoutError:
+                return f"Failed to plot a route to {args['system_name']}"
 
         return f"The galaxy map has opened. It is now zoomed in on \"{args['system_name']}\". No route was plotted yet, only the commander can do that."
 
