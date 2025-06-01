@@ -7,6 +7,7 @@ import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { FormsModule } from "@angular/forms";
+import { MatTooltipModule } from '@angular/material/tooltip';
 import {
   Character,
   Config,
@@ -27,6 +28,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { EdgeTtsVoicesDialogComponent } from '../edge-tts-voices-dialog';
 import { ConfirmationDialogComponent, ConfirmationDialogData } from '../../components/confirmation-dialog/confirmation-dialog.component';
 import { ConfirmationDialogService } from '../../services/confirmation-dialog.service';
+import { GameEventTooltips } from './game-event-tooltips';
+import { TooltipDirective } from './tooltip.directive';
 
 interface PromptSettings {
   // Existing settings
@@ -70,6 +73,8 @@ interface PromptSettings {
     MatCheckboxModule,
     MatDialogModule,
     MatProgressSpinnerModule,
+    MatTooltipModule,
+    TooltipDirective,
     EdgeTtsVoicesDialogComponent
   ],
   templateUrl: "./settings-menu.component.html",
@@ -91,6 +96,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   eventSearchQuery: string = "";
   voiceInstructionSupportedModels: string[] = ['gpt-4o-mini-tts'];
   isApplyingChange: boolean = false;
+  public GameEventTooltips = GameEventTooltips;
 
   gameEventCategories = GameEventCategories;
   settings: PromptSettings = {

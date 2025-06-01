@@ -362,6 +362,9 @@ class StatusParser:
             if not old_status["flags"]["FsdCharging"] and new_status["flags"]["FsdCharging"]:
                 events.append({"event": "FsdCharging"})
 
+            if not old_status["flags"]["BeingInterdicted"] and new_status["flags"]["BeingInterdicted"]:
+                events.append({"event": "BeingInterdicted"})
+
         # Only SRV
         if new_status["flags"]["InSRV"]:
             if old_status["flags"]["SrvHandbrake"] and not new_status["flags"]["SrvHandbrake"]:
