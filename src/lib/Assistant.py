@@ -72,6 +72,9 @@ class Assistant:
 
 
     def reply(self, events: list[Event], projected_states: dict[str, dict]):
+        if self.is_replying:
+            log('debug', 'Reply already in progress, skipping new reply')
+            return
         thread = Thread(target=self.reply_thread, args=(events, projected_states), daemon=True)
         thread.start()
         
