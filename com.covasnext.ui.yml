@@ -20,7 +20,8 @@ finish-args:
   - --filesystem=/tmp:rw
   # Devices access
   - --device=dri # OpenGL
-  - --device=input # Joysticks and other input devices
+  #- --device=input # Not supported in flatpak-builder 1.4 (default on ubuntu 24.04) 
+  - --device=all # Fallback for input devices
   # D-Bus access for notifications and system integration
   - --socket=session-bus
   - --socket=system-bus
