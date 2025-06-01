@@ -1,6 +1,12 @@
 import sys
-from time import time
+from time import time, sleep # Modified import
 from typing import Any, final
+import os # Added import
+import threading # Added import
+import json # Added import
+import io # Added import
+import traceback # Added import
+import platform # Added import
 
 from EDMesg.CovasNext import ExternalChatNotification, ExternalBackgroundChatNotification
 from openai import OpenAI
@@ -288,6 +294,16 @@ def read_stdin(chat: Chat):
             if data.get("type") == "submit_input":
                 chat.submit_input(data["input"])
 
+def check_zombie_status():
+    """Checks if the current process is a zombie and exits if it is."""
+    log("debug", "Starting zombie process checker thread...")
+    while True:
+        if os.getppid() == 1:
+            log("info", "Parent process exited. Exiting.")
+            sleep(1)  # Give some time for the parent to exit
+            os._exit(0)  # Use os._exit to avoid cleanup issues in threads
+        sleep(5)  # Check every 5 seconds
+
 if __name__ == "__main__":
     try:
         print(json.dumps({"type": "ready"})+'\n')
@@ -341,6 +357,10 @@ if __name__ == "__main__":
         # run chat in a thread
         stdin_thread = threading.Thread(target=read_stdin, args=(chat,), daemon=True)
         stdin_thread.start()
+
+        if sys.platform.startswith('linux'):
+            zombie_check_thread = threading.Thread(target=check_zombie_status, daemon=True)
+            zombie_check_thread.start()
 
         log("debug", "Running chat...")
         chat.run()
