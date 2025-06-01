@@ -1,8 +1,9 @@
 from datetime import timedelta, datetime
 from functools import lru_cache
-from typing import Any, cast, Dict, Union, List, Optional
+from typing import Any, Callable, cast, Dict, Union, List, Optional
 import random
 
+from openai.types.chat import ChatCompletionMessageParam
 import yaml
 import requests
 import humanize
@@ -49,6 +50,8 @@ NavRouteEvent = dict
 
 class PromptGenerator:
     def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str], system_db: SystemDatabase):
+        self.registered_prompt_event_handlers: list[Callable[[Event], list[ChatCompletionMessageParam]]] = []
+        self.registered_status_generators: list[Callable[[dict[str, dict]], list[tuple[str, Any]]]] = []
         self.commander_name = commander_name
         self.character_prompt = character_prompt
         self.important_game_events = important_game_events
@@ -3004,6 +3007,13 @@ class PromptGenerator:
 
             if available_engineers:
                 status_entries.append(("Available Engineers", available_engineers))
+        
+        # Process plugin status messages
+        for status_generator in self.registered_status_generators:
+            try:
+                status_entries += status_generator(projected_states)
+            except Exception as e:
+                log('error', f"Error executing status generator: {e}", traceback.format_exc())
 
         # Format and return the final status message
         return "\n\n".join(['# '+entry[0]+'\n' + yaml.dump(entry[1], sort_keys=False) for entry in status_entries])
@@ -3053,6 +3063,12 @@ class PromptGenerator:
             if isinstance(event, ToolEvent):
                 conversational_pieces += self.tool_messages(event)
 
+            for handler in self.registered_prompt_event_handlers:
+                try:
+                    conversational_pieces += handler(event)
+                except Exception as e:
+                    log('error', f"Error executing prompt event handler for {event}: {e}", traceback.format_exc())
+
         conversational_pieces.append(
             {
                 "role": "user",
@@ -3084,6 +3100,12 @@ class PromptGenerator:
         log('debug', 'conversation', json.dumps(conversational_pieces))
 
         return conversational_pieces
+    
+    def register_prompt_event_handler(self, prompt_event_handler: Callable[[Event], list[ChatCompletionMessageParam]]):
+        self.registered_prompt_event_handlers.append(prompt_event_handler)
+    
+    def register_status_generator(self, status_generator: Callable[[dict[str, dict]], list[tuple [str, Any]]]):
+        self.registered_status_generators.append(status_generator)
 
     def format_system_info(self, system_info: dict) -> dict:
         """
