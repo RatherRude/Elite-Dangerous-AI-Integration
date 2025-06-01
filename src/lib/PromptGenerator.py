@@ -2234,7 +2234,7 @@ class PromptGenerator:
         if event_name == 'FsdCharging':
             return 'Frame Shift Drive charging, preparing for jump'
         if event_name == "BeingInterdicted":
-            return "We are being interdicted."
+            return "Supercruise is being interdicted."
         if event_name == 'SrvHandbrakeOff':
             return 'SRV handbrake released, free to move'
         if event_name == 'SrvHandbrakeOn':
