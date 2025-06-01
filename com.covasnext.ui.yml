@@ -18,8 +18,9 @@ finish-args:
   # File access
   - --filesystem=home:rw
   - --filesystem=/tmp:rw
-  # OpenGL access
-  - --device=dri
+  # Devices access
+  - --device=dri # OpenGL
+  - --device=input # Joysticks and other input devices
   # D-Bus access for notifications and system integration
   - --socket=session-bus
   - --socket=system-bus
