@@ -287,7 +287,8 @@ pub async fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(
             tauri_plugin_log::Builder::default()
-                .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepAll)
+                .max_file_size(50_000_000 /* bytes */)
+                .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepOne)
                 .build(),
         )
         .manage(AppState {

@@ -159,7 +159,7 @@ class Status(TypedDict):
     flags: BaseFlags
     flags2: Optional[OdysseyFlags]
     Pips: Optional[Pips]
-    Firegroup: Optional[int]
+    FireGroup: Optional[int]
     GuiFocus: Optional[Literal[
         'NoFocus',
         'InternalPanel',
@@ -223,7 +223,7 @@ def parse_status_json(value: dict[str, Any]) -> Status:
         flags=parse_status_flags(value.get('Flags', 0)),
         flags2=parse_odyssey_flags(value.get('Flags2', 0)) if 'Flags2' in value else None,
         Pips=parse_pips_flags(value.get('Pips', [0,0,0])) if 'Pips' in value else None,
-        Firegroup=value.get('Firegroup') if 'Firegroup' in value else None,
+        FireGroup=value.get('FireGroup') if 'FireGroup' in value else None,
         GuiFocus=GuiPanels[value.get('GuiFocus', 0)] if 'GuiFocus' in value else None,
         Fuel=Fuel(**value.get('Fuel', {})) if 'Fuel' in value else None,
         Cargo=value.get('Cargo', None),
@@ -361,6 +361,9 @@ class StatusParser:
 
             if not old_status["flags"]["FsdCharging"] and new_status["flags"]["FsdCharging"]:
                 events.append({"event": "FsdCharging"})
+
+            if not old_status["flags"]["BeingInterdicted"] and new_status["flags"]["BeingInterdicted"]:
+                events.append({"event": "BeingInterdicted"})
 
         # Only SRV
         if new_status["flags"]["InSRV"]:

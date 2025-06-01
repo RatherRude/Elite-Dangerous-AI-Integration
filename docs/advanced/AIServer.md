@@ -15,16 +15,17 @@ It can be download [here](https://github.com/lucaelin/covas-next-aiserver/releas
 
 *Downsides:*
 - Tricky to set up, as it is still highly experimental
-- May struggle with multilingual input/output
-- Higher latency than cloud services
+- Struggle with multilingual input/output
+- Higher latency than cloud services for LLMs
+- Requires a powerful GPU when working with LLMs
 
 Upon starting the AIServer, need to configure it using the window that pops up. You can select the "None" option for the different modalities you don't want to use (e.g. if you only want STT and use the LLM via OpenRouter and TTS via EdgeTTS).
 
-1) Select a TTS Model. At the time of writing we recommend using `vits-piper-en_US-libritts-high.tar.bz2`. 
+1) Select a TTS Model. At the time of writing we recommend using `hexgrad/Kokoro-82M`. 
 
-2) Select a STT model. At the time of writing we recommend using `distil-medium.en` or `distil-small.en`.
+2) Select a STT model. At the time of writing we recommend using `onnx_asr/nemo-parakeet-tdt-0.6b-v2`
 
-3) Select an LLM model. At the time of writing we recommend using `lmstudio-community/Llama-3.2-3B-Instruct-GGUF`.
+3) Select an LLM model. At the time of writing we recommend using `Salesforce/xLAM-2-3b-fc-r-gguf`.
 
 4) You can choose to enable or disable the LLM Disk Cache. Depending on your system (SSD performance), this my speed up the LLM response time or significantly slow it down. We recommend to disable it, if you are unsure.
 
@@ -32,27 +33,13 @@ Upon starting the AIServer, need to configure it using the window that pops up. 
 
 The AIServer window will then download the selected models and show a message when done: `running on http://127.0.0.1:8080`.
 
-Lastly, you will need to configure the AI Integration itself. 
+6) Lastly, you will need to configure the COVAS:NEXT itself:
 
-```
-STT Provider: Custom
-STT Model Name: whisper-1
-STT Endpoint URL: http://localhost:8080/v1
-STT API Key: <empty>
-``` 
-```
-TTS Provider: Custom
-TTS Model Name: tts-1
-TTS Endpoint URL: http://localhost:8080/v1
-TTS Voice name: nova
-TTS API Key: <empty>
-```
-```
-LLM Provider: Custom
-LLM Model Name: gpt-4o-mini
-LLM Endpoint URL: http://localhost:8080/v1
-LLM API Key: <empty>
-```
+- Open the COVAS:NEXT "Advances settings"
+
+- Depending on the modalities you selected, you will need to change LLM, STT and TTS settings to "Local AIServer".
+
+- When using a separate computer to run AIServer, you can adjust the host and port in the endpoint settings.
 
 ## Saving configuration
 
@@ -62,7 +49,7 @@ If you don't want to configure every time you start the AIServer, you can place 
   "host": "127.0.0.1",
   "port": 8080,
   "embedding_model_name": "None",
-  "stt_model_name": "distil-medium.en",
+  "stt_model_name": "onnx_asr/nemo-parakeet-tdt-0.6b-v2",
   "tts_model_name": "hexgrad/Kokoro-82M",
   "llm_model_name": "None",
   "use_disk_cache": false

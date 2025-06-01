@@ -1,13 +1,21 @@
 import sys
-from time import time
+from time import time, sleep # Modified import
 from typing import Any, final
+import os # Added import
+import threading # Added import
+import json # Added import
+import io # Added import
+import traceback # Added import
+import platform # Added import
 
 from EDMesg.CovasNext import ExternalChatNotification, ExternalBackgroundChatNotification
 from openai import OpenAI
 from openai.types.chat import ChatCompletion
 from openai.types.chat import ChatCompletionMessageToolCall
 
+from lib.PluginHelper import PluginHelper
 from lib.Config import Config, assign_ptt, get_ed_appdata_path, get_ed_journals_path, get_system_info, load_config, save_config, update_config, update_event_config, validate_config
+from lib.PluginManager import PluginManager
 from lib.ActionManager import ActionManager
 from lib.Actions import register_actions
 from lib.ControllerManager import ControllerManager
@@ -31,8 +39,9 @@ sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
 
 @final
 class Chat:
-    def __init__(self, config: Config):
+    def __init__(self, config: Config, plugin_manager: PluginManager):
         self.config = config # todo: remove
+        self.plugin_manager = plugin_manager
         if self.config["api_key"] == '':
             self.config["api_key"] = '-'
         self.character = self.config['characters'][self.config['active_character_index']]
@@ -102,10 +111,14 @@ class Chat:
         self.status_parser = StatusParser(get_ed_journals_path(config))
         log("debug", "Initializing prompt generator...")
         self.prompt_generator = PromptGenerator(self.config["commander_name"], self.character["character"], important_game_events=self.enabled_game_events, system_db=self.system_database)
+        
+        log("debug", "Getting plugin event classes...")
+        plugin_event_classes = self.plugin_manager.register_event_classes()
+
         log("debug", "Initializing event manager...")
         self.event_manager = EventManager(
             game_events=self.enabled_game_events,
-            continue_conversation=self.config["continue_conversation_var"],
+            plugin_event_classes=plugin_event_classes,
         )
 
         log("debug", message="Initializing assistant...")
@@ -124,6 +137,24 @@ class Chat:
         log("debug", "Registering side effect...")
         self.event_manager.register_sideeffect(self.on_event)
         self.event_manager.register_sideeffect(self.assistant.on_event)
+        
+        self.plugin_helper = PluginHelper(self.prompt_generator, config, self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.system_database, self.ed_keys, self.assistant)
+        log("debug", "Plugin helper is ready...")
+
+        # Execute plugin helper ready hooks
+        self.plugin_manager.on_plugin_helper_ready(self.plugin_helper)
+
+        log("debug", "Registering plugin provided should_reply event handlers...")
+        self.plugin_manager.register_should_reply_handlers(self.plugin_helper)
+        
+        log("debug", "Registering plugin provided side effect...")
+        self.plugin_manager.register_sideeffects(self.plugin_helper)
+        
+        log("debug", "Registering plugin provided prompt event handlers...")
+        self.plugin_manager.register_prompt_event_handlers(self.plugin_helper)
+        
+        log("debug", "Registering plugin provided status generators...")
+        self.plugin_manager.register_status_generators(self.plugin_helper)
 
     def on_event(self, event: Event, projected_states: dict[str, Any]):
         send_message({
@@ -166,13 +197,14 @@ class Chat:
         log('info', "Voice interface ready.")
 
         registerProjections(self.event_manager, self.system_database, self.character.get('idle_timeout_var', 300))
+        self.plugin_manager.register_projections(self.plugin_helper)
 
         if self.config['tools_var']:
             register_actions(self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.ed_keys)
-            log('info', "Actions ready.")
-        
-        if not self.config["continue_conversation_var"]:
-            self.action_manager.reset_action_cache()
+
+            log('info', "Built-in Actions ready.")
+            self.plugin_manager.register_actions(self.plugin_helper)
+            log('info', "Plugin provided Actions ready.")
             
         log('info', 'Initializing states...')
         while self.jn.historic_events:
@@ -249,6 +281,9 @@ class Chat:
         # Teardown TTS
         self.tts.quit()
 
+        # Execute plugin chat stop hooks
+        self.plugin_manager.on_chat_stop(self.plugin_helper)
+
 
 def read_stdin(chat: Chat):
     log("debug", "Reading stdin...")
@@ -259,9 +294,25 @@ def read_stdin(chat: Chat):
             if data.get("type") == "submit_input":
                 chat.submit_input(data["input"])
 
+def check_zombie_status():
+    """Checks if the current process is a zombie and exits if it is."""
+    log("debug", "Starting zombie process checker thread...")
+    while True:
+        if os.getppid() == 1:
+            log("info", "Parent process exited. Exiting.")
+            sleep(1)  # Give some time for the parent to exit
+            os._exit(0)  # Use os._exit to avoid cleanup issues in threads
+        sleep(5)  # Check every 5 seconds
+
 if __name__ == "__main__":
     try:
         print(json.dumps({"type": "ready"})+'\n')
+        # Load plugins.
+        log('debug', "Loading plugins...")
+        plugin_manager = PluginManager()
+        plugin_manager.load_plugins()
+        log('debug', "Registering plugin settings for the UI...")
+        plugin_manager.register_settings()
         # Wait for start signal on stdin
         config = load_config()
         print(json.dumps({"type": "config", "config": config})+'\n', flush=True)
@@ -285,12 +336,15 @@ if __name__ == "__main__":
                         if new_config:
                             config = new_config
                             break
-                if data.get("type") == "assign_ptt":
+                if data.get("type") == "assign_ptt": 
                     config = assign_ptt(config, ControllerManager())
                 if data.get("type") == "change_config":
                     config = update_config(config, data["config"])
                 if data.get("type") == "change_event_config":
                     config = update_event_config(config, data["section"], data["event"], data["value"])
+                if data.get("type") == "clear_history":
+                    EventManager.clear_history()
+                    #ActionManager.clear_action_cache()
                 
             except json.JSONDecodeError:
                 continue
@@ -299,10 +353,14 @@ if __name__ == "__main__":
         save_config(config)
         print(json.dumps({"type": "start"})+'\n', flush=True)
         
-        chat = Chat(config)
+        chat = Chat(config, plugin_manager)
         # run chat in a thread
         stdin_thread = threading.Thread(target=read_stdin, args=(chat,), daemon=True)
         stdin_thread.start()
+
+        if sys.platform.startswith('linux'):
+            zombie_check_thread = threading.Thread(target=check_zombie_status, daemon=True)
+            zombie_check_thread.start()
 
         log("debug", "Running chat...")
         chat.run()
