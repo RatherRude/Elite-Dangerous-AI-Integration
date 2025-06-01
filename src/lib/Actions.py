@@ -184,10 +184,10 @@ def cycle_fire_group(args, projected_states):
 
         if direction == 'previous':
             keys.send('CycleFireGroupPrevious')
-            return "just say previous firegroup selected"
+            return "Previous firegroup selected."
         else:
             keys.send('CycleFireGroupNext')
-            return "just say next firegroup selected"
+            return "Next firegroup selected."
 
 
     elif firegroup_ask == initial_firegroup:
