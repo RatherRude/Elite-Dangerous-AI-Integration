@@ -37,7 +37,7 @@ def checkStatus(projected_states: dict[str, dict], blocked_status_dict: dict[str
 # Define functions for each action
 # General Ship Actions
 def fire_weapons(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True,'HudInAnalysisMode':True})
+    checkStatus(projected_states, {'Docked':True,'Landed':True})
     setGameWindowActive()
 
     # Parse arguments with defaults
@@ -47,6 +47,13 @@ def fire_weapons(args, projected_states):
     repetitions = args.get('repetitions', 0)  # 0 = one action, 1+ = repeat
 
     # Determine key mapping
+    if weapon_type == 'discovery_scanner':
+        change_hud_mode({'hud mode': 'analysis'}, projected_states)
+        cycle_fire_group({'fire_group': 0}, projected_states)
+        keys.send('PrimaryFire', hold=6)
+        return 'Discovery scan has been performed.'
+
+    change_hud_mode({'hud mode': 'combat'}, projected_states)
     if weapon_type == 'secondary':
         key_name = 'SecondaryFire'
         weapon_desc = 'secondary weapons'
@@ -2852,7 +2859,8 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             "description": "Type of weapons to fire",
             "enum": [
               "primary",
-              "secondary"
+              "secondary",
+              "discovery_scanner"
             ],
             "default": "primary"
           },
