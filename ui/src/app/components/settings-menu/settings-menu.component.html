@@ -204,14 +204,14 @@
                                         </button>
 
                                         <button mat-raised-button color="accent" (click)="addNewCharacter()"
-                                                [matTooltip]="selectedCharacterIndex <= 0 ? 'Create a new character to allow editing of character traits and prompt' : 'Create new character'">
+                                                [matTooltip]="selectedCharacterIndex <= 0 ? 'Create a new character to allow editing of character traits and prompt' : 'Create new character.'">
                                             <mat-icon>add</mat-icon> New
 
                                         </button>
 
                                         <button mat-raised-button color="accent" 
                                                 (click)="duplicateSelectedCharacter()"
-                                                [matTooltip]="'Duplicate this character. You can edit character traits after duplicating.'">
+                                                [matTooltip]="selectedCharacterIndex <= 0 ? 'Duplicate this character. You can edit character traits after duplicating.': 'Duplicate this character.'">
                                             <mat-icon>content_copy</mat-icon> Duplicate
                                         </button>
 
