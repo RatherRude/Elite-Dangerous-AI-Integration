@@ -203,16 +203,16 @@ def cycle_fire_group(args, projected_states):
 
         if direction == 'previous':
             keys.send('CycleFireGroupPrevious')
-            return "Previous firegroup selected."
+            return "Previous fire group selected."
         else:
             keys.send('CycleFireGroupNext')
-            return "Next firegroup selected."
+            return "Next fire group selected."
 
 
     elif firegroup_ask == initial_firegroup:
-        return f"Just say: Fire group {chr(65 + firegroup_ask)} is already selected"
+        return f"Fire group {chr(65 + firegroup_ask)} was already selected. No changes."
     elif firegroup_ask > 7:   # max allowed is up to H which is 7 starting with A=0
-        return f"Cannot switch to Firegroup {firegroup_ask} as it does not exists"
+        return f"Cannot switch to Firegroup {firegroup_ask} as it does not exist."
     else:
         for loop in range(abs(firegroup_ask - initial_firegroup)):
             if firegroup_ask > initial_firegroup:
@@ -227,9 +227,9 @@ def cycle_fire_group(args, projected_states):
         new_firegroup = status_event["FireGroup"]
     except TimeoutError:
         #handles case where we cycle back round to zero
-        return "Failed to cycle to requested firegroup. Does that firegroup exists?"
+        return "Failed to cycle to requested fire group. Please ensure it exists."
 
-    return f"just say fire group {chr(65 + new_firegroup)} is now selected"
+    return f"Fire group {chr(65 + new_firegroup)} is now selected."
 
 
 def ship_spot_light_toggle(args, projected_states):
