@@ -198,33 +198,41 @@
                                     @if (!editMode) {
                                         <button mat-raised-button color="primary"
                                                 [disabled]="selectedCharacterIndex <= 0"
+                                                [matTooltip]="'Edit the selected character and event reactions.'"
                                                 (click)="toggleEditMode()">
                                             <mat-icon>edit</mat-icon> Edit
                                         </button>
 
-                                        <button mat-raised-button color="accent" (click)="addNewCharacter()">
+                                        <button mat-raised-button color="accent" (click)="addNewCharacter()"
+                                                [matTooltip]="selectedCharacterIndex <= 0 ? 'Create a new character to allow editing of character traits and prompt' : 'Create new character.'">
                                             <mat-icon>add</mat-icon> New
+
                                         </button>
 
                                         <button mat-raised-button color="accent" 
-                                                (click)="duplicateSelectedCharacter()">
+                                                (click)="duplicateSelectedCharacter()"
+                                                [matTooltip]="selectedCharacterIndex <= 0 ? 'Duplicate this character. You can edit character traits after duplicating.': 'Duplicate this character.'">
                                             <mat-icon>content_copy</mat-icon> Duplicate
                                         </button>
 
                                         <button mat-raised-button color="warn"
                                                 [disabled]="selectedCharacterIndex <= 0"
-                                                (click)="deleteSelectedCharacter()">
+                                                (click)="deleteSelectedCharacter()"
+                                                [matTooltip]="'Delete current character.'">
                                             <mat-icon>delete</mat-icon> Delete
                                         </button>
                                     }
 
                                     <!-- When in edit mode, show Save and Cancel buttons -->
                                     @if (editMode) {
-                                        <button mat-raised-button color="primary" (click)="saveCurrentAsCharacter()">
+                                        <button mat-raised-button color="primary" (click)="saveCurrentAsCharacter()"
+                                                [matTooltip]="'Save character.'" >
                                             <mat-icon>save</mat-icon> Save
                                         </button>
 
-                                        <button mat-raised-button (click)="cancelEditMode()">
+                                        <button mat-raised-button (click)="cancelEditMode()"
+                                                [matTooltip]="'Cancel current edit.'" >
+
                                             <mat-icon>cancel</mat-icon> Cancel
                                         </button>
                                     }
@@ -349,7 +357,8 @@
                                 <div class="trait-select">
                                     <mat-form-field appearance="fill">
                                         <mat-label>Personality Preset</mat-label>
-                                        <mat-select [value]="getCharacterProperty('personality_preset', 'default')" (selectionChange)="applyPersonalityPreset($event.value)">
+                                        <mat-select [value]="getCharacterProperty('personality_preset', 'default')" (selectionChange)="applyPersonalityPreset($event.value)"  [matTooltip]="'Select a predefined personality role or write your own.'"
+                                                      tooltipPosition="right">>
                                             <mat-option value="default">Default</mat-option>
                                             <mat-option value="custom">Write your own prompt</mat-option>
                                             <mat-option disabled>--- Elite: Dangerous Roles ---</mat-option>
@@ -592,8 +601,10 @@
                                     </button>
                                 </mat-form-field>
 
-                                <button mat-raised-button color="warn" (click)="resetGameEvents()">
+                                <button mat-raised-button color="warn" (click)="resetGameEvents()"
+                                        [matTooltip]="'Reset the event reactions to the default set.'">
                                     <mat-icon>restart_alt</mat-icon> Reset to Defaults
+
                                 </button>
                             </div>
 
@@ -608,10 +619,14 @@
                                             </mat-panel-title>
                                         </mat-expansion-panel-header>
                                         @for (e of section.value | keyvalue:orderByKey; track e.key) {
-                                            <mat-slide-toggle [(ngModel)]="e.value"
-                                                              (ngModelChange)="onEventConfigChange(section.key, e.key, $event)">
-                                                {{ e.key }}
-                                            </mat-slide-toggle><br/>
+                                            <mat-slide-toggle
+                                                  [(ngModel)]="e.value"
+                                                  (ngModelChange)="onEventConfigChange(section.key, e.key, $event)"
+                                                  [appTooltip]="GameEventTooltips[e.key]"
+                                                  tooltipPosition="right"
+                                                >
+                                                  {{ e.key }}
+                                            </mat-slide-toggle>
                                             @if (e.key === "ProspectedAsteroid") {
                                                 <mat-form-field>
                                                     <mat-label>React to material</mat-label>
@@ -635,37 +650,86 @@
                                                 </mat-form-field>
                                             }
                                             @if (e.key === "InDanger") {
-                                                <mat-slide-toggle [ngModel]="getEventProperty('react_to_danger_mining_var', false)"
-                                                                  (ngModelChange)="onEventReactionFeatureToggle('react_to_danger_mining_var', $event)">
-                                                    React while mining
-                                                </mat-slide-toggle><br/>
-                                                <mat-slide-toggle [ngModel]="getEventProperty('react_to_danger_onfoot_var', false)"
-                                                                  (ngModelChange)="onEventReactionFeatureToggle('react_to_danger_onfoot_var', $event)">
-                                                    React while on-foot
-                                                </mat-slide-toggle><br/>
-                                                <mat-slide-toggle [ngModel]="getEventProperty('react_to_danger_supercruise_var', false)"
-                                                                  (ngModelChange)="onEventReactionFeatureToggle('react_to_danger_supercruise_var', $event)">
-                                                    React while in supercruise
-                                                </mat-slide-toggle><br/>
+                                            <div class="event-suboption">
+                                                <mat-slide-toggle
+                                                  [ngModel]="getEventProperty('react_to_danger_mining_var', false)"
+                                                  (ngModelChange)="onEventReactionFeatureToggle('react_to_danger_mining_var', $event)"
+                                                  [appTooltip]="'React to in danger whilst mining or not.'"
+                                                  tooltipPosition="right"
+                                                >
+                                                  React while mining
+                                                </mat-slide-toggle>
+                                              </div>
+
+                                            <div class="event-suboption">
+                                                <mat-slide-toggle
+                                                  [ngModel]="getEventProperty('react_to_danger_onfoot_var', false)"
+                                                  (ngModelChange)="onEventReactionFeatureToggle('react_to_danger_onfoot_var', $event)"
+                                                  [appTooltip]="'React to in danger whilst on foot or not.'"
+                                                  tooltipPosition="right"
+                                                >
+                                                  React while on-foot
+                                                </mat-slide-toggle>
+                                              </div>
+
+                                            <div class="event-suboption">
+                                                <mat-slide-toggle
+                                                  [ngModel]="getEventProperty('react_to_danger_supercruise_var', false)"
+                                                  (ngModelChange)="onEventReactionFeatureToggle('react_to_danger_supercruise_var', $event)"
+                                                  [appTooltip]="'React to in danger whilst in supercruise or not.'"
+                                                  tooltipPosition="right"
+                                                >
+                                                  React while in supercruise
+                                                </mat-slide-toggle>
+                                              </div>
                                             }
+
                                             @if (e.key === "ReceiveText") {
-                                                <mat-slide-toggle [ngModel]="getEventProperty('react_to_text_local_var', false)"
-                                                                  (ngModelChange)="onEventReactionFeatureToggle('react_to_text_local_var', $event)">
-                                                    React to local text
-                                                </mat-slide-toggle><br/>
-                                                <mat-slide-toggle [ngModel]="getEventProperty('react_to_text_starsystem_var', false)"
-                                                                  (ngModelChange)="onEventReactionFeatureToggle('react_to_text_starsystem_var', $event)">
-                                                    React to starsystem text
-                                                </mat-slide-toggle><br/>
-                                                <mat-slide-toggle [ngModel]="getEventProperty('react_to_text_squadron_var', false)"
-                                                                  (ngModelChange)="onEventReactionFeatureToggle('react_to_text_squadron_var', $event)">
-                                                    React to squadron text
-                                                </mat-slide-toggle><br/>
-                                                <mat-slide-toggle [ngModel]="getEventProperty('react_to_text_npc_var', false)"
-                                                                  (ngModelChange)="onEventReactionFeatureToggle('react_to_text_npc_var', $event)">
-                                                    React to NPC text
-                                                </mat-slide-toggle><br/>
+                                            <div class="event-suboption">
+                                                <mat-slide-toggle
+                                                  [ngModel]="getEventProperty('react_to_text_local_var', false)"
+                                                  (ngModelChange)="onEventReactionFeatureToggle('react_to_text_local_var', $event)"
+                                                  [appTooltip]="'React to local text or not'"
+                                                  tooltipPosition="right"
+                                                >
+                                                React to local text
+                                                </mat-slide-toggle>
+                                            </div>
+
+                                            <div class="event-suboption">
+                                                <mat-slide-toggle
+                                                  [ngModel]="getEventProperty('react_to_text_starsystem_var', false)"
+                                                  (ngModelChange)="onEventReactionFeatureToggle('react_to_text_starsystem_var', $event)"
+                                                  [appTooltip]="'React to starsystem text or not'"
+                                                  tooltipPosition="right"
+                                                >
+                                                  React to starsystem text
+                                                </mat-slide-toggle>
+                                              </div>
+
+                                            <div class="event-suboption">
+                                                <mat-slide-toggle
+                                                  [ngModel]="getEventProperty('react_to_text_squadron_var', false)"
+                                                  (ngModelChange)="onEventReactionFeatureToggle('react_to_text_squadron_var', $event)"
+                                                  [appTooltip]="'React to squadron text or not'"
+                                                  tooltipPosition="right"
+                                                >
+                                                  React to squadron text
+                                                </mat-slide-toggle>
+                                              </div>
+
+                                            <div class="event-suboption">
+                                                <mat-slide-toggle
+                                                  [ngModel]="getEventProperty('react_to_text_npc_var', false)"
+                                                  (ngModelChange)="onEventReactionFeatureToggle('react_to_text_npc_var', $event)"
+                                                  [appTooltip]="'React to npc text or not'"
+                                                  tooltipPosition="right"
+                                                >
+                                                  React to NPC text
+                                                </mat-slide-toggle>
+                                              </div>
                                             }
+
                                             @if (e.key === "Idle") {
                                                 <mat-form-field>
                                                     <mat-label>Idle Timeout (seconds)</mat-label>

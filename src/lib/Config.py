@@ -45,6 +45,7 @@ game_events = {
     'Interdiction': False,
     'Interdicted': False,
     'EscapeInterdiction': False,
+    'BeingInterdicted': True,
     'FactionKillBond': False,
     'FighterDestroyed': True,
     'HeatDamage': True,
@@ -60,7 +61,6 @@ game_events = {
     'SelfDestruct': True,
 
     # Trading
-    'Trade': False,
     'BuyTradeData': False,
     'CollectCargo': False,
     'EjectCargo': True,

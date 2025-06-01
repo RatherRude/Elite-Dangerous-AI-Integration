@@ -2103,17 +2103,6 @@ class PromptGenerator:
 
             return f"{self.commander_name}'s game statistics have been reported:\n{yaml.dump(content)}"
 
-        if event_name == 'Trade':
-            trade_event = cast(Dict[str, Any], content)
-            commodity = trade_event.get('Type_Localised', trade_event.get('Type', 'goods'))
-            count = trade_event.get('Count', 0)
-            price_per_unit = trade_event.get('Price', 0)
-            total_profit = trade_event.get('TotalProfit', 0)
-            if trade_event.get('SellPrice'):
-                return f"{self.commander_name} has sold {count} units of {commodity} at {price_per_unit:,} credits each (Total profit: {total_profit:,} credits)."
-            else:
-                return f"{self.commander_name} has purchased {count} units of {commodity} at {price_per_unit:,} credits each."
-
         if event_name == 'WeaponSelected':
             weapon_event = cast(Dict[str, Any], content)
             weapon = weapon_event.get('Weapon_Localised', weapon_event.get('Weapon', 'unknown weapon'))
@@ -2249,6 +2238,8 @@ class PromptGenerator:
             return 'Warning: Fuel reserves critically low, refueling recommended'
         if event_name == 'FsdCharging':
             return 'Frame Shift Drive charging, preparing for jump'
+        if event_name == "BeingInterdicted":
+            return "Supercruise is being interdicted."
         if event_name == 'SrvHandbrakeOff':
             return 'SRV handbrake released, free to move'
         if event_name == 'SrvHandbrakeOn':

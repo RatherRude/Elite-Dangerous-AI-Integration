@@ -18,7 +18,6 @@ export const GameEventCategories: Record<string, string[]> = {
     "Combat": [
         "Died",
         "Resurrect",
-        "WeaponSelected",
         "InDanger",
         "OutofDanger",
         "CombatEntered",
@@ -29,6 +28,7 @@ export const GameEventCategories: Record<string, string[]> = {
         "CapShipBond",
         "Interdiction",
         "Interdicted",
+        "BeingInterdicted",
         "EscapeInterdiction",
         "FactionKillBond",
         "FighterDestroyed",
@@ -45,7 +45,6 @@ export const GameEventCategories: Record<string, string[]> = {
         "SelfDestruct",
     ],
     "Trading": [
-        "Trade",
         "BuyTradeData",
         "CollectCargo",
         "EjectCargo",
@@ -154,6 +153,7 @@ export const GameEventCategories: Record<string, string[]> = {
         "DeleteSuitLoadout",
         "RenameSuitLoadout",
         "SwitchSuitLoadout",
+        "WeaponSelected",
         "UseConsumable",
         "FCMaterials",
         "ScanOrganic",
