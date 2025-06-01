@@ -2472,8 +2472,13 @@ class PromptGenerator:
         if in_combat.get("InCombat", False):
             flags.append("InCombat")
 
+        firegroup = "Unknown"
+        if current_status.get("FireGroup") is not None:
+            firegroup = chr(65 + current_status.get("FireGroup"))
+
         status_info = {
             "status": flags,
+            "current fire_group": firegroup,
             "balance": current_status.get("Balance", None),
             "pips": current_status.get("Pips", None),
             "cargo": current_status.get("Cargo", None),
