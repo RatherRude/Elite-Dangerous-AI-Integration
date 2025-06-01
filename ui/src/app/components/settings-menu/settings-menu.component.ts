@@ -7,6 +7,7 @@ import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { FormsModule } from "@angular/forms";
+import { MatTooltipModule } from '@angular/material/tooltip';
 import {
   Character,
   Config,
@@ -27,6 +28,8 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { EdgeTtsVoicesDialogComponent } from '../edge-tts-voices-dialog';
 import { ConfirmationDialogComponent, ConfirmationDialogData } from '../../components/confirmation-dialog/confirmation-dialog.component';
 import { ConfirmationDialogService } from '../../services/confirmation-dialog.service';
+import { GameEventTooltips } from './game-event-tooltips';
+import { TooltipDirective } from './tooltip.directive';
 import { PluginSettingsComponent } from "../plugin-settings/plugin-settings.component";
 
 interface PromptSettings {
@@ -71,6 +74,8 @@ interface PromptSettings {
     MatCheckboxModule,
     MatDialogModule,
     MatProgressSpinnerModule,
+    MatTooltipModule,
+    TooltipDirective,
     EdgeTtsVoicesDialogComponent,
     PluginSettingsComponent
   ],
@@ -95,6 +100,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
   eventSearchQuery: string = "";
   voiceInstructionSupportedModels: string[] = ['gpt-4o-mini-tts'];
   isApplyingChange: boolean = false;
+  public GameEventTooltips = GameEventTooltips;
 
   gameEventCategories = GameEventCategories;
   settings: PromptSettings = {
@@ -2738,6 +2744,21 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     }).catch(error => {
       console.error('Error duplicating character:', error);
       this.snackBar.open('Error duplicating character', 'OK', { duration: 5000 });
+    });
+  }
+
+  async onClearHistory(): Promise<void> {
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+      data: {
+        title: 'Clear History',
+        message: 'Are you sure you want to clear the conversation history? This action cannot be undone.',
+      },
+    });
+
+    dialogRef.afterClosed().subscribe(async (result) => {
+      if (result) {
+        await this.configService.clearHistory();
+      }
     });
   }
 
