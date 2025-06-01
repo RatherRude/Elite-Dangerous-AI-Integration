@@ -45,7 +45,7 @@ game_events = {
     'Interdiction': False,
     'Interdicted': False,
     'EscapeInterdiction': False,
-    'BeingInterdicted': False,
+    'BeingInterdicted': True,
     'FactionKillBond': False,
     'FighterDestroyed': True,
     'HeatDamage': True,
