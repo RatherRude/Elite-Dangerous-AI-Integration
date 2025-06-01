@@ -56,6 +56,12 @@ class EventManager:
         
         self.event_store = EventStore('events', self.event_classes)
         self.projection_store = KeyValueStore('projections')
+        
+        self.load_history()
+        if self.processed:
+            log('info', 'Continuing conversation with', len(self.processed), 'events.')
+        else:
+            log('info', 'Starting new conversation.')
             
         
     def add_game_event(self, content: dict[str, Any]):
