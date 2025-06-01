@@ -113,7 +113,6 @@ class Chat:
         self.event_manager = EventManager(
             game_events=self.enabled_game_events,
             plugin_event_classes=plugin_event_classes,
-            continue_conversation=self.config["continue_conversation_var"],
         )
 
         log("debug", message="Initializing assistant...")
@@ -196,12 +195,10 @@ class Chat:
 
         if self.config['tools_var']:
             register_actions(self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.ed_keys)
+
             log('info', "Built-in Actions ready.")
             self.plugin_manager.register_actions(self.plugin_helper)
             log('info', "Plugin provided Actions ready.")
-        
-        if not self.config["continue_conversation_var"]:
-            self.action_manager.reset_action_cache()
             
         log('info', 'Initializing states...')
         while self.jn.historic_events:
@@ -329,6 +326,9 @@ if __name__ == "__main__":
                     config = update_config(config, data["config"])
                 if data.get("type") == "change_event_config":
                     config = update_event_config(config, data["section"], data["event"], data["value"])
+                if data.get("type") == "clear_history":
+                    EventManager.clear_history()
+                    #ActionManager.clear_action_cache()
                 
             except json.JSONDecodeError:
                 continue

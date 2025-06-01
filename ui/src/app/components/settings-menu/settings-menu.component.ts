@@ -2747,5 +2747,20 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     });
   }
 
+  async onClearHistory(): Promise<void> {
+    const dialogRef = this.dialog.open(ConfirmationDialogComponent, {
+      data: {
+        title: 'Clear History',
+        message: 'Are you sure you want to clear the conversation history? This action cannot be undone.',
+      },
+    });
+
+    dialogRef.afterClosed().subscribe(async (result) => {
+      if (result) {
+        await this.configService.clearHistory();
+      }
+    });
+  }
+
     protected readonly String = String;
 }

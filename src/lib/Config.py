@@ -380,7 +380,6 @@ class Config(TypedDict):
     vision_var: bool
     ptt_var: bool
     mute_during_response_var: bool
-    continue_conversation_var: bool
     game_actions_var: bool
     web_search_actions_var: bool
     use_action_cache_var: bool
@@ -643,7 +642,6 @@ def load_config() -> Config:
         'vision_var': False,
         'ptt_var': False,
         'mute_during_response_var': False,
-        'continue_conversation_var': True,
         'event_reaction_enabled_var': True,
         'game_actions_var': True,
         'web_search_actions_var': True,
