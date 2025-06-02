@@ -2893,8 +2893,8 @@ class PromptGenerator:
                 status_entries.append((
                     "Local market information",
                     {
-                        "Items I can buy from the market": buy_items,
-                        "Items I can sell to the market": sell_items
+                        "List of goods I can buy from the market": buy_items,
+                        "List of Goods I can sell to the market": sell_items
                     }
                 ))
 
