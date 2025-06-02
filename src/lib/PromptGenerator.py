@@ -2164,6 +2164,9 @@ class PromptGenerator:
         if event_name == "DockingComputerDeactivated":
             return f"{self.commander_name}'s ship has deactivated the docking computer"
 
+        if event_name == "Market":
+            return None
+
         log('debug', f'fallback for event', event_name, content)
 
         return f"Event: {event_name}\n{yaml.dump(content)}"
