@@ -2,7 +2,6 @@ import hashlib
 import inspect
 from abc import ABC, abstractmethod
 from datetime import timezone, datetime
-import time
 from typing import Any, Generic, Literal, Callable, TypeVar, final
 
 from .Database import EventStore, KeyValueStore
@@ -31,40 +30,38 @@ class Projection(ABC, Generic[ProjectedState]):
 
 @final
 class EventManager:
-    def __init__(self, game_events: list[str],
-                 continue_conversation: bool = False, 
-                 #react_to_text_local: bool = True, react_to_text_starsystem: bool = True, react_to_text_npc: bool = False,
-                 #react_to_text_squadron: bool = True, react_to_material:str = '', react_to_danger_mining:bool = False,
-                 #react_to_danger_onfoot:bool = False, react_to_danger_supercruise:bool = False
-                 ):
+    @staticmethod
+    def clear_history():
+        event_store = EventStore('events', [])
+        event_store.delete_all()
+        projection_store = KeyValueStore('projections')
+        projection_store.delete_all()
+    
+    def __init__(
+            self, 
+            game_events: list[str],
+            plugin_event_classes: list[type[Event]],
+        ):
         self.incoming: Queue[Event] = Queue()
         self.pending: list[Event] = []
         self.processed: list[Event] = []
         self.game_events = game_events
-        #self.react_to_text_local = react_to_text_local
-        #self.react_to_text_starsystem = react_to_text_starsystem
-        #self.react_to_text_npc = react_to_text_npc
-        #self.react_to_text_squadron = react_to_text_squadron
-        #self.react_to_material = react_to_material
-        #self.react_to_danger_mining = react_to_danger_mining
-        #self.react_to_danger_onfoot = react_to_danger_onfoot
-        #self.react_to_danger_supercruise = react_to_danger_supercruise
         self._conditions_registry = defaultdict(list)
         self._registry_lock = threading.Lock()
 
         self.event_classes: list[type[Event]] = [ConversationEvent, ToolEvent, GameEvent, StatusEvent, ExternalEvent]
+        self.event_classes += plugin_event_classes # Adds the plugin provided event classes
         self.projections: list[Projection] = []
         self.sideeffects: list[Callable[[Event, dict[str, Any]], None]] = []
         
         self.event_store = EventStore('events', self.event_classes)
         self.projection_store = KeyValueStore('projections')
-
-        if continue_conversation:
-            self.load_history()
+        
+        self.load_history()
+        if self.processed:
             log('info', 'Continuing conversation with', len(self.processed), 'events.')
         else:
-            self.clear_history()
-            log('info', 'Starting a new conversation.')
+            log('info', 'Starting new conversation.')
             
         
     def add_game_event(self, content: dict[str, Any]):
@@ -184,24 +181,29 @@ class EventManager:
         for projection in self.projections:
             self.projection_store.set(projection.__class__.__name__, {"state": projection.state, "last_processed": projection.last_processed})
     
-    def register_projection(self, projection: Projection):
+    def register_projection(self, projection: Projection, raise_error: bool = True):
         projection_class_name = projection.__class__.__name__
         projection_source = inspect.getsource(projection.__class__)
         projection_version = hashlib.sha256(projection_source.encode()).hexdigest()
         log('debug', 'Register projection', projection_class_name, 'version', projection_version)
         
-        state = self.projection_store.init(projection_class_name, projection_version, {"state": projection.get_default_state(), "last_processed": 0.0})
-        projection.state = state["state"]
-        projection.last_processed = state["last_processed"]
-        
-        for event in self.processed + self.pending:
-            if event.processed_at <= projection.last_processed:
-                continue
-            #log('debug', 'updating', projection_class_name, 'with', event, 'after starting from', projection.last_processed)
-            self.update_projection(projection, event, save_later=True)
-        
-        self.projections.append(projection)
-        self.save_projections()
+        try:
+            state = self.projection_store.init(projection_class_name, projection_version, {"state": projection.get_default_state(), "last_processed": 0.0})
+            projection.state = state["state"]
+            projection.last_processed = state["last_processed"]
+
+            for event in self.processed + self.pending:
+                if event.processed_at <= projection.last_processed:
+                    continue
+                #log('debug', 'updating', projection_class_name, 'with', event, 'after starting from', projection.last_processed)
+                self.update_projection(projection, event, save_later=True)
+            
+            self.projections.append(projection)
+            self.save_projections()
+        except Exception as e:
+            if raise_error:
+                raise
+            log('error', 'Error registering projection', projection, e, traceback.format_exc())
 
     def wait_for_condition(self, projection_name: str, condition_fn, timeout=None):
         """
@@ -268,6 +270,9 @@ class EventManager:
             # Only keep conditions that are still not satisfied
             self._conditions_registry[projection_name] = still_waiting
 
+    def get_projection(self, projection_type: type) -> Projection[object] | None:
+        return next((proj for proj in self.projections if isinstance(proj, projection_type)), None)
+
     def save_incoming_history(self, incoming: list[Event]):
         for event in incoming:
             self.event_store.insert_event(event, event.processed_at)
@@ -277,8 +282,3 @@ class EventManager:
         for event in reversed(events):
             self.processed.append(event)
     
-    def clear_history(self):
-        # TODO do we want to clear all events or just conversation?
-        self.event_store.delete_all()
-        # TODO do we want to clear projections as well?
-        self.projection_store.delete_all()

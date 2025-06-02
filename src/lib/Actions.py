@@ -37,7 +37,7 @@ def checkStatus(projected_states: dict[str, dict], blocked_status_dict: dict[str
 # Define functions for each action
 # General Ship Actions
 def fire_weapons(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True,'HudInAnalysisMode':True})
+    checkStatus(projected_states, {'Docked':True,'Landed':True})
     setGameWindowActive()
 
     # Parse arguments with defaults
@@ -47,6 +47,13 @@ def fire_weapons(args, projected_states):
     repetitions = args.get('repetitions', 0)  # 0 = one action, 1+ = repeat
 
     # Determine key mapping
+    if weapon_type == 'discovery_scanner':
+        change_hud_mode({'hud mode': 'analysis'}, projected_states)
+        cycle_fire_group({'fire_group': 0}, projected_states)
+        keys.send('PrimaryFire', hold=6)
+        return 'Discovery scan has been performed.'
+
+    change_hud_mode({'hud mode': 'combat'}, projected_states)
     if weapon_type == 'secondary':
         key_name = 'SecondaryFire'
         weapon_desc = 'secondary weapons'
@@ -173,18 +180,64 @@ def cycle_target(args, projected_states):
         keys.send('CycleNextTarget')
         return "Selected next target"
 
+def change_hud_mode(args, projected_states):
+
+    mode = args.get('hud mode', 'toggle').lower()
+    if projected_states.get('CurrentStatus').get('flags').get('HudInAnalysisMode'):
+        current_hud_mode = "analysis"
+    else:
+        current_hud_mode = "combat"
+
+    if mode == "toggle":
+        keys.send('PlayerHUDModeToggle')
+        return "combat mode activated" if current_hud_mode == "analysis" else "analysis mode activated"
+
+    if mode == current_hud_mode:
+        return f"hud already in {current_hud_mode}"
+    else:
+        keys.send('PlayerHUDModeToggle')
+        return f"{mode} mode activated"
+
+
 def cycle_fire_group(args, projected_states):
     setGameWindowActive()
+    firegroup_ask = args.get('fire_group')
 
-    direction = args.get('direction', 'next').lower()
+    initial_firegroup = projected_states.get("CurrentStatus").get('FireGroup')
 
-    if direction == 'previous':
-        keys.send('CycleFireGroupPrevious')
-        return "Cycled to previous fire group"
+    if firegroup_ask is None:
+        direction = args.get('direction', 'next').lower()
+
+        if direction == 'previous':
+            keys.send('CycleFireGroupPrevious')
+            return "Previous fire group selected."
+        else:
+            keys.send('CycleFireGroupNext')
+            return "Next fire group selected."
+
+
+    elif firegroup_ask == initial_firegroup:
+        return f"Fire group {chr(65 + firegroup_ask)} was already selected. No changes."
+    elif firegroup_ask > 7:   # max allowed is up to H which is 7 starting with A=0
+        return f"Cannot switch to Firegroup {firegroup_ask} as it does not exist."
     else:
-        # Default to 'next' for any invalid direction
-        keys.send('CycleFireGroupNext')
-        return "Cycled to next fire group"
+        for loop in range(abs(firegroup_ask - initial_firegroup)):
+            if firegroup_ask > initial_firegroup:
+                keys.send("CycleFireGroupNext")
+            else:
+                keys.send("CycleFireGroupPrevious")
+
+    try:
+
+        status_event = event_manager.wait_for_condition('CurrentStatus',
+                                                            lambda s: s.get('FireGroup') == firegroup_ask, 2)
+        new_firegroup = status_event["FireGroup"]
+    except TimeoutError:
+        #handles case where we cycle back round to zero
+        return "Failed to cycle to requested fire group. Please ensure it exists."
+
+    return f"Fire group {chr(65 + new_firegroup)} is now selected."
+
 
 def ship_spot_light_toggle(args, projected_states):
     setGameWindowActive()
@@ -416,7 +469,7 @@ def fsd_jump(args, projected_states):
 def next_system_in_route(args, projected_states):
     nav_info = projected_states.get('NavInfo', {})
     if not nav_info['NextJumpTarget']:
-        return "a target next system in route as no navigation route is currently set set"
+        return "cannot target next system in route as no navigation route is currently set"
 
     keys.send('TargetNextRouteSystem')
     return "Targeting next system in route"
@@ -1843,7 +1896,7 @@ def station_finder(obj,projected_states):
 
     url = "https://spansh.co.uk/api/stations/search"
     try:
-        response = requests.post(url, json=request_body)
+        response = requests.post(url, json=request_body, timeout=15)
         response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
 
         data = response.json()
@@ -2065,7 +2118,7 @@ def system_finder(obj, projected_states):
     url = "https://spansh.co.uk/api/systems/search"
 
     try:
-        response = requests.post(url, json=request_body)
+        response = requests.post(url, json=request_body, timeout=15)
         response.raise_for_status()
 
         data = response.json()
@@ -2731,7 +2784,7 @@ def body_finder(obj,projected_states):
     url = "https://spansh.co.uk/api/bodies/search"
 
     try:
-        response = requests.post(url, json=request_body)
+        response = requests.post(url, json=request_body, timeout=15)
         response.raise_for_status()
 
         data = response.json()
@@ -2806,7 +2859,8 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             "description": "Type of weapons to fire",
             "enum": [
               "primary",
-              "secondary"
+              "secondary",
+              "discovery_scanner"
             ],
             "default": "primary"
           },
@@ -2823,8 +2877,8 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
           "duration": {
             "type": "number",
             "description": "Duration to hold fire button in seconds (for fire action only)",
-            "minimum": 0.1,
-            "maximum": 30.0
+            "minimum": 0,
+            "maximum": 30
           },
           "repetitions": {
             "type": "integer",
@@ -2864,7 +2918,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, deploy_heat_sink, 'ship')
 
-    actionManager.registerAction('deployHardpointToggle', "Deploy or retract hardpoints", {
+    actionManager.registerAction('deployHardpointToggle', "Deploy or retract hardpoints. Do not call this action when asked to switch hud mode", {
         "type": "object",
         "properties": {}
     }, deploy_hardpoint_toggle, 'ship')
@@ -2944,6 +2998,40 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     }, cycle_target, 'ship')
 
 
+    actionManager.registerAction(
+        'cycle_fire_group',
+        "call this tool if the user asks to cycle, select or switch to specific firegroup, the the next firegroup or to the previous firegroup",
+        {
+            "type": "object",
+            "properties": {
+                "direction": {
+                    "type": "string",
+                    "description": "If next or previous is give: Cycle direction: 'next' or 'previous'.",
+                    "enum": ["next", "previous"]
+                },
+                "fire_group": {
+                    "type": "integer",
+                    "description": "Specific firegroup index to select. Letters A=0, B=1, C=2, etc.",
+                    "default": None
+                }
+            },
+        },
+        cycle_fire_group,
+        'mainship'
+    )
+
+    actionManager.registerAction('Change_ship_HUD_mode', "Switch to combat or analysis mode", {
+        "type": "object",
+        "properties": {
+            "hud mode": {
+                "type": "string",
+                "description": "mode to switch to",
+                "enum": ["combat", "analysis", "toggle"],
+            }
+        },
+        "required": ["hud mode"],
+    }, change_hud_mode, 'mainship')
+
     actionManager.registerAction('cycleFireGroup', "Cycle to next fire group", {
         "type": "object",
         "properties": {
@@ -2954,6 +3042,8 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             }
         }
     }, cycle_fire_group, 'ship')
+
+    
 
 
     actionManager.registerAction('shipSpotLightToggle', "Toggle ship spotlight", {
