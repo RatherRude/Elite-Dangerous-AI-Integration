@@ -294,19 +294,34 @@ def read_stdin(chat: Chat):
             if data.get("type") == "submit_input":
                 chat.submit_input(data["input"])
 
-def check_zombie_status():
-    """Checks if the current process is a zombie and exits if it is."""
-    log("debug", "Starting zombie process checker thread...")
-    while True:
-        if os.getppid() == 1:
-            log("info", "Parent process exited. Exiting.")
-            sleep(1)  # Give some time for the parent to exit
-            os._exit(0)  # Use os._exit to avoid cleanup issues in threads
-        sleep(5)  # Check every 5 seconds
 
+def parent_death_pact():
+    """
+    Source: https://gist.github.com/qxcv/fe5be4d14f855fedf7a5db723aad22c2
+    Commit to kill current process when parent process dies.
+    Each time you spawn a new process, run this to set signal
+    handler appropriately (e.g put it at the beginning of each
+    script, and in multiprocessing startup code).
+    """
+    import sys
+    if sys.platform != 'linux':
+        return
+    import ctypes
+    import signal
+    
+    libc = ctypes.CDLL("libc.so.6")
+    # see include/uapi/linux/prctl.h in kernel
+    PR_SET_PDEATHSIG = 1
+    # last three args are unused for PR_SET_PDEATHSIG
+    retcode = libc.prctl(PR_SET_PDEATHSIG, signal.SIGINT, 0, 0, 0)
+    if retcode != 0:
+        raise Exception("prctl() returned nonzero retcode %d" % retcode)
+    
 if __name__ == "__main__":
     try:
         print(json.dumps({"type": "ready"})+'\n')
+        parent_death_pact()
+        
         # Load plugins.
         log('debug', "Loading plugins...")
         plugin_manager = PluginManager()
@@ -357,10 +372,6 @@ if __name__ == "__main__":
         # run chat in a thread
         stdin_thread = threading.Thread(target=read_stdin, args=(chat,), daemon=True)
         stdin_thread.start()
-
-        if sys.platform.startswith('linux'):
-            zombie_check_thread = threading.Thread(target=check_zombie_status, daemon=True)
-            zombie_check_thread.start()
 
         log("debug", "Running chat...")
         chat.run()
