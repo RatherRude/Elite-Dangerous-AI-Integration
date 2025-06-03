@@ -95,6 +95,17 @@ async fn start_process(window: tauri::Window, state: State<'_, AppState>) -> Res
 
     let (exe_path, exe_cwd, exe_args) = get_exe_config(&window)?;
 
+    // Ensure the exe_cwd exists or create it
+    if !std::path::Path::new(&exe_cwd).exists() {
+        std::fs::create_dir_all(&exe_cwd).map_err(|e| {
+            format!(
+                "Failed to create executable working directory {}: {}",
+                exe_cwd, e
+            )
+        })?;
+        info!("Created executable working directory: {}", exe_cwd);
+    }
+
     let mut command = Command::new(exe_path.clone());
     command
         .args(exe_args)
