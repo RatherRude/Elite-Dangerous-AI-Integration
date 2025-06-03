@@ -486,10 +486,6 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     await this.configService.assignPTT();
   }
 
-  async onAssignPTM() {
-    await this.configService.assignPTM();
-  }
-
   private categorizeEvents(
     events: Record<string, boolean>,
   ): Record<string, Record<string, boolean>> {

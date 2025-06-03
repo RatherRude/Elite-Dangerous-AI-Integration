@@ -14,7 +14,7 @@ from openai.types.chat import ChatCompletion
 from openai.types.chat import ChatCompletionMessageToolCall
 
 from lib.PluginHelper import PluginHelper
-from lib.Config import Config, assign_ptt, assign_ptm, get_ed_appdata_path, get_ed_journals_path, get_system_info, load_config, save_config, update_config, update_event_config, validate_config
+from lib.Config import Config, assign_ptt, get_ed_appdata_path, get_ed_journals_path, get_system_info, load_config, save_config, update_config, update_event_config, validate_config
 from lib.PluginManager import PluginManager
 from lib.ActionManager import ActionManager
 from lib.Actions import register_actions
@@ -195,7 +195,6 @@ class Chat:
         else:
             self.stt.listen_continuous()
 
-            log('info', f"Setting push-to-mute hotkey {self.config['ptm_key']}.")
             # Utilize PTT key as mute key instead.
             if self.config['ptm_key']:
                 if self.config['ptm_toggle_var']:
@@ -354,8 +353,6 @@ if __name__ == "__main__":
                             break
                 if data.get("type") == "assign_ptt": 
                     config = assign_ptt(config, ControllerManager())
-                if data.get("type") == "assign_ptm":
-                    config = assign_ptm(config, ControllerManager())
                 if data.get("type") == "change_config":
                     config = update_config(config, data["config"])
                 if data.get("type") == "change_event_config":
