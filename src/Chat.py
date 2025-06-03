@@ -173,6 +173,8 @@ class Chat:
         log('info', f"Initializing CMDR {self.config['commander_name']}'s personal AI...\n")
         log('info', "API Key: Loaded")
         log('info', f"Using Push-to-Talk: {self.config['ptt_var']}")
+        log('info', f"Using Tap-to-Talk: {self.config['ptt_tap_to_talk_var']}")
+        log('info', f"Is Push-to-Talk inverted: {self.config['ptt_inverted_var']}")
         log('info', f"Using Function Calling: {self.config['tools_var']}")
         log('info', f"Current model: {self.config['llm_model_name']}")
         log('info', f"Current TTS voice: {self.character['tts_voice']}")
@@ -187,28 +189,31 @@ class Chat:
 
         if self.config['ptt_var'] and self.config['ptt_key']:
             log('info', f"Setting push-to-talk hotkey {self.config['ptt_key']}.")
-            self.controller_manager.register_hotkey(
-                self.config["ptt_key"], 
-                lambda _: self.stt.listen_once_start(),
-                lambda _: self.stt.listen_once_end()
-            )
-        else:
-            self.stt.listen_continuous()
-
-            # Utilize PTT key as mute key instead.
-            if self.config['ptm_key']:
-                if self.config['ptm_toggle_var']:
+            if self.config['ptt_tap_to_talk_var']:
+                self.stt.listen_continuous()
+                self.stt.pause_continuous_listening(self.config['ptt_inverted_var'])
+                self.controller_manager.register_hotkey(
+                    self.config["ptt_key"], 
+                    lambda _: _,
+                    lambda _: self.stt.pause_continuous_listening(not self.stt.continuous_listening_paused)
+                )
+            else:
+                if self.config['ptt_inverted_var']:
+                    self.stt.listen_continuous()
                     self.controller_manager.register_hotkey(
-                        self.config["ptm_key"], 
-                        lambda _: _,
-                        lambda _: self.stt.pause_continuous_listening(not self.stt.continuous_listening_paused)
-                    )
-                else:
-                    self.controller_manager.register_hotkey(
-                        self.config["ptm_key"], 
+                        self.config["ptt_key"], 
                         lambda _: self.stt.pause_continuous_listening(True),
                         lambda _: self.stt.pause_continuous_listening(False)
                     )
+                else:
+                    self.controller_manager.register_hotkey(
+                        self.config["ptt_key"], 
+                        lambda _: self.stt.listen_once_start(),
+                        lambda _: self.stt.listen_once_end()
+                    )
+        else:
+            self.stt.listen_continuous()
+            
         log('info', "Voice interface ready.")
 
         registerProjections(self.event_manager, self.system_database, self.character.get('idle_timeout_var', 300))

@@ -59,18 +59,24 @@
                                 <mat-option value="ptt">Push-to-Talk</mat-option>
                             </mat-select>
                         </mat-form-field>
-                        <mat-form-field (click)="onAssignPTT()">
-                            <mat-label>{{config.ptt_var ? 'Push-to-Talk Key' : 'Toggle Mute Key'}}</mat-label>
-                            <input required matInput [value]="config.ptt_key" readonly>
-                            <button matSuffix mat-icon-button>
-                                <mat-icon>keyboard</mat-icon>
-                            </button>
-                        </mat-form-field>
-                        @if (!config.ptt_var) {
-                            <mat-slide-toggle [(ngModel)]="config.mute_during_response_var"
-                                                (ngModelChange)="onConfigChange({mute_during_response_var: $event})">
-                                Mute microphone during response
-                            </mat-slide-toggle>
+                        @if (config.ptt_var) {
+                            <mat-form-field (click)="onAssignPTT()">
+                                <mat-label>Push-to-Talk Key</mat-label>
+                                <input required matInput [value]="config.ptt_key" readonly>
+                                <button matSuffix mat-icon-button>
+                                    <mat-icon>keyboard</mat-icon>
+                                </button>
+                            </mat-form-field>
+                            <div class="ptt-extras">
+                                <mat-slide-toggle [(ngModel)]="config.ptt_tap_to_talk_var" appTooltip="Turns the Push-to-Talk key into a toggle, so you don't have to hold it."
+                                                    (ngModelChange)="onConfigChange({ptt_tap_to_talk_var: $event})">
+                                    Tap-to-Talk
+                                </mat-slide-toggle>
+                                <mat-slide-toggle [(ngModel)]="config.ptt_inverted_var" appTooltip="Inverts the Push-to-Talk key behavior, swapping muting and unmuting."
+                                                    (ngModelChange)="onConfigChange({ptt_inverted_var: $event})">
+                                    Invert
+                                </mat-slide-toggle>
+                            </div>
                         }
                     </div>
 

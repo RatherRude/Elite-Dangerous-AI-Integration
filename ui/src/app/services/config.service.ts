@@ -133,6 +133,8 @@ export interface Config {
     tools_var: boolean;
     vision_var: boolean;
     ptt_var: boolean;
+    ptt_tap_to_talk_var: boolean;
+    ptt_inverted_var: boolean;
     mute_during_response_var: boolean;
     game_actions_var: boolean;
     web_search_actions_var: boolean;

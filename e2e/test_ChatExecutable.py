@@ -15,6 +15,8 @@ default_config = {
     'tools_var': True,
     'vision_var': True,
     'ptt_var': True,
+    'ptt_tap_to_talk_var': False,
+    'ptt_inverted_var': False,
     'continue_conversation_var': True,
     'event_reaction_enabled_var': True,
     'game_actions_var': True,
