@@ -1,10 +1,5 @@
 # Getting started for "free"
 
-!!! danger
-
-    This setup is highly experimental and will significantly degrade your experience. We recommend using OpenAI instead.
-
-
 There are 3 main components that need to be configured for a free setup: LLM, STT, TTS.
 
 ## 1. LLM Configuration
@@ -21,13 +16,14 @@ The cloud service https://aistudio.google.com provides access to free models, re
 
 *Downsides*
 - Requires a Google account
+- Rate-limited, so you may run out of quota after a while
+- Does not provide great STT
+- Does not support TTS, so you need to mix and match with other services
 
 Once logged in you can create your API key and start using it with COVAS:NEXT:
 
 ```
-LLM Provider: Custom
-LLM Model Name: gemini-2.5-flash-preview-04-17
-LLM Endpoint URL: https://generativelanguage.googleapis.com/v1beta
+LLM Provider: Google AI Studio
 LLM API Key: <your API key>
 ```
 
@@ -44,16 +40,16 @@ The cloud service https://openrouter.ai provides a free tier that can be used to
 - Tool use is unreliable and may crash the integration, [see why here](llmInternals.md).
 - The free tier has significant rate-limiting
 - The available models are not as powerful as the ones available on OpenAI, they may hallucinate more and be less coherent
+- Does not support STT or TTS, so you need to mix and match with other services
 
 To use OpenRouter.ai, you need to sign up for an account and create an API key.
 Once you have an account and an API key, you can check the website for the available models in the :free tier. At the time of writing we recommend using ´meta-llama/llama-3.3-70b-instruct:free`.
 
 ```
-LLM Provider: Custom
+LLM Provider: OpenRouter
 LLM Model Name: meta-llama/llama-3.3-70b-instruct:free
-LLM Endpoint URL: https://openrouter.ai/api/v1
 LLM API Key: <your API key>
-Allow AI Actions: Disable (Unless you use a paid model that supports actions)
+Allow Actions: Disable (Unless you use a paid model that supports actions)
 ```
 
 ### 1.3 Using Ollama (local)
@@ -69,6 +65,7 @@ https://ollama.com is a third-party application that can run the LLM locally on 
 - High latency, especially on weaker GPUs
 - Not trivial to set up
 - Tool use is unreliable and may crash the integration, [see why here](llmInternals.md).
+- Does not support STT or TTS, so you need to mix and match with other services
 
 After installing Ollama, you need to download a model according to the instructions on their website. At the time of writing we recommend using `llama3.1:8b`.
 Once the download is complete you can configure the LLM as follows:
@@ -93,6 +90,7 @@ https://lmstudio.ai is a third-party application that can run the LLM locally on
 - High latency, especially on weaker GPUs
 - Not trivial to set up
 - Tool use is unreliable and may crash the integration, [see why here](llmInternals.md).
+- Does not support STT or TTS, so you need to mix and match with other services
 
 Load the model into LMStudio according to the instructions on their website. At the time of writing we recommend using `llama-3.1-8b`.
 Next, you need to navigate to the Developer tab and click "Start Server". By default, the server will use port 1234.
@@ -113,6 +111,7 @@ You can read more about the AIServer [here](./AIServer.md).
 - Can be used offline
 - It is free, except for the cost of the GPU and electricity
 - No rate limiting (except for the hardware)
+- Supports STT and TTS as well
 
 *Downsides:*
 - Tricky to set up, as it is still highly experimental
@@ -136,7 +135,7 @@ You can read more about the AIServer [here](./AIServer.md).
 - Tricky to set up, as it is still highly experimental
 - May struggle with multilingual input/output
 - Higher latency than cloud services
-- 
+
 ### 2.2 Using Google AI Studio (cloud-based)
 The cloud service https://aistudio.google.com provides access to free models, requiring only a google account to set up.
 
@@ -149,15 +148,14 @@ These models can be multi-modal allowing for the ability to transcribe and make 
 
 *Downsides*
 - Requires a Google account
-- Never as accurate as designated STT models (like whisper-1/gpt-4o-mini-transcribe)
+- Never as accurate as designated STT models (like whisper-1 or gpt-4o-mini-transcribe)
 
 Once logged in you can create your API key and start using it with COVAS:NEXT:
 
 ```
-STT Provider: Custom Multi-Modal
+STT Provider: Google AI Studio (Multi-Modal)
 STT Model Name: gemini-2.0-flash-lite
-STT Endpoint URL: https://generativelanguage.googleapis.com/v1beta
-STT API Key: <empty>
+STT API Key: <your API key>
 ```
 
 ## 3. TTS Configuration

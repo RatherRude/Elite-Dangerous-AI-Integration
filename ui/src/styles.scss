@@ -96,3 +96,21 @@ html.overlay-window app-root {
     display: none !important;
   }
 }
+
+.custom-tooltip {
+  background: #333;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 14px;
+  max-width: 400px;
+  min-width: 200px;
+  text-align: justify;
+  line-height: 1.4;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  pointer-events: none;
+  position: absolute;
+  white-space: normal;
+ }
+

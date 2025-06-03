@@ -27,17 +27,6 @@
                                (ngModelChange)="onConfigChange({commander_name: $event})">
                     </mat-form-field>
 
-                    <p>This setting controls whether the AI will continue the conversation from the last message or
-                        start a new one. If you change the character, you may want to reset the conversation history, so
-                        the AI starts with a blank slate.</p>
-                    <mat-form-field>
-                        <mat-label>Conversation history</mat-label>
-                        <mat-select [value]="config.continue_conversation_var ? 'continue' : 'reset'"
-                                    (selectionChange)="onConfigChange({continue_conversation_var: $event.value === 'continue'})">
-                            <mat-option value="continue">Continue</mat-option>
-                            <mat-option value="reset">Reset</mat-option>
-                        </mat-select>
-                    </mat-form-field>
                     <p>Enter your API key from 
                         <a target="_blank" rel="noopener noreferrer" href="https://platform.openai.com/api-keys">OpenAI</a>, 
                         <a target="_blank" rel="noopener noreferrer" href="https://aistudio.google.com/app/apikey">Google AI Studio</a>, or 
@@ -198,33 +187,41 @@
                                     @if (!editMode) {
                                         <button mat-raised-button color="primary"
                                                 [disabled]="selectedCharacterIndex <= 0"
+                                                [matTooltip]="'Edit the selected character and event reactions.'"
                                                 (click)="toggleEditMode()">
                                             <mat-icon>edit</mat-icon> Edit
                                         </button>
 
-                                        <button mat-raised-button color="accent" (click)="addNewCharacter()">
+                                        <button mat-raised-button color="accent" (click)="addNewCharacter()"
+                                                [matTooltip]="selectedCharacterIndex <= 0 ? 'Create a new character to allow editing of character traits and prompt' : 'Create new character.'">
                                             <mat-icon>add</mat-icon> New
+
                                         </button>
 
                                         <button mat-raised-button color="accent" 
-                                                (click)="duplicateSelectedCharacter()">
+                                                (click)="duplicateSelectedCharacter()"
+                                                [matTooltip]="selectedCharacterIndex <= 0 ? 'Duplicate this character. You can edit character traits after duplicating.': 'Duplicate this character.'">
                                             <mat-icon>content_copy</mat-icon> Duplicate
                                         </button>
 
                                         <button mat-raised-button color="warn"
                                                 [disabled]="selectedCharacterIndex <= 0"
-                                                (click)="deleteSelectedCharacter()">
+                                                (click)="deleteSelectedCharacter()"
+                                                [matTooltip]="'Delete current character.'">
                                             <mat-icon>delete</mat-icon> Delete
                                         </button>
                                     }
 
                                     <!-- When in edit mode, show Save and Cancel buttons -->
                                     @if (editMode) {
-                                        <button mat-raised-button color="primary" (click)="saveCurrentAsCharacter()">
+                                        <button mat-raised-button color="primary" (click)="saveCurrentAsCharacter()"
+                                                [matTooltip]="'Save character.'" >
                                             <mat-icon>save</mat-icon> Save
                                         </button>
 
-                                        <button mat-raised-button (click)="cancelEditMode()">
+                                        <button mat-raised-button (click)="cancelEditMode()"
+                                                [matTooltip]="'Cancel current edit.'" >
+
                                             <mat-icon>cancel</mat-icon> Cancel
                                         </button>
                                     }
@@ -349,7 +346,8 @@
                                 <div class="trait-select">
                                     <mat-form-field appearance="fill">
                                         <mat-label>Personality Preset</mat-label>
-                                        <mat-select [value]="getCharacterProperty('personality_preset', 'default')" (selectionChange)="applyPersonalityPreset($event.value)">
+                                        <mat-select [value]="getCharacterProperty('personality_preset', 'default')" (selectionChange)="applyPersonalityPreset($event.value)"  [matTooltip]="'Select a predefined personality role or write your own.'"
+                                                      tooltipPosition="right">>
                                             <mat-option value="default">Default</mat-option>
                                             <mat-option value="custom">Write your own prompt</mat-option>
                                             <mat-option disabled>--- Elite: Dangerous Roles ---</mat-option>
@@ -592,8 +590,10 @@
                                     </button>
                                 </mat-form-field>
 
-                                <button mat-raised-button color="warn" (click)="resetGameEvents()">
+                                <button mat-raised-button color="warn" (click)="resetGameEvents()"
+                                        [matTooltip]="'Reset the event reactions to the default set.'">
                                     <mat-icon>restart_alt</mat-icon> Reset to Defaults
+
                                 </button>
                             </div>
 
@@ -608,10 +608,14 @@
                                             </mat-panel-title>
                                         </mat-expansion-panel-header>
                                         @for (e of section.value | keyvalue:orderByKey; track e.key) {
-                                            <mat-slide-toggle [(ngModel)]="e.value"
-                                                              (ngModelChange)="onEventConfigChange(section.key, e.key, $event)">
-                                                {{ e.key }}
-                                            </mat-slide-toggle><br/>
+                                            <mat-slide-toggle
+                                                  [(ngModel)]="e.value"
+                                                  (ngModelChange)="onEventConfigChange(section.key, e.key, $event)"
+                                                  [appTooltip]="GameEventTooltips[e.key]"
+                                                  tooltipPosition="right"
+                                                >
+                                                  {{ e.key }}
+                                            </mat-slide-toggle>
                                             @if (e.key === "ProspectedAsteroid") {
                                                 <mat-form-field>
                                                     <mat-label>React to material</mat-label>
@@ -635,37 +639,86 @@
                                                 </mat-form-field>
                                             }
                                             @if (e.key === "InDanger") {
-                                                <mat-slide-toggle [ngModel]="getEventProperty('react_to_danger_mining_var', false)"
-                                                                  (ngModelChange)="onEventReactionFeatureToggle('react_to_danger_mining_var', $event)">
-                                                    React while mining
-                                                </mat-slide-toggle><br/>
-                                                <mat-slide-toggle [ngModel]="getEventProperty('react_to_danger_onfoot_var', false)"
-                                                                  (ngModelChange)="onEventReactionFeatureToggle('react_to_danger_onfoot_var', $event)">
-                                                    React while on-foot
-                                                </mat-slide-toggle><br/>
-                                                <mat-slide-toggle [ngModel]="getEventProperty('react_to_danger_supercruise_var', false)"
-                                                                  (ngModelChange)="onEventReactionFeatureToggle('react_to_danger_supercruise_var', $event)">
-                                                    React while in supercruise
-                                                </mat-slide-toggle><br/>
+                                            <div class="event-suboption">
+                                                <mat-slide-toggle
+                                                  [ngModel]="getEventProperty('react_to_danger_mining_var', false)"
+                                                  (ngModelChange)="onEventReactionFeatureToggle('react_to_danger_mining_var', $event)"
+                                                  [appTooltip]="'React to in danger whilst mining or not.'"
+                                                  tooltipPosition="right"
+                                                >
+                                                  React while mining
+                                                </mat-slide-toggle>
+                                              </div>
+
+                                            <div class="event-suboption">
+                                                <mat-slide-toggle
+                                                  [ngModel]="getEventProperty('react_to_danger_onfoot_var', false)"
+                                                  (ngModelChange)="onEventReactionFeatureToggle('react_to_danger_onfoot_var', $event)"
+                                                  [appTooltip]="'React to in danger whilst on foot or not.'"
+                                                  tooltipPosition="right"
+                                                >
+                                                  React while on-foot
+                                                </mat-slide-toggle>
+                                              </div>
+
+                                            <div class="event-suboption">
+                                                <mat-slide-toggle
+                                                  [ngModel]="getEventProperty('react_to_danger_supercruise_var', false)"
+                                                  (ngModelChange)="onEventReactionFeatureToggle('react_to_danger_supercruise_var', $event)"
+                                                  [appTooltip]="'React to in danger whilst in supercruise or not.'"
+                                                  tooltipPosition="right"
+                                                >
+                                                  React while in supercruise
+                                                </mat-slide-toggle>
+                                              </div>
                                             }
+
                                             @if (e.key === "ReceiveText") {
-                                                <mat-slide-toggle [ngModel]="getEventProperty('react_to_text_local_var', false)"
-                                                                  (ngModelChange)="onEventReactionFeatureToggle('react_to_text_local_var', $event)">
-                                                    React to local text
-                                                </mat-slide-toggle><br/>
-                                                <mat-slide-toggle [ngModel]="getEventProperty('react_to_text_starsystem_var', false)"
-                                                                  (ngModelChange)="onEventReactionFeatureToggle('react_to_text_starsystem_var', $event)">
-                                                    React to starsystem text
-                                                </mat-slide-toggle><br/>
-                                                <mat-slide-toggle [ngModel]="getEventProperty('react_to_text_squadron_var', false)"
-                                                                  (ngModelChange)="onEventReactionFeatureToggle('react_to_text_squadron_var', $event)">
-                                                    React to squadron text
-                                                </mat-slide-toggle><br/>
-                                                <mat-slide-toggle [ngModel]="getEventProperty('react_to_text_npc_var', false)"
-                                                                  (ngModelChange)="onEventReactionFeatureToggle('react_to_text_npc_var', $event)">
-                                                    React to NPC text
-                                                </mat-slide-toggle><br/>
+                                            <div class="event-suboption">
+                                                <mat-slide-toggle
+                                                  [ngModel]="getEventProperty('react_to_text_local_var', false)"
+                                                  (ngModelChange)="onEventReactionFeatureToggle('react_to_text_local_var', $event)"
+                                                  [appTooltip]="'React to local text or not'"
+                                                  tooltipPosition="right"
+                                                >
+                                                React to local text
+                                                </mat-slide-toggle>
+                                            </div>
+
+                                            <div class="event-suboption">
+                                                <mat-slide-toggle
+                                                  [ngModel]="getEventProperty('react_to_text_starsystem_var', false)"
+                                                  (ngModelChange)="onEventReactionFeatureToggle('react_to_text_starsystem_var', $event)"
+                                                  [appTooltip]="'React to starsystem text or not'"
+                                                  tooltipPosition="right"
+                                                >
+                                                  React to starsystem text
+                                                </mat-slide-toggle>
+                                              </div>
+
+                                            <div class="event-suboption">
+                                                <mat-slide-toggle
+                                                  [ngModel]="getEventProperty('react_to_text_squadron_var', false)"
+                                                  (ngModelChange)="onEventReactionFeatureToggle('react_to_text_squadron_var', $event)"
+                                                  [appTooltip]="'React to squadron text or not'"
+                                                  tooltipPosition="right"
+                                                >
+                                                  React to squadron text
+                                                </mat-slide-toggle>
+                                              </div>
+
+                                            <div class="event-suboption">
+                                                <mat-slide-toggle
+                                                  [ngModel]="getEventProperty('react_to_text_npc_var', false)"
+                                                  (ngModelChange)="onEventReactionFeatureToggle('react_to_text_npc_var', $event)"
+                                                  [appTooltip]="'React to npc text or not'"
+                                                  tooltipPosition="right"
+                                                >
+                                                  React to NPC text
+                                                </mat-slide-toggle>
+                                              </div>
                                             }
+
                                             @if (e.key === "Idle") {
                                                 <mat-form-field>
                                                     <mat-label>Idle Timeout (seconds)</mat-label>
@@ -683,6 +736,16 @@
                             </mat-accordion>
                         }
                     }
+
+                    <h2>Conversation History</h2>
+                    <div class="clear_history">
+                        <p>This will clear the entire conversation history with the AI. If you change the character, you may want to reset the conversation history, so
+                        the AI starts with a blank slate.</p>
+                        <button mat-stroked-button color="warn" (click)="onClearHistory()">
+                            <mat-icon>delete_sweep</mat-icon>
+                            Clear History
+                        </button>
+                    </div>
                 </div>
             }
         </div>
@@ -1174,56 +1237,65 @@
             }
         </div>
     </mat-tab>
-    @if (system?.edcopilot_installed) {
+    @if (system?.edcopilot_installed || has_plugin_settings) {
         <mat-tab>
             <ng-template mat-tab-label>
                 <mat-icon class="tab-icon">extension</mat-icon>
-                Third Party
+                Plugins
             </ng-template>
             <div class="tab-content">
-                <div class="settings-grid">
-                    @if (config && system) {
-                        @if (system.edcopilot_installed) {
-                            <mat-slide-toggle [(ngModel)]="config.edcopilot"
-                                              (ngModelChange)="onConfigChange({edcopilot: $event})">
-                                Enable EDCoPilot Integration
-                            </mat-slide-toggle>
-                            @if (config.edcopilot) {
-                                <p>
-                                    The EDCoPilot integration prevents both applications for talking at the same time.
-                                    There are two modes of operation. <br>
-                                    Learn more about this feature <a target="_blank" rel="noopener noreferrer"
-                                                                     href="https://ratherrude.github.io/Elite-Dangerous-AI-Integration/50_EDCoPilot/">here.</a>
-                                </p>
-                                <p>Enabled:</p>
-                                <ul>
-                                    <li>EDCoPilot will show COVAS:NEXT chat history</li>
-                                    <li>COVAS:NEXT will generate responses</li>
-                                </ul>
-                                <p>COVAS:NEXT Dominant:</p>
-                                <ul>
-                                    <li>EDCoPilot will be silent</li>
-                                    <li>COVAS:NEXT low-latency Text-to-Speech is used</li>
-                                </ul>
-                                <p>EDCoPilot Dominant:</p>
-                                <ul>
-                                    <li>EDCoPilot will generate responses</li>
-                                    <li>COVAS:NEXT Text-to-Speech is disabled</li>
-                                </ul>
+                @if (config && system) {
+                    @if (system.edcopilot_installed) {
+                        <mat-expansion-panel>
+                            <mat-expansion-panel-header>
+                                <mat-panel-title>
+                                    <mat-icon fontSet="material-symbols-outlined" class="tab-icon">robot_2</mat-icon>
+                                    EDCoPilot
+                                </mat-panel-title>
+                            </mat-expansion-panel-header>
 
-                                <mat-form-field>
-                                    <mat-label>Speech Output Application</mat-label>
-                                    <mat-select [value]="config.edcopilot_dominant ? 'edcopilot' : 'covas'"
-                                                (selectionChange)="onConfigChange({edcopilot_dominant: $event.value === 'edcopilot'})">
-                                        <mat-option value="covas">COVAS:NEXT Dominant</mat-option>
-                                        <mat-option value="edcopilot">EDCoPilot Dominant</mat-option>
-                                    </mat-select>
-                                </mat-form-field>
-                            }
-                        }
+                            <div class="settings-grid">
+                                <mat-slide-toggle [(ngModel)]="config.edcopilot"
+                                                (ngModelChange)="onConfigChange({edcopilot: $event})">
+                                    Enable EDCoPilot Integration
+                                </mat-slide-toggle>
+                                @if (config.edcopilot) {
+                                    <p>
+                                        The EDCoPilot integration prevents both applications for talking at the same time.
+                                        There are two modes of operation. <br>
+                                        Learn more about this feature <a target="_blank" rel="noopener noreferrer"
+                                                                        href="https://ratherrude.github.io/Elite-Dangerous-AI-Integration/50_EDCoPilot/">here.</a>
+                                    </p>
+                                    <p>Enabled:</p>
+                                    <ul>
+                                        <li>EDCoPilot will show COVAS:NEXT chat history</li>
+                                        <li>COVAS:NEXT will generate responses</li>
+                                    </ul>
+                                    <p>COVAS:NEXT Dominant:</p>
+                                    <ul>
+                                        <li>EDCoPilot will be silent</li>
+                                        <li>COVAS:NEXT low-latency Text-to-Speech is used</li>
+                                    </ul>
+                                    <p>EDCoPilot Dominant:</p>
+                                    <ul>
+                                        <li>EDCoPilot will generate responses</li>
+                                        <li>COVAS:NEXT Text-to-Speech is disabled</li>
+                                    </ul>
+
+                                    <mat-form-field>
+                                        <mat-label>Speech Output Application</mat-label>
+                                        <mat-select [value]="config.edcopilot_dominant ? 'edcopilot' : 'covas'"
+                                                    (selectionChange)="onConfigChange({edcopilot_dominant: $event.value === 'edcopilot'})">
+                                            <mat-option value="covas">COVAS:NEXT Dominant</mat-option>
+                                            <mat-option value="edcopilot">EDCoPilot Dominant</mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                }
+                            </div>
+                        </mat-expansion-panel>
                     }
-                </div>
-
+                    <app-plugin-settings></app-plugin-settings>
+                }
             </div>
         </mat-tab>
     }

@@ -4,8 +4,6 @@ Welcome to the setup guide for COVAS:NEXT! Follow the steps below to get up and 
 
 ## Important Notes Before You Begin
 
-- **Costs:** The application uses the OpenAI API, which costs money based on usage. Typical usage costs are **around $0.10 per hour**, depending on your playstyle. Alternatives are available, but they will significantly degrade your experience and are not recommended.
-
 - **Microphone:** You will need a working microphone to interact with the AI and preferably a headset to prevent the AI from hearing itself.
 
 - **Antivirus Software:** Some antivirus software may flag the application as a virus due to **a false positive**. This can be very annoying and you may need to add an exception in your antivirus software or disable it, if you encounter this issue.
@@ -74,9 +72,9 @@ Also, please check our [FAQ](./10_faq.md) for additional information.
 
 ---
 
-## Step 4: Obtain an OpenAI API Key
+## Step 4: Obtain an API Key
 
-OpenAI likes changing their API key system, so documentation may be out of date. At the time of writing, you can get an API key using the following links:
+## Step 4 - Option 1: Using OpenAI API Key (recommended)
 
 1. Navigate to [platform.openai.com](https://platform.openai.com/) and sign up for an account.
 
@@ -88,7 +86,7 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 
     - **Problem:** I don't want to pay for an API key.
     
-        **Solution:** None, unless you know exactly what you're doing and can set up a local models. This is not recommended and will significantly degrade your experience.
+        **Solution:** You can use Google AI Studio as an alternative, which provides a free tier. However, it has limitations and may not perform as well as OpenAI.
     
     - **Problem:** I already have a ChatGPT subscription.
 
@@ -96,10 +94,20 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 
 ---
 
+## Step 4 - Option 2: Using Gemini API Key (free, but not as reliable)
+
+1. Navigate to [Google AI Studio](https://aistudio.google.com/) and log in with your Google account.
+
+2. Create an API key at [Google AI Studio API Keys](https://aistudio.google.com/apikey) using the "Create API Key" button.
+
+3. Follow the instructions to setup a project and receive your API key.
+
 ## Step 5: Configure Your Profile
 
 1. In the configuration UI, enter your commander name.
-2. Next, enter your OpenAI API key.
+
+2. Next, enter your API key. It should automatically detect the provider based on the key you entered.
+
 3. We recommend using Push-to-Talk (PTT) for voice detection and setting the keybind accordingly (HOTAS, Controller or Keyboard supported).
 
 ??? note "Common Issues"
@@ -117,6 +125,7 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 ## Step 5: Start the AI Assistant
 
 1. Click the "Start AI Assistant" button to get started.
+
 2. Verify that the chat log window appears.
 
 ??? note "Common Issues"
@@ -142,6 +151,7 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 ## Step 7: Test the Application’s Voice Detection
 
 1. Start speaking into your microphone, either using Push-to-Talk (PTT) or voice detection.
+
 2. Verify that your speech text appears in the log window.
 
 ??? note "Common Issues"
@@ -159,6 +169,7 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 ## Step 8: Check the Response
 
 1. After you speak, confirm that the AI generates a response, visible in the log window.
+
 2. Ensure that the application reads the response text aloud.
 
 ??? note "Common Issues"
@@ -172,7 +183,9 @@ OpenAI likes changing their API key system, so documentation may be out of date.
 ## Step 9: Test a Command
 
 1. Try issuing a command to the AI, such as "Retract landing gear."
+
 2. Observe if the AI performs the action.
+
 3. Read more about the available commands in the [Actions](./20_actions.md) documentation.
 
 ??? note "Common Issues"

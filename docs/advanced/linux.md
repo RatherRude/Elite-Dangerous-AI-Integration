@@ -5,31 +5,33 @@
         WARNING: This setup is highly experimental and is potentially difficult, please contact us on discord
 
 
-We have a native Linux version available, but it requires some special setup. We will provide you with a download link in our discord server, and some instructions on how to get it running, here.
+We have a native Linux version available, but it requires some special setup. Starting with version 2.6.0, we provide a flatpak package for easier installation, but it is still experimental and may not work on all distributions. If you encounter any issues, please contact us on discord.
 
 ## Starting the application
 
-1. Download the Linux version from the link we provide you in discord.
-2. Extract the downloaded file to a folder of your choice, you may need to do this twice, as the zip file contains a `.tar.gz` file inside.
-3. Open a terminal and navigate to the folder where you extracted the files.
-4. Verify that you have the following files:
+1. Ensure you have [Flatpak](https://flatpak.org/setup/) installed on your system. You can check if Flatpak is installed by running:
 
-    - `bin/`
+    ```bash
+    flatpak --version
+    ```
 
-        - `covas-next-ui`
+   If it is not installed, follow the instructions on the Flatpak website to install it.
 
-    - `lib/`
+2. Download the flatpak file from out latest release at [GitHub](https://github.com/RatherRude/Elite-Dangerous-AI-Integration/releases) (or contact us on discord if it is not available).
 
-        - `covas-next-ui/`
+3. Open a terminal and navigate to the directory where you downloaded the flatpak file.
 
-            - `resources/`
+4. Run the following command to install the flatpak package:
 
-                - `Chat`
-                - `_internal/`
+    ```bash
+    flatpak install <path_to_flatpak_file>
+    ```
 
-5. Start the application by running the `bin/covas-next-ui` executable.
+5. Once the installation is complete, you can start the application by running:
 
-    - Depending on your distribution, you may need to install additional dependencies, such as `libwebkit2gtk-4.1-0` or similar.
+    ```bash
+    flatpak run com.covasnext.ui
+    ```
 
 6. The application should now start and you should see the main menu.
 7. Open the advanced settings tab and scroll to the `Linux Settings` section at the bottom.
@@ -41,6 +43,6 @@ We have a native Linux version available, but it requires some special setup. We
     ```
     Depending on your system, the paths may be different. The above paths are for a steam + proton installation of the game.
 
-9. In the General Settings tab, setup your input and output audio devices, it is recommended to use the virtual pipewire or pulse devices.
+9. In the General Settings tab, setup your input and output audio devices, it is recommended to use the virtual pulse devices.
 10. Follow the regular [Getting Started](../index.md) guide to configure the rest of the application.
 11. Start the AI and it should now work 🤞 If you have any issues, please contact us on discord.

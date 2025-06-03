@@ -45,6 +45,7 @@ game_events = {
     'Interdiction': False,
     'Interdicted': False,
     'EscapeInterdiction': False,
+    'BeingInterdicted': True,
     'FactionKillBond': False,
     'FighterDestroyed': True,
     'HeatDamage': True,
@@ -60,7 +61,6 @@ game_events = {
     'SelfDestruct': True,
 
     # Trading
-    'Trade': False,
     'BuyTradeData': False,
     'CollectCargo': False,
     'EjectCargo': True,
@@ -380,7 +380,6 @@ class Config(TypedDict):
     vision_var: bool
     ptt_var: bool
     mute_during_response_var: bool
-    continue_conversation_var: bool
     game_actions_var: bool
     web_search_actions_var: bool
     use_action_cache_var: bool
@@ -394,6 +393,8 @@ class Config(TypedDict):
     ed_appdata_path: str
     qol_autobrake: bool  # Quality of life: Auto brake when approaching stations
     qol_autoscan: bool  # Quality of life: Auto scan when entering new systems
+
+    plugin_settings: dict[str, Any]
 
 
 def get_cn_appdata_path() -> str:
@@ -552,7 +553,9 @@ def migrate(data: dict) -> dict:
 
         if 'llm_provider' in data and data['llm_provider'] == 'google-ai-studio':
             if 'llm_model_name' in data and data['llm_model_name'] == 'gemini-2.0-flash':
-                data['llm_model_name'] = 'gemini-2.5-flash-preview-04-17'
+                data['llm_model_name'] = 'gemini-2.5-flash-preview-05-20'
+            if 'llm_model_name' in data and data['llm_model_name'] == 'gemini-2.5-flash-preview-04-17':
+                data['llm_model_name'] = 'gemini-2.5-flash-preview-05-20'
                 
         if 'llm_provider' in data and data['llm_provider'] == 'openai':
             if 'llm_model_name' in data and data['llm_model_name'] == 'gpt-4o-mini':
@@ -583,6 +586,12 @@ def merge_config_data(defaults: dict, user: dict):
             # If types don't match, keep the default
             if not isinstance(user.get(key), type(defaults.get(key))):
                 print(f"Warning: Config type mismatch for '{key}', using default")
+                continue
+
+            # Plugin settings
+            if key == "plugin_settings":
+                # Copy plugin settings directly, since we don't know what settings are supposed to be there.
+                merge[key] = user.get(key) or {}
                 continue
                 
             # Handle dict type specially
@@ -641,7 +650,6 @@ def load_config() -> Config:
         'vision_var': False,
         'ptt_var': False,
         'mute_during_response_var': False,
-        'continue_conversation_var': True,
         'event_reaction_enabled_var': True,
         'game_actions_var': True,
         'web_search_actions_var': True,
@@ -673,7 +681,8 @@ def load_config() -> Config:
         "ed_journal_path": "",
         "ed_appdata_path": "",
         "qol_autobrake": False,  # Quality of life: Auto brake when approaching stations
-        "qol_autoscan": False   # Quality of life: Auto scan when entering new systems
+        "qol_autoscan": False,   # Quality of life: Auto scan when entering new systems
+        "plugin_settings": {}
     }
     try:
         print("Loading configuration file")
@@ -1029,7 +1038,7 @@ def update_config(config: Config, data: dict) -> Config:
 
         elif data["llm_provider"] == "google-ai-studio":
             data["llm_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
-            data["llm_model_name"] = "gemini-2.5-flash-preview-04-17"
+            data["llm_model_name"] = "gemini-2.5-flash-preview-05-20"
             data["llm_api_key"] = ""
             data["tools_var"] = True
 
