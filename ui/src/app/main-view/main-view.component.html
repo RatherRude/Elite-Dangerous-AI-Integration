@@ -2,7 +2,7 @@
   <mat-progress-bar mode="indeterminate" class="toolbar-progress"></mat-progress-bar>
 }
 
-<main class="app">
+<main class="app" [class.red]="isRunning">
   @if (!isRunning) {
     <div class="settings-container">
       <app-settings-menu></app-settings-menu>

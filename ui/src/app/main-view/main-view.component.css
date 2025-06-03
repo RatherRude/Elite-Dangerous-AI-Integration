@@ -13,6 +13,9 @@
   background-repeat: no-repeat;
   background-color: rgba(0, 0, 0, 1);
 }
+.app.red{
+  background-image: url('../../assets/EDAI_logo_transparent_red.png');
+}
 
 .settings-container, .runtime-container {
   flex: 1;
