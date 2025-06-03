@@ -136,18 +136,6 @@ class Assistant:
                     log("debug", "LLM error request:", e.request.method, e.request.url, e.request.headers, e.request.content.decode('utf-8', errors='replace'))
                     log("debug", "LLM error response:", e.response.status_code, e.response.headers, e.response.content.decode('utf-8', errors='replace'))
                     
-                    # Gemini:
-                    # e.body[0].get('details') - gemini error details is a list of objects with 
-                    # @type: type.googleapis.com/google.rpc.QuotaFailure
-                    #   .get('violations')[0].get('quotaId') == 'GenerateRequestsPerMinutePerProjectPerModel-FreeTier'
-                    # @type: type.googleapis.com/google.rpc.Help
-                    # @type: type.googleapis.com/google.rpc.RetryInfo 
-                    #   .get('retryDelay') - /.+s/
-                    # OpenRouter: TODO
-                    # OpenAI: 
-                    # {'error': {'message': 'You exceeded your current quota, please check your plan and billing details.', 'type': 'insufficient_quota', 'param': None, 'code': 'insufficient_quota'}}
-                    # e.body.get('error')
-                    
                     try:
                         error: dict = e.body[0] if hasattr(e, 'body') and e.body and isinstance(e.body, list) else e.body # pyright: ignore[reportAssignmentType]
                         message = error.get('error', {}).get('message', e.body if e.body else 'Unknown error')

@@ -230,30 +230,49 @@ class STT:
         audio_wav.seek(0)
         audio_wav.name = "audio.wav"  # OpenAI needs a filename
         
-        response = self.openai_client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role":"system", "content":
-                    "You are a high quality transcription model. You are given audio input from the user, and return the transcribed text from the input. Do NOT add any additional text in your response, only respond with the text given by the user.\n" +
-                    "The audio may be related to space sci-fi terminology like systems, equipment, and station names, specifically the game Elite Dangerous.\n" + 
-                    #"Here is an example of the type of text you should return: <example>" + self.prompt + "</example>\n" +
-                    "Always provide an exact transcription of the audio. If the user is not speaking or inaudible, return only the word 'silence'."
-                },
-                {"role": "user", "content": [{
-                    "type": "text",
-                    "text": "<input>"
-                },{
-                    "type": "input_audio",
-                    "input_audio": {
-                        "data": base64.b64encode(audio_wav.getvalue()).decode('utf-8'),
-                        "format": "wav"
-                    }
-                },{
-                    "type": "text",
-                    "text": "</input>"
-                },]}
-            ]
-        )
+        try:
+            response = self.openai_client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role":"system", "content":
+                        "You are a high quality transcription model. You are given audio input from the user, and return the transcribed text from the input. Do NOT add any additional text in your response, only respond with the text given by the user.\n" +
+                        "The audio may be related to space sci-fi terminology like systems, equipment, and station names, specifically the game Elite Dangerous.\n" + 
+                        #"Here is an example of the type of text you should return: <example>" + self.prompt + "</example>\n" +
+                        "Always provide an exact transcription of the audio. If the user is not speaking or inaudible, return only the word 'silence'."
+                    },
+                    {"role": "user", "content": [{
+                        "type": "text",
+                        "text": "<input>"
+                    },{
+                        "type": "input_audio",
+                        "input_audio": {
+                            "data": base64.b64encode(audio_wav.getvalue()).decode('utf-8'),
+                            "format": "wav"
+                        }
+                    },{
+                        "type": "text",
+                        "text": "</input>"
+                    },]}
+                ]
+            )
+        except openai.APIStatusError as e:
+            log("debug", "STT mm error request:", e.request.method, e.request.url, e.request.headers, e.request.content.decode('utf-8', errors='replace'))
+            log("debug", "STT mm error response:", e.response.status_code, e.response.headers, e.response.content.decode('utf-8', errors='replace'))
+            
+            try:
+                error: dict = e.body[0] if hasattr(e, 'body') and e.body and isinstance(e.body, list) else e.body # pyright: ignore[reportAssignmentType]
+                message = error.get('error', {}).get('message', e.body if e.body else 'Unknown error')
+            except:
+                message = e.message
+            
+            log('error', f'STT {e.response.reason_phrase}:', message)
+            return ''
+        
+        if not response.choices or not hasattr(response.choices[0], 'message') or not hasattr(response.choices[0].message, 'content'):
+            log('debug', "STT mm response is incomplete or malformed:", response)
+            log('error', f'STT completion error: Response incomplete or malformed')
+            return ''
+        
         text = response.choices[0].message.content
         if not text:
             return ''
@@ -273,12 +292,26 @@ class STT:
         audio_ogg.seek(0)
         audio_ogg.name = "audio.ogg"  # OpenAI needs a filename
         
-        transcription = self.openai_client.audio.transcriptions.create(
-            model=self.model,
-            file=audio_ogg,
-            language=self.language,
-            prompt=self.prompt
-        )
+        try:
+            transcription = self.openai_client.audio.transcriptions.create(
+                model=self.model,
+                file=audio_ogg,
+                language=self.language,
+                prompt=self.prompt
+            )
+        except openai.APIStatusError as e:
+            log("debug", "STT error request:", e.request.method, e.request.url, e.request.headers, e.request.content.decode('utf-8', errors='replace'))
+            log("debug", "STT error response:", e.response.status_code, e.response.headers, e.response.content.decode('utf-8', errors='replace'))
+            
+            try:
+                error: dict = e.body[0] if hasattr(e, 'body') and e.body and isinstance(e.body, list) else e.body # pyright: ignore[reportAssignmentType]
+                message = error.get('error', {}).get('message', e.body if e.body else 'Unknown error')
+            except:
+                message = e.message
+            
+            log('error', f'STT {e.response.reason_phrase}:', message)
+            return ''
+        
         text = transcription.text
         return text
 
