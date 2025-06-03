@@ -256,7 +256,6 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
         if not 'system_name' in args:
             return "Galaxy map is already open"
     else:
-        log('info', "Here!!")
         keys.send(galaxymap_key)
 
     try:
