@@ -2786,20 +2786,37 @@ class PromptGenerator:
         outfitting = projected_states.get('Outfitting', {})
         storedShips = projected_states.get('StoredShips', {})
         if current_station and current_station == market.get('StationName'):
-            status_entries.append(("Local market information", {
+            buy_items = {
                 item.get('Name_Localised'): {
                     'Category': item.get('Category_Localised'),
                     'BuyPrice': item.get('BuyPrice'),
                     'MeanPrice': item.get('MeanPrice'),
                     'Stock': item.get('Stock'),
-                } if item.get('Stock') > item.get('Demand') else {
+                }
+                for item in market.get('Items', [])
+                if item.get('Stock', 0) > item.get('Demand', 0)
+            }
+
+            sell_items = {
+                item.get('Name_Localised'): {
                     'Category': item.get('Category_Localised'),
                     'SellPrice': item.get('SellPrice'),
                     'MeanPrice': item.get('MeanPrice'),
                     'Demand': item.get('Demand'),
                 }
-                for item in market.get('Items',[]) if item.get('Stock') or item.get('Demand')
-            }))
+                for item in market.get('Items', [])
+                if item.get('Demand', 0) > item.get('Stock', 0)
+            }
+
+            if buy_items or sell_items:
+                status_entries.append((
+                    "Local market information",
+                    {
+                        "List of goods I can buy from the market": buy_items,
+                        "List of Goods I can sell to the market": sell_items
+                    }
+                ))
+
         if current_station and current_station == outfitting.get('StationName'):
             # Create a nested structure from outfitting items with optimized leaf nodes
             nested_outfitting = {}
