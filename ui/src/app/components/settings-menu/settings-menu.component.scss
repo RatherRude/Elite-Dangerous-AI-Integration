@@ -123,6 +123,10 @@ mat-slide-toggle {
   margin-top: 0;
 }
 
+.ptt-extras mat-slide-toggle:first-child {
+  margin-top: 3px;
+}
+
 ul {
   margin-top: 0;
 }
