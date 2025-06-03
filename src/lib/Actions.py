@@ -243,6 +243,7 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
     current_gui = projected_states.get('CurrentStatus', {}).get('GuiFocus', '')
 
 
+
     if 'start_navigation' in args and args['start_navigation']:
         nav_route = projected_states.get('NavInfo', {}).get('NavRoute', [])
         if nav_route and nav_route[-1].get('StarSystem') == args.get('system_name'):
@@ -255,6 +256,7 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
         if not 'system_name' in args:
             return "Galaxy map is already open"
     else:
+        log('info', "Here!!")
         keys.send(galaxymap_key)
 
     try:
@@ -286,7 +288,7 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
                 "Unable to enter system name due to a collision between the 'UI Panel Right' and 'Galaxy Cam Translate Right' keys. "
                 + "Please change the keybinding for 'Galaxy Cam Translate' to Shift + WASD under General Controls > Galaxy Map.")
 
-        keys.send('CamZoomOut')
+        keys.send('CamZoomIn')
         sleep(0.05)
 
         keys.send('UI_Up')
@@ -314,22 +316,35 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
         keys.send('UI_Right')
         sleep(.5)
         keys.send('UI_Select')
-        sleep(1)
+        sleep(3)
 
         if 'start_navigation' in args and args['start_navigation']:
             keys.send('CamZoomOut')
             sleep(0.15)
             keys.send('UI_Select', hold=1)
-
             sleep(0.05)
-            if not current_gui == "GalaxyMap":  # if we are already in the galaxy map we don't want to close it
-                keys.send(galaxymap_key)
 
             try:
-                event_manager.wait_for_condition('NavRoute', lambda s: s and s[-1].get('StarSystem') == args['system_name'], 3)
+                data = event_manager.wait_for_condition('NavInfo',
+                                                                     lambda s: s.get('NavRoute')[-1].get('StarSystem').lower() == args['system_name'].lower(), 3)
+
+                if not current_gui == "GalaxyMap":  # if we are already in the galaxy map we don't want to close it
+                    keys.send(galaxymap_key)
+
                 return (f"Best location found: {json.dumps(args['details'])}. " if 'details' in args else '') + f"Route to {args['system_name']} successfully plotted"
+
             except TimeoutError:
-                return f"Failed to plot a route to {args['system_name']}"
+
+                try:
+                    data = event_manager.wait_for_condition('NavInfo',
+                                                 lambda s: s.get('NavRoute')[-1].get('StarSystem') != None, 1)
+
+                    plotted_system = data.get('NavRoute',{})[-1].get('StarSystem') # if we end up plotting a route to a system but not the one we asked for
+                    return f"Route is plotted to the nearest match to {plotted_system} - the nearest match to {args['system_name']}. The system you asked for does not exist"
+
+                except TimeoutError:
+
+                    return f"Failed to plot a route to {args['system_name']}"
 
         return f"The galaxy map has opened. It is now zoomed in on \"{args['system_name']}\". No route was plotted yet, only the commander can do that."
 
