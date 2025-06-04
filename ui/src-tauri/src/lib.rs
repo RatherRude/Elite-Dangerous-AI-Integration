@@ -91,7 +91,6 @@ async fn start_process(window: tauri::Window, state: State<'_, AppState>) -> Res
 
     #[cfg(windows)]
     {
-        use std::os::windows::process::CommandExt;
         command.creation_flags(0x08000000); // CREATE_NO_WINDOW
     }
 

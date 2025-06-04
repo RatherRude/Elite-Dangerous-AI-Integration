@@ -1,7 +1,7 @@
 import { Injectable } from "@angular/core";
 import { BehaviorSubject, filter, Observable } from "rxjs";
 import { type BaseMessage, TauriService } from "./tauri.service";
-import { PluginSettings, PluginSettingsMessage } from "./plugin-settings";
+import { PluginSettingsMessage } from "./plugin-settings";
 
 export interface ConfigMessage extends BaseMessage {
     type: "config";
@@ -159,21 +159,21 @@ export interface Config {
     providedIn: "root",
 })
 export class ConfigService {
-    private configSubject = new BehaviorSubject<Config | null>(null);
+    private readonly configSubject = new BehaviorSubject<Config | null>(null);
     public config$ = this.configSubject.asObservable();
 
-    private systemSubject = new BehaviorSubject<SystemInfo | null>(null);
+    private readonly systemSubject = new BehaviorSubject<SystemInfo | null>(null);
     public system$ = this.systemSubject.asObservable();
 
-    private validationSubject = new BehaviorSubject<
+    private readonly validationSubject = new BehaviorSubject<
         ModelValidationMessage | null
     >(null);
     public validation$ = this.validationSubject.asObservable();
 
-    private plugin_settings_message_subject = new BehaviorSubject<PluginSettingsMessage | null>(null);
+    private readonly plugin_settings_message_subject = new BehaviorSubject<PluginSettingsMessage | null>(null);
     public plugin_settings_message$ = this.plugin_settings_message_subject.asObservable();
 
-    constructor(private tauriService: TauriService) {
+    constructor(private readonly tauriService: TauriService) {
         // Subscribe to config messages from the TauriService
         this.tauriService.output$.pipe(
             filter((
@@ -260,11 +260,6 @@ export class ConfigService {
         };
 
         await this.tauriService.send_message(message);
-    }
-
-    public getPluginSetting(key: string): any | null {
-        const currentConfig = this.getCurrentConfig();
-        return currentConfig?.plugin_settings?.[key] ?? null;
     }
 
     public async addCharacter(character: Character, setActive: boolean = false): Promise<void> {
