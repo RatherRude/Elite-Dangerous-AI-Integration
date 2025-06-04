@@ -1,4 +1,5 @@
 import importlib
+from inspect import isclass
 import json
 import os
 
@@ -46,7 +47,7 @@ class PluginManager:
         # Find a subclass of PluginBase
         for attr in dir(module):
             obj = cast(type, getattr(module, attr))
-            if issubclass(obj, PluginBase) and obj is not PluginBase:
+            if isclass(obj) and issubclass(obj, PluginBase) and obj is not PluginBase:
                 return obj(manifest) # Instantiate and return
 
         raise TypeError("No valid PluginBase subclass found.")
