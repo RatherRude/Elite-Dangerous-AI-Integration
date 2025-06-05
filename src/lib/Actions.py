@@ -338,8 +338,12 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
                     data = event_manager.wait_for_condition('NavInfo',
                                                  lambda s: s.get('NavRoute')[-1].get('StarSystem') != None, 1)
 
-                    plotted_system = data.get('NavRoute',{})[-1].get('StarSystem') # if we end up plotting a route to a system but not the one we asked for
-                    return f"Route is plotted to the nearest match to {plotted_system} - the nearest match to {args['system_name']}. The system you asked for does not exist"
+                    plotted_system = data.get('NavRoute', {})[-1].get('StarSystem')  # if we end up plotting a route to a system but not the one we asked for
+
+                    if plotted_system.lower() == args['system_name'].lower():
+                        return (f"Best location found: {json.dumps(args['details'])}. " if 'details' in args else '') + f"Route to {args['system_name']} successfully plotted"
+                    else:
+                        return f"Route is plotted to the nearest match to {plotted_system} - the nearest match to {args['system_name']}. The system you asked for does not exist"
 
                 except TimeoutError:
 
