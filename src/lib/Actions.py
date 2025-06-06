@@ -3,7 +3,8 @@ import platform
 import threading
 from time import sleep
 import traceback
-from typing import Optional
+import math
+from typing import Any, Literal, Optional
 from pyautogui import typewrite
 from datetime import datetime, timezone
 
@@ -237,6 +238,80 @@ def charge_ecm(args, projected_states):
     return "ECM is attempting to charge"
 
 
+def calculate_navigation_distance_and_timing(current_system: str, target_system: str) -> tuple[float, int]:
+    distance_ly = 0.0  # Default value in case API call fails
+    
+    if current_system != 'Unknown' and target_system:
+        try:
+            # Request coordinates for both systems from EDSM API
+            edsm_url = "https://www.edsm.net/api-v1/systems"
+            params = {
+                'systemName[]': [current_system, target_system],
+                'showCoordinates': 1
+            }
+            
+            log('debug', 'Distance Calculation', f"Requesting coordinates for {current_system} -> {target_system}")
+            response = requests.get(edsm_url, params=params, timeout=5)
+            
+            if response.status_code == 200:
+                systems_data = response.json()
+                
+                if len(systems_data) >= 2:
+                    # Find the systems in the response
+                    current_coords = None
+                    target_coords = None
+                    
+                    for system in systems_data:
+                        if system.get('name', '').lower() == current_system.lower():
+                            current_coords = system.get('coords')
+                        elif system.get('name', '').lower() == target_system.lower():
+                            target_coords = system.get('coords')
+                    
+                    # Calculate distance if both coordinate sets are available
+                    if current_coords and target_coords:
+                        x1, y1, z1 = current_coords['x'], current_coords['y'], current_coords['z']
+                        x2, y2, z2 = target_coords['x'], target_coords['y'], target_coords['z']
+                        
+                        distance_ly = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2)
+                        distance_ly = round(distance_ly, 2)
+                        
+                        # Check if distance is too far to plot
+                        if distance_ly > 20000:
+                            raise Exception(f"Distance of {distance_ly} LY from {current_system} to {target_system} is too far to plot (max 20000 LY)")
+                        
+                        log('info', 'Navigation Distance', f"Distance from {current_system} to {target_system}: {distance_ly} LY")
+                    else:
+                        log('warn', 'Distance Calculation', f"Could not find coordinates for one or both systems: {current_system}, {target_system}")
+                else:
+                    log('warn', 'Distance Calculation', f"EDSM API returned insufficient data for systems: {current_system}, {target_system}")
+            else:
+                log('warn', 'Distance Calculation', f"EDSM API request failed with status {response.status_code}")
+                
+        except requests.RequestException as e:
+            log('error', 'Distance Calculation', f"Failed to request system coordinates from EDSM API: {str(e)}")
+        except Exception as e:
+            # Re-raise if it's our distance check exception
+            if "too far to plot" in str(e):
+                raise
+            log('error', 'Distance Calculation', f"Unexpected error during distance calculation: {str(e)}")
+    
+    # Determine wait time based on distance
+    zoom_wait_time = 3
+    
+    # Add additional second for every 1000 LY
+    if distance_ly > 0:
+        additional_time = int(distance_ly / 1000)
+        zoom_wait_time += additional_time
+    
+    # Add additional 2 seconds if distance couldn't be determined (still 0)
+    if distance_ly == 0:
+        zoom_wait_time += 2
+        log('warn', 'Navigation Timing', f"Distance could not be determined, adding 2 extra seconds to wait time")
+        
+    log('debug', 'Navigation Timing', f"Using {zoom_wait_time}s zoom wait time for {distance_ly} LY distance")
+    return distance_ly, zoom_wait_time
+
+
 def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
     # Trigger the GUI open
     setGameWindowActive()
@@ -315,22 +390,30 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
         keys.send('UI_Right')
         sleep(.5)
         keys.send('UI_Select')
-        sleep(3)
 
         if 'start_navigation' in args and args['start_navigation']:
+            # Get current location from projected states and calculate distance/timing
+            current_system = projected_states.get('Location', {}).get('StarSystem', 'Unknown')
+            target_system = args['system_name']
+            
+            distance_ly, zoom_wait_time = calculate_navigation_distance_and_timing(current_system, target_system)
+            log('info', 'zoom_wait_time', zoom_wait_time)
+            # Continue with the navigation logic
+            sleep(0.05)
             keys.send('CamZoomOut')
-            sleep(0.15)
+            sleep(zoom_wait_time)
             keys.send('UI_Select', hold=1)
+
             sleep(0.05)
 
             try:
                 data = event_manager.wait_for_condition('NavInfo',
-                                                                     lambda s: s.get('NavRoute')[-1].get('StarSystem').lower() == args['system_name'].lower(), 3)
+                                                                     lambda s: s.get('NavRoute')[-1].get('StarSystem').lower() == args['system_name'].lower(), zoom_wait_time)
 
                 if not current_gui == "GalaxyMap":  # if we are already in the galaxy map we don't want to close it
                     keys.send(galaxymap_key)
 
-                return (f"Best location found: {json.dumps(args['details'])}. " if 'details' in args else '') + f"Route to {args['system_name']} successfully plotted"
+                return (f"Best location found: {json.dumps(args['details'])}. " if 'details' in args else '') + f"Route to {args['system_name']} successfully plotted (Distance: {distance_ly} LY)"
 
             except TimeoutError:
 
@@ -341,7 +424,7 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
                     plotted_system = data.get('NavRoute', {})[-1].get('StarSystem')  # if we end up plotting a route to a system but not the one we asked for
 
                     if plotted_system.lower() == args['system_name'].lower():
-                        return (f"Best location found: {json.dumps(args['details'])}. " if 'details' in args else '') + f"Route to {args['system_name']} successfully plotted"
+                        return (f"Best location found: {json.dumps(args['details'])}. " if 'details' in args else '') + f"Route to {args['system_name']} successfully plotted (Distance: {distance_ly} LY)"
                     else:
                         return f"Route is plotted to the nearest match to {plotted_system} - the nearest match to {args['system_name']}. The system you asked for does not exist"
 
@@ -752,7 +835,7 @@ def recall_dismiss_ship_buggy(args, projected_states):
     keys.send('RecallDismissShip')
     return "Remote ship has been recalled or dismissed."
 
-def galaxy_map_open_buggy(args, projected_states):
+def galaxy_map_open_buggy(args, projected_states) -> Any | Literal['Galaxy map is already closed', 'Galaxy map closed']:
     setGameWindowActive()
     if args['desired_state'] == "open":
         response = galaxy_map_open(args, projected_states, "GalaxyMapOpen_Buggy")
