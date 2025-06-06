@@ -408,7 +408,7 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
 
             try:
                 data = event_manager.wait_for_condition('NavInfo',
-                                                                     lambda s: s.get('NavRoute')[-1].get('StarSystem').lower() == args['system_name'].lower(), zoom_wait_time)
+                                                                     lambda s: s.get('NavRoute') and len(s.get('NavRoute', [])) > 0 and s.get('NavRoute')[-1].get('StarSystem').lower() == args['system_name'].lower(), zoom_wait_time)
 
                 if not current_gui == "GalaxyMap":  # if we are already in the galaxy map we don't want to close it
                     keys.send(galaxymap_key)
@@ -419,7 +419,7 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
 
                 try:
                     data = event_manager.wait_for_condition('NavInfo',
-                                                 lambda s: s.get('NavRoute')[-1].get('StarSystem') != None, 1)
+                                                 lambda s: s.get('NavRoute') and len(s.get('NavRoute', [])) > 0 and s.get('NavRoute')[-1].get('StarSystem') != None, 1)
 
                     plotted_system = data.get('NavRoute', {})[-1].get('StarSystem')  # if we end up plotting a route to a system but not the one we asked for
 
