@@ -211,6 +211,7 @@ class Chat:
         self.plugin_manager.register_projections(self.plugin_helper)
 
         if self.config['tools_var']:
+            log('info', "Register actions...")
             register_actions(self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.ed_keys)
 
             log('info', "Built-in Actions ready.")
