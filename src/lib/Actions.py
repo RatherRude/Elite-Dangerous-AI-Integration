@@ -1102,6 +1102,468 @@ def get_galnet_news(obj, projected_states):
     except:
         return "News feed currently unavailable"
 
+def get_engineer_progress(obj, projected_states):
+    # get Engineering Progress.
+    # Example:
+    # {
+    #     "state": {
+    #         "timestamp": "2025-06-07T12:08:42Z",
+    #         "event": "EngineerProgress",
+    #         "Engineers": [
+    #             {
+    #                 "Engineer": "Hera Tani",
+    #                 "EngineerID": 300090,
+    #                 "Progress": "Unlocked",
+    #                 "RankProgress": 0,
+    #                 "Rank": 5
+    #             },
+    #             {
+    #                 "Engineer": "The Sarge",
+    #                 "EngineerID": 300040,
+    #                 "Progress": "Unlocked",
+    #                 "RankProgress": 0,
+    #                 "Rank": 5
+    #             },
+    #             {
+    #                 "Engineer": "Professor Palin",
+    #                 "EngineerID": 300220,
+    #                 "Progress": "Unlocked",
+    #                 "RankProgress": 0,
+    #                 "Rank": 5
+    #             },
+    #             {
+    #                 "Engineer": "Felicity Farseer",
+    #                 "EngineerID": 300100,
+    #                 "Progress": "Unlocked",
+    #                 "RankProgress": 0,
+    #                 "Rank": 5
+    #             },
+    #             {
+    #                 "Engineer": "Eleanor Bresa",
+    #                 "EngineerID": 400011,
+    #                 "Progress": "Known"
+    #             },
+    #             {
+    #                 "Engineer": "Hero Ferrari",
+    #                 "EngineerID": 400003,
+    #                 "Progress": "Unlocked",
+    #                 "RankProgress": 0,
+    #                 "Rank": 0
+    #             },
+    #             {
+    #                 "Engineer": "Tiana Fortune",
+    #                 "EngineerID": 300270,
+    #                 "Progress": "Unlocked",
+    #                 "RankProgress": 0,
+    #                 "Rank": 5
+    #             },
+    #             {
+    #                 "Engineer": "Jude Navarro",
+    #                 "EngineerID": 400001,
+    #                 "Progress": "Known"
+    #             },
+    #             {
+    #                 "Engineer": "Broo Tarquin",
+    #                 "EngineerID": 300030,
+    #                 "Progress": "Unlocked",
+    #                 "RankProgress": 0,
+    #                 "Rank": 5
+    #             },
+    #             {
+    #                 "Engineer": "Etienne Dorn",
+    #                 "EngineerID": 300290,
+    #                 "Progress": "Invited"
+    #             },
+    #             {
+    #                 "Engineer": "Lori Jameson",
+    #                 "EngineerID": 300230,
+    #                 "Progress": "Invited"
+    #             },
+    #             {
+    #                 "Engineer": "Yarden Bond",
+    #                 "EngineerID": 400009,
+    #                 "Progress": "Invited"
+    #             },
+    #             {
+    #                 "Engineer": "Bill Turner",
+    #                 "EngineerID": 300010,
+    #                 "Progress": "Unlocked",
+    #                 "RankProgress": 0,
+    #                 "Rank": 5
+    #             },
+    #             {
+    #                 "Engineer": "Liz Ryder",
+    #                 "EngineerID": 300080,
+    #                 "Progress": "Unlocked",
+    #                 "RankProgress": 0,
+    #                 "Rank": 5
+    #             },
+    #             {
+    #                 "Engineer": "Rosa Dayette",
+    #                 "EngineerID": 400012,
+    #                 "Progress": "Known"
+    #             },
+    #             {
+    #                 "Engineer": "Juri Ishmaak",
+    #                 "EngineerID": 300250,
+    #                 "Progress": "Unlocked",
+    #                 "RankProgress": 33,
+    #                 "Rank": 4
+    #             },
+    #             {
+    #                 "Engineer": "Zacariah Nemo",
+    #                 "EngineerID": 300050,
+    #                 "Progress": "Known"
+    #             },
+    #             {
+    #                 "Engineer": "Mel Brandon",
+    #                 "EngineerID": 300280,
+    #                 "Progress": "Known"
+    #             },
+    #             {
+    #                 "Engineer": "Selene Jean",
+    #                 "EngineerID": 300210,
+    #                 "Progress": "Unlocked",
+    #                 "RankProgress": 0,
+    #                 "Rank": 5
+    #             },
+    #             {
+    #                 "Engineer": "Marco Qwent",
+    #                 "EngineerID": 300200,
+    #                 "Progress": "Unlocked",
+    #                 "RankProgress": 0,
+    #                 "Rank": 5
+    #             },
+    #             {
+    #                 "Engineer": "Chloe Sedesi",
+    #                 "EngineerID": 300300,
+    #                 "Progress": "Invited"
+    #             },
+    #             {
+    #                 "Engineer": "Baltanos",
+    #                 "EngineerID": 400010,
+    #                 "Progress": "Known"
+    #             },
+    #             {
+    #                 "Engineer": "Petra Olmanova",
+    #                 "EngineerID": 300130,
+    #                 "Progress": "Invited"
+    #             },
+    #             {
+    #                 "Engineer": "Ram Tah",
+    #                 "EngineerID": 300110,
+    #                 "Progress": "Unlocked",
+    #                 "RankProgress": 0,
+    #                 "Rank": 5
+    #             },
+    #             {
+    #                 "Engineer": "The Dweller",
+    #                 "EngineerID": 300180,
+    #                 "Progress": "Unlocked",
+    #                 "RankProgress": 0,
+    #                 "Rank": 5
+    #             },
+    #             {
+    #                 "Engineer": "Elvira Martuuk",
+    #                 "EngineerID": 300160,
+    #                 "Progress": "Unlocked",
+    #                 "RankProgress": 0,
+    #                 "Rank": 5
+    #             },
+    #             {
+    #                 "Engineer": "Lei Cheung",
+    #                 "EngineerID": 300120,
+    #                 "Progress": "Unlocked",
+    #                 "RankProgress": 0,
+    #                 "Rank": 5
+    #             },
+    #             {
+    #                 "Engineer": "Kit Fowler",
+    #                 "EngineerID": 400004,
+    #                 "Progress": "Unlocked",
+    #                 "RankProgress": 0,
+    #                 "Rank": 0
+    #             },
+    #             {
+    #                 "Engineer": "Colonel Bris Dekker",
+    #                 "EngineerID": 300140,
+    #                 "Progress": "Invited"
+    #             },
+    #             {
+    #                 "Engineer": "Didi Vatermann",
+    #                 "EngineerID": 300000,
+    #                 "Progress": "Unlocked",
+    #                 "RankProgress": 0,
+    #                 "Rank": 5
+    #             },
+    #             {
+    #                 "Engineer": "Tod 'The Blaster' McQuinn",
+    #                 "EngineerID": 300260,
+    #                 "Progress": "Unlocked",
+    #                 "RankProgress": 0,
+    #                 "Rank": 5
+    #             },
+    #             {
+    #                 "Engineer": "Domino Green",
+    #                 "EngineerID": 400002,
+    #                 "Progress": "Unlocked",
+    #                 "RankProgress": 0,
+    #                 "Rank": 0
+    #             },
+    #             {
+    #                 "Engineer": "Wellington Beck",
+    #                 "EngineerID": 400005,
+    #                 "Progress": "Invited"
+    #             },
+    #             {
+    #                 "Engineer": "Marsha Hicks",
+    #                 "EngineerID": 300150,
+    #                 "Progress": "Invited"
+    #             }
+    #         ],
+    #         "id": "Journal.2025-06-07T140133.01.log.000009"
+    #     },
+    #     "last_processed": 1749334592.275252
+    # }
+
+    # // Ship Engineers data
+    # private shipEngineers = [
+    #     { Engineer: "Tod 'The Blaster' McQuinn", EngineerID: 300260, Location: "Wolf 397",
+    #       Modifies: "Weapons (Ballistic)",
+    #       HowToFind: "Available from start",
+    #       HowToGetInvite: "15 bounty vouchers earned",
+    #       HowToUnlock: "100,001 CR of bounty vouchers provided",
+    #       HowToGainRep: "Modules crafted or Alliance vouchers handed in" },
+    #     { Engineer: "Felicity Farseer", EngineerID: 300100, Location: "Deciat",
+    #       Modifies: "FSD, Thrusters, Sensors",
+    #       HowToFind: "Available from start",
+    #       HowToGetInvite: "Exploration rank Scout or higher reached",
+    #       HowToUnlock: "1 Meta-Alloy provided",
+    #       HowToGainRep: "Modules crafted or exploration data sold" },
+    #     { Engineer: "Elvira Martuuk", EngineerID: 300160, Location: "Khun",
+    #       Modifies: "FSD, Shields, Thrusters",
+    #       HowToFind: "Available from start",
+    #       HowToGetInvite: "300+ ly from starting system traveled",
+    #       HowToUnlock: "3 Soontill Relics provided",
+    #       HowToGainRep: "Modules crafted or exploration data sold" },
+    #     { Engineer: "Liz Ryder", EngineerID: 300080, Location: "Eurybia",
+    #       Modifies: "Explosives, Armor",
+    #       HowToFind: "Available from start",
+    #       HowToGetInvite: "Friendly with Eurybia Blue Mafia achieved",
+    #       HowToUnlock: "200 Landmines provided",
+    #       HowToGainRep: "Modules crafted or commodities sold" },
+    #     { Engineer: "The Dweller", EngineerID: 300180, Location: "Wyrd",
+    #       Modifies: "Power Distributor, Lasers",
+    #       HowToFind: "Available from start",
+    #       HowToGetInvite: "5 Black Markets dealt with",
+    #       HowToUnlock: "500,000 CR paid",
+    #       HowToGainRep: "Modules crafted or commodities sold" },
+    #     { Engineer: "Lei Cheung", EngineerID: 300120, Location: "Laksak",
+    #       Modifies: "Shields, Sensors",
+    #       HowToFind: "Introduced by The Dweller",
+    #       HowToGetInvite: "50 markets traded with",
+    #       HowToUnlock: "200 Gold provided",
+    #       HowToGainRep: "Modules crafted" },
+    #     { Engineer: "Selene Jean", EngineerID: 300210, Location: "Kuk",
+    #       Modifies: "Hull, Armor",
+    #       HowToFind: "Introduced by Tod McQuinn",
+    #       HowToGetInvite: "500 tons of ore mined",
+    #       HowToUnlock: "10 Painite provided",
+    #       HowToGainRep: "Modules crafted or commodities/data sold" },
+    #     { Engineer: "Hera Tani", EngineerID: 300090, Location: "Kuwemaki",
+    #       Modifies: "Power Plant, Sensors",
+    #       HowToFind: "Introduced by Liz Ryder",
+    #       HowToGetInvite: "Imperial Navy rank Outsider achieved",
+    #       HowToUnlock: "50 Kamitra Cigars provided",
+    #       HowToGainRep: "Modules crafted or commodities sold" },
+    #     { Engineer: "Broo Tarquin", EngineerID: 300030, Location: "Muang",
+    #       Modifies: "Lasers",
+    #       HowToFind: "Introduced by Hera Tani",
+    #       HowToGetInvite: "Combat rank Competent or higher achieved",
+    #       HowToUnlock: "50 Fujin Tea provided",
+    #       HowToGainRep: "Modules crafted" },
+    #     { Engineer: "Marco Qwent", EngineerID: 300200, Location: "Sirius (Permit Required)",
+    #       Modifies: "Power Plant, Power Distributor",
+    #       HowToFind: "Introduced by Elvira Martuuk",
+    #       HowToGetInvite: "Sirius Corporation invitation obtained",
+    #       HowToUnlock: "25 Modular Terminals provided",
+    #       HowToGainRep: "Modules crafted or commodities sold" },
+    #     { Engineer: "Zacariah Nemo", EngineerID: 300050, Location: "Yoru",
+    #       Modifies: "Weapons (Varied)",
+    #       HowToFind: "Introduced by Elvira Martuuk",
+    #       HowToGetInvite: "Party of Yoru invitation received",
+    #       HowToUnlock: "25 Xihe Biomorphic Companions provided",
+    #       HowToGainRep: "Modules crafted or commodities sold" },
+    #     { Engineer: "Didi Vatermann", EngineerID: 300000, Location: "Leesti",
+    #       Modifies: "Shields",
+    #       HowToFind: "Introduced by Selene Jean",
+    #       HowToGetInvite: "Trade rank Merchant or higher achieved",
+    #       HowToUnlock: "50 Lavian Brandy provided",
+    #       HowToGainRep: "Modules crafted" },
+    #     { Engineer: "Colonel Bris Dekker", EngineerID: 300140, Location: "Sol (Permit Required)",
+    #       Modifies: "FSD, Interdictor",
+    #       HowToFind: "Introduced by Juri Ishmaak",
+    #       HowToGetInvite: "Federation friendly status achieved",
+    #       HowToUnlock: "1,000,000 CR of combat bonds provided",
+    #       HowToGainRep: "Modules crafted" },
+    #     { Engineer: "Juri Ishmaak", EngineerID: 300250, Location: "Giryak",
+    #       Modifies: "Sensors, Explosives",
+    #       HowToFind: "Introduced by Felicity Farseer",
+    #       HowToGetInvite: "50+ combat bonds earned",
+    #       HowToUnlock: "100,000 CR of combat bonds provided",
+    #       HowToGainRep: "Modules crafted or combat bonds handed in" },
+    #     { Engineer: "Professor Palin", EngineerID: 300220, Location: "Arque",
+    #       Modifies: "Thrusters, FSD",
+    #       HowToFind: "Introduced by Marco Qwent",
+    #       HowToGetInvite: "5,000 ly from start location traveled",
+    #       HowToUnlock: "25 Sensor Fragments provided",
+    #       HowToGainRep: "Modules crafted or exploration data sold" },
+    #     { Engineer: "Bill Turner", EngineerID: 300010, Location: "Alioth (Permit Required)",
+    #       Modifies: "Utility, Scanners, Sensors",
+    #       HowToFind: "Introduced by Selene Jean",
+    #       HowToGetInvite: "Alliance friendly status achieved",
+    #       HowToUnlock: "50 Bromellite provided",
+    #       HowToGainRep: "Modules crafted" },
+    #     { Engineer: "Lori Jameson", EngineerID: 300230, Location: "Shinrarta Dezhra (Permit Required)",
+    #       Modifies: "Support Modules, Scanners",
+    #       HowToFind: "Introduced by Marco Qwent",
+    #       HowToGetInvite: "Combat rank Dangerous or higher achieved",
+    #       HowToUnlock: "25 Konnga Ale provided",
+    #       HowToGainRep: "Modules crafted or exploration data sold" },
+    #     { Engineer: "Ram Tah", EngineerID: 300110, Location: "Meene",
+    #       Modifies: "Utility, Limpets",
+    #       HowToFind: "Introduced by Lei Cheung",
+    #       HowToGetInvite: "Exploration rank Surveyor or higher achieved",
+    #       HowToUnlock: "50 Classified Scan Databanks provided",
+    #       HowToGainRep: "Modules crafted or exploration data sold" },
+    #     { Engineer: "Tiana Fortune", EngineerID: 300270, Location: "Achenar (Permit Required)",
+    #       Modifies: "Scanners, Limpets",
+    #       HowToFind: "Introduced by Hera Tani",
+    #       HowToGetInvite: "Empire friendly status achieved",
+    #       HowToUnlock: "50 Decoded Emission Data provided",
+    #       HowToGainRep: "Modules crafted or commodities sold" },
+    #     { Engineer: "The Sarge", EngineerID: 300040, Location: "Beta-3 Tucani",
+    #       Modifies: "Cannons, Limpets",
+    #       HowToFind: "Introduced by Juri Ishmaak",
+    #       HowToGetInvite: "Federal Navy rank Midshipman achieved",
+    #       HowToUnlock: "50 Aberrant Shield Pattern Analysis provided",
+    #       HowToGainRep: "Modules crafted or exploration data sold" },
+    #     { Engineer: "Etienne Dorn", EngineerID: 300290, Location: "Los",
+    #       Modifies: "Core Modules, Weapons",
+    #       HowToFind: "Introduced by Liz Ryder",
+    #       HowToGetInvite: "Trade rank Dealer or higher achieved",
+    #       HowToUnlock: "25 Occupied Escape Pods provided",
+    #       HowToGainRep: "Modules crafted" },
+    #     { Engineer: "Marsha Hicks", EngineerID: 300150, Location: "Tir",
+    #       Modifies: "Weapons, Support Modules",
+    #       HowToFind: "Introduced by The Dweller",
+    #       HowToGetInvite: "Exploration rank Surveyor or higher achieved",
+    #       HowToUnlock: "10 Osmium mined",
+    #       HowToGainRep: "Modules crafted" },
+    #     { Engineer: "Mel Brandon", EngineerID: 300280, Location: "Luchtaine",
+    #       Modifies: "Core Modules, Weapons",
+    #       HowToFind: "Introduced by Elvira Martuuk",
+    #       HowToGetInvite: "Colonia Council invitation received",
+    #       HowToUnlock: "100,000 CR of bounty vouchers provided",
+    #       HowToGainRep: "Modules crafted" },
+    #     { Engineer: "Petra Olmanova", EngineerID: 300130, Location: "Asura",
+    #       Modifies: "Armor, Weapons",
+    #       HowToFind: "Introduced by Tod McQuinn",
+    #       HowToGetInvite: "Combat rank Expert or higher achieved",
+    #       HowToUnlock: "200 Progenitor Cells provided",
+    #       HowToGainRep: "Modules crafted" },
+    #     { Engineer: "Chloe Sedesi", EngineerID: 300300, Location: "Shenve",
+    #       Modifies: "Thrusters, FSD",
+    #       HowToFind: "Introduced by Marco Qwent",
+    #       HowToGetInvite: "5,000 ly from start location traveled",
+    #       HowToUnlock: "25 Sensor Fragments provided",
+    #       HowToGainRep: "Modules crafted or exploration data sold" }
+    # ];
+    #
+    # // On-foot Engineers data
+    # private onFootEngineers = [
+    #     { Engineer: "Domino Green", EngineerID: 400002, Location: "Orishis",
+    #       Modifies: "Suits, Tools",
+    #       HowToFind: "Available from start",
+    #       HowToGetInvite: "100ly in Apex Transport traveled",
+    #       HowToUnlock: "5 Push provided",
+    #       HowToReferral: "5 Push required" },
+    #     { Engineer: "Hero Ferrari", EngineerID: 400003, Location: "Siris",
+    #       Modifies: "Suit Mobility",
+    #       HowToFind: "Available from start",
+    #       HowToGetInvite: "10 Conflict Zones completed",
+    #       HowToUnlock: "15 Settlement Defence Plans provided",
+    #       HowToReferral: "15 Settlement Defence Plans required" },
+    #     { Engineer: "Jude Navarro", EngineerID: 400001, Location: "Aurai",
+    #       Modifies: "Weapons, Armor",
+    #       HowToFind: "Available from start",
+    #       HowToGetInvite: "10 Restore/Reactivation missions completed",
+    #       HowToUnlock: "5 Genetic Repair Meds provided",
+    #       HowToReferral: "5 Genetic Repair Meds required" },
+    #     { Engineer: "Kit Fowler", EngineerID: 400004, Location: "Capoya",
+    #       Modifies: "Weapons, Shields",
+    #       HowToFind: "Introduced by Domino Green",
+    #       HowToGetInvite: "10 Opinion Polls sold to Bartenders",
+    #       HowToUnlock: "5 Surveillance Equipment provided",
+    #       HowToReferral: "5 Surveillance Equipment required" },
+    #     { Engineer: "Oden Geiger", EngineerID: 400008, Location: "Candiaei",
+    #       Modifies: "Vision, Tools",
+    #       HowToFind: "Introduced by Terra Velasquez",
+    #       HowToGetInvite: "20 Biological/Genetic items sold to Bartenders",
+    #       HowToUnlock: "No referral needed",
+    #       HowToReferral: "N/A" },
+    #     { Engineer: "Terra Velasquez", EngineerID: 400006, Location: "Shou Xing",
+    #       Modifies: "Suit Mobility, Stealth",
+    #       HowToFind: "Introduced by Jude Navarro",
+    #       HowToGetInvite: "12 Covert missions completed",
+    #       HowToUnlock: "15 Financial Projections provided",
+    #       HowToReferral: "15 Financial Projections required" },
+    #     { Engineer: "Uma Laszlo", EngineerID: 400007, Location: "Xuane",
+    #       Modifies: "Weapons, Defense",
+    #       HowToFind: "Introduced by Wellington Beck",
+    #       HowToGetInvite: "Sirius Corp unfriendly status reached",
+    #       HowToUnlock: "No referral needed",
+    #       HowToReferral: "N/A" },
+    #     { Engineer: "Wellington Beck", EngineerID: 400005, Location: "Jolapa",
+    #       Modifies: "Tools, Backpack",
+    #       HowToFind: "Introduced by Hero Ferrari",
+    #       HowToGetInvite: "25 Entertainment items sold to Bartenders",
+    #       HowToUnlock: "5 InSight Entertainment Suites provided",
+    #       HowToReferral: "5 InSight Entertainment Suites required" },
+    #     { Engineer: "Yarden Bond", EngineerID: 400009, Location: "Bayan",
+    #       Modifies: "Stealth, Mobility",
+    #       HowToFind: "Introduced by Kit Fowler",
+    #       HowToGetInvite: "8 Smear Campaign Plans sold to Bartenders",
+    #       HowToUnlock: "No referral needed",
+    #       HowToReferral: "N/A" },
+    #     { Engineer: "Baltanos", EngineerID: 400010, Location: "Deriso",
+    #       Modifies: "Suit Mobility, Stealth",
+    #       HowToFind: "Available in Colonia",
+    #       HowToGetInvite: "Colonia Council friendly status achieved",
+    #       HowToUnlock: "10 Faction Associates provided",
+    #       HowToReferral: "10 Faction Associates required" },
+    #     { Engineer: "Eleanor Bresa", EngineerID: 400011, Location: "Desy",
+    #       Modifies: "Weapons, Defense",
+    #       HowToFind: "Available in Colonia",
+    #       HowToGetInvite: "5 Settlements in Colonia visited",
+    #       HowToUnlock: "10 Digital Designs provided",
+    #       HowToReferral: "10 Digital Designs required" },
+    #     { Engineer: "Rosa Dayette", EngineerID: 400012, Location: "Kojeara",
+    #       Modifies: "Tools, Backpack",
+    #       HowToFind: "Available in Colonia",
+    #       HowToGetInvite: "10 Recipe items sold to Bartenders in Colonia",
+    #       HowToUnlock: "10 Manufacturing Instructions provided",
+    #       HowToReferral: "10 Manufacturing Instructions required" },
+    #     { Engineer: "Yi Shen", EngineerID: 400013, Location: "Einheriar",
+    #       Modifies: "Stealth, Weapons",
+    #       HowToFind: "Introduced by Colonia engineers",
+    #       HowToGetInvite: "All Colonia engineers' referral tasks completed",
+    #       HowToUnlock: "No referral needed",
+    #       HowToReferral: "N/A" }
+    # ];
+
+
+    return "Here could be engineers"
 
 def send_message(obj, projected_states):
     from pyautogui import typewrite
@@ -3867,6 +4329,14 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         },
         "required": ["message","channel"]
     }, send_message, 'global')
+
+    actionManager.registerAction(
+        'getEngineerProgress',
+        "Retrieve information about standing and location of engineers",
+        {},
+        get_engineer_progress,
+        'web'
+    )
 
     if vision_client:
         actionManager.registerAction('getVisuals', "Describes what's currently visible to the Commander.", {
