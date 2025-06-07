@@ -5,7 +5,7 @@ on: [push, pull_request]
 jobs:
   pyinstaller-build:
     name: Build Executable
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out the repository
         uses: actions/checkout@v2
@@ -70,7 +70,7 @@ jobs:
   tauri-build:
     name: Build Tauri App
     needs: pyinstaller-build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out the repository
         uses: actions/checkout@v2
@@ -142,6 +142,86 @@ jobs:
         with:
           name: COVAS_NEXT_TAURI_v${{ github.sha }}_linux
           path: covas-next-ui-linux-*.tar.gz
+
+  flatpak-bundle:
+    name: Build Flatpak Bundle
+    needs: tauri-build
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v2
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: COVAS_NEXT_TAURI_v${{ github.sha }}_linux
+
+      - name: Install flatpak
+        run: |
+          sudo apt update
+          sudo apt install -y flatpak flatpak-builder
+
+      - name: Setup flatpak remotes and runtimes
+        run: |
+          # Add flathub repo
+          sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+          flatpak --user remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+
+          # Install runtimes system-wide to avoid permission issues
+          sudo flatpak install -y flathub org.freedesktop.Platform//23.08
+          sudo flatpak install -y flathub org.freedesktop.Sdk//23.08
+
+      - name: Extract tauri build
+        run: |
+          SHORT_HASH=$(echo ${{ github.sha }} | cut -c1-7)
+          tar -xzf covas-next-ui-linux-$SHORT_HASH.tar.gz
+          mv covas-next-ui-linux-$SHORT_HASH.tar.gz covas-next-ui-linux.tar.gz
+          # Verify extracted contents
+          ls -la bin/ lib/
+
+      - name: Build flatpak
+        run: |
+          SHORT_HASH=$(echo ${{ github.sha }} | cut -c1-7)
+          # Create build directory
+          mkdir -p flatpak-build
+
+          # Verify flatpak manifest exists
+          ls -la com.covasnext.ui.yml
+
+          # Build the flatpak with verbose output
+          sudo flatpak-builder --verbose --force-clean --install-deps-from=flathub \
+            --repo=flatpak-repo flatpak-build com.covasnext.ui.yml
+
+          # Create flatpak bundle
+          sudo flatpak build-bundle flatpak-repo covas-next-ui-$SHORT_HASH.flatpak \
+            com.covasnext.ui --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo
+
+          # Fix permissions for the bundle
+          sudo chown $USER covas-next-ui-$SHORT_HASH.flatpak
+
+          # Verify the bundle was created
+          ls -la covas-next-ui-*.flatpak
+          echo "Flatpak bundle created successfully: covas-next-ui-$SHORT_HASH.flatpak"
+
+      - name: Validate flatpak bundle
+        run: |
+          SHORT_HASH=$(echo ${{ github.sha }} | cut -c1-7)
+          # Install the bundle locally to test it
+          flatpak install --user --bundle covas-next-ui-$SHORT_HASH.flatpak -y
+
+          # Check if the app was installed correctly
+          flatpak list --user | grep com.covasnext.ui
+
+          # Get app info
+          flatpak info --user com.covasnext.ui
+
+          echo "Flatpak bundle validation completed successfully"
+
+      - name: Upload flatpak bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: COVAS_NEXT_FLATPAK_v${{ github.sha }}_linux
+          path: covas-next-ui-*.flatpak
 
   e2e-and-scan:
     name: E2E Tests & Defender Scan

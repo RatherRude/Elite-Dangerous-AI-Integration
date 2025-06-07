@@ -686,7 +686,27 @@ def load_config() -> Config:
     }
     try:
         print("Loading configuration file")
-        config_exists = os.path.exists('config.json')
+        if getattr(sys, 'frozen', False):
+            executable_path = os.path.dirname(sys.executable)
+        else:
+            executable_path = os.path.dirname(__file__)
+        
+        # prefer to load config from current working directory
+        config_path = 'config.json'
+        config_exists = os.path.exists(config_path)
+        if not config_exists:
+            # if it doesn't exist, check the executable path and try to move it to the workdir
+            config_path = os.path.join(executable_path, 'config.json')
+            config_exists = os.path.exists(config_path)
+            if config_exists:
+                print(f"Config file found in executable path: {config_path}, migrating to workdir")
+                # move config file to workdir
+                import shutil
+                shutil.move(config_path, 'config.json')
+                try:
+                    shutil.move(os.path.join(executable_path, 'covas.db'), 'covas.db')
+                except:
+                    print("Failed to move covas.db, it may not exist in the executable path")
         
         if not config_exists:
             print("Config file not found, creating default configuration")
@@ -753,6 +773,9 @@ def get_input_device_names() -> list[str]:
 
 def get_default_input_device_name() -> str:
     devices = get_input_device_names()
+    if 'pulse' in devices:
+        # If PulseAudio is available on linux, its a save bet
+        return 'pulse'
     return devices[0] if devices else ""
 
 
@@ -777,6 +800,9 @@ def get_output_device_names() -> list[str]:
 
 def get_default_output_device_name() -> str:
     devices = get_output_device_names()
+    if 'pulse' in devices:
+        # If PulseAudio is available on linux, its a save bet
+        return 'pulse'
     return devices[0] if devices else ""
 
 

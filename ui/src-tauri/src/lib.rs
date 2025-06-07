@@ -22,14 +22,16 @@ const DEV_EXE_ARGS: &[&str] = &["-u", "./src/Chat.py"];
 
 const PROD_EXE_ARGS: &[&str] = &[];
 
-fn get_exe_config(
-    window: &tauri::Window,
-) -> Result<(String, String, &'static [&'static str]), String> {
+fn get_exe_config(window: &tauri::Window) -> Result<(String, String, Vec<String>), String> {
     if cfg!(debug_assertions) {
+        debug!(
+            "Using development executable: {}, working path: {}, args: {:?}",
+            DEV_EXE_PATH, DEV_EXE_CWD, DEV_EXE_ARGS
+        );
         Ok((
             DEV_EXE_PATH.to_string(),
             DEV_EXE_CWD.to_string(),
-            DEV_EXE_ARGS,
+            DEV_EXE_ARGS.iter().map(|&s| s.to_string()).collect(), // Convert to Vec<String>
         ))
     } else {
         let app_handle = window.app_handle();
@@ -41,15 +43,28 @@ fn get_exe_config(
             .ok_or("Failed to convert resource path to string")?
             .to_string();
 
-        let working_path = app_handle
+        // In production, set the working directory to the app_data_dir
+        let app_data_dir_path = app_handle
             .path()
-            .resolve("resources", BaseDirectory::Resource)
-            .map_err(|e| format!("Failed to resolve Chat executable working directory: {}", e))?
+            .app_data_dir()
+            .map_err(|e| format!("Application data directory is not available: {}", e))?;
+
+        let prod_working_path = app_data_dir_path
             .to_str()
-            .ok_or("Failed to convert working path to string")?
+            .ok_or_else(|| "Application data directory path contains invalid UTF-8.".to_string())?
             .to_string();
 
-        Ok((resource_path, working_path, PROD_EXE_ARGS))
+        // PROD_EXE_ARGS is &[], so convert it to Vec<String>
+        // No need to add --app-data as the working directory is now the app data directory
+        let effective_prod_args: Vec<String> =
+            PROD_EXE_ARGS.iter().map(|&s| s.to_string()).collect();
+
+        debug!(
+            "Using production executable: {}, working path: {}, args: {:?}",
+            resource_path, prod_working_path, effective_prod_args
+        );
+
+        Ok((resource_path, prod_working_path, effective_prod_args))
     }
 }
 
@@ -66,7 +81,10 @@ struct AppState {
 // Helper function to check if a string contains sensitive information
 fn contains_sensitive_data(text: &str) -> bool {
     false
-        || text.to_lowercase().contains("api_key")
+        || text.contains("sk-")
+        || text.contains("AIza")
+        || text.to_lowercase().contains("\"type\": \"config\"")
+        || text.to_lowercase().contains("\"type\": \"change_config\"")
         || text.to_lowercase().contains("\"type\":\"config\"")
         || text.to_lowercase().contains("\"type\":\"change_config\"")
 }
@@ -79,6 +97,17 @@ async fn start_process(window: tauri::Window, state: State<'_, AppState>) -> Res
     }
 
     let (exe_path, exe_cwd, exe_args) = get_exe_config(&window)?;
+
+    // Ensure the exe_cwd exists or create it
+    if !std::path::Path::new(&exe_cwd).exists() {
+        std::fs::create_dir_all(&exe_cwd).map_err(|e| {
+            format!(
+                "Failed to create executable working directory {}: {}",
+                exe_cwd, e
+            )
+        })?;
+        info!("Created executable working directory: {}", exe_cwd);
+    }
 
     let mut command = Command::new(exe_path.clone());
     command
