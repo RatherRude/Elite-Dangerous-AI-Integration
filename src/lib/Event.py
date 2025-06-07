@@ -4,7 +4,7 @@ from typing import Dict, List, Literal, TypedDict
 
 
 class Event:
-    kind: Literal['game', 'user', 'assistant', 'assistant_completed', 'tool', 'status', 'projected']
+    kind: Literal['game', 'user', 'assistant', 'assistant_completed', 'tool', 'status', 'projected', 'external', 'archive']
     timestamp: str
     processed_at: float
 

@@ -2,7 +2,7 @@ import queue
 import threading
 import time
 from typing import final
-from .Logger import log
+from .Logger import log, show_chat_message
 
 from EDMesg.CovasNext import (
     ExternalChatNotification,
@@ -35,7 +35,7 @@ class EDCoPilot:
         except Exception:
             self.is_enabled = False
             self.is_edcopilot_dominant = False
-            log("error", "Could not connect to EDMesg, third party applications may not work.")
+            show_chat_message("error", "Could not connect to EDMesg, third party applications may not work.")
 
         if self.is_enabled:
             thread = threading.Thread(target=self.listen_actions)
