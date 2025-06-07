@@ -26,7 +26,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
         # Call default handler for keyboard interrupt
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
-    if not sys.stdout.closed:
+    if not sys.stderr.closed:
         logger.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
 
 sys.excepthook = handle_exception
