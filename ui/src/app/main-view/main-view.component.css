@@ -79,13 +79,6 @@
   flex-shrink: 0;
 }
 
-/* Style chat container similarly to log container for now */
-app-chat-container {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px;
-}
-
 .button-container {
   display: flex;
   flex: 0;
@@ -102,6 +95,6 @@ app-chat-container {
   z-index: 1000;
 }
 
-:host ::ng-deep .mat-mdc-tab-body-wrapper {
+::ng-deep .mat-mdc-tab-body-wrapper {
   flex-grow: 1;
 }

@@ -71,22 +71,17 @@ def log(prefix: Literal['info', 'debug', 'warn', 'error'], message: Any, *args: 
     output.close()
     prefix = prefix.lower()
     
-    message = {
-        'type': 'log',
-        'timestamp': datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
-        'prefix': prefix,
-        'message': contents,
-    }
+    timestamp = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
     if prefix == 'debug':
-        logging.debug(contents)
+        logging.debug(contents, extra={"timestamp": timestamp})
     elif prefix == 'info':
-        logging.info(contents)
+        logging.info(contents, extra={"timestamp": timestamp})
     elif prefix == 'warn':
-        logging.warning(contents)
+        logging.warning(contents, extra={"timestamp": timestamp})
     elif prefix == 'error':
-        logging.error(contents)
+        logging.error(contents, extra={"timestamp": timestamp})
     else:
-        logging.info(contents)
+        logging.info(contents, extra={"timestamp": timestamp})
     if sys.stdout:
         sys.stdout.flush()
