@@ -6,6 +6,9 @@ import logging
 import json
 from pythonjsonlogger.json import JsonFormatter
 
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+
 logger = logging.getLogger()
 
 logHandler = logging.StreamHandler(stream=sys.stdout)
@@ -19,7 +22,6 @@ logHandler.setFormatter(formatter)
 logger.addHandler(logHandler)
 logger.setLevel(logging.DEBUG)
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 def handle_exception(exc_type, exc_value, exc_traceback):
     if issubclass(exc_type, KeyboardInterrupt):
@@ -28,7 +30,16 @@ def handle_exception(exc_type, exc_value, exc_traceback):
         return
     
     if not sys.stderr.closed:
-        logger.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
+        output = io.StringIO()
+        print("Uncaught exception", exc_type, exc_value, exc_traceback, file=output)
+        contents = output.getvalue().strip()
+        output.close()
+        print(json.dumps({
+            "type": "log",
+            "timestamp": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            "prefix": "error",
+            "message": contents
+        }), file=sys.stderr)
 
 sys.excepthook = handle_exception
 
