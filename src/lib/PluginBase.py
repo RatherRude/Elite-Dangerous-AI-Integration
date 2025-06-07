@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Any
 
 from .PluginHelper import PluginHelper, PluginManifest
 from .PluginSettingDefinitions import PluginSettings

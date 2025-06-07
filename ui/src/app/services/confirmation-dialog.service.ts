@@ -7,7 +7,7 @@ import { ConfirmationDialogComponent, ConfirmationDialogData } from '../componen
   providedIn: 'root'
 })
 export class ConfirmationDialogService {
-  constructor(private dialog: MatDialog) {}
+  constructor(private readonly dialog: MatDialog) {}
 
   /**
    * Opens a confirmation dialog with the provided data

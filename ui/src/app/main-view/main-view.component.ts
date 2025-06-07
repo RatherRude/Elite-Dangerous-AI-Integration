@@ -37,10 +37,10 @@ export class MainViewComponent implements OnInit, OnDestroy {
     private hasAutoStarted = false;
 
     constructor(
-        private tauri: TauriService,
-        private loggingService: LoggingService,
-        private router: Router,
-        private configService: ConfigService,
+        private readonly tauri: TauriService,
+        private readonly loggingService: LoggingService,
+        private readonly router: Router,
+        private readonly configService: ConfigService,
     ) {}
 
     ngOnInit(): void {
@@ -48,7 +48,7 @@ export class MainViewComponent implements OnInit, OnDestroy {
             (config) => {
                 this.config = config;
                 if (
-                    this.config && this.config.cn_autostart &&
+                    this.config?.cn_autostart &&
                     !this.isRunning && !this.hasAutoStarted
                 ) {
                     console.log("Started automatically.");

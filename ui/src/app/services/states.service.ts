@@ -11,17 +11,16 @@ export interface StatesMessage extends BaseMessage {
     providedIn: "root",
 })
 export class EventService {
-    private eventSubject = new BehaviorSubject<StatesMessage | null>(null);
+    private readonly eventSubject = new BehaviorSubject<StatesMessage | null>(null);
     public events$ = this.eventSubject.asObservable();
 
-    constructor(private tauriService: TauriService) {
+    constructor(private readonly tauriService: TauriService) {
         // Subscribe to log messages from the TauriService
         this.tauriService.output$.pipe(
             filter((message): message is StatesMessage =>
                 message.type === "states"
             ),
         ).subscribe((mesg) => {
-            const currentLogs = this.eventSubject.getValue();
             this.eventSubject.next(mesg);
         });
     }

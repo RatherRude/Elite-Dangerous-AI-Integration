@@ -13,7 +13,6 @@ import {
 } from "../../services/config.service";
 import { Subscription } from "rxjs";
 import { MatButtonModule } from "@angular/material/button";
-import { KeyValue, KeyValuePipe } from "@angular/common";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatSnackBar, MatSnackBarModule } from "@angular/material/snack-bar";
 import { CommonModule } from "@angular/common";
@@ -21,9 +20,8 @@ import { MatDividerModule } from "@angular/material/divider";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { ConfirmationDialogComponent, ConfirmationDialogData } from '../../components/confirmation-dialog/confirmation-dialog.component';
 import { ConfirmationDialogService } from '../../services/confirmation-dialog.service';
-import { PluginSettings, SelectSetting, SettingBase, TextAreaSetting } from "../../services/plugin-settings";
+import { PluginSettings } from "../../services/plugin-settings";
 
 @Component({
   selector: "app-plugin-settings",
@@ -39,7 +37,6 @@ import { PluginSettings, SelectSetting, SettingBase, TextAreaSetting } from "../
     MatSlideToggleModule,
     MatButtonModule,
     FormsModule,
-    KeyValuePipe,
     MatExpansionModule,
     MatSnackBarModule,
     MatDividerModule,
@@ -59,10 +56,10 @@ export class PluginSettingsComponent implements OnInit, OnDestroy {
   plugin_settings_configs: PluginSettings[] = []
 
   constructor(
-    private configService: ConfigService,
-    private snackBar: MatSnackBar,
-    private dialog: MatDialog,
-    private confirmationDialog: ConfirmationDialogService
+    private readonly configService: ConfigService,
+    private readonly snackBar: MatSnackBar,
+    private readonly dialog: MatDialog,
+    private readonly confirmationDialog: ConfirmationDialogService
   ) {}
   
   ngOnInit() {

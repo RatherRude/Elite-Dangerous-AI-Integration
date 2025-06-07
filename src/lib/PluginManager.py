@@ -1,24 +1,15 @@
-from abc import ABC
 import importlib
-import importlib.util
+from inspect import isclass
 import json
 import os
 
 import sys
-from typing import Any, Callable, Literal, Self, TypedDict, cast, final
-
-import openai
+from typing import Self, cast
 
 from .PluginBase import PluginBase
 from .PluginHelper import PluginHelper, PluginManifest
 from .PluginSettingDefinitions import PluginSettings
-from .ScreenReader import ScreenReader
 from .Logger import log
-from .EDKeys import EDKeys
-from .Config import Config
-from .EventManager import EventManager
-from .ActionManager import ActionManager
-from .SystemDatabase import SystemDatabase
 from .Event import Event
 
 class PluginManager:
@@ -55,8 +46,8 @@ class PluginManager:
 
         # Find a subclass of PluginBase
         for attr in dir(module):
-            obj = getattr(module, attr)
-            if isinstance(obj, type) and issubclass(obj, PluginBase) and obj is not PluginBase:
+            obj = cast(type, getattr(module, attr))
+            if isclass(obj) and issubclass(obj, PluginBase) and obj is not PluginBase:
                 return obj(manifest) # Instantiate and return
 
         raise TypeError("No valid PluginBase subclass found.")
