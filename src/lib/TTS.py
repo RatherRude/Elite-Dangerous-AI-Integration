@@ -178,8 +178,8 @@ class TTS:
                     for chunk in response.iter_bytes(1024):
                         yield chunk
             except openai.APIStatusError as e:
-                log("debug", "TTS error request:", e.request.method, e.request.url, e.request.headers, e.request.content.decode('utf-8', errors='replace'))
-                log("debug", "TTS error response:", e.response.status_code, e.response.headers, e.response.content.decode('utf-8', errors='replace'))
+                log("debug", "TTS error request:", e.request.method, e.request.url, e.request.headers, e.request.read().decode('utf-8', errors='replace'))
+                log("debug", "TTS error response:", e.response.status_code, e.response.headers, e.response.read().decode('utf-8', errors='replace'))
                 
                 try:
                     error: dict = e.body[0] if hasattr(e, 'body') and e.body and isinstance(e.body, list) else e.body # pyright: ignore[reportAssignmentType]

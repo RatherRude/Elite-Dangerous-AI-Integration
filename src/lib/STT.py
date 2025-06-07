@@ -257,8 +257,8 @@ class STT:
                 ]
             )
         except openai.APIStatusError as e:
-            log("debug", "STT mm error request:", e.request.method, e.request.url, e.request.headers, e.request.content.decode('utf-8', errors='replace'))
-            log("debug", "STT mm error response:", e.response.status_code, e.response.headers, e.response.content.decode('utf-8', errors='replace'))
+            log("debug", "STT mm error request:", e.request.method, e.request.url, e.request.headers, e.request.read().decode('utf-8', errors='replace'))
+            log("debug", "STT mm error response:", e.response.status_code, e.response.headers, e.response.read().decode('utf-8', errors='replace'))
             
             try:
                 error: dict = e.body[0] if hasattr(e, 'body') and e.body and isinstance(e.body, list) else e.body # pyright: ignore[reportAssignmentType]
@@ -301,8 +301,8 @@ class STT:
                 prompt=self.prompt
             )
         except openai.APIStatusError as e:
-            log("debug", "STT error request:", e.request.method, e.request.url, e.request.headers, e.request.content.decode('utf-8', errors='replace'))
-            log("debug", "STT error response:", e.response.status_code, e.response.headers, e.response.content.decode('utf-8', errors='replace'))
+            log("debug", "STT error request:", e.request.method, e.request.url, e.request.headers)
+            log("debug", "STT error response:", e.response.status_code, e.response.headers, e.response.read().decode('utf-8', errors='replace'))
             
             try:
                 error: dict = e.body[0] if hasattr(e, 'body') and e.body and isinstance(e.body, list) else e.body # pyright: ignore[reportAssignmentType]
@@ -310,7 +310,7 @@ class STT:
             except:
                 message = e.message
             
-            log('error', f'STT {e.response.reason_phrase}:', message)
+            show_chat_message('error', f'STT {e.response.reason_phrase}:', message)
             return ''
         
         text = transcription.text
