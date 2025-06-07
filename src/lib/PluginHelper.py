@@ -9,7 +9,7 @@ from .EDKeys import EDKeys
 from .EventManager import EventManager, Projection
 from .ActionManager import ActionManager
 from .SystemDatabase import SystemDatabase
-from .Config import Config
+from .Config import Config, save_config
 from .Event import Event
 from .PromptGenerator import PromptGenerator
 from .Assistant import Assistant
@@ -58,15 +58,36 @@ class PluginHelper():
         self._assistant = assistant
     
     # Plugin helper functions
-    def get_plugin_settings(self, *key_paths: str) -> Any:
+    def get_plugin_setting(self, *key_paths: str) -> Any:
         """Get a plugin setting, from a number of keys forming a path"""
-        cur_setting: dict[str, Any] = self._config.get('plugin_settings', {})
+        cur_setting: dict[str, Any] | None = self._config.get('plugin_settings', None)
         
         # Recursively search for key paths
         for key_path in key_paths:
-            cur_setting = cur_setting.get(key_path, {})
+            cur_setting = (cur_setting or {}).get(key_path, None)
         
         return cur_setting
+
+    def set_plugin_setting(self, *key_path: str, value: Any) -> None:
+        """Set a plugin setting using a series of keys forming a path"""
+        if not key_path:
+            raise ValueError("At least one key must be provided")
+
+        # Ensure plugin_settings exists
+        if 'plugin_settings' not in self._config:
+            self._config['plugin_settings'] = {}
+
+        cur_setting = self._config['plugin_settings']
+
+        # Traverse or create intermediate dictionaries
+        for key in key_path[:-1]:
+            if key not in cur_setting or not isinstance(cur_setting[key], dict):
+                cur_setting[key] = {}
+            cur_setting = cur_setting[key]
+
+        # Set the final value
+        cur_setting[key_path[-1]] = value
+        save_config(self._config)
 
     def get_plugin_data_path(self, plugin_manifest: PluginManifest) -> str:
         """Get a plugin data path, from the plugin data folder"""
