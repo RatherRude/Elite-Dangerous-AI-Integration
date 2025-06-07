@@ -1548,7 +1548,9 @@ def get_engineer_progress(obj, projected_states):
     #       HowToGetInvite: "All Colonia engineers' referral tasks completed",
     #       HowToReferral: "N/A" }
     # ];
-
+    engineer_progress = projected_states.get('EngineerProgress')
+    if not engineer_progress:
+        return "No engineer progress found"
 
     return "Here could be engineers"
 
