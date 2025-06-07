@@ -74,7 +74,7 @@ class PluginHelper():
             raise ValueError("At least one key must be provided")
 
         # Ensure plugin_settings exists
-        if 'plugin_settings' not in self._config):
+        if 'plugin_settings' not in self._config:
             self._config['plugin_settings'] = {}
 
         cur_setting = self._config['plugin_settings']
