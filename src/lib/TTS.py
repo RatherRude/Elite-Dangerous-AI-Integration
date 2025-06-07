@@ -12,7 +12,7 @@ import pyaudio
 import strip_markdown
 from num2words import num2words
 
-from .Logger import log
+from .Logger import log, show_chat_message
 
 
 @final
@@ -76,6 +76,7 @@ class TTS:
                 self._playback_loop()
             except Exception as e:
                 log('error', 'An error occurred during speech synthesis', e, traceback.format_exc())
+                show_chat_message('error', 'An error occurred during speech synthesis:', e)
                 sleep(backoff)
                 log('info', 'Attempting to restart audio playback after failure')
                 backoff *= 2
@@ -186,7 +187,7 @@ class TTS:
                 except:
                     message = e.message
                 
-                log('error', f'TTS {e.response.reason_phrase}:', message)
+                show_chat_message('error', f'TTS {e.response.reason_phrase}:', message)
         else:
             raise ValueError('No TTS client provided')
 

@@ -13,7 +13,7 @@ import soundfile as sf
 import numpy as np
 from pysilero_vad import SileroVoiceActivityDetector
 
-from .Logger import log
+from .Logger import log, show_chat_message
 
 
 @final
@@ -101,6 +101,7 @@ class STT:
                 self._listen_continuous_loop()
             except Exception as e:
                 log('error', 'An error occurred during speech recognition', e, traceback.format_exc())
+                show_chat_message('error', 'Speech recognition error:', e)
                 sleep(backoff)
                 log('info', 'Attempting to restart speech recognition after failure')
                 backoff *= 2
@@ -265,12 +266,12 @@ class STT:
             except:
                 message = e.message
             
-            log('error', f'STT {e.response.reason_phrase}:', message)
+            show_chat_message('error', f'STT {e.response.reason_phrase}:', message)
             return ''
         
         if not response.choices or not hasattr(response.choices[0], 'message') or not hasattr(response.choices[0].message, 'content'):
             log('debug', "STT mm response is incomplete or malformed:", response)
-            log('error', f'STT completion error: Response incomplete or malformed')
+            show_chat_message('error', f'STT completion error: Response incomplete or malformed')
             return ''
         
         text = response.choices[0].message.content
