@@ -81,7 +81,10 @@ struct AppState {
 // Helper function to check if a string contains sensitive information
 fn contains_sensitive_data(text: &str) -> bool {
     false
-        || text.to_lowercase().contains("api_key")
+        || text.contains("sk-")
+        || text.contains("AIza")
+        || text.to_lowercase().contains("\"type\": \"config\"")
+        || text.to_lowercase().contains("\"type\": \"change_config\"")
         || text.to_lowercase().contains("\"type\":\"config\"")
         || text.to_lowercase().contains("\"type\":\"change_config\"")
 }

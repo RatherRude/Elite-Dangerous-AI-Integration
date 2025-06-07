@@ -164,17 +164,29 @@ class TTS:
             for i in pcm_stream:
                 yield i.tobytes()
         elif self.openai_client:
-            with self.openai_client.audio.speech.with_streaming_response.create(
-                    model=self.model,
-                    voice=self.voice, # pyright: ignore[reportArgumentType]
-                    input=text,
-                    response_format="pcm",
-                    # raw samples in 24kHz (16-bit signed, low-endian), without the header.
-                    instructions = self.voice_instructions,
-                    speed=float(self.speed)
-            ) as response:
-                for chunk in response.iter_bytes(1024):
-                    yield chunk
+            try:
+                with self.openai_client.audio.speech.with_streaming_response.create(
+                        model=self.model,
+                        voice=self.voice,
+                        input=text,
+                        response_format="pcm",
+                        # raw samples in 24kHz (16-bit signed, low-endian), without the header.
+                        instructions = self.voice_instructions,
+                        speed=float(self.speed)
+                ) as response:
+                    for chunk in response.iter_bytes(1024):
+                        yield chunk
+            except openai.APIStatusError as e:
+                log("debug", "TTS error request:", e.request.method, e.request.url, e.request.headers, e.request.content.decode('utf-8', errors='replace'))
+                log("debug", "TTS error response:", e.response.status_code, e.response.headers, e.response.content.decode('utf-8', errors='replace'))
+                
+                try:
+                    error: dict = e.body[0] if hasattr(e, 'body') and e.body and isinstance(e.body, list) else e.body # pyright: ignore[reportAssignmentType]
+                    message = error.get('error', {}).get('message', e.body if e.body else 'Unknown error')
+                except:
+                    message = e.message
+                
+                log('error', f'TTS {e.response.reason_phrase}:', message)
         else:
             raise ValueError('No TTS client provided')
 
