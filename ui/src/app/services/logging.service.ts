@@ -39,10 +39,10 @@ export class LoggingService {
         ).subscribe((logMessage) => {
             const currentLogs = this.logsSubject.getValue();
             if (logMessage.type === "log") {
-                this.logsSubject.next([...currentLogs, logMessage]);
+                this.logsSubject.next([...currentLogs.slice(-100), logMessage]);
             }
             if (logMessage.type === "event") {
-                this.logsSubject.next([...currentLogs, {
+                this.logsSubject.next([...currentLogs.slice(-100), {
                     type: "log",
                     prefix: "event",
                     timestamp: logMessage.timestamp,
