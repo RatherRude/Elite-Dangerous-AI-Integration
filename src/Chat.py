@@ -177,14 +177,17 @@ class Chat:
             show_chat_message('action', '\n'.join(event.text if event.text else [r.get('function',{}).get('name', 'Unknown') for r in event.request]))
         if event.kind=='game':
             event = cast(GameEvent, event)
-            show_chat_message('game', event.content.get('event', 'Unknown'))
+            show_chat_message('event', event.content.get('event', 'Unknown'))
         if event.kind=='status':
             event = cast(StatusEvent, event)
             if event.status.get('event', 'Unknown') != 'Status':
-                show_chat_message('status', f"Status updated: {event.status.get('event', 'Unknown')}")
+                show_chat_message('event', f"Status updated: {event.status.get('event', 'Unknown')}")
         if event.kind=='external':
             event = cast(ExternalEvent, event)
-            show_chat_message('external', event.content.get('event', 'Unknown'))
+            show_chat_message('event', event.content.get('event', 'Unknown'))
+        if event.kind=='projected':
+            event = cast(ProjectedEvent, event)
+            show_chat_message('event', event.content.get('event', 'Unknown'))
 
     def submit_input(self, input: str):
         self.event_manager.add_conversation_event('user', input)
