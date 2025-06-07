@@ -29,7 +29,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
     
-    if not sys.stderr.closed:
+    if not sys.stderr.closed and not sys.stdout.closed:
         output = io.StringIO()
         print("Uncaught exception", exc_type, exc_value, exc_traceback, file=output)
         contents = output.getvalue().strip()
@@ -40,6 +40,12 @@ def handle_exception(exc_type, exc_value, exc_traceback):
             "prefix": "error",
             "message": contents
         }), file=sys.stderr)
+        print(json.dumps({
+            "type": "chat",
+            "timestamp": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
+            "role": "error",
+            "message": "Uncaught exception, please check the logs for more details."
+        }), file=sys.stdout)
 
 sys.excepthook = handle_exception
 
