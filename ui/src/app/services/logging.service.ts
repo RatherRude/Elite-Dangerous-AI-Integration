@@ -10,10 +10,7 @@ export interface LogMessage extends BaseMessage {
         | "info"
         | "warn"
         | "error"
-        | "covas"
-        | "event"
-        | "cmdr"
-        | "action";
+        | "event";
     message: string;
 }
 
@@ -30,58 +27,27 @@ export class LoggingService {
             filter((message): message is LogMessage | EventMessage =>
                 message.type === "log" || message.type === "event"
             ),
-            // Filter out debug messages
-            filter((message) => message.prefix !== "debug"),
+            // Map to lowercase prefix for consistency
+            map((message) => ("prefix" in message
+                ? {
+                    ...message,
+                    prefix: message.prefix
+                        .toLowerCase() as LogMessage["prefix"],
+                }
+                : message)
+            ),
         ).subscribe((logMessage) => {
+            const currentLogs = this.logsSubject.getValue();
             if (logMessage.type === "log") {
-                const currentLogs = this.logsSubject.getValue();
                 this.logsSubject.next([...currentLogs, logMessage]);
             }
             if (logMessage.type === "event") {
-                const currentLogs = this.logsSubject.getValue();
-                if (logMessage.event.kind === "assistant_completed") {
-                    return;
-                } else if (logMessage.event.kind === "assistant") {
-                    this.logsSubject.next([...currentLogs, {
-                        type: "log",
-                        prefix: "covas",
-                        timestamp: logMessage.timestamp,
-                        message: logMessage.event.content,
-                    } as LogMessage]);
-                } else if (logMessage.event.kind === "user") {
-                    this.logsSubject.next([...currentLogs, {
-                        type: "log",
-                        prefix: "cmdr",
-                        timestamp: logMessage.timestamp,
-                        message: logMessage.event.content,
-                    } as LogMessage]);
-                } else if (logMessage.event.kind === "tool") {
-                    this.logsSubject.next([...currentLogs, {
-                        type: "log",
-                        prefix: "action",
-                        timestamp: logMessage.timestamp,
-                        message: logMessage.event.text
-                            ? logMessage.event.text.join(", ")
-                            : logMessage.event.results.map((r) =>
-                                r.name + ": " + r.content
-                            ).join(", "),
-                    } as LogMessage]);
-                } else if (logMessage.event.kind === "status") {
-                    if (logMessage.event.status.event === "Status") return;
-                    this.logsSubject.next([...currentLogs, {
-                        type: "log",
-                        prefix: "event",
-                        timestamp: logMessage.timestamp,
-                        message: logMessage.event.status.event,
-                    } as LogMessage]);
-                } else {
-                    this.logsSubject.next([...currentLogs, {
-                        type: "log",
-                        prefix: "event",
-                        timestamp: logMessage.timestamp,
-                        message: logMessage.event.content.event,
-                    } as LogMessage]);
-                }
+                this.logsSubject.next([...currentLogs, {
+                    type: "log",
+                    prefix: "event",
+                    timestamp: logMessage.timestamp,
+                    message: JSON.stringify(logMessage.event),
+                } as LogMessage]);
             }
         });
     }

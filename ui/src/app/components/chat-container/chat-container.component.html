@@ -1,0 +1,7 @@
+@for (msg of chat; track msg.timestamp) {
+  <div class="log-entry">
+    <span class="timestamp">{{ msg.timestamp | date:'HH:mm:ss' }}</span>
+    <span class="prefix" [style.color]="getLogColor(msg.role)">{{ msg.role }}</span>
+    <span class="message">{{ msg.message }}</span>
+  </div>
+}

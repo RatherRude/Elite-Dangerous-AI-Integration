@@ -1,0 +1,19 @@
+.log-entry {
+  font-family: 'Roboto Mono', monospace;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.timestamp {
+  color: #888;
+  margin-right: 8px;
+}
+
+.prefix {
+  font-weight: bold;
+  margin-right: 8px;
+}
+
+.message {
+  color: #e0e0e0;
+}

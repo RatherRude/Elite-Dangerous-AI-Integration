@@ -3,7 +3,7 @@ import traceback
 from openai.types.chat import ChatCompletion
 from time import time
 
-from .Logger import log
+from .Logger import log, show_chat_message
 from .Config import Config
 from .Event import ConversationEvent, Event, GameEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent, ArchiveEvent
 from .EventManager import EventManager
@@ -142,7 +142,7 @@ class Assistant:
                     except:
                         message = e.message
                     
-                    log('error', f'LLM {e.response.reason_phrase}:', message)
+                    show_chat_message('error', f'LLM {e.response.reason_phrase}:', message)
                     return
                 
                 completion = response.parse()
@@ -150,15 +150,15 @@ class Assistant:
                 if not isinstance(completion, ChatCompletion) or hasattr(completion, 'error'):
                     log("debug", "LLM completion error request:", response.http_request.method, response.http_request.url, response.http_request.headers, response.http_request.content.decode('utf-8', errors='replace'))
                     log("debug", "LLM completion error:", completion)
-                    log("error", "LLM error: No valid completion received")
+                    show_chat_message("error", "LLM error: No valid completion received")
                     return
                 if not completion.choices:
                     log("debug", "LLM completion has no choices:", completion)
-                    log("error", "LLM error: No valid response choices received")
+                    show_chat_message("covas", "...")
                     return
                 if not hasattr(completion.choices[0], 'message') or not completion.choices[0].message:
                     log("debug", "LLM completion choice has no message:", completion)
-                    log("error", "LLM error: No valid response message received")
+                    show_chat_message("covas", "...")
                     return
                 
                 if hasattr(completion, 'usage') and completion.usage:
@@ -185,9 +185,10 @@ class Assistant:
 
                 if not predicted_actions and self.config["use_action_cache_var"]:
                     self.verify_action(user_input, response_actions, prompt, tool_list)
+                    
         except Exception as e:
             log("debug", "LLM error during reply:", e, traceback.format_exc())
-            log("error", "LLM error: An unknown error occurred during reply")
+            show_chat_message("error", "LLM error: An unknown error occurred during reply")
         finally:
             self.is_replying = False
 

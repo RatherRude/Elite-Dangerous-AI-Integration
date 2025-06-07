@@ -22,10 +22,23 @@
     </div>
   } @else {
     <div class="runtime-container">
-      <div class="log-container">
-        <app-log-container></app-log-container>
-      </div>
-      <app-input-container class="input-container"></app-input-container>
+      <mat-tab-group>
+        <mat-tab label="Chat">
+          <div class="tab-content-container">
+            <div class="chat-container">
+              <app-chat-container></app-chat-container>
+            </div>
+          </div>
+          <app-input-container class="input-container"></app-input-container>
+        </mat-tab>
+        <mat-tab label="Logs">
+          <div class="tab-content-container">
+            <div class="log-container">
+              <app-log-container></app-log-container>
+            </div>
+          </div>
+        </mat-tab>
+      </mat-tab-group>
     </div>
     <div class="button-container">
       @if (isLoading) {
@@ -41,4 +54,3 @@
       }
     </div>
   }
-</main> 
