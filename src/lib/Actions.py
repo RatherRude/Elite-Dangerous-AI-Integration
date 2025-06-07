@@ -278,8 +278,6 @@ def calculate_navigation_distance_and_timing(current_system: str, target_system:
                         # Check if distance is too far to plot
                         if distance_ly > 20000:
                             raise Exception(f"Distance of {distance_ly} LY from {current_system} to {target_system} is too far to plot (max 20000 LY)")
-                        
-                        log('info', 'Navigation Distance', f"Distance from {current_system} to {target_system}: {distance_ly} LY")
                     else:
                         log('warn', 'Distance Calculation', f"Could not find coordinates for one or both systems: {current_system}, {target_system}")
                 else:
@@ -308,7 +306,6 @@ def calculate_navigation_distance_and_timing(current_system: str, target_system:
         zoom_wait_time += 2
         log('warn', 'Navigation Timing', f"Distance could not be determined, adding 2 extra seconds to wait time")
         
-    log('debug', 'Navigation Timing', f"Using {zoom_wait_time}s zoom wait time for {distance_ly} LY distance")
     return distance_ly, zoom_wait_time
 
 
@@ -409,28 +406,15 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
             try:
                 data = event_manager.wait_for_condition('NavInfo',
                                                                      lambda s: s.get('NavRoute') and len(s.get('NavRoute', [])) > 0 and s.get('NavRoute')[-1].get('StarSystem').lower() == args['system_name'].lower(), zoom_wait_time)
+                jumpAmount = len(data.get('NavRoute', []))  # amount of jumps to do
 
                 if not current_gui == "GalaxyMap":  # if we are already in the galaxy map we don't want to close it
                     keys.send(galaxymap_key)
 
-                return (f"Best location found: {json.dumps(args['details'])}. " if 'details' in args else '') + f"Route to {args['system_name']} successfully plotted (Distance: {distance_ly} LY)"
+                return (f"Best location found: {json.dumps(args['details'])}. " if 'details' in args else '') + f"Route to {args['system_name']} successfully plotted ({f"Distance: {distance_ly} LY, " if distance_ly > 0 else ""}Jumps: {jumpAmount})"
 
             except TimeoutError:
-
-                try:
-                    data = event_manager.wait_for_condition('NavInfo',
-                                                 lambda s: s.get('NavRoute') and len(s.get('NavRoute', [])) > 0 and s.get('NavRoute')[-1].get('StarSystem') != None, 1)
-
-                    plotted_system = data.get('NavRoute', {})[-1].get('StarSystem')  # if we end up plotting a route to a system but not the one we asked for
-
-                    if plotted_system.lower() == args['system_name'].lower():
-                        return (f"Best location found: {json.dumps(args['details'])}. " if 'details' in args else '') + f"Route to {args['system_name']} successfully plotted (Distance: {distance_ly} LY)"
-                    else:
-                        return f"Route is plotted to the nearest match to {plotted_system} - the nearest match to {args['system_name']}. The system you asked for does not exist"
-
-                except TimeoutError:
-
-                    return f"Failed to plot a route to {args['system_name']}"
+                return f"Failed to plot a route to {args['system_name']}"
 
         return f"The galaxy map has opened. It is now zoomed in on \"{args['system_name']}\". No route was plotted yet, only the commander can do that."
 
