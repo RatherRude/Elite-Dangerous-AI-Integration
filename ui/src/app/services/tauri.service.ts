@@ -34,7 +34,7 @@ export class TauriService {
     public runMode$ = this.runModeSubject.asObservable();
 
     // ReplaySubject to expose the lines as an Observable
-    private messagesSubject = new ReplaySubject<BaseMessage>();
+    private messagesSubject = new ReplaySubject<BaseMessage>(100);
 
     // Public observable for UI to subscribe
     public output$: Observable<BaseMessage> = this.messagesSubject
