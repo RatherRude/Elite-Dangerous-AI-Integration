@@ -1551,6 +1551,7 @@ def get_engineer_progress(obj, projected_states):
     # ];
     
     # Define ship engineers data
+    log('info', 'obj', obj)
     ship_engineers = {
         300260: {"Engineer": "Tod 'The Blaster' McQuinn", "Location": "Wolf 397", "Modifies": "Weapons (Ballistic)", 
                 "HowToFind": "Available from start", "HowToGetInvite": "15 bounty vouchers earned", 
@@ -1672,11 +1673,86 @@ def get_engineer_progress(obj, projected_states):
                 "HowToReferral": "N/A"}
     }
     
+    # Extract search parameters - only use one
+    search_type = None
+    search_value = ''
+    
+    if obj:
+        if obj.get('name'):
+            search_type = 'name'
+            search_value = obj.get('name').lower().strip()
+        elif obj.get('system'):
+            search_type = 'system'
+            search_value = obj.get('system').lower().strip()
+        elif obj.get('modifications'):
+            search_type = 'modifications'
+            search_value = obj.get('modifications').lower().strip()
+    
     engineer_progress = projected_states.get('EngineerProgress')
     if not engineer_progress:
         return "No engineer progress found"
     
     engineers = engineer_progress.get('state', {}).get('Engineers', [])
+    
+    # Helper function for Levenshtein distance
+    def levenshtein_distance(s1, s2):
+        if len(s1) < len(s2):
+            return levenshtein_distance(s2, s1)
+        
+        if len(s2) == 0:
+            return len(s1)
+        
+        previous_row = list(range(len(s2) + 1))
+        for i, c1 in enumerate(s1):
+            current_row = [i + 1]
+            for j, c2 in enumerate(s2):
+                insertions = previous_row[j + 1] + 1
+                deletions = current_row[j] + 1
+                substitutions = previous_row[j] + (c1 != c2)
+                current_row.append(min(insertions, deletions, substitutions))
+            previous_row = current_row
+        
+        return previous_row[-1]
+    
+    # Helper function for fuzzy matching modifications using Levenshtein distance
+    def matches_modifications(modifies_text, search_term):
+        modifies_lower = modifies_text.lower()
+        search_terms = search_term.split()
+        
+        # First check for exact substring matches
+        for term in search_terms:
+            if term in modifies_lower:
+                return True
+        
+        # Then check for fuzzy matches using Levenshtein distance
+        modifies_words = modifies_lower.replace(',', ' ').replace('(', ' ').replace(')', ' ').split()
+        
+        for search_word in search_terms:
+            for modifies_word in modifies_words:
+                # Allow some fuzzy matching based on word length
+                max_distance = max(1, len(search_word) // 3)  # Allow 1 error per 3 characters
+                if levenshtein_distance(search_word, modifies_word) <= max_distance:
+                    return True
+        
+        return False
+    
+    # Helper function to check if engineer matches search criteria
+    def matches_search_criteria(engineer_info, engineer_name):
+        if not search_type:
+            return True  # No filter, show all
+            
+        if search_type == 'name':
+            return search_value in engineer_name.lower()
+        elif search_type == 'system':
+            location = engineer_info.get('Location', '').lower()
+            # Remove permit required text for matching
+            location_clean = location.replace(' (permit required)', '')
+            return search_value in location_clean
+        elif search_type == 'modifications':
+            modifies = engineer_info.get('Modifies', '')
+            return matches_modifications(modifies, search_value)
+        
+        return True
     
     # Build the comprehensive engineer overview
     engineer_overview = {
@@ -1691,6 +1767,12 @@ def get_engineer_progress(obj, projected_states):
     
     # Process ALL ship engineers
     for engineer_id, engineer_info in ship_engineers.items():
+        engineer_name = engineer_info['Engineer']
+        
+        # Check if engineer matches search criteria
+        if not matches_search_criteria(engineer_info, engineer_name):
+            continue
+            
         engineer_data = engineer_info.copy()
         game_data = game_engineers.get(engineer_id)
         
@@ -1734,10 +1816,16 @@ def get_engineer_progress(obj, projected_states):
         for field in fields_to_remove:
             engineer_data.pop(field, None)
         
-        engineer_overview['ship_engineers'][engineer_info['Engineer']] = engineer_data
+        engineer_overview['ship_engineers'][engineer_name] = engineer_data
     
     # Process ALL suit engineers
     for engineer_id, engineer_info in suit_engineers.items():
+        engineer_name = engineer_info['Engineer']
+        
+        # Check if engineer matches search criteria
+        if not matches_search_criteria(engineer_info, engineer_name):
+            continue
+            
         engineer_data = engineer_info.copy()
         game_data = game_engineers.get(engineer_id)
         
@@ -1764,12 +1852,25 @@ def get_engineer_progress(obj, projected_states):
         for field in fields_to_remove:
             engineer_data.pop(field, None)
         
-        engineer_overview['suit_engineers'][engineer_info['Engineer']] = engineer_data
+        engineer_overview['suit_engineers'][engineer_name] = engineer_data
+    
+    # Check if any engineers were found
+    total_engineers = len(engineer_overview['ship_engineers']) + len(engineer_overview['suit_engineers'])
+    if total_engineers == 0:
+        if search_type:
+            return f"No engineers found matching search criteria: {search_type}: '{search_value}'"
+        else:
+            return "No engineers found"
     
     # Convert to YAML format
     yaml_output = yaml.dump(engineer_overview, default_flow_style=False, sort_keys=False)
     # log('debug', 'engineers', yaml_output)
-    return f"Engineer Progress Overview:\n\n```yaml\n{yaml_output}```"
+    
+    # Add search info to the output if filters were applied
+    if search_type:
+        return f"Engineer Progress Overview (filtered by {search_type}: '{search_value}'):\n\n```yaml\n{yaml_output}```"
+    else:
+        return f"Engineer Progress Overview:\n\n```yaml\n{yaml_output}```"
 
 def send_message(obj, projected_states):
     from pyautogui import typewrite
@@ -4538,8 +4639,24 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
 
     actionManager.registerAction(
         'getEngineerProgress',
-        "Get information about engineers' location, standing and modifications.",
-        {},
+        "Get information about engineers' location, standing and modifications. Use only ONE filter parameter.",
+        {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Filter engineers by name (partial match). Use this OR system OR modifications, not combined."
+                },
+                "system": {
+                    "type": "string",
+                    "description": "Filter engineers by system/location (partial match). Use this OR name OR modifications, not combined."
+                },
+                "modifications": {
+                    "type": "string",
+                    "description": "Filter engineers by what they modify (fuzzy match using Levenshtein distance). Use this OR name OR system, not combined."
+                },
+            }
+        },
         get_engineer_progress,
         'web'
     )
