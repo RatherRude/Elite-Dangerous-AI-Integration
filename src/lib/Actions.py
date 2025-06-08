@@ -1994,20 +1994,55 @@ def get_visuals(obj, projected_states):
 
 
 def educated_guesses_message(search_query, valid_list):
+    # Helper function for Levenshtein distance
+    def levenshtein_distance(s1, s2):
+        if len(s1) < len(s2):
+            return levenshtein_distance(s2, s1)
+        
+        if len(s2) == 0:
+            return len(s1)
+        
+        previous_row = list(range(len(s2) + 1))
+        for i, c1 in enumerate(s1):
+            current_row = [i + 1]
+            for j, c2 in enumerate(s2):
+                insertions = previous_row[j + 1] + 1
+                deletions = current_row[j] + 1
+                substitutions = previous_row[j] + (c1 != c2)
+                current_row.append(min(insertions, deletions, substitutions))
+            previous_row = current_row
+        
+        return previous_row[-1]
+    
+    search_lower = search_query.lower()
+    suggestions = []
+    
+    # First try substring matching (existing behavior)
     split_string = search_query.split()
-
-    caught_items = []
-
-    # Iterate over each word in the split string
     for word in split_string:
-        # Check if the word is part of any value in the array
         for element in valid_list:
-            if word in element:
-                caught_items.append(element)
-
+            if word.lower() in element.lower() and element not in suggestions:
+                suggestions.append(element)
+    
+    # If we don't have enough suggestions, add fuzzy matches
+    if len(suggestions) < 5:
+        scored_matches = []
+        max_distance = max(2, len(search_query) // 3)  # Allow more errors for suggestions
+        
+        for element in valid_list:
+            if element not in suggestions:  # Don't duplicate existing suggestions
+                distance = levenshtein_distance(search_lower, element.lower())
+                if distance <= max_distance:
+                    scored_matches.append((distance, element))
+        
+        # Sort by distance and add the best fuzzy matches
+        scored_matches.sort(key=lambda x: x[0])
+        for distance, element in scored_matches[:5 - len(suggestions)]:
+            suggestions.append(element)
+    
     message = ""
-    if caught_items:
-        guesses_str = ', '.join(caught_items)
+    if suggestions:
+        guesses_str = ', '.join(suggestions[:5])  # Limit to 5 suggestions
         message = (
             f"Restart search with valid inputs, here are suggestions: {guesses_str}"
         )
@@ -2017,6 +2052,48 @@ def educated_guesses_message(search_query, valid_list):
 
 # Prepare a request for the spansh station finder
 def prepare_station_request(obj, projected_states):
+    # Helper function for Levenshtein distance
+    def levenshtein_distance(s1, s2):
+        if len(s1) < len(s2):
+            return levenshtein_distance(s2, s1)
+        
+        if len(s2) == 0:
+            return len(s1)
+        
+        previous_row = list(range(len(s2) + 1))
+        for i, c1 in enumerate(s1):
+            current_row = [i + 1]
+            for j, c2 in enumerate(s2):
+                insertions = previous_row[j + 1] + 1
+                deletions = current_row[j] + 1
+                substitutions = previous_row[j] + (c1 != c2)
+                current_row.append(min(insertions, deletions, substitutions))
+            previous_row = current_row
+        
+        return previous_row[-1]
+    
+    # Helper function for fuzzy matching
+    def find_best_match(search_term, known_list):
+        search_lower = search_term.lower()
+        
+        # First try exact match
+        for item in known_list:
+            if item.lower() == search_lower:
+                return item
+        
+        # Then try fuzzy matching
+        best_match = None
+        best_distance = float('inf')
+        max_distance = max(1, len(search_term) // 3)  # Allow 1 error per 3 characters
+        
+        for item in known_list:
+            distance = levenshtein_distance(search_lower, item.lower())
+            if distance <= max_distance and distance < best_distance:
+                best_distance = distance
+                best_match = item
+        
+        return best_match
+    
     known_modules = [
         "AX Missile Rack",
         "AX Multi-Cannon",
@@ -2640,9 +2717,8 @@ def prepare_station_request(obj, projected_states):
     if "commodities" in obj and obj["commodities"]:
         market_filters = []
         for market_item in obj["commodities"]:
-            # Find matching commodity name while preserving original capitalization
-            market_item_name_lower = market_item["name"].lower()
-            matching_commodity = next((commodity for commodity in known_commodities if commodity.lower() == market_item_name_lower), None)
+            # Find matching commodity name using fuzzy matching
+            matching_commodity = find_best_match(market_item["name"], known_commodities)
             if not matching_commodity:
                 raise Exception(
                     f"Invalid commodity name: {market_item['name']}. {educated_guesses_message(market_item['name'], known_commodities)}")
@@ -2671,7 +2747,7 @@ def prepare_station_request(obj, projected_states):
     if "modules" in obj:
         modules_filter = {}
         for module in obj["modules"]:
-            # Find matching module name while preserving original capitalization
+            # Find matching module name using exact matching only
             module_name_lower = module["name"].lower()
             matching_module = next((m for m in known_modules if m.lower() == module_name_lower), None)
             if not matching_module:
@@ -2681,9 +2757,8 @@ def prepare_station_request(obj, projected_states):
         filters["modules"] = obj["modules"]
     if "ships" in obj:
         for ship in obj["ships"]:
-            # Find matching ship name while preserving original capitalization
-            ship_name_lower = ship["name"].lower()
-            matching_ship = next((s for s in known_ships if s.lower() == ship_name_lower), None)
+            # Find matching ship name using fuzzy matching
+            matching_ship = find_best_match(ship["name"], known_ships)
             if not matching_ship:
                 raise Exception(
                     f"Invalid ship name: {ship['name']}. {educated_guesses_message(ship['name'], known_ships)}")
@@ -2691,9 +2766,8 @@ def prepare_station_request(obj, projected_states):
         filters["ships"] = {"value": obj["ships"]}
     if "services" in obj:
         for service in obj["services"]:
-            # Find matching service name while preserving original capitalization
-            service_name_lower = service["name"].lower()
-            matching_service = next((s for s in known_services if s.lower() == service_name_lower), None)
+            # Find matching service name using fuzzy matching
+            matching_service = find_best_match(service["name"], known_services)
             if not matching_service:
                 raise Exception(
                     f"Invalid service name: {service['name']}. {educated_guesses_message(service['name'], known_services)}")
@@ -2824,6 +2898,48 @@ def station_finder(obj,projected_states):
 
 
 def prepare_system_request(obj, projected_states):
+    # Helper function for Levenshtein distance
+    def levenshtein_distance(s1, s2):
+        if len(s1) < len(s2):
+            return levenshtein_distance(s2, s1)
+        
+        if len(s2) == 0:
+            return len(s1)
+        
+        previous_row = list(range(len(s2) + 1))
+        for i, c1 in enumerate(s1):
+            current_row = [i + 1]
+            for j, c2 in enumerate(s2):
+                insertions = previous_row[j + 1] + 1
+                deletions = current_row[j] + 1
+                substitutions = previous_row[j] + (c1 != c2)
+                current_row.append(min(insertions, deletions, substitutions))
+            previous_row = current_row
+        
+        return previous_row[-1]
+    
+    # Helper function for fuzzy matching
+    def find_best_match(search_term, known_list):
+        search_lower = search_term.lower()
+        
+        # First try exact match
+        for item in known_list:
+            if item.lower() == search_lower:
+                return item
+        
+        # Then try fuzzy matching
+        best_match = None
+        best_distance = float('inf')
+        max_distance = max(1, len(search_term) // 3)  # Allow 1 error per 3 characters
+        
+        for item in known_list:
+            distance = levenshtein_distance(search_lower, item.lower())
+            if distance <= max_distance and distance < best_distance:
+                best_distance = distance
+                best_match = item
+        
+        return best_match
+    
     known_allegiances = [
         "Alliance", "Empire", "Federation", "Guardian",
         "Independent", "Pilots Federation", "Player Pilots", "Thargoid"
@@ -2859,74 +2975,81 @@ def prepare_system_request(obj, projected_states):
 
     # Add optional filters if they exist
     if "allegiance" in obj and obj["allegiance"]:
+        validated_allegiances = []
         for allegiance in obj["allegiance"]:
-            # Find matching allegiance while preserving original capitalization
-            allegiance_lower = allegiance.lower()
-            matching_allegiance = next((a for a in known_allegiances if a.lower() == allegiance_lower), None)
+            # Find matching allegiance using fuzzy matching
+            matching_allegiance = find_best_match(allegiance, known_allegiances)
             if not matching_allegiance:
                 raise Exception(
                     f"Invalid allegiance: {allegiance}. {educated_guesses_message(allegiance, known_allegiances)}")
-        filters["allegiance"] = {"value": [a for a in obj["allegiance"] if next((k for k in known_allegiances if k.lower() == a.lower()), None)]}
+            validated_allegiances.append(matching_allegiance)
+        filters["allegiance"] = {"value": validated_allegiances}
 
     if "state" in obj and obj["state"]:
+        validated_states = []
         for state in obj["state"]:
-            # Find matching state while preserving original capitalization
-            state_lower = state.lower()
-            matching_state = next((s for s in known_states if s.lower() == state_lower), None)
+            # Find matching state using fuzzy matching
+            matching_state = find_best_match(state, known_states)
             if not matching_state:
                 raise Exception(
                     f"Invalid state: {state}. {educated_guesses_message(state, known_states)}")
-        filters["state"] = {"value": [s for s in obj["state"] if next((k for k in known_states if k.lower() == s.lower()), None)]}
+            validated_states.append(matching_state)
+        filters["state"] = {"value": validated_states}
 
     if "government" in obj and obj["government"]:
+        validated_governments = []
         for government in obj["government"]:
-            # Find matching government while preserving original capitalization
-            government_lower = government.lower()
-            matching_government = next((g for g in known_governments if g.lower() == government_lower), None)
+            # Find matching government using fuzzy matching
+            matching_government = find_best_match(government, known_governments)
             if not matching_government:
                 raise Exception(
                     f"Invalid government: {government}. {educated_guesses_message(government, known_governments)}")
-        filters["government"] = {"value": [g for g in obj["government"] if next((k for k in known_governments if k.lower() == g.lower()), None)]}
+            validated_governments.append(matching_government)
+        filters["government"] = {"value": validated_governments}
 
     if "power" in obj and obj["power"]:
+        validated_powers = []
         for power in obj["power"]:
-            # Find matching power while preserving original capitalization
-            power_lower = power.lower()
-            matching_power = next((p for p in known_powers if p.lower() == power_lower), None)
+            # Find matching power using fuzzy matching
+            matching_power = find_best_match(power, known_powers)
             if not matching_power:
                 raise Exception(
                     f"Invalid power: {power}. {educated_guesses_message(power, known_powers)}")
-        filters["controlling_power"] = {"value": [p for p in obj["power"] if next((k for k in known_powers if k.lower() == p.lower()), None)]}
+            validated_powers.append(matching_power)
+        filters["controlling_power"] = {"value": validated_powers}
 
     if "primary_economy" in obj and obj["primary_economy"]:
+        validated_economies = []
         for economy in obj["primary_economy"]:
-            # Find matching economy while preserving original capitalization
-            economy_lower = economy.lower()
-            matching_economy = next((e for e in known_economies if e.lower() == economy_lower), None)
+            # Find matching economy using fuzzy matching
+            matching_economy = find_best_match(economy, known_economies)
             if not matching_economy:
                 raise Exception(
                     f"Invalid primary economy: {economy}. {educated_guesses_message(economy, known_economies)}")
-        filters["primary_economy"] = {"value": [e for e in obj["primary_economy"] if next((k for k in known_economies if k.lower() == e.lower()), None)]}
+            validated_economies.append(matching_economy)
+        filters["primary_economy"] = {"value": validated_economies}
 
     if "security" in obj and obj["security"]:
+        validated_security = []
         for security_level in obj["security"]:
-            # Find matching security level while preserving original capitalization
-            security_lower = security_level.lower()
-            matching_security = next((s for s in known_security_levels if s.lower() == security_lower), None)
+            # Find matching security level using fuzzy matching
+            matching_security = find_best_match(security_level, known_security_levels)
             if not matching_security:
                 raise Exception(
                     f"Invalid security level: {security_level}. {educated_guesses_message(security_level, known_security_levels)}")
-        filters["security"] = {"value": [s for s in obj["security"] if next((k for k in known_security_levels if k.lower() == s.lower()), None)]}
+            validated_security.append(matching_security)
+        filters["security"] = {"value": validated_security}
 
     if "thargoid_war_state" in obj and obj["thargoid_war_state"]:
+        validated_thargoid_states = []
         for thargoid_war_state in obj["thargoid_war_state"]:
-            # Find matching thargoid war state while preserving original capitalization
-            state_lower = thargoid_war_state.lower()
-            matching_state = next((s for s in known_thargoid_war_states if s.lower() == state_lower), None)
+            # Find matching thargoid war state using fuzzy matching
+            matching_state = find_best_match(thargoid_war_state, known_thargoid_war_states)
             if not matching_state:
                 raise Exception(
                     f"Invalid thargoid war state: {thargoid_war_state}. {educated_guesses_message(thargoid_war_state, known_thargoid_war_states)}")
-        filters["thargoid_war_state"] = {"value": [s for s in obj["thargoid_war_state"] if next((k for k in known_thargoid_war_states if k.lower() == s.lower()), None)]}
+            validated_thargoid_states.append(matching_state)
+        filters["thargoid_war_state"] = {"value": validated_thargoid_states}
 
     if "population" in obj and obj["population"]:
         comparison = obj["population"].get("comparison", ">")
@@ -3037,6 +3160,48 @@ def system_finder(obj, projected_states):
 
 
 def prepare_body_request(obj, projected_states):
+    # Helper function for Levenshtein distance
+    def levenshtein_distance(s1, s2):
+        if len(s1) < len(s2):
+            return levenshtein_distance(s2, s1)
+        
+        if len(s2) == 0:
+            return len(s1)
+        
+        previous_row = list(range(len(s2) + 1))
+        for i, c1 in enumerate(s1):
+            current_row = [i + 1]
+            for j, c2 in enumerate(s2):
+                insertions = previous_row[j + 1] + 1
+                deletions = current_row[j] + 1
+                substitutions = previous_row[j] + (c1 != c2)
+                current_row.append(min(insertions, deletions, substitutions))
+            previous_row = current_row
+        
+        return previous_row[-1]
+    
+    # Helper function for fuzzy matching
+    def find_best_match(search_term, known_list):
+        search_lower = search_term.lower()
+        
+        # First try exact match
+        for item in known_list:
+            if item.lower() == search_lower:
+                return item
+        
+        # Then try fuzzy matching
+        best_match = None
+        best_distance = float('inf')
+        max_distance = max(1, len(search_term) // 3)  # Allow 1 error per 3 characters
+        
+        for item in known_list:
+            distance = levenshtein_distance(search_lower, item.lower())
+            if distance <= max_distance and distance < best_distance:
+                best_distance = distance
+                best_match = item
+        
+        return best_match
+    
     known_planet_types_obj = {
         "Planet": [
             "Ammonia world",
@@ -3596,24 +3761,24 @@ def prepare_body_request(obj, projected_states):
 
     # Add optional filters if they exist
     if "subtype" in obj and obj["subtype"]:
+        validated_subtypes = []
         for subtype in obj["subtype"]:
-            # Find matching subtype while preserving original capitalization
-            subtype_lower = subtype.lower()
-            matching_subtype = next((s for s in known_subtypes if s.lower() == subtype_lower), None)
+            # Find matching subtype using fuzzy matching
+            matching_subtype = find_best_match(subtype, known_subtypes)
             if not matching_subtype:
                 raise Exception(
                     f"Invalid celestial body subtype: {subtype}. {educated_guesses_message(subtype, known_subtypes)}")
-        filters["subtype"] = {"value": [s for s in obj["subtype"] if next((k for k in known_subtypes if k.lower() == s.lower()), None)]}
+            validated_subtypes.append(matching_subtype)
+        filters["subtype"] = {"value": validated_subtypes}
 
     if "landmark_subtype" in obj and obj["landmark_subtype"]:
         for landmark_subtype in obj["landmark_subtype"]:
-            # Find matching landmark subtype while preserving original capitalization
-            landmark_lower = landmark_subtype.lower()
-            matching_landmark = next((l for l in known_landmarks if l.lower() == landmark_lower), None)
+            # Find matching landmark subtype using fuzzy matching
+            matching_landmark = find_best_match(landmark_subtype, known_landmarks)
             if not matching_landmark:
                 raise Exception(
                     f"Invalid Landmark Subtype: {landmark_subtype}. {educated_guesses_message(landmark_subtype, known_landmarks)}")
-        filters["landmarks"] = [{"subtype": next((k for k in known_landmarks if k.lower() == obj["landmark_subtype"].lower()), None)}]
+        filters["landmarks"] = [{"subtype": matching_landmark}]
 
     if "name" in obj and obj["name"]:
         filters["name"] = {
@@ -3680,7 +3845,7 @@ def filter_body_response(request, response):
     }
 
 
-# System finder function that sends the request to the Spansh API
+# Body finder function that sends the request to the Spansh API
 def body_finder(obj,projected_states):
     # Build the request body
     request_body = prepare_body_request(obj,projected_states)
