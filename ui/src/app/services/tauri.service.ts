@@ -6,13 +6,20 @@ import { BehaviorSubject, Observable, ReplaySubject } from "rxjs";
 import { MatDialog } from "@angular/material/dialog";
 import { UpdateDialogComponent } from "../components/update-dialog/update-dialog.component";
 
-export interface BaseMessage {
+export interface BaseCommand {
     type: string;
     timestamp: string;
     [key: string]: any;
 }
 
-export interface SubmitInputMessage extends BaseMessage {
+export interface BaseMessage {
+    type: string;
+    timestamp: string;
+    index: number;
+    [key: string]: any;
+}
+
+export interface SubmitInputMessage extends BaseCommand {
     type: "submit_input";
     input: string;
 }
@@ -43,6 +50,8 @@ export class TauriService {
     // Flag to control the polling loop
     private stopListener?: UnlistenFn;
     private stopStderrListener?: UnlistenFn;
+
+    private currentIndex = 0;
 
     constructor(private ngZone: NgZone, private dialog: MatDialog) {
         this.startReadingOutput();
@@ -83,7 +92,10 @@ export class TauriService {
                 if (message.type === "config") {
                     this.runModeSubject.next("configuring");
                 }
-                this.messagesSubject.next(message);
+                this.messagesSubject.next({
+                    ...message,
+                    index: this.currentIndex++,
+                });
             } catch (error) {
                 console.warn("Error parsing message:", error);
             }
@@ -97,6 +109,7 @@ export class TauriService {
                 timestamp: new Date().toISOString(),
                 message: event.payload,
                 prefix: "error",
+                index: this.currentIndex++,
             });
         });
     }
@@ -137,12 +150,13 @@ export class TauriService {
         await this.runExe();
     }
     public async send_start_signal(): Promise<void> {
-        await this.send_message({
+        await this.send_command({
             type: "start",
             timestamp: new Date().toISOString(),
+            index: this.currentIndex++,
         });
     }
-    public async send_message(message: BaseMessage): Promise<void> {
+    public async send_command(message: BaseCommand): Promise<void> {
         await invoke("send_json_line", {
             jsonLine: JSON.stringify(message) + "\n",
         });

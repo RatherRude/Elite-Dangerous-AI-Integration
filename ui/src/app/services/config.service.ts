@@ -1,25 +1,25 @@
 import { Injectable } from "@angular/core";
 import { BehaviorSubject, filter, Observable } from "rxjs";
-import { type BaseMessage, TauriService } from "./tauri.service";
+import { BaseCommand, type BaseMessage, TauriService } from "./tauri.service";
 import { PluginSettings, PluginSettingsMessage } from "./plugin-settings";
 
 export interface ConfigMessage extends BaseMessage {
     type: "config";
     config: Config;
 }
-export interface ChangeConfigMessage extends BaseMessage {
+export interface ChangeConfigMessage extends BaseCommand {
     type: "change_config";
     config: Partial<Config>;
 }
 
-export interface ChangeEventConfigMessage extends BaseMessage {
+export interface ChangeEventConfigMessage extends BaseCommand {
     type: "change_event_config";
     section: string;
     event: string;
     value: any;
 }
 
-export interface CharacterOperationMessage extends BaseMessage {
+export interface CharacterOperationMessage extends BaseCommand {
     type: "change_config";
     config: {
         operation: "add" | "update" | "delete" | "set_active";
@@ -150,8 +150,10 @@ export interface Config {
     qol_autoscan: boolean; // Quality of life: Auto scan when entering new systems
 
     // Add index signature to allow string indexing
-    [key: string]: string | number | boolean | Character[] | { [key: string]: boolean } | undefined;
-    
+    [key: string]: string | number | boolean | Character[] | {
+        [key: string]: boolean;
+    } | undefined;
+
     plugin_settings: { [key: string]: any };
 }
 
@@ -170,8 +172,11 @@ export class ConfigService {
     >(null);
     public validation$ = this.validationSubject.asObservable();
 
-    private plugin_settings_message_subject = new BehaviorSubject<PluginSettingsMessage | null>(null);
-    public plugin_settings_message$ = this.plugin_settings_message_subject.asObservable();
+    private plugin_settings_message_subject = new BehaviorSubject<
+        PluginSettingsMessage | null
+    >(null);
+    public plugin_settings_message$ = this.plugin_settings_message_subject
+        .asObservable();
 
     constructor(private tauriService: TauriService) {
         // Subscribe to config messages from the TauriService
@@ -218,7 +223,7 @@ export class ConfigService {
         };
 
         // Send update to backend
-        await this.tauriService.send_message(message);
+        await this.tauriService.send_command(message);
     }
 
     public async changeEventConfig(
@@ -239,7 +244,7 @@ export class ConfigService {
             value: enabled,
         };
 
-        await this.tauriService.send_message(message);
+        await this.tauriService.send_command(message);
     }
 
     public async setPluginSetting(key: string, value: any): Promise<void> {
@@ -259,7 +264,7 @@ export class ConfigService {
             config: { plugin_settings: updatedPluginSettings },
         };
 
-        await this.tauriService.send_message(message);
+        await this.tauriService.send_command(message);
     }
 
     public getPluginSetting(key: string): any | null {
@@ -267,7 +272,10 @@ export class ConfigService {
         return currentConfig?.plugin_settings?.[key] ?? null;
     }
 
-    public async addCharacter(character: Character, setActive: boolean = false): Promise<void> {
+    public async addCharacter(
+        character: Character,
+        setActive: boolean = false,
+    ): Promise<void> {
         const message: CharacterOperationMessage = {
             type: "change_config",
             timestamp: new Date().toISOString(),
@@ -278,7 +286,7 @@ export class ConfigService {
             },
         };
 
-        await this.tauriService.send_message(message);
+        await this.tauriService.send_command(message);
     }
 
     public async updateCharacter(
@@ -295,7 +303,7 @@ export class ConfigService {
             },
         };
 
-        await this.tauriService.send_message(message);
+        await this.tauriService.send_command(message);
     }
 
     public async deleteCharacter(index: number): Promise<void> {
@@ -308,7 +316,7 @@ export class ConfigService {
             },
         };
 
-        await this.tauriService.send_message(message);
+        await this.tauriService.send_command(message);
     }
 
     public async setActiveCharacter(index: number): Promise<void> {
@@ -321,7 +329,7 @@ export class ConfigService {
             },
         };
 
-        await this.tauriService.send_message(message);
+        await this.tauriService.send_command(message);
     }
 
     public getCurrentConfig(): Config | null {
@@ -332,8 +340,9 @@ export class ConfigService {
         const message = {
             type: "assign_ptt",
             timestamp: new Date().toISOString(),
+            index: 0,
         };
-        await this.tauriService.send_message(message);
+        await this.tauriService.send_command(message);
     }
 
     public async resetGameEvents(): Promise<void> {
@@ -346,20 +355,20 @@ export class ConfigService {
         };
 
         try {
-            await this.tauriService.send_message(message);
+            await this.tauriService.send_command(message);
         } catch (error) {
             console.error("Error sending reset game events request:", error);
         }
     }
 
     public async clearHistory(): Promise<void> {
-        const message: BaseMessage = {
+        const message: BaseCommand = {
             type: "clear_history",
             timestamp: new Date().toISOString(),
         };
 
         try {
-            await this.tauriService.send_message(message);
+            await this.tauriService.send_command(message);
         } catch (error) {
             console.error("Error sending clear history request:", error);
         }
