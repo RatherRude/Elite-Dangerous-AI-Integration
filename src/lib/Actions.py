@@ -1103,7 +1103,7 @@ def get_galnet_news(obj, projected_states):
     except:
         return "News feed currently unavailable"
 
-def get_engineer_progress(obj, projected_states):
+def engineer_finder(obj, projected_states):
     # get Engineering Progress.
     # Example:
     # {
@@ -1673,27 +1673,24 @@ def get_engineer_progress(obj, projected_states):
                 "HowToReferral": "N/A"}
     }
     
-    # Extract search parameters - only use one
-    search_type = None
-    search_value = ''
-    
-    if obj:
-        if obj.get('name'):
-            search_type = 'name'
-            search_value = obj.get('name').lower().strip()
-        elif obj.get('system'):
-            search_type = 'system'
-            search_value = obj.get('system').lower().strip()
-        elif obj.get('modifications'):
-            search_type = 'modifications'
-            search_value = obj.get('modifications').lower().strip()
+    # Extract search parameters - can be combined
+    search_name = obj.get('name', '').lower().strip() if obj else ''
+    search_system = obj.get('system', '').lower().strip() if obj else ''
+    search_modifications = obj.get('modifications', '').lower().strip() if obj else ''
+    search_progress = obj.get('progress', '').strip() if obj else ''
     
     engineer_progress = projected_states.get('EngineerProgress')
+
     if not engineer_progress:
         return "No engineer progress found"
     
-    engineers = engineer_progress.get('state', {}).get('Engineers', [])
-    
+    engineers = engineer_progress.get('Engineers', [])
+
+    # Create a lookup for engineers from game data
+    game_engineers = {}
+    for engineer in engineers:
+        game_engineers[engineer.get('EngineerID')] = engineer
+
     # Helper function for Levenshtein distance
     def levenshtein_distance(s1, s2):
         if len(s1) < len(s2):
@@ -1737,20 +1734,28 @@ def get_engineer_progress(obj, projected_states):
         return False
     
     # Helper function to check if engineer matches search criteria
-    def matches_search_criteria(engineer_info, engineer_name):
-        if not search_type:
-            return True  # No filter, show all
-            
-        if search_type == 'name':
-            return search_value in engineer_name.lower()
-        elif search_type == 'system':
+    def matches_search_criteria(engineer_info, engineer_name, engineer_progress):
+        # Check name match
+        if search_name and search_name not in engineer_name.lower():
+            return False
+        
+        # Check system/location match
+        if search_system:
             location = engineer_info.get('Location', '').lower()
             # Remove permit required text for matching
             location_clean = location.replace(' (permit required)', '')
-            return search_value in location_clean
-        elif search_type == 'modifications':
+            if search_system not in location_clean:
+                return False
+        
+        # Check modifications match
+        if search_modifications:
             modifies = engineer_info.get('Modifies', '')
-            return matches_modifications(modifies, search_value)
+            if not matches_modifications(modifies, search_modifications):
+                return False
+        
+        # Check progress match
+        if search_progress and search_progress != engineer_progress:
+            return False
         
         return True
     
@@ -1760,19 +1765,10 @@ def get_engineer_progress(obj, projected_states):
         'suit_engineers': {}
     }
     
-    # Create a lookup for engineers from game data
-    game_engineers = {}
-    for engineer in engineers:
-        game_engineers[engineer.get('EngineerID')] = engineer
-    
     # Process ALL ship engineers
     for engineer_id, engineer_info in ship_engineers.items():
         engineer_name = engineer_info['Engineer']
         
-        # Check if engineer matches search criteria
-        if not matches_search_criteria(engineer_info, engineer_name):
-            continue
-            
         engineer_data = engineer_info.copy()
         game_data = game_engineers.get(engineer_id)
         
@@ -1801,8 +1797,13 @@ def get_engineer_progress(obj, projected_states):
                 engineer_data['NextStep'] = f"To get invite: {engineer_info['HowToGetInvite']}"
         else:
             # Engineer is unknown - show how to find them
-            engineer_data['Progress'] = 'Unknown'
+            progress = 'Unknown'
+            engineer_data['Progress'] = progress
             engineer_data['NextStep'] = f"To discover: {engineer_info['HowToFind']}"
+        
+        # Check if engineer matches search criteria
+        if not matches_search_criteria(engineer_info, engineer_name, progress):
+            continue
         
         # Clean up fields not needed in final output (except HowToGainRep for unlocked engineers with rank < 5)
         fields_to_remove = ['HowToGetInvite', 'HowToUnlock', 'HowToFind']
@@ -1822,10 +1823,6 @@ def get_engineer_progress(obj, projected_states):
     for engineer_id, engineer_info in suit_engineers.items():
         engineer_name = engineer_info['Engineer']
         
-        # Check if engineer matches search criteria
-        if not matches_search_criteria(engineer_info, engineer_name):
-            continue
-            
         engineer_data = engineer_info.copy()
         game_data = game_engineers.get(engineer_id)
         
@@ -1844,8 +1841,13 @@ def get_engineer_progress(obj, projected_states):
                 engineer_data['NextStep'] = f"To get invite: {engineer_info['HowToGetInvite']}"
         else:
             # Engineer is unknown - show how to find them
-            engineer_data['Progress'] = 'Unknown'
+            progress = 'Unknown'
+            engineer_data['Progress'] = progress
             engineer_data['NextStep'] = f"To discover: {engineer_info['HowToFind']}"
+        
+        # Check if engineer matches search criteria
+        if not matches_search_criteria(engineer_info, engineer_name, progress):
+            continue
         
         # Clean up fields not needed in final output for suit engineers
         fields_to_remove = ['HowToGetInvite', 'HowToFind', 'HowToReferral']
@@ -1857,8 +1859,18 @@ def get_engineer_progress(obj, projected_states):
     # Check if any engineers were found
     total_engineers = len(engineer_overview['ship_engineers']) + len(engineer_overview['suit_engineers'])
     if total_engineers == 0:
-        if search_type:
-            return f"No engineers found matching search criteria: {search_type}: '{search_value}'"
+        search_terms = []
+        if search_name:
+            search_terms.append(f"name: '{search_name}'")
+        if search_system:
+            search_terms.append(f"system: '{search_system}'")
+        if search_modifications:
+            search_terms.append(f"modifications: '{search_modifications}'")
+        if search_progress:
+            search_terms.append(f"progress: '{search_progress}'")
+        
+        if search_terms:
+            return f"No engineers found matching search criteria: {', '.join(search_terms)}"
         else:
             return "No engineers found"
     
@@ -1867,8 +1879,18 @@ def get_engineer_progress(obj, projected_states):
     # log('debug', 'engineers', yaml_output)
     
     # Add search info to the output if filters were applied
-    if search_type:
-        return f"Engineer Progress Overview (filtered by {search_type}: '{search_value}'):\n\n```yaml\n{yaml_output}```"
+    search_info = []
+    if search_name:
+        search_info.append(f"name: '{search_name}'")
+    if search_system:
+        search_info.append(f"system: '{search_system}'")
+    if search_modifications:
+        search_info.append(f"modifications: '{search_modifications}'")
+    if search_progress:
+        search_info.append(f"progress: '{search_progress}'")
+    
+    if search_info:
+        return f"Engineer Progress Overview (filtered by {', '.join(search_info)}):\n\n```yaml\n{yaml_output}```"
     else:
         return f"Engineer Progress Overview:\n\n```yaml\n{yaml_output}```"
 
@@ -4637,27 +4659,30 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "required": ["message","channel"]
     }, send_message, 'global')
 
-    actionManager.registerAction(
-        'getEngineerProgress',
-        "Get information about engineers' location, standing and modifications. Use only ONE filter parameter.",
+    actionManager.registerAction('engineer_finder', "Get information about engineers' location, standing and modifications.",
         {
             "type": "object",
             "properties": {
                 "name": {
                     "type": "string",
-                    "description": "Filter engineers by name (partial match). Use this OR system OR modifications, not combined."
+                    "description": "Filter engineers by name"
                 },
                 "system": {
-                    "type": "string",
-                    "description": "Filter engineers by system/location (partial match). Use this OR name OR modifications, not combined."
+                    "type": "string", 
+                    "description": "Filter engineers by system/location"
                 },
                 "modifications": {
                     "type": "string",
-                    "description": "Filter engineers by what they modify (fuzzy match using Levenshtein distance). Use this OR name OR system, not combined."
+                    "description": "Filter engineers by what they modify"
                 },
+                "progress": {
+                    "type": "string",
+                    "enum": ["Unknown", "Known", "Invited", "Unlocked"],
+                    "description": "Filter engineers by their current progress status"
+                }
             }
         },
-        get_engineer_progress,
+        engineer_finder,
         'web'
     )
 
