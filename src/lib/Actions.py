@@ -1870,6 +1870,25 @@ def engineer_finder(obj, projected_states):
             search_terms.append(f"progress: '{search_progress}'")
         
         if search_terms:
+            # If searching by modifications failed, show available options
+            if search_modifications:
+                # Collect all unique modification values
+                all_modifications = set()
+                for engineer_info in ship_engineers.values():
+                    mods = engineer_info.get('Modifies', '')
+                    # Split by comma and clean up
+                    for mod in mods.split(','):
+                        all_modifications.add(mod.strip())
+                
+                for engineer_info in suit_engineers.values():
+                    mods = engineer_info.get('Modifies', '')
+                    # Split by comma and clean up
+                    for mod in mods.split(','):
+                        all_modifications.add(mod.strip())
+                
+                sorted_mods = sorted(list(all_modifications))
+                return f"No engineers found matching modifications: '{search_modifications}'\n\nValid modification types:\n" + yaml.dump(sorted_mods)
+            
             return f"No engineers found matching search criteria: {', '.join(search_terms)}"
         else:
             return "No engineers found"
