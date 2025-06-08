@@ -87,6 +87,7 @@ class EDKeys:
             'CamTranslateForward',
             'CamTranslateRight',
             'CamZoomOut',
+            'CamZoomIn',
             'UIFocus',
             'QuickCommsPanel',
             'QuickCommsPanel_Buggy',
