@@ -99,7 +99,7 @@ class Chat:
                 api_key=self.config["api_key"] if self.config["tts_api_key"] == '' else self.config["tts_api_key"],
             )
             
-        tts_provider = 'none' if self.config["edcopilot_dominant"] else self.config["tts_provider"]
+        tts_provider = 'none' if self.config["edcopilot"] and self.config["edcopilot_dominant"] else self.config["tts_provider"]
         self.tts = TTS(openai_client=self.ttsClient, provider=tts_provider, model=self.config["tts_model_name"], voice=self.character["tts_voice"], voice_instructions=self.character["tts_prompt"], speed=self.character["tts_speed"], output_device=self.config["output_device_name"])
         self.stt = STT(openai_client=self.sttClient, provider=self.config["stt_provider"], input_device_name=self.config["input_device_name"], model=self.config["stt_model_name"], custom_prompt=self.config["stt_custom_prompt"], required_word=self.config["stt_required_word"])
 
@@ -184,7 +184,7 @@ class Chat:
         # TTS Setup
         log('info', "Basic configuration complete.")
         log('info', "Loading voice output...")
-        if self.config["edcopilot_dominant"]:
+        if self.config["edcopilot"] and self.config["edcopilot_dominant"]:
             log('info', "EDCoPilot is dominant, voice output will be handled by EDCoPilot.")
 
         if self.config['ptt_var'] and self.config['ptt_key']:
