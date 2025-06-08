@@ -1,3 +1,4 @@
+import json
 import traceback
 from openai.types.chat import ChatCompletion
 from time import time
@@ -10,7 +11,7 @@ from .ActionManager import ActionManager
 from .PromptGenerator import PromptGenerator
 from .TTS import TTS
 from .EDCoPilot import EDCoPilot
-from openai import OpenAI, RateLimitError
+from openai import APIStatusError, BadRequestError, OpenAI, RateLimitError
 from typing import Any,  Callable, final
 from threading import Thread
 
@@ -131,33 +132,33 @@ class Assistant:
                     )
                     end_time = time()
                     log('debug', 'Response time LLM', end_time - start_time)
-                except RateLimitError as e:
-                    log("error", "LLM rate limit error:", e)
-                    # Gemini:
-                    # e.body[0].get('details') - gemini error details is a list of objects with 
-                    # @type: type.googleapis.com/google.rpc.QuotaFailure
-                    #   .get('violations')[0].get('quotaId') == 'GenerateRequestsPerMinutePerProjectPerModel-FreeTier'
-                    # @type: type.googleapis.com/google.rpc.Help
-                    # @type: type.googleapis.com/google.rpc.RetryInfo 
-                    #   .get('retryDelay') - /.+s/
+                except APIStatusError as e:
+                    log("debug", "LLM error request:", e.request.method, e.request.url, e.request.headers, e.request.content.decode('utf-8', errors='replace'))
+                    log("debug", "LLM error response:", e.response.status_code, e.response.headers, e.response.content.decode('utf-8', errors='replace'))
                     
+                    try:
+                        error: dict = e.body[0] if hasattr(e, 'body') and e.body and isinstance(e.body, list) else e.body # pyright: ignore[reportAssignmentType]
+                        message = error.get('error', {}).get('message', e.body if e.body else 'Unknown error')
+                    except:
+                        message = e.message
+                    
+                    log('error', f'LLM {e.response.reason_phrase}:', message)
                     return
                 
-                if response.status_code < 200 or response.status_code >= 300:
-                    log("error", "LLM api error request:", response.http_request.method, response.http_request.url, response.http_request.headers, response.http_request.content.decode('utf-8', errors='replace'))
-                    log("error", "LLM api error:", response.status_code, response.headers, response.text)
-                    return
                 completion = response.parse()
                 
                 if not isinstance(completion, ChatCompletion) or hasattr(completion, 'error'):
-                    log("error", "LLM completion error request:", response.http_request.method, response.http_request.url, response.http_request.headers, response.http_request.content.decode('utf-8', errors='replace'))
-                    log("error", "LLM completion error:", completion)
+                    log("debug", "LLM completion error request:", response.http_request.method, response.http_request.url, response.http_request.headers, response.http_request.content.decode('utf-8', errors='replace'))
+                    log("debug", "LLM completion error:", completion)
+                    log("error", "LLM error: No valid completion received")
                     return
                 if not completion.choices:
-                    log("error", "LLM completion has no choices:", completion)
+                    log("debug", "LLM completion has no choices:", completion)
+                    log("error", "LLM error: No valid response choices received")
                     return
                 if not hasattr(completion.choices[0], 'message') or not completion.choices[0].message:
-                    log("error", "LLM completion choice has no message:", completion)
+                    log("debug", "LLM completion choice has no message:", completion)
+                    log("error", "LLM error: No valid response message received")
                     return
                 
                 if hasattr(completion, 'usage') and completion.usage:
@@ -185,7 +186,8 @@ class Assistant:
                 if not predicted_actions and self.config["use_action_cache_var"]:
                     self.verify_action(user_input, response_actions, prompt, tool_list)
         except Exception as e:
-            log("error", "An error occurred during reply:", e, traceback.format_exc())
+            log("debug", "LLM error during reply:", e, traceback.format_exc())
+            log("error", "LLM error: An unknown error occurred during reply")
         finally:
             self.is_replying = False
 
