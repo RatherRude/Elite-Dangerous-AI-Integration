@@ -4,6 +4,7 @@ import threading
 from time import sleep
 import traceback
 import math
+import yaml
 from typing import Any, Literal, Optional
 from pyautogui import typewrite
 from datetime import datetime, timezone
@@ -1548,11 +1549,227 @@ def get_engineer_progress(obj, projected_states):
     #       HowToGetInvite: "All Colonia engineers' referral tasks completed",
     #       HowToReferral: "N/A" }
     # ];
+    
+    # Define ship engineers data
+    ship_engineers = {
+        300260: {"Engineer": "Tod 'The Blaster' McQuinn", "Location": "Wolf 397", "Modifies": "Weapons (Ballistic)", 
+                "HowToFind": "Available from start", "HowToGetInvite": "15 bounty vouchers earned", 
+                "HowToUnlock": "100,001 CR of bounty vouchers provided", "HowToGainRep": "Modules crafted or Alliance vouchers handed in"},
+        300100: {"Engineer": "Felicity Farseer", "Location": "Deciat", "Modifies": "FSD, Thrusters, Sensors", 
+                "HowToFind": "Available from start", "HowToGetInvite": "Exploration rank Scout or higher reached", 
+                "HowToUnlock": "1 Meta-Alloy provided", "HowToGainRep": "Modules crafted or exploration data sold"},
+        300160: {"Engineer": "Elvira Martuuk", "Location": "Khun", "Modifies": "FSD, Shields, Thrusters", 
+                "HowToFind": "Available from start", "HowToGetInvite": "300+ ly from starting system traveled", 
+                "HowToUnlock": "3 Soontill Relics provided", "HowToGainRep": "Modules crafted or exploration data sold"},
+        300080: {"Engineer": "Liz Ryder", "Location": "Eurybia", "Modifies": "Explosives, Armor", 
+                "HowToFind": "Available from start", "HowToGetInvite": "Friendly with Eurybia Blue Mafia achieved", 
+                "HowToUnlock": "200 Landmines provided", "HowToGainRep": "Modules crafted or commodities sold"},
+        300180: {"Engineer": "The Dweller", "Location": "Wyrd", "Modifies": "Power Distributor, Lasers", 
+                "HowToFind": "Available from start", "HowToGetInvite": "5 Black Markets dealt with", 
+                "HowToUnlock": "500,000 CR paid", "HowToGainRep": "Modules crafted or commodities sold"},
+        300120: {"Engineer": "Lei Cheung", "Location": "Laksak", "Modifies": "Shields, Sensors", 
+                "HowToFind": "Introduced by The Dweller", "HowToGetInvite": "50 markets traded with", 
+                "HowToUnlock": "200 Gold provided", "HowToGainRep": "Modules crafted"},
+        300210: {"Engineer": "Selene Jean", "Location": "Kuk", "Modifies": "Hull, Armor", 
+                "HowToFind": "Introduced by Tod McQuinn", "HowToGetInvite": "500 tons of ore mined", 
+                "HowToUnlock": "10 Painite provided", "HowToGainRep": "Modules crafted or commodities/data sold"},
+        300090: {"Engineer": "Hera Tani", "Location": "Kuwemaki", "Modifies": "Power Plant, Sensors", 
+                "HowToFind": "Introduced by Liz Ryder", "HowToGetInvite": "Imperial Navy rank Outsider achieved", 
+                "HowToUnlock": "50 Kamitra Cigars provided", "HowToGainRep": "Modules crafted or commodities sold"},
+        300030: {"Engineer": "Broo Tarquin", "Location": "Muang", "Modifies": "Lasers", 
+                "HowToFind": "Introduced by Hera Tani", "HowToGetInvite": "Combat rank Competent or higher achieved", 
+                "HowToUnlock": "50 Fujin Tea provided", "HowToGainRep": "Modules crafted"},
+        300200: {"Engineer": "Marco Qwent", "Location": "Sirius (Permit Required)", "Modifies": "Power Plant, Power Distributor", 
+                "HowToFind": "Introduced by Elvira Martuuk", "HowToGetInvite": "Sirius Corporation invitation obtained", 
+                "HowToUnlock": "25 Modular Terminals provided", "HowToGainRep": "Modules crafted or commodities sold"},
+        300050: {"Engineer": "Zacariah Nemo", "Location": "Yoru", "Modifies": "Weapons (Varied)", 
+                "HowToFind": "Introduced by Elvira Martuuk", "HowToGetInvite": "Party of Yoru invitation received", 
+                "HowToUnlock": "25 Xihe Biomorphic Companions provided", "HowToGainRep": "Modules crafted or commodities sold"},
+        300000: {"Engineer": "Didi Vatermann", "Location": "Leesti", "Modifies": "Shields", 
+                "HowToFind": "Introduced by Selene Jean", "HowToGetInvite": "Trade rank Merchant or higher achieved", 
+                "HowToUnlock": "50 Lavian Brandy provided", "HowToGainRep": "Modules crafted"},
+        300140: {"Engineer": "Colonel Bris Dekker", "Location": "Sol (Permit Required)", "Modifies": "FSD, Interdictor", 
+                "HowToFind": "Introduced by Juri Ishmaak", "HowToGetInvite": "Federation friendly status achieved", 
+                "HowToUnlock": "1,000,000 CR of combat bonds provided", "HowToGainRep": "Modules crafted"},
+        300250: {"Engineer": "Juri Ishmaak", "Location": "Giryak", "Modifies": "Sensors, Explosives", 
+                "HowToFind": "Introduced by Felicity Farseer", "HowToGetInvite": "50+ combat bonds earned", 
+                "HowToUnlock": "100,000 CR of combat bonds provided", "HowToGainRep": "Modules crafted or combat bonds handed in"},
+        300220: {"Engineer": "Professor Palin", "Location": "Arque", "Modifies": "Thrusters, FSD", 
+                "HowToFind": "Introduced by Marco Qwent", "HowToGetInvite": "5,000 ly from start location traveled", 
+                "HowToUnlock": "25 Sensor Fragments provided", "HowToGainRep": "Modules crafted or exploration data sold"},
+        300010: {"Engineer": "Bill Turner", "Location": "Alioth (Permit Required)", "Modifies": "Utility, Scanners, Sensors", 
+                "HowToFind": "Introduced by Selene Jean", "HowToGetInvite": "Alliance friendly status achieved", 
+                "HowToUnlock": "50 Bromellite provided", "HowToGainRep": "Modules crafted"},
+        300230: {"Engineer": "Lori Jameson", "Location": "Shinrarta Dezhra (Permit Required)", "Modifies": "Support Modules, Scanners", 
+                "HowToFind": "Introduced by Marco Qwent", "HowToGetInvite": "Combat rank Dangerous or higher achieved", 
+                "HowToUnlock": "25 Konnga Ale provided", "HowToGainRep": "Modules crafted or exploration data sold"},
+        300110: {"Engineer": "Ram Tah", "Location": "Meene", "Modifies": "Utility, Limpets", 
+                "HowToFind": "Introduced by Lei Cheung", "HowToGetInvite": "Exploration rank Surveyor or higher achieved", 
+                "HowToUnlock": "50 Classified Scan Databanks provided", "HowToGainRep": "Modules crafted or exploration data sold"},
+        300270: {"Engineer": "Tiana Fortune", "Location": "Achenar (Permit Required)", "Modifies": "Scanners, Limpets", 
+                "HowToFind": "Introduced by Hera Tani", "HowToGetInvite": "Empire friendly status achieved", 
+                "HowToUnlock": "50 Decoded Emission Data provided", "HowToGainRep": "Modules crafted or commodities sold"},
+        300040: {"Engineer": "The Sarge", "Location": "Beta-3 Tucani", "Modifies": "Cannons, Limpets", 
+                "HowToFind": "Introduced by Juri Ishmaak", "HowToGetInvite": "Federal Navy rank Midshipman achieved", 
+                "HowToUnlock": "50 Aberrant Shield Pattern Analysis provided", "HowToGainRep": "Modules crafted or exploration data sold"},
+        300290: {"Engineer": "Etienne Dorn", "Location": "Los", "Modifies": "Core Modules, Weapons", 
+                "HowToFind": "Introduced by Liz Ryder", "HowToGetInvite": "Trade rank Dealer or higher achieved", 
+                "HowToUnlock": "25 Occupied Escape Pods provided", "HowToGainRep": "Modules crafted"},
+        300150: {"Engineer": "Marsha Hicks", "Location": "Tir", "Modifies": "Weapons, Support Modules", 
+                "HowToFind": "Introduced by The Dweller", "HowToGetInvite": "Exploration rank Surveyor or higher achieved", 
+                "HowToUnlock": "10 Osmium mined", "HowToGainRep": "Modules crafted"},
+        300280: {"Engineer": "Mel Brandon", "Location": "Luchtaine", "Modifies": "Core Modules, Weapons", 
+                "HowToFind": "Introduced by Elvira Martuuk", "HowToGetInvite": "Colonia Council invitation received", 
+                "HowToUnlock": "100,000 CR of bounty vouchers provided", "HowToGainRep": "Modules crafted"},
+        300130: {"Engineer": "Petra Olmanova", "Location": "Asura", "Modifies": "Armor, Weapons", 
+                "HowToFind": "Introduced by Tod McQuinn", "HowToGetInvite": "Combat rank Expert or higher achieved", 
+                "HowToUnlock": "200 Progenitor Cells provided", "HowToGainRep": "Modules crafted"},
+        300300: {"Engineer": "Chloe Sedesi", "Location": "Shenve", "Modifies": "Thrusters, FSD", 
+                "HowToFind": "Introduced by Marco Qwent", "HowToGetInvite": "5,000 ly from start location traveled", 
+                "HowToUnlock": "25 Sensor Fragments provided", "HowToGainRep": "Modules crafted or exploration data sold"}
+    }
+    
+    # Define suit engineers data
+    suit_engineers = {
+        400002: {"Engineer": "Domino Green", "Location": "Orishis", "Modifies": "Suits, Tools", 
+                "HowToFind": "Available from start", "HowToGetInvite": "100ly in Apex Transport traveled", 
+                "HowToReferral": "5 Push required"},
+        400003: {"Engineer": "Hero Ferrari", "Location": "Siris", "Modifies": "Suit Mobility", 
+                "HowToFind": "Available from start", "HowToGetInvite": "10 Conflict Zones completed", 
+                "HowToReferral": "15 Settlement Defence Plans required"},
+        400001: {"Engineer": "Jude Navarro", "Location": "Aurai", "Modifies": "Weapons, Armor", 
+                "HowToFind": "Available from start", "HowToGetInvite": "10 Restore/Reactivation missions completed", 
+                "HowToReferral": "5 Genetic Repair Meds required"},
+        400004: {"Engineer": "Kit Fowler", "Location": "Capoya", "Modifies": "Weapons, Shields", 
+                "HowToFind": "Introduced by Domino Green", "HowToGetInvite": "10 Opinion Polls sold to Bartenders", 
+                "HowToReferral": "5 Surveillance Equipment required"},
+        400008: {"Engineer": "Oden Geiger", "Location": "Candiaei", "Modifies": "Vision, Tools", 
+                "HowToFind": "Introduced by Terra Velasquez", "HowToGetInvite": "20 Biological/Genetic items sold to Bartenders", 
+                "HowToReferral": "N/A"},
+        400006: {"Engineer": "Terra Velasquez", "Location": "Shou Xing", "Modifies": "Suit Mobility, Stealth", 
+                "HowToFind": "Introduced by Jude Navarro", "HowToGetInvite": "12 Covert missions completed", 
+                "HowToReferral": "15 Financial Projections required"},
+        400007: {"Engineer": "Uma Laszlo", "Location": "Xuane", "Modifies": "Weapons, Defense", 
+                "HowToFind": "Introduced by Wellington Beck", "HowToGetInvite": "Sirius Corp unfriendly status reached", 
+                "HowToReferral": "N/A"},
+        400005: {"Engineer": "Wellington Beck", "Location": "Jolapa", "Modifies": "Tools, Backpack", 
+                "HowToFind": "Introduced by Hero Ferrari", "HowToGetInvite": "25 Entertainment items sold to Bartenders", 
+                "HowToReferral": "5 InSight Entertainment Suites required"},
+        400009: {"Engineer": "Yarden Bond", "Location": "Bayan", "Modifies": "Stealth, Mobility", 
+                "HowToFind": "Introduced by Kit Fowler", "HowToGetInvite": "8 Smear Campaign Plans sold to Bartenders", 
+                "HowToReferral": "N/A"},
+        400010: {"Engineer": "Baltanos", "Location": "Deriso", "Modifies": "Suit Mobility, Stealth", 
+                "HowToFind": "Available in Colonia", "HowToGetInvite": "Colonia Council friendly status achieved", 
+                "HowToReferral": "10 Faction Associates required"},
+        400011: {"Engineer": "Eleanor Bresa", "Location": "Desy", "Modifies": "Weapons, Defense", 
+                "HowToFind": "Available in Colonia", "HowToGetInvite": "5 Settlements in Colonia visited", 
+                "HowToReferral": "10 Digital Designs required"},
+        400012: {"Engineer": "Rosa Dayette", "Location": "Kojeara", "Modifies": "Tools, Backpack", 
+                "HowToFind": "Available in Colonia", "HowToGetInvite": "10 Recipe items sold to Bartenders in Colonia", 
+                "HowToReferral": "10 Manufacturing Instructions required"},
+        400013: {"Engineer": "Yi Shen", "Location": "Einheriar", "Modifies": "Stealth, Weapons", 
+                "HowToFind": "Introduced by Colonia engineers", "HowToGetInvite": "All Colonia engineers' referral tasks completed", 
+                "HowToReferral": "N/A"}
+    }
+    
     engineer_progress = projected_states.get('EngineerProgress')
     if not engineer_progress:
         return "No engineer progress found"
-
-    return "Here could be engineers"
+    
+    engineers = engineer_progress.get('state', {}).get('Engineers', [])
+    
+    # Build the comprehensive engineer overview
+    engineer_overview = {
+        'ship_engineers': {},
+        'suit_engineers': {}
+    }
+    
+    # Create a lookup for engineers from game data
+    game_engineers = {}
+    for engineer in engineers:
+        game_engineers[engineer.get('EngineerID')] = engineer
+    
+    # Process ALL ship engineers
+    for engineer_id, engineer_info in ship_engineers.items():
+        engineer_data = engineer_info.copy()
+        game_data = game_engineers.get(engineer_id)
+        
+        if game_data:
+            # Engineer is known in game
+            progress = game_data.get('Progress')
+            rank = game_data.get('Rank')
+            rank_progress = game_data.get('RankProgress', 0)
+            
+            engineer_data['Progress'] = progress
+            
+            if progress == 'Unlocked':
+                engineer_data['Rank'] = rank
+                if rank_progress > 0:
+                    engineer_data['RankProgress'] = f"{rank_progress}% towards rank {rank + 1}"
+                else:
+                    engineer_data['RankProgress'] = "Max rank achieved" if rank >= 5 else "No progress towards next rank"
+                
+                # Keep HowToGainRep if not max rank
+                if rank < 5:
+                    engineer_data['HowToGainRep'] = engineer_info['HowToGainRep']
+                    
+            elif progress == 'Invited':
+                engineer_data['NextStep'] = f"To unlock: {engineer_info['HowToUnlock']}"
+            elif progress == 'Known':
+                engineer_data['NextStep'] = f"To get invite: {engineer_info['HowToGetInvite']}"
+        else:
+            # Engineer is unknown - show how to find them
+            engineer_data['Progress'] = 'Unknown'
+            engineer_data['NextStep'] = f"To discover: {engineer_info['HowToFind']}"
+        
+        # Clean up fields not needed in final output (except HowToGainRep for unlocked engineers with rank < 5)
+        fields_to_remove = ['HowToGetInvite', 'HowToUnlock', 'HowToFind']
+        if game_data and game_data.get('Progress') == 'Unlocked' and game_data.get('Rank', 0) < 5:
+            # Keep HowToGainRep for unlocked engineers not at max rank
+            fields_to_remove.append('HowToGainRep')  # Remove from list since we want to keep it
+            fields_to_remove = ['HowToGetInvite', 'HowToUnlock', 'HowToFind']
+        else:
+            fields_to_remove.append('HowToGainRep')
+            
+        for field in fields_to_remove:
+            engineer_data.pop(field, None)
+        
+        engineer_overview['ship_engineers'][engineer_info['Engineer']] = engineer_data
+    
+    # Process ALL suit engineers
+    for engineer_id, engineer_info in suit_engineers.items():
+        engineer_data = engineer_info.copy()
+        game_data = game_engineers.get(engineer_id)
+        
+        if game_data:
+            # Engineer is known in game
+            progress = game_data.get('Progress')
+            engineer_data['Progress'] = progress
+            
+            if progress == 'Unlocked':
+                engineer_data['Status'] = 'Available for modifications'
+                if engineer_info.get('HowToReferral') != 'N/A':
+                    engineer_data['ReferralTask'] = engineer_info['HowToReferral']
+            elif progress == 'Invited':
+                engineer_data['NextStep'] = f"To unlock: Visit {engineer_info['Location']}"
+            elif progress == 'Known':
+                engineer_data['NextStep'] = f"To get invite: {engineer_info['HowToGetInvite']}"
+        else:
+            # Engineer is unknown - show how to find them
+            engineer_data['Progress'] = 'Unknown'
+            engineer_data['NextStep'] = f"To discover: {engineer_info['HowToFind']}"
+        
+        # Clean up fields not needed in final output for suit engineers
+        fields_to_remove = ['HowToGetInvite', 'HowToFind', 'HowToReferral']
+        for field in fields_to_remove:
+            engineer_data.pop(field, None)
+        
+        engineer_overview['suit_engineers'][engineer_info['Engineer']] = engineer_data
+    
+    # Convert to YAML format
+    yaml_output = yaml.dump(engineer_overview, default_flow_style=False, sort_keys=False)
+    # log('debug', 'engineers', yaml_output)
+    return f"Engineer Progress Overview:\n\n```yaml\n{yaml_output}```"
 
 def send_message(obj, projected_states):
     from pyautogui import typewrite
@@ -4321,7 +4538,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
 
     actionManager.registerAction(
         'getEngineerProgress',
-        "Retrieve information about standing and location of engineers",
+        "Get information about engineers' location, standing and modifications.",
         {},
         get_engineer_progress,
         'web'
