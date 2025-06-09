@@ -12,6 +12,8 @@ import { Router } from "@angular/router";
 import { InputContainerComponent } from "../components/input-container/input-container.component";
 import { ConfigService } from "../services/config.service";
 import { Subscription } from "rxjs";
+import { TabbedContainerComponent } from "../components/tabbed-container/tabbed-container.component";
+import { CovasLogComponent } from "../components/covas-log/covas-log.component";
 
 @Component({
     selector: "app-main-view",
@@ -25,6 +27,8 @@ import { Subscription } from "rxjs";
         LogContainerComponent,
         SettingsMenuComponent,
         InputContainerComponent,
+        TabbedContainerComponent,
+        CovasLogComponent
     ],
     templateUrl: "./main-view.component.html",
     styleUrl: "./main-view.component.css",
