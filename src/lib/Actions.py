@@ -1553,122 +1553,160 @@ def engineer_finder(obj, projected_states):
     # Define ship engineers data
     log('info', 'obj', obj)
     ship_engineers = {
-        300260: {"Engineer": "Tod 'The Blaster' McQuinn", "Location": "Wolf 397", "Modifies": "Weapons (Ballistic)", 
+        300260: {"Engineer": "Tod 'The Blaster' McQuinn", "Location": "Wolf 397", 
+                "Modifies": {"Multi-cannon": 5, "Rail Gun": 5, "Cannon": 2, "Fragment Cannon": 2}, 
                 "HowToFind": "Available from start", "HowToGetInvite": "15 bounty vouchers earned", 
                 "HowToUnlock": "100,001 CR of bounty vouchers provided", "HowToGainRep": "Modules crafted or Alliance vouchers handed in"},
-        300100: {"Engineer": "Felicity Farseer", "Location": "Deciat", "Modifies": "FSD, Thrusters, Sensors", 
+        300100: {"Engineer": "Felicity Farseer", "Location": "Deciat", 
+                "Modifies": {"Frame Shift Drive": 5, "Detailed Surface Scanner": 3, "Sensors": 3, "Thrusters": 3, "Power Plant": 1, "Frame Shift Drive Interdictor": 1, "Shield Booster": 1}, 
                 "HowToFind": "Available from start", "HowToGetInvite": "Exploration rank Scout or higher reached", 
                 "HowToUnlock": "1 Meta-Alloy provided", "HowToGainRep": "Modules crafted or exploration data sold"},
-        300160: {"Engineer": "Elvira Martuuk", "Location": "Khun", "Modifies": "FSD, Shields, Thrusters", 
+        300160: {"Engineer": "Elvira Martuuk", "Location": "Khun", 
+                "Modifies": {"Frame Shift Drive": 5, "Shield Generator": 3, "Thrusters": 2, "Shield Cell Bank": 1}, 
                 "HowToFind": "Available from start", "HowToGetInvite": "300+ ly from starting system traveled", 
                 "HowToUnlock": "3 Soontill Relics provided", "HowToGainRep": "Modules crafted or exploration data sold"},
-        300080: {"Engineer": "Liz Ryder", "Location": "Eurybia", "Modifies": "Explosives, Armor", 
+        300080: {"Engineer": "Liz Ryder", "Location": "Eurybia", 
+                "Modifies": {"Missile Rack": 5, "Seeker Missile Rack": 5, "Torpedo Pylon": 5, "Mine Launcher": 3, "Hull Reinforcement Package": 1, "Armour": 1}, 
                 "HowToFind": "Available from start", "HowToGetInvite": "Friendly with Eurybia Blue Mafia achieved", 
                 "HowToUnlock": "200 Landmines provided", "HowToGainRep": "Modules crafted or commodities sold"},
-        300180: {"Engineer": "The Dweller", "Location": "Wyrd", "Modifies": "Power Distributor, Lasers", 
+        300180: {"Engineer": "The Dweller", "Location": "Wyrd", 
+                "Modifies": {"Beam Laser": 3, "Burst Laser": 3, "Pulse Laser": 4, "Power Distributor": 5}, 
                 "HowToFind": "Available from start", "HowToGetInvite": "5 Black Markets dealt with", 
                 "HowToUnlock": "500,000 CR paid", "HowToGainRep": "Modules crafted or commodities sold"},
-        300120: {"Engineer": "Lei Cheung", "Location": "Laksak", "Modifies": "Shields, Sensors", 
+        300120: {"Engineer": "Lei Cheung", "Location": "Laksak", 
+                "Modifies": {"Shield Generator": 5, "Detailed Surface Scanner": 5, "Sensors": 5, "Shield Booster": 3}, 
                 "HowToFind": "Introduced by The Dweller", "HowToGetInvite": "50 markets traded with", 
                 "HowToUnlock": "200 Gold provided", "HowToGainRep": "Modules crafted"},
-        300210: {"Engineer": "Selene Jean", "Location": "Kuk", "Modifies": "Hull, Armor", 
+        300210: {"Engineer": "Selene Jean", "Location": "Kuk", 
+                "Modifies": {"Armour": 5, "Hull Reinforcement Package": 5}, 
                 "HowToFind": "Introduced by Tod McQuinn", "HowToGetInvite": "500 tons of ore mined", 
                 "HowToUnlock": "10 Painite provided", "HowToGainRep": "Modules crafted or commodities/data sold"},
-        300090: {"Engineer": "Hera Tani", "Location": "Kuwemaki", "Modifies": "Power Plant, Sensors", 
+        300090: {"Engineer": "Hera Tani", "Location": "Kuwemaki", 
+                "Modifies": {"Detailed Surface Scanner": 5, "Power Plant": 5, "Power Distributor": 3, "Sensors": 3}, 
                 "HowToFind": "Introduced by Liz Ryder", "HowToGetInvite": "Imperial Navy rank Outsider achieved", 
                 "HowToUnlock": "50 Kamitra Cigars provided", "HowToGainRep": "Modules crafted or commodities sold"},
-        300030: {"Engineer": "Broo Tarquin", "Location": "Muang", "Modifies": "Lasers", 
+        300030: {"Engineer": "Broo Tarquin", "Location": "Muang", 
+                "Modifies": {"Beam Laser": 5, "Burst Laser": 5, "Pulse Laser": 5}, 
                 "HowToFind": "Introduced by Hera Tani", "HowToGetInvite": "Combat rank Competent or higher achieved", 
                 "HowToUnlock": "50 Fujin Tea provided", "HowToGainRep": "Modules crafted"},
-        300200: {"Engineer": "Marco Qwent", "Location": "Sirius (Permit Required)", "Modifies": "Power Plant, Power Distributor", 
+        300200: {"Engineer": "Marco Qwent", "Location": "Sirius (Permit Required)", 
+                "Modifies": {"Power Plant": 4, "Power Distributor": 3}, 
                 "HowToFind": "Introduced by Elvira Martuuk", "HowToGetInvite": "Sirius Corporation invitation obtained", 
                 "HowToUnlock": "25 Modular Terminals provided", "HowToGainRep": "Modules crafted or commodities sold"},
-        300050: {"Engineer": "Zacariah Nemo", "Location": "Yoru", "Modifies": "Weapons (Varied)", 
+        300050: {"Engineer": "Zacariah Nemo", "Location": "Yoru", 
+                "Modifies": {"Fragment Cannon": 5, "Multi-cannon": 3, "Plasma Accelerator": 2}, 
                 "HowToFind": "Introduced by Elvira Martuuk", "HowToGetInvite": "Party of Yoru invitation received", 
                 "HowToUnlock": "25 Xihe Biomorphic Companions provided", "HowToGainRep": "Modules crafted or commodities sold"},
-        300000: {"Engineer": "Didi Vatermann", "Location": "Leesti", "Modifies": "Shields", 
+        300000: {"Engineer": "Didi Vatermann", "Location": "Leesti", 
+                "Modifies": {"Shield Booster": 5, "Shield Generator": 3}, 
                 "HowToFind": "Introduced by Selene Jean", "HowToGetInvite": "Trade rank Merchant or higher achieved", 
                 "HowToUnlock": "50 Lavian Brandy provided", "HowToGainRep": "Modules crafted"},
-        300140: {"Engineer": "Colonel Bris Dekker", "Location": "Sol (Permit Required)", "Modifies": "FSD, Interdictor", 
+        300140: {"Engineer": "Colonel Bris Dekker", "Location": "Sol (Permit Required)", 
+                "Modifies": {"Frame Shift Drive Interdictor": 4, "Frame Shift Drive": 3}, 
                 "HowToFind": "Introduced by Juri Ishmaak", "HowToGetInvite": "Federation friendly status achieved", 
                 "HowToUnlock": "1,000,000 CR of combat bonds provided", "HowToGainRep": "Modules crafted"},
-        300250: {"Engineer": "Juri Ishmaak", "Location": "Giryak", "Modifies": "Sensors, Explosives", 
+        300250: {"Engineer": "Juri Ishmaak", "Location": "Giryak", 
+                "Modifies": {"Detailed Surface Scanner": 5, "Mine Launcher": 5, "Sensors": 5, "Frame Shift Wake Scanner": 3, "Kill Warrant Scanner": 3, "Manifest Scanner": 3, "Missile Rack": 3, "Seeker Missile Rack": 3, "Torpedo Pylon": 3}, 
                 "HowToFind": "Introduced by Felicity Farseer", "HowToGetInvite": "50+ combat bonds earned", 
                 "HowToUnlock": "100,000 CR of combat bonds provided", "HowToGainRep": "Modules crafted or combat bonds handed in"},
-        300220: {"Engineer": "Professor Palin", "Location": "Arque", "Modifies": "Thrusters, FSD", 
+        300220: {"Engineer": "Professor Palin", "Location": "Arque", 
+                "Modifies": {"Thrusters": 5, "Frame Shift Drive": 3}, 
                 "HowToFind": "Introduced by Marco Qwent", "HowToGetInvite": "5,000 ly from start location traveled", 
                 "HowToUnlock": "25 Sensor Fragments provided", "HowToGainRep": "Modules crafted or exploration data sold"},
-        300010: {"Engineer": "Bill Turner", "Location": "Alioth (Permit Required)", "Modifies": "Utility, Scanners, Sensors", 
+        300010: {"Engineer": "Bill Turner", "Location": "Alioth (Permit Required)", 
+                "Modifies": {"Sensors": 5, "Plasma Accelerator": 5, "AFMU": 3, "Detailed Surface Scanner": 5, "Frame Shift Wake Scanner": 3, "Fuel Scoop": 3, "Kill Warrant Scanner": 3, "Life Support": 3, "Manifest Scanner": 3, "Refinery": 3}, 
                 "HowToFind": "Introduced by Selene Jean", "HowToGetInvite": "Alliance friendly status achieved", 
                 "HowToUnlock": "50 Bromellite provided", "HowToGainRep": "Modules crafted"},
-        300230: {"Engineer": "Lori Jameson", "Location": "Shinrarta Dezhra (Permit Required)", "Modifies": "Support Modules, Scanners", 
+        300230: {"Engineer": "Lori Jameson", "Location": "Shinrarta Dezhra (Permit Required)", 
+                "Modifies": {"Detailed Surface Scanner": 5, "Sensors": 5, "AFMU": 4, "Fuel Scoop": 4, "Life Support": 4, "Refinery": 4, "Frame Shift Wake Scanner": 3, "Manifest Scanner": 3, "Shield Cell Bank": 3}, 
                 "HowToFind": "Introduced by Marco Qwent", "HowToGetInvite": "Combat rank Dangerous or higher achieved", 
                 "HowToUnlock": "25 Konnga Ale provided", "HowToGainRep": "Modules crafted or exploration data sold"},
-        300110: {"Engineer": "Ram Tah", "Location": "Meene", "Modifies": "Utility, Limpets", 
+        300110: {"Engineer": "Ram Tah", "Location": "Meene", 
+                "Modifies": {"Chaff Launcher": 5, "ECM": 5, "Heat Sink Launcher": 5, "Point Defence": 5, "Collector Limpet Controller": 4, "Fuel Transfer Limpet Controller": 4, "Prospector Limpet Controller": 4, "Hatch Breaker Limpet Controller": 3}, 
                 "HowToFind": "Introduced by Lei Cheung", "HowToGetInvite": "Exploration rank Surveyor or higher achieved", 
                 "HowToUnlock": "50 Classified Scan Databanks provided", "HowToGainRep": "Modules crafted or exploration data sold"},
-        300270: {"Engineer": "Tiana Fortune", "Location": "Achenar (Permit Required)", "Modifies": "Scanners, Limpets", 
+        300270: {"Engineer": "Tiana Fortune", "Location": "Achenar (Permit Required)", 
+                "Modifies": {"Manifest Scanner": 5, "Collector Limpet Controller": 5, "Frame Shift Wake Scanner": 5, "Fuel Transfer Limpet Controller": 5, "Hatch Breaker Limpet Controller": 5, "Kill Warrant Scanner": 5, "Prospector Limpet Controller": 5, "Sensors": 5, "Detailed Surface Scanner": 3, "Frame Shift Drive Interdictor": 3}, 
                 "HowToFind": "Introduced by Hera Tani", "HowToGetInvite": "Empire friendly status achieved", 
                 "HowToUnlock": "50 Decoded Emission Data provided", "HowToGainRep": "Modules crafted or commodities sold"},
-        300040: {"Engineer": "The Sarge", "Location": "Beta-3 Tucani", "Modifies": "Cannons, Limpets", 
+        300040: {"Engineer": "The Sarge", "Location": "Beta-3 Tucani", 
+                "Modifies": {"Cannon": 5, "Collector Limpet Controller": 5, "Fuel Transfer Limpet Controller": 5, "Hatch Breaker Limpet Controller": 5, "Prospector Limpet Controller": 5, "Rail Gun": 3}, 
                 "HowToFind": "Introduced by Juri Ishmaak", "HowToGetInvite": "Federal Navy rank Midshipman achieved", 
                 "HowToUnlock": "50 Aberrant Shield Pattern Analysis provided", "HowToGainRep": "Modules crafted or exploration data sold"},
-        300290: {"Engineer": "Etienne Dorn", "Location": "Los", "Modifies": "Core Modules, Weapons", 
+        300290: {"Engineer": "Etienne Dorn", "Location": "Los", 
+                "Modifies": {"Detailed Surface Scanner": 5, "Frame Shift Wake Scanner": 5, "Kill Warrant Scanner": 5, "Life Support": 5, "Manifest Scanner": 5, "Plasma Accelerator": 5, "Power Distributor": 5, "Power Plant": 5, "Sensors": 5, "Rail Gun": 5}, 
                 "HowToFind": "Introduced by Liz Ryder", "HowToGetInvite": "Trade rank Dealer or higher achieved", 
                 "HowToUnlock": "25 Occupied Escape Pods provided", "HowToGainRep": "Modules crafted"},
-        300150: {"Engineer": "Marsha Hicks", "Location": "Tir", "Modifies": "Weapons, Support Modules", 
+        300150: {"Engineer": "Marsha Hicks", "Location": "Tir", 
+                "Modifies": {"Cannon": 5, "Fragment Cannon": 5, "Fuel Scoop": 5, "Fuel Transfer Limpet Controller": 5, "Hatch Breaker Limpet Controller": 5, "Multi-cannon": 5, "Prospector Limpet Controller": 5, "Refinery": 5}, 
                 "HowToFind": "Introduced by The Dweller", "HowToGetInvite": "Exploration rank Surveyor or higher achieved", 
                 "HowToUnlock": "10 Osmium mined", "HowToGainRep": "Modules crafted"},
-        300280: {"Engineer": "Mel Brandon", "Location": "Luchtaine", "Modifies": "Core Modules, Weapons", 
+        300280: {"Engineer": "Mel Brandon", "Location": "Luchtaine", 
+                "Modifies": {"Beam Laser": 5, "Burst Laser": 5, "Pulse Laser": 5, "Shield Generator": 5, "Thrusters": 5, "Shield Booster": 5, "Frame Shift Drive": 5, "Frame Shift Drive Interdictor": 5, "Shield Cell Bank": 4}, 
                 "HowToFind": "Introduced by Elvira Martuuk", "HowToGetInvite": "Colonia Council invitation received", 
                 "HowToUnlock": "100,000 CR of bounty vouchers provided", "HowToGainRep": "Modules crafted"},
-        300130: {"Engineer": "Petra Olmanova", "Location": "Asura", "Modifies": "Armor, Weapons", 
+        300130: {"Engineer": "Petra Olmanova", "Location": "Asura", 
+                "Modifies": {"Armour": 5, "AFMU": 5, "Chaff Launcher": 5, "ECM": 5, "Heat Sink Launcher": 5, "Hull Reinforcement Package": 5, "Mine Launcher": 5, "Missile Rack": 5, "Point Defence": 5, "Seeker Missile Rack": 5, "Torpedo Pylon": 5}, 
                 "HowToFind": "Introduced by Tod McQuinn", "HowToGetInvite": "Combat rank Expert or higher achieved", 
                 "HowToUnlock": "200 Progenitor Cells provided", "HowToGainRep": "Modules crafted"},
-        300300: {"Engineer": "Chloe Sedesi", "Location": "Shenve", "Modifies": "Thrusters, FSD", 
+        300300: {"Engineer": "Chloe Sedesi", "Location": "Shenve", 
+                "Modifies": {"Thrusters": 5, "Frame Shift Drive": 3}, 
                 "HowToFind": "Introduced by Marco Qwent", "HowToGetInvite": "5,000 ly from start location traveled", 
                 "HowToUnlock": "25 Sensor Fragments provided", "HowToGainRep": "Modules crafted or exploration data sold"}
     }
     
     # Define suit engineers data
     suit_engineers = {
-        400002: {"Engineer": "Domino Green", "Location": "Orishis", "Modifies": "Suits, Tools", 
+        400002: {"Engineer": "Domino Green", "Location": "Orishis", 
+                "Modifies": {"Enhanced Tracking": 1, "Extra Backpack Capacity": 1, "Reduced Tool Battery Consumption": 1, "Greater Range": 1, "Stability": 1},
                 "HowToFind": "Available from start", "HowToGetInvite": "100ly in Apex Transport traveled", 
                 "HowToReferral": "5 Push required"},
-        400003: {"Engineer": "Hero Ferrari", "Location": "Siris", "Modifies": "Suit Mobility", 
+        400003: {"Engineer": "Hero Ferrari", "Location": "Siris", 
+                "Modifies": {"Improved Jump Assist": 1, "Increased Air Reserves": 1, "Faster Handling": 1, "Noise Suppressor": 1},
                 "HowToFind": "Available from start", "HowToGetInvite": "10 Conflict Zones completed", 
                 "HowToReferral": "15 Settlement Defence Plans required"},
-        400001: {"Engineer": "Jude Navarro", "Location": "Aurai", "Modifies": "Weapons, Armor", 
+        400001: {"Engineer": "Jude Navarro", "Location": "Aurai", 
+                "Modifies": {"Added Melee Damage": 1, "Damage Resistance": 1, "Extra Ammo Capacity": 1, "Magazine Size": 1, "Reload Speed": 1},
                 "HowToFind": "Available from start", "HowToGetInvite": "10 Restore/Reactivation missions completed", 
                 "HowToReferral": "5 Genetic Repair Meds required"},
-        400004: {"Engineer": "Kit Fowler", "Location": "Capoya", "Modifies": "Weapons, Shields", 
+        400004: {"Engineer": "Kit Fowler", "Location": "Capoya", 
+                "Modifies": {"Added Melee Damage": 1, "Extra Ammo Capacity": 1, "Faster Shield Regen": 1, "Magazine Size": 1, "Stowed Reloading": 1},
                 "HowToFind": "Introduced by Domino Green", "HowToGetInvite": "10 Opinion Polls sold to Bartenders", 
                 "HowToReferral": "5 Surveillance Equipment required"},
-        400008: {"Engineer": "Oden Geiger", "Location": "Candiaei", "Modifies": "Vision, Tools", 
+        400008: {"Engineer": "Oden Geiger", "Location": "Candiaei", 
+                "Modifies": {"Enhanced Tracking": 1, "Improved Battery Capacity": 1, "Night Vision": 1, "Scope": 1, "Stability": 1},
                 "HowToFind": "Introduced by Terra Velasquez", "HowToGetInvite": "20 Biological/Genetic items sold to Bartenders", 
                 "HowToReferral": "N/A"},
-        400006: {"Engineer": "Terra Velasquez", "Location": "Shou Xing", "Modifies": "Suit Mobility, Stealth", 
+        400006: {"Engineer": "Terra Velasquez", "Location": "Shou Xing", 
+                "Modifies": {"Combat Movement Speed": 1, "Increased Air Reserves": 1, "Increased Sprint Duration": 1, "Improved Hip Fire Accuracy": 1, "Noise Suppressor": 1},
                 "HowToFind": "Introduced by Jude Navarro", "HowToGetInvite": "12 Covert missions completed", 
                 "HowToReferral": "15 Financial Projections required"},
-        400007: {"Engineer": "Uma Laszlo", "Location": "Xuane", "Modifies": "Weapons, Defense", 
+        400007: {"Engineer": "Uma Laszlo", "Location": "Xuane", 
+                "Modifies": {"Damage Resistance": 1, "Faster Shield Regen": 1, "Headshot Damage": 1, "Reload Speed": 1, "Stowed Reloading": 1},
                 "HowToFind": "Introduced by Wellington Beck", "HowToGetInvite": "Sirius Corp unfriendly status reached", 
                 "HowToReferral": "N/A"},
-        400005: {"Engineer": "Wellington Beck", "Location": "Jolapa", "Modifies": "Tools, Backpack", 
+        400005: {"Engineer": "Wellington Beck", "Location": "Jolapa", 
+                "Modifies": {"Extra Backpack Capacity": 1, "Improved Battery Capacity": 1, "Reduced Tool Battery Consumption": 1, "Greater Range": 1, "Scope": 1},
                 "HowToFind": "Introduced by Hero Ferrari", "HowToGetInvite": "25 Entertainment items sold to Bartenders", 
                 "HowToReferral": "5 InSight Entertainment Suites required"},
-        400009: {"Engineer": "Yarden Bond", "Location": "Bayan", "Modifies": "Stealth, Mobility", 
+        400009: {"Engineer": "Yarden Bond", "Location": "Bayan", 
+                "Modifies": {"Combat Movement Speed": 1, "Improved Jump Assist": 1, "Quieter Footsteps": 1, "Audio Masking": 1, "Faster Handling": 1, "Improved Hip Fire Accuracy": 1},
                 "HowToFind": "Introduced by Kit Fowler", "HowToGetInvite": "8 Smear Campaign Plans sold to Bartenders", 
                 "HowToReferral": "N/A"},
-        400010: {"Engineer": "Baltanos", "Location": "Deriso", "Modifies": "Suit Mobility, Stealth", 
+        400010: {"Engineer": "Baltanos", "Location": "Deriso", 
+                "Modifies": {"Combat Movement Speed": 1, "Improved Jump Assist": 1, "Increased Air Reserves": 1, "Increased Sprint Duration": 1, "Faster Handling": 1, "Improved Hip Fire Accuracy": 1, "Noise Suppressor": 1},
                 "HowToFind": "Available in Colonia", "HowToGetInvite": "Colonia Council friendly status achieved", 
                 "HowToReferral": "10 Faction Associates required"},
-        400011: {"Engineer": "Eleanor Bresa", "Location": "Desy", "Modifies": "Weapons, Defense", 
+        400011: {"Engineer": "Eleanor Bresa", "Location": "Desy", 
+                "Modifies": {"Added Melee Damage": 1, "Damage Resistance": 1, "Extra Ammo Capacity": 1, "Faster Shield Regen": 1, "Magazine Size": 1, "Reload Speed": 1, "Stowed Reloading": 1},
                 "HowToFind": "Available in Colonia", "HowToGetInvite": "5 Settlements in Colonia visited", 
                 "HowToReferral": "10 Digital Designs required"},
-        400012: {"Engineer": "Rosa Dayette", "Location": "Kojeara", "Modifies": "Tools, Backpack", 
+        400012: {"Engineer": "Rosa Dayette", "Location": "Kojeara", 
+                "Modifies": {"Enhanced Tracking": 1, "Extra Backpack Capacity": 1, "Improved Battery Capacity": 1, "Reduced Tool Battery Consumption": 1, "Greater Range": 1, "Scope": 1, "Stability": 1},
                 "HowToFind": "Available in Colonia", "HowToGetInvite": "10 Recipe items sold to Bartenders in Colonia", 
                 "HowToReferral": "10 Manufacturing Instructions required"},
-        400013: {"Engineer": "Yi Shen", "Location": "Einheriar", "Modifies": "Stealth, Weapons", 
+        400013: {"Engineer": "Yi Shen", "Location": "Einheriar", 
+                "Modifies": {"Night Vision": 1, "Quieter Footsteps": 1, "Audio Masking": 1, "Headshot Damage": 1},
                 "HowToFind": "Introduced by Colonia engineers", "HowToGetInvite": "All Colonia engineers' referral tasks completed", 
                 "HowToReferral": "N/A"}
     }
@@ -1683,7 +1721,7 @@ def engineer_finder(obj, projected_states):
 
     if not engineer_progress:
         return "No engineer progress found"
-    
+
     engineers = engineer_progress.get('Engineers', [])
 
     # Create a lookup for engineers from game data
@@ -1712,18 +1750,22 @@ def engineer_finder(obj, projected_states):
         return previous_row[-1]
     
     # Helper function for fuzzy matching modifications using Levenshtein distance
-    def matches_modifications(modifies_text, search_term):
-        modifies_lower = modifies_text.lower()
+    def matches_modifications(modifies_dict, search_term):
         search_terms = search_term.split()
+        modifies_words = []
         
-        # First check for exact substring matches
-        for term in search_terms:
-            if term in modifies_lower:
-                return True
+        # Extract all words from modification names
+        for mod_name in modifies_dict.keys():
+            mod_lower = mod_name.lower()
+            # First check for exact substring matches
+            for term in search_terms:
+                if term in mod_lower:
+                    return True
+            # Add words for fuzzy matching
+            mod_words = mod_lower.replace(',', ' ').replace('(', ' ').replace(')', ' ').split()
+            modifies_words.extend(mod_words)
         
-        # Then check for fuzzy matches using Levenshtein distance
-        modifies_words = modifies_lower.replace(',', ' ').replace('(', ' ').replace(')', ' ').split()
-        
+        # Fuzzy matching using Levenshtein distance
         for search_word in search_terms:
             for modifies_word in modifies_words:
                 # Allow some fuzzy matching based on word length
@@ -1854,6 +1896,10 @@ def engineer_finder(obj, projected_states):
         for field in fields_to_remove:
             engineer_data.pop(field, None)
         
+        # Convert modifications from dict to list for suit engineers (no ranks)
+        if 'Modifies' in engineer_data:
+            engineer_data['Modifies'] = list(engineer_data['Modifies'].keys())
+        
         engineer_overview['suit_engineers'][engineer_name] = engineer_data
     
     # Check if any engineers were found
@@ -1875,16 +1921,16 @@ def engineer_finder(obj, projected_states):
                 # Collect all unique modification values
                 all_modifications = set()
                 for engineer_info in ship_engineers.values():
-                    mods = engineer_info.get('Modifies', '')
-                    # Split by comma and clean up
-                    for mod in mods.split(','):
-                        all_modifications.add(mod.strip())
+                    mods = engineer_info.get('Modifies', {})
+                    # Add all modification names from dict keys
+                    for mod_name in mods.keys():
+                        all_modifications.add(mod_name)
                 
                 for engineer_info in suit_engineers.values():
-                    mods = engineer_info.get('Modifies', '')
-                    # Split by comma and clean up
-                    for mod in mods.split(','):
-                        all_modifications.add(mod.strip())
+                    mods = engineer_info.get('Modifies', {})
+                    # Add all modification names from dict keys
+                    for mod_name in mods.keys():
+                        all_modifications.add(mod_name)
                 
                 sorted_mods = sorted(list(all_modifications))
                 return f"No engineers found matching modifications: '{search_modifications}'\n\nValid modification types:\n" + yaml.dump(sorted_mods)
@@ -2039,7 +2085,7 @@ def educated_guesses_message(search_query, valid_list):
         scored_matches.sort(key=lambda x: x[0])
         for distance, element in scored_matches[:5 - len(suggestions)]:
             suggestions.append(element)
-    
+
     message = ""
     if suggestions:
         guesses_str = ', '.join(suggestions[:5])  # Limit to 5 suggestions
