@@ -105,6 +105,11 @@ jobs:
         working-directory: ui
         run: npm install
 
+      - name: Replace Commit HASH in environment.prod.ts
+        working-directory: ui
+        run: |
+          sed -i "s/__COMMIT_HASH_PLACEHOLDER__/${{ github.sha }}/g" src/environments/environment.prod.ts
+
       - name: Set Tauri version
         working-directory: ui
         run: |
