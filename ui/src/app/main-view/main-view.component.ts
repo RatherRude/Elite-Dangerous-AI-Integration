@@ -15,6 +15,7 @@ import { Subscription } from "rxjs";
 import { ChatService } from "../services/chat.service.js";
 import { MatTabsModule } from "@angular/material/tabs";
 import { ChatContainerComponent } from "../components/chat-container/chat-container.component.js";
+import { ProjectionsService } from "../services/projections.service";
 
 @Component({
     selector: "app-main-view",
@@ -37,8 +38,10 @@ import { ChatContainerComponent } from "../components/chat-container/chat-contai
 export class MainViewComponent implements OnInit, OnDestroy {
     isLoading = true;
     isRunning = false;
+    isInDanger = false;
     config: any;
     private configSubscription!: Subscription;
+    private inDangerSubscription!: Subscription;
     private hasAutoStarted = false;
 
     constructor(
@@ -46,6 +49,7 @@ export class MainViewComponent implements OnInit, OnDestroy {
         private loggingService: LoggingService,
         private chatService: ChatService,
         private configService: ConfigService,
+        private projectionsService: ProjectionsService,
     ) {}
 
     ngOnInit(): void {
@@ -62,6 +66,7 @@ export class MainViewComponent implements OnInit, OnDestroy {
                 }
             },
         );
+        
         // Subscribe to the running state
         this.tauri.runMode$.subscribe(
             (mode) => {
@@ -69,6 +74,18 @@ export class MainViewComponent implements OnInit, OnDestroy {
                 this.isLoading = mode === "starting";
             },
         );
+
+        // Subscribe to CurrentStatus projection and check for InDanger
+        this.inDangerSubscription = this.projectionsService
+            .getProjection("CurrentStatus")
+            .subscribe((currentStatus) => {
+                if (currentStatus && currentStatus.flags) {
+                    this.isInDanger = Boolean(currentStatus.flags.InDanger);
+                } else {
+                    this.isInDanger = false;
+                }
+            });
+        
         // Initialize the main view
         this.tauri.runExe();
         this.tauri.checkForUpdates();
@@ -77,6 +94,9 @@ export class MainViewComponent implements OnInit, OnDestroy {
     ngOnDestroy(): void { // Implement ngOnDestroy
         if (this.configSubscription) {
             this.configSubscription.unsubscribe();
+        }
+        if (this.inDangerSubscription) {
+            this.inDangerSubscription.unsubscribe();
         }
     }
 
