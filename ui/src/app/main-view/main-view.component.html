@@ -31,13 +31,15 @@
           </div>
           <app-input-container class="input-container"></app-input-container>
         </mat-tab>
-        <mat-tab label="Logs">
-          <div class="tab-content-container">
-            <div class="log-container">
-              <app-log-container></app-log-container>
+        @if (false) {
+          <mat-tab label="Logs">
+            <div class="tab-content-container">
+              <div class="log-container">
+                <app-log-container></app-log-container>
+              </div>
             </div>
-          </div>
-        </mat-tab>
+          </mat-tab>
+        }
       </mat-tab-group>
     </div>
     <div class="button-container">
