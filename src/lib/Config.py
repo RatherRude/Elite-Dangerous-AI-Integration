@@ -379,6 +379,8 @@ class Config(TypedDict):
     tools_var: bool
     vision_var: bool
     ptt_var: bool
+    ptt_tap_to_talk_var: bool
+    ptt_inverted_var: bool
     mute_during_response_var: bool
     game_actions_var: bool
     web_search_actions_var: bool
@@ -649,6 +651,8 @@ def load_config() -> Config:
         'tools_var': True,
         'vision_var': False,
         'ptt_var': False,
+        'ptt_tap_to_talk_var': False,
+        'ptt_inverted_var': False,
         'mute_during_response_var': False,
         'event_reaction_enabled_var': True,
         'game_actions_var': True,

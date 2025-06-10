@@ -111,6 +111,22 @@ mat-slide-toggle {
   padding-bottom: 1rem;
 }
 
+.ptt-extras {
+  display: flex;
+  flex-direction: column;
+  justify-items: revert;
+  align-self: flex-start;
+}
+
+.ptt-extras mat-slide-toggle {
+  padding-bottom: 0;
+  margin-top: 0;
+}
+
+.ptt-extras mat-slide-toggle:first-child {
+  margin-top: 3px;
+}
+
 ul {
   margin-top: 0;
 }
