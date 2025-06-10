@@ -21,10 +21,10 @@ export interface LogMessage extends BaseMessage {
     providedIn: "root",
 })
 export class LoggingService {
-    private logsSubject = new BehaviorSubject<LogMessage[]>([]);
+    private readonly logsSubject = new BehaviorSubject<LogMessage[]>([]);
     public logs$ = this.logsSubject.asObservable();
 
-    constructor(private tauriService: TauriService) {
+    constructor(private readonly tauriService: TauriService) {
         // Subscribe to log messages from the TauriService
         this.tauriService.output$.pipe(
             filter((message): message is LogMessage | EventMessage =>

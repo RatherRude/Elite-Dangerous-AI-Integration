@@ -1,9 +1,8 @@
 import json
 import os
-from typing import Any, Callable, TypedDict, cast
+from typing import Any, Callable, cast
 import openai
 from openai.types.chat import ChatCompletionMessageParam
-from requests import auth
 
 from .EDKeys import EDKeys
 from .EventManager import EventManager, Projection
@@ -96,13 +95,13 @@ class PluginHelper():
             os.makedirs(plugin_data_path, exist_ok=True)
         return plugin_data_path
 
-    def register_action(self, name, description, parameters, method: Callable[[dict, dict], str], action_type="ship", input_template: Callable[[dict, dict], str]|None=None):
+    def register_action(self, name: str, description: str, parameters: dict[str, Any], method: Callable[[dict, dict], str], action_type: str = "ship", input_template: Callable[[dict, dict], str]|None=None):
         """Register an action"""
         self._action_manager.registerAction(name, description, parameters, method, action_type, input_template)
 
-    def register_projection(self, projection: Projection):
+    def register_projection(self, projection: Projection[object], raise_error: bool = False):
         """Register a projection"""
-        self._event_manager.register_projection(projection, raise_error = False)
+        self._event_manager.register_projection(projection, raise_error)
         
     def register_sideeffect(self, sideeffect: Callable[[Event, dict[str, Any]], None]):
         """Register a sideeffect"""
@@ -136,7 +135,7 @@ class PluginHelper():
         """Register a handler that will decide wether the assistant should reply to any given event. False means no reply, True means reply, None means no decision, leaving it to the assistant"""
         self._assistant.register_should_reply_handler(should_reply_handler)
 
-    def wait_for_condition(self, projection_name: str, condition_fn, timeout=None):
+    def wait_for_condition(self, projection_name: str, condition_fn: Callable[[dict[str, Any]], bool], timeout: float | None = None):
         """Block until `condition_fn` is satisfied by the current or future
         state of the specified projection.
 

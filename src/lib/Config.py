@@ -650,7 +650,6 @@ def load_config() -> Config:
         'vision_var': False,
         'ptt_var': False,
         'mute_during_response_var': False,
-        'event_reaction_enabled_var': True,
         'game_actions_var': True,
         'web_search_actions_var': True,
         'use_action_cache_var': True,

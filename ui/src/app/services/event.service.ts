@@ -65,10 +65,10 @@ export interface ExternalEvent {
     providedIn: "root",
 })
 export class EventService {
-    private eventSubject = new BehaviorSubject<EventMessage[]>([]);
+    private readonly eventSubject = new BehaviorSubject<EventMessage[]>([]);
     public events$ = this.eventSubject.asObservable();
 
-    constructor(private tauriService: TauriService) {
+    constructor(private readonly tauriService: TauriService) {
         // Subscribe to log messages from the TauriService
         this.tauriService.output$.pipe(
             filter((message): message is EventMessage =>
