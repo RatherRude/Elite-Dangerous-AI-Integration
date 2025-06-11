@@ -35,20 +35,34 @@ export class MetricsService {
             "service.install.id": this.tauriService.installId,
         }),
     });
-    private messageTypeCounterMap = new Map<string, any>();
-    private logPrefixCounterMap = new Map<string, any>();
-    private chatRoleCounterMap = new Map<string, any>();
+    private messageTypeCounterMap = new Map<
+        string,
+        ReturnType<typeof this.meter.createCounter>
+    >();
+    private logPrefixCounterMap = new Map<
+        string,
+        ReturnType<typeof this.meter.createCounter>
+    >();
+    private chatRoleCounterMap = new Map<
+        string,
+        ReturnType<typeof this.meter.createCounter>
+    >();
     private meter = this.meterProvider.getMeter("com.covaslabs.ui-events");
+    private startedSessionsGauge = this.meter.createGauge(
+        `started_sessions`,
+        {
+            description: `Counts number of started sessions`,
+        },
+    );
+    private readySessionsGauge = this.meter.createGauge(
+        `ready_sessions`,
+        {
+            description: `Counts number of ready sessions`,
+        },
+    );
 
     constructor(private tauriService: TauriService) {
-        const uiStartCounter = this.meter.createCounter(
-            `message_type_ui_start_count`,
-            {
-                description: `Counts number of UI starts`,
-            },
-        );
-        uiStartCounter.add(0);
-        uiStartCounter.add(1);
+        this.startedSessionsGauge.record(1);
 
         this.setupTeardown();
 
@@ -57,6 +71,14 @@ export class MetricsService {
                 let messageTypeCounter = this.messageTypeCounterMap.get(
                     message.type,
                 );
+                if (message.type === "ready") {
+                    this.readySessionsGauge.record(1);
+                    this.startedSessionsGauge.record(0);
+                }
+                if (message.type === "start") {
+                    this.readySessionsGauge.record(0);
+                    this.startedSessionsGauge.record(1);
+                }
                 if (!messageTypeCounter) {
                     messageTypeCounter = this.meter.createCounter(
                         `message_type_${message.type}_count`,
@@ -124,6 +146,8 @@ export class MetricsService {
     private async setupTeardown(): Promise<void> {
         const unlisten = await getCurrentWindow().onCloseRequested(
             async (event) => {
+                this.readySessionsGauge.record(0);
+                this.startedSessionsGauge.record(0);
                 await this.metricReader.shutdown();
                 unlisten();
             },
