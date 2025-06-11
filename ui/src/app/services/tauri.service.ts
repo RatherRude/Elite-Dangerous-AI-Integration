@@ -34,7 +34,16 @@ export interface UnknownMessage extends BaseMessage {
     providedIn: "root",
 })
 export class TauriService {
-    private commitHash = environment.COMMIT_HASH;
+    public readonly installId = window.localStorage.getItem(
+        "install_id",
+    ) ||
+        `${Date.now().toString()}-${
+            Math.random().toString(36).substring(2, 15)
+        }`;
+    public readonly sessionId = `${Date.now().toString()}-${
+        Math.random().toString(36).substring(2, 15)
+    }`;
+    public readonly commitHash = environment.COMMIT_HASH;
     private runModeSubject = new BehaviorSubject<
         "starting" | "configuring" | "running"
     >(
@@ -57,6 +66,7 @@ export class TauriService {
 
     constructor(private ngZone: NgZone, private dialog: MatDialog) {
         this.startReadingOutput();
+        window.localStorage.setItem("install_id", this.installId);
     }
 
     public async createOverlay(): Promise<void> {

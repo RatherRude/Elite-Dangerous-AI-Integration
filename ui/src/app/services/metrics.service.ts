@@ -1,24 +1,19 @@
 // telemetry.ts
 import {
-    AggregationTemporality,
     MeterProvider,
     PeriodicExportingMetricReader,
 } from "@opentelemetry/sdk-metrics";
 import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
-import { Resource, resourceFromAttributes } from "@opentelemetry/resources";
-import { SEMRESATTRS_SERVICE_INSTANCE_ID } from "@opentelemetry/semantic-conventions";
+import { resourceFromAttributes } from "@opentelemetry/resources";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 
 import { Injectable } from "@angular/core";
 import { BaseMessage, TauriService } from "./tauri.service";
-import { EventMessage } from "./event.service.js";
 
 @Injectable({
     providedIn: "root",
 })
 export class MetricsService {
-    private sessionId = `${Date.now().toString()}-${
-        Math.random().toString(36).substring(2, 15)
-    }`;
     private exporter = new OTLPMetricExporter({
         url: "https://monitoring.covaslabs.com/v1/metrics",
         headers: {
@@ -28,15 +23,16 @@ export class MetricsService {
     });
     private metricReader = new PeriodicExportingMetricReader({
         exporter: this.exporter,
-        exportIntervalMillis: 3000, // Adjust as needed
+        exportIntervalMillis: 10000,
     });
     private meterProvider = new MeterProvider({
         readers: [this.metricReader],
         resource: resourceFromAttributes({
             "service.name": "com.covaslabs.ui",
-            "service.version": "1.0.0",
+            "service.version": this.tauriService.commitHash,
             "service.namespace": "com.covaslabs",
-            "service.instance.id": this.sessionId,
+            "service.instance.id": this.tauriService.sessionId,
+            "service.install.id": this.tauriService.installId,
         }),
     });
     private messageTypeCounterMap = new Map<string, any>();
@@ -48,11 +44,13 @@ export class MetricsService {
         const uiStartCounter = this.meter.createCounter(
             `message_type_ui_start_count`,
             {
-                description: `Counts messages of type ui_start`,
+                description: `Counts number of UI starts`,
             },
         );
         uiStartCounter.add(0);
         uiStartCounter.add(1);
+
+        this.setupTeardown();
 
         this.tauriService.output$.pipe().subscribe(
             (message: BaseMessage) => {
@@ -119,6 +117,15 @@ export class MetricsService {
                     }
                     chatRoleCounter.add(1);
                 }
+            },
+        );
+    }
+
+    private async setupTeardown(): Promise<void> {
+        const unlisten = await getCurrentWindow().onCloseRequested(
+            async (event) => {
+                await this.metricReader.shutdown();
+                unlisten();
             },
         );
     }
