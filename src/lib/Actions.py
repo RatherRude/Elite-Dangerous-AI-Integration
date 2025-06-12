@@ -1110,610 +1110,698 @@ ENGINEERING_MODIFICATIONS = {
     "Efficient": {
         "module_recipes": {
             "Beam Laser": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_4": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]},
+                "grade_5": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
             },
             "Burst Laser": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_4": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]},
+                "grade_5": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
             },
             "Cannon": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_3": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_4": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_5": {"cost": {}, "engineers": ["The Sarge", "Marsha Hicks"]}
             },
             "Fragment Cannon": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_3": {"cost": {}, "engineers": ["Zacariah Nemo"]},
+                "grade_4": {"cost": {}, "engineers": ["Zacariah Nemo"]},
+                "grade_5": {"cost": {}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]}
             },
             "Multi-cannon": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
+                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
+                "grade_3": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
+                "grade_4": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]},
+                "grade_5": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]}
             },
             "Plasma Accelerator": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Zacariah Nemo"]},
+                "grade_2": {"cost": {}, "engineers": ["Zacariah Nemo"]},
+                "grade_3": {"cost": {}, "engineers": ["Bill Turner"]},
+                "grade_4": {"cost": {}, "engineers": ["Bill Turner"]},
+                "grade_5": {"cost": {}, "engineers": ["Bill Turner", "Etienne Dorn"]}
             },
             "Pulse Laser": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_4": {"cost": {}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]},
+                "grade_5": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
             }
         }
     },
     "Lightweight": {
         "module_recipes": {
             "Beam Laser": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_4": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]},
+                "grade_5": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
             },
             "Burst Laser": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_4": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]},
+                "grade_5": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
             },
             "Cannon": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_3": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_4": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_5": {"cost": {}, "engineers": ["The Sarge", "Marsha Hicks"]}
             },
             "Fragment Cannon": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_3": {"cost": {}, "engineers": ["Zacariah Nemo"]},
+                "grade_4": {"cost": {}, "engineers": ["Zacariah Nemo"]},
+                "grade_5": {"cost": {}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]}
             },
             "Mine Launcher": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_2": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_3": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_4": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_5": {"cost": {}, "engineers": ["Juri Ishmaak", "Petra Olmanova"]}
             },
             "Missile Rack": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_4": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_5": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]}
             },
             "Multi-cannon": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
+                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
+                "grade_3": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
+                "grade_4": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]},
+                "grade_5": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]}
             },
             "Plasma Accelerator": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Zacariah Nemo"]},
+                "grade_2": {"cost": {}, "engineers": ["Zacariah Nemo"]},
+                "grade_3": {"cost": {}, "engineers": ["Bill Turner"]},
+                "grade_4": {"cost": {}, "engineers": ["Bill Turner"]},
+                "grade_5": {"cost": {}, "engineers": ["Bill Turner", "Etienne Dorn"]}
             },
             "Pulse Laser": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_4": {"cost": {}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]},
+                "grade_5": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
             },
             "Rail Gun": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_2": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_3": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_4": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_5": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Etienne Dorn"]}
             },
             "Seeker Missile Rack": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_4": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_5": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]}
             },
             "Torpedo Pylon": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
-            },
-            "Caustic Sink Launcher": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_4": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_5": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]}
             },
             "Chaff Launcher": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_2": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_3": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_4": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_5": {"cost": {}, "engineers": ["Ram Tah", "Petra Olmanova"]}
             },
             "Electronic Countermeasure": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_2": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_3": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_4": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_5": {"cost": {}, "engineers": ["Ram Tah", "Petra Olmanova"]}
             },
             "Frame Shift Wake Scanner": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson"]},
+                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson"]},
+                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson"]},
+                "grade_4": {"cost": {}, "engineers": ["Tiana Fortune"]},
+                "grade_5": {"cost": {}, "engineers": ["Tiana Fortune", "Etienne Dorn"]}
             },
             "Heat Sink Launcher": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_2": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_3": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_4": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_5": {"cost": {}, "engineers": ["Ram Tah", "Petra Olmanova"]}
             },
             "Kill Warrant Scanner": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson"]},
+                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson"]},
+                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson"]},
+                "grade_4": {"cost": {}, "engineers": ["Tiana Fortune"]},
+                "grade_5": {"cost": {}, "engineers": ["Tiana Fortune", "Etienne Dorn"]}
             },
             "Manifest Scanner": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson"]},
+                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson"]},
+                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson"]},
+                "grade_4": {"cost": {}, "engineers": ["Tiana Fortune"]},
+                "grade_5": {"cost": {}, "engineers": ["Tiana Fortune", "Etienne Dorn"]}
             },
             "Point Defence": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_2": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_3": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_4": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_5": {"cost": {}, "engineers": ["Ram Tah", "Petra Olmanova"]}
             },
             "Collector Limpet Controller": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_2": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_3": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_4": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_5": {"cost": {}, "engineers": ["Tiana Fortune", "The Sarge"]}
             },
             "Fuel Transfer Limpet Controller": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_2": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_3": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_4": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_5": {"cost": {}, "engineers": ["Tiana Fortune", "The Sarge", "Marsha Hicks"]}
             },
             "Hatch Breaker Limpet Controller": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_2": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_3": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_4": {"cost": {}, "engineers": []},
+                "grade_5": {"cost": {}, "engineers": ["Tiana Fortune", "The Sarge", "Marsha Hicks"]}
             },
             "Hull Reinforcement Package": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_2": {"cost": {}, "engineers": []},
+                "grade_3": {"cost": {}, "engineers": []},
+                "grade_4": {"cost": {}, "engineers": []},
+                "grade_5": {"cost": {}, "engineers": ["Selene Jean", "Petra Olmanova"]}
             },
             "Prospector Limpet Controller": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_2": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_3": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_4": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_5": {"cost": {}, "engineers": ["Tiana Fortune", "The Sarge", "Marsha Hicks"]}
             },
             "Life Support": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Bill Turner", "Lori Jameson"]},
+                "grade_2": {"cost": {}, "engineers": ["Bill Turner", "Lori Jameson"]},
+                "grade_3": {"cost": {}, "engineers": ["Bill Turner", "Lori Jameson"]},
+                "grade_4": {"cost": {}, "engineers": ["Lori Jameson"]},
+                "grade_5": {"cost": {}, "engineers": ["Etienne Dorn"]}
             },
             "Sensors": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Felicity Farseer", "Lei Cheung", "Hera Tani"]},
+                "grade_2": {"cost": {}, "engineers": ["Felicity Farseer", "Lei Cheung", "Hera Tani"]},
+                "grade_3": {"cost": {}, "engineers": ["Felicity Farseer", "Lei Cheung", "Hera Tani"]},
+                "grade_4": {"cost": {}, "engineers": ["Lei Cheung"]},
+                "grade_5": {"cost": {}, "engineers": ["Lei Cheung", "Juri Ishmaak", "Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]}
             },
             "Armour": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_2": {"cost": {}, "engineers": []},
+                "grade_3": {"cost": {}, "engineers": []},
+                "grade_4": {"cost": {}, "engineers": []},
+                "grade_5": {"cost": {}, "engineers": ["Selene Jean", "Petra Olmanova"]}
             }
         }
     },
     "Long range": {
         "module_recipes": {
             "Beam Laser": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_4": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]},
+                "grade_5": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
             },
             "Burst Laser": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_4": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]},
+                "grade_5": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
             },
             "Cannon": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_3": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_4": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_5": {"cost": {}, "engineers": ["The Sarge", "Marsha Hicks"]}
             },
             "Multi-cannon": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
+                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
+                "grade_3": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
+                "grade_4": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]},
+                "grade_5": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]}
             },
             "Plasma Accelerator": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Zacariah Nemo"]},
+                "grade_2": {"cost": {}, "engineers": ["Zacariah Nemo"]},
+                "grade_3": {"cost": {}, "engineers": ["Bill Turner"]},
+                "grade_4": {"cost": {}, "engineers": ["Bill Turner"]},
+                "grade_5": {"cost": {}, "engineers": ["Bill Turner", "Etienne Dorn"]}
             },
             "Pulse Laser": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_4": {"cost": {}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]},
+                "grade_5": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
             },
             "Rail Gun": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_2": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_3": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_4": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_5": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Etienne Dorn"]}
             },
             "Frame Shift Wake Scanner": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson"]},
+                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson"]},
+                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson"]},
+                "grade_4": {"cost": {}, "engineers": ["Tiana Fortune"]},
+                "grade_5": {"cost": {}, "engineers": ["Tiana Fortune", "Etienne Dorn"]}
             },
             "Kill Warrant Scanner": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson"]},
+                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson"]},
+                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson"]},
+                "grade_4": {"cost": {}, "engineers": ["Tiana Fortune"]},
+                "grade_5": {"cost": {}, "engineers": ["Tiana Fortune", "Etienne Dorn"]}
             },
             "Manifest Scanner": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson"]},
+                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson"]},
+                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson"]},
+                "grade_4": {"cost": {}, "engineers": ["Tiana Fortune"]},
+                "grade_5": {"cost": {}, "engineers": ["Tiana Fortune", "Etienne Dorn"]}
             },
             "Frame Shift Drive Interdictor": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Felicity Farseer", "Tiana Fortune"]},
+                "grade_2": {"cost": {}, "engineers": ["Tiana Fortune"]},
+                "grade_3": {"cost": {}, "engineers": ["Tiana Fortune", "Colonel Bris Dekker"]},
+                "grade_4": {"cost": {}, "engineers": ["Colonel Bris Dekker"]},
+                "grade_5": {"cost": {}, "engineers": ["Mel Brandon"]}
             },
             "Sensors": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Felicity Farseer", "Lei Cheung", "Hera Tani"]},
+                "grade_2": {"cost": {}, "engineers": ["Felicity Farseer", "Lei Cheung", "Hera Tani"]},
+                "grade_3": {"cost": {}, "engineers": ["Felicity Farseer", "Lei Cheung", "Hera Tani"]},
+                "grade_4": {"cost": {}, "engineers": ["Lei Cheung"]},
+                "grade_5": {"cost": {}, "engineers": ["Lei Cheung", "Juri Ishmaak", "Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]}
             }
         }
     },
     "Overcharged": {
         "module_recipes": {
             "Beam Laser": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_4": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]},
+                "grade_5": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
             },
             "Burst Laser": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_4": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]},
+                "grade_5": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
             },
             "Cannon": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_3": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_4": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_5": {"cost": {}, "engineers": ["The Sarge", "Marsha Hicks"]}
             },
             "Fragment Cannon": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_3": {"cost": {}, "engineers": ["Zacariah Nemo"]},
+                "grade_4": {"cost": {}, "engineers": ["Zacariah Nemo"]},
+                "grade_5": {"cost": {}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]}
             },
             "Multi-cannon": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
+                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
+                "grade_3": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
+                "grade_4": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]},
+                "grade_5": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]}
             },
             "Plasma Accelerator": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Zacariah Nemo"]},
+                "grade_2": {"cost": {}, "engineers": ["Zacariah Nemo"]},
+                "grade_3": {"cost": {}, "engineers": ["Bill Turner"]},
+                "grade_4": {"cost": {}, "engineers": ["Bill Turner"]},
+                "grade_5": {"cost": {}, "engineers": ["Bill Turner", "Etienne Dorn"]}
             },
             "Pulse Laser": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_4": {"cost": {}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]},
+                "grade_5": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
             },
             "Power Plant": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Felicity Farseer"]},
+                "grade_2": {"cost": {}, "engineers": ["Marco Qwent"]},
+                "grade_3": {"cost": {}, "engineers": ["Marco Qwent", "Hera Tani"]},
+                "grade_4": {"cost": {}, "engineers": ["Marco Qwent", "Hera Tani"]},
+                "grade_5": {"cost": {}, "engineers": ["Hera Tani", "Etienne Dorn"]}
             }
         }
     },
     "Short range": {
         "module_recipes": {
             "Beam Laser": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_4": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]},
+                "grade_5": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
             },
             "Burst Laser": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_4": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]},
+                "grade_5": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
             },
             "Cannon": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_3": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_4": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_5": {"cost": {}, "engineers": ["The Sarge", "Marsha Hicks"]}
             },
             "Multi-cannon": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
+                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
+                "grade_3": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
+                "grade_4": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]},
+                "grade_5": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]}
             },
             "Plasma Accelerator": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Zacariah Nemo"]},
+                "grade_2": {"cost": {}, "engineers": ["Zacariah Nemo"]},
+                "grade_3": {"cost": {}, "engineers": ["Bill Turner"]},
+                "grade_4": {"cost": {}, "engineers": ["Bill Turner"]},
+                "grade_5": {"cost": {}, "engineers": ["Bill Turner", "Etienne Dorn"]}
             },
             "Pulse Laser": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_4": {"cost": {}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]},
+                "grade_5": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
             },
             "Rail Gun": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_2": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_3": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_4": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_5": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Etienne Dorn"]}
             }
         }
     },
     "Sturdy": {
         "module_recipes": {
             "Beam Laser": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_4": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]},
+                "grade_5": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
             },
             "Burst Laser": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_4": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]},
+                "grade_5": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
             },
             "Cannon": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_3": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_4": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_5": {"cost": {}, "engineers": ["The Sarge", "Marsha Hicks"]}
             },
             "Fragment Cannon": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_3": {"cost": {}, "engineers": ["Zacariah Nemo"]},
+                "grade_4": {"cost": {}, "engineers": ["Zacariah Nemo"]},
+                "grade_5": {"cost": {}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]}
             },
             "Mine Launcher": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_2": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_3": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_4": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_5": {"cost": {}, "engineers": ["Juri Ishmaak", "Petra Olmanova"]}
             },
             "Missile Rack": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_4": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_5": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]}
             },
             "Multi-cannon": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
+                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
+                "grade_3": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
+                "grade_4": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]},
+                "grade_5": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]}
             },
             "Plasma Accelerator": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Zacariah Nemo"]},
+                "grade_2": {"cost": {}, "engineers": ["Zacariah Nemo"]},
+                "grade_3": {"cost": {}, "engineers": ["Bill Turner"]},
+                "grade_4": {"cost": {}, "engineers": ["Bill Turner"]},
+                "grade_5": {"cost": {}, "engineers": ["Bill Turner", "Etienne Dorn"]}
             },
             "Pulse Laser": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_4": {"cost": {}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]},
+                "grade_5": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
             },
             "Rail Gun": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_2": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_3": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_4": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_5": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Etienne Dorn"]}
             },
             "Seeker Missile Rack": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_4": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_5": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]}
             },
             "Torpedo Pylon": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_4": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_5": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]}
             }
         }
     },
     "Focused": {
         "module_recipes": {
             "Burst Laser": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_4": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]},
+                "grade_5": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
             },
             "Plasma Accelerator": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Zacariah Nemo"]},
+                "grade_2": {"cost": {}, "engineers": ["Zacariah Nemo"]},
+                "grade_3": {"cost": {}, "engineers": ["Bill Turner"]},
+                "grade_4": {"cost": {}, "engineers": ["Bill Turner"]},
+                "grade_5": {"cost": {}, "engineers": ["Bill Turner", "Etienne Dorn"]}
             },
             "Pulse Laser": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_4": {"cost": {}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]},
+                "grade_5": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
             }
         }
     },
     "Rapid fire": {
         "module_recipes": {
             "Burst Laser": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_4": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]},
+                "grade_5": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
             },
             "Cannon": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_3": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_4": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_5": {"cost": {}, "engineers": ["The Sarge", "Marsha Hicks"]}
             },
             "Fragment Cannon": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_3": {"cost": {}, "engineers": ["Zacariah Nemo"]},
+                "grade_4": {"cost": {}, "engineers": ["Zacariah Nemo"]},
+                "grade_5": {"cost": {}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]}
             },
             "Mine Launcher": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_2": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_3": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_4": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_5": {"cost": {}, "engineers": ["Juri Ishmaak", "Petra Olmanova"]}
             },
             "Missile Rack": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_4": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_5": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]}
             },
             "Multi-cannon": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
+                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
+                "grade_3": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
+                "grade_4": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]},
+                "grade_5": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]}
             },
             "Plasma Accelerator": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Zacariah Nemo"]},
+                "grade_2": {"cost": {}, "engineers": ["Zacariah Nemo"]},
+                "grade_3": {"cost": {}, "engineers": ["Bill Turner"]},
+                "grade_4": {"cost": {}, "engineers": ["Bill Turner"]},
+                "grade_5": {"cost": {}, "engineers": ["Bill Turner", "Etienne Dorn"]}
             },
             "Pulse Laser": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_4": {"cost": {}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]},
+                "grade_5": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
             },
             "Seeker Missile Rack": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_4": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_5": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]}
             }
         }
     },
     "High capacity": {
         "module_recipes": {
             "Cannon": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_3": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_4": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_5": {"cost": {}, "engineers": ["The Sarge", "Marsha Hicks"]}
             },
             "Fragment Cannon": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_3": {"cost": {}, "engineers": ["Zacariah Nemo"]},
+                "grade_4": {"cost": {}, "engineers": ["Zacariah Nemo"]},
+                "grade_5": {"cost": {}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]}
             },
             "Mine Launcher": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_2": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_3": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_4": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_5": {"cost": {}, "engineers": ["Juri Ishmaak", "Petra Olmanova"]}
             },
             "Missile Rack": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_4": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_5": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]}
             },
             "Multi-cannon": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
+                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
+                "grade_3": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
+                "grade_4": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]},
+                "grade_5": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]}
             },
             "Rail Gun": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_2": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_3": {"cost": {}, "engineers": ["The Sarge"]},
+                "grade_4": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_5": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Etienne Dorn"]}
             },
             "Seeker Missile Rack": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_4": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_5": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]}
             },
             "Power Distributor": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_4": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_5": {"cost": {}, "engineers": ["The Dweller"]}
             }
         }
     },
     "Double shot": {
         "module_recipes": {
             "Fragment Cannon": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_3": {"cost": {}, "engineers": ["Zacariah Nemo"]},
+                "grade_4": {"cost": {}, "engineers": ["Zacariah Nemo"]},
+                "grade_5": {"cost": {}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]}
             }
         }
     },
@@ -1784,28 +1872,32 @@ ENGINEERING_MODIFICATIONS = {
     "Ammo capacity": {
         "module_recipes": {
             "Caustic Sink Launcher": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_2": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_3": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_4": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_5": {"cost": {}, "engineers": ["Ram Tah"]}
             },
             "Chaff Launcher": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_4": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_5": {"cost": {}, "engineers": ["Juri Ishmaak"]}
             },
             "Heat Sink Launcher": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_2": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_3": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_4": {"cost": {}, "engineers": ["Ram Tah"]},
+                "grade_5": {"cost": {}, "engineers": ["Ram Tah"]}
             },
             "Point Defence": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_4": {"cost": {}, "engineers": ["Juri Ishmaak"]},
+                "grade_5": {"cost": {}, "engineers": ["Juri Ishmaak"]}
             }
         }
     },
@@ -2018,310 +2110,347 @@ ENGINEERING_MODIFICATIONS = {
     "Fast scan": {
         "module_recipes": {
             "Frame Shift Wake Scanner": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Tiana Fortune"]},
+                "grade_2": {"cost": {}, "engineers": ["Tiana Fortune"]},
+                "grade_3": {"cost": {}, "engineers": ["Tiana Fortune"]},
+                "grade_4": {"cost": {}, "engineers": ["Tiana Fortune"]},
+                "grade_5": {"cost": {}, "engineers": ["Tiana Fortune"]}
             },
             "Kill Warrant Scanner": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Lori Jameson"]},
+                "grade_2": {"cost": {}, "engineers": ["Lori Jameson"]},
+                "grade_3": {"cost": {}, "engineers": ["Lori Jameson"]},
+                "grade_4": {"cost": {}, "engineers": ["Lori Jameson"]},
+                "grade_5": {"cost": {}, "engineers": ["Lori Jameson"]}
             },
             "Manifest Scanner": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Lori Jameson"]},
+                "grade_2": {"cost": {}, "engineers": ["Lori Jameson"]},
+                "grade_3": {"cost": {}, "engineers": ["Lori Jameson"]},
+                "grade_4": {"cost": {}, "engineers": ["Lori Jameson"]},
+                "grade_5": {"cost": {}, "engineers": ["Lori Jameson"]}
             }
         }
     },
     "Wide angle": {
         "module_recipes": {
             "Frame Shift Wake Scanner": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Tiana Fortune"]},
+                "grade_2": {"cost": {}, "engineers": ["Tiana Fortune"]},
+                "grade_3": {"cost": {}, "engineers": ["Tiana Fortune"]},
+                "grade_4": {"cost": {}, "engineers": ["Tiana Fortune"]},
+                "grade_5": {"cost": {}, "engineers": ["Tiana Fortune"]}
             },
             "Kill Warrant Scanner": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Lori Jameson"]},
+                "grade_2": {"cost": {}, "engineers": ["Lori Jameson"]},
+                "grade_3": {"cost": {}, "engineers": ["Lori Jameson"]},
+                "grade_4": {"cost": {}, "engineers": ["Lori Jameson"]},
+                "grade_5": {"cost": {}, "engineers": ["Lori Jameson"]}
             },
             "Manifest Scanner": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Lori Jameson"]},
+                "grade_2": {"cost": {}, "engineers": ["Lori Jameson"]},
+                "grade_3": {"cost": {}, "engineers": ["Lori Jameson"]},
+                "grade_4": {"cost": {}, "engineers": ["Lori Jameson"]},
+                "grade_5": {"cost": {}, "engineers": ["Lori Jameson"]}
             },
             "Sensors": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Felicity Farseer"]},
+                "grade_2": {"cost": {}, "engineers": ["Felicity Farseer"]},
+                "grade_3": {"cost": {}, "engineers": ["Felicity Farseer"]},
+                "grade_4": {"cost": {}, "engineers": ["Lori Jameson"]},
+                "grade_5": {"cost": {}, "engineers": ["Lori Jameson"]}
             }
         }
     },
     "Blast resistant": {
         "module_recipes": {
             "Shield Booster": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Didi Vatermann"]},
+                "grade_2": {"cost": {}, "engineers": ["Didi Vatermann"]},
+                "grade_3": {"cost": {}, "engineers": ["Didi Vatermann"]},
+                "grade_4": {"cost": {}, "engineers": ["Lei Cheung"]},
+                "grade_5": {"cost": {}, "engineers": ["Lei Cheung"]}
             },
             "Hull Reinforcement Package": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_2": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_3": {"cost": {}, "engineers": ["Petra Olmanova"]},
+                "grade_4": {"cost": {}, "engineers": ["Petra Olmanova"]},
+                "grade_5": {"cost": {}, "engineers": ["Petra Olmanova"]}
             },
             "Armour": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_2": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_3": {"cost": {}, "engineers": ["Petra Olmanova"]},
+                "grade_4": {"cost": {}, "engineers": ["Petra Olmanova"]},
+                "grade_5": {"cost": {}, "engineers": ["Petra Olmanova"]}
             }
         }
     },
     "Heavy duty": {
         "module_recipes": {
             "Shield Booster": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Didi Vatermann"]},
+                "grade_2": {"cost": {}, "engineers": ["Didi Vatermann"]},
+                "grade_3": {"cost": {}, "engineers": ["Didi Vatermann"]},
+                "grade_4": {"cost": {}, "engineers": ["Lei Cheung"]},
+                "grade_5": {"cost": {}, "engineers": ["Lei Cheung"]}
             },
             "Hull Reinforcement Package": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_2": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_3": {"cost": {}, "engineers": ["Petra Olmanova"]},
+                "grade_4": {"cost": {}, "engineers": ["Petra Olmanova"]},
+                "grade_5": {"cost": {}, "engineers": ["Petra Olmanova"]}
             },
             "Armour": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_2": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_3": {"cost": {}, "engineers": ["Petra Olmanova"]},
+                "grade_4": {"cost": {}, "engineers": ["Petra Olmanova"]},
+                "grade_5": {"cost": {}, "engineers": ["Petra Olmanova"]}
             }
         }
     },
     "Kinetic resistant": {
         "module_recipes": {
             "Shield Booster": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Didi Vatermann"]},
+                "grade_2": {"cost": {}, "engineers": ["Didi Vatermann"]},
+                "grade_3": {"cost": {}, "engineers": ["Didi Vatermann"]},
+                "grade_4": {"cost": {}, "engineers": ["Lei Cheung"]},
+                "grade_5": {"cost": {}, "engineers": ["Lei Cheung"]}
             },
             "Hull Reinforcement Package": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_2": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_3": {"cost": {}, "engineers": ["Petra Olmanova"]},
+                "grade_4": {"cost": {}, "engineers": ["Petra Olmanova"]},
+                "grade_5": {"cost": {}, "engineers": ["Petra Olmanova"]}
             },
             "Shield Generator": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Elvira Martuuk"]},
+                "grade_2": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
+                "grade_3": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
+                "grade_4": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
+                "grade_5": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]}
             },
             "Armour": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_2": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_3": {"cost": {}, "engineers": ["Petra Olmanova"]},
+                "grade_4": {"cost": {}, "engineers": ["Petra Olmanova"]},
+                "grade_5": {"cost": {}, "engineers": ["Petra Olmanova"]}
             }
         }
     },
     "Resistance augmented": {
         "module_recipes": {
             "Shield Booster": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Didi Vatermann"]},
+                "grade_2": {"cost": {}, "engineers": ["Didi Vatermann"]},
+                "grade_3": {"cost": {}, "engineers": ["Didi Vatermann"]},
+                "grade_4": {"cost": {}, "engineers": ["Lei Cheung"]},
+                "grade_5": {"cost": {}, "engineers": ["Lei Cheung"]}
             }
         }
     },
     "Thermal resistant": {
         "module_recipes": {
             "Shield Booster": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Didi Vatermann"]},
+                "grade_2": {"cost": {}, "engineers": ["Didi Vatermann"]},
+                "grade_3": {"cost": {}, "engineers": ["Didi Vatermann"]},
+                "grade_4": {"cost": {}, "engineers": ["Lei Cheung"]},
+                "grade_5": {"cost": {}, "engineers": ["Lei Cheung"]}
             },
             "Hull Reinforcement Package": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_2": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_3": {"cost": {}, "engineers": ["Petra Olmanova"]},
+                "grade_4": {"cost": {}, "engineers": ["Petra Olmanova"]},
+                "grade_5": {"cost": {}, "engineers": ["Petra Olmanova"]}
             },
             "Shield Generator": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Elvira Martuuk"]},
+                "grade_2": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
+                "grade_3": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
+                "grade_4": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
+                "grade_5": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]}
             },
             "Armour": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_2": {"cost": {}, "engineers": ["Liz Ryder"]},
+                "grade_3": {"cost": {}, "engineers": ["Petra Olmanova"]},
+                "grade_4": {"cost": {}, "engineers": ["Petra Olmanova"]},
+                "grade_5": {"cost": {}, "engineers": ["Petra Olmanova"]}
             }
         }
     },
     "Expanded probe scanning radius": {
         "module_recipes": {
             "Detailed Surface Scanner": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Felicity Farseer", "Juri Ishmaak", "Tiana Fortune", "Bill Turner", "Lori Jameson", "Etienne Dorn"]},
+                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak", "Tiana Fortune", "Bill Turner", "Lori Jameson", "Etienne Dorn"]},
+                "grade_3": {"cost": {}, "engineers": ["Felicity Farseer", "Juri Ishmaak", "Tiana Fortune", "Bill Turner", "Lori Jameson", "Etienne Dorn"]},
+                "grade_4": {"cost": {}, "engineers": ["Lei Cheung", "Hera Tani", "Bill Turner", "Lori Jameson", "Etienne Dorn"]},
+                "grade_5": {"cost": {}, "engineers": ["Lei Cheung", "Hera Tani", "Juri Ishmaak", "Tiana Fortune", "Bill Turner", "Lori Jameson", "Etienne Dorn"]}
             }
         }
     },
     "Expanded capture arc": {
         "module_recipes": {
             "Frame Shift Drive Interdictor": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Felicity Farseer"]},
+                "grade_2": {"cost": {}, "engineers": ["Tiana Fortune"]},
+                "grade_3": {"cost": {}, "engineers": ["Tiana Fortune"]},
+                "grade_4": {"cost": {}, "engineers": ["Colonel Bris Dekker"]},
+                "grade_5": {"cost": {}, "engineers": ["Mel Brandon"]}
             }
         }
     },
     "Rapid charge": {
         "module_recipes": {
             "Shield Cell Bank": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Elvira Martuuk"]},
+                "grade_2": {"cost": {}, "engineers": ["Lori Jameson"]},
+                "grade_3": {"cost": {}, "engineers": ["Lori Jameson"]},
+                "grade_4": {"cost": {}, "engineers": ["Mel Brandon"]},
+                "grade_5": {"cost": {}, "engineers": ["Mel Brandon"]}
             }
         }
     },
     "Specialised": {
         "module_recipes": {
             "Shield Cell Bank": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Elvira Martuuk"]},
+                "grade_2": {"cost": {}, "engineers": ["Lori Jameson"]},
+                "grade_3": {"cost": {}, "engineers": ["Lori Jameson"]},
+                "grade_4": {"cost": {}, "engineers": ["Mel Brandon"]},
+                "grade_5": {"cost": {}, "engineers": ["Mel Brandon"]}
             }
         }
     },
     "Enhanced low power": {
         "module_recipes": {
             "Shield Generator": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Elvira Martuuk"]},
+                "grade_2": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
+                "grade_3": {"cost": {}, "engineers": ["Elvira Martuuk", "Didi Vatermann", "Lei Cheung"]},
+                "grade_4": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
+                "grade_5": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung", "Mel Brandon"]}
             }
         }
     },
     "Faster boot sequence": {
         "module_recipes": {
             "Frame Shift Drive": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Colonel Bris Dekker", "Professor Palin", "Chloe Sedesi"]},
+                "grade_2": {"cost": {}, "engineers": ["Elvira Martuuk", "Colonel Bris Dekker", "Professor Palin", "Chloe Sedesi"]},
+                "grade_3": {"cost": {}, "engineers": ["Elvira Martuuk", "Colonel Bris Dekker", "Professor Palin", "Chloe Sedesi"]},
+                "grade_4": {"cost": {}, "engineers": ["Felicity Farseer", "Elvira Martuuk"]},
+                "grade_5": {"cost": {}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Mel Brandon"]}
             }
         }
     },
     "Increased range": {
         "module_recipes": {
             "Frame Shift Drive": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Colonel Bris Dekker", "Professor Palin", "Chloe Sedesi"]},
+                "grade_2": {"cost": {}, "engineers": ["Elvira Martuuk", "Colonel Bris Dekker", "Professor Palin", "Chloe Sedesi"]},
+                "grade_3": {"cost": {}, "engineers": ["Elvira Martuuk", "Colonel Bris Dekker", "Professor Palin", "Chloe Sedesi"]},
+                "grade_4": {"cost": {}, "engineers": ["Felicity Farseer", "Elvira Martuuk"]},
+                "grade_5": {"cost": {}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Mel Brandon"]}
             }
         }
     },
     "Charge enhanced": {
         "module_recipes": {
             "Power Distributor": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_4": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_5": {"cost": {}, "engineers": ["The Dweller"]}
             }
         }
     },
     "Engine focused": {
         "module_recipes": {
             "Power Distributor": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_4": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_5": {"cost": {}, "engineers": ["The Dweller"]}
             }
         }
     },
     "System focused": {
         "module_recipes": {
             "Power Distributor": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_4": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_5": {"cost": {}, "engineers": ["The Dweller"]}
             }
         }
     },
     "Weapon focused": {
         "module_recipes": {
             "Power Distributor": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_4": {"cost": {}, "engineers": ["The Dweller"]},
+                "grade_5": {"cost": {}, "engineers": ["The Dweller"]}
             }
         }
     },
     "Armoured": {
         "module_recipes": {
             "Power Plant": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Felicity Farseer"]},
+                "grade_2": {"cost": {}, "engineers": ["Marco Qwent"]},
+                "grade_3": {"cost": {}, "engineers": ["Marco Qwent", "Hera Tani"]},
+                "grade_4": {"cost": {}, "engineers": ["Marco Qwent", "Hera Tani"]},
+                "grade_5": {"cost": {}, "engineers": ["Hera Tani", "Etienne Dorn"]}
             }
         }
     },
     "Low emissions": {
         "module_recipes": {
             "Power Plant": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Felicity Farseer"]},
+                "grade_2": {"cost": {}, "engineers": ["Marco Qwent"]},
+                "grade_3": {"cost": {}, "engineers": ["Marco Qwent", "Hera Tani"]},
+                "grade_4": {"cost": {}, "engineers": ["Marco Qwent", "Hera Tani"]},
+                "grade_5": {"cost": {}, "engineers": ["Hera Tani", "Etienne Dorn"]}
             }
         }
     },
     "Clean": {
         "module_recipes": {
             "Thrusters": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Felicity Farseer"]},
+                "grade_2": {"cost": {}, "engineers": ["Elvira Martuuk"]},
+                "grade_3": {"cost": {}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Professor Palin"]},
+                "grade_4": {"cost": {}, "engineers": ["Professor Palin", "Mel Brandon", "Chloe Sedesi"]},
+                "grade_5": {"cost": {}, "engineers": ["Professor Palin", "Mel Brandon", "Chloe Sedesi"]}
             }
         }
     },
     "Dirty": {
         "module_recipes": {
             "Thrusters": {
-                "grade_1": {
-                    "cost": {},
-                    "engineers": []
-                }
+                "grade_1": {"cost": {}, "engineers": ["Felicity Farseer"]},
+                "grade_2": {"cost": {}, "engineers": ["Elvira Martuuk"]},
+                "grade_3": {"cost": {}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Professor Palin"]},
+                "grade_4": {"cost": {}, "engineers": ["Professor Palin", "Mel Brandon", "Chloe Sedesi"]},
+                "grade_5": {"cost": {}, "engineers": ["Professor Palin", "Mel Brandon", "Chloe Sedesi"]}
             }
         }
     }
