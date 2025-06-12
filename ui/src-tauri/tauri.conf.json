@@ -19,9 +19,6 @@
       }
     ],
     "security": {
-      "csp": {
-        "connect-src": "'self' https://*.covaslabs.com"
-      },
       "capabilities": [
         "default",
         "overlay",
