@@ -1529,317 +1529,278 @@ ENGINEERING_MODIFICATIONS = {
     "Sturdy": {
         "module_recipes": {
             "Beam Laser": {
-                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
-                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
-                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
-                "grade_4": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]},
-                "grade_5": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
+                "grade_1": {"cost": {"Nickel": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                "grade_2": {"cost": {"Nickel": 1, "Shield Emitters": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                "grade_3": {"cost": {"Nickel": 1, "Shield Emitters": 1, "Tungsten": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                "grade_4": {"cost": {"Molybdenum": 1, "Tungsten": 1, "Zinc": 1}, "engineers": ["Broo Tarquin"]},
+                "grade_5": {"cost": {"High Density Composites": 1, "Molybdenum": 1, "Technetium": 1}, "engineers": ["Broo Tarquin"]}
             },
             "Burst Laser": {
-                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
-                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
-                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
-                "grade_4": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]},
-                "grade_5": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
+                "grade_1": {"cost": {"Nickel": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                "grade_2": {"cost": {"Nickel": 1, "Shield Emitters": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                "grade_3": {"cost": {"Nickel": 1, "Shield Emitters": 1, "Tungsten": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                "grade_4": {"cost": {"Molybdenum": 1, "Tungsten": 1, "Zinc": 1}, "engineers": ["Broo Tarquin"]},
+                "grade_5": {"cost": {"High Density Composites": 1, "Molybdenum": 1, "Technetium": 1}, "engineers": ["Broo Tarquin"]}
             },
             "Cannon": {
-                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
-                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
-                "grade_3": {"cost": {}, "engineers": ["The Sarge"]},
-                "grade_4": {"cost": {}, "engineers": ["The Sarge"]},
-                "grade_5": {"cost": {}, "engineers": ["The Sarge", "Marsha Hicks"]}
+                "grade_1": {"cost": {"Nickel": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "The Sarge", "Marsha Hicks"]},
+                "grade_2": {"cost": {"Nickel": 1, "Shield Emitters": 1}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_3": {"cost": {"Nickel": 1, "Shield Emitters": 1, "Tungsten": 1}, "engineers": ["The Sarge", "Marsha Hicks"]},
+                "grade_4": {"cost": {"Molybdenum": 1, "Tungsten": 1, "Zinc": 1}, "engineers": ["The Sarge", "Marsha Hicks"]},
+                "grade_5": {"cost": {"High Density Composites": 1, "Molybdenum": 1, "Technetium": 1}, "engineers": ["The Sarge", "Marsha Hicks"]}
             },
             "Fragment Cannon": {
-                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
-                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
-                "grade_3": {"cost": {}, "engineers": ["Zacariah Nemo"]},
-                "grade_4": {"cost": {}, "engineers": ["Zacariah Nemo"]},
-                "grade_5": {"cost": {}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]}
+                "grade_1": {"cost": {"Nickel": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                "grade_2": {"cost": {"Nickel": 1, "Shield Emitters": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                "grade_3": {"cost": {"Nickel": 1, "Shield Emitters": 1, "Tungsten": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                "grade_4": {"cost": {"Molybdenum": 1, "Tungsten": 1, "Zinc": 1}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]},
+                "grade_5": {"cost": {"High Density Composites": 1, "Molybdenum": 1, "Technetium": 1}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]}
             },
             "Mine Launcher": {
-                "grade_1": {"cost": {}, "engineers": ["Liz Ryder"]},
-                "grade_2": {"cost": {}, "engineers": ["Liz Ryder"]},
-                "grade_3": {"cost": {}, "engineers": ["Liz Ryder"]},
-                "grade_4": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_5": {"cost": {}, "engineers": ["Juri Ishmaak", "Petra Olmanova"]}
+                "grade_1": {"cost": {"Nickel": 1}, "engineers": ["Liz Ryder", "Juri Ishmaak", "Petra Olmanova"]},
+                "grade_2": {"cost": {"Nickel": 1, "Shield Emitters": 1}, "engineers": ["Liz Ryder", "Juri Ishmaak", "Petra Olmanova"]},
+                "grade_3": {"cost": {"Nickel": 1, "Shield Emitters": 1, "Tungsten": 1}, "engineers": ["Liz Ryder", "Juri Ishmaak", "Petra Olmanova"]},
+                "grade_4": {"cost": {"Molybdenum": 1, "Tungsten": 1, "Zinc": 1}, "engineers": ["Juri Ishmaak", "Petra Olmanova"]},
+                "grade_5": {"cost": {"High Density Composites": 1, "Molybdenum": 1, "Technetium": 1}, "engineers": ["Juri Ishmaak", "Petra Olmanova"]}
             },
             "Missile Rack": {
-                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_4": {"cost": {}, "engineers": ["Liz Ryder"]},
-                "grade_5": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]}
+                "grade_1": {"cost": {"Nickel": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
+                "grade_2": {"cost": {"Nickel": 1, "Shield Emitters": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
+                "grade_3": {"cost": {"Nickel": 1, "Shield Emitters": 1, "Tungsten": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
+                "grade_4": {"cost": {"Molybdenum": 1, "Tungsten": 1, "Zinc": 1}, "engineers": ["Liz Ryder", "Petra Olmanova"]},
+                "grade_5": {"cost": {"High Density Composites": 1, "Molybdenum": 1, "Technetium": 1}, "engineers": ["Liz Ryder", "Petra Olmanova"]}
             },
             "Multi-cannon": {
-                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
-                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
-                "grade_3": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
-                "grade_4": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]},
-                "grade_5": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]}
+                "grade_1": {"cost": {"Nickel": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                "grade_2": {"cost": {"Nickel": 1, "Shield Emitters": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                "grade_3": {"cost": {"Nickel": 1, "Shield Emitters": 1, "Tungsten": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                "grade_4": {"cost": {"Molybdenum": 1, "Tungsten": 1, "Zinc": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]},
+                "grade_5": {"cost": {"High Density Composites": 1, "Molybdenum": 1, "Technetium": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]}
             },
             "Plasma Accelerator": {
-                "grade_1": {"cost": {}, "engineers": ["Zacariah Nemo"]},
-                "grade_2": {"cost": {}, "engineers": ["Zacariah Nemo"]},
-                "grade_3": {"cost": {}, "engineers": ["Bill Turner"]},
-                "grade_4": {"cost": {}, "engineers": ["Bill Turner"]},
-                "grade_5": {"cost": {}, "engineers": ["Bill Turner", "Etienne Dorn"]}
+                "grade_1": {"cost": {"Nickel": 1}, "engineers": ["Zacariah Nemo", "Bill Turner"]},
+                "grade_2": {"cost": {"Nickel": 1, "Shield Emitters": 1}, "engineers": ["Zacariah Nemo"]},
+                "grade_3": {"cost": {"Nickel": 1, "Shield Emitters": 1, "Tungsten": 1}, "engineers": ["Bill Turner"]},
+                "grade_4": {"cost": {"Molybdenum": 1, "Tungsten": 1, "Zinc": 1}, "engineers": ["Bill Turner"]},
+                "grade_5": {"cost": {"High Density Composites": 1, "Molybdenum": 1, "Technetium": 1}, "engineers": ["Bill Turner"]}
             },
             "Pulse Laser": {
-                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
-                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
-                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
-                "grade_4": {"cost": {}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]},
-                "grade_5": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
+                "grade_1": {"cost": {"Nickel": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                "grade_2": {"cost": {"Nickel": 1, "Shield Emitters": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                "grade_3": {"cost": {"Nickel": 1, "Shield Emitters": 1, "Tungsten": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                "grade_4": {"cost": {"Molybdenum": 1, "Tungsten": 1, "Zinc": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                "grade_5": {"cost": {"High Density Composites": 1, "Molybdenum": 1, "Technetium": 1}, "engineers": ["Broo Tarquin"]}
             },
             "Rail Gun": {
-                "grade_1": {"cost": {}, "engineers": ["The Sarge"]},
-                "grade_2": {"cost": {}, "engineers": ["The Sarge"]},
-                "grade_3": {"cost": {}, "engineers": ["The Sarge"]},
-                "grade_4": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
-                "grade_5": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Etienne Dorn"]}
+                "grade_1": {"cost": {"Nickel": 1}, "engineers": ["The Sarge", "Tod 'The Blaster' McQuinn"]},
+                "grade_2": {"cost": {"Nickel": 1, "Shield Emitters": 1}, "engineers": ["The Sarge", "Tod 'The Blaster' McQuinn"]},
+                "grade_3": {"cost": {"Nickel": 1, "Shield Emitters": 1, "Tungsten": 1}, "engineers": ["The Sarge"]},
+                "grade_4": {"cost": {"Molybdenum": 1, "Tungsten": 1, "Zinc": 1}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_5": {"cost": {"High Density Composites": 1, "Molybdenum": 1, "Technetium": 1}, "engineers": ["Tod 'The Blaster' McQuinn"]}
             },
             "Seeker Missile Rack": {
-                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_4": {"cost": {}, "engineers": ["Liz Ryder"]},
-                "grade_5": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]}
+                "grade_1": {"cost": {"Nickel": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
+                "grade_2": {"cost": {"Nickel": 1, "Shield Emitters": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
+                "grade_3": {"cost": {"Nickel": 1, "Shield Emitters": 1, "Tungsten": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
+                "grade_4": {"cost": {"Molybdenum": 1, "Tungsten": 1, "Zinc": 1}, "engineers": ["Liz Ryder", "Petra Olmanova"]},
+                "grade_5": {"cost": {"High Density Composites": 1, "Molybdenum": 1, "Technetium": 1}, "engineers": ["Liz Ryder", "Petra Olmanova"]}
             },
             "Torpedo Pylon": {
-                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_4": {"cost": {}, "engineers": ["Liz Ryder"]},
-                "grade_5": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]}
+                "grade_1": {"cost": {"Nickel": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
+                "grade_2": {"cost": {"Nickel": 1, "Shield Emitters": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
+                "grade_3": {"cost": {"Nickel": 1, "Shield Emitters": 1, "Tungsten": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
+                "grade_4": {"cost": {"Molybdenum": 1, "Tungsten": 1, "Zinc": 1}, "engineers": ["Liz Ryder", "Petra Olmanova"]},
+                "grade_5": {"cost": {"High Density Composites": 1, "Molybdenum": 1, "Technetium": 1}, "engineers": ["Liz Ryder", "Petra Olmanova"]}
             }
         }
     },
     "Focused": {
         "module_recipes": {
             "Burst Laser": {
-                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
-                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
-                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
-                "grade_4": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]},
-                "grade_5": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
+                "grade_1": {"cost": {"Iron": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                "grade_2": {"cost": {"Conductive Components": 1, "Iron": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                "grade_3": {"cost": {"Chromium": 1, "Conductive Ceramics": 1, "Iron": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                "grade_4": {"cost": {"Focus Crystals": 1, "Germanium": 1, "Polymer Capacitors": 1}, "engineers": ["Broo Tarquin"]},
+                "grade_5": {"cost": {"Military Supercapacitors": 1, "Niobium": 1, "Refined Focus Crystals": 1}, "engineers": ["Broo Tarquin"]}
             },
             "Plasma Accelerator": {
-                "grade_1": {"cost": {}, "engineers": ["Zacariah Nemo"]},
-                "grade_2": {"cost": {}, "engineers": ["Zacariah Nemo"]},
-                "grade_3": {"cost": {}, "engineers": ["Bill Turner"]},
-                "grade_4": {"cost": {}, "engineers": ["Bill Turner"]},
-                "grade_5": {"cost": {}, "engineers": ["Bill Turner", "Etienne Dorn"]}
+                "grade_1": {"cost": {"Iron": 1}, "engineers": ["Zacariah Nemo", "Bill Turner"]},
+                "grade_2": {"cost": {"Conductive Components": 1, "Iron": 1}, "engineers": ["Zacariah Nemo"]},
+                "grade_3": {"cost": {"Chromium": 1, "Conductive Ceramics": 1, "Iron": 1}, "engineers": ["Bill Turner"]},
+                "grade_4": {"cost": {"Focus Crystals": 1, "Germanium": 1, "Polymer Capacitors": 1}, "engineers": ["Bill Turner"]},
+                "grade_5": {"cost": {"Military Supercapacitors": 1, "Niobium": 1, "Refined Focus Crystals": 1}, "engineers": ["Bill Turner"]}
             },
             "Pulse Laser": {
-                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
-                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
-                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
-                "grade_4": {"cost": {}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]},
-                "grade_5": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
+                "grade_1": {"cost": {"Iron": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                "grade_2": {"cost": {"Conductive Components": 1, "Iron": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                "grade_3": {"cost": {"Chromium": 1, "Conductive Ceramics": 1, "Iron": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                "grade_4": {"cost": {"Focus Crystals": 1, "Germanium": 1, "Polymer Capacitors": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                "grade_5": {"cost": {"Military Supercapacitors": 1, "Niobium": 1, "Refined Focus Crystals": 1}, "engineers": ["Broo Tarquin"]}
             }
         }
     },
     "Rapid fire": {
         "module_recipes": {
             "Burst Laser": {
-                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
-                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
-                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
-                "grade_4": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]},
-                "grade_5": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
+                "grade_1": {"cost": {"Mechanical Scrap": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                "grade_2": {"cost": {"Heat Dispersion Plate": 1, "Mechanical Scrap": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                "grade_3": {"cost": {"Mechanical Equipment": 1, "Precipitated Alloys": 1, "Specialised Legacy Firmware": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                "grade_4": {"cost": {"Mechanical Components": 1, "Modified Consumer Firmware": 1, "Thermic Alloys": 1}, "engineers": ["Broo Tarquin"]},
+                "grade_5": {"cost": {"Configurable Components": 1, "Precipitated Alloys": 1, "Technetium": 1}, "engineers": ["Broo Tarquin"]}
             },
             "Cannon": {
-                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
-                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
-                "grade_3": {"cost": {}, "engineers": ["The Sarge"]},
-                "grade_4": {"cost": {}, "engineers": ["The Sarge"]},
-                "grade_5": {"cost": {}, "engineers": ["The Sarge", "Marsha Hicks"]}
+                "grade_1": {"cost": {"Mechanical Scrap": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "The Sarge", "Marsha Hicks"]},
+                "grade_2": {"cost": {"Heat Dispersion Plate": 1, "Mechanical Scrap": 1}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_3": {"cost": {"Mechanical Equipment": 1, "Precipitated Alloys": 1, "Specialised Legacy Firmware": 1}, "engineers": ["The Sarge", "Marsha Hicks"]},
+                "grade_4": {"cost": {"Mechanical Components": 1, "Modified Consumer Firmware": 1, "Thermic Alloys": 1}, "engineers": ["The Sarge", "Marsha Hicks"]},
+                "grade_5": {"cost": {"Configurable Components": 1, "Precipitated Alloys": 1, "Technetium": 1}, "engineers": ["The Sarge", "Marsha Hicks"]}
             },
             "Fragment Cannon": {
-                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
-                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
-                "grade_3": {"cost": {}, "engineers": ["Zacariah Nemo"]},
-                "grade_4": {"cost": {}, "engineers": ["Zacariah Nemo"]},
-                "grade_5": {"cost": {}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]}
+                "grade_1": {"cost": {"Mechanical Scrap": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                "grade_2": {"cost": {"Heat Dispersion Plate": 1, "Mechanical Scrap": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                "grade_3": {"cost": {"Mechanical Equipment": 1, "Precipitated Alloys": 1, "Specialised Legacy Firmware": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                "grade_4": {"cost": {"Mechanical Components": 1, "Modified Consumer Firmware": 1, "Thermic Alloys": 1}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]},
+                "grade_5": {"cost": {"Configurable Components": 1, "Precipitated Alloys": 1, "Technetium": 1}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]}
             },
             "Mine Launcher": {
-                "grade_1": {"cost": {}, "engineers": ["Liz Ryder"]},
-                "grade_2": {"cost": {}, "engineers": ["Liz Ryder"]},
-                "grade_3": {"cost": {}, "engineers": ["Liz Ryder"]},
-                "grade_4": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_5": {"cost": {}, "engineers": ["Juri Ishmaak", "Petra Olmanova"]}
+                "grade_1": {"cost": {"Mechanical Scrap": 1}, "engineers": ["Liz Ryder", "Juri Ishmaak", "Petra Olmanova"]},
+                "grade_2": {"cost": {"Heat Dispersion Plate": 1, "Mechanical Scrap": 1}, "engineers": ["Liz Ryder", "Juri Ishmaak", "Petra Olmanova"]},
+                "grade_3": {"cost": {"Mechanical Equipment": 1, "Precipitated Alloys": 1, "Specialised Legacy Firmware": 1}, "engineers": ["Liz Ryder", "Juri Ishmaak", "Petra Olmanova"]},
+                "grade_4": {"cost": {"Mechanical Components": 1, "Modified Consumer Firmware": 1, "Thermic Alloys": 1}, "engineers": ["Juri Ishmaak", "Petra Olmanova"]},
+                "grade_5": {"cost": {"Configurable Components": 1, "Precipitated Alloys": 1, "Technetium": 1}, "engineers": ["Juri Ishmaak", "Petra Olmanova"]}
             },
             "Missile Rack": {
-                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_4": {"cost": {}, "engineers": ["Liz Ryder"]},
-                "grade_5": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]}
+                "grade_1": {"cost": {"Mechanical Scrap": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
+                "grade_2": {"cost": {"Heat Dispersion Plate": 1, "Mechanical Scrap": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
+                "grade_3": {"cost": {"Mechanical Equipment": 1, "Precipitated Alloys": 1, "Specialised Legacy Firmware": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
+                "grade_4": {"cost": {"Mechanical Components": 1, "Modified Consumer Firmware": 1, "Thermic Alloys": 1}, "engineers": ["Liz Ryder", "Petra Olmanova"]},
+                "grade_5": {"cost": {"Configurable Components": 1, "Precipitated Alloys": 1, "Technetium": 1}, "engineers": ["Liz Ryder", "Petra Olmanova"]}
             },
             "Multi-cannon": {
-                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
-                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
-                "grade_3": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
-                "grade_4": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]},
-                "grade_5": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]}
+                "grade_1": {"cost": {"Mechanical Scrap": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                "grade_2": {"cost": {"Heat Dispersion Plate": 1, "Mechanical Scrap": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                "grade_3": {"cost": {"Mechanical Equipment": 1, "Precipitated Alloys": 1, "Specialised Legacy Firmware": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                "grade_4": {"cost": {"Mechanical Components": 1, "Modified Consumer Firmware": 1, "Thermic Alloys": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]},
+                "grade_5": {"cost": {"Configurable Components": 1, "Precipitated Alloys": 1, "Technetium": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]}
             },
             "Plasma Accelerator": {
-                "grade_1": {"cost": {}, "engineers": ["Zacariah Nemo"]},
-                "grade_2": {"cost": {}, "engineers": ["Zacariah Nemo"]},
-                "grade_3": {"cost": {}, "engineers": ["Bill Turner"]},
-                "grade_4": {"cost": {}, "engineers": ["Bill Turner"]},
-                "grade_5": {"cost": {}, "engineers": ["Bill Turner", "Etienne Dorn"]}
+                "grade_1": {"cost": {"Mechanical Scrap": 1}, "engineers": ["Zacariah Nemo", "Bill Turner"]},
+                "grade_2": {"cost": {"Heat Dispersion Plate": 1, "Mechanical Scrap": 1}, "engineers": ["Zacariah Nemo"]},
+                "grade_3": {"cost": {"Mechanical Equipment": 1, "Precipitated Alloys": 1, "Specialised Legacy Firmware": 1}, "engineers": ["Bill Turner"]},
+                "grade_4": {"cost": {"Mechanical Components": 1, "Modified Consumer Firmware": 1, "Thermic Alloys": 1}, "engineers": ["Bill Turner"]},
+                "grade_5": {"cost": {"Configurable Components": 1, "Precipitated Alloys": 1, "Technetium": 1}, "engineers": ["Bill Turner"]}
             },
             "Pulse Laser": {
-                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
-                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
-                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
-                "grade_4": {"cost": {}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]},
-                "grade_5": {"cost": {}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
+                "grade_1": {"cost": {"Mechanical Scrap": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                "grade_2": {"cost": {"Heat Dispersion Plate": 1, "Mechanical Scrap": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                "grade_3": {"cost": {"Mechanical Equipment": 1, "Precipitated Alloys": 1, "Specialised Legacy Firmware": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                "grade_4": {"cost": {"Mechanical Components": 1, "Modified Consumer Firmware": 1, "Thermic Alloys": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                "grade_5": {"cost": {"Configurable Components": 1, "Precipitated Alloys": 1, "Technetium": 1}, "engineers": ["Broo Tarquin"]}
             },
             "Seeker Missile Rack": {
-                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_4": {"cost": {}, "engineers": ["Liz Ryder"]},
-                "grade_5": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]}
+                "grade_1": {"cost": {"Mechanical Scrap": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
+                "grade_2": {"cost": {"Heat Dispersion Plate": 1, "Mechanical Scrap": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
+                "grade_3": {"cost": {"Mechanical Equipment": 1, "Precipitated Alloys": 1, "Specialised Legacy Firmware": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
+                "grade_4": {"cost": {"Mechanical Components": 1, "Modified Consumer Firmware": 1, "Thermic Alloys": 1}, "engineers": ["Liz Ryder", "Petra Olmanova"]},
+                "grade_5": {"cost": {"Configurable Components": 1, "Precipitated Alloys": 1, "Technetium": 1}, "engineers": ["Liz Ryder", "Petra Olmanova"]}
             }
         }
     },
     "High capacity": {
         "module_recipes": {
             "Cannon": {
-                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
-                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
-                "grade_3": {"cost": {}, "engineers": ["The Sarge"]},
-                "grade_4": {"cost": {}, "engineers": ["The Sarge"]},
-                "grade_5": {"cost": {}, "engineers": ["The Sarge", "Marsha Hicks"]}
+                "grade_1": {"cost": {"Mechanical Scrap": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "The Sarge", "Marsha Hicks"]},
+                "grade_2": {"cost": {"Mechanical Scrap": 1, "Vanadium": 1}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_3": {"cost": {"Mechanical Scrap": 1, "Niobium": 1, "Vanadium": 1}, "engineers": ["The Sarge", "Marsha Hicks"]},
+                "grade_4": {"cost": {"High Density Composites": 1, "Mechanical Equipment": 1, "Tin": 1}, "engineers": ["The Sarge", "Marsha Hicks"]},
+                "grade_5": {"cost": {"Mechanical Components": 1, "Military Supercapacitors": 1, "Proprietary Composites": 1}, "engineers": ["The Sarge", "Marsha Hicks"]}
             },
             "Fragment Cannon": {
-                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
-                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
-                "grade_3": {"cost": {}, "engineers": ["Zacariah Nemo"]},
-                "grade_4": {"cost": {}, "engineers": ["Zacariah Nemo"]},
-                "grade_5": {"cost": {}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]}
+                "grade_1": {"cost": {"Mechanical Scrap": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                "grade_2": {"cost": {"Mechanical Scrap": 1, "Vanadium": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                "grade_3": {"cost": {"Mechanical Scrap": 1, "Niobium": 1, "Vanadium": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                "grade_4": {"cost": {"High Density Composites": 1, "Mechanical Equipment": 1, "Tin": 1}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]},
+                "grade_5": {"cost": {"Mechanical Components": 1, "Military Supercapacitors": 1, "Proprietary Composites": 1}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]}
             },
             "Mine Launcher": {
-                "grade_1": {"cost": {}, "engineers": ["Liz Ryder"]},
-                "grade_2": {"cost": {}, "engineers": ["Liz Ryder"]},
-                "grade_3": {"cost": {}, "engineers": ["Liz Ryder"]},
-                "grade_4": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_5": {"cost": {}, "engineers": ["Juri Ishmaak", "Petra Olmanova"]}
+                "grade_1": {"cost": {"Mechanical Scrap": 1}, "engineers": ["Liz Ryder", "Juri Ishmaak"]},
+                "grade_2": {"cost": {"Mechanical Scrap": 1, "Vanadium": 1}, "engineers": ["Liz Ryder", "Juri Ishmaak"]},
+                "grade_3": {"cost": {"Mechanical Scrap": 1, "Niobium": 1, "Vanadium": 1}, "engineers": ["Liz Ryder", "Juri Ishmaak"]},
+                "grade_4": {"cost": {"High Density Composites": 1, "Mechanical Equipment": 1, "Tin": 1}, "engineers": ["Juri Ishmaak"]},
+                "grade_5": {"cost": {"Mechanical Components": 1, "Military Supercapacitors": 1, "Proprietary Composites": 1}, "engineers": ["Juri Ishmaak"]}
             },
             "Missile Rack": {
-                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_4": {"cost": {}, "engineers": ["Liz Ryder"]},
-                "grade_5": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]}
+                "grade_1": {"cost": {"Mechanical Scrap": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder"]},
+                "grade_2": {"cost": {"Mechanical Scrap": 1, "Vanadium": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder"]},
+                "grade_3": {"cost": {"Mechanical Scrap": 1, "Niobium": 1, "Vanadium": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder"]},
+                "grade_4": {"cost": {"High Density Composites": 1, "Mechanical Equipment": 1, "Tin": 1}, "engineers": ["Liz Ryder"]},
+                "grade_5": {"cost": {"Mechanical Components": 1, "Military Supercapacitors": 1, "Proprietary Composites": 1}, "engineers": ["Liz Ryder"]}
             },
             "Multi-cannon": {
-                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
-                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
-                "grade_3": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo"]},
-                "grade_4": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]},
-                "grade_5": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]}
+                "grade_1": {"cost": {"Mechanical Scrap": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                "grade_2": {"cost": {"Mechanical Scrap": 1, "Vanadium": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                "grade_3": {"cost": {"Mechanical Scrap": 1, "Niobium": 1, "Vanadium": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                "grade_4": {"cost": {"High Density Composites": 1, "Mechanical Equipment": 1, "Tin": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]},
+                "grade_5": {"cost": {"Mechanical Components": 1, "Military Supercapacitors": 1, "Proprietary Composites": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]}
             },
             "Rail Gun": {
-                "grade_1": {"cost": {}, "engineers": ["The Sarge"]},
-                "grade_2": {"cost": {}, "engineers": ["The Sarge"]},
-                "grade_3": {"cost": {}, "engineers": ["The Sarge"]},
-                "grade_4": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
-                "grade_5": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn", "Etienne Dorn"]}
-            },
-            "Seeker Missile Rack": {
-                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_4": {"cost": {}, "engineers": ["Liz Ryder"]},
-                "grade_5": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]}
-            },
-            "Power Distributor": {
-                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
-                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
-                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
-                "grade_4": {"cost": {}, "engineers": ["The Dweller"]},
-                "grade_5": {"cost": {}, "engineers": ["The Dweller"]}
+                "grade_1": {"cost": {"Mechanical Scrap": 1}, "engineers": ["The Sarge", "Tod 'The Blaster' McQuinn"]},
+                "grade_2": {"cost": {"Mechanical Scrap": 1, "Vanadium": 1}, "engineers": ["The Sarge", "Tod 'The Blaster' McQuinn"]},
+                "grade_3": {"cost": {"Mechanical Scrap": 1, "Niobium": 1, "Vanadium": 1}, "engineers": ["The Sarge"]},
+                "grade_4": {"cost": {"High Density Composites": 1, "Mechanical Equipment": 1, "Tin": 1}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                "grade_5": {"cost": {"Mechanical Components": 1, "Military Supercapacitors": 1, "Proprietary Composites": 1}, "engineers": ["Tod 'The Blaster' McQuinn"]}
             }
         }
     },
     "Double shot": {
         "module_recipes": {
             "Fragment Cannon": {
-                "grade_1": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
-                "grade_2": {"cost": {}, "engineers": ["Tod 'The Blaster' McQuinn"]},
-                "grade_3": {"cost": {}, "engineers": ["Zacariah Nemo"]},
-                "grade_4": {"cost": {}, "engineers": ["Zacariah Nemo"]},
-                "grade_5": {"cost": {}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]}
+                "grade_1": {"cost": {"Carbon": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                "grade_2": {"cost": {"Carbon": 1, "Mechanical Equipment": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                "grade_3": {"cost": {"Carbon": 1, "Cracked Industrial Firmware": 1, "Mechanical Equipment": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                "grade_4": {"cost": {"Mechanical Components": 1, "Security Firmware Patch": 1, "Vanadium": 1}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]},
+                "grade_5": {"cost": {"Configurable Components": 1, "High Density Composites": 1, "Modified Embedded Firmware": 1}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]}
             }
         }
     },
     "Anti-Guardian Zone Resistance": {
         "module_recipes": {
             "Guardian Gauss Cannon": {
-                "grade_1": {"cost": {}, "engineers": ["Ram Tah"]}
-            },
-            "Guardian Nanite Torpedo Pylon": {
-                "grade_1": {"cost": {}, "engineers": ["Ram Tah"]}
+                "grade_1": {"cost": {"Hardened Surface Fragments": 2, "Caustic Crystal": 1}, "engineers": ["Ram Tah"]}
             },
             "Guardian Plasma Charger": {
-                "grade_1": {"cost": {}, "engineers": ["Ram Tah"]}
+                "grade_1": {"cost": {"Hardened Surface Fragments": 2, "Caustic Crystal": 1}, "engineers": ["Ram Tah"]}
             },
             "Guardian Shard Cannon": {
-                "grade_1": {"cost": {}, "engineers": ["Ram Tah"]}
+                "grade_1": {"cost": {"Hardened Surface Fragments": 2, "Caustic Crystal": 1}, "engineers": ["Ram Tah"]}
             },
-            "Guardian FSD Booster": {
-                "grade_1": {"cost": {}, "engineers": ["Ram Tah"]}
-            },
-            "Guardian Hull Reinforcement": {
-                "grade_1": {"cost": {}, "engineers": ["Ram Tah"]}
-            },
-            "Guardian Module Reinforcement": {
-                "grade_1": {"cost": {}, "engineers": ["Ram Tah"]}
-            },
-            "Guardian Shield Reinforcement": {
-                "grade_1": {"cost": {}, "engineers": ["Ram Tah"]}
+            "Guardian Hybrid Power Plant": {
+                "grade_1": {"cost": {"Hardened Surface Fragments": 2, "Caustic Crystal": 1}, "engineers": ["Ram Tah"]}
             },
             "Guardian Hybrid Power Distributor": {
-                "grade_1": {"cost": {}, "engineers": ["Ram Tah"]}
+                "grade_1": {"cost": {"Hardened Surface Fragments": 2, "Caustic Crystal": 1}, "engineers": ["Ram Tah"]}
             },
-            "Guardian Power Plant": {
-                "grade_1": {"cost": {}, "engineers": ["Ram Tah"]}
+            "Guardian Shield Reinforcement Package": {
+                "grade_1": {"cost": {"Hardened Surface Fragments": 2, "Caustic Crystal": 1}, "engineers": ["Ram Tah"]}
+            },
+            "Guardian Module Reinforcement Package": {
+                "grade_1": {"cost": {"Hardened Surface Fragments": 2, "Caustic Crystal": 1}, "engineers": ["Ram Tah"]}
+            },
+            "Guardian Frame Shift Drive Booster": {
+                "grade_1": {"cost": {"Hardened Surface Fragments": 2, "Caustic Crystal": 1}, "engineers": ["Ram Tah"]}
             }
         }
     },
     "Ammo capacity": {
         "module_recipes": {
-            "Caustic Sink Launcher": {
-                "grade_1": {"cost": {}, "engineers": ["Ram Tah"]},
-                "grade_2": {"cost": {}, "engineers": ["Ram Tah"]},
-                "grade_3": {"cost": {}, "engineers": ["Ram Tah"]},
-                "grade_4": {"cost": {}, "engineers": ["Ram Tah"]},
-                "grade_5": {"cost": {}, "engineers": ["Ram Tah"]}
-            },
             "Chaff Launcher": {
-                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_4": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_5": {"cost": {}, "engineers": ["Juri Ishmaak"]}
+                "grade_3": {"cost": {"Mechanical Scrap": 1, "Niobium": 1, "Vanadium": 1}, "engineers": ["Ram Tah"]},
             },
             "Heat Sink Launcher": {
-                "grade_1": {"cost": {}, "engineers": ["Ram Tah"]},
-                "grade_2": {"cost": {}, "engineers": ["Ram Tah"]},
-                "grade_3": {"cost": {}, "engineers": ["Ram Tah"]},
-                "grade_4": {"cost": {}, "engineers": ["Ram Tah"]},
-                "grade_5": {"cost": {}, "engineers": ["Ram Tah"]}
+                "grade_3": {"cost": {"Mechanical Scrap": 1, "Niobium": 1, "Vanadium": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
             },
             "Point Defence": {
-                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_4": {"cost": {}, "engineers": ["Juri Ishmaak"]},
-                "grade_5": {"cost": {}, "engineers": ["Juri Ishmaak"]}
+                "grade_3": {"cost": {"Mechanical Scrap": 1, "Niobium": 1, "Vanadium": 1}, "engineers": ["Ram Tah"]},
             }
         }
     },
