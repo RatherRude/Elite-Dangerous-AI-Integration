@@ -15,6 +15,7 @@ import { Subscription } from "rxjs";
 import { ChatService } from "../services/chat.service.js";
 import { MatTabsModule } from "@angular/material/tabs";
 import { ChatContainerComponent } from "../components/chat-container/chat-container.component.js";
+import { MetricsService } from "../services/metrics.service.js";
 
 @Component({
     selector: "app-main-view",
@@ -46,6 +47,7 @@ export class MainViewComponent implements OnInit, OnDestroy {
         private loggingService: LoggingService,
         private chatService: ChatService,
         private configService: ConfigService,
+        private metricsService: MetricsService,
     ) {}
 
     ngOnInit(): void {

@@ -5,6 +5,7 @@ import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { BehaviorSubject, Observable, ReplaySubject } from "rxjs";
 import { MatDialog } from "@angular/material/dialog";
 import { UpdateDialogComponent } from "../components/update-dialog/update-dialog.component";
+import { environment } from "../../environments/environment";
 
 export interface BaseCommand {
     type: string;
@@ -33,6 +34,16 @@ export interface UnknownMessage extends BaseMessage {
     providedIn: "root",
 })
 export class TauriService {
+    public readonly installId = window.localStorage.getItem(
+        "install_id",
+    ) ||
+        `${Date.now().toString()}-${
+            Math.random().toString(36).substring(2, 15)
+        }`;
+    public readonly sessionId = `${Date.now().toString()}-${
+        Math.random().toString(36).substring(2, 15)
+    }`;
+    public readonly commitHash = environment.COMMIT_HASH;
     private runModeSubject = new BehaviorSubject<
         "starting" | "configuring" | "running"
     >(
@@ -55,6 +66,7 @@ export class TauriService {
 
     constructor(private ngZone: NgZone, private dialog: MatDialog) {
         this.startReadingOutput();
+        window.localStorage.setItem("install_id", this.installId);
     }
 
     public async createOverlay(): Promise<void> {
@@ -168,6 +180,7 @@ export class TauriService {
             // Get the current commit hash from the Tauri app
             const currentCommit: string = await invoke("get_commit_hash");
             console.log("Current commit hash:", currentCommit);
+            console.log("Frontend commit hash:", this.commitHash);
 
             // Skip update check for development builds
             if (currentCommit === "development") {
@@ -203,7 +216,10 @@ export class TauriService {
                     const releaseCommit = tagData.object.sha;
                     console.log("Release commit hash:", releaseCommit);
 
-                    if (releaseCommit !== currentCommit) {
+                    if (
+                        releaseCommit !== currentCommit &&
+                        releaseCommit !== this.commitHash
+                    ) {
                         console.log("Update available, showing prompt");
                         this.askForUpdate(releaseName, releaseUrl);
                     } else {

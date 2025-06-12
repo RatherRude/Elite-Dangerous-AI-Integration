@@ -298,6 +298,7 @@ pub async fn run() {
     // Logging will be initialized by the plugin
 
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(
             tauri_plugin_log::Builder::default()
