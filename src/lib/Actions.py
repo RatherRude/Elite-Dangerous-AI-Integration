@@ -1806,347 +1806,340 @@ ENGINEERING_MODIFICATIONS = {
     },
     "Reinforced": {
         "module_recipes": {
-            "Caustic Sink Launcher": {
-                "grade_1": {"cost": {}, "engineers": ["Ram Tah"]},
-                "grade_2": {"cost": {}, "engineers": ["Ram Tah"]},
-                "grade_3": {"cost": {}, "engineers": ["Ram Tah"]},
-                "grade_4": {"cost": {}, "engineers": ["Ram Tah"]},
-                "grade_5": {"cost": {}, "engineers": ["Ram Tah"]}
-            },
             "Chaff Launcher": {
-                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak", "Petra Olmanova"]},
-                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak", "Petra Olmanova"]},
-                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak", "Petra Olmanova"]},
-                "grade_4": {"cost": {}, "engineers": ["Juri Ishmaak", "Petra Olmanova"]},
-                "grade_5": {"cost": {}, "engineers": ["Juri Ishmaak", "Petra Olmanova"]}
+                "grade_1": {"cost": {"Phosphorus": 1}, "engineers": ["Ram Tah"]},
+                "grade_2": {"cost": {"Conductive Components": 1, "Phosphorus": 1}, "engineers": ["Ram Tah"]},
+                "grade_3": {"cost": {"Conductive Components": 1, "Mechanical Components": 1, "Phosphorus": 1}, "engineers": ["Ram Tah"]},
+                "grade_4": {"cost": {"Conductive Ceramics": 1, "Configurable Components": 1, "Manganese": 1}, "engineers": ["Ram Tah"]},
+                "grade_5": {"cost": {"Arsenic": 1, "Conductive Polymers": 1, "Improvised Components": 1}, "engineers": ["Ram Tah"]}
             },
             "Electronic Countermeasure": {
-                "grade_1": {"cost": {}, "engineers": ["Ram Tah", "Petra Olmanova"]},
-                "grade_2": {"cost": {}, "engineers": ["Ram Tah", "Petra Olmanova"]},
-                "grade_3": {"cost": {}, "engineers": ["Ram Tah", "Petra Olmanova"]},
-                "grade_4": {"cost": {}, "engineers": ["Ram Tah", "Petra Olmanova"]},
-                "grade_5": {"cost": {}, "engineers": ["Ram Tah", "Petra Olmanova"]}
+                "grade_1": {"cost": {"Phosphorus": 1}, "engineers": ["Ram Tah"]},
+                "grade_2": {"cost": {"Conductive Components": 1, "Phosphorus": 1}, "engineers": ["Ram Tah"]},
+                "grade_3": {"cost": {"Conductive Components": 1, "Mechanical Components": 1, "Phosphorus": 1}, "engineers": ["Ram Tah"]},
+                "grade_4": {"cost": {"Conductive Ceramics": 1, "Configurable Components": 1, "Manganese": 1}, "engineers": ["Ram Tah"]},
+                "grade_5": {"cost": {"Arsenic": 1, "Conductive Polymers": 1, "Improvised Components": 1}, "engineers": ["Ram Tah"]}
             },
             "Frame Shift Wake Scanner": {
-                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
-                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
-                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
-                "grade_4": {"cost": {}, "engineers": ["Tiana Fortune", "Etienne Dorn"]},
-                "grade_5": {"cost": {}, "engineers": ["Tiana Fortune", "Etienne Dorn"]}
+                "grade_1": {"cost": {"Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                "grade_2": {"cost": {"Conductive Components": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                "grade_3": {"cost": {"Conductive Components": 1, "Mechanical Components": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                "grade_4": {"cost": {"Conductive Ceramics": 1, "Configurable Components": 1, "Manganese": 1}, "engineers": ["Tiana Fortune"]},
+                "grade_5": {"cost": {"Arsenic": 1, "Conductive Polymers": 1, "Improvised Components": 1}, "engineers": ["Tiana Fortune"]}
             },
             "Heat Sink Launcher": {
-                "grade_1": {"cost": {}, "engineers": ["Ram Tah", "Petra Olmanova"]},
-                "grade_2": {"cost": {}, "engineers": ["Ram Tah", "Petra Olmanova"]},
-                "grade_3": {"cost": {}, "engineers": ["Ram Tah", "Petra Olmanova"]},
-                "grade_4": {"cost": {}, "engineers": ["Ram Tah", "Petra Olmanova"]},
-                "grade_5": {"cost": {}, "engineers": ["Ram Tah", "Petra Olmanova"]}
+                "grade_1": {"cost": {"Phosphorus": 1}, "engineers": ["Ram Tah"]},
+                "grade_2": {"cost": {"Conductive Components": 1, "Phosphorus": 1}, "engineers": ["Ram Tah"]},
+                "grade_3": {"cost": {"Conductive Components": 1, "Mechanical Components": 1, "Phosphorus": 1}, "engineers": ["Ram Tah"]},
+                "grade_4": {"cost": {"Conductive Ceramics": 1, "Configurable Components": 1, "Manganese": 1}, "engineers": ["Ram Tah"]},
+                "grade_5": {"cost": {"Arsenic": 1, "Conductive Polymers": 1, "Improvised Components": 1}, "engineers": ["Ram Tah"]}
             },
             "Kill Warrant Scanner": {
-                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
-                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
-                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
-                "grade_4": {"cost": {}, "engineers": ["Tiana Fortune", "Etienne Dorn"]},
-                "grade_5": {"cost": {}, "engineers": ["Tiana Fortune", "Etienne Dorn"]}
-            },
-            "Manifest Scanner": {
-                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
-                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
-                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
-                "grade_4": {"cost": {}, "engineers": ["Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
-                "grade_5": {"cost": {}, "engineers": ["Tiana Fortune", "Etienne Dorn"]}
-            },
-            "Point Defence": {
-                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak", "Ram Tah", "Petra Olmanova"]},
-                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak", "Ram Tah", "Petra Olmanova"]},
-                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak", "Ram Tah", "Petra Olmanova"]},
-                "grade_4": {"cost": {}, "engineers": ["Juri Ishmaak", "Ram Tah", "Petra Olmanova"]},
-                "grade_5": {"cost": {}, "engineers": ["Juri Ishmaak", "Ram Tah", "Petra Olmanova"]}
-            },
-            "Collector Limpet Controller": {
-                "grade_1": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge"]},
-                "grade_2": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge"]},
-                "grade_3": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge"]},
-                "grade_4": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge"]},
-                "grade_5": {"cost": {}, "engineers": ["Tiana Fortune", "The Sarge"]}
-            },
-            "Fuel Transfer Limpet Controller": {
-                "grade_1": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge", "Marsha Hicks"]},
-                "grade_2": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge", "Marsha Hicks"]},
-                "grade_3": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge", "Marsha Hicks"]},
-                "grade_4": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge", "Marsha Hicks"]},
-                "grade_5": {"cost": {}, "engineers": ["Tiana Fortune", "The Sarge", "Marsha Hicks"]}
-            },
-            "Hatch Breaker Limpet Controller": {
-                "grade_1": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge", "Marsha Hicks"]},
-                "grade_2": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge", "Marsha Hicks"]},
-                "grade_3": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge", "Marsha Hicks"]},
-                "grade_4": {"cost": {}, "engineers": ["Tiana Fortune", "The Sarge", "Marsha Hicks"]},
-                "grade_5": {"cost": {}, "engineers": ["Tiana Fortune", "The Sarge", "Marsha Hicks"]}
-            },
-            "Prospector Limpet Controller": {
-                "grade_1": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge", "Marsha Hicks"]},
-                "grade_2": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge", "Marsha Hicks"]},
-                "grade_3": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge", "Marsha Hicks"]},
-                "grade_4": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge", "Marsha Hicks"]},
-                "grade_5": {"cost": {}, "engineers": ["Tiana Fortune", "The Sarge", "Marsha Hicks"]}
-            },
-            "Shield Generator": {
-                "grade_1": {"cost": {}, "engineers": ["Elvira Martuuk", "Didi Vatermann", "Lei Cheung", "Mel Brandon"]},
-                "grade_2": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung", "Mel Brandon"]},
-                "grade_3": {"cost": {}, "engineers": ["Elvira Martuuk", "Didi Vatermann", "Lei Cheung", "Mel Brandon"]},
-                "grade_4": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung", "Mel Brandon"]},
-                "grade_5": {"cost": {}, "engineers": ["Lei Cheung", "Mel Brandon"]}
+                "grade_1": {"cost": {"Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                "grade_2": {"cost": {"Conductive Components": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                "grade_3": {"cost": {"Conductive Components": 1, "Mechanical Components": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                "grade_4": {"cost": {"Conductive Ceramics": 1, "Configurable Components": 1, "Manganese": 1}, "engineers": ["Tiana Fortune"]},
+                "grade_5": {"cost": {"Arsenic": 1, "Conductive Polymers": 1, "Improvised Components": 1}, "engineers": ["Tiana Fortune"]}
             },
             "Life Support": {
-                "grade_1": {"cost": {}, "engineers": ["Bill Turner", "Lori Jameson", "Etienne Dorn"]},
-                "grade_2": {"cost": {}, "engineers": ["Bill Turner", "Lori Jameson", "Etienne Dorn"]},
-                "grade_3": {"cost": {}, "engineers": ["Bill Turner", "Lori Jameson", "Etienne Dorn"]},
-                "grade_4": {"cost": {}, "engineers": ["Lori Jameson", "Etienne Dorn"]},
-                "grade_5": {"cost": {}, "engineers": ["Etienne Dorn"]}
+                "grade_1": {"cost": {"Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Etienne Dorn"]},
+                "grade_2": {"cost": {"Conductive Components": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Etienne Dorn"]},
+                "grade_3": {"cost": {"Conductive Components": 1, "Mechanical Components": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Etienne Dorn"]},
+                "grade_4": {"cost": {"Conductive Ceramics": 1, "Configurable Components": 1, "Manganese": 1}, "engineers": ["Lori Jameson", "Etienne Dorn"]},
+                "grade_5": {"cost": {"Arsenic": 1, "Conductive Polymers": 1, "Improvised Components": 1}, "engineers": ["Etienne Dorn"]}
             },
-            "Thrusters": {
-                "grade_1": {"cost": {}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Professor Palin", "Mel Brandon", "Chloe Sedesi"]},
-                "grade_2": {"cost": {}, "engineers": ["Elvira Martuuk", "Professor Palin", "Mel Brandon", "Chloe Sedesi"]},
-                "grade_3": {"cost": {}, "engineers": ["Felicity Farseer", "Professor Palin", "Mel Brandon", "Chloe Sedesi"]},
-                "grade_4": {"cost": {}, "engineers": ["Professor Palin", "Mel Brandon", "Chloe Sedesi"]},
-                "grade_5": {"cost": {}, "engineers": ["Professor Palin", "Mel Brandon", "Chloe Sedesi"]}
+            "Collector Limpet Controller": {
+                "grade_1": {"cost": {"Phosphorus": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                "grade_2": {"cost": {"Conductive Components": 1, "Phosphorus": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                "grade_3": {"cost": {"Conductive Components": 1, "Mechanical Components": 1, "Phosphorus": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                "grade_4": {"cost": {"Conductive Ceramics": 1, "Configurable Components": 1, "Manganese": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                "grade_5": {"cost": {"Arsenic": 1, "Conductive Polymers": 1, "Improvised Components": 1}, "engineers": ["Marsha Hicks", "The Sarge", "Tiana Fortune"]}
+            },
+            "Fuel Transfer Limpet Controller": {
+                "grade_1": {"cost": {"Phosphorus": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                "grade_2": {"cost": {"Conductive Components": 1, "Phosphorus": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                "grade_3": {"cost": {"Conductive Components": 1, "Mechanical Components": 1, "Phosphorus": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                "grade_4": {"cost": {"Conductive Ceramics": 1, "Configurable Components": 1, "Manganese": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                "grade_5": {"cost": {"Arsenic": 1, "Conductive Polymers": 1, "Improvised Components": 1}, "engineers": ["Marsha Hicks", "The Sarge", "Tiana Fortune"]}
+            },
+            "Hatch Breaker Limpet Controller": {
+                "grade_1": {"cost": {"Phosphorus": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                "grade_2": {"cost": {"Conductive Components": 1, "Phosphorus": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                "grade_3": {"cost": {"Conductive Components": 1, "Mechanical Components": 1, "Phosphorus": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                "grade_4": {"cost": {"Conductive Ceramics": 1, "Configurable Components": 1, "Manganese": 1}, "engineers": ["Marsha Hicks", "The Sarge", "Tiana Fortune"]},
+                "grade_5": {"cost": {"Arsenic": 1, "Conductive Polymers": 1, "Improvised Components": 1}, "engineers": ["Marsha Hicks", "The Sarge", "Tiana Fortune"]}
+            },
+            "Prospector Limpet Controller": {
+                "grade_1": {"cost": {"Phosphorus": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                "grade_2": {"cost": {"Conductive Components": 1, "Phosphorus": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                "grade_3": {"cost": {"Conductive Components": 1, "Mechanical Components": 1, "Phosphorus": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                "grade_4": {"cost": {"Conductive Ceramics": 1, "Configurable Components": 1, "Manganese": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                "grade_5": {"cost": {"Arsenic": 1, "Conductive Polymers": 1, "Improvised Components": 1}, "engineers": ["Marsha Hicks", "The Sarge", "Tiana Fortune"]}
+            },
+            "Manifest Scanner": {
+                "grade_1": {"cost": {"Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                "grade_2": {"cost": {"Conductive Components": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                "grade_3": {"cost": {"Conductive Components": 1, "Mechanical Components": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                "grade_4": {"cost": {"Conductive Ceramics": 1, "Configurable Components": 1, "Manganese": 1}, "engineers": ["Tiana Fortune"]},
+                "grade_5": {"cost": {"Arsenic": 1, "Conductive Polymers": 1, "Improvised Components": 1}, "engineers": ["Tiana Fortune"]}
+            },
+            "Point Defence": {
+                "grade_1": {"cost": {"Phosphorus": 1}, "engineers": ["Ram Tah"]},
+                "grade_2": {"cost": {"Conductive Components": 1, "Phosphorus": 1}, "engineers": ["Ram Tah"]},
+                "grade_3": {"cost": {"Conductive Components": 1, "Mechanical Components": 1, "Phosphorus": 1}, "engineers": ["Ram Tah"]},
+                "grade_4": {"cost": {"Conductive Ceramics": 1, "Configurable Components": 1, "Manganese": 1}, "engineers": ["Ram Tah"]},
+                "grade_5": {"cost": {"Arsenic": 1, "Conductive Polymers": 1, "Improvised Components": 1}, "engineers": ["Ram Tah"]}
+            },
+            "Shield Generator": {
+                "grade_1": {"cost": {"Phosphorus": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung", "Mel Brandon"]},
+                "grade_2": {"cost": {"Conductive Components": 1, "Phosphorus": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung", "Mel Brandon"]},
+                "grade_3": {"cost": {"Conductive Components": 1, "Mechanical Components": 1, "Phosphorus": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung", "Mel Brandon"]},
+                "grade_4": {"cost": {"Conductive Ceramics": 1, "Configurable Components": 1, "Manganese": 1}, "engineers": ["Lei Cheung", "Mel Brandon"]},
+                "grade_5": {"cost": {"Arsenic": 1, "Conductive Polymers": 1, "Improvised Components": 1}, "engineers": ["Lei Cheung", "Mel Brandon"]}
             }
         }
     },
     "Shielded": {
         "module_recipes": {
-            "Caustic Sink Launcher": {
-                "grade_1": {"cost": {}, "engineers": ["Ram Tah"]},
-                "grade_2": {"cost": {}, "engineers": ["Ram Tah"]},
-                "grade_3": {"cost": {}, "engineers": ["Ram Tah"]},
-                "grade_4": {"cost": {}, "engineers": ["Ram Tah"]},
-                "grade_5": {"cost": {}, "engineers": ["Ram Tah"]}
+            "Auto Field-Maintenance Unit": {
+                "grade_1": {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Petra Olmanova"]},
+                "grade_2": {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Petra Olmanova"]},
+                "grade_3": {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Petra Olmanova"]},
+                "grade_4": {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Lori Jameson", "Petra Olmanova"]},
+                "grade_5": {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Petra Olmanova"]}
             },
             "Chaff Launcher": {
-                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak", "Petra Olmanova"]},
-                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak", "Petra Olmanova"]},
-                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak", "Petra Olmanova"]},
-                "grade_4": {"cost": {}, "engineers": ["Juri Ishmaak", "Petra Olmanova"]},
-                "grade_5": {"cost": {}, "engineers": ["Juri Ishmaak", "Petra Olmanova"]}
+                "grade_1": {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                "grade_2": {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                "grade_3": {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                "grade_4": {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                "grade_5": {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]}
             },
             "Electronic Countermeasure": {
-                "grade_1": {"cost": {}, "engineers": ["Ram Tah", "Petra Olmanova"]},
-                "grade_2": {"cost": {}, "engineers": ["Ram Tah", "Petra Olmanova"]},
-                "grade_3": {"cost": {}, "engineers": ["Ram Tah", "Petra Olmanova"]},
-                "grade_4": {"cost": {}, "engineers": ["Ram Tah", "Petra Olmanova"]},
-                "grade_5": {"cost": {}, "engineers": ["Ram Tah", "Petra Olmanova"]}
+                "grade_1": {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                "grade_2": {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                "grade_3": {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                "grade_4": {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                "grade_5": {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]}
             },
             "Frame Shift Wake Scanner": {
-                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
-                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
-                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
-                "grade_4": {"cost": {}, "engineers": ["Tiana Fortune", "Etienne Dorn"]},
-                "grade_5": {"cost": {}, "engineers": ["Tiana Fortune", "Etienne Dorn"]}
-            },
-            "Heat Sink Launcher": {
-                "grade_1": {"cost": {}, "engineers": ["Ram Tah", "Petra Olmanova"]},
-                "grade_2": {"cost": {}, "engineers": ["Ram Tah", "Petra Olmanova"]},
-                "grade_3": {"cost": {}, "engineers": ["Ram Tah", "Petra Olmanova"]},
-                "grade_4": {"cost": {}, "engineers": ["Ram Tah", "Petra Olmanova"]},
-                "grade_5": {"cost": {}, "engineers": ["Ram Tah", "Petra Olmanova"]}
-            },
-            "Kill Warrant Scanner": {
-                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
-                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
-                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
-                "grade_4": {"cost": {}, "engineers": ["Tiana Fortune", "Etienne Dorn"]},
-                "grade_5": {"cost": {}, "engineers": ["Tiana Fortune", "Etienne Dorn"]}
-            },
-            "Manifest Scanner": {
-                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
-                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
-                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak", "Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
-                "grade_4": {"cost": {}, "engineers": ["Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
-                "grade_5": {"cost": {}, "engineers": ["Tiana Fortune", "Etienne Dorn"]}
-            },
-            "Point Defence": {
-                "grade_1": {"cost": {}, "engineers": ["Juri Ishmaak", "Ram Tah", "Petra Olmanova"]},
-                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak", "Ram Tah", "Petra Olmanova"]},
-                "grade_3": {"cost": {}, "engineers": ["Juri Ishmaak", "Ram Tah", "Petra Olmanova"]},
-                "grade_4": {"cost": {}, "engineers": ["Juri Ishmaak", "Ram Tah", "Petra Olmanova"]},
-                "grade_5": {"cost": {}, "engineers": ["Juri Ishmaak", "Ram Tah", "Petra Olmanova"]}
-            },
-            "Auto Field-Maintenance Unit": {
-                "grade_1": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge", "Marsha Hicks"]},
-                "grade_2": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge", "Marsha Hicks"]},
-                "grade_3": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge", "Marsha Hicks"]},
-                "grade_4": {"cost": {}, "engineers": ["Tiana Fortune", "The Sarge", "Marsha Hicks"]},
-                "grade_5": {"cost": {}, "engineers": ["Tiana Fortune", "The Sarge", "Marsha Hicks"]}
-            },
-            "Collector Limpet Controller": {
-                "grade_1": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge"]},
-                "grade_2": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge"]},
-                "grade_3": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge"]},
-                "grade_4": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge"]},
-                "grade_5": {"cost": {}, "engineers": ["Tiana Fortune", "The Sarge"]}
+                "grade_1": {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
+                "grade_2": {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
+                "grade_3": {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
+                "grade_4": {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Tiana Fortune", "Etienne Dorn"]},
+                "grade_5": {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Tiana Fortune", "Etienne Dorn"]}
             },
             "Fuel Scoop": {
-                "grade_1": {"cost": {}, "engineers": ["Felicity Farseer", "Juri Ishmaak", "Lori Jameson"]},
-                "grade_2": {"cost": {}, "engineers": ["Felicity Farseer", "Juri Ishmaak", "Lori Jameson"]},
-                "grade_3": {"cost": {}, "engineers": ["Felicity Farseer", "Juri Ishmaak", "Lori Jameson"]},
-                "grade_4": {"cost": {}, "engineers": ["Lori Jameson"]},
-                "grade_5": {"cost": {}, "engineers": ["Lori Jameson"]}
+                "grade_1": {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Marsha Hicks"]},
+                "grade_2": {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Marsha Hicks"]},
+                "grade_3": {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Marsha Hicks"]},
+                "grade_4": {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Lori Jameson", "Marsha Hicks"]},
+                "grade_5": {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Marsha Hicks"]}
             },
-            "Fuel Transfer Limpet Controller": {
-                "grade_1": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge", "Marsha Hicks"]},
-                "grade_2": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge", "Marsha Hicks"]},
-                "grade_3": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge", "Marsha Hicks"]},
-                "grade_4": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge", "Marsha Hicks"]},
-                "grade_5": {"cost": {}, "engineers": ["Tiana Fortune", "The Sarge", "Marsha Hicks"]}
+            "Heat Sink Launcher": {
+                "grade_1": {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                "grade_2": {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                "grade_3": {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                "grade_4": {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                "grade_5": {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]}
             },
-            "Hatch Breaker Limpet Controller": {
-                "grade_1": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge", "Marsha Hicks"]},
-                "grade_2": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge", "Marsha Hicks"]},
-                "grade_3": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge", "Marsha Hicks"]},
-                "grade_4": {"cost": {}, "engineers": ["Tiana Fortune", "The Sarge", "Marsha Hicks"]},
-                "grade_5": {"cost": {}, "engineers": ["Tiana Fortune", "The Sarge", "Marsha Hicks"]}
-            },
-            "Prospector Limpet Controller": {
-                "grade_1": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge", "Marsha Hicks"]},
-                "grade_2": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge", "Marsha Hicks"]},
-                "grade_3": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge", "Marsha Hicks"]},
-                "grade_4": {"cost": {}, "engineers": ["Ram Tah", "Tiana Fortune", "The Sarge", "Marsha Hicks"]},
-                "grade_5": {"cost": {}, "engineers": ["Tiana Fortune", "The Sarge", "Marsha Hicks"]}
-            },
-            "Refinery": {
-                "grade_1": {"cost": {}, "engineers": ["Marsha Hicks"]},
-                "grade_2": {"cost": {}, "engineers": ["Marsha Hicks"]},
-                "grade_3": {"cost": {}, "engineers": ["Marsha Hicks"]},
-                "grade_4": {"cost": {}, "engineers": ["Marsha Hicks"]},
-                "grade_5": {"cost": {}, "engineers": ["Marsha Hicks"]}
-            },
-            "Frame Shift Drive": {
-                "grade_1": {"cost": {}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Professor Palin", "Chloe Sedesi"]},
-                "grade_2": {"cost": {}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Professor Palin", "Chloe Sedesi"]},
-                "grade_3": {"cost": {}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Professor Palin", "Chloe Sedesi"]},
-                "grade_4": {"cost": {}, "engineers": ["Professor Palin", "Chloe Sedesi"]},
-                "grade_5": {"cost": {}, "engineers": ["Professor Palin", "Chloe Sedesi"]}
+            "Kill Warrant Scanner": {
+                "grade_1": {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
+                "grade_2": {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
+                "grade_3": {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
+                "grade_4": {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Tiana Fortune", "Etienne Dorn"]},
+                "grade_5": {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Tiana Fortune", "Etienne Dorn"]}
             },
             "Life Support": {
-                "grade_1": {"cost": {}, "engineers": ["Bill Turner", "Lori Jameson", "Etienne Dorn"]},
-                "grade_2": {"cost": {}, "engineers": ["Bill Turner", "Lori Jameson", "Etienne Dorn"]},
-                "grade_3": {"cost": {}, "engineers": ["Bill Turner", "Lori Jameson", "Etienne Dorn"]},
-                "grade_4": {"cost": {}, "engineers": ["Lori Jameson", "Etienne Dorn"]},
-                "grade_5": {"cost": {}, "engineers": ["Etienne Dorn"]}
+                "grade_1": {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Etienne Dorn"]},
+                "grade_2": {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Etienne Dorn"]},
+                "grade_3": {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Etienne Dorn"]},
+                "grade_4": {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Lori Jameson", "Etienne Dorn"]},
+                "grade_5": {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Etienne Dorn"]}
+            },
+            "Collector Limpet Controller": {
+                "grade_1": {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                "grade_2": {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                "grade_3": {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                "grade_4": {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                "grade_5": {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Marsha Hicks", "The Sarge", "Tiana Fortune"]}
+            },
+            "Fuel Transfer Limpet Controller": {
+                "grade_1": {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                "grade_2": {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                "grade_3": {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                "grade_4": {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                "grade_5": {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Marsha Hicks", "The Sarge", "Tiana Fortune"]}
+            },
+            "Hatch Breaker Limpet Controller": {
+                "grade_1": {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                "grade_2": {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                "grade_3": {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                "grade_4": {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Marsha Hicks", "The Sarge", "Tiana Fortune"]},
+                "grade_5": {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Marsha Hicks", "The Sarge", "Tiana Fortune"]}
+            },
+            "Prospector Limpet Controller": {
+                "grade_1": {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                "grade_2": {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                "grade_3": {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                "grade_4": {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                "grade_5": {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Marsha Hicks", "The Sarge", "Tiana Fortune"]}
+            },
+            "Manifest Scanner": {
+                "grade_1": {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
+                "grade_2": {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
+                "grade_3": {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
+                "grade_4": {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Tiana Fortune", "Etienne Dorn"]},
+                "grade_5": {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Tiana Fortune", "Etienne Dorn"]}
+            },
+            "Point Defence": {
+                "grade_1": {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                "grade_2": {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                "grade_3": {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                "grade_4": {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                "grade_5": {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]}
+            },
+            "Refinery": {
+                "grade_1": {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Marsha Hicks"]},
+                "grade_2": {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Marsha Hicks"]},
+                "grade_3": {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Marsha Hicks"]},
+                "grade_4": {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Lori Jameson", "Marsha Hicks"]},
+                "grade_5": {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Marsha Hicks"]}
+            },
+            "Frame Shift Drive": {
+                "grade_1": {"cost": {"Nickel": 1}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Mel Brandon", "Professor Palin", "Colonel Bris Dekker", "Chloe Sedesi"]},
+                "grade_2": {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Mel Brandon", "Professor Palin", "Colonel Bris Dekker", "Chloe Sedesi"]},
+                "grade_3": {"cost": {"Carbon": 1, "Shielding Sensors": 1, "Zinc": 1}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Mel Brandon", "Professor Palin", "Colonel Bris Dekker", "Chloe Sedesi"]},
+                "grade_4": {"cost": {"Compound Shielding": 1, "High Density Composites": 1, "Vanadium": 1}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Mel Brandon"]},
+                "grade_5": {"cost": {"Imperial Shielding": 1, "Proprietary Composites": 1, "Tungsten": 1}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Mel Brandon"]}
             },
             "Power Distributor": {
-                "grade_1": {"cost": {}, "engineers": ["The Dweller", "Marco Qwent", "Hera Tani"]},
-                "grade_2": {"cost": {}, "engineers": ["The Dweller", "Marco Qwent", "Hera Tani"]},
-                "grade_3": {"cost": {}, "engineers": ["The Dweller", "Marco Qwent", "Hera Tani"]},
-                "grade_4": {"cost": {}, "engineers": ["Marco Qwent", "Hera Tani"]},
-                "grade_5": {"cost": {}, "engineers": ["Hera Tani"]}
+                "grade_1": {"cost": {"Worn Shield Emitters": 1}, "engineers": ["The Dweller", "Etienne Dorn", "Marco Qwent", "Hera Tani"]},
+                "grade_2": {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["The Dweller", "Etienne Dorn", "Marco Qwent", "Hera Tani"]},
+                "grade_3": {"cost": {"Carbon": 1, "Shield Emitters": 1, "High Density Composites": 1}, "engineers": ["The Dweller", "Etienne Dorn", "Marco Qwent", "Hera Tani"]},
+                "grade_4": {"cost": {"Vanadium": 1, "Shielding Sensors": 1, "Proprietary Composites": 1}, "engineers": ["The Dweller", "Etienne Dorn"]},
+                "grade_5": {"cost": {"Tungsten": 1, "Compound Shielding": 1, "Core Dynamics Composites": 1}, "engineers": ["The Dweller", "Etienne Dorn"]}
             }
         }
     },
     "Fast scan": {
         "module_recipes": {
             "Frame Shift Wake Scanner": {
-                "grade_1": {"cost": {}, "engineers": ["Tiana Fortune"]},
-                "grade_2": {"cost": {}, "engineers": ["Tiana Fortune"]},
-                "grade_3": {"cost": {}, "engineers": ["Tiana Fortune"]},
-                "grade_4": {"cost": {}, "engineers": ["Tiana Fortune"]},
-                "grade_5": {"cost": {}, "engineers": ["Tiana Fortune"]}
+                "grade_1": {"cost": {"Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                "grade_2": {"cost": {"Flawed Focus Crystals": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                "grade_3": {"cost": {"Flawed Focus Crystals": 1, "Open Symmetric Keys": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                "grade_4": {"cost": {"Atypical Encryption Archives": 1, "Focus Crystals": 1, "Manganese": 1}, "engineers": ["Tiana Fortune"]},
+                "grade_5": {"cost": {"Adaptive Encryptors Capture": 1, "Arsenic": 1, "Refined Focus Crystals": 1}, "engineers": ["Tiana Fortune"]}
             },
             "Kill Warrant Scanner": {
-                "grade_1": {"cost": {}, "engineers": ["Lori Jameson"]},
-                "grade_2": {"cost": {}, "engineers": ["Lori Jameson"]},
-                "grade_3": {"cost": {}, "engineers": ["Lori Jameson"]},
-                "grade_4": {"cost": {}, "engineers": ["Lori Jameson"]},
-                "grade_5": {"cost": {}, "engineers": ["Lori Jameson"]}
+                "grade_1": {"cost": {"Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                "grade_2": {"cost": {"Flawed Focus Crystals": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                "grade_3": {"cost": {"Flawed Focus Crystals": 1, "Open Symmetric Keys": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                "grade_4": {"cost": {"Atypical Encryption Archives": 1, "Focus Crystals": 1, "Manganese": 1}, "engineers": ["Tiana Fortune"]},
+                "grade_5": {"cost": {"Adaptive Encryptors Capture": 1, "Arsenic": 1, "Refined Focus Crystals": 1}, "engineers": ["Tiana Fortune"]}
             },
             "Manifest Scanner": {
-                "grade_1": {"cost": {}, "engineers": ["Lori Jameson"]},
-                "grade_2": {"cost": {}, "engineers": ["Lori Jameson"]},
-                "grade_3": {"cost": {}, "engineers": ["Lori Jameson"]},
-                "grade_4": {"cost": {}, "engineers": ["Lori Jameson"]},
-                "grade_5": {"cost": {}, "engineers": ["Lori Jameson"]}
+                "grade_1": {"cost": {"Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                "grade_2": {"cost": {"Flawed Focus Crystals": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                "grade_3": {"cost": {"Flawed Focus Crystals": 1, "Open Symmetric Keys": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                "grade_4": {"cost": {"Atypical Encryption Archives": 1, "Focus Crystals": 1, "Manganese": 1}, "engineers": ["Tiana Fortune"]},
+                "grade_5": {"cost": {"Adaptive Encryptors Capture": 1, "Arsenic": 1, "Refined Focus Crystals": 1}, "engineers": ["Tiana Fortune"]}
+            },
+            "Detailed Surface Scanner": {
+                "grade_1": {"cost": {"Phosphorus": 1}, "engineers": ["Bill Turner", "Felicity Farseer", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]},
+                "grade_2": {"cost": {"Flawed Focus Crystals": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Felicity Farseer", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]},
+                "grade_3": {"cost": {"Flawed Focus Crystals": 1, "Open Symmetric Keys": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Felicity Farseer", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]},
+                "grade_4": {"cost": {"Atypical Encryption Archives": 1, "Focus Crystals": 1, "Manganese": 1}, "engineers": ["Bill Turner", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson"]},
+                "grade_5": {"cost": {"Adaptive Encryptors Capture": 1, "Arsenic": 1, "Refined Focus Crystals": 1}, "engineers": ["Bill Turner", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson"]}
             }
         }
     },
     "Wide angle": {
         "module_recipes": {
             "Frame Shift Wake Scanner": {
-                "grade_1": {"cost": {}, "engineers": ["Tiana Fortune"]},
-                "grade_2": {"cost": {}, "engineers": ["Tiana Fortune"]},
-                "grade_3": {"cost": {}, "engineers": ["Tiana Fortune"]},
-                "grade_4": {"cost": {}, "engineers": ["Tiana Fortune"]},
-                "grade_5": {"cost": {}, "engineers": ["Tiana Fortune"]}
+                "grade_1": {"cost": {"Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                "grade_2": {"cost": {"Germanium": 1, "Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                "grade_3": {"cost": {"Classified Scan Databanks": 1, "Germanium": 1, "Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                "grade_4": {"cost": {"Divergent Scan Data": 1, "Mechanical Equipment": 1, "Niobium": 1}, "engineers": ["Tiana Fortune"]},
+                "grade_5": {"cost": {"Classified Scan Fragment": 1, "Mechanical Components": 1, "Tin": 1}, "engineers": ["Tiana Fortune"]}
             },
             "Kill Warrant Scanner": {
-                "grade_1": {"cost": {}, "engineers": ["Lori Jameson"]},
-                "grade_2": {"cost": {}, "engineers": ["Lori Jameson"]},
-                "grade_3": {"cost": {}, "engineers": ["Lori Jameson"]},
-                "grade_4": {"cost": {}, "engineers": ["Lori Jameson"]},
-                "grade_5": {"cost": {}, "engineers": ["Lori Jameson"]}
+                "grade_1": {"cost": {"Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                "grade_2": {"cost": {"Germanium": 1, "Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                "grade_3": {"cost": {"Classified Scan Databanks": 1, "Germanium": 1, "Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                "grade_4": {"cost": {"Divergent Scan Data": 1, "Mechanical Equipment": 1, "Niobium": 1}, "engineers": ["Tiana Fortune"]},
+                "grade_5": {"cost": {"Classified Scan Fragment": 1, "Mechanical Components": 1, "Tin": 1}, "engineers": ["Tiana Fortune"]}
             },
             "Manifest Scanner": {
-                "grade_1": {"cost": {}, "engineers": ["Lori Jameson"]},
-                "grade_2": {"cost": {}, "engineers": ["Lori Jameson"]},
-                "grade_3": {"cost": {}, "engineers": ["Lori Jameson"]},
-                "grade_4": {"cost": {}, "engineers": ["Lori Jameson"]},
-                "grade_5": {"cost": {}, "engineers": ["Lori Jameson"]}
+                "grade_1": {"cost": {"Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                "grade_2": {"cost": {"Germanium": 1, "Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                "grade_3": {"cost": {"Classified Scan Databanks": 1, "Germanium": 1, "Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                "grade_4": {"cost": {"Divergent Scan Data": 1, "Mechanical Equipment": 1, "Niobium": 1}, "engineers": ["Tiana Fortune"]},
+                "grade_5": {"cost": {"Classified Scan Fragment": 1, "Mechanical Components": 1, "Tin": 1}, "engineers": ["Tiana Fortune"]}
             },
             "Sensors": {
-                "grade_1": {"cost": {}, "engineers": ["Felicity Farseer"]},
-                "grade_2": {"cost": {}, "engineers": ["Felicity Farseer"]},
-                "grade_3": {"cost": {}, "engineers": ["Felicity Farseer"]},
-                "grade_4": {"cost": {}, "engineers": ["Lori Jameson"]},
-                "grade_5": {"cost": {}, "engineers": ["Lori Jameson"]}
+                "grade_1": {"cost": {"Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Felicity Farseer", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]},
+                "grade_2": {"cost": {"Germanium": 1, "Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Felicity Farseer", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]},
+                "grade_3": {"cost": {"Classified Scan Databanks": 1, "Germanium": 1, "Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Felicity Farseer", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]},
+                "grade_4": {"cost": {"Divergent Scan Data": 1, "Mechanical Equipment": 1, "Niobium": 1}, "engineers": ["Bill Turner", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson"]},
+                "grade_5": {"cost": {"Classified Scan Fragment": 1, "Mechanical Components": 1, "Tin": 1}, "engineers": ["Bill Turner", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]}
+            },
+            "Detailed Surface Scanner": {
+                "grade_1": {"cost": {"Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Felicity Farseer", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]},
+                "grade_2": {"cost": {"Germanium": 1, "Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Felicity Farseer", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]},
+                "grade_3": {"cost": {"Classified Scan Databanks": 1, "Germanium": 1, "Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Felicity Farseer", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]},
+                "grade_4": {"cost": {"Divergent Scan Data": 1, "Mechanical Equipment": 1, "Niobium": 1}, "engineers": ["Bill Turner", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson"]},
+                "grade_5": {"cost": {"Classified Scan Fragment": 1, "Mechanical Components": 1, "Tin": 1}, "engineers": ["Bill Turner", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]}
             }
         }
     },
     "Blast resistant": {
         "module_recipes": {
             "Shield Booster": {
-                "grade_1": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
-                "grade_2": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
-                "grade_3": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
-                "grade_4": {"cost": {}, "engineers": ["Lei Cheung"]},
-                "grade_5": {"cost": {}, "engineers": ["Lei Cheung"]}
+                "grade_1": {"cost": {"Iron": 1}, "engineers": ["Didi Vatermann", "Mel Brandon", "Felicity Farseer", "Lei Cheung"]},
+                "grade_2": {"cost": {"Conductive Components": 1, "Iron": 1}, "engineers": ["Didi Vatermann", "Mel Brandon", "Lei Cheung"]},
+                "grade_3": {"cost": {"Conductive Components": 1, "Focus Crystals": 1, "Iron": 1}, "engineers": ["Didi Vatermann", "Mel Brandon", "Lei Cheung"]},
+                "grade_4": {"cost": {"Germanium": 1, "Refined Focus Crystals": 1, "Untypical Shield Scans": 1}, "engineers": ["Didi Vatermann", "Mel Brandon"]},
+                "grade_5": {"cost": {"Aberrant Shield Pattern Analysis": 1, "Exquisite Focus Crystals": 1, "Niobium": 1}, "engineers": ["Didi Vatermann", "Mel Brandon"]}
             },
             "Hull Reinforcement Package": {
-                "grade_1": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]},
-                "grade_2": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]},
-                "grade_3": {"cost": {}, "engineers": ["Petra Olmanova"]},
-                "grade_4": {"cost": {}, "engineers": ["Petra Olmanova"]},
-                "grade_5": {"cost": {}, "engineers": ["Petra Olmanova"]}
+                "grade_1": {"cost": {"Nickel": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                "grade_2": {"cost": {"Carbon": 1, "Zinc": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                "grade_3": {"cost": {"Salvaged Alloys": 1, "Vanadium": 1, "Zirconium": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                "grade_4": {"cost": {"Galvanising Alloys": 1, "Mercury": 1, "Tungsten": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                "grade_5": {"cost": {"Molybdenum": 1, "Phase Alloys": 1, "Ruthenium": 1}, "engineers": ["Selene Jean"]}
             },
             "Armour": {
-                "grade_1": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]},
-                "grade_2": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]},
-                "grade_3": {"cost": {}, "engineers": ["Petra Olmanova"]},
-                "grade_4": {"cost": {}, "engineers": ["Petra Olmanova"]},
-                "grade_5": {"cost": {}, "engineers": ["Petra Olmanova"]}
+                "grade_1": {"cost": {"Nickel": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                "grade_2": {"cost": {"Carbon": 1, "Zinc": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                "grade_3": {"cost": {"Salvaged Alloys": 1, "Vanadium": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                "grade_4": {"cost": {"Galvanising Alloys": 1, "Mercury": 1, "Tungsten": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                "grade_5": {"cost": {"Molybdenum": 1, "Phase Alloys": 1, "Ruthenium": 1}, "engineers": ["Selene Jean"]}
             }
         }
     },
     "Heavy duty": {
         "module_recipes": {
             "Shield Booster": {
-                "grade_1": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
-                "grade_2": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
-                "grade_3": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
-                "grade_4": {"cost": {}, "engineers": ["Lei Cheung"]},
-                "grade_5": {"cost": {}, "engineers": ["Lei Cheung"]}
+                "grade_1": {"cost": {"Grid Resistors": 1}, "engineers": ["Didi Vatermann", "Felicity Farseer", "Lei Cheung"]},
+                "grade_2": {"cost": {"Distorted Shield Cycle Recordings": 1, "Hybrid Capacitors": 1}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
+                "grade_3": {"cost": {"Distorted Shield Cycle Recordings": 1, "Hybrid Capacitors": 1, "Niobium": 1}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
+                "grade_4": {"cost": {"Electrochemical Arrays": 1, "Inconsistent Shield Soak Analysis": 1, "Tin": 1}, "engineers": ["Didi Vatermann"]},
+                "grade_5": {"cost": {"Antimony": 1, "Polymer Capacitors": 1, "Untypical Shield Scans": 1}, "engineers": ["Didi Vatermann"]}
             },
             "Hull Reinforcement Package": {
-                "grade_1": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]},
-                "grade_2": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]},
-                "grade_3": {"cost": {}, "engineers": ["Petra Olmanova"]},
-                "grade_4": {"cost": {}, "engineers": ["Petra Olmanova"]},
-                "grade_5": {"cost": {}, "engineers": ["Petra Olmanova"]}
+                "grade_1": {"cost": {"Carbon": 1}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]},
+                "grade_2": {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]},
+                "grade_3": {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]},
+                "grade_4": {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]},
+                "grade_5": {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Petra Olmanova", "Selene Jean"]}
             },
             "Armour": {
-                "grade_1": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]},
-                "grade_2": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]},
-                "grade_3": {"cost": {}, "engineers": ["Petra Olmanova"]},
-                "grade_4": {"cost": {}, "engineers": ["Petra Olmanova"]},
-                "grade_5": {"cost": {}, "engineers": ["Petra Olmanova"]}
+                "grade_1": {"cost": {"Carbon": 1}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]},
+                "grade_2": {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]},
+                "grade_3": {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]},
+                "grade_4": {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]},
+                "grade_5": {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Petra Olmanova", "Selene Jean"]}
             }
         }
     },
