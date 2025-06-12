@@ -2384,6 +2384,200 @@ ENGINEERING_MODIFICATIONS = {
 }
 
 
+def blueprint_finder(obj, projected_states):
+    """
+    Find engineer blueprints based on search criteria.
+    Can search by modification name, engineer name, module name, and grade.
+    Supports fuzzy matching and returns material costs with grade calculations.
+    """
+    import yaml
+
+    # Extract search parameters - can be combined
+    search_modifications = obj.get('modifications', '').lower().strip() if obj else ''
+    search_engineer = obj.get('engineer', '').lower().strip() if obj else ''
+    search_module = obj.get('module', '').lower().strip() if obj else ''
+    search_grade = obj.get('grade', '') if obj else ''
+
+    # Convert search_grade to int if provided
+    if search_grade and str(search_grade).isdigit():
+        search_grade = int(search_grade)
+    else:
+        search_grade = None
+
+    # Helper function for Levenshtein distance
+    def levenshtein_distance(s1, s2):
+        if len(s1) < len(s2):
+            return levenshtein_distance(s2, s1)
+
+        if len(s2) == 0:
+            return len(s1)
+
+        previous_row = list(range(len(s2) + 1))
+        for i, c1 in enumerate(s1):
+            current_row = [i + 1]
+            for j, c2 in enumerate(s2):
+                insertions = previous_row[j + 1] + 1
+                deletions = current_row[j] + 1
+                substitutions = previous_row[j] + (c1 != c2)
+                current_row.append(min(insertions, deletions, substitutions))
+            previous_row = current_row
+
+        return previous_row[-1]
+
+    # Helper function for fuzzy matching using Levenshtein distance
+    def matches_fuzzy(search_term, target_string):
+        if not search_term or not target_string:
+            return False
+
+        search_lower = search_term.lower()
+        target_lower = target_string.lower()
+
+        # First check for exact substring matches
+        if search_lower in target_lower:
+            return True
+
+        # Split into words for fuzzy matching
+        search_words = search_lower.split()
+        target_words = target_lower.replace(',', ' ').replace('(', ' ').replace(')', ' ').split()
+
+        # Fuzzy matching using Levenshtein distance
+        for search_word in search_words:
+            for target_word in target_words:
+                # Allow some fuzzy matching based on word length
+                max_distance = max(1, len(search_word) // 3)  # Allow 1 error per 3 characters
+                if levenshtein_distance(search_word, target_word) <= max_distance:
+                    return True
+
+        return False
+
+    # Helper function to calculate total materials needed for a grade
+    def calculate_materials_for_grade(base_cost, grade):
+        """Calculate total materials needed to reach a specific grade"""
+        total_materials = {}
+
+        # Sum materials from grade 1 to target grade
+        for g in range(1, grade + 1):
+            for material, amount in base_cost.items():
+                if material not in total_materials:
+                    total_materials[material] = 0
+                total_materials[material] += amount * g
+
+        return total_materials
+
+    # Build results
+    results = {}
+
+    # Prepare lists for fuzzy matching
+    all_modifications = list(ENGINEERING_MODIFICATIONS.keys())
+    all_engineers = set()
+    all_modules = set()
+
+    # Collect all unique engineers and modules
+    for mod_name, mod_data in ENGINEERING_MODIFICATIONS.items():
+        if "module_recipes" in mod_data:
+            for module_name, grades in mod_data["module_recipes"].items():
+                all_modules.add(module_name)
+                for grade, grade_info in grades.items():
+                    for engineer in grade_info.get("engineers", []):
+                        all_engineers.add(engineer)
+
+    all_engineers = list(all_engineers)
+    all_modules = list(all_modules)
+
+    # Search through all modifications
+    for mod_name, mod_data in ENGINEERING_MODIFICATIONS.items():
+        # Check if modification matches search criteria
+        if search_modifications and not matches_fuzzy(search_modifications, mod_name):
+            continue
+
+        if "module_recipes" not in mod_data:
+            continue
+
+        mod_results = {}
+
+        for module_name, grades in mod_data["module_recipes"].items():
+            # Check if module matches search criteria
+            if search_module and not matches_fuzzy(search_module, module_name):
+                continue
+
+            module_results = {}
+
+            for grade, grade_info in grades.items():
+                # Check if grade matches search criteria
+                if search_grade is not None and grade != search_grade:
+                    continue
+
+                # Check if any engineer matches search criteria
+                engineers = grade_info.get("engineers", [])
+                if search_engineer:
+                    matching_engineers = [eng for eng in engineers if matches_fuzzy(search_engineer, eng)]
+                    if not matching_engineers:
+                        continue
+                    engineers = matching_engineers
+
+                # Calculate total materials needed to reach this grade
+                base_cost = grade_info.get("cost", {})
+                total_materials = calculate_materials_for_grade(base_cost, grade)
+
+                grade_results = {
+                    "base_cost_per_roll": base_cost,
+                    "total_materials_to_reach_grade": total_materials,
+                    "engineers": engineers
+                }
+
+                module_results[f"Grade {grade}"] = grade_results
+
+            if module_results:
+                mod_results[module_name] = module_results
+
+        if mod_results:
+            results[mod_name] = mod_results
+
+    # Check if any blueprints were found
+    if not results:
+        search_terms = []
+        if search_modifications:
+            search_terms.append(f"modifications: '{search_modifications}'")
+        if search_engineer:
+            search_terms.append(f"engineer: '{search_engineer}'")
+        if search_module:
+            search_terms.append(f"module: '{search_module}'")
+        if search_grade:
+            search_terms.append(f"grade: {search_grade}")
+
+        if search_terms:
+            # If searching by modifications failed, show available options
+            if search_modifications:
+                return f"No blueprints found matching modifications: '{search_modifications}'\n\nAvailable modification types:\n" + yaml.dump(sorted(all_modifications))
+            elif search_engineer:
+                return f"No blueprints found matching engineer: '{search_engineer}'\n\nAvailable engineers:\n" + yaml.dump(sorted(all_engineers))
+            elif search_module:
+                return f"No blueprints found matching module: '{search_module}'\n\nAvailable modules:\n" + yaml.dump(sorted(all_modules))
+            else:
+                return f"No blueprints found matching search criteria: {', '.join(search_terms)}"
+        else:
+            return "No search criteria provided. Please specify modifications, engineer, module, or grade."
+
+    # Convert to YAML format
+    yaml_output = yaml.dump(results, default_flow_style=False, sort_keys=False)
+
+    # Add search info to the output if filters were applied
+    search_info = []
+    if search_modifications:
+        search_info.append(f"modifications: '{search_modifications}'")
+    if search_engineer:
+        search_info.append(f"engineer: '{search_engineer}'")
+    if search_module:
+        search_info.append(f"module: '{search_module}'")
+    if search_grade:
+        search_info.append(f"grade: {search_grade}")
+
+    if search_info:
+        return f"Blueprint Search Results (filtered by {', '.join(search_info)}):\n\n```yaml\n{yaml_output}```"
+    else:
+        return f"All Available Blueprints:\n\n```yaml\n{yaml_output}```"
+
+
 def engineer_finder(obj, projected_states):
     ship_engineers = {
         300260: {"Engineer": "Tod 'The Blaster' McQuinn", "Location": "Wolf 397", 
@@ -6449,6 +6643,35 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             }
         },
         engineer_finder,
+        'web'
+    )
+
+    # Register AI action for blueprint finder
+    actionManager.registerAction(
+        'blueprint_finder',
+        "Find engineer blueprints based on search criteria. Can search by modification name, engineer name, module name, and grade. Supports fuzzy matching and returns material costs with grade calculations.",
+        {
+            "type": "object",
+            "properties": {
+                "modifications": {
+                    "type": "string",
+                    "description": "Modification name to search for"
+                },
+                "engineer": {
+                    "type": "string",
+                    "description": "Engineer name to search for"
+                },
+                "module": {
+                    "type": "string",
+                    "description": "Module name to search for"
+                },
+                "grade": {
+                    "type": "integer",
+                    "description": "Grade to search for"
+                }
+            }
+        },
+        blueprint_finder,
         'web'
     )
 
