@@ -2146,32 +2146,32 @@ ENGINEERING_MODIFICATIONS = {
     "Kinetic resistant": {
         "module_recipes": {
             "Shield Booster": {
-                "grade_1": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
-                "grade_2": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
-                "grade_3": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
-                "grade_4": {"cost": {}, "engineers": ["Lei Cheung"]},
-                "grade_5": {"cost": {}, "engineers": ["Lei Cheung"]}
-            },
-            "Hull Reinforcement Package": {
-                "grade_1": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]},
-                "grade_2": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]},
-                "grade_3": {"cost": {}, "engineers": ["Petra Olmanova"]},
-                "grade_4": {"cost": {}, "engineers": ["Petra Olmanova"]},
-                "grade_5": {"cost": {}, "engineers": ["Petra Olmanova"]}
+                "grade_1": {"cost": {"Iron": 1}, "engineers": ["Didi Vatermann", "Felicity Farseer", "Lei Cheung"]},
+                "grade_2": {"cost": {"Germanium": 1, "Grid Resistors": 1}, "engineers": ["Didi Vatermann", "Felicity Farseer", "Lei Cheung"]},
+                "grade_3": {"cost": {"Focus Crystals": 1, "Hybrid Capacitors": 1, "Salvaged Alloys": 1}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
+                "grade_4": {"cost": {"Galvanising Alloys": 1, "Refined Focus Crystals": 1, "Untypical Shield Scans": 1}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
+                "grade_5": {"cost": {"Aberrant Shield Pattern Analysis": 1, "Exquisite Focus Crystals": 1, "Phase Alloys": 1}, "engineers": ["Didi Vatermann"]}
             },
             "Shield Generator": {
-                "grade_1": {"cost": {}, "engineers": ["Elvira Martuuk", "Didi Vatermann", "Lei Cheung"]},
-                "grade_2": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
-                "grade_3": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
-                "grade_4": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
-                "grade_5": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]}
+                "grade_1": {"cost": {"Distorted Shield Cycle Recordings": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung"]},
+                "grade_2": {"cost": {"Distorted Shield Cycle Recordings": 1, "Modified Consumer Firmware": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung"]},
+                "grade_3": {"cost": {"Distorted Shield Cycle Recordings": 1, "Modified Consumer Firmware": 1, "Selenium": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung"]},
+                "grade_4": {"cost": {"Focus Crystals": 1, "Inconsistent Shield Soak Analysis": 1, "Mercury": 1}, "engineers": ["Lei Cheung"]},
+                "grade_5": {"cost": {"Refined Focus Crystals": 1, "Ruthenium": 1, "Untypical Shield Scans": 1}, "engineers": ["Lei Cheung"]}
             },
             "Armour": {
-                "grade_1": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]},
-                "grade_2": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]},
-                "grade_3": {"cost": {}, "engineers": ["Petra Olmanova"]},
-                "grade_4": {"cost": {}, "engineers": ["Petra Olmanova"]},
-                "grade_5": {"cost": {}, "engineers": ["Petra Olmanova"]}
+                "grade_1": {"cost": {"Nickel": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                "grade_2": {"cost": {"Nickel": 1, "Vanadium": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                "grade_3": {"cost": {"High Density Composites": 1, "Salvaged Alloys": 1, "Vanadium": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                "grade_4": {"cost": {"Galvanising Alloys": 1, "Proprietary Composites": 1, "Tungsten": 1}, "engineers": ["Selene Jean"]},
+                "grade_5": {"cost": {"Core Dynamics Composites": 1, "Molybdenum": 1, "Phase Alloys": 1}, "engineers": ["Selene Jean"]}
+            },
+            "Hull Reinforcement Package": {
+                "grade_1": {"cost": {"Nickel": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                "grade_2": {"cost": {"Nickel": 1, "Vanadium": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                "grade_3": {"cost": {"High Density Composites": 1, "Salvaged Alloys": 1, "Vanadium": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                "grade_4": {"cost": {"Galvanising Alloys": 1, "Proprietary Composites": 1, "Tungsten": 1}, "engineers": ["Selene Jean"]},
+                "grade_5": {"cost": {"Core Dynamics Composites": 1, "Molybdenum": 1, "Phase Alloys": 1}, "engineers": ["Selene Jean"]}
             }
         }
     },
