@@ -70,7 +70,7 @@
                             <div class="ptt-extras">
                                 <mat-slide-toggle [(ngModel)]="config.ptt_tap_to_talk_var" appTooltip="Turns the Push-to-Talk key into a toggle, so you don't have to hold it."
                                                     (ngModelChange)="onConfigChange({ptt_tap_to_talk_var: $event})">
-                                    Tap-to-Talk
+                                    <span [innerHTML]="config.ptt_tap_to_talk_var ? '<strong>Toggle</strong> / Hold' : 'Toggle / <strong>Hold</strong>'"></span>
                                 </mat-slide-toggle>
                                 <mat-slide-toggle [(ngModel)]="config.ptt_inverted_var" appTooltip="Inverts the Push-to-Talk key behavior, swapping muting and unmuting."
                                                     (ngModelChange)="onConfigChange({ptt_inverted_var: $event})">
