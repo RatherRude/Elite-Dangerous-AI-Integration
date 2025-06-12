@@ -1103,6 +1103,1231 @@ def get_galnet_news(obj, projected_states):
     except:
         return "News feed currently unavailable"
 
+# Here could be a json
+
+# Engineering modifications database
+ENGINEERING_MODIFICATIONS = {
+    "Efficient": {
+        "module_recipes": {
+            "Beam Laser": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Burst Laser": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Cannon": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Fragment Cannon": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Multi-cannon": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Plasma Accelerator": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Pulse Laser": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Lightweight": {
+        "module_recipes": {
+            "Beam Laser": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Burst Laser": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Cannon": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Fragment Cannon": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Mine Launcher": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Missile Rack": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Multi-cannon": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Plasma Accelerator": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Pulse Laser": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Rail Gun": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Seeker Missile Rack": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Torpedo Pylon": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Caustic Sink Launcher": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Chaff Launcher": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Electronic Countermeasure": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Frame Shift Wake Scanner": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Heat Sink Launcher": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Kill Warrant Scanner": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Manifest Scanner": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Point Defence": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Collector Limpet Controller": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Fuel Transfer Limpet Controller": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Hatch Breaker Limpet Controller": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Hull Reinforcement Package": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Prospector Limpet Controller": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Life Support": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Sensors": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Armour": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Long range": {
+        "module_recipes": {
+            "Beam Laser": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Burst Laser": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Cannon": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Multi-cannon": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Plasma Accelerator": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Pulse Laser": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Rail Gun": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Frame Shift Wake Scanner": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Kill Warrant Scanner": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Manifest Scanner": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Frame Shift Drive Interdictor": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Sensors": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Overcharged": {
+        "module_recipes": {
+            "Beam Laser": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Burst Laser": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Cannon": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Fragment Cannon": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Multi-cannon": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Plasma Accelerator": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Pulse Laser": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Power Plant": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Short range": {
+        "module_recipes": {
+            "Beam Laser": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Burst Laser": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Cannon": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Multi-cannon": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Plasma Accelerator": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Pulse Laser": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Rail Gun": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Sturdy": {
+        "module_recipes": {
+            "Beam Laser": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Burst Laser": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Cannon": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Fragment Cannon": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Mine Launcher": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Missile Rack": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Multi-cannon": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Plasma Accelerator": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Pulse Laser": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Rail Gun": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Seeker Missile Rack": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Torpedo Pylon": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Focused": {
+        "module_recipes": {
+            "Burst Laser": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Plasma Accelerator": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Pulse Laser": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Rapid fire": {
+        "module_recipes": {
+            "Burst Laser": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Cannon": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Fragment Cannon": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Mine Launcher": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Missile Rack": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Multi-cannon": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Plasma Accelerator": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Pulse Laser": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Seeker Missile Rack": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "High capacity": {
+        "module_recipes": {
+            "Cannon": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Fragment Cannon": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Mine Launcher": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Missile Rack": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Multi-cannon": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Rail Gun": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Seeker Missile Rack": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Power Distributor": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Double shot": {
+        "module_recipes": {
+            "Fragment Cannon": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Anti-Guardian Zone Resistance": {
+        "module_recipes": {
+            "Guardian Gauss Cannon": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Guardian Nanite Torpedo Pylon": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Guardian Plasma Charger": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Guardian Shard Cannon": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Guardian FSD Booster": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Guardian Hull Reinforcement": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Guardian Module Reinforcement": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Guardian Shield Reinforcement": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Guardian Hybrid Power Distributor": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Guardian Power Plant": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Ammo capacity": {
+        "module_recipes": {
+            "Caustic Sink Launcher": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Chaff Launcher": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Heat Sink Launcher": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Point Defence": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Reinforced": {
+        "module_recipes": {
+            "Caustic Sink Launcher": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Chaff Launcher": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Electronic Countermeasure": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Frame Shift Wake Scanner": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Heat Sink Launcher": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Kill Warrant Scanner": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Manifest Scanner": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Point Defence": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Collector Limpet Controller": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Fuel Transfer Limpet Controller": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Hatch Breaker Limpet Controller": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Prospector Limpet Controller": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Shield Generator": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Life Support": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Thrusters": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Shielded": {
+        "module_recipes": {
+            "Caustic Sink Launcher": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Chaff Launcher": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Electronic Countermeasure": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Frame Shift Wake Scanner": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Heat Sink Launcher": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Kill Warrant Scanner": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Manifest Scanner": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Point Defence": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Auto Field-Maintenance Unit": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Collector Limpet Controller": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Fuel Scoop": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Fuel Transfer Limpet Controller": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Hatch Breaker Limpet Controller": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Prospector Limpet Controller": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Refinery": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Frame Shift Drive": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Life Support": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Power Distributor": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Fast scan": {
+        "module_recipes": {
+            "Frame Shift Wake Scanner": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Kill Warrant Scanner": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Manifest Scanner": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Wide angle": {
+        "module_recipes": {
+            "Frame Shift Wake Scanner": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Kill Warrant Scanner": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Manifest Scanner": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Sensors": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Blast resistant": {
+        "module_recipes": {
+            "Shield Booster": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Hull Reinforcement Package": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Armour": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Heavy duty": {
+        "module_recipes": {
+            "Shield Booster": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Hull Reinforcement Package": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Armour": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Kinetic resistant": {
+        "module_recipes": {
+            "Shield Booster": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Hull Reinforcement Package": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Shield Generator": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Armour": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Resistance augmented": {
+        "module_recipes": {
+            "Shield Booster": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Thermal resistant": {
+        "module_recipes": {
+            "Shield Booster": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Hull Reinforcement Package": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Shield Generator": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            },
+            "Armour": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Expanded probe scanning radius": {
+        "module_recipes": {
+            "Detailed Surface Scanner": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Expanded capture arc": {
+        "module_recipes": {
+            "Frame Shift Drive Interdictor": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Rapid charge": {
+        "module_recipes": {
+            "Shield Cell Bank": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Specialised": {
+        "module_recipes": {
+            "Shield Cell Bank": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Enhanced low power": {
+        "module_recipes": {
+            "Shield Generator": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Faster boot sequence": {
+        "module_recipes": {
+            "Frame Shift Drive": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Increased range": {
+        "module_recipes": {
+            "Frame Shift Drive": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Charge enhanced": {
+        "module_recipes": {
+            "Power Distributor": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Engine focused": {
+        "module_recipes": {
+            "Power Distributor": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "System focused": {
+        "module_recipes": {
+            "Power Distributor": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Weapon focused": {
+        "module_recipes": {
+            "Power Distributor": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Armoured": {
+        "module_recipes": {
+            "Power Plant": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Low emissions": {
+        "module_recipes": {
+            "Power Plant": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Clean": {
+        "module_recipes": {
+            "Thrusters": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    },
+    "Dirty": {
+        "module_recipes": {
+            "Thrusters": {
+                "grade_1": {
+                    "cost": {},
+                    "engineers": []
+                }
+            }
+        }
+    }
+}
+
+
 def engineer_finder(obj, projected_states):
     ship_engineers = {
         300260: {"Engineer": "Tod 'The Blaster' McQuinn", "Location": "Wolf 397", 
