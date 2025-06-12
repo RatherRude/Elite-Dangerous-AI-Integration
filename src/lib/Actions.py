@@ -1511,6 +1511,709 @@ def engineer_finder(obj, projected_states):
     else:
         return f"Engineer Progress Overview:\n\n```yaml\n{yaml_output}```"
 
+
+def material_finder(obj, projected_states):
+    """
+    Find materials for both ship and suit engineering.
+    
+    Supports 6 material types:
+    - Ship materials: Raw, Manufactured, Encoded (from Materials projection)
+    - Suit materials: Items, Components, Data (from ShipLocker projection)
+    
+    Suit materials don't have grades, only counts.
+    """
+    import yaml
+    
+    # Ship engineering materials (from Materials projection)
+    ship_raw_materials_map = {
+        1: { 1: ['carbon'], 2: ['vanadium'], 3: ['niobium'], 4: ['yttrium'] },
+        2: { 1: ['phosphorus'], 2: ['chromium'], 3: ['molybdenum'], 4: ['technetium'] },
+        3: { 1: ['sulphur'], 2: ['manganese'], 3: ['cadmium'], 4: ['ruthenium'] },
+        4: { 1: ['iron'], 2: ['zinc'], 3: ['tin'], 4: ['selenium'] },
+        5: { 1: ['nickel'], 2: ['germanium'], 3: ['tungsten'], 4: ['tellurium'] },
+        6: { 1: ['rhenium'], 2: ['arsenic'], 3: ['mercury'], 4: ['polonium'] },
+        7: { 1: ['lead'], 2: ['zirconium'], 3: ['boron'], 4: ['antimony'] }
+    }
+
+    ship_manufactured_materials_map = {
+        'Chemical': {
+            1: ['chemicalstorageunits'], 2: ['chemicalprocessors'], 3: ['chemicaldistillery'],
+            4: ['chemicalmanipulators'], 5: ['pharmaceuticalisolators']
+        },
+        'Thermic': {
+            1: ['temperedalloys'], 2: ['heatresistantceramics'], 3: ['precipitatedalloys'],
+            4: ['thermicalloys'], 5: ['militarygradealloys']
+        },
+        'Heat': {
+            1: ['heatconductionwiring'], 2: ['heatdispersionplate'], 3: ['heatexchangers'],
+            4: ['heatvanes'], 5: ['protoheatradiators']
+        },
+        'Conductive': {
+            1: ['basicconductors'], 2: ['conductivecomponents'], 3: ['conductiveceramics'],
+            4: ['conductivepolymers'], 5: ['biotechconductors']
+        },
+        'Mechanical Components': {
+            1: ['mechanicalscrap'], 2: ['mechanicalequipment'], 3: ['mechanicalcomponents'],
+            4: ['configurablecomponents'], 5: ['improvisedcomponents']
+        },
+        'Capacitors': {
+            1: ['gridresistors'], 2: ['hybridcapacitors'], 3: ['electrochemicalarrays'],
+            4: ['polymercapacitors'], 5: ['militarysupercapacitors']
+        },
+        'Shielding': {
+            1: ['wornshieldemitters'], 2: ['shieldemitters'], 3: ['shieldingsensors'],
+            4: ['compoundshielding'], 5: ['imperialshielding']
+        },
+        'Composite': {
+            1: ['compactcomposites'], 2: ['filamentcomposites'], 3: ['highdensitycomposites'],
+            4: ['proprietarycomposites'], 5: ['coredynamicscomposites']
+        },
+        'Crystals': {
+            1: ['crystalshards'], 2: ['flawedfocuscrystals'], 3: ['focuscrystals'],
+            4: ['refinedfocuscrystals'], 5: ['exquisitefocuscrystals']
+        },
+        'Alloys': {
+            1: ['salvagedalloys'], 2: ['galvanisingalloys'], 3: ['phasealloys'],
+            4: ['protolightalloys'], 5: ['protoradiolicalloys']
+        },
+        'Guardian Technology': {
+            1: ['guardian_sentinel_wreckagecomponents', 'guardianwreckagecomponents'],
+            2: ['guardian_powercell', 'guardianpowercell'],
+            3: ['guardian_powerconduit', 'guardianpowerconduit'],
+            4: ['guardian_sentinel_weaponparts', 'guardiansentinelweaponparts'],
+            5: ['guardian_techcomponent', 'techcomponent']
+        },
+        'Thargoid Technology': {
+            1: ['tg_wreckagecomponents', 'wreckagecomponents', 'tg_abrasion02', 'tgabrasion02'],
+            2: ['tg_biomechanicalconduits', 'biomechanicalconduits', 'tg_abrasion03', 'tgabrasion03'],
+            3: ['tg_weaponparts', 'weaponparts', 'unknowncarapace', 'tg_causticshard', 'tgcausticshard'],
+            4: ['tg_propulsionelement', 'propulsionelement', 'unknownenergycell', 'unknowncorechip'],
+            5: ['tg_causticgeneratorparts', 'causticgeneratorparts', 'tg_causticcrystal', 'tgcausticcrystal', 'unknowntechnologycomponents']
+        }
+    }
+
+    ship_encoded_materials_map = {
+        'Emission Data': {
+            1: ['scrambledemissiondata'], 2: ['archivedemissiondata'], 3: ['emissiondata'],
+            4: ['decodedemissiondata'], 5: ['compactemissionsdata']
+        },
+        'Wake Scans': {
+            1: ['disruptedwakeechoes'], 2: ['fsdtelemetry'], 3: ['wakesolutions'],
+            4: ['hyperspacetrajectories'], 5: ['dataminedwake']
+        },
+        'Shield Data': {
+            1: ['shieldcyclerecordings'], 2: ['shieldsoakanalysis'], 3: ['shielddensityreports'],
+            4: ['shieldpatternanalysis'], 5: ['shieldfrequencydata']
+        },
+        'Encryption Files': {
+            1: ['encryptedfiles'], 2: ['encryptioncodes'], 3: ['symmetrickeys'],
+            4: ['encryptionarchives'], 5: ['adaptiveencryptors']
+        },
+        'Data Archives': {
+            1: ['bulkscandata'], 2: ['scanarchives'], 3: ['scandatabanks'],
+            4: ['encodedscandata'], 5: ['classifiedscandata']
+        },
+        'Encoded Firmware': {
+            1: ['legacyfirmware'], 2: ['consumerfirmware'], 3: ['industrialfirmware'],
+            4: ['securityfirmware'], 5: ['embeddedfirmware']
+        },
+        'Guardian Data': {
+            1: ['ancientbiologicaldata'],
+            2: ['ancientculturaldata'],
+            3: ['ancienthistoricaldata'],
+            4: ['ancienttechnologicaldata'],
+            5: ['guardian_vesselblueprint']
+        },
+        'Thargoid Data': {
+            1: ['tg_interdictiondata'],
+            2: ['tg_shipflightdata'],
+            3: ['tg_shipsystemsdata'],
+            4: ['tg_shutdowndata'],
+            5: ['unknownshipsignature']
+        }
+    }
+
+    # Suit engineering materials (from ShipLocker projection) - no grades
+    suit_items_materials = [
+        'weaponschematic', 'chemicalprocesssample', 'insightdatabank', 'personaldocuments',
+        'chemicalsample', 'biochemicalagent', 'geneticsample', 'gmeds', 'healthmonitor',
+        'inertiacanister', 'insight', 'ionisedgas', 'personalcomputer', 'syntheticgenome',
+        'geneticrepairmeds', 'buildingschematic', 'compactlibrary', 'deepmantlesample',
+        'hush', 'infinity', 'insightentertainmentsuite', 'lazarus', 'microbialinhibitor',
+        'nutritionalconcentrate', 'push', 'shipschematic', 'surveillanceequipment',
+        'universaltranslator', 'vehicleschematic', 'pyrolyticcatalyst', 'inorganiccontaminant',
+        'agriculturalprocesssample', 'refinementprocesssample', 'compressionliquefiedgas',
+        'degradedpowerregulator', 'largecapacitypowerregulator', 'powermiscindust',
+        'powermisccomputer', 'powerequipment'
+    ]
+
+    suit_components_materials = [
+        'aerogel', 'chemicalcatalyst', 'chemicalsuperbase', 'circuitboard', 'circuitswitch',
+        'electricalfuse', 'electricalwiring', 'encryptedmemorychip', 'epoxyadhesive',
+        'memorychip', 'metalcoil', 'microhydraulics', 'microsupercapacitor', 'microthrusters',
+        'microtransformer', 'motor', 'opticalfibre', 'opticallens', 'scrambler',
+        'titaniumplating', 'transmitter', 'tungstencarbide', 'viscoelasticpolymer', 'rdx',
+        'electromagnet', 'oxygenicbacteria', 'epinephrine', 'phneutraliser', 'microelectrode',
+        'ionbattery', 'weaponcomponent'
+    ]
+
+    suit_data_materials = [
+        'internalcorrespondence', 'biometricdata', 'nocdata', 'axcombatlogs', 'airqualityreports',
+        'audiologs', 'ballisticsdata', 'biologicalweapondata', 'catmedia', 'chemicalexperimentdata',
+        'chemicalformulae', 'chemicalinventory', 'chemicalpatents', 'cocktailrecipes',
+        'combatantperformance', 'conflicthistory', 'digitaldesigns', 'dutyrota', 'espionagematerial',
+        'evacuationprotocols', 'explorationjournals', 'extractionyielddata', 'factionassociates',
+        'financialprojections', 'factionnews', 'geneticresearch', 'influenceprojections',
+        'kompromat', 'maintenancelogs', 'manufacturinginstructions', 'medicalrecords',
+        'medicaltrialrecords', 'meetingminutes', 'mininganalytics', 'networkaccesshistory',
+        'operationalmanual', 'opinionpolls', 'patrolroutes', 'politicalaffiliations',
+        'productionreports', 'productionschedule', 'propaganda', 'radioactivitydata',
+        'reactoroutputreview', 'recyclinglogs', 'securityexpenses', 'seedgeneaology',
+        'settlementassaultplans', 'settlementdefenceplans', 'shareholderinformation',
+        'smearcampaignplans', 'spectralanalysisdata', 'stellaractivitylogs', 'surveilleancelogs',
+        'tacticalplans', 'taxrecords', 'topographicalsurveys', 'vaccineresearch',
+        'visitorregister', 'weaponinventory', 'weapontestdata', 'xenodefenceprotocols',
+        'geologicaldata', 'factiondonatorlist', 'pharmaceuticalpatents', 'powerresearchdata',
+        'powerpropagandadata', 'poweremployeedata', 'powerclassifieddata', 'powerpreparationspyware'
+    ]
+
+    suit_consumables_materials = [
+        'healthpack', 'energycell', 'amm_grenade_emp', 'amm_grenade_frag', 
+        'amm_grenade_shield', 'bypass'
+    ]
+
+    # Display names from game data
+    display_names = {
+        # Ship materials - Raw
+        'carbon': 'Carbon', 'vanadium': 'Vanadium', 'niobium': 'Niobium', 'yttrium': 'Yttrium',
+        'phosphorus': 'Phosphorus', 'chromium': 'Chromium', 'molybdenum': 'Molybdenum',
+        'technetium': 'Technetium', 'sulphur': 'Sulphur', 'manganese': 'Manganese',
+        'cadmium': 'Cadmium', 'ruthenium': 'Ruthenium', 'iron': 'Iron', 'zinc': 'Zinc',
+        'tin': 'Tin', 'selenium': 'Selenium', 'nickel': 'Nickel', 'germanium': 'Germanium',
+        'tungsten': 'Tungsten', 'tellurium': 'Tellurium', 'rhenium': 'Rhenium',
+        'arsenic': 'Arsenic', 'mercury': 'Mercury', 'polonium': 'Polonium', 'lead': 'Lead',
+        'zirconium': 'Zirconium', 'boron': 'Boron', 'antimony': 'Antimony',
+        
+        # Ship materials - Manufactured (key examples)
+        'chemicalstorageunits': 'Chemical Storage Units', 'temperedalloys': 'Tempered Alloys',
+        'heatconductionwiring': 'Heat Conduction Wiring', 'basicconductors': 'Basic Conductors',
+        'mechanicalscrap': 'Mechanical Scrap', 'gridresistors': 'Grid Resistors',
+        'wornshieldemitters': 'Worn Shield Emitters', 'compactcomposites': 'Compact Composites',
+        'crystalshards': 'Crystal Shards', 'salvagedalloys': 'Salvaged Alloys',
+        
+        # Ship materials - Encoded (key examples)
+        'scrambledemissiondata': 'Exceptional Scrambled Emission Data',
+        'disruptedwakeechoes': 'Atypical Disrupted Wake Echoes',
+        'shieldcyclerecordings': 'Distorted Shield Cycle Recordings',
+        'encryptedfiles': 'Unusual Encrypted Files', 'bulkscandata': 'Anomalous Bulk Scan Data',
+        'legacyfirmware': 'Specialised Legacy Firmware',
+        
+        # Suit materials - Items
+        'weaponschematic': 'Weapon Schematic', 'chemicalprocesssample': 'Chemical Process Sample',
+        'insightdatabank': 'Insight Data Bank', 'personaldocuments': 'Personal Documents',
+        'chemicalsample': 'Chemical Sample', 'biochemicalagent': 'Biochemical Agent',
+        'geneticsample': 'Biological Sample', 'gmeds': 'G-Meds', 'healthmonitor': 'Health Monitor',
+        'inertiacanister': 'Inertia Canister', 'ionisedgas': 'Ionised Gas',
+        'personalcomputer': 'Personal Computer', 'syntheticgenome': 'Synthetic Genome',
+        'geneticrepairmeds': 'Genetic Repair Meds', 'buildingschematic': 'Building Schematic',
+        'compactlibrary': 'Compact Library', 'deepmantlesample': 'Deep Mantle Sample',
+        'insightentertainmentsuite': 'Insight Entertainment Suite',
+        'microbialinhibitor': 'Microbial Inhibitor', 'nutritionalconcentrate': 'Nutritional Concentrate',
+        'shipschematic': 'Ship Schematic', 'surveillanceequipment': 'Surveillance Equipment',
+        'universaltranslator': 'Universal Translator', 'vehicleschematic': 'Vehicle Schematic',
+        'pyrolyticcatalyst': 'Pyrolytic Catalyst', 'inorganiccontaminant': 'Inorganic Contaminant',
+        'agriculturalprocesssample': 'Agricultural Process Sample',
+        'refinementprocesssample': 'Refinement Process Sample',
+        'compressionliquefiedgas': 'Compression-Liquefied Gas',
+        'degradedpowerregulator': 'Degraded Power Regulator',
+        'largecapacitypowerregulator': 'Power Regulator', 'powermiscindust': 'Industrial Machinery',
+        'powermisccomputer': 'Data Storage Device', 'powerequipment': 'Personal Protective Equipment',
+        
+        # Suit materials - Components
+        'chemicalcatalyst': 'Chemical Catalyst', 'chemicalsuperbase': 'Chemical Superbase',
+        'circuitboard': 'Circuit Board', 'circuitswitch': 'Circuit Switch',
+        'electricalfuse': 'Electrical Fuse', 'electricalwiring': 'Electrical Wiring',
+        'encryptedmemorychip': 'Encrypted Memory Chip', 'epoxyadhesive': 'Epoxy Adhesive',
+        'memorychip': 'Memory Chip', 'metalcoil': 'Metal Coil', 'microhydraulics': 'Micro Hydraulics',
+        'microsupercapacitor': 'Micro Supercapacitor', 'microthrusters': 'Micro Thrusters',
+        'microtransformer': 'Micro Transformer', 'opticalfibre': 'Optical Fibre',
+        'opticallens': 'Optical Lens', 'titaniumplating': 'Titanium Plating',
+        'tungstencarbide': 'Tungsten Carbide', 'viscoelasticpolymer': 'Viscoelastic Polymer',
+        'oxygenicbacteria': 'Oxygenic Bacteria', 'phneutraliser': 'pH Neutraliser',
+        'ionbattery': 'Ion Battery', 'weaponcomponent': 'Weapon Component',
+        
+        # Suit materials - Data
+        'internalcorrespondence': 'Internal Correspondence', 'biometricdata': 'Biometric Data',
+        'nocdata': 'NOC Data', 'axcombatlogs': 'AX Combat Logs', 'airqualityreports': 'Air Quality Reports',
+        'audiologs': 'Audio Logs', 'ballisticsdata': 'Ballistics Data',
+        'biologicalweapondata': 'Biological Weapon Data', 'catmedia': 'Cat Media',
+        'chemicalexperimentdata': 'Chemical Experiment Data', 'chemicalformulae': 'Chemical Formulae',
+        'chemicalinventory': 'Chemical Inventory', 'chemicalpatents': 'Chemical Patents',
+        'cocktailrecipes': 'Cocktail Recipes', 'combatantperformance': 'Combatant Performance',
+        'conflicthistory': 'Conflict History', 'digitaldesigns': 'Digital Designs',
+        'dutyrota': 'Duty Rota', 'espionagematerial': 'Espionage Material',
+        'evacuationprotocols': 'Evacuation Protocols', 'explorationjournals': 'Exploration Journals',
+        'extractionyielddata': 'Extraction Yield Data', 'factionassociates': 'Faction Associates',
+        'financialprojections': 'Financial Projections', 'factionnews': 'Faction News',
+        'geneticresearch': 'Genetic Research', 'influenceprojections': 'Influence Projections',
+        'maintenancelogs': 'Maintenance Logs', 'manufacturinginstructions': 'Manufacturing Instructions',
+        'medicalrecords': 'Medical Records', 'medicaltrialrecords': 'Clinical Trial Records',
+        'meetingminutes': 'Meeting Minutes', 'mininganalytics': 'Mining Analytics',
+        'networkaccesshistory': 'Network Access History', 'operationalmanual': 'Operational Manual',
+        'opinionpolls': 'Opinion Polls', 'patrolroutes': 'Patrol Routes',
+        'politicalaffiliations': 'Political Affiliations', 'productionreports': 'Production Reports',
+        'productionschedule': 'Production Schedule', 'radioactivitydata': 'Radioactivity Data',
+        'reactoroutputreview': 'Reactor Output Review', 'recyclinglogs': 'Recycling Logs',
+        'securityexpenses': 'Security Expenses', 'seedgeneaology': 'Seed Geneaology',
+        'settlementassaultplans': 'Settlement Assault Plans',
+        'settlementdefenceplans': 'Settlement Defence Plans',
+        'shareholderinformation': 'Shareholder Information',
+        'smearcampaignplans': 'Smear Campaign Plans', 'spectralanalysisdata': 'Spectral Analysis Data',
+        'stellaractivitylogs': 'Stellar Activity Logs', 'surveilleancelogs': 'Surveillance Logs',
+        'tacticalplans': 'Tactical Plans', 'taxrecords': 'Tax Records',
+        'topographicalsurveys': 'Topographical Surveys', 'vaccineresearch': 'Vaccine Research',
+        'visitorregister': 'Visitor Register', 'weaponinventory': 'Weapon Inventory',
+        'weapontestdata': 'Weapon Test Data', 'xenodefenceprotocols': 'Xeno-Defence Protocols',
+        'geologicaldata': 'Geological Data', 'factiondonatorlist': 'Faction Donator List',
+        'pharmaceuticalpatents': 'Pharmaceutical Patents', 'powerresearchdata': 'Power Research Data',
+        'powerpropagandadata': 'Power Political Data', 'poweremployeedata': 'Power Association Data',
+        'powerclassifieddata': 'Power Classified Data', 'powerpreparationspyware': 'Power Injection Malware',
+        
+        # Suit materials - Consumables
+        'healthpack': 'Medkit', 'energycell': 'Energy Cell', 'amm_grenade_emp': 'Shield Disruptor',
+        'amm_grenade_frag': 'Frag Grenade', 'amm_grenade_shield': 'Shield Projector', 'bypass': 'E-Breach'
+    }
+
+    # Extract search parameters
+    search_names = []
+    if obj and obj.get('name'):
+        name_param = obj.get('name')
+        if isinstance(name_param, list):
+            search_names = [name.lower().strip() for name in name_param if name]
+        else:
+            search_names = [name_param.lower().strip()] if name_param else []
+    
+    search_grade = obj.get('grade', 0) if obj else 0
+    search_type = obj.get('type', '').lower().strip() if obj else ''
+
+    # Get data from projected states
+    materials_data = projected_states.get('Materials', {})
+    shiploader_data = projected_states.get('ShipLocker', {})
+
+    # Helper function for Levenshtein distance
+    def levenshtein_distance(s1, s2):
+        if len(s1) < len(s2):
+            return levenshtein_distance(s2, s1)
+        if len(s2) == 0:
+            return len(s1)
+        previous_row = list(range(len(s2) + 1))
+        for i, c1 in enumerate(s1):
+            current_row = [i + 1]
+            for j, c2 in enumerate(s2):
+                insertions = previous_row[j + 1] + 1
+                deletions = current_row[j] + 1
+                substitutions = previous_row[j] + (c1 != c2)
+                current_row.append(min(insertions, deletions, substitutions))
+            previous_row = current_row
+        return previous_row[-1]
+
+    # Helper function to find ship material info
+    def find_ship_material_info(material_name):
+        material_name_lower = material_name.lower()
+        
+        # Check raw materials
+        for category, grades in ship_raw_materials_map.items():
+            for grade, materials in grades.items():
+                if material_name_lower in materials:
+                    return {'category': 'Ship', 'type': 'Raw', 'grade': grade, 'section': f'Category {category}'}
+        
+        # Check manufactured materials
+        for section, grades in ship_manufactured_materials_map.items():
+            for grade, materials in grades.items():
+                if material_name_lower in materials:
+                    return {'category': 'Ship', 'type': 'Manufactured', 'grade': grade, 'section': section}
+        
+        # Check encoded materials
+        for section, grades in ship_encoded_materials_map.items():
+            for grade, materials in grades.items():
+                if material_name_lower in materials:
+                    return {'category': 'Ship', 'type': 'Encoded', 'grade': grade, 'section': section}
+        
+        return None
+
+    # Helper function to find suit material info
+    def find_suit_material_info(material_name):
+        material_name_lower = material_name.lower()
+        
+        if material_name_lower in suit_items_materials:
+            return {'category': 'Suit', 'type': 'Items', 'grade': None, 'section': 'Items'}
+        elif material_name_lower in suit_components_materials:
+            return {'category': 'Suit', 'type': 'Components', 'grade': None, 'section': 'Components'}
+        elif material_name_lower in suit_data_materials:
+            return {'category': 'Suit', 'type': 'Data', 'grade': None, 'section': 'Data'}
+        elif material_name_lower in suit_consumables_materials:
+            return {'category': 'Suit', 'type': 'Consumables', 'grade': None, 'section': 'Consumables'}
+        
+        return None
+
+    # Helper function to get higher grade materials from the same family
+    def get_higher_grade_materials(material_info, current_material):
+        higher_grade_materials = []
+        
+        if material_info['category'] != 'Ship' or material_info['grade'] is None:
+            return higher_grade_materials  # Only ship materials have grades
+        
+        if material_info['type'] == 'Raw':
+            materials_map = ship_raw_materials_map
+            max_grade = 4  # Raw materials go up to grade 4
+            # For raw materials, find the category that contains this material
+            material_category = None
+            for category, grades in materials_map.items():
+                for grade, materials in grades.items():
+                    if current_material in materials:
+                        material_category = category
+                        break
+                if material_category:
+                    break
+                    
+            if material_category and material_category in materials_map:
+                for grade in range(material_info['grade'] + 1, max_grade + 1):
+                    if grade in materials_map[material_category]:
+                        for mat_name in materials_map[material_category][grade]:
+                            # Check if player has this material
+                            player_materials = materials_data.get('Raw', [])
+                            for player_mat in player_materials:
+                                if player_mat.get('Name', '').lower() == mat_name:
+                                    display_name = display_names.get(mat_name, mat_name.title())
+                                    higher_grade_materials.append({
+                                        'name': display_name,
+                                        'count': player_mat.get('Count', 0),
+                                        'grade': grade
+                                    })
+        
+        elif material_info['type'] in ['Manufactured', 'Encoded']:
+            materials_map = ship_manufactured_materials_map if material_info['type'] == 'Manufactured' else ship_encoded_materials_map
+            max_grade = 5  # Manufactured and Encoded materials go up to grade 5
+            
+            # Find the section that contains this material
+            material_section = material_info['section']
+            if material_section in materials_map:
+                for grade in range(material_info['grade'] + 1, max_grade + 1):
+                    if grade in materials_map[material_section]:
+                        for mat_name in materials_map[material_section][grade]:
+                            # Check if player has this material
+                            player_materials = materials_data.get(material_info['type'], [])
+                            for player_mat in player_materials:
+                                if player_mat.get('Name', '').lower() == mat_name:
+                                    display_name = display_names.get(mat_name, mat_name.title())
+                                    higher_grade_materials.append({
+                                        'name': display_name,
+                                        'count': player_mat.get('Count', 0),
+                                        'grade': grade
+                                    })
+        
+        return higher_grade_materials
+
+    # Helper function to check if material matches search criteria
+    def matches_criteria(material_name, material_info, count):
+        # Check name match using fuzzy search
+        if search_names:
+            display_name = display_names.get(material_name, material_name)
+            name_match = False
+            for search_name in search_names:
+                if levenshtein_distance(search_name, material_name) <= 3 or levenshtein_distance(search_name, display_name.lower()) <= 3:
+                    name_match = True
+                    break
+            if not name_match:
+                return False
+        
+        # Check grade match (only for ship materials)
+        if search_grade > 0 and material_info['grade'] is not None:
+            if material_info['grade'] != search_grade:
+                return False
+        
+        # Check type match
+        if search_type:
+            type_matches = {
+                'raw': 'Raw', 'manufactured': 'Manufactured', 'encoded': 'Encoded',
+                'items': 'Items', 'components': 'Components', 'data': 'Data', 'consumables': 'Consumables',
+                'ship': 'Ship', 'suit': 'Suit'
+            }
+            expected_type = type_matches.get(search_type)
+            if expected_type in ['Raw', 'Manufactured', 'Encoded', 'Items', 'Components', 'Data', 'Consumables']:
+                if material_info['type'] != expected_type:
+                    return False
+            elif expected_type in ['Ship', 'Suit']:
+                if material_info['category'] != expected_type:
+                    return False
+        
+        return True
+
+    # Build results
+    results = []
+    
+    # Process ship materials from Materials projection
+    if materials_data:
+        for material_type in ['Raw', 'Manufactured', 'Encoded']:
+            type_materials = materials_data.get(material_type, [])
+            
+            for material in type_materials:
+                material_name = material.get('Name', '').lower()
+                count = material.get('Count', 0)
+                
+                if count == 0:
+                    continue
+                
+                material_info = find_ship_material_info(material_name)
+                if not material_info:
+                    continue
+                
+                if not matches_criteria(material_name, material_info, count):
+                    continue
+                
+                display_name = display_names.get(material_name, material_name.title())
+                
+                # Get higher grade materials for trading info
+                higher_grade_materials = get_higher_grade_materials(material_info, material_name)
+                
+                result = {
+                    'name': display_name,
+                    'count': count,
+                    'category': material_info['category'],
+                    'type': material_info['type'],
+                    'grade': material_info['grade'],
+                    'section': material_info['section']
+                }
+                
+                if higher_grade_materials:
+                    result['tradeable_higher_grades'] = higher_grade_materials
+                
+                results.append(result)
+
+    # Process suit materials from ShipLocker projection
+    if shiploader_data:
+        # Process Items
+        for item in shiploader_data.get('Items', []):
+            material_name = item.get('Name', '').lower()
+            count = item.get('Count', 0)
+            
+            if count == 0:
+                continue
+            
+            material_info = find_suit_material_info(material_name)
+            if not material_info:
+                continue
+            
+            if not matches_criteria(material_name, material_info, count):
+                continue
+            
+            display_name = display_names.get(material_name, item.get('Name_Localised', material_name.title()))
+            
+            result = {
+                'name': display_name,
+                'count': count,
+                'category': material_info['category'],
+                'type': material_info['type'],
+                'section': material_info['section']
+            }
+            
+            results.append(result)
+        
+        # Process Components
+        for component in shiploader_data.get('Components', []):
+            material_name = component.get('Name', '').lower()
+            count = component.get('Count', 0)
+            
+            if count == 0:
+                continue
+            
+            material_info = find_suit_material_info(material_name)
+            if not material_info:
+                continue
+            
+            if not matches_criteria(material_name, material_info, count):
+                continue
+            
+            display_name = display_names.get(material_name, component.get('Name_Localised', material_name.title()))
+            
+            result = {
+                'name': display_name,
+                'count': count,
+                'category': material_info['category'],
+                'type': material_info['type'],
+                'section': material_info['section']
+            }
+            
+            results.append(result)
+        
+        # Process Data
+        for data_item in shiploader_data.get('Data', []):
+            material_name = data_item.get('Name', '').lower()
+            count = data_item.get('Count', 0)
+            
+            if count == 0:
+                continue
+            
+            material_info = find_suit_material_info(material_name)
+            if not material_info:
+                continue
+            
+            if not matches_criteria(material_name, material_info, count):
+                continue
+            
+            display_name = display_names.get(material_name, data_item.get('Name_Localised', material_name.title()))
+            
+            result = {
+                'name': display_name,
+                'count': count,
+                'category': material_info['category'],
+                'type': material_info['type'],
+                'section': material_info['section']
+            }
+            
+            results.append(result)
+        
+        # Process Consumables
+        for consumable in shiploader_data.get('Consumables', []):
+            material_name = consumable.get('Name', '').lower()
+            count = consumable.get('Count', 0)
+            
+            if count == 0:
+                continue
+            
+            material_info = find_suit_material_info(material_name)
+            if not material_info:
+                continue
+            
+            if not matches_criteria(material_name, material_info, count):
+                continue
+            
+            display_name = display_names.get(material_name, consumable.get('Name_Localised', material_name.title()))
+            
+            result = {
+                'name': display_name,
+                'count': count,
+                'category': material_info['category'],
+                'type': material_info['type'],
+                'section': material_info['section']
+            }
+            
+            results.append(result)
+
+    # Check if any materials were found
+    if not results:
+        search_terms = []
+        if search_names:
+            name_list = ', '.join([f"'{name}'" for name in search_names])
+            search_terms.append(f"name(s): {name_list}")
+        if search_grade > 0:
+            search_terms.append(f"grade: {search_grade}")
+        if search_type:
+            search_terms.append(f"type: '{search_type}'")
+        
+        if search_terms:
+            return f"No materials found matching search criteria: {', '.join(search_terms)}"
+        else:
+            return "No materials found"
+
+    # Format results
+    formatted_results = []
+    for result in results:
+        if result['category'] == 'Ship':
+            material_line = f"{result['count']}x {result['name']} ({result['category']} {result['type']}, Grade {result['grade']})"
+        else:  # Suit materials
+            material_line = f"{result['count']}x {result['name']} ({result['category']} {result['type']})"
+        
+        if result.get('tradeable_higher_grades'):
+            trading_lines = ["Tradeable, higher grades:"]
+            for higher_mat in result['tradeable_higher_grades']:
+                if higher_mat['count'] > 0:
+                    trading_lines.append(f"- {higher_mat['count']}x {higher_mat['name']} (Grade {higher_mat['grade']})")
+            
+            if len(trading_lines) > 1:  # Only add if there are actual tradeable materials
+                formatted_results.append(material_line)
+                formatted_results.extend(trading_lines)
+            else:
+                formatted_results.append(material_line)
+        else:
+            formatted_results.append(material_line)
+    
+    # Sort results while preserving trading info structure
+    def sort_key(item):
+        if isinstance(item, str) and 'x ' in item and '(' in item:
+            if 'Ship Raw' in item:
+                type_order = 0
+            elif 'Ship Manufactured' in item:
+                type_order = 1
+            elif 'Ship Encoded' in item:
+                type_order = 2
+            elif 'Suit Items' in item:
+                type_order = 3
+            elif 'Suit Components' in item:
+                type_order = 4
+            elif 'Suit Data' in item:
+                type_order = 5
+            elif 'Suit Consumables' in item:
+                type_order = 6
+            else:
+                type_order = 7
+            
+            # Extract grade for ship materials
+            import re
+            grade_match = re.search(r'Grade (\d)', item)
+            grade = int(grade_match.group(1)) if grade_match else 0
+            
+            # Extract name for sorting
+            name_match = re.search(r'\d+x ([^(]+)', item)
+            name = name_match.group(1).strip() if name_match else ''
+            
+            return (type_order, grade, name)
+        else:
+            return (999, 999, item)  # Put non-material lines at end
+    
+    # Sort while preserving trading info structure
+    material_blocks = []
+    current_block = []
+    
+    for line in formatted_results:
+        if isinstance(line, str) and 'x ' in line and '(' in line:
+            if current_block:
+                material_blocks.append(current_block)
+            current_block = [line]
+        else:
+            current_block.append(line)
+    
+    if current_block:
+        material_blocks.append(current_block)
+    
+    # Sort blocks by their main material line
+    material_blocks.sort(key=lambda block: sort_key(block[0]))
+    
+    # Flatten back to single list
+    sorted_results = []
+    for block in material_blocks:
+        sorted_results.extend(block)
+    
+    # Add search info to the output if filters were applied
+    search_info = []
+    if search_names:
+        if len(search_names) == 1:
+            search_info.append(f"name: '{search_names[0]}'")
+        else:
+            name_list = ', '.join([f"'{name}'" for name in search_names])
+            search_info.append(f"names: {name_list}")
+    if search_grade > 0:
+        search_info.append(f"grade: {search_grade}")
+    if search_type:
+        search_info.append(f"type: '{search_type}'")
+    
+    yaml_output = yaml.dump(sorted_results, default_flow_style=False, sort_keys=False)
+    
+    if search_info:
+        return f"Materials Inventory (filtered by {', '.join(search_info)}):\n\n```yaml\n{yaml_output}```"
+    else:
+        return f"Materials Inventory:\n\n```yaml\n{yaml_output}```"
+
 def send_message(obj, projected_states):
     from pyautogui import typewrite
     setGameWindowActive()
@@ -4465,6 +5168,34 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             }
         },
         engineer_finder,
+        'web'
+    )
+
+    actionManager.registerAction('material_finder', "Find and search materials for both ship and suit engineering from commander's inventory.",
+        {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "oneOf": [
+                        {"type": "string", "description": "Single material name to search for"},
+                        {"type": "array", "items": {"type": "string"}, "description": "Multiple material names to search for"}
+                    ],
+                    "description": "Filter materials by name(s) - supports fuzzy search. Can be a single string or array of strings."
+                },
+                "grade": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5,
+                    "description": "Filter ship materials by grade (1-5). Suit materials don't have grades."
+                },
+                "type": {
+                    "type": "string",
+                    "enum": ["raw", "manufactured", "encoded", "items", "components", "data", "consumables", "ship", "suit"],
+                    "description": "Filter by material type. Ship types: raw, manufactured, encoded. Suit types: items, components, data, consumables. Category filters: ship, suit."
+                }
+            }
+        },
+        material_finder,
         'web'
     )
 
