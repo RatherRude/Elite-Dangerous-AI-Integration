@@ -1,4 +1,4 @@
-@for (log of logs; track log.timestamp) {
+@for (log of logs; track log.index) {
   <div class="log-entry">
     <span class="timestamp">{{ log.timestamp | date:'HH:mm:ss' }}</span>
     <span class="prefix" [style.color]="getLogColor(log.prefix)">{{ log.prefix }}</span>

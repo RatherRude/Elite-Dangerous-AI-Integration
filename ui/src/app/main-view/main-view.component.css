@@ -5,8 +5,7 @@
   height: 100vh;
   overflow: hidden;
   box-sizing: border-box;
-  justify-items: stretch;
-  align-items: stretch;
+  /* Removed justify-items and align-items as flex handles alignment */
   background-image: url('../../assets/EDAI_logo.png');
   background-size: contain;
   background-position: center;
@@ -14,23 +13,11 @@
   background-color: rgba(0, 0, 0, 1);
 }
 
-.settings-container, .runtime-container {
+.settings-container {
   flex: 1;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-}
-
-.log-container {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px;
-}
-.input-container {
-  flex-grow: 0;
-}
-
-.settings-container {
   background: rgba(22, 22, 22, 0.7);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -40,11 +27,56 @@
 }
 
 .runtime-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   background: rgba(22, 22, 22, 0.7);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-radius: 10px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+/* Style the tab group to fill space */
+.runtime-container mat-tab-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Style the content area within each tab */
+/* Use ::ng-deep as Material might encapsulate its view */
+::ng-deep .mat-mdc-tab-body-content {
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.tab-content-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.log-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.chat-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.input-container {
+  flex-grow: 0;
+  flex-shrink: 0;
 }
 
 .button-container {
@@ -61,4 +93,8 @@
   left: 0;
   right: 0;
   z-index: 1000;
-} 
+}
+
+::ng-deep .mat-mdc-tab-body-wrapper {
+  flex-grow: 1;
+}

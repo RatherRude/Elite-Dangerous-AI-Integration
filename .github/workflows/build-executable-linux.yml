@@ -26,7 +26,7 @@ jobs:
         uses: GabrielBB/xvfb-action@v1
         with:
           run: |
-            python -m pytest --timeout 10 test -v
+            python -m pytest --timeout 10 test -v --capture=no
 
       - name: Install pyinstaller
         run: |

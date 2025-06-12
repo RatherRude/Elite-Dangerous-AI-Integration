@@ -1,6 +1,6 @@
 import sys
 from time import time, sleep # Modified import
-from typing import Any, final
+from typing import Any, cast, final
 import os # Added import
 import threading # Added import
 import json # Added import
@@ -22,6 +22,7 @@ from lib.ControllerManager import ControllerManager
 from lib.EDCoPilot import EDCoPilot
 from lib.EDKeys import EDKeys
 from lib.Event import ConversationEvent, Event, ExternalEvent, GameEvent, ProjectedEvent, StatusEvent, ToolEvent
+from lib.Logger import show_chat_message
 from lib.Projections import registerProjections
 from lib.PromptGenerator import PromptGenerator
 from lib.STT import STT
@@ -165,28 +166,50 @@ class Chat:
             "type": "event",
             "event": event,
         })
+        if event.kind=='assistant':
+            event = cast(ConversationEvent, event)
+            show_chat_message('covas', event.content)
+        if event.kind=='user':
+            event = cast(ConversationEvent, event)
+            show_chat_message('cmdr', event.content)
+        if event.kind=='tool':
+            event = cast(ToolEvent, event)
+            show_chat_message('action', '\n'.join(event.text if event.text else [r.get('function',{}).get('name', 'Unknown') for r in event.request]))
+        if event.kind=='game':
+            event = cast(GameEvent, event)
+            show_chat_message('event', event.content.get('event', 'Unknown'))
+        if event.kind=='status':
+            event = cast(StatusEvent, event)
+            if event.status.get('event', 'Unknown') != 'Status':
+                show_chat_message('event', f"Status updated: {event.status.get('event', 'Unknown')}")
+        if event.kind=='external':
+            event = cast(ExternalEvent, event)
+            show_chat_message('event', event.content.get('event', 'Unknown'))
+        if event.kind=='projected':
+            event = cast(ProjectedEvent, event)
+            show_chat_message('event', event.content.get('event', 'Unknown'))
 
     def submit_input(self, input: str):
         self.event_manager.add_conversation_event('user', input)
         
     def run(self):
-        log('info', f"Initializing CMDR {self.config['commander_name']}'s personal AI...\n")
-        log('info', "API Key: Loaded")
-        log('info', f"Using Push-to-Talk: {self.config['ptt_var']}")
-        log('info', f"Using Function Calling: {self.config['tools_var']}")
-        log('info', f"Current model: {self.config['llm_model_name']}")
-        log('info', f"Current TTS voice: {self.character['tts_voice']}")
-        log('info', f"Current TTS Speed: {self.character['tts_speed']}")
-        log('info', "Current backstory: " + self.backstory)
+        show_chat_message('info', f"Initializing CMDR {self.config['commander_name']}'s personal AI...\n")
+        show_chat_message('info', "API Key: Loaded")
+        show_chat_message('info', f"Using Push-to-Talk: {self.config['ptt_var']}")
+        show_chat_message('info', f"Using Function Calling: {self.config['tools_var']}")
+        show_chat_message('info', f"Current model: {self.config['llm_model_name']}")
+        show_chat_message('info', f"Current TTS voice: {self.character['tts_voice']}")
+        show_chat_message('info', f"Current TTS Speed: {self.character['tts_speed']}")
+        show_chat_message('info', "Current backstory: " + self.backstory)
 
         # TTS Setup
-        log('info', "Basic configuration complete.")
-        log('info', "Loading voice output...")
+        show_chat_message('info', "Basic configuration complete.")
+        show_chat_message('info', "Loading voice output...")
         if self.config["edcopilot"] and self.config["edcopilot_dominant"]:
-            log('info', "EDCoPilot is dominant, voice output will be handled by EDCoPilot.")
+            show_chat_message('info', "EDCoPilot is dominant, voice output will be handled by EDCoPilot.")
 
         if self.config['ptt_var'] and self.config['ptt_key']:
-            log('info', f"Setting push-to-talk hotkey {self.config['ptt_key']}.")
+            show_chat_message('info', f"Setting push-to-talk hotkey {self.config['ptt_key']}.")
             self.controller_manager.register_hotkey(
                 self.config["ptt_key"], 
                 lambda _: self.stt.listen_once_start(),
@@ -194,19 +217,21 @@ class Chat:
             )
         else:
             self.stt.listen_continuous()
-        log('info', "Voice interface ready.")
+        show_chat_message('info', "Voice interface ready.")
 
         registerProjections(self.event_manager, self.system_database, self.character.get('idle_timeout_var', 300))
         self.plugin_manager.register_projections(self.plugin_helper)
 
         if self.config['tools_var']:
+            log('info', "Register actions...")
             register_actions(self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.ed_keys)
 
             log('info', "Built-in Actions ready.")
             self.plugin_manager.register_actions(self.plugin_helper)
             log('info', "Plugin provided Actions ready.")
-            
-        log('info', 'Initializing states...')
+            show_chat_message('info', "Actions ready.")
+
+        show_chat_message('info', 'Initializing states...')
         while self.jn.historic_events:
             self.event_manager.add_historic_game_event(self.jn.historic_events.pop(0))
             
@@ -214,7 +239,7 @@ class Chat:
         self.event_manager.process()
 
         # Cue the user that we're ready to go.
-        log('info', "System Ready.")
+        show_chat_message('info', "System Ready.")
 
         while True:
             try:
