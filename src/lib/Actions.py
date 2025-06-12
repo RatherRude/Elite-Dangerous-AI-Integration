@@ -2178,208 +2178,206 @@ ENGINEERING_MODIFICATIONS = {
     "Resistance augmented": {
         "module_recipes": {
             "Shield Booster": {
-                "grade_1": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
-                "grade_2": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
-                "grade_3": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
-                "grade_4": {"cost": {}, "engineers": ["Lei Cheung"]},
-                "grade_5": {"cost": {}, "engineers": ["Lei Cheung"]}
+                "grade_1": {"cost": {"Phosphorus": 1}, "engineers": ["Didi Vatermann", "Felicity Farseer", "Lei Cheung"]},
+                "grade_2": {"cost": {"Conductive Components": 1, "Phosphorus": 1}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
+                "grade_3": {"cost": {"Conductive Components": 1, "Focus Crystals": 1, "Phosphorus": 1}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
+                "grade_4": {"cost": {"Conductive Ceramics": 1, "Manganese": 1, "Refined Focus Crystals": 1}, "engineers": ["Didi Vatermann"]},
+                "grade_5": {"cost": {"Conductive Ceramics": 1, "Imperial Shielding": 1, "Refined Focus Crystals": 1}, "engineers": ["Didi Vatermann"]}
             }
         }
     },
     "Thermal resistant": {
         "module_recipes": {
             "Shield Booster": {
-                "grade_1": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
-                "grade_2": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
-                "grade_3": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
-                "grade_4": {"cost": {}, "engineers": ["Lei Cheung"]},
-                "grade_5": {"cost": {}, "engineers": ["Lei Cheung"]}
+                "grade_1": {"cost": {"Iron": 1}, "engineers": ["Didi Vatermann", "Felicity Farseer", "Lei Cheung"]},
+                "grade_2": {"cost": {"Germanium": 1, "Heat Conduction Wiring": 1}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
+                "grade_3": {"cost": {"Focus Crystals": 1, "Heat Conduction Wiring": 1, "Heat Dispersion Plate": 1}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
+                "grade_4": {"cost": {"Heat Dispersion Plate": 1, "Refined Focus Crystals": 1, "Untypical Shield Scans": 1}, "engineers": ["Didi Vatermann"]},
+                "grade_5": {"cost": {"Aberrant Shield Pattern Analysis": 1, "Exquisite Focus Crystals": 1, "Heat Exchangers": 1}, "engineers": ["Didi Vatermann"]}
             },
             "Hull Reinforcement Package": {
-                "grade_1": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]},
-                "grade_2": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]},
-                "grade_3": {"cost": {}, "engineers": ["Petra Olmanova"]},
-                "grade_4": {"cost": {}, "engineers": ["Petra Olmanova"]},
-                "grade_5": {"cost": {}, "engineers": ["Petra Olmanova"]}
+                "grade_1": {"cost": {"Heat Conduction Wiring": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                "grade_2": {"cost": {"Heat Dispersion Plate": 1, "Nickel": 1}, "engineers": ["Selene Jean"]},
+                "grade_3": {"cost": {"Heat Exchangers": 1, "Salvaged Alloys": 1, "Vanadium": 1}, "engineers": ["Selene Jean"]},
+                "grade_4": {"cost": {"Galvanising Alloys": 1, "Heat Vanes": 1, "Tungsten": 1}, "engineers": ["Selene Jean"]},
+                "grade_5": {"cost": {"Molybdenum": 1, "Phase Alloys": 1, "Proto Heat Radiators": 1}, "engineers": ["Selene Jean"]}
             },
             "Shield Generator": {
-                "grade_1": {"cost": {}, "engineers": ["Elvira Martuuk", "Didi Vatermann", "Lei Cheung"]},
-                "grade_2": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
-                "grade_3": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
-                "grade_4": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
-                "grade_5": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]}
+                "grade_1": {"cost": {"Distorted Shield Cycle Recordings": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung"]},
+                "grade_2": {"cost": {"Distorted Shield Cycle Recordings": 1, "Germanium": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung"]},
+                "grade_3": {"cost": {"Distorted Shield Cycle Recordings": 1, "Germanium": 1, "Selenium": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung"]},
+                "grade_4": {"cost": {"Focus Crystals": 1, "Inconsistent Shield Soak Analysis": 1, "Mercury": 1}, "engineers": ["Lei Cheung"]},
+                "grade_5": {"cost": {"Refined Focus Crystals": 1, "Ruthenium": 1, "Untypical Shield Scans": 1}, "engineers": ["Lei Cheung"]}
             },
             "Armour": {
-                "grade_1": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]},
-                "grade_2": {"cost": {}, "engineers": ["Liz Ryder", "Petra Olmanova"]},
-                "grade_3": {"cost": {}, "engineers": ["Petra Olmanova"]},
-                "grade_4": {"cost": {}, "engineers": ["Petra Olmanova"]},
-                "grade_5": {"cost": {}, "engineers": ["Petra Olmanova"]}
+                "grade_1": {"cost": {"Heat Conduction Wiring": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                "grade_2": {"cost": {"Heat Dispersion Plate": 1, "Nickel": 1}, "engineers": ["Selene Jean"]},
+                "grade_3": {"cost": {"Heat Exchangers": 1, "Salvaged Alloys": 1, "Vanadium": 1}, "engineers": ["Selene Jean"]},
+                "grade_4": {"cost": {"Galvanising Alloys": 1, "Heat Vanes": 1, "Tungsten": 1}, "engineers": ["Selene Jean"]},
+                "grade_5": {"cost": {"Molybdenum": 1, "Phase Alloys": 1, "Proto Heat Radiators": 1}, "engineers": ["Selene Jean"]}
             }
         }
     },
     "Expanded probe scanning radius": {
         "module_recipes": {
             "Detailed Surface Scanner": {
-                "grade_1": {"cost": {}, "engineers": ["Felicity Farseer", "Juri Ishmaak", "Tiana Fortune", "Bill Turner", "Lori Jameson", "Etienne Dorn"]},
-                "grade_2": {"cost": {}, "engineers": ["Juri Ishmaak", "Tiana Fortune", "Bill Turner", "Lori Jameson", "Etienne Dorn"]},
-                "grade_3": {"cost": {}, "engineers": ["Felicity Farseer", "Juri Ishmaak", "Tiana Fortune", "Bill Turner", "Lori Jameson", "Etienne Dorn"]},
-                "grade_4": {"cost": {}, "engineers": ["Lei Cheung", "Hera Tani", "Bill Turner", "Lori Jameson", "Etienne Dorn"]},
-                "grade_5": {"cost": {}, "engineers": ["Lei Cheung", "Hera Tani", "Juri Ishmaak", "Tiana Fortune", "Bill Turner", "Lori Jameson", "Etienne Dorn"]}
+                "grade_1": {"cost": {"Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Etienne Dorn", "Felicity Farseer", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]},
+                "grade_2": {"cost": {"Mechanical Scrap": 1, "Germanium": 1}, "engineers": ["Bill Turner", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson"]},
+                "grade_3": {"cost": {"Mechanical Scrap": 1, "Germanium": 1, "Phase Alloys": 1}, "engineers": ["Bill Turner", "Felicity Farseer", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]},
+                "grade_4": {"cost": {"Mechanical Equipment": 1, "Niobium": 1, "Proto Light Alloys": 1}, "engineers": ["Bill Turner", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson"]},
+                "grade_5": {"cost": {"Mechanical Components": 1, "Tin": 1, "Proto Radiolic Alloys": 1}, "engineers": ["Bill Turner", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson"]}
             }
         }
     },
     "Expanded capture arc": {
         "module_recipes": {
             "Frame Shift Drive Interdictor": {
-                "grade_1": {"cost": {}, "engineers": ["Felicity Farseer", "Tiana Fortune", "Colonel Bris Dekker", "Mel Brandon"]},
-                "grade_2": {"cost": {}, "engineers": ["Tiana Fortune", "Colonel Bris Dekker", "Mel Brandon"]},
-                "grade_3": {"cost": {}, "engineers": ["Tiana Fortune", "Colonel Bris Dekker", "Mel Brandon"]},
-                "grade_4": {"cost": {}, "engineers": ["Colonel Bris Dekker", "Mel Brandon"]},
-                "grade_5": {"cost": {}, "engineers": ["Mel Brandon"]}
+                "grade_1": {"cost": {"Mechanical Scrap": 1}, "engineers": ["Colonel Bris Dekker", "Felicity Farseer", "Mel Brandon", "Tiana Fortune"]},
+                "grade_2": {"cost": {"Mechanical Equipment": 1, "Unusual Encrypted Files": 1}, "engineers": ["Colonel Bris Dekker", "Mel Brandon", "Tiana Fortune"]},
+                "grade_3": {"cost": {"Grid Resistors": 1, "Mechanical Components": 1, "Tagged Encryption Codes": 1}, "engineers": ["Colonel Bris Dekker", "Mel Brandon", "Tiana Fortune"]},
+                "grade_4": {"cost": {"Divergent Scan Data": 1, "Mechanical Equipment": 1, "Strange Wake Solutions": 1}, "engineers": ["Colonel Bris Dekker", "Mel Brandon"]},
+                "grade_5": {"cost": {"Mechanical Components": 1, "Eccentric Hyperspace Trajectories": 1, "Classified Scan Fragment": 1}, "engineers": ["Mel Brandon"]}
             }
         }
     },
     "Rapid charge": {
         "module_recipes": {
             "Shield Cell Bank": {
-                "grade_1": {"cost": {}, "engineers": ["Elvira Martuuk", "Lori Jameson", "Mel Brandon"]},
-                "grade_2": {"cost": {}, "engineers": ["Lori Jameson", "Mel Brandon"]},
-                "grade_3": {"cost": {}, "engineers": ["Lori Jameson", "Mel Brandon"]},
-                "grade_4": {"cost": {}, "engineers": ["Mel Brandon"]},
-                "grade_5": {"cost": {}, "engineers": ["Mel Brandon"]}
+                "grade_1": {"cost": {"Sulphur": 1}, "engineers": ["Elvira Martuuk", "Lori Jameson", "Mel Brandon"]},
+                "grade_2": {"cost": {"Chromium": 1, "Grid Resistors": 1}, "engineers": ["Lori Jameson", "Mel Brandon"]},
+                "grade_3": {"cost": {"Hybrid Capacitors": 1, "Precipitated Alloys": 1, "Sulphur": 1}, "engineers": ["Lori Jameson", "Mel Brandon"]},
+                "grade_4": {"cost": {"Chromium": 1, "Thermic Alloys": 1, "Electrochemical Arrays": 1}, "engineers": ["Mel Brandon"]}
             }
         }
     },
     "Specialised": {
         "module_recipes": {
             "Shield Cell Bank": {
-                "grade_1": {"cost": {}, "engineers": ["Elvira Martuuk", "Lori Jameson", "Mel Brandon"]},
-                "grade_2": {"cost": {}, "engineers": ["Lori Jameson", "Mel Brandon"]},
-                "grade_3": {"cost": {}, "engineers": ["Lori Jameson", "Mel Brandon"]},
-                "grade_4": {"cost": {}, "engineers": ["Mel Brandon"]},
-                "grade_5": {"cost": {}, "engineers": ["Mel Brandon"]}
+                "grade_1": {"cost": {"Specialised Legacy Firmware": 1}, "engineers": ["Elvira Martuuk", "Lori Jameson", "Mel Brandon"]},
+                "grade_2": {"cost": {"Conductive Components": 1, "Specialised Legacy Firmware": 1}, "engineers": ["Lori Jameson", "Mel Brandon"]},
+                "grade_3": {"cost": {"Conductive Components": 1, "Cracked Industrial Firmware": 1, "Exceptional Scrambled Emission Data": 1}, "engineers": ["Lori Jameson", "Mel Brandon"]},
+                "grade_4": {"cost": {"Conductive Components": 1, "Cracked Industrial Firmware": 1, "Yttrium": 1}, "engineers": ["Mel Brandon"]}
             }
         }
     },
     "Enhanced low power": {
         "module_recipes": {
             "Shield Generator": {
-                "grade_1": {"cost": {}, "engineers": ["Elvira Martuuk"]},
-                "grade_2": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
-                "grade_3": {"cost": {}, "engineers": ["Elvira Martuuk", "Didi Vatermann", "Lei Cheung"]},
-                "grade_4": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
-                "grade_5": {"cost": {}, "engineers": ["Didi Vatermann", "Lei Cheung", "Mel Brandon"]}
+                "grade_1": {"cost": {"Distorted Shield Cycle Recordings": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung", "Mel Brandon"]},
+                "grade_2": {"cost": {"Distorted Shield Cycle Recordings": 1, "Germanium": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung", "Mel Brandon"]},
+                "grade_3": {"cost": {"Distorted Shield Cycle Recordings": 1, "Germanium": 1, "Precipitated Alloys": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung", "Mel Brandon"]},
+                "grade_4": {"cost": {"Inconsistent Shield Soak Analysis": 1, "Niobium": 1, "Thermic Alloys": 1}, "engineers": ["Lei Cheung", "Mel Brandon"]},
+                "grade_5": {"cost": {"Military Grade Alloys": 1, "Tin": 1, "Untypical Shield Scans": 1}, "engineers": ["Lei Cheung", "Mel Brandon"]}
             }
         }
     },
     "Faster boot sequence": {
         "module_recipes": {
             "Frame Shift Drive": {
-                "grade_1": {"cost": {}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Colonel Bris Dekker", "Professor Palin", "Chloe Sedesi"]},
-                "grade_2": {"cost": {}, "engineers": ["Elvira Martuuk", "Colonel Bris Dekker", "Professor Palin", "Chloe Sedesi"]},
-                "grade_3": {"cost": {}, "engineers": ["Elvira Martuuk", "Colonel Bris Dekker", "Professor Palin", "Chloe Sedesi"]},
-                "grade_4": {"cost": {}, "engineers": ["Felicity Farseer", "Elvira Martuuk"]},
-                "grade_5": {"cost": {}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Mel Brandon"]}
+                "grade_1": {"cost": {"Grid Resistors": 1}, "engineers": ["Colonel Bris Dekker", "Chloe Sedesi", "Elvira Martuuk", "Felicity Farseer", "Mel Brandon", "Professor Palin"]},
+                "grade_2": {"cost": {"Chromium": 1, "Grid Resistors": 1}, "engineers": ["Colonel Bris Dekker", "Chloe Sedesi", "Elvira Martuuk", "Felicity Farseer", "Mel Brandon", "Professor Palin"]},
+                "grade_3": {"cost": {"Grid Resistors": 1, "Heat Dispersion Plate": 1, "Selenium": 1}, "engineers": ["Colonel Bris Dekker", "Chloe Sedesi", "Elvira Martuuk", "Felicity Farseer", "Mel Brandon", "Professor Palin"]},
+                "grade_4": {"cost": {"Cadmium": 1, "Heat Exchangers": 1, "Hybrid Capacitors": 1}, "engineers": ["Elvira Martuuk", "Felicity Farseer", "Mel Brandon"]},
+                "grade_5": {"cost": {"Electrochemical Arrays": 1, "Heat Vanes": 1, "Tellurium": 1}, "engineers": ["Elvira Martuuk", "Felicity Farseer", "Mel Brandon"]}
             }
         }
     },
     "Increased range": {
         "module_recipes": {
             "Frame Shift Drive": {
-                "grade_1": {"cost": {}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Colonel Bris Dekker", "Professor Palin", "Chloe Sedesi"]},
-                "grade_2": {"cost": {}, "engineers": ["Elvira Martuuk", "Colonel Bris Dekker", "Professor Palin", "Chloe Sedesi"]},
-                "grade_3": {"cost": {}, "engineers": ["Elvira Martuuk", "Colonel Bris Dekker", "Professor Palin", "Chloe Sedesi"]},
-                "grade_4": {"cost": {}, "engineers": ["Felicity Farseer", "Elvira Martuuk"]},
-                "grade_5": {"cost": {}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Mel Brandon"]}
+                "grade_1": {"cost": {"Atypical Disrupted Wake Echoes": 1}, "engineers": ["Colonel Bris Dekker", "Chloe Sedesi", "Elvira Martuuk", "Felicity Farseer", "Mel Brandon", "Professor Palin"]},
+                "grade_2": {"cost": {"Atypical Disrupted Wake Echoes": 1, "Chemical Processors": 1}, "engineers": ["Colonel Bris Dekker", "Chloe Sedesi", "Elvira Martuuk", "Felicity Farseer", "Mel Brandon", "Professor Palin"]},
+                "grade_3": {"cost": {"Chemical Processors": 1, "Phosphorus": 1, "Strange Wake Solutions": 1}, "engineers": ["Colonel Bris Dekker", "Chloe Sedesi", "Elvira Martuuk", "Felicity Farseer", "Mel Brandon", "Professor Palin"]},
+                "grade_4": {"cost": {"Chemical Distillery": 1, "Eccentric Hyperspace Trajectories": 1, "Manganese": 1}, "engineers": ["Elvira Martuuk", "Felicity Farseer", "Mel Brandon"]},
+                "grade_5": {"cost": {"Arsenic": 1, "Chemical Manipulators": 1, "Datamined Wake Exceptions": 1}, "engineers": ["Elvira Martuuk", "Felicity Farseer", "Mel Brandon"]}
             }
         }
     },
     "Charge enhanced": {
         "module_recipes": {
             "Power Distributor": {
-                "grade_1": {"cost": {}, "engineers": ["The Dweller", "Marco Qwent", "Hera Tani"]},
-                "grade_2": {"cost": {}, "engineers": ["The Dweller", "Marco Qwent", "Hera Tani"]},
-                "grade_3": {"cost": {}, "engineers": ["The Dweller", "Marco Qwent", "Hera Tani"]},
-                "grade_4": {"cost": {}, "engineers": ["The Dweller", "Marco Qwent", "Hera Tani"]},
-                "grade_5": {"cost": {}, "engineers": ["The Dweller"]}
+                "grade_1": {"cost": {"Specialised Legacy Firmware": 1}, "engineers": ["Etienne Dorn", "Hera Tani", "Marco Qwent", "The Dweller"]},
+                "grade_2": {"cost": {"Chemical Processors": 1, "Specialised Legacy Firmware": 1}, "engineers": ["Etienne Dorn", "Hera Tani", "Marco Qwent", "The Dweller"]},
+                "grade_3": {"cost": {"Chemical Distillery": 1, "Grid Resistors": 1, "Modified Consumer Firmware": 1}, "engineers": ["Etienne Dorn", "Hera Tani", "Marco Qwent", "The Dweller"]},
+                "grade_4": {"cost": {"Chemical Manipulators": 1, "Cracked Industrial Firmware": 1, "Hybrid Capacitors": 1}, "engineers": ["Etienne Dorn", "The Dweller"]},
+                "grade_5": {"cost": {"Chemical Manipulators": 1, "Cracked Industrial Firmware": 1, "Exquisite Focus Crystals": 1}, "engineers": ["Etienne Dorn", "The Dweller"]}
             }
         }
     },
     "Engine focused": {
         "module_recipes": {
             "Power Distributor": {
-                "grade_1": {"cost": {}, "engineers": ["The Dweller", "Marco Qwent", "Hera Tani"]},
-                "grade_2": {"cost": {}, "engineers": ["The Dweller", "Marco Qwent", "Hera Tani"]},
-                "grade_3": {"cost": {}, "engineers": ["The Dweller", "Marco Qwent", "Hera Tani"]},
-                "grade_4": {"cost": {}, "engineers": ["The Dweller", "Marco Qwent", "Hera Tani"]},
-                "grade_5": {"cost": {}, "engineers": ["The Dweller"]}
+                "grade_1": {"cost": {"Sulphur": 1}, "engineers": ["Etienne Dorn", "Hera Tani", "Marco Qwent", "The Dweller"]},
+                "grade_2": {"cost": {"Conductive Components": 1, "Sulphur": 1}, "engineers": ["Etienne Dorn", "Hera Tani", "Marco Qwent", "The Dweller"]},
+                "grade_3": {"cost": {"Anomalous Bulk Scan Data": 1, "Chromium": 1, "Electrochemical Arrays": 1}, "engineers": ["Etienne Dorn", "Hera Tani", "Marco Qwent", "The Dweller"]},
+                "grade_4": {"cost": {"Unidentified Scan Archives": 1, "Selenium": 1, "Polymer Capacitors": 1}, "engineers": ["Etienne Dorn", "The Dweller"]},
+                "grade_5": {"cost": {"Classified Scan Databanks": 1, "Cadmium": 1, "Military Supercapacitors": 1}, "engineers": ["Etienne Dorn", "The Dweller"]}
             }
         }
     },
     "System focused": {
         "module_recipes": {
             "Power Distributor": {
-                "grade_1": {"cost": {}, "engineers": ["The Dweller", "Marco Qwent", "Hera Tani"]},
-                "grade_2": {"cost": {}, "engineers": ["The Dweller", "Marco Qwent", "Hera Tani"]},
-                "grade_3": {"cost": {}, "engineers": ["The Dweller", "Marco Qwent", "Hera Tani"]},
-                "grade_4": {"cost": {}, "engineers": ["The Dweller", "Marco Qwent", "Hera Tani"]},
-                "grade_5": {"cost": {}, "engineers": ["The Dweller"]}
+                "grade_1": {"cost": {"Sulphur": 1}, "engineers": ["Etienne Dorn", "Hera Tani", "Marco Qwent", "The Dweller"]},
+                "grade_2": {"cost": {"Conductive Components": 1, "Sulphur": 1}, "engineers": ["Etienne Dorn", "Hera Tani", "Marco Qwent", "The Dweller"]},
+                "grade_3": {"cost": {"Anomalous Bulk Scan Data": 1, "Chromium": 1, "Electrochemical Arrays": 1}, "engineers": ["Etienne Dorn", "Hera Tani", "Marco Qwent", "The Dweller"]},
+                "grade_4": {"cost": {"Unidentified Scan Archives": 1, "Selenium": 1, "Polymer Capacitors": 1}, "engineers": ["Etienne Dorn", "The Dweller"]},
+                "grade_5": {"cost": {"Classified Scan Databanks": 1, "Cadmium": 1, "Military Supercapacitors": 1}, "engineers": ["Etienne Dorn", "The Dweller"]}
             }
         }
     },
     "Weapon focused": {
         "module_recipes": {
             "Power Distributor": {
-                "grade_1": {"cost": {}, "engineers": ["The Dweller"]},
-                "grade_2": {"cost": {}, "engineers": ["The Dweller"]},
-                "grade_3": {"cost": {}, "engineers": ["The Dweller"]},
-                "grade_4": {"cost": {}, "engineers": ["The Dweller"]},
-                "grade_5": {"cost": {}, "engineers": ["The Dweller"]}
+                "grade_1": {"cost": {"Sulphur": 1}, "engineers": ["Etienne Dorn", "Hera Tani", "Marco Qwent", "The Dweller"]},
+                "grade_2": {"cost": {"Conductive Components": 1, "Sulphur": 1}, "engineers": ["Etienne Dorn", "Hera Tani", "Marco Qwent", "The Dweller"]},
+                "grade_3": {"cost": {"Anomalous Bulk Scan Data": 1, "Hybrid Capacitors": 1, "Selenium": 1}, "engineers": ["Etienne Dorn", "Hera Tani", "Marco Qwent", "The Dweller"]},
+                "grade_4": {"cost": {"Unidentified Scan Archives": 1, "Electrochemical Arrays": 1, "Cadmium": 1}, "engineers": ["Etienne Dorn", "The Dweller"]},
+                "grade_5": {"cost": {"Classified Scan Databanks": 1, "Polymer Capacitors": 1, "Tellurium": 1}, "engineers": ["Etienne Dorn", "The Dweller"]}
             }
         }
     },
     "Armoured": {
         "module_recipes": {
             "Power Plant": {
-                "grade_1": {"cost": {}, "engineers": ["Felicity Farseer"]},
-                "grade_2": {"cost": {}, "engineers": ["Marco Qwent"]},
-                "grade_3": {"cost": {}, "engineers": ["Marco Qwent", "Hera Tani"]},
-                "grade_4": {"cost": {}, "engineers": ["Marco Qwent", "Hera Tani"]},
-                "grade_5": {"cost": {}, "engineers": ["Hera Tani", "Etienne Dorn"]}
+                "grade_1": {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Felicity Farseer", "Marco Qwent", "Hera Tani", "Etienne Dorn"]},
+                "grade_2": {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Marco Qwent", "Hera Tani", "Etienne Dorn"]},
+                "grade_3": {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Marco Qwent", "Hera Tani", "Etienne Dorn"]},
+                "grade_4": {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Marco Qwent", "Hera Tani", "Etienne Dorn"]},
+                "grade_5": {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Hera Tani", "Etienne Dorn"]}
             }
         }
     },
     "Low emissions": {
         "module_recipes": {
             "Power Plant": {
-                "grade_1": {"cost": {}, "engineers": ["Felicity Farseer"]},
-                "grade_2": {"cost": {}, "engineers": ["Marco Qwent"]},
-                "grade_3": {"cost": {}, "engineers": ["Marco Qwent", "Hera Tani"]},
-                "grade_4": {"cost": {}, "engineers": ["Marco Qwent", "Hera Tani"]},
-                "grade_5": {"cost": {}, "engineers": ["Hera Tani", "Etienne Dorn"]}
+                "grade_1": {"cost": {"Iron": 1}, "engineers": ["Felicity Farseer", "Marco Qwent", "Hera Tani", "Etienne Dorn"]},
+                "grade_2": {"cost": {"Iron": 1, "Irregular Emission Data": 1}, "engineers": ["Marco Qwent", "Hera Tani", "Etienne Dorn"]},
+                "grade_3": {"cost": {"Heat Exchangers": 1, "Iron": 1, "Irregular Emission Data": 1}, "engineers": ["Marco Qwent", "Hera Tani", "Etienne Dorn"]},
+                "grade_4": {"cost": {"Germanium": 1, "Heat Vanes": 1, "Unexpected Emission Data": 1}, "engineers": ["Marco Qwent", "Hera Tani", "Etienne Dorn"]},
+                "grade_5": {"cost": {"Niobium": 1, "Proto Heat Radiators": 1, "Decoded Emission Data": 1}, "engineers": ["Hera Tani", "Etienne Dorn"]}
             }
         }
     },
     "Clean": {
         "module_recipes": {
             "Thrusters": {
-                "grade_1": {"cost": {}, "engineers": ["Felicity Farseer"]},
-                "grade_2": {"cost": {}, "engineers": ["Elvira Martuuk"]},
-                "grade_3": {"cost": {}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Professor Palin"]},
-                "grade_4": {"cost": {}, "engineers": ["Professor Palin", "Mel Brandon", "Chloe Sedesi"]},
-                "grade_5": {"cost": {}, "engineers": ["Professor Palin", "Mel Brandon", "Chloe Sedesi"]}
+                "grade_1": {"cost": {"Sulphur": 1}, "engineers": ["Elvira Martuuk", "Felicity Farseer", "Professor Palin", "Chloe Sedesi"]},
+                "grade_2": {"cost": {"Conductive Components": 1, "Specialised Legacy Firmware": 1}, "engineers": ["Elvira Martuuk", "Felicity Farseer", "Professor Palin", "Chloe Sedesi"]},
+                "grade_3": {"cost": {"Conductive Components": 1, "Specialised Legacy Firmware": 1, "Unexpected Emission Data": 1}, "engineers": ["Felicity Farseer", "Professor Palin", "Chloe Sedesi"]},
+                "grade_4": {"cost": {"Conductive Ceramics": 1, "Decoded Emission Data": 1, "Modified Consumer Firmware": 1}, "engineers": ["Professor Palin", "Chloe Sedesi"]},
+                "grade_5": {"cost": {"Abnormal Compact Emissions Data": 1, "Conductive Ceramics": 1, "Tin": 1}, "engineers": ["Professor Palin", "Chloe Sedesi"]}
             }
         }
     },
     "Dirty": {
         "module_recipes": {
             "Thrusters": {
-                "grade_1": {"cost": {}, "engineers": ["Felicity Farseer"]},
-                "grade_2": {"cost": {}, "engineers": ["Elvira Martuuk"]},
-                "grade_3": {"cost": {}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Professor Palin"]},
-                "grade_4": {"cost": {}, "engineers": ["Professor Palin", "Mel Brandon", "Chloe Sedesi"]},
-                "grade_5": {"cost": {}, "engineers": ["Professor Palin", "Mel Brandon", "Chloe Sedesi"]}
+                "grade_1": {"cost": {"Specialised Legacy Firmware": 1}, "engineers": ["Elvira Martuuk", "Felicity Farseer", "Professor Palin", "Chloe Sedesi", "Mel Brandon"]},
+                "grade_2": {"cost": {"Mechanical Equipment": 1, "Specialised Legacy Firmware": 1}, "engineers": ["Elvira Martuuk", "Felicity Farseer", "Professor Palin", "Chloe Sedesi", "Mel Brandon"]},
+                "grade_3": {"cost": {"Chromium": 1, "Mechanical Components": 1, "Specialised Legacy Firmware": 1}, "engineers": ["Felicity Farseer", "Professor Palin", "Chloe Sedesi", "Mel Brandon"]},
+                "grade_4": {"cost": {"Configurable Components": 1, "Modified Consumer Firmware": 1, "Selenium": 1}, "engineers": ["Professor Palin", "Chloe Sedesi", "Mel Brandon"]},
+                "grade_5": {"cost": {"Cadmium": 1, "Cracked Industrial Firmware": 1, "Pharmaceutical Isolators": 1}, "engineers": ["Professor Palin", "Chloe Sedesi", "Mel Brandon"]}
             }
         }
     }
