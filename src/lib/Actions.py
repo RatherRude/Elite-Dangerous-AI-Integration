@@ -2450,18 +2450,15 @@ def blueprint_finder(obj, projected_states):
 
         return False
 
-    # Helper function to calculate total materials needed for a grade
+        # Helper function to calculate total materials needed for a grade
     def calculate_materials_for_grade(base_cost, grade):
-        """Calculate total materials needed to reach a specific grade"""
+        """Calculate total materials needed for a specific grade"""
         total_materials = {}
-
-        # Sum materials from grade 1 to target grade
-        for g in range(1, grade + 1):
-            for material, amount in base_cost.items():
-                if material not in total_materials:
-                    total_materials[material] = 0
-                total_materials[material] += amount * g
-
+        
+        # Multiply each material by the grade level
+        for material, amount in base_cost.items():
+            total_materials[material] = amount * grade
+        
         return total_materials
 
     # Build results
@@ -2515,13 +2512,12 @@ def blueprint_finder(obj, projected_states):
                         continue
                     engineers = matching_engineers
 
-                # Calculate total materials needed to reach this grade
+                                # Calculate total materials needed for this grade
                 base_cost = grade_info.get("cost", {})
                 total_materials = calculate_materials_for_grade(base_cost, grade)
-
+                
                 grade_results = {
-                    "base_cost_per_roll": base_cost,
-                    "total_materials_to_reach_grade": total_materials,
+                    "materials_needed": total_materials,
                     "engineers": engineers
                 }
 
