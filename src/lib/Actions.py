@@ -1663,73 +1663,6 @@ ENGINEERING_MODIFICATIONS = {
             }
         }
     },
-    "Rapid fire": {
-        "module_recipes": {
-            "Burst Laser": {
-                1: {"cost": {"Mechanical Scrap": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
-                2: {"cost": {"Heat Dispersion Plate": 1, "Mechanical Scrap": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
-                3: {"cost": {"Mechanical Equipment": 1, "Precipitated Alloys": 1, "Specialised Legacy Firmware": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
-                4: {"cost": {"Mechanical Components": 1, "Modified Consumer Firmware": 1, "Thermic Alloys": 1}, "engineers": ["Broo Tarquin"]},
-                5: {"cost": {"Configurable Components": 1, "Precipitated Alloys": 1, "Technetium": 1}, "engineers": ["Broo Tarquin"]}
-            },
-            "Cannon": {
-                1: {"cost": {"Mechanical Scrap": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "The Sarge", "Marsha Hicks"]},
-                2: {"cost": {"Heat Dispersion Plate": 1, "Mechanical Scrap": 1}, "engineers": ["Tod 'The Blaster' McQuinn"]},
-                3: {"cost": {"Mechanical Equipment": 1, "Precipitated Alloys": 1, "Specialised Legacy Firmware": 1}, "engineers": ["The Sarge", "Marsha Hicks"]},
-                4: {"cost": {"Mechanical Components": 1, "Modified Consumer Firmware": 1, "Thermic Alloys": 1}, "engineers": ["The Sarge", "Marsha Hicks"]},
-                5: {"cost": {"Configurable Components": 1, "Precipitated Alloys": 1, "Technetium": 1}, "engineers": ["The Sarge", "Marsha Hicks"]}
-            },
-            "Fragment Cannon": {
-                1: {"cost": {"Mechanical Scrap": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
-                2: {"cost": {"Heat Dispersion Plate": 1, "Mechanical Scrap": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
-                3: {"cost": {"Mechanical Equipment": 1, "Precipitated Alloys": 1, "Specialised Legacy Firmware": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
-                4: {"cost": {"Mechanical Components": 1, "Modified Consumer Firmware": 1, "Thermic Alloys": 1}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]},
-                5: {"cost": {"Configurable Components": 1, "Precipitated Alloys": 1, "Technetium": 1}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]}
-            },
-            "Mine Launcher": {
-                1: {"cost": {"Mechanical Scrap": 1}, "engineers": ["Liz Ryder", "Juri Ishmaak", "Petra Olmanova"]},
-                2: {"cost": {"Heat Dispersion Plate": 1, "Mechanical Scrap": 1}, "engineers": ["Liz Ryder", "Juri Ishmaak", "Petra Olmanova"]},
-                3: {"cost": {"Mechanical Equipment": 1, "Precipitated Alloys": 1, "Specialised Legacy Firmware": 1}, "engineers": ["Liz Ryder", "Juri Ishmaak", "Petra Olmanova"]},
-                4: {"cost": {"Mechanical Components": 1, "Modified Consumer Firmware": 1, "Thermic Alloys": 1}, "engineers": ["Juri Ishmaak", "Petra Olmanova"]},
-                5: {"cost": {"Configurable Components": 1, "Precipitated Alloys": 1, "Technetium": 1}, "engineers": ["Juri Ishmaak", "Petra Olmanova"]}
-            },
-            "Missile Rack": {
-                1: {"cost": {"Mechanical Scrap": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
-                2: {"cost": {"Heat Dispersion Plate": 1, "Mechanical Scrap": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
-                3: {"cost": {"Mechanical Equipment": 1, "Precipitated Alloys": 1, "Specialised Legacy Firmware": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
-                4: {"cost": {"Mechanical Components": 1, "Modified Consumer Firmware": 1, "Thermic Alloys": 1}, "engineers": ["Liz Ryder", "Petra Olmanova"]},
-                5: {"cost": {"Configurable Components": 1, "Precipitated Alloys": 1, "Technetium": 1}, "engineers": ["Liz Ryder", "Petra Olmanova"]}
-            },
-            "Multi-cannon": {
-                1: {"cost": {"Mechanical Scrap": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
-                2: {"cost": {"Heat Dispersion Plate": 1, "Mechanical Scrap": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
-                3: {"cost": {"Mechanical Equipment": 1, "Precipitated Alloys": 1, "Specialised Legacy Firmware": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
-                4: {"cost": {"Mechanical Components": 1, "Modified Consumer Firmware": 1, "Thermic Alloys": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]},
-                5: {"cost": {"Configurable Components": 1, "Precipitated Alloys": 1, "Technetium": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]}
-            },
-            "Plasma Accelerator": {
-                1: {"cost": {"Mechanical Scrap": 1}, "engineers": ["Zacariah Nemo", "Bill Turner"]},
-                2: {"cost": {"Heat Dispersion Plate": 1, "Mechanical Scrap": 1}, "engineers": ["Zacariah Nemo"]},
-                3: {"cost": {"Mechanical Equipment": 1, "Precipitated Alloys": 1, "Specialised Legacy Firmware": 1}, "engineers": ["Bill Turner"]},
-                4: {"cost": {"Mechanical Components": 1, "Modified Consumer Firmware": 1, "Thermic Alloys": 1}, "engineers": ["Bill Turner"]},
-                5: {"cost": {"Configurable Components": 1, "Precipitated Alloys": 1, "Technetium": 1}, "engineers": ["Bill Turner"]}
-            },
-            "Pulse Laser": {
-                1: {"cost": {"Mechanical Scrap": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
-                2: {"cost": {"Heat Dispersion Plate": 1, "Mechanical Scrap": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
-                3: {"cost": {"Mechanical Equipment": 1, "Precipitated Alloys": 1, "Specialised Legacy Firmware": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
-                4: {"cost": {"Mechanical Components": 1, "Modified Consumer Firmware": 1, "Thermic Alloys": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
-                5: {"cost": {"Configurable Components": 1, "Precipitated Alloys": 1, "Technetium": 1}, "engineers": ["Broo Tarquin"]}
-            },
-            "Seeker Missile Rack": {
-                1: {"cost": {"Mechanical Scrap": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
-                2: {"cost": {"Heat Dispersion Plate": 1, "Mechanical Scrap": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
-                3: {"cost": {"Mechanical Equipment": 1, "Precipitated Alloys": 1, "Specialised Legacy Firmware": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
-                4: {"cost": {"Mechanical Components": 1, "Modified Consumer Firmware": 1, "Thermic Alloys": 1}, "engineers": ["Liz Ryder", "Petra Olmanova"]},
-                5: {"cost": {"Configurable Components": 1, "Precipitated Alloys": 1, "Technetium": 1}, "engineers": ["Liz Ryder", "Petra Olmanova"]}
-            }
-        }
-    },
     "High capacity": {
         "module_recipes": {
             "Cannon": {
@@ -2690,65 +2623,6 @@ ENGINEERING_MODIFICATIONS = {
             }
         }
     },
-    "Stripped Down": {
-        "experimental": True,
-        "module_recipes": {
-            "Frame Shift Drive": {
-                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Proto Light Alloys": 1}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Mel Brandon", "Professor Palin", "Colonel Bris Dekker", "Chloe Sedesi"]}
-            },
-            "Shield Generator": {
-                1: {"cost": {"Worn Shield Emitters": 5, "Flawed Focus Crystals": 3, "Proto Light Alloys": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung", "Mel Brandon"]}
-            },
-            "Power Distributor": {
-                1: {"cost": {"Phosphorus": 5, "Heat Resistant Ceramics": 3, "Proto Light Alloys": 1}, "engineers": ["The Dweller", "Etienne Dorn", "Marco Qwent", "Hera Tani"]}
-            },
-            "Power Plant": {
-                1: {"cost": {"Grid Resistors": 5, "Vanadium": 3, "Proto Light Alloys": 1}, "engineers": ["Felicity Farseer", "Marco Qwent", "Hera Tani", "Etienne Dorn"]}
-            },
-            "Thrusters": {
-                1: {"cost": {"Iron": 5, "Hybrid Capacitors": 3, "Proto Light Alloys": 1}, "engineers": ["Elvira Martuuk", "Felicity Farseer", "Professor Palin", "Chloe Sedesi", "Mel Brandon"]}
-            },
-            "Shield Cell Bank": {
-                1: {"cost": {"Salvaged Alloys": 5, "Carbon": 5, "Tin": 1}, "engineers": ["Elvira Martuuk", "Lori Jameson", "Mel Brandon"]}
-            },
-            "Beam Laser": {
-                1: {"cost": {"Salvaged Alloys": 5, "Carbon": 5, "Tin": 1}, "engineers": ["The Dweller", "Broo Tarquin"]}
-            },
-            "Burst Laser": {
-                1: {"cost": {"Salvaged Alloys": 5, "Carbon": 5, "Tin": 1}, "engineers": ["The Dweller", "Broo Tarquin"]}
-            },
-            "Pulse Laser": {
-                1: {"cost": {"Salvaged Alloys": 5, "Carbon": 5, "Tin": 1}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]}
-            },
-            "Multi-cannon": {
-                1: {"cost": {"Salvaged Alloys": 5, "Carbon": 5, "Tin": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
-            },
-            "Plasma Accelerator": {
-                1: {"cost": {"Salvaged Alloys": 5, "Carbon": 5, "Tin": 1}, "engineers": ["Zacariah Nemo", "Bill Turner", "Etienne Dorn"]}
-            },
-            "Fragment Cannon": {
-                1: {"cost": {"Salvaged Alloys": 5, "Carbon": 5, "Tin": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
-            },
-            "Cannon": {
-                1: {"cost": {"Salvaged Alloys": 5, "Carbon": 5, "Tin": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "The Sarge", "Marsha Hicks"]}
-            },
-            "Rail Gun": {
-                1: {"cost": {"Salvaged Alloys": 5, "Carbon": 5, "Tin": 1}, "engineers": ["The Sarge", "Tod 'The Blaster' McQuinn", "Etienne Dorn"]}
-            },
-            "Mine Launcher": {
-                1: {"cost": {"Salvaged Alloys": 5, "Carbon": 5, "Tin": 1}, "engineers": ["Liz Ryder", "Juri Ishmaak", "Petra Olmanova"]}
-            },
-            "Torpedo Pylon": {
-                1: {"cost": {"Salvaged Alloys": 5, "Carbon": 5, "Tin": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]}
-            },
-            "Missile Rack": {
-                1: {"cost": {"Salvaged Alloys": 5, "Carbon": 5, "Tin": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]}
-            },
-            "Seeker Missile Rack": {
-                1: {"cost": {"Salvaged Alloys": 5, "Carbon": 5, "Tin": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]}
-            }
-        }
-    },
     "Thermal Conduit": {
         "experimental": True,
         "module_recipes": {
@@ -3387,19 +3261,6 @@ ENGINEERING_MODIFICATIONS = {
             }
         }
     },
-    "Scope": {
-        "module_recipes": {
-            "Kinematic Armaments Weapons": {
-                1: {"cost": {"Credits": 500000, "Spectral Analysis Data": 10, "Biometric Data": 5, "Optical Lens": 10, "Optical Fibre": 5}, "engineers": ["Oden Geiger", "Rosa Dayette", "Wellington Beck"]}
-            },
-            "Takada Weapons": {
-                1: {"cost": {"Credits": 500000, "Spectral Analysis Data": 10, "Biometric Data": 5, "Optical Lens": 10, "Optical Fibre": 5}, "engineers": ["Oden Geiger", "Rosa Dayette", "Wellington Beck"]}
-            },
-            "Manticore weapons": {
-                1: {"cost": {"Credits": 500000, "Spectral Analysis Data": 10, "Biometric Data": 5, "Optical Lens": 10, "Optical Fibre": 5}, "engineers": ["Oden Geiger", "Rosa Dayette", "Wellington Beck"]}
-            }
-        }
-    },
     "Stability": {
         "module_recipes": {
             "Kinematic Armaments Weapons": {
@@ -3523,15 +3384,56 @@ def blueprint_finder(obj, projected_states):
         if not search_term or not target_string:
             return False
 
+        # Module synonyms mapping - maps synonyms to their main module names
+        MODULE_SYNONYMS = {
+            # Kinematic Armaments Weapons synonyms
+            "karma p-15": "Kinematic Armaments Weapons",
+            "karma l-6": "Kinematic Armaments Weapons", 
+            "karma c-44": "Kinematic Armaments Weapons",
+            "karma ar-50": "Kinematic Armaments Weapons",
+            "karma": "Kinematic Armaments Weapons",
+            
+            # Takada Weapons synonyms
+            "tk aphelion": "Takada Weapons",
+            "tk eclipse": "Takada Weapons", 
+            "tk zenith": "Takada Weapons",
+            "takada": "Takada Weapons",
+            
+            # Manticore weapons synonyms
+            "manticore executioner": "Manticore weapons",
+            "manticore intimidator": "Manticore weapons",
+            "manticore oppressor": "Manticore weapons", 
+            "manticore tormentor": "Manticore weapons",
+            "manticore": "Manticore weapons",
+            
+            # Suit synonyms
+            "flight suit": "suit",
+            "artemis suit": "suit",
+            "maverick suit": "suit", 
+            "dominator suit": "suit"
+        }
+
         search_lower = search_term.lower()
         target_lower = target_string.lower()
 
-        # First check for exact substring matches
+        # First check if the search term is a synonym
+        if search_lower in MODULE_SYNONYMS:
+            # If the search term is a synonym, check if it maps to the target
+            if MODULE_SYNONYMS[search_lower].lower() == target_lower:
+                return True
+
+        # Check if any part of the search term matches a synonym
+        search_words = search_lower.split()
+        for word in search_words:
+            if word in MODULE_SYNONYMS:
+                if MODULE_SYNONYMS[word].lower() == target_lower:
+                    return True
+
+        # Original fuzzy matching logic - check for exact substring matches
         if search_lower in target_lower:
             return True
 
-        # Split into words for fuzzy matching
-        search_words = search_lower.split()
+        # Split into words for fuzzy matching  
         target_words = target_lower.replace(',', ' ').replace('(', ' ').replace(')', ' ').split()
 
         # Fuzzy matching using Levenshtein distance
@@ -7615,7 +7517,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 },
                 "module": {
                     "type": "string",
-                    "description": "Module name to search for"
+                    "description": "Module/hardware name to search for"
                 },
                 "grade": {
                     "type": "integer",
