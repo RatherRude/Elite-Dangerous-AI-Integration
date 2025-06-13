@@ -2380,6 +2380,786 @@ ENGINEERING_MODIFICATIONS = {
                 5: {"cost": {"Cadmium": 1, "Cracked Industrial Firmware": 1, "Pharmaceutical Isolators": 1}, "engineers": ["Professor Palin", "Chloe Sedesi", "Mel Brandon"]}
             }
         }
+    },
+    "Target Lock Breaker": {
+        "experimental": True,
+        "module_recipes": {
+            "Plasma Accelerator": {
+                1: {"cost": {"Selenium": 5, "Security Firmware Patch": 3, "Adaptive Encryptors Capture": 1}, "engineers": []}
+            }
+        }
+    },
+    "Plasma Slug": {
+        "experimental": True,
+        "module_recipes": {
+            "Plasma Accelerator": {
+                1: {"cost": {"Heat Exchangers": 3, "Modified Embedded Firmware": 2, "Refined Focus Crystals": 2, "Mercury": 4}, "engineers": []}
+            },
+            "Rail Gun": {
+                1: {"cost": {"Heat Exchangers": 3, "Modified Embedded Firmware": 2, "Refined Focus Crystals": 2, "Mercury": 4}, "engineers": []}
+            }
+        }
+    },
+    "Ion Disruptor": {
+        "experimental": True,
+        "module_recipes": {
+            "Mine Launcher": {
+                1: {"cost": {"Sulphur": 5, "Phosphorus": 5, "Chemical Distillery": 3, "Electrochemical Arrays": 3}, "engineers": []}
+            }
+        }
+    },
+    "Overload Munitions": {
+        "experimental": True,
+        "module_recipes": {
+            "Mine Launcher": {
+                1: {"cost": {"Germanium": 3, "Filament Composites": 5, "Tagged Encryption Codes": 4, "Aberrant Shield Pattern Analysis": 2}, "engineers": []}
+            },
+            "Missile Rack": {
+                1: {"cost": {"Germanium": 3, "Filament Composites": 5, "Tagged Encryption Codes": 4, "Aberrant Shield Pattern Analysis": 2}, "engineers": []}
+            },
+            "Pack-Hound Missile Rack": {
+                1: {"cost": {"Germanium": 3, "Filament Composites": 5, "Tagged Encryption Codes": 4, "Aberrant Shield Pattern Analysis": 2}, "engineers": []}
+            },
+            "Seeker Missile Rack": {
+                1: {"cost": {"Germanium": 3, "Filament Composites": 5, "Tagged Encryption Codes": 4, "Aberrant Shield Pattern Analysis": 2}, "engineers": []}
+            }
+        }
+    },
+    "Radiant Canister": {
+        "experimental": True,
+        "module_recipes": {
+            "Mine Launcher": {
+                1: {"cost": {"Polonium": 1, "Phase Alloys": 3, "Heat Dispersion Plate": 4}, "engineers": []}
+            }
+        }
+    },
+    "Reverberating Cascade": {
+        "experimental": True,
+        "module_recipes": {
+            "Mine Launcher": {
+                1: {"cost": {"Chromium": 4, "Configurable Components": 2, "Filament Composites": 4, "Classified Scan Databanks": 3}, "engineers": []}
+            },
+            "Torpedo Pylon": {
+                1: {"cost": {"Chromium": 4, "Configurable Components": 2, "Filament Composites": 4, "Classified Scan Databanks": 3}, "engineers": []}
+            }
+        }
+    },
+    "Shift-Lock Canister": {
+        "experimental": True,
+        "module_recipes": {
+            "Mine Launcher": {
+                1: {"cost": {"Tempered Alloys": 5, "Salvaged Alloys": 5, "Strange Wake Solutions": 3}, "engineers": []}
+            }
+        }
+    },
+    "FSD Interrupt": {
+        "experimental": True,
+        "module_recipes": {
+            "Missile Rack": {
+                1: {"cost": {"Strange Wake Solutions": 3, "Anomalous FSD Telemetry": 5, "Mechanical Equipment": 5, "Configurable Components": 3}, "engineers": []}
+            },
+            "Containment Missile": {
+                1: {"cost": {"Strange Wake Solutions": 3, "Anomalous FSD Telemetry": 5, "Mechanical Equipment": 5, "Configurable Components": 3}, "engineers": []}
+            }
+        }
+    },
+    "Penetrator Munitions": {
+        "experimental": True,
+        "module_recipes": {
+            "Missile Rack": {
+                1: {"cost": {"Galvanising Alloys": 5, "Electrochemical Arrays": 3, "Zirconium": 3}, "engineers": []}
+            }
+        }
+    },
+    "Feedback Cascade": {
+        "experimental": True,
+        "module_recipes": {
+            "Rail Gun": {
+                1: {"cost": {"Open Symmetric Keys": 5, "Shield Emitters": 5, "Filament Composites": 5}, "engineers": []}
+            }
+        }
+    },
+    "Super Penetrator": {
+        "experimental": True,
+        "module_recipes": {
+            "Rail Gun": {
+                1: {"cost": {"Proto Light Alloys": 3, "Refined Focus Crystals": 3, "Zirconium": 3, "Untypical Shield Scans": 5}, "engineers": []}
+            }
+        }
+    },
+    "Mass Lock Munitions": {
+        "experimental": True,
+        "module_recipes": {
+            "Torpedo Pylon": {
+                1: {"cost": {"Mechanical Equipment": 5, "High Density Composites": 3, "Aberrant Shield Pattern Analysis": 3}, "engineers": []}
+            }
+        }
+    },
+    "Penetrator Payload": {
+        "experimental": True,
+        "module_recipes": {
+            "Torpedo Pylon": {
+                1: {"cost": {"Anomalous Bulk Scan Data": 5, "Tungsten": 3, "Selenium": 3, "Mechanical Components": 3}, "engineers": []}
+            }
+        }
+    },
+    "Concordant Sequence": {
+        "experimental": True,
+        "module_recipes": {
+            "Beam Laser": {
+                1: {"cost": {"Focus Crystals": 5, "Modified Embedded Firmware": 3, "Zirconium": 1}, "engineers": []}
+            },
+            "Burst Laser": {
+                1: {"cost": {"Focus Crystals": 5, "Modified Embedded Firmware": 3, "Zirconium": 1}, "engineers": []}
+            },
+            "Pulse Laser": {
+                1: {"cost": {"Focus Crystals": 5, "Modified Embedded Firmware": 3, "Zirconium": 1}, "engineers": []}
+            }
+        }
+    },
+    "Double Braced": {
+        "experimental": True,
+        "module_recipes": {
+            "Frame Shift Drive": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": []}
+            },
+            "Beam Laser": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": []}
+            },
+            "Burst Laser": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": []}
+            },
+            "Pulse Laser": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": []}
+            },
+            "Multi-cannon": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": []}
+            },
+            "Plasma Accelerator": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": []}
+            },
+            "Fragment Cannon": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": []}
+            },
+            "Cannon": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": []}
+            },
+            "Rail Gun": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": []}
+            },
+            "Mine Launcher": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": []}
+            },
+            "Torpedo Pylon": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": []}
+            },
+            "Shield Generator": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": []}
+            },
+            "Thrusters": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": []}
+            },
+            "Power Plant": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": []}
+            },
+            "Power Distributor": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": []}
+            },
+            "Shield Cell Bank": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": []}
+            },
+            "Shield Booster": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": []}
+            }
+        }
+    },
+    "Flow Control": {
+        "experimental": True,
+        "module_recipes": {
+            "Shield Booster": {
+                1: {"cost": {"Inconsistent Shield Soak Analysis": 5, "Security Firmware Patch": 3, "Focus Crystals": 3, "Niobium": 3}, "engineers": []}
+            },
+            "Power Distributor": {
+                1: {"cost": {"Phosphorus": 5, "Heat Resistant Ceramics": 3, "Conductive Polymers": 1}, "engineers": []}
+            },
+            "Shield Cell Bank": {
+                1: {"cost": {"Chemical Storage Units": 5, "Chromium": 3, "Conductive Polymers": 1}, "engineers": []}
+            },
+            "Beam Laser": {
+                1: {"cost": {"Mechanical Scrap": 5, "Hybrid Capacitors": 3, "Modified Embedded Firmware": 1}, "engineers": []}
+            },
+            "Burst Laser": {
+                1: {"cost": {"Mechanical Scrap": 5, "Hybrid Capacitors": 3, "Modified Embedded Firmware": 1}, "engineers": []}
+            },
+            "Pulse Laser": {
+                1: {"cost": {"Mechanical Scrap": 5, "Hybrid Capacitors": 3, "Modified Embedded Firmware": 1}, "engineers": []}
+            },
+            "Multi-cannon": {
+                1: {"cost": {"Mechanical Scrap": 5, "Hybrid Capacitors": 3, "Modified Embedded Firmware": 1}, "engineers": []}
+            },
+            "Plasma Accelerator": {
+                1: {"cost": {"Mechanical Scrap": 5, "Hybrid Capacitors": 3, "Modified Embedded Firmware": 1}, "engineers": []}
+            },
+            "Fragment Cannon": {
+                1: {"cost": {"Mechanical Scrap": 5, "Hybrid Capacitors": 3, "Modified Embedded Firmware": 1}, "engineers": []}
+            },
+            "Cannon": {
+                1: {"cost": {"Mechanical Scrap": 5, "Hybrid Capacitors": 3, "Modified Embedded Firmware": 1}, "engineers": []}
+            },
+            "Rail Gun": {
+                1: {"cost": {"Mechanical Scrap": 5, "Hybrid Capacitors": 3, "Modified Embedded Firmware": 1}, "engineers": []}
+            },
+            "Missile Rack": {
+                1: {"cost": {"Mechanical Scrap": 5, "Hybrid Capacitors": 3, "Modified Embedded Firmware": 1}, "engineers": []}
+            },
+            "Seeker Missile Rack": {
+                1: {"cost": {"Mechanical Scrap": 5, "Hybrid Capacitors": 3, "Modified Embedded Firmware": 1}, "engineers": []}
+            }
+        }
+    },
+    "Oversized": {
+        "experimental": True,
+        "module_recipes": {
+            "Beam Laser": {
+                1: {"cost": {"Mechanical Scrap": 5, "Mechanical Components": 3, "Ruthenium": 1}, "engineers": []}
+            },
+            "Burst Laser": {
+                1: {"cost": {"Mechanical Scrap": 5, "Mechanical Components": 3, "Ruthenium": 1}, "engineers": []}
+            },
+            "Pulse Laser": {
+                1: {"cost": {"Mechanical Scrap": 5, "Mechanical Components": 3, "Ruthenium": 1}, "engineers": []}
+            },
+            "Multi-cannon": {
+                1: {"cost": {"Mechanical Scrap": 5, "Mechanical Components": 3, "Ruthenium": 1}, "engineers": []}
+            },
+            "Plasma Accelerator": {
+                1: {"cost": {"Mechanical Scrap": 5, "Mechanical Components": 3, "Ruthenium": 1}, "engineers": []}
+            },
+            "Fragment Cannon": {
+                1: {"cost": {"Mechanical Scrap": 5, "Mechanical Components": 3, "Ruthenium": 1}, "engineers": []}
+            },
+            "Cannon": {
+                1: {"cost": {"Mechanical Scrap": 5, "Mechanical Components": 3, "Ruthenium": 1}, "engineers": []}
+            },
+            "Rail Gun": {
+                1: {"cost": {"Mechanical Scrap": 5, "Mechanical Components": 3, "Ruthenium": 1}, "engineers": []}
+            },
+            "Mine Launcher": {
+                1: {"cost": {"Mechanical Scrap": 5, "Mechanical Components": 3, "Ruthenium": 1}, "engineers": []}
+            },
+            "Torpedo Pylon": {
+                1: {"cost": {"Mechanical Scrap": 5, "Mechanical Components": 3, "Ruthenium": 1}, "engineers": []}
+            },
+            "Missile Rack": {
+                1: {"cost": {"Mechanical Scrap": 5, "Mechanical Components": 3, "Ruthenium": 1}, "engineers": []}
+            },
+            "Seeker Missile Rack": {
+                1: {"cost": {"Mechanical Scrap": 5, "Mechanical Components": 3, "Ruthenium": 1}, "engineers": []}
+            }
+        }
+    },
+    "Regeneration Sequence": {
+        "experimental": True,
+        "module_recipes": {
+            "Beam Laser": {
+                1: {"cost": {"Refined Focus Crystals": 3, "Shielding Sensors": 4, "Peculiar Shield Frequency Data": 1}, "engineers": []}
+            }
+        }
+    },
+    "Stripped Down": {
+        "experimental": True,
+        "module_recipes": {
+            "Frame Shift Drive": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Proto Light Alloys": 1}, "engineers": []}
+            },
+            "Shield Generator": {
+                1: {"cost": {"Worn Shield Emitters": 5, "Flawed Focus Crystals": 3, "Proto Light Alloys": 1}, "engineers": []}
+            },
+            "Power Distributor": {
+                1: {"cost": {"Phosphorus": 5, "Heat Resistant Ceramics": 3, "Proto Light Alloys": 1}, "engineers": []}
+            },
+            "Power Plant": {
+                1: {"cost": {"Grid Resistors": 5, "Vanadium": 3, "Proto Light Alloys": 1}, "engineers": []}
+            },
+            "Thrusters": {
+                1: {"cost": {"Iron": 5, "Hybrid Capacitors": 3, "Proto Light Alloys": 1}, "engineers": []}
+            },
+            "Shield Cell Bank": {
+                1: {"cost": {"Salvaged Alloys": 5, "Carbon": 5, "Tin": 1}, "engineers": []}
+            },
+            "Beam Laser": {
+                1: {"cost": {"Salvaged Alloys": 5, "Carbon": 5, "Tin": 1}, "engineers": []}
+            },
+            "Burst Laser": {
+                1: {"cost": {"Salvaged Alloys": 5, "Carbon": 5, "Tin": 1}, "engineers": []}
+            },
+            "Pulse Laser": {
+                1: {"cost": {"Salvaged Alloys": 5, "Carbon": 5, "Tin": 1}, "engineers": []}
+            },
+            "Multi-cannon": {
+                1: {"cost": {"Salvaged Alloys": 5, "Carbon": 5, "Tin": 1}, "engineers": []}
+            },
+            "Plasma Accelerator": {
+                1: {"cost": {"Salvaged Alloys": 5, "Carbon": 5, "Tin": 1}, "engineers": []}
+            },
+            "Fragment Cannon": {
+                1: {"cost": {"Salvaged Alloys": 5, "Carbon": 5, "Tin": 1}, "engineers": []}
+            },
+            "Cannon": {
+                1: {"cost": {"Salvaged Alloys": 5, "Carbon": 5, "Tin": 1}, "engineers": []}
+            },
+            "Rail Gun": {
+                1: {"cost": {"Salvaged Alloys": 5, "Carbon": 5, "Tin": 1}, "engineers": []}
+            },
+            "Mine Launcher": {
+                1: {"cost": {"Salvaged Alloys": 5, "Carbon": 5, "Tin": 1}, "engineers": []}
+            },
+            "Torpedo Pylon": {
+                1: {"cost": {"Salvaged Alloys": 5, "Carbon": 5, "Tin": 1}, "engineers": []}
+            },
+            "Missile Rack": {
+                1: {"cost": {"Salvaged Alloys": 5, "Carbon": 5, "Tin": 1}, "engineers": []}
+            },
+            "Seeker Missile Rack": {
+                1: {"cost": {"Salvaged Alloys": 5, "Carbon": 5, "Tin": 1}, "engineers": []}
+            }
+        }
+    },
+    "Thermal Conduit": {
+        "experimental": True,
+        "module_recipes": {
+            "Beam Laser": {
+                1: {"cost": {"Heat Dispersion Plate": 5, "Sulphur": 5, "Tempered Alloys": 5}, "engineers": []}
+            },
+            "Plasma Accelerator": {
+                1: {"cost": {"Heat Dispersion Plate": 5, "Sulphur": 5, "Tempered Alloys": 5}, "engineers": []}
+            }
+        }
+    },
+    "Thermal Shock": {
+        "experimental": True,
+        "module_recipes": {
+            "Beam Laser": {
+                1: {"cost": {"Flawed Focus Crystals": 5, "Heat Resistant Ceramics": 3, "Conductive Components": 3, "Tungsten": 3}, "engineers": []}
+            },
+            "Burst Laser": {
+                1: {"cost": {"Flawed Focus Crystals": 5, "Heat Resistant Ceramics": 3, "Conductive Components": 3, "Tungsten": 3}, "engineers": []}
+            },
+            "Pulse Laser": {
+                1: {"cost": {"Flawed Focus Crystals": 5, "Heat Resistant Ceramics": 3, "Conductive Components": 3, "Tungsten": 3}, "engineers": []}
+            },
+            "Multi-cannon": {
+                1: {"cost": {"Flawed Focus Crystals": 5, "Heat Resistant Ceramics": 3, "Conductive Components": 3, "Tungsten": 3}, "engineers": []}
+            }
+        }
+    },
+    "Thermal Vent": {
+        "experimental": True,
+        "module_recipes": {
+            "Beam Laser": {
+                1: {"cost": {"Flawed Focus Crystals": 5, "Conductive Polymers": 3, "Precipitated Alloys": 3}, "engineers": []}
+            }
+        }
+    },
+    "Inertial Impact": {
+        "experimental": True,
+        "module_recipes": {
+            "Burst Laser": {
+                1: {"cost": {"Flawed Focus Crystals": 5, "Distorted Shield Cycle Recordings": 5, "Atypical Disrupted Wake Echoes": 5}, "engineers": []}
+            }
+        }
+    },
+    "Multi-Servos": {
+        "experimental": True,
+        "module_recipes": {
+            "Burst Laser": {
+                1: {"cost": {"Mechanical Scrap": 5, "Conductive Polymers": 2, "Configurable Components": 2, "Focus Crystals": 4}, "engineers": []}
+            },
+            "Pulse Laser": {
+                1: {"cost": {"Mechanical Scrap": 5, "Conductive Polymers": 2, "Configurable Components": 2, "Focus Crystals": 4}, "engineers": []}
+            },
+            "Multi-cannon": {
+                1: {"cost": {"Mechanical Scrap": 5, "Conductive Polymers": 2, "Configurable Components": 2, "Focus Crystals": 4}, "engineers": []}
+            },
+            "Plasma Accelerator": {
+                1: {"cost": {"Mechanical Scrap": 5, "Conductive Polymers": 2, "Configurable Components": 2, "Focus Crystals": 4}, "engineers": []}
+            },
+            "Fragment Cannon": {
+                1: {"cost": {"Mechanical Scrap": 5, "Conductive Polymers": 2, "Configurable Components": 2, "Focus Crystals": 4}, "engineers": []}
+            },
+            "Cannon": {
+                1: {"cost": {"Mechanical Scrap": 5, "Conductive Polymers": 2, "Configurable Components": 2, "Focus Crystals": 4}, "engineers": []}
+            },
+            "Rail Gun": {
+                1: {"cost": {"Mechanical Scrap": 5, "Conductive Polymers": 2, "Configurable Components": 2, "Focus Crystals": 4}, "engineers": []}
+            },
+            "Missile Rack": {
+                1: {"cost": {"Mechanical Scrap": 5, "Conductive Polymers": 2, "Configurable Components": 2, "Focus Crystals": 4}, "engineers": []}
+            },
+            "Seeker Missile Rack": {
+                1: {"cost": {"Mechanical Scrap": 5, "Conductive Polymers": 2, "Configurable Components": 2, "Focus Crystals": 4}, "engineers": []}
+            }
+        }
+    },
+    "Phasing Sequence": {
+        "experimental": True,
+        "module_recipes": {
+            "Burst Laser": {
+                1: {"cost": {"Focus Crystals": 5, "Aberrant Shield Pattern Analysis": 3, "Niobium": 3, "Configurable Components": 3}, "engineers": []}
+            },
+            "Plasma Accelerator": {
+                1: {"cost": {"Focus Crystals": 5, "Aberrant Shield Pattern Analysis": 3, "Niobium": 3, "Configurable Components": 3}, "engineers": []}
+            },
+            "Pulse Laser": {
+                1: {"cost": {"Focus Crystals": 5, "Aberrant Shield Pattern Analysis": 3, "Niobium": 3, "Configurable Components": 3}, "engineers": []}
+            }
+        }
+    },
+    "Scramble Spectrum": {
+        "experimental": True,
+        "module_recipes": {
+            "Burst Laser": {
+                1: {"cost": {"Crystal Shards": 5, "Untypical Shield Scans": 3, "Exceptional Scrambled Emission Data": 5}, "engineers": []}
+            },
+            "Pulse Laser": {
+                1: {"cost": {"Crystal Shards": 5, "Untypical Shield Scans": 3, "Exceptional Scrambled Emission Data": 5}, "engineers": []}
+            }
+        }
+    },
+    "Emissive Munitions": {
+        "experimental": True,
+        "module_recipes": {
+            "Mine Launcher": {
+                1: {"cost": {"Manganese": 3, "Mechanical Equipment": 4, "Heat Exchangers": 3, "Unexpected Emission Data": 3}, "engineers": []}
+            },
+            "Missile Rack": {
+                1: {"cost": {"Manganese": 3, "Mechanical Equipment": 4, "Heat Exchangers": 3, "Unexpected Emission Data": 3}, "engineers": []}
+            },
+            "Multi-cannon": {
+                1: {"cost": {"Manganese": 3, "Mechanical Equipment": 4, "Heat Exchangers": 3, "Unexpected Emission Data": 3}, "engineers": []}
+            },
+            "Pulse Laser": {
+                1: {"cost": {"Manganese": 3, "Mechanical Equipment": 4, "Heat Exchangers": 3, "Unexpected Emission Data": 3}, "engineers": []}
+            },
+            "Seeker Missile Rack": {
+                1: {"cost": {"Manganese": 3, "Mechanical Equipment": 4, "Heat Exchangers": 3, "Unexpected Emission Data": 3}, "engineers": []}
+            }
+        }
+    },
+    "Auto Loader": {
+        "experimental": True,
+        "module_recipes": {
+            "Cannon": {
+                1: {"cost": {"Mechanical Equipment": 4, "Mechanical Components": 3, "High Density Composites": 3}, "engineers": []}
+            },
+            "Multi-cannon": {
+                1: {"cost": {"Mechanical Equipment": 4, "Mechanical Components": 3, "High Density Composites": 3}, "engineers": []}
+            }
+        }
+    },
+    "Dispersal Field": {
+        "experimental": True,
+        "module_recipes": {
+            "Cannon": {
+                1: {"cost": {"Conductive Components": 5, "Hybrid Capacitors": 5, "Worn Shield Emitters": 5, "Irregular Emission Data": 5}, "engineers": []}
+            },
+            "Plasma Accelerator": {
+                1: {"cost": {"Conductive Components": 5, "Hybrid Capacitors": 5, "Worn Shield Emitters": 5, "Irregular Emission Data": 5}, "engineers": []}
+            }
+        }
+    },
+    "Force Shell": {
+        "experimental": True,
+        "module_recipes": {
+            "Cannon": {
+                1: {"cost": {"Zinc": 5, "Mechanical Scrap": 5, "Phase Alloys": 3, "Heat Conduction Wiring": 3}, "engineers": []}
+            }
+        }
+    },
+    "High Yield Shell": {
+        "experimental": True,
+        "module_recipes": {
+            "Cannon": {
+                1: {"cost": {"Nickel": 5, "Mechanical Scrap": 5, "Proto Light Alloys": 3, "Chemical Manipulators": 3}, "engineers": []}
+            }
+        }
+    },
+    "Smart Rounds": {
+        "experimental": True,
+        "module_recipes": {
+            "Cannon": {
+                1: {"cost": {"Decoded Emission Data": 3, "Security Firmware Patch": 3, "Classified Scan Databanks": 3, "Mechanical Scrap": 5}, "engineers": []}
+            },
+            "Multi-cannon": {
+                1: {"cost": {"Decoded Emission Data": 3, "Security Firmware Patch": 3, "Classified Scan Databanks": 3, "Mechanical Scrap": 5}, "engineers": []}
+            }
+        }
+    },
+    "Thermal Cascade": {
+        "experimental": True,
+        "module_recipes": {
+            "Cannon": {
+                1: {"cost": {"Heat Conduction Wiring": 5, "Hybrid Capacitors": 4, "High Density Composites": 3, "Phosphorus": 5}, "engineers": []}
+            },
+            "Missile Rack": {
+                1: {"cost": {"Heat Conduction Wiring": 5, "Hybrid Capacitors": 4, "High Density Composites": 3, "Phosphorus": 5}, "engineers": []}
+            },
+            "Seeker Missile Rack": {
+                1: {"cost": {"Heat Conduction Wiring": 5, "Hybrid Capacitors": 4, "High Density Composites": 3, "Phosphorus": 5}, "engineers": []}
+            }
+        }
+    },
+    "Corrosive Shell": {
+        "experimental": True,
+        "module_recipes": {
+            "Fragment Cannon": {
+                1: {"cost": {"Chemical Storage Units": 5, "Precipitated Alloys": 4, "Arsenic": 3}, "engineers": []}
+            },
+            "Multi-cannon": {
+                1: {"cost": {"Chemical Storage Units": 5, "Precipitated Alloys": 4, "Arsenic": 3}, "engineers": []}
+            }
+        }
+    },
+    "Dazzle Shell": {
+        "experimental": True,
+        "module_recipes": {
+            "Fragment Cannon": {
+                1: {"cost": {"Manganese": 4, "Mechanical Scrap": 5, "Mechanical Components": 5, "Hybrid Capacitors": 5}, "engineers": []}
+            },
+            "Plasma Accelerator": {
+                1: {"cost": {"Manganese": 4, "Mechanical Scrap": 5, "Mechanical Components": 5, "Hybrid Capacitors": 5}, "engineers": []}
+            }
+        }
+    },
+    "Drag Munitions": {
+        "experimental": True,
+        "module_recipes": {
+            "Fragment Cannon": {
+                1: {"cost": {"Carbon": 5, "Grid Resistors": 5, "Molybdenum": 2}, "engineers": []}
+            },
+            "Seeker Missile Rack": {
+                1: {"cost": {"Carbon": 5, "Grid Resistors": 5, "Molybdenum": 2}, "engineers": []}
+            }
+        }
+    },
+    "Incendiary Rounds": {
+        "experimental": True,
+        "module_recipes": {
+            "Fragment Cannon": {
+                1: {"cost": {"Heat Conduction Wiring": 5, "Phosphorus": 5, "Sulphur": 5, "Phase Alloys": 3}, "engineers": []}
+            },
+            "Multi-cannon": {
+                1: {"cost": {"Heat Conduction Wiring": 5, "Phosphorus": 5, "Sulphur": 5, "Phase Alloys": 3}, "engineers": []}
+            }
+        }
+    },
+    "Screening Shell": {
+        "experimental": True,
+        "module_recipes": {
+            "Fragment Cannon": {
+                1: {"cost": {"Niobium": 3, "Mechanical Scrap": 5, "Distorted Shield Cycle Recordings": 5, "Modified Consumer Firmware": 5}, "engineers": []}
+            }
+        }
+    },
+    "Angled Plating": {
+        "experimental": True,
+        "module_recipes": {
+            "Bulkheads": {
+                1: {"cost": {"Compact Composites": 5, "Mechanical Equipment": 3, "Molybdenum": 2}, "engineers": []}
+            },
+            "Hull Reinforcement Package": {
+                1: {"cost": {"Tempered Alloys": 5, "Carbon": 5, "High Density Composites": 3, "Zirconium": 3}, "engineers": []}
+            }
+        }
+    },
+    "Deep Plating": {
+        "experimental": True,
+        "module_recipes": {
+            "Bulkheads": {
+                1: {"cost": {"Compact Composites": 5, "Mechanical Equipment": 3, "Molybdenum": 2}, "engineers": []}
+            },
+            "Hull Reinforcement Package": {
+                1: {"cost": {"Compact Composites": 5, "Molybdenum": 3, "Ruthenium": 2}, "engineers": []}
+            }
+        }
+    },
+    "Layered Plating": {
+        "experimental": True,
+        "module_recipes": {
+            "Bulkheads": {
+                1: {"cost": {"Heat Conduction Wiring": 5, "High Density Composites": 3, "Niobium": 1}, "engineers": []}
+            },
+            "Hull Reinforcement Package": {
+                1: {"cost": {"Heat Conduction Wiring": 5, "Shielding Sensors": 3, "Tungsten": 3}, "engineers": []}
+            }
+        }
+    },
+    "Reflective Plating": {
+        "experimental": True,
+        "module_recipes": {
+            "Bulkheads": {
+                1: {"cost": {"Compact Composites": 5, "Heat Dispersion Plate": 3, "Thermic Alloys": 2}, "engineers": []}
+            },
+            "Hull Reinforcement Package": {
+                1: {"cost": {"Heat Conduction Wiring": 5, "Zinc": 4, "Heat Dispersion Plate": 3, "Proto Light Alloys": 1}, "engineers": []}
+            }
+        }
+    },
+    "Monstered": {
+        "experimental": True,
+        "module_recipes": {
+            "Power Plant": {
+                1: {"cost": {"Grid Resistors": 5, "Vanadium": 3, "Polymer Capacitors": 1}, "engineers": []}
+            }
+        }
+    },
+    "Thermal Spread": {
+        "experimental": True,
+        "module_recipes": {
+            "Power Plant": {
+                1: {"cost": {"Grid Resistors": 5, "Vanadium": 3, "Heat Vanes": 1}, "engineers": []}
+            },
+            "Frame Shift Drive": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Heat Vanes": 1, "Grid Resistors": 3}, "engineers": []}
+            },
+            "Thrusters": {
+                1: {"cost": {"Iron": 5, "Hybrid Capacitors": 3, "Heat Vanes": 1}, "engineers": []}
+            }
+        }
+    },
+    "Drag Drives": {
+        "experimental": True,
+        "module_recipes": {
+            "Thrusters": {
+                1: {"cost": {"Iron": 5, "Hybrid Capacitors": 3, "Security Firmware Patch": 1}, "engineers": []}
+            }
+        }
+    },
+    "Drive Distributors": {
+        "experimental": True,
+        "module_recipes": {
+            "Thrusters": {
+                1: {"cost": {"Iron": 5, "Hybrid Capacitors": 3, "Security Firmware Patch": 1}, "engineers": []}
+            }
+        }
+    },
+    "Deep Charge": {
+        "experimental": True,
+        "module_recipes": {
+            "Frame Shift Drive": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Eccentric Hyperspace Trajectories": 1}, "engineers": []}
+            }
+        }
+    },
+    "Mass Manager": {
+        "experimental": True,
+        "module_recipes": {
+            "Frame Shift Drive": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Eccentric Hyperspace Trajectories": 1}, "engineers": []}
+            }
+        }
+    },
+    "Cluster Capacitors": {
+        "experimental": True,
+        "module_recipes": {
+            "Power Distributor": {
+                1: {"cost": {"Phosphorus": 5, "Heat Resistant Ceramics": 3, "Cadmium": 1}, "engineers": []}
+            }
+        }
+    },
+    "Super Conduits": {
+        "experimental": True,
+        "module_recipes": {
+            "Power Distributor": {
+                1: {"cost": {"Phosphorus": 5, "Heat Resistant Ceramics": 3, "Security Firmware Patch": 1}, "engineers": []}
+            }
+        }
+    },
+    "Boss Cells": {
+        "experimental": True,
+        "module_recipes": {
+            "Shield Cell Bank": {
+                1: {"cost": {"Chromium": 3, "Chemical Storage Units": 5, "Polymer Capacitors": 1}, "engineers": []}
+            }
+        }
+    },
+    "Recycling Cells": {
+        "experimental": True,
+        "module_recipes": {
+            "Shield Cell Bank": {
+                1: {"cost": {"Chromium": 3, "Chemical Storage Units": 5, "Configurable Components": 1}, "engineers": []}
+            }
+        }
+    },
+    "Fast Charge": {
+        "experimental": True,
+        "module_recipes": {
+            "Shield Generator": {
+                1: {"cost": {"Worn Shield Emitters": 5, "Flawed Focus Crystals": 3, "Compound Shielding": 1}, "engineers": []}
+            }
+        }
+    },
+    "Force Block": {
+        "experimental": True,
+        "module_recipes": {
+            "Shield Booster": {
+                1: {"cost": {"Unidentified Scan Archives": 5, "Shielding Sensors": 3, "Aberrant Shield Pattern Analysis": 2}, "engineers": []}
+            },
+            "Shield Generator": {
+                1: {"cost": {"Worn Shield Emitters": 5, "Flawed Focus Crystals": 3, "Decoded Emission Data": 1}, "engineers": []}
+            }
+        }
+    },
+    "Hi-Cap": {
+        "experimental": True,
+        "module_recipes": {
+            "Shield Generator": {
+                1: {"cost": {"Worn Shield Emitters": 5, "Flawed Focus Crystals": 3, "Conductive Polymers": 1}, "engineers": []}
+            }
+        }
+    },
+    "Lo-Draw": {
+        "experimental": True,
+        "module_recipes": {
+            "Shield Generator": {
+                1: {"cost": {"Worn Shield Emitters": 5, "Flawed Focus Crystals": 3, "Conductive Polymers": 1}, "engineers": []}
+            }
+        }
+    },
+    "Multi-Weave": {
+        "experimental": True,
+        "module_recipes": {
+            "Shield Generator": {
+                1: {"cost": {"Worn Shield Emitters": 5, "Flawed Focus Crystals": 3, "Aberrant Shield Pattern Analysis": 1}, "engineers": []}
+            }
+        }
+    },
+    "Thermo Block": {
+        "experimental": True,
+        "module_recipes": {
+            "Shield Booster": {
+                1: {"cost": {"Anomalous Bulk Scan Data": 5, "Conductive Ceramics": 3, "Heat Vanes": 3}, "engineers": []}
+            },
+            "Shield Generator": {
+                1: {"cost": {"Worn Shield Emitters": 5, "Flawed Focus Crystals": 3, "Heat Vanes": 1}, "engineers": []}
+            }
+        }
+    },
+    "Blast Block": {
+        "experimental": True,
+        "module_recipes": {
+            "Shield Booster": {
+                1: {"cost": {"Inconsistent Shield Soak Analysis": 5, "Heat Resistant Ceramics": 3, "Heat Dispersion Plate": 3, "Selenium": 2}, "engineers": []}
+            }
+        }
+    },
+    "Super Capacitors": {
+        "experimental": True,
+        "module_recipes": {
+            "Shield Booster": {
+                1: {"cost": {"Untypical Shield Scans": 3, "Compact Composites": 5, "Cadmium": 2}, "engineers": []}
+            }
+        }
     }
 }
 
@@ -2527,7 +3307,11 @@ def blueprint_finder(obj, projected_states):
                 mod_results[module_name] = module_results
 
         if mod_results:
-            results[mod_name] = mod_results
+            # Check if this is an experimental modification and add suffix
+            display_name = mod_name
+            if mod_data.get("experimental", False):
+                display_name = f"{mod_name} (Experimental)"
+            results[display_name] = mod_results
 
     # Check if any blueprints were found
     if not results:
