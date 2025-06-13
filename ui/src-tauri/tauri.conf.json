@@ -19,7 +19,6 @@
       }
     ],
     "security": {
-      "csp": null,
       "capabilities": [
         "default",
         "overlay",

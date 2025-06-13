@@ -23,7 +23,7 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m pytest --timeout 10 test -v
+          python -m pytest --timeout 10 test -v --capture=no
 
       - name: Install pyinstaller
         run: |
@@ -103,6 +103,14 @@ jobs:
       - name: Install frontend dependencies
         working-directory: ui
         run: npm install
+
+      - name: Replace Commit HASH in environment.prod.ts
+        working-directory: ui
+        run: |
+          $content = Get-Content -Path src/environments/environment.prod.ts -Raw
+          $newContent = $content -replace '__COMMIT_HASH_PLACEHOLDER__', '${{ github.sha }}'
+          Set-Content -Path src/environments/environment.prod.ts -Value $newContent
+        shell: pwsh
 
       - name: Set Tauri version
         working-directory: ui

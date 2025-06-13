@@ -7,7 +7,7 @@ from typing import Any, Generic, Literal, Callable, TypeVar, final
 from .Database import EventStore, KeyValueStore
 from .EDJournal import *
 from .Event import Event, GameEvent, ConversationEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent
-from .Logger import log
+from .Logger import log, show_chat_message
 
 import threading
 from collections import defaultdict
@@ -59,9 +59,9 @@ class EventManager:
         
         self.load_history()
         if self.processed:
-            log('info', 'Continuing conversation with', len(self.processed), 'events.')
+            show_chat_message('info', 'Continuing conversation with', len(self.processed), 'events.')
         else:
-            log('info', 'Starting new conversation.')
+            show_chat_message('info', 'Starting new conversation.')
             
         
     def add_game_event(self, content: dict[str, Any]):

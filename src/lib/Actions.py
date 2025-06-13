@@ -13,7 +13,7 @@ import openai
 import requests
 
 from .ScreenReader import ScreenReader
-from .Logger import log
+from .Logger import log, show_chat_message
 from .EDKeys import EDKeys
 from .EventManager import EventManager
 from .ActionManager import ActionManager
@@ -1013,7 +1013,7 @@ def setGameWindowActive():
             sleep(.15)
             log("debug", "Set game window as active")
         except:
-            log("error", "Failed to set game window as active")
+            log("warn", "Failed to set game window as active")
     else:
         log("info", "Unable to find Elite game window")
 
@@ -1053,7 +1053,7 @@ def screenshot(new_height: int = 720):
 
         return im
     else:
-        log("error", 'Window not found!')
+        log("warn", 'Window not found!')
         return None
 
 
@@ -6461,7 +6461,7 @@ def target_subsystem_thread(current_subsystem: str, current_event_id: str, desir
         log('debug', 'CycleNextSubsystem key sent')
         new_state = event_manager.wait_for_condition('Target', lambda s: s.get('EventID') != current_event_id)
         if 'Subsystem' not in new_state:
-            log('info', 'target lost, abort cycle')
+            show_chat_message('info', 'Target lost, abort cycle')
             return
         if new_state.get('Subsystem') == 'Power Plant':
             if subsystem_loop:

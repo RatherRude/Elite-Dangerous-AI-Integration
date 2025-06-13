@@ -26,7 +26,7 @@ jobs:
         uses: GabrielBB/xvfb-action@v1
         with:
           run: |
-            python -m pytest --timeout 10 test -v
+            python -m pytest --timeout 10 test -v --capture=no
 
       - name: Install pyinstaller
         run: |
@@ -104,6 +104,11 @@ jobs:
       - name: Install frontend dependencies
         working-directory: ui
         run: npm install
+
+      - name: Replace Commit HASH in environment.prod.ts
+        working-directory: ui
+        run: |
+          sed -i "s/__COMMIT_HASH_PLACEHOLDER__/${{ github.sha }}/g" src/environments/environment.prod.ts
 
       - name: Set Tauri version
         working-directory: ui

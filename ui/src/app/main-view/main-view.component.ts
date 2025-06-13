@@ -12,6 +12,10 @@ import { Router } from "@angular/router";
 import { InputContainerComponent } from "../components/input-container/input-container.component";
 import { ConfigService } from "../services/config.service";
 import { Subscription } from "rxjs";
+import { ChatService } from "../services/chat.service.js";
+import { MatTabsModule } from "@angular/material/tabs";
+import { ChatContainerComponent } from "../components/chat-container/chat-container.component.js";
+import { MetricsService } from "../services/metrics.service.js";
 
 @Component({
     selector: "app-main-view",
@@ -25,6 +29,8 @@ import { Subscription } from "rxjs";
         LogContainerComponent,
         SettingsMenuComponent,
         InputContainerComponent,
+        MatTabsModule,
+        ChatContainerComponent,
     ],
     templateUrl: "./main-view.component.html",
     styleUrl: "./main-view.component.css",
@@ -39,8 +45,9 @@ export class MainViewComponent implements OnInit, OnDestroy {
     constructor(
         private tauri: TauriService,
         private loggingService: LoggingService,
-        private router: Router,
+        private chatService: ChatService,
         private configService: ConfigService,
+        private metricsService: MetricsService,
     ) {}
 
     ngOnInit(): void {
@@ -79,6 +86,7 @@ export class MainViewComponent implements OnInit, OnDestroy {
         try {
             this.isLoading = true;
             this.loggingService.clearLogs(); // Clear logs when starting
+            this.chatService.clearChat(); // Clear chat when starting
             await this.tauri.send_start_signal();
         } catch (error) {
             console.error("Failed to start:", error);

@@ -397,7 +397,7 @@ def test_chat_executable():
         if not line:
             raise Exception("Chat.exe exited unexpectedly")
         print(line)
-        if '"prefix": "info", "message": "System Ready.\\n"' in line:
+        if '"message": "System Ready."' in line:
             break
     
     # assert that Chat.exe is running
