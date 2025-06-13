@@ -3438,7 +3438,12 @@ def blueprint_finder(obj, projected_states):
     import yaml
 
     # Extract search parameters - can be combined
-    search_modifications = obj.get('modifications', '').lower().strip() if obj else ''
+    search_modifications = []
+    if obj and obj.get('modifications'):
+        modifications_param = obj.get('modifications')
+        # Only accept arrays of modifications now
+        if isinstance(modifications_param, list):
+            search_modifications = [mod.lower().strip() for mod in modifications_param if mod]
     search_engineer = obj.get('engineer', '').lower().strip() if obj else ''
     search_module = obj.get('module', '').lower().strip() if obj else ''
     search_grade = obj.get('grade', '') if obj else ''
@@ -3530,8 +3535,14 @@ def blueprint_finder(obj, projected_states):
     # Search through all modifications
     for mod_name, mod_data in ENGINEERING_MODIFICATIONS.items():
         # Check if modification matches search criteria
-        if search_modifications and not matches_fuzzy(search_modifications, mod_name):
-            continue
+        if search_modifications:
+            modification_match = False
+            for search_mod in search_modifications:
+                if matches_fuzzy(search_mod, mod_name):
+                    modification_match = True
+                    break
+            if not modification_match:
+                continue
 
         if "module_recipes" not in mod_data:
             continue
@@ -3583,7 +3594,11 @@ def blueprint_finder(obj, projected_states):
     if not results:
         search_terms = []
         if search_modifications:
-            search_terms.append(f"modifications: '{search_modifications}'")
+            if len(search_modifications) == 1:
+                search_terms.append(f"modifications: '{search_modifications[0]}'")
+            else:
+                mod_list = ', '.join([f"'{mod}'" for mod in search_modifications])
+                search_terms.append(f"modifications: {mod_list}")
         if search_engineer:
             search_terms.append(f"engineer: '{search_engineer}'")
         if search_module:
@@ -3594,7 +3609,11 @@ def blueprint_finder(obj, projected_states):
         if search_terms:
             # If searching by modifications failed, show available options
             if search_modifications:
-                return f"No blueprints found matching modifications: '{search_modifications}'\n\nAvailable modification types:\n" + yaml.dump(sorted(all_modifications))
+                if len(search_modifications) == 1:
+                    return f"No blueprints found matching modifications: '{search_modifications[0]}'\n\nAvailable modification types:\n" + yaml.dump(sorted(all_modifications))
+                else:
+                    mod_list = ', '.join([f"'{mod}'" for mod in search_modifications])
+                    return f"No blueprints found matching modifications: {mod_list}\n\nAvailable modification types:\n" + yaml.dump(sorted(all_modifications))
             elif search_engineer:
                 return f"No blueprints found matching engineer: '{search_engineer}'\n\nAvailable engineers:\n" + yaml.dump(sorted(all_engineers))
             elif search_module:
@@ -3610,7 +3629,11 @@ def blueprint_finder(obj, projected_states):
     # Add search info to the output if filters were applied
     search_info = []
     if search_modifications:
-        search_info.append(f"modifications: '{search_modifications}'")
+        if len(search_modifications) == 1:
+            search_info.append(f"modifications: '{search_modifications[0]}'")
+        else:
+            mod_list = ', '.join([f"'{mod}'" for mod in search_modifications])
+            search_info.append(f"modifications: {mod_list}")
     if search_engineer:
         search_info.append(f"engineer: '{search_engineer}'")
     if search_module:
@@ -7684,8 +7707,9 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             "type": "object",
             "properties": {
                 "modifications": {
-                    "type": "string",
-                    "description": "Modification name to search for"
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Array of modification names to search for - supports fuzzy search."
                 },
                 "engineer": {
                     "type": "string",
@@ -7707,7 +7731,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
 
     actionManager.registerAction(
         'material_finder',
-        "Find and search materials for both ship and suit engineering from commander's inventory.",
+        "Find and search a list of materials for both ship and suit engineering from my inventory.",
         {
             "type": "object",
             "properties": {

@@ -3097,7 +3097,7 @@ class PromptGenerator:
                     + "Don't repeat the same words and sentences, mix it up. "
                     + "I will provide game events in parentheses; do not create new ones. Only react to game events marked with 'IMPORTANT:'.  "
                     + "Stay consistent with the lived experience and character. Do not hallucinate any information that is not given to you. "
-                    + "Do not use markdown in your responses. "
+                    + "Do not use markdown in your responses and write numbers as decimals. "
                     # The character_prompt now contains all the generated settings
                     + self.character_prompt.format(commander_name=self.commander_name),
                 }
