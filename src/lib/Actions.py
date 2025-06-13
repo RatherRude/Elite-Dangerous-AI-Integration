@@ -3429,6 +3429,25 @@ ENGINEERING_MODIFICATIONS = {
 }
 
 
+def levenshtein_distance(s1, s2):
+    if len(s1) < len(s2):
+        return levenshtein_distance(s2, s1)
+
+    if len(s2) == 0:
+        return len(s1)
+
+    previous_row = list(range(len(s2) + 1))
+    for i, c1 in enumerate(s1):
+        current_row = [i + 1]
+        for j, c2 in enumerate(s2):
+            insertions = previous_row[j + 1] + 1
+            deletions = current_row[j] + 1
+            substitutions = previous_row[j] + (c1 != c2)
+            current_row.append(min(insertions, deletions, substitutions))
+        previous_row = current_row
+
+    return previous_row[-1]
+
 def blueprint_finder(obj, projected_states):
     """
     Find engineer blueprints based on search criteria.
@@ -3454,25 +3473,6 @@ def blueprint_finder(obj, projected_states):
     else:
         search_grade = None
 
-    # Helper function for Levenshtein distance
-    def levenshtein_distance(s1, s2):
-        if len(s1) < len(s2):
-            return levenshtein_distance(s2, s1)
-
-        if len(s2) == 0:
-            return len(s1)
-
-        previous_row = list(range(len(s2) + 1))
-        for i, c1 in enumerate(s1):
-            current_row = [i + 1]
-            for j, c2 in enumerate(s2):
-                insertions = previous_row[j + 1] + 1
-                deletions = current_row[j] + 1
-                substitutions = previous_row[j] + (c1 != c2)
-                current_row.append(min(insertions, deletions, substitutions))
-            previous_row = current_row
-
-        return previous_row[-1]
 
     # Helper function for fuzzy matching using Levenshtein distance
     def matches_fuzzy(search_term, target_string):
@@ -3824,26 +3824,6 @@ def engineer_finder(obj, projected_states):
     game_engineers = {}
     for engineer in engineers:
         game_engineers[engineer.get('EngineerID')] = engineer
-
-    # Helper function for Levenshtein distance
-    def levenshtein_distance(s1, s2):
-        if len(s1) < len(s2):
-            return levenshtein_distance(s2, s1)
-
-        if len(s2) == 0:
-            return len(s1)
-
-        previous_row = list(range(len(s2) + 1))
-        for i, c1 in enumerate(s1):
-            current_row = [i + 1]
-            for j, c2 in enumerate(s2):
-                insertions = previous_row[j + 1] + 1
-                deletions = current_row[j] + 1
-                substitutions = previous_row[j] + (c1 != c2)
-                current_row.append(min(insertions, deletions, substitutions))
-            previous_row = current_row
-
-        return previous_row[-1]
 
     # Helper function for fuzzy matching modifications using Levenshtein distance
     def matches_modifications(modifies_dict, search_term):
@@ -4333,23 +4313,6 @@ def material_finder(obj, projected_states):
     materials_data = projected_states.get('Materials', {})
     shiploader_data = projected_states.get('ShipLocker', {})
 
-    # Helper function for Levenshtein distance
-    def levenshtein_distance(s1, s2):
-        if len(s1) < len(s2):
-            return levenshtein_distance(s2, s1)
-        if len(s2) == 0:
-            return len(s1)
-        previous_row = list(range(len(s2) + 1))
-        for i, c1 in enumerate(s1):
-            current_row = [i + 1]
-            for j, c2 in enumerate(s2):
-                insertions = previous_row[j + 1] + 1
-                deletions = current_row[j] + 1
-                substitutions = previous_row[j] + (c1 != c2)
-                current_row.append(min(insertions, deletions, substitutions))
-            previous_row = current_row
-        return previous_row[-1]
-
     # Helper function to find ship material info
     def find_ship_material_info(material_name):
         material_name_lower = material_name.lower()
@@ -4828,26 +4791,6 @@ def get_visuals(obj, projected_states):
 
 
 def educated_guesses_message(search_query, valid_list):
-    # Helper function for Levenshtein distance
-    def levenshtein_distance(s1, s2):
-        if len(s1) < len(s2):
-            return levenshtein_distance(s2, s1)
-
-        if len(s2) == 0:
-            return len(s1)
-
-        previous_row = list(range(len(s2) + 1))
-        for i, c1 in enumerate(s1):
-            current_row = [i + 1]
-            for j, c2 in enumerate(s2):
-                insertions = previous_row[j + 1] + 1
-                deletions = current_row[j] + 1
-                substitutions = previous_row[j] + (c1 != c2)
-                current_row.append(min(insertions, deletions, substitutions))
-            previous_row = current_row
-
-        return previous_row[-1]
-
     search_lower = search_query.lower()
     suggestions = []
 
@@ -4883,51 +4826,30 @@ def educated_guesses_message(search_query, valid_list):
 
     return message
 
+# Helper function
+def find_best_match(search_term, known_list):
+    search_lower = search_term.lower()
+
+    # First try exact match
+    for item in known_list:
+        if item.lower() == search_lower:
+            return item
+
+    # Then try fuzzy matching
+    best_match = None
+    best_distance = float('inf')
+    max_distance = max(1, len(search_term) // 3)  # Allow 1 error per 3 characters
+
+    for item in known_list:
+        distance = levenshtein_distance(search_lower, item.lower())
+        if distance <= max_distance and distance < best_distance:
+            best_distance = distance
+            best_match = item
+
+    return best_match
 
 # Prepare a request for the spansh station finder
-def prepare_station_request(obj, projected_states):
-    # Helper function for Levenshtein distance
-    def levenshtein_distance(s1, s2):
-        if len(s1) < len(s2):
-            return levenshtein_distance(s2, s1)
-
-        if len(s2) == 0:
-            return len(s1)
-
-        previous_row = list(range(len(s2) + 1))
-        for i, c1 in enumerate(s1):
-            current_row = [i + 1]
-            for j, c2 in enumerate(s2):
-                insertions = previous_row[j + 1] + 1
-                deletions = current_row[j] + 1
-                substitutions = previous_row[j] + (c1 != c2)
-                current_row.append(min(insertions, deletions, substitutions))
-            previous_row = current_row
-
-        return previous_row[-1]
-
-    # Helper function for fuzzy matching
-    def find_best_match(search_term, known_list):
-        search_lower = search_term.lower()
-
-        # First try exact match
-        for item in known_list:
-            if item.lower() == search_lower:
-                return item
-
-        # Then try fuzzy matching
-        best_match = None
-        best_distance = float('inf')
-        max_distance = max(1, len(search_term) // 3)  # Allow 1 error per 3 characters
-
-        for item in known_list:
-            distance = levenshtein_distance(search_lower, item.lower())
-            if distance <= max_distance and distance < best_distance:
-                best_distance = distance
-                best_match = item
-
-        return best_match
-
+def prepare_station_request(obj, projected_states):# Helper function for fuzzy matching
     known_modules = [
         "AX Missile Rack",
         "AX Multi-Cannon",
@@ -5731,49 +5653,7 @@ def station_finder(obj, projected_states):
         return 'An error has occurred. The station finder seems currently not available.'
 
 
-def prepare_system_request(obj, projected_states):
-    # Helper function for Levenshtein distance
-    def levenshtein_distance(s1, s2):
-        if len(s1) < len(s2):
-            return levenshtein_distance(s2, s1)
-
-        if len(s2) == 0:
-            return len(s1)
-
-        previous_row = list(range(len(s2) + 1))
-        for i, c1 in enumerate(s1):
-            current_row = [i + 1]
-            for j, c2 in enumerate(s2):
-                insertions = previous_row[j + 1] + 1
-                deletions = current_row[j] + 1
-                substitutions = previous_row[j] + (c1 != c2)
-                current_row.append(min(insertions, deletions, substitutions))
-            previous_row = current_row
-
-        return previous_row[-1]
-
-    # Helper function for fuzzy matching
-    def find_best_match(search_term, known_list):
-        search_lower = search_term.lower()
-
-        # First try exact match
-        for item in known_list:
-            if item.lower() == search_lower:
-                return item
-
-        # Then try fuzzy matching
-        best_match = None
-        best_distance = float('inf')
-        max_distance = max(1, len(search_term) // 3)  # Allow 1 error per 3 characters
-
-        for item in known_list:
-            distance = levenshtein_distance(search_lower, item.lower())
-            if distance <= max_distance and distance < best_distance:
-                best_distance = distance
-                best_match = item
-
-        return best_match
-
+def prepare_system_request(obj, projected_states):# Helper function for fuzzy matching
     known_allegiances = [
         "Alliance", "Empire", "Federation", "Guardian",
         "Independent", "Pilots Federation", "Player Pilots", "Thargoid"
@@ -5994,48 +5874,6 @@ def system_finder(obj, projected_states):
 
 
 def prepare_body_request(obj, projected_states):
-    # Helper function for Levenshtein distance
-    def levenshtein_distance(s1, s2):
-        if len(s1) < len(s2):
-            return levenshtein_distance(s2, s1)
-
-        if len(s2) == 0:
-            return len(s1)
-
-        previous_row = list(range(len(s2) + 1))
-        for i, c1 in enumerate(s1):
-            current_row = [i + 1]
-            for j, c2 in enumerate(s2):
-                insertions = previous_row[j + 1] + 1
-                deletions = current_row[j] + 1
-                substitutions = previous_row[j] + (c1 != c2)
-                current_row.append(min(insertions, deletions, substitutions))
-            previous_row = current_row
-
-        return previous_row[-1]
-
-    # Helper function for fuzzy matching
-    def find_best_match(search_term, known_list):
-        search_lower = search_term.lower()
-
-        # First try exact match
-        for item in known_list:
-            if item.lower() == search_lower:
-                return item
-
-        # Then try fuzzy matching
-        best_match = None
-        best_distance = float('inf')
-        max_distance = max(1, len(search_term) // 3)  # Allow 1 error per 3 characters
-
-        for item in known_list:
-            distance = levenshtein_distance(search_lower, item.lower())
-            if distance <= max_distance and distance < best_distance:
-                best_distance = distance
-                best_match = item
-
-        return best_match
-
     known_planet_types_obj = {
         "Planet": [
             "Ammonia world",
