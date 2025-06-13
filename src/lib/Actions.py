@@ -25,7 +25,8 @@ llm_model_name: str = None
 vision_model_name: str | None = None
 event_manager: EventManager = None
 
-#Checking status projection to exit game actions early if not applicable
+
+# Checking status projection to exit game actions early if not applicable
 def checkStatus(projected_states: dict[str, dict], blocked_status_dict: dict[str, bool]):
     current_status = projected_states.get("CurrentStatus")
 
@@ -36,10 +37,11 @@ def checkStatus(projected_states: dict[str, dict], blocked_status_dict: dict[str
                     if current_status[flag_group][blocked_status] == expected_value:
                         raise Exception(f"Action not possible due to {'not ' if not expected_value else ''}being in a state of {blocked_status}!")
 
+
 # Define functions for each action
 # General Ship Actions
 def fire_weapons(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True})
+    checkStatus(projected_states, {'Docked': True, 'Landed': True})
     setGameWindowActive()
 
     # Parse arguments with defaults
@@ -96,11 +98,11 @@ def fire_weapons(args, projected_states):
 
 
 def set_speed(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True})
+    checkStatus(projected_states, {'Docked': True, 'Landed': True})
     setGameWindowActive()
 
     if 'speed' in args:
-        if args['speed'] in ["Minus100","Minus75","Minus50","Minus25","Zero","25","50","75","100"]:
+        if args['speed'] in ["Minus100", "Minus75", "Minus50", "Minus25", "Zero", "25", "50", "75", "100"]:
             keys.send(f"SetSpeed{args['speed']}")
         else:
             raise Exception(f"Invalid speed {args['speed']}")
@@ -109,14 +111,14 @@ def set_speed(args, projected_states):
 
 
 def deploy_heat_sink(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True})
+    checkStatus(projected_states, {'Docked': True, 'Landed': True})
     setGameWindowActive()
     keys.send('DeployHeatSink')
     return f"Heat sink deployed"
 
 
 def deploy_hardpoint_toggle(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True})
+    checkStatus(projected_states, {'Docked': True, 'Landed': True})
     setGameWindowActive()
     keys.send('DeployHardpointToggle')
     return f"Hardpoints {'deployed ' if not projected_states.get('CurrentStatus').get('flags').get('HardpointsDeployed') else 'retracted'}"
@@ -169,6 +171,7 @@ def manage_power_distribution(args, projected_states):
 
     return message
 
+
 def cycle_target(args, projected_states):
     setGameWindowActive()
 
@@ -182,8 +185,8 @@ def cycle_target(args, projected_states):
         keys.send('CycleNextTarget')
         return "Selected next target"
 
-def change_hud_mode(args, projected_states):
 
+def change_hud_mode(args, projected_states):
     mode = args.get('hud mode', 'toggle').lower()
     if projected_states.get('CurrentStatus').get('flags').get('HudInAnalysisMode'):
         current_hud_mode = "analysis"
@@ -220,7 +223,7 @@ def cycle_fire_group(args, projected_states):
 
     elif firegroup_ask == initial_firegroup:
         return f"Fire group {chr(65 + firegroup_ask)} was already selected. No changes."
-    elif firegroup_ask > 7:   # max allowed is up to H which is 7 starting with A=0
+    elif firegroup_ask > 7:  # max allowed is up to H which is 7 starting with A=0
         return f"Cannot switch to Firegroup {firegroup_ask} as it does not exist."
     else:
         for loop in range(abs(firegroup_ask - initial_firegroup)):
@@ -232,10 +235,10 @@ def cycle_fire_group(args, projected_states):
     try:
 
         status_event = event_manager.wait_for_condition('CurrentStatus',
-                                                            lambda s: s.get('FireGroup') == firegroup_ask, 2)
+                                                        lambda s: s.get('FireGroup') == firegroup_ask, 2)
         new_firegroup = status_event["FireGroup"]
     except TimeoutError:
-        #handles case where we cycle back round to zero
+        # handles case where we cycle back round to zero
         return "Failed to cycle to requested fire group. Please ensure it exists."
 
     return f"Fire group {chr(65 + new_firegroup)} is now selected."
@@ -248,7 +251,7 @@ def ship_spot_light_toggle(args, projected_states):
 
 
 def fire_chaff_launcher(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True,'Supercruise':True})
+    checkStatus(projected_states, {'Docked': True, 'Landed': True, 'Supercruise': True})
     setGameWindowActive()
     keys.send('FireChaffLauncher')
     return f"Chaff launcher fired"
@@ -267,7 +270,7 @@ def select_highest_threat(args, projected_states):
 
 
 def charge_ecm(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True,'Supercruise':True})
+    checkStatus(projected_states, {'Docked': True, 'Landed': True, 'Supercruise': True})
     setGameWindowActive()
     keys.send('ChargeECM')
     return "ECM is attempting to charge"
@@ -349,8 +352,6 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
     setGameWindowActive()
     current_gui = projected_states.get('CurrentStatus', {}).get('GuiFocus', '')
 
-
-
     if 'start_navigation' in args and args['start_navigation']:
         nav_route = projected_states.get('NavInfo', {}).get('NavRoute', [])
         if nav_route and nav_route[-1].get('StarSystem') == args.get('system_name'):
@@ -375,7 +376,6 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
             event_manager.wait_for_condition('CurrentStatus', lambda s: s.get('GuiFocus') == "GalaxyMap", 5)
         except TimeoutError:
             return "Galaxy map can not be opened currently, the current GUI needs to be closed first"
-
 
     if 'system_name' in args:
 
@@ -440,7 +440,7 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
 
             try:
                 data = event_manager.wait_for_condition('NavInfo',
-                                                                     lambda s: s.get('NavRoute') and len(s.get('NavRoute', [])) > 0 and s.get('NavRoute')[-1].get('StarSystem').lower() == args['system_name'].lower(), zoom_wait_time)
+                                                        lambda s: s.get('NavRoute') and len(s.get('NavRoute', [])) > 0 and s.get('NavRoute')[-1].get('StarSystem').lower() == args['system_name'].lower(), zoom_wait_time)
                 jumpAmount = len(data.get('NavRoute', []))  # amount of jumps to do
 
                 if not current_gui == "GalaxyMap":  # if we are already in the galaxy map we don't want to close it
@@ -456,9 +456,7 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
     return "Galaxy map opened"
 
 
-
 def galaxy_map_close(args, projected_states, galaxymap_key="GalaxyMapOpen"):
-
     if projected_states.get('CurrentStatus').get('GuiFocus') == 'GalaxyMap':
         keys.send(galaxymap_key)
     else:
@@ -467,25 +465,24 @@ def galaxy_map_close(args, projected_states, galaxymap_key="GalaxyMapOpen"):
     return "Galaxy map closed"
 
 
-def system_map_open_or_close(args, projected_states, sys_map_key = 'SystemMapOpen'):
+def system_map_open_or_close(args, projected_states, sys_map_key='SystemMapOpen'):
     # Trigger the GUI open
     setGameWindowActive()
 
     current_gui = projected_states.get('CurrentStatus', {}).get('GuiFocus', '')
 
     if args['desired_state'] == "close":
-        if  current_gui == "SystemMap":
+        if current_gui == "SystemMap":
             keys.send(sys_map_key)
             return "System map has been closed."
         else:
             return "System map is not open, nothing to close."
 
-
     if current_gui in ['SAA', 'FSS', 'Codex']:
         raise Exception('System map can not be opened currently, the active GUI needs to be closed first')
 
     if current_gui == 'SystemMap':
-            return "System map is already open"
+        return "System map is already open"
 
     keys.send(sys_map_key)
 
@@ -509,8 +506,9 @@ def eject_all_cargo(args, projected_states):
     keys.send('EjectAllCargo')
     return f"All cargo ejected"
 
+
 def landing_gear_toggle(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True,'Supercruise':True})
+    checkStatus(projected_states, {'Docked': True, 'Landed': True, 'Supercruise': True})
     setGameWindowActive()
     keys.send('LandingGearToggle')
     return f"Landing gear {'deployed ' if not projected_states.get('CurrentStatus').get('flags').get('LandingGearDown') else 'retracted'}"
@@ -523,14 +521,14 @@ def use_shield_cell(args, projected_states):
 
 
 def toggle_cargo_scoop(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True,'Supercruise':True})
+    checkStatus(projected_states, {'Docked': True, 'Landed': True, 'Supercruise': True})
     setGameWindowActive()
     keys.send('ToggleCargoScoop')
     return f"Cargo scoop {'deployed ' if not projected_states.get('CurrentStatus').get('flags').get('CargoScoopDeployed') else 'retracted'}"
 
 
 def fsd_jump(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True,'FsdMassLocked':True,'FsdCooldown':True,'FsdCharging':True})
+    checkStatus(projected_states, {'Docked': True, 'Landed': True, 'FsdMassLocked': True, 'FsdCooldown': True, 'FsdCharging': True})
     setGameWindowActive()
 
     return_message = ""
@@ -561,6 +559,7 @@ def fsd_jump(args, projected_states):
 
     return return_message + "Frame Shift Drive is now charging for a jump"
 
+
 def next_system_in_route(args, projected_states):
     nav_info = projected_states.get('NavInfo', {})
     if not nav_info['NextJumpTarget']:
@@ -569,12 +568,12 @@ def next_system_in_route(args, projected_states):
     keys.send('TargetNextRouteSystem')
     return "Targeting next system in route"
 
+
 def undock(args, projected_states):
     setGameWindowActive()
     # Early return if we're not docked
     if not projected_states.get('CurrentStatus').get('flags').get('Docked'):
         raise Exception("The ship currently isn't docked.")
-
 
     if projected_states.get('CurrentStatus').get('GuiFocus') in ['InternalPanel', 'CommsPanel', 'RolePanel', 'ExternalPanel']:
         keys.send('UIFocus')
@@ -590,21 +589,22 @@ def undock(args, projected_states):
 
     return 'The ship is now undocking'
 
+
 def docking_key_press_sequence(stop_event):
     keys.send('UI_Left')
     keys.send('UI_Right')
-    keys.send("UI_Select",hold = 0.2)
+    keys.send("UI_Select", hold=0.2)
     for _ in range(6):
         if stop_event.is_set():
             break
         keys.send("CyclePreviousPanel")
         keys.send('UI_Left')
         keys.send('UI_Right')
-        keys.send("UI_Select",hold = 0.2)
+        keys.send("UI_Select", hold=0.2)
 
 
 def request_docking(args, projected_states):
-    checkStatus(projected_states, {'Supercruise':True})
+    checkStatus(projected_states, {'Supercruise': True})
     setGameWindowActive()
     if projected_states.get('CurrentStatus').get('GuiFocus') in ['NoFocus', 'InternalPanel', 'CommsPanel', 'RolePanel']:
         keys.send('FocusLeftPanel')
@@ -623,17 +623,16 @@ def request_docking(args, projected_states):
         old_timestamp = projected_states.get('DockingEvents').get('Timestamp', "1970-01-01T00:00:01Z")
         # Wait for a docking event with a timestamp newer than when we started
         event_manager.wait_for_condition('DockingEvents',
-            lambda s: ((s.get('LastEventType') in ['DockingGranted', 'DockingRequested', 'DockingCanceled', 'DockingDenied', 'DockingTimeout'])
-                      and (s.get('Timestamp', "1970-01-01T00:00:02Z") != old_timestamp)), 10)
+                                         lambda s: ((s.get('LastEventType') in ['DockingGranted', 'DockingRequested', 'DockingCanceled', 'DockingDenied', 'DockingTimeout'])
+                                                    and (s.get('Timestamp', "1970-01-01T00:00:02Z") != old_timestamp)), 10)
         msg = ""
     except:
         msg = "Failed to request docking via menu"
 
-    stop_event.set() # stop the keypress thread
+    stop_event.set()  # stop the keypress thread
 
     keys.send('UIFocus')
     return msg
-
 
 
 # Ship Launched Fighter Actions
@@ -645,7 +644,7 @@ def fighter_request_dock(args, projected_states):
 
 # NPC Crew Order Actions
 def npc_order(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True,'Supercruise':True})
+    checkStatus(projected_states, {'Docked': True, 'Landed': True, 'Supercruise': True})
     setGameWindowActive()
     if 'orders' in args:
         for order in args['orders']:
@@ -661,6 +660,7 @@ def toggle_drive_assist(args, projected_states):
     # return f"Landing gear {'deployed ' if not projected_states.get('CurrentStatus').get('flags').get('HardpointsDeployed') else 'retracted'}"
     return f"Drive assist has been {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('SrvDriveAssist') else 'deactivated'}."
 
+
 def fire_weapons_buggy(args, projected_states):
     """
     Simple buggy weapon firing action with three clear controls.
@@ -669,7 +669,7 @@ def fire_weapons_buggy(args, projected_states):
     - start: Begin continuous firing
     - stop: Stop continuous firing
     """
-    checkStatus(projected_states, {'SrvTurretRetracted':True})
+    checkStatus(projected_states, {'SrvTurretRetracted': True})
     setGameWindowActive()
 
     # Parse arguments with defaults
@@ -717,22 +717,26 @@ def fire_weapons_buggy(args, projected_states):
     else:
         return f"Invalid action '{action}'. Use: fire, start, or stop."
 
+
 def buggy_primary_fire(args, projected_states):
-    checkStatus(projected_states, {'SrvTurretRetracted':True})
+    checkStatus(projected_states, {'SrvTurretRetracted': True})
     setGameWindowActive()
     keys.send('BuggyPrimaryFireButton')
     return "Buggy primary fire triggered."
 
+
 def buggy_secondary_fire(args, projected_states):
-    checkStatus(projected_states, {'SrvTurretRetracted':True})
+    checkStatus(projected_states, {'SrvTurretRetracted': True})
     setGameWindowActive()
     keys.send('BuggySecondaryFireButton')
     return "Buggy secondary fire triggered."
+
 
 def auto_break_buggy(args, projected_states):
     setGameWindowActive()
     keys.send('AutoBreakBuggyButton')
     return "Auto-brake for buggy  {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('SrvHandbrake') else 'deactivated'}."
+
 
 def headlights_buggy(args, projected_states):
     setGameWindowActive()
@@ -780,16 +784,19 @@ def headlights_buggy(args, projected_states):
     else:
         return f"Buggy headlights set to {mode_names[final_mode]} mode."
 
+
 def toggle_buggy_turret(args, projected_states):
-    checkStatus(projected_states, {'SrvTurretRetracted':True})
+    checkStatus(projected_states, {'SrvTurretRetracted': True})
     setGameWindowActive()
     keys.send('ToggleBuggyTurretButton')
     return f"Buggy turret mode  {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('SrvUsingTurretView') else 'deactivated'}."
+
 
 def select_target_buggy(args, projected_states):
     setGameWindowActive()
     keys.send('SelectTarget_Buggy')
     return "Buggy target selection activated."
+
 
 def manage_power_distribution_buggy(args, projected_states):
     """
@@ -844,15 +851,18 @@ def toggle_cargo_scoop_buggy(args, projected_states):
     keys.send('ToggleCargoScoop_Buggy')
     return f"Buggy cargo scoop {'deployed ' if not projected_states.get('CurrentStatus').get('flags').get('CargoScoopDeployed') else 'retracted'}"
 
+
 def eject_all_cargo_buggy(args, projected_states):
     setGameWindowActive()
     keys.send('EjectAllCargo_Buggy')
     return "All cargo ejected from buggy."
 
+
 def recall_dismiss_ship_buggy(args, projected_states):
     setGameWindowActive()
     keys.send('RecallDismissShip')
     return "Remote ship has been recalled or dismissed."
+
 
 def galaxy_map_open_buggy(args, projected_states) -> Any | Literal['Galaxy map is already closed', 'Galaxy map closed']:
     setGameWindowActive()
@@ -862,6 +872,7 @@ def galaxy_map_open_buggy(args, projected_states) -> Any | Literal['Galaxy map i
         response = galaxy_map_close(args, projected_states, "GalaxyMapOpen_Buggy")
 
     return response
+
 
 def system_map_open_buggy(args, projected_states):
     setGameWindowActive()
@@ -885,70 +896,82 @@ def system_map_open_buggy(args, projected_states):
 
     return msg
 
+
 # On-Foot Actions (Odyssey)
 def primary_interact_humanoid(args, projected_states):
     setGameWindowActive()
     keys.send('HumanoidPrimaryInteractButton')
     return "Primary interaction initiated."
 
+
 def secondary_interact_humanoid(args, projected_states):
     setGameWindowActive()
     keys.send('HumanoidSecondaryInteractButton')
     return "Secondary interaction initiated."
 
+
 def equip_humanoid(args, projected_states):
-    checkStatus(projected_states, {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
+    checkStatus(projected_states, {'OnFootInStation': True, 'OnFootInHangar': True, 'OnFootSocialSpace': True})
     if 'equipment' in args:
         keys.send(args['equipment'])
     return f"{args['equipment']} has been triggered."
+
 
 def toggle_flashlight_humanoid(args, projected_states):
     setGameWindowActive()
     keys.send('HumanoidToggleFlashlightButton')
     return "Flashlight toggled."
 
+
 def toggle_night_vision_humanoid(args, projected_states):
     setGameWindowActive()
     keys.send('HumanoidToggleNightVisionButton')
     return f"Night vision {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('NightVision') else 'deactivated'}"
 
+
 def toggle_shields_humanoid(args, projected_states):
-    checkStatus(projected_states, {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
+    checkStatus(projected_states, {'OnFootInStation': True, 'OnFootInHangar': True, 'OnFootSocialSpace': True})
     setGameWindowActive()
     keys.send('HumanoidToggleShieldsButton')
 
     return f"Shields {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('ShieldsUp') else 'deactivated'}."
 
+
 def clear_authority_level_humanoid(args, projected_states):
-    checkStatus(projected_states, {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
+    checkStatus(projected_states, {'OnFootInStation': True, 'OnFootInHangar': True, 'OnFootSocialSpace': True})
     setGameWindowActive()
     keys.send('HumanoidClearAuthorityLevel')
     return "Authority level cleared."
 
+
 def health_pack_humanoid(args, projected_states):
-    checkStatus(projected_states, {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
+    checkStatus(projected_states, {'OnFootInStation': True, 'OnFootInHangar': True, 'OnFootSocialSpace': True})
     setGameWindowActive()
     keys.send('HumanoidHealthPack')
     return "Health pack used."
 
+
 def battery_humanoid(args, projected_states):
-    checkStatus(projected_states, {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
+    checkStatus(projected_states, {'OnFootInStation': True, 'OnFootInHangar': True, 'OnFootSocialSpace': True})
     setGameWindowActive()
     keys.send('HumanoidBattery')
     return "Battery used."
+
 
 def galaxy_map_open_humanoid(args, projected_states):
     setGameWindowActive()
     keys.send('GalaxyMapOpen_Humanoid')
     return "Galaxy map opened or closed."
 
+
 def system_map_open_humanoid(args, projected_states):
     setGameWindowActive()
     keys.send('SystemMapOpen_Humanoid')
     return "System map opened or closed."
 
+
 def recall_dismiss_ship_humanoid(args, projected_states):
-    checkStatus(projected_states, {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
+    checkStatus(projected_states, {'OnFootInStation': True, 'OnFootInHangar': True, 'OnFootSocialSpace': True})
     setGameWindowActive()
     keys.send('HumanoidOpenAccessPanelButton', state=1)
     sleep(.3)
@@ -1102,6 +1125,7 @@ def get_galnet_news(obj, projected_states):
 
     except:
         return "News feed currently unavailable"
+
 
 # Here could be a json
 
@@ -2805,13 +2829,13 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Burst Laser": {
-                1: {"cost": {"Focus Crystals": 5, "Aberrant Shield Pattern Analysis": 3, "Niobium": 3, "Configurable Components": 3}, "engineers": []}
+                1: {"cost": {"Focus Crystals": 5, "Aberrant Shield Pattern Analysis": 3, "Niobium": 3, "Configurable Components": 3}, "engineers": ["The Dweller", "Broo Tarquin"]}
             },
             "Plasma Accelerator": {
-                1: {"cost": {"Focus Crystals": 5, "Aberrant Shield Pattern Analysis": 3, "Niobium": 3, "Configurable Components": 3}, "engineers": []}
+                1: {"cost": {"Focus Crystals": 5, "Aberrant Shield Pattern Analysis": 3, "Niobium": 3, "Configurable Components": 3}, "engineers": ["Zacariah Nemo", "Bill Turner", "Etienne Dorn"]}
             },
             "Pulse Laser": {
-                1: {"cost": {"Focus Crystals": 5, "Aberrant Shield Pattern Analysis": 3, "Niobium": 3, "Configurable Components": 3}, "engineers": []}
+                1: {"cost": {"Focus Crystals": 5, "Aberrant Shield Pattern Analysis": 3, "Niobium": 3, "Configurable Components": 3}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]}
             }
         }
     },
@@ -2819,10 +2843,10 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Burst Laser": {
-                1: {"cost": {"Crystal Shards": 5, "Untypical Shield Scans": 3, "Exceptional Scrambled Emission Data": 5}, "engineers": []}
+                1: {"cost": {"Crystal Shards": 5, "Untypical Shield Scans": 3, "Exceptional Scrambled Emission Data": 5}, "engineers": ["The Dweller", "Broo Tarquin"]}
             },
             "Pulse Laser": {
-                1: {"cost": {"Crystal Shards": 5, "Untypical Shield Scans": 3, "Exceptional Scrambled Emission Data": 5}, "engineers": []}
+                1: {"cost": {"Crystal Shards": 5, "Untypical Shield Scans": 3, "Exceptional Scrambled Emission Data": 5}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]}
             }
         }
     },
@@ -2830,19 +2854,19 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Mine Launcher": {
-                1: {"cost": {"Manganese": 3, "Mechanical Equipment": 4, "Heat Exchangers": 3, "Unexpected Emission Data": 3}, "engineers": []}
+                1: {"cost": {"Manganese": 3, "Mechanical Equipment": 4, "Heat Exchangers": 3, "Unexpected Emission Data": 3}, "engineers": ["Liz Ryder", "Juri Ishmaak", "Petra Olmanova"]}
             },
             "Missile Rack": {
-                1: {"cost": {"Manganese": 3, "Mechanical Equipment": 4, "Heat Exchangers": 3, "Unexpected Emission Data": 3}, "engineers": []}
+                1: {"cost": {"Manganese": 3, "Mechanical Equipment": 4, "Heat Exchangers": 3, "Unexpected Emission Data": 3}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]}
             },
             "Multi-cannon": {
-                1: {"cost": {"Manganese": 3, "Mechanical Equipment": 4, "Heat Exchangers": 3, "Unexpected Emission Data": 3}, "engineers": []}
+                1: {"cost": {"Manganese": 3, "Mechanical Equipment": 4, "Heat Exchangers": 3, "Unexpected Emission Data": 3}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
             },
             "Pulse Laser": {
-                1: {"cost": {"Manganese": 3, "Mechanical Equipment": 4, "Heat Exchangers": 3, "Unexpected Emission Data": 3}, "engineers": []}
+                1: {"cost": {"Manganese": 3, "Mechanical Equipment": 4, "Heat Exchangers": 3, "Unexpected Emission Data": 3}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]}
             },
             "Seeker Missile Rack": {
-                1: {"cost": {"Manganese": 3, "Mechanical Equipment": 4, "Heat Exchangers": 3, "Unexpected Emission Data": 3}, "engineers": []}
+                1: {"cost": {"Manganese": 3, "Mechanical Equipment": 4, "Heat Exchangers": 3, "Unexpected Emission Data": 3}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]}
             }
         }
     },
@@ -2850,10 +2874,10 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Cannon": {
-                1: {"cost": {"Mechanical Equipment": 4, "Mechanical Components": 3, "High Density Composites": 3}, "engineers": []}
+                1: {"cost": {"Mechanical Equipment": 4, "Mechanical Components": 3, "High Density Composites": 3}, "engineers": ["Tod 'The Blaster' McQuinn", "The Sarge", "Marsha Hicks"]}
             },
             "Multi-cannon": {
-                1: {"cost": {"Mechanical Equipment": 4, "Mechanical Components": 3, "High Density Composites": 3}, "engineers": []}
+                1: {"cost": {"Mechanical Equipment": 4, "Mechanical Components": 3, "High Density Composites": 3}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
             }
         }
     },
@@ -2861,10 +2885,10 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Cannon": {
-                1: {"cost": {"Conductive Components": 5, "Hybrid Capacitors": 5, "Worn Shield Emitters": 5, "Irregular Emission Data": 5}, "engineers": []}
+                1: {"cost": {"Conductive Components": 5, "Hybrid Capacitors": 5, "Worn Shield Emitters": 5, "Irregular Emission Data": 5}, "engineers": ["Tod 'The Blaster' McQuinn", "The Sarge", "Marsha Hicks"]}
             },
             "Plasma Accelerator": {
-                1: {"cost": {"Conductive Components": 5, "Hybrid Capacitors": 5, "Worn Shield Emitters": 5, "Irregular Emission Data": 5}, "engineers": []}
+                1: {"cost": {"Conductive Components": 5, "Hybrid Capacitors": 5, "Worn Shield Emitters": 5, "Irregular Emission Data": 5}, "engineers": ["Zacariah Nemo", "Bill Turner", "Etienne Dorn"]}
             }
         }
     },
@@ -2872,7 +2896,7 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Cannon": {
-                1: {"cost": {"Zinc": 5, "Mechanical Scrap": 5, "Phase Alloys": 3, "Heat Conduction Wiring": 3}, "engineers": []}
+                1: {"cost": {"Zinc": 5, "Mechanical Scrap": 5, "Phase Alloys": 3, "Heat Conduction Wiring": 3}, "engineers": ["Tod 'The Blaster' McQuinn", "The Sarge", "Marsha Hicks"]}
             }
         }
     },
@@ -2880,7 +2904,7 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Cannon": {
-                1: {"cost": {"Nickel": 5, "Mechanical Scrap": 5, "Proto Light Alloys": 3, "Chemical Manipulators": 3}, "engineers": []}
+                1: {"cost": {"Nickel": 5, "Mechanical Scrap": 5, "Proto Light Alloys": 3, "Chemical Manipulators": 3}, "engineers": ["Tod 'The Blaster' McQuinn", "The Sarge", "Marsha Hicks"]}
             }
         }
     },
@@ -2888,10 +2912,10 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Cannon": {
-                1: {"cost": {"Decoded Emission Data": 3, "Security Firmware Patch": 3, "Classified Scan Databanks": 3, "Mechanical Scrap": 5}, "engineers": []}
+                1: {"cost": {"Decoded Emission Data": 3, "Security Firmware Patch": 3, "Classified Scan Databanks": 3, "Mechanical Scrap": 5}, "engineers": ["Tod 'The Blaster' McQuinn", "The Sarge", "Marsha Hicks"]}
             },
             "Multi-cannon": {
-                1: {"cost": {"Decoded Emission Data": 3, "Security Firmware Patch": 3, "Classified Scan Databanks": 3, "Mechanical Scrap": 5}, "engineers": []}
+                1: {"cost": {"Decoded Emission Data": 3, "Security Firmware Patch": 3, "Classified Scan Databanks": 3, "Mechanical Scrap": 5}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
             }
         }
     },
@@ -2899,13 +2923,13 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Cannon": {
-                1: {"cost": {"Heat Conduction Wiring": 5, "Hybrid Capacitors": 4, "High Density Composites": 3, "Phosphorus": 5}, "engineers": []}
+                1: {"cost": {"Heat Conduction Wiring": 5, "Hybrid Capacitors": 4, "High Density Composites": 3, "Phosphorus": 5}, "engineers": ["Tod 'The Blaster' McQuinn", "The Sarge", "Marsha Hicks"]}
             },
             "Missile Rack": {
-                1: {"cost": {"Heat Conduction Wiring": 5, "Hybrid Capacitors": 4, "High Density Composites": 3, "Phosphorus": 5}, "engineers": []}
+                1: {"cost": {"Heat Conduction Wiring": 5, "Hybrid Capacitors": 4, "High Density Composites": 3, "Phosphorus": 5}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]}
             },
             "Seeker Missile Rack": {
-                1: {"cost": {"Heat Conduction Wiring": 5, "Hybrid Capacitors": 4, "High Density Composites": 3, "Phosphorus": 5}, "engineers": []}
+                1: {"cost": {"Heat Conduction Wiring": 5, "Hybrid Capacitors": 4, "High Density Composites": 3, "Phosphorus": 5}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]}
             }
         }
     },
@@ -2913,10 +2937,10 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Fragment Cannon": {
-                1: {"cost": {"Chemical Storage Units": 5, "Precipitated Alloys": 4, "Arsenic": 3}, "engineers": []}
+                1: {"cost": {"Chemical Storage Units": 5, "Precipitated Alloys": 4, "Arsenic": 3}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
             },
             "Multi-cannon": {
-                1: {"cost": {"Chemical Storage Units": 5, "Precipitated Alloys": 4, "Arsenic": 3}, "engineers": []}
+                1: {"cost": {"Chemical Storage Units": 5, "Precipitated Alloys": 4, "Arsenic": 3}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
             }
         }
     },
@@ -2924,10 +2948,10 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Fragment Cannon": {
-                1: {"cost": {"Manganese": 4, "Mechanical Scrap": 5, "Mechanical Components": 5, "Hybrid Capacitors": 5}, "engineers": []}
+                1: {"cost": {"Manganese": 4, "Mechanical Scrap": 5, "Mechanical Components": 5, "Hybrid Capacitors": 5}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
             },
             "Plasma Accelerator": {
-                1: {"cost": {"Manganese": 4, "Mechanical Scrap": 5, "Mechanical Components": 5, "Hybrid Capacitors": 5}, "engineers": []}
+                1: {"cost": {"Manganese": 4, "Mechanical Scrap": 5, "Mechanical Components": 5, "Hybrid Capacitors": 5}, "engineers": ["Zacariah Nemo", "Bill Turner", "Etienne Dorn"]}
             }
         }
     },
@@ -2935,10 +2959,10 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Fragment Cannon": {
-                1: {"cost": {"Carbon": 5, "Grid Resistors": 5, "Molybdenum": 2}, "engineers": []}
+                1: {"cost": {"Carbon": 5, "Grid Resistors": 5, "Molybdenum": 2}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
             },
             "Seeker Missile Rack": {
-                1: {"cost": {"Carbon": 5, "Grid Resistors": 5, "Molybdenum": 2}, "engineers": []}
+                1: {"cost": {"Carbon": 5, "Grid Resistors": 5, "Molybdenum": 2}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]}
             }
         }
     },
@@ -2946,10 +2970,10 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Fragment Cannon": {
-                1: {"cost": {"Heat Conduction Wiring": 5, "Phosphorus": 5, "Sulphur": 5, "Phase Alloys": 3}, "engineers": []}
+                1: {"cost": {"Heat Conduction Wiring": 5, "Phosphorus": 5, "Sulphur": 5, "Phase Alloys": 3}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
             },
             "Multi-cannon": {
-                1: {"cost": {"Heat Conduction Wiring": 5, "Phosphorus": 5, "Sulphur": 5, "Phase Alloys": 3}, "engineers": []}
+                1: {"cost": {"Heat Conduction Wiring": 5, "Phosphorus": 5, "Sulphur": 5, "Phase Alloys": 3}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
             }
         }
     },
@@ -2957,7 +2981,7 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Fragment Cannon": {
-                1: {"cost": {"Niobium": 3, "Mechanical Scrap": 5, "Distorted Shield Cycle Recordings": 5, "Modified Consumer Firmware": 5}, "engineers": []}
+                1: {"cost": {"Niobium": 3, "Mechanical Scrap": 5, "Distorted Shield Cycle Recordings": 5, "Modified Consumer Firmware": 5}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
             }
         }
     },
@@ -2965,10 +2989,10 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Bulkheads": {
-                1: {"cost": {"Compact Composites": 5, "Mechanical Equipment": 3, "Molybdenum": 2}, "engineers": []}
+                1: {"cost": {"Compact Composites": 5, "Mechanical Equipment": 3, "Molybdenum": 2}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]}
             },
             "Hull Reinforcement Package": {
-                1: {"cost": {"Tempered Alloys": 5, "Carbon": 5, "High Density Composites": 3, "Zirconium": 3}, "engineers": []}
+                1: {"cost": {"Tempered Alloys": 5, "Carbon": 5, "High Density Composites": 3, "Zirconium": 3}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]}
             }
         }
     },
@@ -2976,10 +3000,10 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Bulkheads": {
-                1: {"cost": {"Compact Composites": 5, "Mechanical Equipment": 3, "Molybdenum": 2}, "engineers": []}
+                1: {"cost": {"Compact Composites": 5, "Mechanical Equipment": 3, "Molybdenum": 2}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]}
             },
             "Hull Reinforcement Package": {
-                1: {"cost": {"Compact Composites": 5, "Molybdenum": 3, "Ruthenium": 2}, "engineers": []}
+                1: {"cost": {"Compact Composites": 5, "Molybdenum": 3, "Ruthenium": 2}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]}
             }
         }
     },
@@ -2987,10 +3011,10 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Bulkheads": {
-                1: {"cost": {"Heat Conduction Wiring": 5, "High Density Composites": 3, "Niobium": 1}, "engineers": []}
+                1: {"cost": {"Heat Conduction Wiring": 5, "High Density Composites": 3, "Niobium": 1}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]}
             },
             "Hull Reinforcement Package": {
-                1: {"cost": {"Heat Conduction Wiring": 5, "Shielding Sensors": 3, "Tungsten": 3}, "engineers": []}
+                1: {"cost": {"Heat Conduction Wiring": 5, "Shielding Sensors": 3, "Tungsten": 3}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]}
             }
         }
     },
@@ -2998,10 +3022,10 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Bulkheads": {
-                1: {"cost": {"Compact Composites": 5, "Heat Dispersion Plate": 3, "Thermic Alloys": 2}, "engineers": []}
+                1: {"cost": {"Compact Composites": 5, "Heat Dispersion Plate": 3, "Thermic Alloys": 2}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]}
             },
             "Hull Reinforcement Package": {
-                1: {"cost": {"Heat Conduction Wiring": 5, "Zinc": 4, "Heat Dispersion Plate": 3, "Proto Light Alloys": 1}, "engineers": []}
+                1: {"cost": {"Heat Conduction Wiring": 5, "Zinc": 4, "Heat Dispersion Plate": 3, "Proto Light Alloys": 1}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]}
             }
         }
     },
@@ -3009,7 +3033,7 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Power Plant": {
-                1: {"cost": {"Grid Resistors": 5, "Vanadium": 3, "Polymer Capacitors": 1}, "engineers": []}
+                1: {"cost": {"Grid Resistors": 5, "Vanadium": 3, "Polymer Capacitors": 1}, "engineers": ["Felicity Farseer", "Marco Qwent", "Hera Tani", "Etienne Dorn"]}
             }
         }
     },
@@ -3017,13 +3041,13 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Power Plant": {
-                1: {"cost": {"Grid Resistors": 5, "Vanadium": 3, "Heat Vanes": 1}, "engineers": []}
+                1: {"cost": {"Grid Resistors": 5, "Vanadium": 3, "Heat Vanes": 1}, "engineers": ["Felicity Farseer", "Marco Qwent", "Hera Tani", "Etienne Dorn"]}
             },
             "Frame Shift Drive": {
-                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Heat Vanes": 1, "Grid Resistors": 3}, "engineers": []}
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Heat Vanes": 1, "Grid Resistors": 3}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Mel Brandon", "Professor Palin", "Colonel Bris Dekker", "Chloe Sedesi"]}
             },
             "Thrusters": {
-                1: {"cost": {"Iron": 5, "Hybrid Capacitors": 3, "Heat Vanes": 1}, "engineers": []}
+                1: {"cost": {"Iron": 5, "Hybrid Capacitors": 3, "Heat Vanes": 1}, "engineers": ["Elvira Martuuk", "Felicity Farseer", "Professor Palin", "Chloe Sedesi", "Mel Brandon"]}
             }
         }
     },
@@ -3031,7 +3055,7 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Thrusters": {
-                1: {"cost": {"Iron": 5, "Hybrid Capacitors": 3, "Security Firmware Patch": 1}, "engineers": []}
+                1: {"cost": {"Iron": 5, "Hybrid Capacitors": 3, "Security Firmware Patch": 1}, "engineers": ["Elvira Martuuk", "Felicity Farseer", "Professor Palin", "Chloe Sedesi", "Mel Brandon"]}
             }
         }
     },
@@ -3039,7 +3063,7 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Thrusters": {
-                1: {"cost": {"Iron": 5, "Hybrid Capacitors": 3, "Security Firmware Patch": 1}, "engineers": []}
+                1: {"cost": {"Iron": 5, "Hybrid Capacitors": 3, "Security Firmware Patch": 1}, "engineers": ["Elvira Martuuk", "Felicity Farseer", "Professor Palin", "Chloe Sedesi", "Mel Brandon"]}
             }
         }
     },
@@ -3047,7 +3071,7 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Frame Shift Drive": {
-                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Eccentric Hyperspace Trajectories": 1}, "engineers": []}
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Eccentric Hyperspace Trajectories": 1}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Mel Brandon", "Professor Palin", "Colonel Bris Dekker", "Chloe Sedesi"]}
             }
         }
     },
@@ -3055,7 +3079,7 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Frame Shift Drive": {
-                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Eccentric Hyperspace Trajectories": 1}, "engineers": []}
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Eccentric Hyperspace Trajectories": 1}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Mel Brandon", "Professor Palin", "Colonel Bris Dekker", "Chloe Sedesi"]}
             }
         }
     },
@@ -3063,7 +3087,7 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Power Distributor": {
-                1: {"cost": {"Phosphorus": 5, "Heat Resistant Ceramics": 3, "Cadmium": 1}, "engineers": []}
+                1: {"cost": {"Phosphorus": 5, "Heat Resistant Ceramics": 3, "Cadmium": 1}, "engineers": ["The Dweller", "Etienne Dorn", "Marco Qwent", "Hera Tani"]}
             }
         }
     },
@@ -3071,7 +3095,7 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Power Distributor": {
-                1: {"cost": {"Phosphorus": 5, "Heat Resistant Ceramics": 3, "Security Firmware Patch": 1}, "engineers": []}
+                1: {"cost": {"Phosphorus": 5, "Heat Resistant Ceramics": 3, "Security Firmware Patch": 1}, "engineers": ["The Dweller", "Etienne Dorn", "Marco Qwent", "Hera Tani"]}
             }
         }
     },
@@ -3079,7 +3103,7 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Shield Cell Bank": {
-                1: {"cost": {"Chromium": 3, "Chemical Storage Units": 5, "Polymer Capacitors": 1}, "engineers": []}
+                1: {"cost": {"Chromium": 3, "Chemical Storage Units": 5, "Polymer Capacitors": 1}, "engineers": ["Elvira Martuuk", "Lori Jameson", "Mel Brandon"]}
             }
         }
     },
@@ -3087,7 +3111,7 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Shield Cell Bank": {
-                1: {"cost": {"Chromium": 3, "Chemical Storage Units": 5, "Configurable Components": 1}, "engineers": []}
+                1: {"cost": {"Chromium": 3, "Chemical Storage Units": 5, "Configurable Components": 1}, "engineers": ["Elvira Martuuk", "Lori Jameson", "Mel Brandon"]}
             }
         }
     },
@@ -3095,7 +3119,7 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Shield Generator": {
-                1: {"cost": {"Worn Shield Emitters": 5, "Flawed Focus Crystals": 3, "Compound Shielding": 1}, "engineers": []}
+                1: {"cost": {"Worn Shield Emitters": 5, "Flawed Focus Crystals": 3, "Compound Shielding": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung", "Mel Brandon"]}
             }
         }
     },
@@ -3103,10 +3127,10 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Shield Booster": {
-                1: {"cost": {"Unidentified Scan Archives": 5, "Shielding Sensors": 3, "Aberrant Shield Pattern Analysis": 2}, "engineers": []}
+                1: {"cost": {"Unidentified Scan Archives": 5, "Shielding Sensors": 3, "Aberrant Shield Pattern Analysis": 2}, "engineers": ["Didi Vatermann", "Mel Brandon", "Felicity Farseer", "Lei Cheung"]}
             },
             "Shield Generator": {
-                1: {"cost": {"Worn Shield Emitters": 5, "Flawed Focus Crystals": 3, "Decoded Emission Data": 1}, "engineers": []}
+                1: {"cost": {"Worn Shield Emitters": 5, "Flawed Focus Crystals": 3, "Decoded Emission Data": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung", "Mel Brandon"]}
             }
         }
     },
@@ -3114,7 +3138,7 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Shield Generator": {
-                1: {"cost": {"Worn Shield Emitters": 5, "Flawed Focus Crystals": 3, "Conductive Polymers": 1}, "engineers": []}
+                1: {"cost": {"Worn Shield Emitters": 5, "Flawed Focus Crystals": 3, "Conductive Polymers": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung", "Mel Brandon"]}
             }
         }
     },
@@ -3122,7 +3146,7 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Shield Generator": {
-                1: {"cost": {"Worn Shield Emitters": 5, "Flawed Focus Crystals": 3, "Conductive Polymers": 1}, "engineers": []}
+                1: {"cost": {"Worn Shield Emitters": 5, "Flawed Focus Crystals": 3, "Conductive Polymers": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung", "Mel Brandon"]}
             }
         }
     },
@@ -3130,7 +3154,7 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Shield Generator": {
-                1: {"cost": {"Worn Shield Emitters": 5, "Flawed Focus Crystals": 3, "Aberrant Shield Pattern Analysis": 1}, "engineers": []}
+                1: {"cost": {"Worn Shield Emitters": 5, "Flawed Focus Crystals": 3, "Aberrant Shield Pattern Analysis": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung", "Mel Brandon"]}
             }
         }
     },
@@ -3138,10 +3162,10 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Shield Booster": {
-                1: {"cost": {"Anomalous Bulk Scan Data": 5, "Conductive Ceramics": 3, "Heat Vanes": 3}, "engineers": []}
+                1: {"cost": {"Anomalous Bulk Scan Data": 5, "Conductive Ceramics": 3, "Heat Vanes": 3}, "engineers": ["Didi Vatermann", "Mel Brandon", "Felicity Farseer", "Lei Cheung"]}
             },
             "Shield Generator": {
-                1: {"cost": {"Worn Shield Emitters": 5, "Flawed Focus Crystals": 3, "Heat Vanes": 1}, "engineers": []}
+                1: {"cost": {"Worn Shield Emitters": 5, "Flawed Focus Crystals": 3, "Heat Vanes": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung", "Mel Brandon"]}
             }
         }
     },
@@ -3149,7 +3173,7 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Shield Booster": {
-                1: {"cost": {"Inconsistent Shield Soak Analysis": 5, "Heat Resistant Ceramics": 3, "Heat Dispersion Plate": 3, "Selenium": 2}, "engineers": []}
+                1: {"cost": {"Inconsistent Shield Soak Analysis": 5, "Heat Resistant Ceramics": 3, "Heat Dispersion Plate": 3, "Selenium": 2}, "engineers": ["Didi Vatermann", "Mel Brandon", "Felicity Farseer", "Lei Cheung"]}
             }
         }
     },
@@ -3157,7 +3181,7 @@ ENGINEERING_MODIFICATIONS = {
         "experimental": True,
         "module_recipes": {
             "Shield Booster": {
-                1: {"cost": {"Untypical Shield Scans": 3, "Compact Composites": 5, "Cadmium": 2}, "engineers": []}
+                1: {"cost": {"Untypical Shield Scans": 3, "Compact Composites": 5, "Cadmium": 2}, "engineers": ["Didi Vatermann", "Mel Brandon", "Felicity Farseer", "Lei Cheung"]}
             }
         }
     }
@@ -3231,6 +3255,7 @@ def blueprint_finder(obj, projected_states):
         return False
 
         # Helper function to calculate total materials needed for a grade
+
     def calculate_materials_for_grade(base_cost, grade):
         """Calculate total materials needed for a specific grade"""
         total_materials = {}
@@ -3292,7 +3317,7 @@ def blueprint_finder(obj, projected_states):
                         continue
                     engineers = matching_engineers
 
-                                # Calculate total materials needed for this grade
+                    # Calculate total materials needed for this grade
                 base_cost = grade_info.get("cost", {})
                 total_materials = calculate_materials_for_grade(base_cost, grade)
 
@@ -3361,161 +3386,161 @@ def blueprint_finder(obj, projected_states):
 def engineer_finder(obj, projected_states):
     ship_engineers = {
         300260: {"Engineer": "Tod 'The Blaster' McQuinn", "Location": "Wolf 397",
-                "Modifies": {"Multi-cannon": 5, "Rail Gun": 5, "Cannon": 2, "Fragment Cannon": 2},
-                "HowToFind": "Available from start", "HowToGetInvite": "15 bounty vouchers earned",
-                "HowToUnlock": "100,001 CR of bounty vouchers provided", "HowToGainRep": "Modules crafted or Alliance vouchers handed in"},
+                 "Modifies": {"Multi-cannon": 5, "Rail Gun": 5, "Cannon": 2, "Fragment Cannon": 2},
+                 "HowToFind": "Available from start", "HowToGetInvite": "15 bounty vouchers earned",
+                 "HowToUnlock": "100,001 CR of bounty vouchers provided", "HowToGainRep": "Modules crafted or Alliance vouchers handed in"},
         300100: {"Engineer": "Felicity Farseer", "Location": "Deciat",
-                "Modifies": {"Frame Shift Drive": 5, "Detailed Surface Scanner": 3, "Sensors": 3, "Thrusters": 3, "Power Plant": 1, "Frame Shift Drive Interdictor": 1, "Shield Booster": 1},
-                "HowToFind": "Available from start", "HowToGetInvite": "Exploration rank Scout or higher reached",
-                "HowToUnlock": "1 Meta-Alloy provided", "HowToGainRep": "Modules crafted or exploration data sold"},
+                 "Modifies": {"Frame Shift Drive": 5, "Detailed Surface Scanner": 3, "Sensors": 3, "Thrusters": 3, "Power Plant": 1, "Frame Shift Drive Interdictor": 1, "Shield Booster": 1},
+                 "HowToFind": "Available from start", "HowToGetInvite": "Exploration rank Scout or higher reached",
+                 "HowToUnlock": "1 Meta-Alloy provided", "HowToGainRep": "Modules crafted or exploration data sold"},
         300160: {"Engineer": "Elvira Martuuk", "Location": "Khun",
-                "Modifies": {"Frame Shift Drive": 5, "Shield Generator": 3, "Thrusters": 2, "Shield Cell Bank": 1},
-                "HowToFind": "Available from start", "HowToGetInvite": "300+ ly from starting system traveled",
-                "HowToUnlock": "3 Soontill Relics provided", "HowToGainRep": "Modules crafted or exploration data sold"},
+                 "Modifies": {"Frame Shift Drive": 5, "Shield Generator": 3, "Thrusters": 2, "Shield Cell Bank": 1},
+                 "HowToFind": "Available from start", "HowToGetInvite": "300+ ly from starting system traveled",
+                 "HowToUnlock": "3 Soontill Relics provided", "HowToGainRep": "Modules crafted or exploration data sold"},
         300080: {"Engineer": "Liz Ryder", "Location": "Eurybia",
-                "Modifies": {"Missile Rack": 5, "Seeker Missile Rack": 5, "Torpedo Pylon": 5, "Mine Launcher": 3, "Hull Reinforcement Package": 1, "Armour": 1},
-                "HowToFind": "Available from start", "HowToGetInvite": "Friendly with Eurybia Blue Mafia achieved",
-                "HowToUnlock": "200 Landmines provided", "HowToGainRep": "Modules crafted or commodities sold"},
+                 "Modifies": {"Missile Rack": 5, "Seeker Missile Rack": 5, "Torpedo Pylon": 5, "Mine Launcher": 3, "Hull Reinforcement Package": 1, "Armour": 1},
+                 "HowToFind": "Available from start", "HowToGetInvite": "Friendly with Eurybia Blue Mafia achieved",
+                 "HowToUnlock": "200 Landmines provided", "HowToGainRep": "Modules crafted or commodities sold"},
         300180: {"Engineer": "The Dweller", "Location": "Wyrd",
-                "Modifies": {"Beam Laser": 3, "Burst Laser": 3, "Pulse Laser": 4, "Power Distributor": 5},
-                "HowToFind": "Available from start", "HowToGetInvite": "5 Black Markets dealt with",
-                "HowToUnlock": "500,000 CR paid", "HowToGainRep": "Modules crafted or commodities sold"},
+                 "Modifies": {"Beam Laser": 3, "Burst Laser": 3, "Pulse Laser": 4, "Power Distributor": 5},
+                 "HowToFind": "Available from start", "HowToGetInvite": "5 Black Markets dealt with",
+                 "HowToUnlock": "500,000 CR paid", "HowToGainRep": "Modules crafted or commodities sold"},
         300120: {"Engineer": "Lei Cheung", "Location": "Laksak",
-                "Modifies": {"Shield Generator": 5, "Detailed Surface Scanner": 5, "Sensors": 5, "Shield Booster": 3},
-                "HowToFind": "Introduced by The Dweller", "HowToGetInvite": "50 markets traded with",
-                "HowToUnlock": "200 Gold provided", "HowToGainRep": "Modules crafted"},
+                 "Modifies": {"Shield Generator": 5, "Detailed Surface Scanner": 5, "Sensors": 5, "Shield Booster": 3},
+                 "HowToFind": "Introduced by The Dweller", "HowToGetInvite": "50 markets traded with",
+                 "HowToUnlock": "200 Gold provided", "HowToGainRep": "Modules crafted"},
         300210: {"Engineer": "Selene Jean", "Location": "Kuk",
-                "Modifies": {"Armour": 5, "Hull Reinforcement Package": 5},
-                "HowToFind": "Introduced by Tod McQuinn", "HowToGetInvite": "500 tons of ore mined",
-                "HowToUnlock": "10 Painite provided", "HowToGainRep": "Modules crafted or commodities/data sold"},
+                 "Modifies": {"Armour": 5, "Hull Reinforcement Package": 5},
+                 "HowToFind": "Introduced by Tod McQuinn", "HowToGetInvite": "500 tons of ore mined",
+                 "HowToUnlock": "10 Painite provided", "HowToGainRep": "Modules crafted or commodities/data sold"},
         300090: {"Engineer": "Hera Tani", "Location": "Kuwemaki",
-                "Modifies": {"Detailed Surface Scanner": 5, "Power Plant": 5, "Power Distributor": 3, "Sensors": 3},
-                "HowToFind": "Introduced by Liz Ryder", "HowToGetInvite": "Imperial Navy rank Outsider achieved",
-                "HowToUnlock": "50 Kamitra Cigars provided", "HowToGainRep": "Modules crafted or commodities sold"},
+                 "Modifies": {"Detailed Surface Scanner": 5, "Power Plant": 5, "Power Distributor": 3, "Sensors": 3},
+                 "HowToFind": "Introduced by Liz Ryder", "HowToGetInvite": "Imperial Navy rank Outsider achieved",
+                 "HowToUnlock": "50 Kamitra Cigars provided", "HowToGainRep": "Modules crafted or commodities sold"},
         300030: {"Engineer": "Broo Tarquin", "Location": "Muang",
-                "Modifies": {"Beam Laser": 5, "Burst Laser": 5, "Pulse Laser": 5},
-                "HowToFind": "Introduced by Hera Tani", "HowToGetInvite": "Combat rank Competent or higher achieved",
-                "HowToUnlock": "50 Fujin Tea provided", "HowToGainRep": "Modules crafted"},
+                 "Modifies": {"Beam Laser": 5, "Burst Laser": 5, "Pulse Laser": 5},
+                 "HowToFind": "Introduced by Hera Tani", "HowToGetInvite": "Combat rank Competent or higher achieved",
+                 "HowToUnlock": "50 Fujin Tea provided", "HowToGainRep": "Modules crafted"},
         300200: {"Engineer": "Marco Qwent", "Location": "Sirius (Permit Required)",
-                "Modifies": {"Power Plant": 4, "Power Distributor": 3},
-                "HowToFind": "Introduced by Elvira Martuuk", "HowToGetInvite": "Sirius Corporation invitation obtained",
-                "HowToUnlock": "25 Modular Terminals provided", "HowToGainRep": "Modules crafted or commodities sold"},
+                 "Modifies": {"Power Plant": 4, "Power Distributor": 3},
+                 "HowToFind": "Introduced by Elvira Martuuk", "HowToGetInvite": "Sirius Corporation invitation obtained",
+                 "HowToUnlock": "25 Modular Terminals provided", "HowToGainRep": "Modules crafted or commodities sold"},
         300050: {"Engineer": "Zacariah Nemo", "Location": "Yoru",
-                "Modifies": {"Fragment Cannon": 5, "Multi-cannon": 3, "Plasma Accelerator": 2},
-                "HowToFind": "Introduced by Elvira Martuuk", "HowToGetInvite": "Party of Yoru invitation received",
-                "HowToUnlock": "25 Xihe Biomorphic Companions provided", "HowToGainRep": "Modules crafted or commodities sold"},
+                 "Modifies": {"Fragment Cannon": 5, "Multi-cannon": 3, "Plasma Accelerator": 2},
+                 "HowToFind": "Introduced by Elvira Martuuk", "HowToGetInvite": "Party of Yoru invitation received",
+                 "HowToUnlock": "25 Xihe Biomorphic Companions provided", "HowToGainRep": "Modules crafted or commodities sold"},
         300000: {"Engineer": "Didi Vatermann", "Location": "Leesti",
-                "Modifies": {"Shield Booster": 5, "Shield Generator": 3},
-                "HowToFind": "Introduced by Selene Jean", "HowToGetInvite": "Trade rank Merchant or higher achieved",
-                "HowToUnlock": "50 Lavian Brandy provided", "HowToGainRep": "Modules crafted"},
+                 "Modifies": {"Shield Booster": 5, "Shield Generator": 3},
+                 "HowToFind": "Introduced by Selene Jean", "HowToGetInvite": "Trade rank Merchant or higher achieved",
+                 "HowToUnlock": "50 Lavian Brandy provided", "HowToGainRep": "Modules crafted"},
         300140: {"Engineer": "Colonel Bris Dekker", "Location": "Sol (Permit Required)",
-                "Modifies": {"Frame Shift Drive Interdictor": 4, "Frame Shift Drive": 3},
-                "HowToFind": "Introduced by Juri Ishmaak", "HowToGetInvite": "Federation friendly status achieved",
-                "HowToUnlock": "1,000,000 CR of combat bonds provided", "HowToGainRep": "Modules crafted"},
+                 "Modifies": {"Frame Shift Drive Interdictor": 4, "Frame Shift Drive": 3},
+                 "HowToFind": "Introduced by Juri Ishmaak", "HowToGetInvite": "Federation friendly status achieved",
+                 "HowToUnlock": "1,000,000 CR of combat bonds provided", "HowToGainRep": "Modules crafted"},
         300250: {"Engineer": "Juri Ishmaak", "Location": "Giryak",
-                "Modifies": {"Detailed Surface Scanner": 5, "Mine Launcher": 5, "Sensors": 5, "Frame Shift Wake Scanner": 3, "Kill Warrant Scanner": 3, "Manifest Scanner": 3, "Missile Rack": 3, "Seeker Missile Rack": 3, "Torpedo Pylon": 3},
-                "HowToFind": "Introduced by Felicity Farseer", "HowToGetInvite": "50+ combat bonds earned",
-                "HowToUnlock": "100,000 CR of combat bonds provided", "HowToGainRep": "Modules crafted or combat bonds handed in"},
+                 "Modifies": {"Detailed Surface Scanner": 5, "Mine Launcher": 5, "Sensors": 5, "Frame Shift Wake Scanner": 3, "Kill Warrant Scanner": 3, "Manifest Scanner": 3, "Missile Rack": 3, "Seeker Missile Rack": 3, "Torpedo Pylon": 3},
+                 "HowToFind": "Introduced by Felicity Farseer", "HowToGetInvite": "50+ combat bonds earned",
+                 "HowToUnlock": "100,000 CR of combat bonds provided", "HowToGainRep": "Modules crafted or combat bonds handed in"},
         300220: {"Engineer": "Professor Palin", "Location": "Arque",
-                "Modifies": {"Thrusters": 5, "Frame Shift Drive": 3},
-                "HowToFind": "Introduced by Marco Qwent", "HowToGetInvite": "5,000 ly from start location traveled",
-                "HowToUnlock": "25 Sensor Fragments provided", "HowToGainRep": "Modules crafted or exploration data sold"},
+                 "Modifies": {"Thrusters": 5, "Frame Shift Drive": 3},
+                 "HowToFind": "Introduced by Marco Qwent", "HowToGetInvite": "5,000 ly from start location traveled",
+                 "HowToUnlock": "25 Sensor Fragments provided", "HowToGainRep": "Modules crafted or exploration data sold"},
         300010: {"Engineer": "Bill Turner", "Location": "Alioth (Permit Required)",
-                "Modifies": {"Sensors": 5, "Plasma Accelerator": 5, "AFMU": 3, "Detailed Surface Scanner": 5, "Frame Shift Wake Scanner": 3, "Fuel Scoop": 3, "Kill Warrant Scanner": 3, "Life Support": 3, "Manifest Scanner": 3, "Refinery": 3},
-                "HowToFind": "Introduced by Selene Jean", "HowToGetInvite": "Alliance friendly status achieved",
-                "HowToUnlock": "50 Bromellite provided", "HowToGainRep": "Modules crafted"},
+                 "Modifies": {"Sensors": 5, "Plasma Accelerator": 5, "AFMU": 3, "Detailed Surface Scanner": 5, "Frame Shift Wake Scanner": 3, "Fuel Scoop": 3, "Kill Warrant Scanner": 3, "Life Support": 3, "Manifest Scanner": 3, "Refinery": 3},
+                 "HowToFind": "Introduced by Selene Jean", "HowToGetInvite": "Alliance friendly status achieved",
+                 "HowToUnlock": "50 Bromellite provided", "HowToGainRep": "Modules crafted"},
         300230: {"Engineer": "Lori Jameson", "Location": "Shinrarta Dezhra (Permit Required)",
-                "Modifies": {"Detailed Surface Scanner": 5, "Sensors": 5, "AFMU": 4, "Fuel Scoop": 4, "Life Support": 4, "Refinery": 4, "Frame Shift Wake Scanner": 3, "Manifest Scanner": 3, "Shield Cell Bank": 3},
-                "HowToFind": "Introduced by Marco Qwent", "HowToGetInvite": "Combat rank Dangerous or higher achieved",
-                "HowToUnlock": "25 Konnga Ale provided", "HowToGainRep": "Modules crafted or exploration data sold"},
+                 "Modifies": {"Detailed Surface Scanner": 5, "Sensors": 5, "AFMU": 4, "Fuel Scoop": 4, "Life Support": 4, "Refinery": 4, "Frame Shift Wake Scanner": 3, "Manifest Scanner": 3, "Shield Cell Bank": 3},
+                 "HowToFind": "Introduced by Marco Qwent", "HowToGetInvite": "Combat rank Dangerous or higher achieved",
+                 "HowToUnlock": "25 Konnga Ale provided", "HowToGainRep": "Modules crafted or exploration data sold"},
         300110: {"Engineer": "Ram Tah", "Location": "Meene",
-                "Modifies": {"Chaff Launcher": 5, "ECM": 5, "Heat Sink Launcher": 5, "Point Defence": 5, "Collector Limpet Controller": 4, "Fuel Transfer Limpet Controller": 4, "Prospector Limpet Controller": 4, "Hatch Breaker Limpet Controller": 3},
-                "HowToFind": "Introduced by Lei Cheung", "HowToGetInvite": "Exploration rank Surveyor or higher achieved",
-                "HowToUnlock": "50 Classified Scan Databanks provided", "HowToGainRep": "Modules crafted or exploration data sold"},
+                 "Modifies": {"Chaff Launcher": 5, "ECM": 5, "Heat Sink Launcher": 5, "Point Defence": 5, "Collector Limpet Controller": 4, "Fuel Transfer Limpet Controller": 4, "Prospector Limpet Controller": 4, "Hatch Breaker Limpet Controller": 3},
+                 "HowToFind": "Introduced by Lei Cheung", "HowToGetInvite": "Exploration rank Surveyor or higher achieved",
+                 "HowToUnlock": "50 Classified Scan Databanks provided", "HowToGainRep": "Modules crafted or exploration data sold"},
         300270: {"Engineer": "Tiana Fortune", "Location": "Achenar (Permit Required)",
-                "Modifies": {"Manifest Scanner": 5, "Collector Limpet Controller": 5, "Frame Shift Wake Scanner": 5, "Fuel Transfer Limpet Controller": 5, "Hatch Breaker Limpet Controller": 5, "Kill Warrant Scanner": 5, "Prospector Limpet Controller": 5, "Sensors": 5, "Detailed Surface Scanner": 3, "Frame Shift Drive Interdictor": 3},
-                "HowToFind": "Introduced by Hera Tani", "HowToGetInvite": "Empire friendly status achieved",
-                "HowToUnlock": "50 Decoded Emission Data provided", "HowToGainRep": "Modules crafted or commodities sold"},
+                 "Modifies": {"Manifest Scanner": 5, "Collector Limpet Controller": 5, "Frame Shift Wake Scanner": 5, "Fuel Transfer Limpet Controller": 5, "Hatch Breaker Limpet Controller": 5, "Kill Warrant Scanner": 5, "Prospector Limpet Controller": 5, "Sensors": 5, "Detailed Surface Scanner": 3, "Frame Shift Drive Interdictor": 3},
+                 "HowToFind": "Introduced by Hera Tani", "HowToGetInvite": "Empire friendly status achieved",
+                 "HowToUnlock": "50 Decoded Emission Data provided", "HowToGainRep": "Modules crafted or commodities sold"},
         300040: {"Engineer": "The Sarge", "Location": "Beta-3 Tucani",
-                "Modifies": {"Cannon": 5, "Collector Limpet Controller": 5, "Fuel Transfer Limpet Controller": 5, "Hatch Breaker Limpet Controller": 5, "Prospector Limpet Controller": 5, "Rail Gun": 3},
-                "HowToFind": "Introduced by Juri Ishmaak", "HowToGetInvite": "Federal Navy rank Midshipman achieved",
-                "HowToUnlock": "50 Aberrant Shield Pattern Analysis provided", "HowToGainRep": "Modules crafted or exploration data sold"},
+                 "Modifies": {"Cannon": 5, "Collector Limpet Controller": 5, "Fuel Transfer Limpet Controller": 5, "Hatch Breaker Limpet Controller": 5, "Prospector Limpet Controller": 5, "Rail Gun": 3},
+                 "HowToFind": "Introduced by Juri Ishmaak", "HowToGetInvite": "Federal Navy rank Midshipman achieved",
+                 "HowToUnlock": "50 Aberrant Shield Pattern Analysis provided", "HowToGainRep": "Modules crafted or exploration data sold"},
         300290: {"Engineer": "Etienne Dorn", "Location": "Los",
-                "Modifies": {"Detailed Surface Scanner": 5, "Frame Shift Wake Scanner": 5, "Kill Warrant Scanner": 5, "Life Support": 5, "Manifest Scanner": 5, "Plasma Accelerator": 5, "Power Distributor": 5, "Power Plant": 5, "Sensors": 5, "Rail Gun": 5},
-                "HowToFind": "Introduced by Liz Ryder", "HowToGetInvite": "Trade rank Dealer or higher achieved",
-                "HowToUnlock": "25 Occupied Escape Pods provided", "HowToGainRep": "Modules crafted"},
+                 "Modifies": {"Detailed Surface Scanner": 5, "Frame Shift Wake Scanner": 5, "Kill Warrant Scanner": 5, "Life Support": 5, "Manifest Scanner": 5, "Plasma Accelerator": 5, "Power Distributor": 5, "Power Plant": 5, "Sensors": 5, "Rail Gun": 5},
+                 "HowToFind": "Introduced by Liz Ryder", "HowToGetInvite": "Trade rank Dealer or higher achieved",
+                 "HowToUnlock": "25 Occupied Escape Pods provided", "HowToGainRep": "Modules crafted"},
         300150: {"Engineer": "Marsha Hicks", "Location": "Tir",
-                "Modifies": {"Cannon": 5, "Fragment Cannon": 5, "Fuel Scoop": 5, "Fuel Transfer Limpet Controller": 5, "Hatch Breaker Limpet Controller": 5, "Multi-cannon": 5, "Prospector Limpet Controller": 5, "Refinery": 5},
-                "HowToFind": "Introduced by The Dweller", "HowToGetInvite": "Exploration rank Surveyor or higher achieved",
-                "HowToUnlock": "10 Osmium mined", "HowToGainRep": "Modules crafted"},
+                 "Modifies": {"Cannon": 5, "Fragment Cannon": 5, "Fuel Scoop": 5, "Fuel Transfer Limpet Controller": 5, "Hatch Breaker Limpet Controller": 5, "Multi-cannon": 5, "Prospector Limpet Controller": 5, "Refinery": 5},
+                 "HowToFind": "Introduced by The Dweller", "HowToGetInvite": "Exploration rank Surveyor or higher achieved",
+                 "HowToUnlock": "10 Osmium mined", "HowToGainRep": "Modules crafted"},
         300280: {"Engineer": "Mel Brandon", "Location": "Luchtaine",
-                "Modifies": {"Beam Laser": 5, "Burst Laser": 5, "Pulse Laser": 5, "Shield Generator": 5, "Thrusters": 5, "Shield Booster": 5, "Frame Shift Drive": 5, "Frame Shift Drive Interdictor": 5, "Shield Cell Bank": 4},
-                "HowToFind": "Introduced by Elvira Martuuk", "HowToGetInvite": "Colonia Council invitation received",
-                "HowToUnlock": "100,000 CR of bounty vouchers provided", "HowToGainRep": "Modules crafted"},
+                 "Modifies": {"Beam Laser": 5, "Burst Laser": 5, "Pulse Laser": 5, "Shield Generator": 5, "Thrusters": 5, "Shield Booster": 5, "Frame Shift Drive": 5, "Frame Shift Drive Interdictor": 5, "Shield Cell Bank": 4},
+                 "HowToFind": "Introduced by Elvira Martuuk", "HowToGetInvite": "Colonia Council invitation received",
+                 "HowToUnlock": "100,000 CR of bounty vouchers provided", "HowToGainRep": "Modules crafted"},
         300130: {"Engineer": "Petra Olmanova", "Location": "Asura",
-                "Modifies": {"Armour": 5, "AFMU": 5, "Chaff Launcher": 5, "ECM": 5, "Heat Sink Launcher": 5, "Hull Reinforcement Package": 5, "Mine Launcher": 5, "Missile Rack": 5, "Point Defence": 5, "Seeker Missile Rack": 5, "Torpedo Pylon": 5},
-                "HowToFind": "Introduced by Tod McQuinn", "HowToGetInvite": "Combat rank Expert or higher achieved",
-                "HowToUnlock": "200 Progenitor Cells provided", "HowToGainRep": "Modules crafted"},
+                 "Modifies": {"Armour": 5, "AFMU": 5, "Chaff Launcher": 5, "ECM": 5, "Heat Sink Launcher": 5, "Hull Reinforcement Package": 5, "Mine Launcher": 5, "Missile Rack": 5, "Point Defence": 5, "Seeker Missile Rack": 5, "Torpedo Pylon": 5},
+                 "HowToFind": "Introduced by Tod McQuinn", "HowToGetInvite": "Combat rank Expert or higher achieved",
+                 "HowToUnlock": "200 Progenitor Cells provided", "HowToGainRep": "Modules crafted"},
         300300: {"Engineer": "Chloe Sedesi", "Location": "Shenve",
-                "Modifies": {"Thrusters": 5, "Frame Shift Drive": 3},
-                "HowToFind": "Introduced by Marco Qwent", "HowToGetInvite": "5,000 ly from start location traveled",
-                "HowToUnlock": "25 Sensor Fragments provided", "HowToGainRep": "Modules crafted or exploration data sold"}
+                 "Modifies": {"Thrusters": 5, "Frame Shift Drive": 3},
+                 "HowToFind": "Introduced by Marco Qwent", "HowToGetInvite": "5,000 ly from start location traveled",
+                 "HowToUnlock": "25 Sensor Fragments provided", "HowToGainRep": "Modules crafted or exploration data sold"}
     }
 
     # Define suit engineers data
     suit_engineers = {
         400002: {"Engineer": "Domino Green", "Location": "Orishis",
-                "Modifies": {"Enhanced Tracking": 1, "Extra Backpack Capacity": 1, "Reduced Tool Battery Consumption": 1, "Greater Range": 1, "Stability": 1},
-                "HowToFind": "Available from start", "HowToGetInvite": "100ly in Apex Transport traveled",
-                "HowToReferral": "5 Push required"},
+                 "Modifies": {"Enhanced Tracking": 1, "Extra Backpack Capacity": 1, "Reduced Tool Battery Consumption": 1, "Greater Range": 1, "Stability": 1},
+                 "HowToFind": "Available from start", "HowToGetInvite": "100ly in Apex Transport traveled",
+                 "HowToReferral": "5 Push required"},
         400003: {"Engineer": "Hero Ferrari", "Location": "Siris",
-                "Modifies": {"Improved Jump Assist": 1, "Increased Air Reserves": 1, "Faster Handling": 1, "Noise Suppressor": 1},
-                "HowToFind": "Available from start", "HowToGetInvite": "10 Conflict Zones completed",
-                "HowToReferral": "15 Settlement Defence Plans required"},
+                 "Modifies": {"Improved Jump Assist": 1, "Increased Air Reserves": 1, "Faster Handling": 1, "Noise Suppressor": 1},
+                 "HowToFind": "Available from start", "HowToGetInvite": "10 Conflict Zones completed",
+                 "HowToReferral": "15 Settlement Defence Plans required"},
         400001: {"Engineer": "Jude Navarro", "Location": "Aurai",
-                "Modifies": {"Added Melee Damage": 1, "Damage Resistance": 1, "Extra Ammo Capacity": 1, "Magazine Size": 1, "Reload Speed": 1},
-                "HowToFind": "Available from start", "HowToGetInvite": "10 Restore/Reactivation missions completed",
-                "HowToReferral": "5 Genetic Repair Meds required"},
+                 "Modifies": {"Added Melee Damage": 1, "Damage Resistance": 1, "Extra Ammo Capacity": 1, "Magazine Size": 1, "Reload Speed": 1},
+                 "HowToFind": "Available from start", "HowToGetInvite": "10 Restore/Reactivation missions completed",
+                 "HowToReferral": "5 Genetic Repair Meds required"},
         400004: {"Engineer": "Kit Fowler", "Location": "Capoya",
-                "Modifies": {"Added Melee Damage": 1, "Extra Ammo Capacity": 1, "Faster Shield Regen": 1, "Magazine Size": 1, "Stowed Reloading": 1},
-                "HowToFind": "Introduced by Domino Green", "HowToGetInvite": "10 Opinion Polls sold to Bartenders",
-                "HowToReferral": "5 Surveillance Equipment required"},
+                 "Modifies": {"Added Melee Damage": 1, "Extra Ammo Capacity": 1, "Faster Shield Regen": 1, "Magazine Size": 1, "Stowed Reloading": 1},
+                 "HowToFind": "Introduced by Domino Green", "HowToGetInvite": "10 Opinion Polls sold to Bartenders",
+                 "HowToReferral": "5 Surveillance Equipment required"},
         400008: {"Engineer": "Oden Geiger", "Location": "Candiaei",
-                "Modifies": {"Enhanced Tracking": 1, "Improved Battery Capacity": 1, "Night Vision": 1, "Scope": 1, "Stability": 1},
-                "HowToFind": "Introduced by Terra Velasquez", "HowToGetInvite": "20 Biological/Genetic items sold to Bartenders",
-                "HowToReferral": "N/A"},
+                 "Modifies": {"Enhanced Tracking": 1, "Improved Battery Capacity": 1, "Night Vision": 1, "Scope": 1, "Stability": 1},
+                 "HowToFind": "Introduced by Terra Velasquez", "HowToGetInvite": "20 Biological/Genetic items sold to Bartenders",
+                 "HowToReferral": "N/A"},
         400006: {"Engineer": "Terra Velasquez", "Location": "Shou Xing",
-                "Modifies": {"Combat Movement Speed": 1, "Increased Air Reserves": 1, "Increased Sprint Duration": 1, "Improved Hip Fire Accuracy": 1, "Noise Suppressor": 1},
-                "HowToFind": "Introduced by Jude Navarro", "HowToGetInvite": "12 Covert missions completed",
-                "HowToReferral": "15 Financial Projections required"},
+                 "Modifies": {"Combat Movement Speed": 1, "Increased Air Reserves": 1, "Increased Sprint Duration": 1, "Improved Hip Fire Accuracy": 1, "Noise Suppressor": 1},
+                 "HowToFind": "Introduced by Jude Navarro", "HowToGetInvite": "12 Covert missions completed",
+                 "HowToReferral": "15 Financial Projections required"},
         400007: {"Engineer": "Uma Laszlo", "Location": "Xuane",
-                "Modifies": {"Damage Resistance": 1, "Faster Shield Regen": 1, "Headshot Damage": 1, "Reload Speed": 1, "Stowed Reloading": 1},
-                "HowToFind": "Introduced by Wellington Beck", "HowToGetInvite": "Sirius Corp unfriendly status reached",
-                "HowToReferral": "N/A"},
+                 "Modifies": {"Damage Resistance": 1, "Faster Shield Regen": 1, "Headshot Damage": 1, "Reload Speed": 1, "Stowed Reloading": 1},
+                 "HowToFind": "Introduced by Wellington Beck", "HowToGetInvite": "Sirius Corp unfriendly status reached",
+                 "HowToReferral": "N/A"},
         400005: {"Engineer": "Wellington Beck", "Location": "Jolapa",
-                "Modifies": {"Extra Backpack Capacity": 1, "Improved Battery Capacity": 1, "Reduced Tool Battery Consumption": 1, "Greater Range": 1, "Scope": 1},
-                "HowToFind": "Introduced by Hero Ferrari", "HowToGetInvite": "25 Entertainment items sold to Bartenders",
-                "HowToReferral": "5 InSight Entertainment Suites required"},
+                 "Modifies": {"Extra Backpack Capacity": 1, "Improved Battery Capacity": 1, "Reduced Tool Battery Consumption": 1, "Greater Range": 1, "Scope": 1},
+                 "HowToFind": "Introduced by Hero Ferrari", "HowToGetInvite": "25 Entertainment items sold to Bartenders",
+                 "HowToReferral": "5 InSight Entertainment Suites required"},
         400009: {"Engineer": "Yarden Bond", "Location": "Bayan",
-                "Modifies": {"Combat Movement Speed": 1, "Improved Jump Assist": 1, "Quieter Footsteps": 1, "Audio Masking": 1, "Faster Handling": 1, "Improved Hip Fire Accuracy": 1},
-                "HowToFind": "Introduced by Kit Fowler", "HowToGetInvite": "8 Smear Campaign Plans sold to Bartenders",
-                "HowToReferral": "N/A"},
+                 "Modifies": {"Combat Movement Speed": 1, "Improved Jump Assist": 1, "Quieter Footsteps": 1, "Audio Masking": 1, "Faster Handling": 1, "Improved Hip Fire Accuracy": 1},
+                 "HowToFind": "Introduced by Kit Fowler", "HowToGetInvite": "8 Smear Campaign Plans sold to Bartenders",
+                 "HowToReferral": "N/A"},
         400010: {"Engineer": "Baltanos", "Location": "Deriso",
-                "Modifies": {"Combat Movement Speed": 1, "Improved Jump Assist": 1, "Increased Air Reserves": 1, "Increased Sprint Duration": 1, "Faster Handling": 1, "Improved Hip Fire Accuracy": 1, "Noise Suppressor": 1},
-                "HowToFind": "Available in Colonia", "HowToGetInvite": "Colonia Council friendly status achieved",
-                "HowToReferral": "10 Faction Associates required"},
+                 "Modifies": {"Combat Movement Speed": 1, "Improved Jump Assist": 1, "Increased Air Reserves": 1, "Increased Sprint Duration": 1, "Faster Handling": 1, "Improved Hip Fire Accuracy": 1, "Noise Suppressor": 1},
+                 "HowToFind": "Available in Colonia", "HowToGetInvite": "Colonia Council friendly status achieved",
+                 "HowToReferral": "10 Faction Associates required"},
         400011: {"Engineer": "Eleanor Bresa", "Location": "Desy",
-                "Modifies": {"Added Melee Damage": 1, "Damage Resistance": 1, "Extra Ammo Capacity": 1, "Faster Shield Regen": 1, "Magazine Size": 1, "Reload Speed": 1, "Stowed Reloading": 1},
-                "HowToFind": "Available in Colonia", "HowToGetInvite": "5 Settlements in Colonia visited",
-                "HowToReferral": "10 Digital Designs required"},
+                 "Modifies": {"Added Melee Damage": 1, "Damage Resistance": 1, "Extra Ammo Capacity": 1, "Faster Shield Regen": 1, "Magazine Size": 1, "Reload Speed": 1, "Stowed Reloading": 1},
+                 "HowToFind": "Available in Colonia", "HowToGetInvite": "5 Settlements in Colonia visited",
+                 "HowToReferral": "10 Digital Designs required"},
         400012: {"Engineer": "Rosa Dayette", "Location": "Kojeara",
-                "Modifies": {"Enhanced Tracking": 1, "Extra Backpack Capacity": 1, "Improved Battery Capacity": 1, "Reduced Tool Battery Consumption": 1, "Greater Range": 1, "Scope": 1, "Stability": 1},
-                "HowToFind": "Available in Colonia", "HowToGetInvite": "10 Recipe items sold to Bartenders in Colonia",
-                "HowToReferral": "10 Manufacturing Instructions required"},
+                 "Modifies": {"Enhanced Tracking": 1, "Extra Backpack Capacity": 1, "Improved Battery Capacity": 1, "Reduced Tool Battery Consumption": 1, "Greater Range": 1, "Scope": 1, "Stability": 1},
+                 "HowToFind": "Available in Colonia", "HowToGetInvite": "10 Recipe items sold to Bartenders in Colonia",
+                 "HowToReferral": "10 Manufacturing Instructions required"},
         400013: {"Engineer": "Yi Shen", "Location": "Einheriar",
-                "Modifies": {"Night Vision": 1, "Quieter Footsteps": 1, "Audio Masking": 1, "Headshot Damage": 1},
-                "HowToFind": "Introduced by Colonia engineers", "HowToGetInvite": "All Colonia engineers' referral tasks completed",
-                "HowToReferral": "N/A"}
+                 "Modifies": {"Night Vision": 1, "Quieter Footsteps": 1, "Audio Masking": 1, "Headshot Damage": 1},
+                 "HowToFind": "Introduced by Colonia engineers", "HowToGetInvite": "All Colonia engineers' referral tasks completed",
+                 "HowToReferral": "N/A"}
     }
 
     # Extract search parameters - can be combined
@@ -3781,13 +3806,13 @@ def material_finder(obj, projected_states):
 
     # Ship engineering materials (from Materials projection)
     ship_raw_materials_map = {
-        1: { 1: ['carbon'], 2: ['vanadium'], 3: ['niobium'], 4: ['yttrium'] },
-        2: { 1: ['phosphorus'], 2: ['chromium'], 3: ['molybdenum'], 4: ['technetium'] },
-        3: { 1: ['sulphur'], 2: ['manganese'], 3: ['cadmium'], 4: ['ruthenium'] },
-        4: { 1: ['iron'], 2: ['zinc'], 3: ['tin'], 4: ['selenium'] },
-        5: { 1: ['nickel'], 2: ['germanium'], 3: ['tungsten'], 4: ['tellurium'] },
-        6: { 1: ['rhenium'], 2: ['arsenic'], 3: ['mercury'], 4: ['polonium'] },
-        7: { 1: ['lead'], 2: ['zirconium'], 3: ['boron'], 4: ['antimony'] }
+        1: {1: ['carbon'], 2: ['vanadium'], 3: ['niobium'], 4: ['yttrium']},
+        2: {1: ['phosphorus'], 2: ['chromium'], 3: ['molybdenum'], 4: ['technetium']},
+        3: {1: ['sulphur'], 2: ['manganese'], 3: ['cadmium'], 4: ['ruthenium']},
+        4: {1: ['iron'], 2: ['zinc'], 3: ['tin'], 4: ['selenium']},
+        5: {1: ['nickel'], 2: ['germanium'], 3: ['tungsten'], 4: ['tellurium']},
+        6: {1: ['rhenium'], 2: ['arsenic'], 3: ['mercury'], 4: ['polonium']},
+        7: {1: ['lead'], 2: ['zirconium'], 3: ['boron'], 4: ['antimony']}
     }
 
     ship_manufactured_materials_map = {
@@ -4469,6 +4494,7 @@ def material_finder(obj, projected_states):
     else:
         return f"Materials Inventory:\n\n```yaml\n{yaml_output}```"
 
+
 def send_message(obj, projected_states):
     from pyautogui import typewrite
     setGameWindowActive()
@@ -4478,7 +4504,6 @@ def send_message(obj, projected_states):
     if obj:
         chunk_size = 100
         start = 0
-
 
         in_ship = projected_states.get('CurrentStatus').get('flags').get('InMainShip') or projected_states.get('CurrentStatus').get('flags').get('InFighter')
         in_buggy = projected_states.get('CurrentStatus').get('flags').get('InSRV')
@@ -4508,7 +4533,7 @@ def send_message(obj, projected_states):
                 return_message += " to wing chat"
             elif obj.get("channel").lower() == "system":
                 typewrite("/sy ", interval=0.02)
-                keys.send('UI_Down',repeat=2)
+                keys.send('UI_Down', repeat=2)
                 keys.send('UI_Select')
                 return_message += " to squadron chat"
             elif obj.get("channel").lower() == "squadron":
@@ -5334,12 +5359,12 @@ def prepare_station_request(obj, projected_states):
             "value": obj["name"]
         }
 
-    sort_object = { "distance": { "direction": "asc" } }
+    sort_object = {"distance": {"direction": "asc"}}
     if filters.get("market") and len(filters["market"]) > 0:
         if filters.get("market")[0].get("demand"):
-            sort_object = {"market_sell_price":[{"name":filters["market"][0]["name"],"direction":"desc"}]}
+            sort_object = {"market_sell_price": [{"name": filters["market"][0]["name"], "direction": "desc"}]}
         elif filters["market"][0].get("demand"):
-            sort_object = {"market_buy_price":[{"name":filters["market"][0]["name"],"direction":"asc"}]}
+            sort_object = {"market_buy_price": [{"name": filters["market"][0]["name"], "direction": "asc"}]}
 
     # Build the request body
     request_body = {
@@ -5423,7 +5448,7 @@ def filter_station_response(request, response):
     }
 
 
-def station_finder(obj,projected_states):
+def station_finder(obj, projected_states):
     # Initialize the filters
     request_body = prepare_station_request(obj, projected_states)
     log('debug', 'station search input', request_body)
@@ -5440,8 +5465,8 @@ def station_finder(obj,projected_states):
         if obj.get("technology_broker") or obj.get("material_trader"):
             if len(filtered_data["results"]) > 0:
                 return galaxy_map_open({
-                    "system_name":filtered_data["results"][0]["system"],
-                    "start_navigation":True,
+                    "system_name": filtered_data["results"][0]["system"],
+                    "start_navigation": True,
                     "details": filtered_data["results"][0]
                 }, projected_states)
             else:
@@ -5696,7 +5721,7 @@ def filter_system_response(request, response):
 # System finder function that sends the request to the Spansh API
 def system_finder(obj, projected_states):
     # Build the request body
-    request_body = prepare_system_request(obj,projected_states)
+    request_body = prepare_system_request(obj, projected_states)
 
     url = "https://spansh.co.uk/api/systems/search"
 
@@ -6402,9 +6427,9 @@ def filter_body_response(request, response):
 
 
 # Body finder function that sends the request to the Spansh API
-def body_finder(obj,projected_states):
+def body_finder(obj, projected_states):
     # Build the request body
-    request_body = prepare_body_request(obj,projected_states)
+    request_body = prepare_body_request(obj, projected_states)
 
     url = "https://spansh.co.uk/api/bodies/search"
 
@@ -6421,6 +6446,7 @@ def body_finder(obj,projected_states):
     except Exception as e:
         log('error', f"Error: {e}")
         return 'An error occurred. The system finder seems to be currently unavailable.'
+
 
 def target_subsystem_thread(current_subsystem: str, current_event_id: str, desired_subsystem: str):
     if not current_subsystem:
@@ -6447,6 +6473,7 @@ def target_subsystem_thread(current_subsystem: str, current_event_id: str, desir
         current_event_id = new_state.get('EventID')
     log('debug', 'desired subsystem targeted', current_subsystem)
 
+
 def target_subsystem(args, projected_states):
     current_target = projected_states.get('Target')
 
@@ -6461,6 +6488,7 @@ def target_subsystem(args, projected_states):
     threading.Thread(target=target_subsystem_thread, args=(current_target.get('Subsystem'), current_target.get('EventID'), args['subsystem'],), daemon=True).start()
 
     return f"The submodule {args['subsystem']} is being targeted."
+
 
 def register_actions(actionManager: ActionManager, eventManager: EventManager, llmClient: openai.OpenAI,
                      llmModelName: str, visionClient: Optional[openai.OpenAI], visionModelName: Optional[str],
@@ -6479,39 +6507,39 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('fireWeapons', "Fire weapons with simple controls: single shot, start continuous, or stop", {
         "type": "object",
         "properties": {
-          "weaponType": {
-            "type": "string",
-            "description": "Type of weapons to fire",
-            "enum": [
-              "primary",
-              "secondary",
-              "discovery_scanner"
-            ],
-            "default": "primary"
-          },
-          "action": {
-            "type": "string",
-            "description": "Action to perform with weapons",
-            "enum": [
-              "fire",
-              "start",
-              "stop"
-            ],
-            "default": "fire"
-          },
-          "duration": {
-            "type": "number",
-            "description": "Duration to hold fire button in seconds (for fire action only)",
-            "minimum": 0,
-            "maximum": 30
-          },
-          "repetitions": {
-            "type": "integer",
-            "description": "Number of additional repetitions (0 = single action, 1+ = repeat that many extra times)",
-            "minimum": 0,
-            "maximum": 10,
-            "default": 0
-          }
+            "weaponType": {
+                "type": "string",
+                "description": "Type of weapons to fire",
+                "enum": [
+                    "primary",
+                    "secondary",
+                    "discovery_scanner"
+                ],
+                "default": "primary"
+            },
+            "action": {
+                "type": "string",
+                "description": "Action to perform with weapons",
+                "enum": [
+                    "fire",
+                    "start",
+                    "stop"
+                ],
+                "default": "fire"
+            },
+            "duration": {
+                "type": "number",
+                "description": "Duration to hold fire button in seconds (for fire action only)",
+                "minimum": 0,
+                "maximum": 30
+            },
+            "repetitions": {
+                "type": "integer",
+                "description": "Number of additional repetitions (0 = single action, 1+ = repeat that many extra times)",
+                "minimum": 0,
+                "maximum": 10,
+                "default": 0
+            }
         },
         "required": ["weaponType", "action"]
     }, fire_weapons, 'ship')
@@ -6549,36 +6577,36 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     }, deploy_hardpoint_toggle, 'ship')
 
     actionManager.registerAction('managePowerDistribution',
-     "Manage power distribution between ship systems. Apply pips to one or more power systems or balance the power across two or if unspecified, across all 3",
-     {
-         "type": "object",
-         "properties": {
-             "power_category": {
-                 "type": "array",
-                 "description": "Array of the system(s) being asked to change. if not specified return default",
-                 "items": {
-                     "type": "string",
-                     "enum": ["Engines", "Weapons", "Systems"],
-                     "default":["Engines", "Weapons", "Systems"]
-                 }
-             },
-             "balance_power": {
-                 "type": "boolean",
-                 "description": "Whether the user asks to balance power"
-             },
-             "pips": {
-                 "type": "array",
-                 "description": "Number of pips to allocate (ignored for balance), one per power_category",
-                 "items": {
-                     "type": "integer",
-                     "minimum": 1,
-                     "maximum": 4,
-                     "default": 1
-                 }
-             }
-         },
-         "required": ["power_category"]
-     }, manage_power_distribution, 'ship')
+                                 "Manage power distribution between ship systems. Apply pips to one or more power systems or balance the power across two or if unspecified, across all 3",
+                                 {
+                                     "type": "object",
+                                     "properties": {
+                                         "power_category": {
+                                             "type": "array",
+                                             "description": "Array of the system(s) being asked to change. if not specified return default",
+                                             "items": {
+                                                 "type": "string",
+                                                 "enum": ["Engines", "Weapons", "Systems"],
+                                                 "default": ["Engines", "Weapons", "Systems"]
+                                             }
+                                         },
+                                         "balance_power": {
+                                             "type": "boolean",
+                                             "description": "Whether the user asks to balance power"
+                                         },
+                                         "pips": {
+                                             "type": "array",
+                                             "description": "Number of pips to allocate (ignored for balance), one per power_category",
+                                             "items": {
+                                                 "type": "integer",
+                                                 "minimum": 1,
+                                                 "maximum": 4,
+                                                 "default": 1
+                                             }
+                                         }
+                                     },
+                                     "required": ["power_category"]
+                                 }, manage_power_distribution, 'ship')
 
     actionManager.registerAction('galaxyMapOpen', "Open galaxy map. If asked, also focus on a system or start a navigation route", {
         "type": "object",
@@ -6621,7 +6649,6 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             }
         }
     }, cycle_target, 'ship')
-
 
     actionManager.registerAction(
         'cycle_fire_group',
@@ -6667,9 +6694,6 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             }
         }
     }, cycle_fire_group, 'ship')
-
-
-
 
     actionManager.registerAction('shipSpotLightToggle', "Toggle ship spotlight", {
         "type": "object",
@@ -6741,23 +6765,23 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
 
     # Register actions - Mainship Actions
     actionManager.registerAction('FsdJump',
-        "initiate FSD jump (jump to the next system or enter supercruise)", {
-        "type": "object",
-        "properties": {
-            "jump_type": {
-                "type": "string",
-                "description": "Jump to next system, enter supercruise or auto if unspecified",
-                "enum": ["next_system", "supercruise", "auto"]
-            }
-        }
-    }, fsd_jump, 'mainship')
+                                 "initiate FSD jump (jump to the next system or enter supercruise)", {
+                                     "type": "object",
+                                     "properties": {
+                                         "jump_type": {
+                                             "type": "string",
+                                             "description": "Jump to next system, enter supercruise or auto if unspecified",
+                                             "enum": ["next_system", "supercruise", "auto"]
+                                         }
+                                     }
+                                 }, fsd_jump, 'mainship')
 
     actionManager.registerAction('target_next_system_in_route',
-        "When we have a nav route set, this will automatically target the next system in the route",
-        {
-        "type": "object",
-        "properties": {}
-    }, next_system_in_route, 'mainship')
+                                 "When we have a nav route set, this will automatically target the next system in the route",
+                                 {
+                                     "type": "object",
+                                     "properties": {}
+                                 }, next_system_in_route, 'mainship')
 
     actionManager.registerAction('toggleCargoScoop', "Toggles cargo scoop", {
         "type": "object",
@@ -6875,39 +6899,37 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, select_target_buggy, 'buggy')
 
-
     actionManager.registerAction('managePowerDistributionBuggy',
-     "Manage power distribution between buggy power systems. Apply pips to one or more power systems or balance the power across two or if unspecified, across all 3",
-     {
-         "type": "object",
-         "properties": {
-             "power_category": {
-                 "type": "array",
-                 "description": "Array of the system(s) being asked to change. if not specified return default",
-                 "items": {
-                     "type": "string",
-                     "enum": ["Engines", "Weapons", "Systems"],
-                     "default": ["Engines", "Weapons", "Systems"]
-                 }
-             },
-             "balance_power": {
-                 "type": "boolean",
-                 "description": "Whether the user asks to balance power"
-             },
-             "pips": {
-                 "type": "array",
-                 "description": "Number of pips to allocate (ignored for balance), one per power_category",
-                 "items": {
-                     "type": "integer",
-                     "minimum": 1,
-                     "maximum": 4,
-                     "default": 1
-                 }
-             }
-         },
-         "required": ["power_category"]
-     }, manage_power_distribution_buggy, 'buggy')
-
+                                 "Manage power distribution between buggy power systems. Apply pips to one or more power systems or balance the power across two or if unspecified, across all 3",
+                                 {
+                                     "type": "object",
+                                     "properties": {
+                                         "power_category": {
+                                             "type": "array",
+                                             "description": "Array of the system(s) being asked to change. if not specified return default",
+                                             "items": {
+                                                 "type": "string",
+                                                 "enum": ["Engines", "Weapons", "Systems"],
+                                                 "default": ["Engines", "Weapons", "Systems"]
+                                             }
+                                         },
+                                         "balance_power": {
+                                             "type": "boolean",
+                                             "description": "Whether the user asks to balance power"
+                                         },
+                                         "pips": {
+                                             "type": "array",
+                                             "description": "Number of pips to allocate (ignored for balance), one per power_category",
+                                             "items": {
+                                                 "type": "integer",
+                                                 "minimum": 1,
+                                                 "maximum": 4,
+                                                 "default": 1
+                                             }
+                                         }
+                                     },
+                                     "required": ["power_category"]
+                                 }, manage_power_distribution_buggy, 'buggy')
 
     actionManager.registerAction('toggleCargoScoopBuggy', "Toggle cargo scoop", {
         "type": "object",
@@ -6968,24 +6990,24 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('equipGearHumanoid', "Equip or hide a piece of gear", {
         "type": "object",
         "properties": {
-        "equipment": {
-            "type": "string",
-            "description": "Gear to equip",
-            "enum": [
-                "HumanoidSelectPrimaryWeaponButton",
-                "HumanoidSelectSecondaryWeaponButton",
-                "HumanoidSelectUtilityWeaponButton",
-                "HumanoidSwitchToRechargeTool",
-                "HumanoidSwitchToCompAnalyser",
-                "HumanoidSwitchToSuitTool",
-                "HumanoidHideWeaponButton",
-                "HumanoidSelectFragGrenade",
-                "HumanoidSelectEMPGrenade",
-                "HumanoidSelectShieldGrenade"
-            ]
-        }
-    },
-    "required": ["equipment"]
+            "equipment": {
+                "type": "string",
+                "description": "Gear to equip",
+                "enum": [
+                    "HumanoidSelectPrimaryWeaponButton",
+                    "HumanoidSelectSecondaryWeaponButton",
+                    "HumanoidSelectUtilityWeaponButton",
+                    "HumanoidSwitchToRechargeTool",
+                    "HumanoidSwitchToCompAnalyser",
+                    "HumanoidSwitchToSuitTool",
+                    "HumanoidHideWeaponButton",
+                    "HumanoidSelectFragGrenade",
+                    "HumanoidSelectEMPGrenade",
+                    "HumanoidSelectShieldGrenade"
+                ]
+            }
+        },
+        "required": ["equipment"]
     }, equip_humanoid, 'humanoid')
 
     actionManager.registerAction('toggleFlashlightHumanoid', "Toggle flashlight", {
@@ -7396,35 +7418,35 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "example": "RatherRude.TTV",
             },
         },
-        "required": ["message","channel"]
+        "required": ["message", "channel"]
     }, send_message, 'global')
 
     actionManager.registerAction('engineer_finder', "Get information about engineers' location, standing and modifications.",
-        {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string",
-                    "description": "Filter engineers by name"
-                },
-                "system": {
-                    "type": "string",
-                    "description": "Filter engineers by system/location"
-                },
-                "modifications": {
-                    "type": "string",
-                    "description": "Filter engineers by what they modify"
-                },
-                "progress": {
-                    "type": "string",
-                    "enum": ["Unknown", "Known", "Invited", "Unlocked"],
-                    "description": "Filter engineers by their current progress status"
-                }
-            }
-        },
-        engineer_finder,
-        'web'
-    )
+                                 {
+                                     "type": "object",
+                                     "properties": {
+                                         "name": {
+                                             "type": "string",
+                                             "description": "Filter engineers by name"
+                                         },
+                                         "system": {
+                                             "type": "string",
+                                             "description": "Filter engineers by system/location"
+                                         },
+                                         "modifications": {
+                                             "type": "string",
+                                             "description": "Filter engineers by what they modify"
+                                         },
+                                         "progress": {
+                                             "type": "string",
+                                             "enum": ["Unknown", "Known", "Invited", "Unlocked"],
+                                             "description": "Filter engineers by their current progress status"
+                                         }
+                                     }
+                                 },
+                                 engineer_finder,
+                                 'web'
+                                 )
 
     # Register AI action for blueprint finder
     actionManager.registerAction(
@@ -7456,32 +7478,32 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     )
 
     actionManager.registerAction('material_finder', "Find and search materials for both ship and suit engineering from commander's inventory.",
-        {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "oneOf": [
-                        {"type": "string", "description": "Single material name to search for"},
-                        {"type": "array", "items": {"type": "string"}, "description": "Multiple material names to search for"}
-                    ],
-                    "description": "Filter materials by name(s) - supports fuzzy search. Can be a single string or array of strings."
-                },
-                "grade": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 5,
-                    "description": "Filter ship materials by grade (1-5). Suit materials don't have grades."
-                },
-                "type": {
-                    "type": "string",
-                    "enum": ["raw", "manufactured", "encoded", "items", "components", "data", "consumables", "ship", "suit"],
-                    "description": "Filter by material type. Ship types: raw, manufactured, encoded. Suit types: items, components, data, consumables. Category filters: ship, suit."
-                }
-            }
-        },
-        material_finder,
-        'web'
-    )
+                                 {
+                                     "type": "object",
+                                     "properties": {
+                                         "name": {
+                                             "oneOf": [
+                                                 {"type": "string", "description": "Single material name to search for"},
+                                                 {"type": "array", "items": {"type": "string"}, "description": "Multiple material names to search for"}
+                                             ],
+                                             "description": "Filter materials by name(s) - supports fuzzy search. Can be a single string or array of strings."
+                                         },
+                                         "grade": {
+                                             "type": "integer",
+                                             "minimum": 1,
+                                             "maximum": 5,
+                                             "description": "Filter ship materials by grade (1-5). Suit materials don't have grades."
+                                         },
+                                         "type": {
+                                             "type": "string",
+                                             "enum": ["raw", "manufactured", "encoded", "items", "components", "data", "consumables", "ship", "suit"],
+                                             "description": "Filter by material type. Ship types: raw, manufactured, encoded. Suit types: items, components, data, consumables. Category filters: ship, suit."
+                                         }
+                                     }
+                                 },
+                                 material_finder,
+                                 'web'
+                                 )
 
     if vision_client:
         actionManager.registerAction('getVisuals', "Describes what's currently visible to the Commander.", {
@@ -7529,6 +7551,7 @@ def format_commodity_name(name: str) -> str:
         formatted_parts.append(part.capitalize())
 
     return ' '.join(formatted_parts)
+
 
 def normalize_string(s: str) -> str:
     """
