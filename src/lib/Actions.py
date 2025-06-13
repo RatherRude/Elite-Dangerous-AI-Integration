@@ -4417,7 +4417,15 @@ def material_finder(obj, projected_states):
             display_name = display_names.get(material_name, material_name)
             name_match = False
             for search_name in search_names:
-                if levenshtein_distance(search_name, material_name) <= 3 or levenshtein_distance(search_name, display_name.lower()) <= 3:
+                # First check for exact substring matches (case insensitive)
+                if search_name in material_name or search_name in display_name.lower():
+                    name_match = True
+                    break
+                
+                # Then use more restrictive fuzzy matching based on string length
+                max_distance = max(1, min(len(search_name), len(material_name)) // 4)  # Allow 1 error per 4 characters, minimum 1
+                if (levenshtein_distance(search_name, material_name) <= max_distance or 
+                    levenshtein_distance(search_name, display_name.lower()) <= max_distance):
                     name_match = True
                     break
             if not name_match:
