@@ -3184,6 +3184,247 @@ ENGINEERING_MODIFICATIONS = {
                 1: {"cost": {"Untypical Shield Scans": 3, "Compact Composites": 5, "Cadmium": 2}, "engineers": ["Didi Vatermann", "Mel Brandon", "Felicity Farseer", "Lei Cheung"]}
             }
         }
+    },
+    "Added Melee Damage": {
+        "module_recipes": {
+            "suit": {
+                1: {"cost": {"Combat Training Material": 5, "Combatant Performance": 5, "Epinephrine": 5, "Micro Thrusters": 8}, "engineers": ["Eleanor Bresa", "Jude Navarro", "Kit Fowler"]}
+            }
+        }
+    },
+    "Combat Movement Speed": {
+        "module_recipes": {
+            "suit": {
+                1: {"cost": {"Credits": 750000, "Evacuation Protocols": 5, "Genetic Research": 3, "Epinephrine": 5, "PH Neutraliser": 8}, "engineers": ["Baltanos", "Terra Velasquez", "Yarden Bond"]}
+            }
+        }
+    },
+    "Damage resistance": {
+        "module_recipes": {
+            "suit": {
+                1: {"cost": {"Credits": 750000, "Weapon Inventory": 5, "Ballistics Data": 5, "Titanium Plating": 3, "Carbon Fibre Plating": 3, "Epoxy Adhesive": 8}, "engineers": ["Eleanor Bresa", "Jude Navarro", "Uma Laszlo"]}
+            }
+        }
+    },
+    "Enhanced Tracking": {
+        "module_recipes": {
+            "suit": {
+                1: {"cost": {"Credits": 750000, "Topographical Surveys": 5, "Stellar Activity Logs": 5, "Spectral Analysis Data": 5, "Transmitter": 3, "Circuit Board": 3}, "engineers": ["Domino Green", "Oden Geiger", "Rosa Dayette"]}
+            }
+        }
+    },
+    "Extra Ammo Capacity": {
+        "module_recipes": {
+            "suit": {
+                1: {"cost": {"Credits": 750000, "Recycling Logs": 8, "Weapon Test Data": 5, "Production Reports": 5, "Weapon Component": 3}, "engineers": ["Eleanor Bresa", "Jude Navarro", "Kit Fowler"]}
+            }
+        }
+    },
+    "Extra Backpack Capacity": {
+        "module_recipes": {
+            "suit": {
+                1: {"cost": {"Credits": 750000, "Weapon Inventory": 5, "Chemical Inventory": 5, "Digital Designs": 5, "Epoxy Adhesive": 5, "Memory Chip": 3}, "engineers": ["Domino Green", "Rosa Dayette", "Wellington Beck"]}
+            }
+        }
+    },
+    "Faster Shield Regen": {
+        "module_recipes": {
+            "suit": {
+                1: {"cost": {"Credits": 750000, "Reactor Output Review": 5, "Ion Battery": 3, "Micro Transformer": 8, "Electrical Wiring": 8}, "engineers": ["Eleanor Bresa", "Kit Fowler", "Uma Laszlo"]}
+            }
+        }
+    },
+    "Improved Battery Capacity": {
+        "module_recipes": {
+            "suit": {
+                1: {"cost": {"Credits": 750000, "Reactor Output Review": 5, "Maintenance Logs": 8, "Ion Battery": 3, "Micro Supercapacitor": 5, "Electrical Wiring": 5}, "engineers": ["Oden Geiger", "Rosa Dayette", "Wellington Beck"]}
+            }
+        }
+    },
+    "Improved Jump Assist": {
+        "module_recipes": {
+            "suit": {
+                1: {"cost": {"Credits": 750000, "Topographical Surveys": 5, "G-Meds": 5, "Micro Thrusters": 3, "Motor": 5}, "engineers": ["Baltanos", "Hero Ferrari", "Yarden Bond"]}
+            }
+        }
+    },
+    "Increased Air Reserves": {
+        "module_recipes": {
+            "suit": {
+                1: {"cost": {"Pharmaceutical Patents": 3, "Air Quality Reports": 8, "Oxygenic Bacteria": 5, "PH Neutraliser": 8}, "engineers": ["Baltanos", "Hero Ferrari", "Terra Velasquez"]}
+            }
+        }
+    },
+    "Increased Sprint Duration": {
+        "module_recipes": {
+            "suit": {
+                1: {"cost": {"Credits": 750000, "Troop Deployment Records": 3, "Gene Sequencing Data": 3, "Clinical Trial Records": 3, "Oxygenic Bacteria": 5, "Chemical Catalyst": 8}, "engineers": ["Baltanos", "Hero Ferrari", "Terra Velasquez"]}
+            }
+        }
+    },
+    "Night Vision": {
+        "module_recipes": {
+            "suit": {
+                1: {"cost": {"Credits": 1000000, "Surveillance Logs": 3, "Radioactivity Data": 3, "NOC Data": 3, "Surveillance Equipment": 5, "Circuit Switch": 5}, "engineers": ["Oden Geiger", "Yi Shen"]}
+            }
+        }
+    },
+    "Quieter Footsteps": {
+        "module_recipes": {
+            "suit": {
+                1: {"cost": {"Credits": 1000000, "Settlement Assault Plans": 2, "Tactical Plans": 5, "Patrol Routes": 5, "Micro Hydraulics": 3, "Viscoelastic Polymer": 8}, "engineers": ["Yarden Bond", "Yi Shen"]}
+            }
+        }
+    },
+    "Reduced Tool Battery Consumption": {
+        "module_recipes": {
+            "suit": {
+                1: {"cost": {"Credits": 500000, "Reactor Output Review": 5, "Electrical Fuse": 3, "Micro Transformer": 5, "Electrical Wiring": 8}, "engineers": ["Domino Green", "Rosa Dayette", "Wellington Beck"]}
+            }
+        }
+    },
+    "Audio Masking": {
+        "module_recipes": {
+            "Kinematic Armaments Weapons": {
+                1: {"cost": {"Credits": 1000000, "Audio Logs": 3, "Patrol Routes": 5, "Scrambler": 5, "Transmitter": 8, "Circuit Board": 3}, "engineers": ["Yarden Bond", "Yi Shen"]}
+            },
+            "Takada Weapons": {
+                1: {"cost": {"Credits": 1000000, "Audio Logs": 3, "Patrol Routes": 5, "Scrambler": 5, "Transmitter": 8, "Circuit Board": 3}, "engineers": ["Yarden Bond", "Yi Shen"]}
+            },
+            "Manticore weapons": {
+                1: {"cost": {"Credits": 1000000, "Audio Logs": 3, "Patrol Routes": 5, "Scrambler": 5, "Transmitter": 8, "Circuit Board": 3}, "engineers": ["Yarden Bond", "Yi Shen"]}
+            }
+        }
+    },
+    "Faster handling": {
+        "module_recipes": {
+            "Kinematic Armaments Weapons": {
+                1: {"cost": {"Credits": 500000, "Operational Manual": 5, "Combatant Performance": 5, "Combat Training Material": 5, "Viscoelastic Polymer": 3}, "engineers": ["Baltanos", "Hero Ferrari", "Yarden Bond"]}
+            },
+            "Takada Weapons": {
+                1: {"cost": {"Credits": 500000, "Operational Manual": 5, "Combatant Performance": 5, "Combat Training Material": 5, "Viscoelastic Polymer": 3}, "engineers": ["Baltanos", "Hero Ferrari", "Yarden Bond"]}
+            },
+            "Manticore weapons": {
+                1: {"cost": {"Credits": 500000, "Operational Manual": 5, "Combatant Performance": 5, "Combat Training Material": 5, "Viscoelastic Polymer": 3}, "engineers": ["Baltanos", "Hero Ferrari", "Yarden Bond"]}
+            }
+        }
+    },
+    "Greater Range": {
+        "module_recipes": {
+            "Kinematic Armaments Weapons": {
+                1: {"cost": {"Credits": 500000, "Ballistics Data": 10, "Topographical Surveys": 10, "Metal Coil": 10, "RDX": 10, "Weapon Component": 5}, "engineers": ["Domino Green", "Rosa Dayette", "Wellington Beck"]}
+            },
+            "Takada Weapons": {
+                1: {"cost": {"Credits": 500000, "Stellar Activity Logs": 10, "Risk Assessments": 15, "Optical Lens": 5, "Micro Transformer": 15, "Circuit Board": 5}, "engineers": ["Domino Green", "Rosa Dayette", "Wellington Beck"]}
+            },
+            "Manticore weapons": {
+                1: {"cost": {"Credits": 500000, "Chemical Formulae": 10, "Mineral Survey": 15, "Electromagnet": 10, "Electrical Fuse": 5, "Motor": 5}, "engineers": ["Domino Green", "Rosa Dayette", "Wellington Beck"]}
+            }
+        }
+    },
+    "Headshot Damage": {
+        "module_recipes": {
+            "Kinematic Armaments Weapons": {
+                1: {"cost": {"Credits": 500000, "Weapon Test Data": 10, "Medical Records": 5, "Chemical Catalyst": 10, "RDX": 15, "Weapon Component": 5}, "engineers": ["Uma Laszlo", "Yi Shen"]}
+            },
+            "Takada Weapons": {
+                1: {"cost": {"Credits": 500000, "Weapon Test Data": 10, "Medical Records": 5, "Chemical Catalyst": 10, "RDX": 15, "Weapon Component": 5}, "engineers": ["Uma Laszlo", "Yi Shen"]}
+            },
+            "Manticore weapons": {
+                1: {"cost": {"Credits": 500000, "Weapon Test Data": 10, "Medical Records": 5, "Chemical Catalyst": 10, "RDX": 15, "Weapon Component": 5}, "engineers": ["Uma Laszlo", "Yi Shen"]}
+            }
+        }
+    },
+    "Improved Hip Fire Accuracy": {
+        "module_recipes": {
+            "Kinematic Armaments Weapons": {
+                1: {"cost": {"Credits": 500000, "Biometric Data": 5, "Combatant Performance": 10, "Extraction Yield Data": 10, "Viscoelastic Polymer": 10, "Metal Coil": 20, "Electromagnet": 20, "RDX": 10, "Weapon Component": 5}, "engineers": ["Baltanos", "Terra Velasquez", "Yarden Bond"]}
+            },
+            "Takada Weapons": {
+                1: {"cost": {"Credits": 500000, "Radioactivity Data": 5, "Combatant Performance": 10, "Aerogel": 20, "Electrical Wiring": 15, "Optical Fibre": 25, "Metal Coil": 10, "Optical Lens": 5}, "engineers": ["Baltanos", "Terra Velasquez", "Yarden Bond"]}
+            },
+            "Manticore weapons": {
+                1: {"cost": {"Credits": 500000, "Chemical Patents": 5, "Combatant Performance": 10, "Electromagnet": 10, "Chemical Catalyst": 10, "Metal Coil": 10, "Microelectrode": 20, "Weapon Component": 5}, "engineers": ["Baltanos", "Terra Velasquez", "Yarden Bond"]}
+            }
+        }
+    },
+    "Magazine Size": {
+        "module_recipes": {
+            "Kinematic Armaments Weapons": {
+                1: {"cost": {"Credits": 750000, "Weapon Test Data": 5, "Security Expenses": 3, "Tungsten Carbide": 3, "Metal Coil": 5, "Weapon Component": 3}, "engineers": ["Eleanor Bresa", "Jude Navarro", "Kit Fowler"]}
+            },
+            "Takada Weapons": {
+                1: {"cost": {"Credits": 750000, "Weapon Test Data": 5, "Security Expenses": 3, "Tungsten Carbide": 3, "Metal Coil": 5, "Weapon Component": 3}, "engineers": ["Eleanor Bresa", "Jude Navarro", "Kit Fowler"]}
+            },
+            "Manticore weapons": {
+                1: {"cost": {"Credits": 750000, "Weapon Test Data": 5, "Security Expenses": 3, "Tungsten Carbide": 3, "Metal Coil": 5, "Weapon Component": 3}, "engineers": ["Eleanor Bresa", "Jude Navarro", "Kit Fowler"]}
+            }
+        }
+    },
+    "Noise Suppressor": {
+        "module_recipes": {
+            "Kinematic Armaments Weapons": {
+                1: {"cost": {"Credits": 1000000, "Atmospheric Data": 10, "Mining Analytics": 10, "Viscoelastic Polymer": 15, "Weapon Component": 5}, "engineers": ["Baltanos", "Hero Ferrari", "Terra Velasquez"]}
+            },
+            "Takada Weapons": {
+                1: {"cost": {"Credits": 1000000, "Atmospheric Data": 10, "Mining Analytics": 10, "Viscoelastic Polymer": 15, "Weapon Component": 5}, "engineers": ["Baltanos", "Hero Ferrari", "Terra Velasquez"]}
+            },
+            "Manticore weapons": {
+                1: {"cost": {"Credits": 1000000, "Atmospheric Data": 10, "Mining Analytics": 10, "Viscoelastic Polymer": 15, "Weapon Component": 5}, "engineers": ["Baltanos", "Hero Ferrari", "Terra Velasquez"]}
+            }
+        }
+    },
+    "Reload Speed": {
+        "module_recipes": {
+            "Kinematic Armaments Weapons": {
+                1: {"cost": {"Credits": 500000, "Operational Manual": 5, "Production Reports": 5, "Combat Training Material": 5, "Micro Hydraulics": 5, "Electromagnet": 5}, "engineers": ["Eleanor Bresa", "Jude Navarro", "Uma Laszlo"]}
+            },
+            "Takada Weapons": {
+                1: {"cost": {"Credits": 500000, "Operational Manual": 5, "Production Reports": 5, "Combat Training Material": 5, "Micro Hydraulics": 5, "Electromagnet": 5}, "engineers": ["Eleanor Bresa", "Jude Navarro", "Uma Laszlo"]}
+            },
+            "Manticore weapons": {
+                1: {"cost": {"Credits": 500000, "Operational Manual": 5, "Production Reports": 5, "Combat Training Material": 5, "Micro Hydraulics": 5, "Electromagnet": 5}, "engineers": ["Eleanor Bresa", "Jude Navarro", "Uma Laszlo"]}
+            }
+        }
+    },
+    "Scope": {
+        "module_recipes": {
+            "Kinematic Armaments Weapons": {
+                1: {"cost": {"Credits": 500000, "Spectral Analysis Data": 10, "Biometric Data": 5, "Optical Lens": 10, "Optical Fibre": 5}, "engineers": ["Oden Geiger", "Rosa Dayette", "Wellington Beck"]}
+            },
+            "Takada Weapons": {
+                1: {"cost": {"Credits": 500000, "Spectral Analysis Data": 10, "Biometric Data": 5, "Optical Lens": 10, "Optical Fibre": 5}, "engineers": ["Oden Geiger", "Rosa Dayette", "Wellington Beck"]}
+            },
+            "Manticore weapons": {
+                1: {"cost": {"Credits": 500000, "Spectral Analysis Data": 10, "Biometric Data": 5, "Optical Lens": 10, "Optical Fibre": 5}, "engineers": ["Oden Geiger", "Rosa Dayette", "Wellington Beck"]}
+            }
+        }
+    },
+    "Stability": {
+        "module_recipes": {
+            "Kinematic Armaments Weapons": {
+                1: {"cost": {"Credits": 500000, "Mining Analytics": 5, "Risk Assessments": 8, "Viscoelastic Polymer": 5, "Micro Hydraulics": 5}, "engineers": ["Domino Green", "Oden Geiger", "Rosa Dayette"]}
+            },
+            "Takada Weapons": {
+                1: {"cost": {"Credits": 500000, "Mining Analytics": 5, "Risk Assessments": 8, "Viscoelastic Polymer": 5, "Micro Hydraulics": 5}, "engineers": ["Domino Green", "Oden Geiger", "Rosa Dayette"]}
+            },
+            "Manticore weapons": {
+                1: {"cost": {"Credits": 500000, "Mining Analytics": 5, "Risk Assessments": 8, "Viscoelastic Polymer": 5, "Micro Hydraulics": 5}, "engineers": ["Domino Green", "Oden Geiger", "Rosa Dayette"]}
+            }
+        }
+    },
+    "Stowed Reloading": {
+        "module_recipes": {
+            "Kinematic Armaments Weapons": {
+                1: {"cost": {"Credits": 1000000, "Digital Designs": 5, "Operational Manual": 5, "Production Schedule": 5, "Encrypted Memory Chip": 8, "Circuit Board": 3}, "engineers": ["Eleanor Bresa", "Kit Fowler", "Uma Laszlo"]}
+            },
+            "Takada Weapons": {
+                1: {"cost": {"Credits": 1000000, "Digital Designs": 5, "Operational Manual": 5, "Production Schedule": 5, "Encrypted Memory Chip": 8, "Circuit Board": 3}, "engineers": ["Eleanor Bresa", "Kit Fowler", "Uma Laszlo"]}
+            },
+            "Manticore weapons": {
+                1: {"cost": {"Credits": 1000000, "Digital Designs": 5, "Operational Manual": 5, "Production Schedule": 5, "Encrypted Memory Chip": 8, "Circuit Board": 3}, "engineers": ["Eleanor Bresa", "Kit Fowler", "Uma Laszlo"]}
+            }
+        }
     }
 }
 
@@ -3793,15 +4034,6 @@ def engineer_finder(obj, projected_states):
 
 
 def material_finder(obj, projected_states):
-    """
-    Find materials for both ship and suit engineering.
-    
-    Supports 6 material types:
-    - Ship materials: Raw, Manufactured, Encoded (from Materials projection)
-    - Suit materials: Items, Components, Data (from ShipLocker projection)
-    
-    Suit materials don't have grades, only counts.
-    """
     import yaml
 
     # Ship engineering materials (from Materials projection)
@@ -4070,8 +4302,6 @@ def material_finder(obj, projected_states):
         name_param = obj.get('name')
         if isinstance(name_param, list):
             search_names = [name.lower().strip() for name in name_param if name]
-        else:
-            search_names = [name_param.lower().strip()] if name_param else []
 
     search_grade = obj.get('grade', 0) if obj else 0
     search_type = obj.get('type', '').lower().strip() if obj else ''
@@ -7421,38 +7651,36 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "required": ["message", "channel"]
     }, send_message, 'global')
 
-    actionManager.registerAction('engineer_finder', "Get information about engineers' location, standing and modifications.",
-                                 {
-                                     "type": "object",
-                                     "properties": {
-                                         "name": {
-                                             "type": "string",
-                                             "description": "Filter engineers by name"
-                                         },
-                                         "system": {
-                                             "type": "string",
-                                             "description": "Filter engineers by system/location"
-                                         },
-                                         "modifications": {
-                                             "type": "string",
-                                             "description": "Filter engineers by what they modify"
-                                         },
-                                         "progress": {
-                                             "type": "string",
-                                             "enum": ["Unknown", "Known", "Invited", "Unlocked"],
-                                             "description": "Filter engineers by their current progress status"
-                                         }
-                                     }
-                                 },
-                                 engineer_finder,
-                                 'web'
-                                 )
+    actionManager.registerAction(
+        'engineer_finder', "Get information about engineers' location, standing and modifications.", {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Filter engineers by name"
+                },
+                "system": {
+                    "type": "string",
+                    "description": "Filter engineers by system/location"
+                },
+                "modifications": {
+                    "type": "string",
+                    "description": "Filter engineers by what they modify"
+                },
+                "progress": {
+                    "type": "string",
+                    "enum": ["Unknown", "Known", "Invited", "Unlocked"],
+                    "description": "Filter engineers by their current progress status"
+                }
+            }
+        },
+        engineer_finder,
+        'web'
+    )
 
     # Register AI action for blueprint finder
     actionManager.registerAction(
-        'blueprint_finder',
-        "Find engineer blueprints based on search criteria. Can search by modification name, engineer name, module name, and grade. Supports fuzzy matching and returns material costs with grade calculations.",
-        {
+        'blueprint_finder', "Find engineer blueprints based on search criteria. Returns material costs with grade calculations.", {
             "type": "object",
             "properties": {
                 "modifications": {
@@ -7477,33 +7705,33 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         'web'
     )
 
-    actionManager.registerAction('material_finder', "Find and search materials for both ship and suit engineering from commander's inventory.",
-                                 {
-                                     "type": "object",
-                                     "properties": {
-                                         "name": {
-                                             "oneOf": [
-                                                 {"type": "string", "description": "Single material name to search for"},
-                                                 {"type": "array", "items": {"type": "string"}, "description": "Multiple material names to search for"}
-                                             ],
-                                             "description": "Filter materials by name(s) - supports fuzzy search. Can be a single string or array of strings."
-                                         },
-                                         "grade": {
-                                             "type": "integer",
-                                             "minimum": 1,
-                                             "maximum": 5,
-                                             "description": "Filter ship materials by grade (1-5). Suit materials don't have grades."
-                                         },
-                                         "type": {
-                                             "type": "string",
-                                             "enum": ["raw", "manufactured", "encoded", "items", "components", "data", "consumables", "ship", "suit"],
-                                             "description": "Filter by material type. Ship types: raw, manufactured, encoded. Suit types: items, components, data, consumables. Category filters: ship, suit."
-                                         }
-                                     }
-                                 },
-                                 material_finder,
-                                 'web'
-                                 )
+    actionManager.registerAction(
+        'material_finder',
+        "Find and search materials for both ship and suit engineering from commander's inventory.",
+        {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Array of material names to search for - supports fuzzy search."
+                },
+                "grade": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5,
+                    "description": "Filter ship materials by grade (1-5). Suit materials don't have grades."
+                },
+                "type": {
+                    "type": "string",
+                    "enum": ["raw", "manufactured", "encoded", "items", "components", "data", "consumables", "ship", "suit"],
+                    "description": "Filter by material type. Ship types: raw, manufactured, encoded. Suit types: items, components, data, consumables. Category filters: ship, suit."
+                }
+            }
+        },
+        material_finder,
+        'web'
+    )
 
     if vision_client:
         actionManager.registerAction('getVisuals', "Describes what's currently visible to the Commander.", {
