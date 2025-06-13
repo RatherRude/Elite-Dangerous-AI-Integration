@@ -3449,11 +3449,6 @@ def levenshtein_distance(s1, s2):
     return previous_row[-1]
 
 def blueprint_finder(obj, projected_states):
-    """
-    Find engineer blueprints based on search criteria.
-    Can search by modification name, engineer name, module name, and grade.
-    Supports fuzzy matching and returns material costs with grade calculations.
-    """
     import yaml
 
     # Extract search parameters - can be combined
@@ -3472,6 +3467,55 @@ def blueprint_finder(obj, projected_states):
         search_grade = int(search_grade)
     else:
         search_grade = None
+
+    # Get inventory data from projected states
+    materials_data = projected_states.get('Materials', {})
+    shiploader_data = projected_states.get('ShipLocker', {})
+
+    # Helper function to get inventory count for a material
+    def get_inventory_count(material_name):
+        """Get the total count of a material from both Materials and ShipLocker inventories"""
+        total_count = 0
+        material_name_lower = material_name.lower()
+        
+        # Check Materials projection (ship materials)
+        for material_type in ['Raw', 'Manufactured', 'Encoded']:
+            type_materials = materials_data.get(material_type, [])
+            for material in type_materials:
+                # Check both Name and Name_Localised for matching
+                if (material.get('Name', '').lower() == material_name_lower or
+                    material.get('Name_Localised', '').lower() == material_name_lower):
+                    total_count += material.get('Count', 0)
+        
+        # Check ShipLocker projection (suit materials)
+        for locker_type in ['Items', 'Components', 'Data', 'Consumables']:
+            type_materials = shiploader_data.get(locker_type, [])
+            for material in type_materials:
+                # Check both Name and Name_Localised for matching
+                if (material.get('Name', '').lower() == material_name_lower or
+                    material.get('Name_Localised', '').lower() == material_name_lower):
+                    total_count += material.get('Count', 0)
+        
+        return total_count
+
+    # Helper function to check material availability and create inventory info
+    def check_material_availability(materials_needed):
+        """Check availability of materials and return simplified info"""
+        missing_materials = {}
+        has_all_materials = True
+        
+        for material_name, needed_count in materials_needed.items():
+            # Skip credits as they're not tracked in material inventory
+            if material_name.lower() == 'credits':
+                continue
+                
+            available_count = get_inventory_count(material_name)
+            if available_count < needed_count:
+                has_all_materials = False
+                shortage = needed_count - available_count
+                missing_materials[material_name] = shortage
+        
+        return missing_materials, has_all_materials
 
 
     # Helper function for fuzzy matching using Levenshtein distance
@@ -3573,10 +3617,18 @@ def blueprint_finder(obj, projected_states):
                 base_cost = grade_info.get("cost", {})
                 total_materials = calculate_materials_for_grade(base_cost, grade)
 
+                # Check material availability
+                missing_materials, has_all_materials = check_material_availability(total_materials)
+
                 grade_results = {
                     "materials_needed": total_materials,
-                    "engineers": engineers
+                    "engineers": engineers,
+                    "enough_mats": has_all_materials
                 }
+
+                # Only add materials_missing if there are missing materials
+                if missing_materials:
+                    grade_results["materials_missing"] = missing_materials
 
                 module_results[f"Grade {grade}"] = grade_results
 
