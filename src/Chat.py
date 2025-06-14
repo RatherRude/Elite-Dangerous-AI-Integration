@@ -181,7 +181,7 @@ class Chat:
         if event.kind=='status':
             event = cast(StatusEvent, event)
             if event.status.get('event', 'Unknown') != 'Status':
-                show_chat_message('event', f"Status updated: {event.status.get('event', 'Unknown')}")
+                show_chat_message('event', event.status.get('event', 'Unknown'))
         if event.kind=='external':
             event = cast(ExternalEvent, event)
             show_chat_message('event', event.content.get('event', 'Unknown'))
