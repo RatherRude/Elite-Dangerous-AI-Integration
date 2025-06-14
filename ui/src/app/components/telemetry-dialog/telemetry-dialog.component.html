@@ -1,0 +1,16 @@
+<h2 mat-dialog-title>Telemetry Data Collection</h2>
+<mat-dialog-content>
+  <p><strong>Basic Telemetry Collection Notice</strong></p>
+  <p>COVAS:NEXT collects basic telemetry data to help improve the application and user experience. This includes:</p>
+  <ul>
+    <li>Anonymous usage statistics</li>
+    <li>Error reporting and diagnostic information</li>
+    <li>Performance metrics</li>
+  </ul>
+  <p>This data is collected anonymously and is not linked to your personal information or game data. No personally identifiable information is collected.</p>
+  <p>Do you acknowledge and consent to this basic telemetry data collection?</p>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onDeclineClick()">Decline</button>
+  <button mat-raised-button color="primary" (click)="onAcceptClick()">Accept</button>
+</mat-dialog-actions> 

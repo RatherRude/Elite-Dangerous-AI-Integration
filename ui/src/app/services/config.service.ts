@@ -148,6 +148,7 @@ export interface Config {
     reset_game_events?: boolean; // Flag to request resetting game events to defaults
     qol_autobrake: boolean; // Quality of life: Auto brake when approaching stations
     qol_autoscan: boolean; // Quality of life: Auto scan when entering new systems
+    telemetry_acknowledged: boolean; // Whether user has acknowledged telemetry collection
 
     // Add index signature to allow string indexing
     [key: string]: string | number | boolean | Character[] | {
@@ -198,6 +199,8 @@ export class ConfigService {
         ).subscribe((message) => {
             if (message.type === "config") {
                 this.configSubject.next(message.config);
+                // Check telemetry acknowledgment when config is loaded
+                this.tauriService.checkTelemetryAcknowledgment(message.config);
             } else if (message.type === "system") {
                 this.systemSubject.next(message.system);
             } else if (message.type === "model_validation") {
@@ -206,6 +209,16 @@ export class ConfigService {
                 this.plugin_settings_message_subject.next(message);
             } else if (message.type === "start") {
                 this.validationSubject.next(null);
+            }
+        });
+
+        // Also subscribe to runMode changes to trigger telemetry check when app becomes running
+        this.tauriService.runMode$.subscribe((runMode) => {
+            if (runMode === "running") {
+                const currentConfig = this.getCurrentConfig();
+                if (currentConfig) {
+                    this.tauriService.checkTelemetryAcknowledgment(currentConfig);
+                }
             }
         });
     }

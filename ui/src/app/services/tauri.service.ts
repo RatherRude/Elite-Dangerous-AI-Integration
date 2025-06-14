@@ -5,6 +5,7 @@ import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { BehaviorSubject, Observable, ReplaySubject } from "rxjs";
 import { MatDialog } from "@angular/material/dialog";
 import { UpdateDialogComponent } from "../components/update-dialog/update-dialog.component";
+import { TelemetryDialogComponent } from "../components/telemetry-dialog/telemetry-dialog.component";
 import { environment } from "../../environments/environment";
 
 export interface BaseCommand {
@@ -232,6 +233,24 @@ export class TauriService {
         }
     }
 
+    public async checkTelemetryAcknowledgment(config: any): Promise<void> {
+        // Only check telemetry when the app is running (not during startup/configuration)
+        const currentRunMode = this.runModeSubject.getValue();
+        if (currentRunMode !== "running") {
+            console.log("App not in running mode, skipping telemetry check");
+            return;
+        }
+
+        // Check if telemetry has already been acknowledged
+        if (config.telemetry_acknowledged) {
+            console.log("Telemetry already acknowledged");
+            return;
+        }
+
+        console.log("Telemetry not acknowledged, showing prompt");
+        this.askForTelemetryAcknowledgment();
+    }
+
     private askForUpdate(
         releaseName: string = "A new release",
         releaseUrl: string =
@@ -254,6 +273,25 @@ export class TauriService {
                     a.click();
                     document.body.removeChild(a);
                 }
+            });
+        });
+    }
+
+    private askForTelemetryAcknowledgment(): void {
+        this.ngZone.run(() => {
+            const dialogRef = this.dialog.open(TelemetryDialogComponent, {
+                width: "400px",
+                disableClose: true, // Prevent closing without making a decision
+            });
+
+            dialogRef.afterClosed().subscribe((result) => {
+                console.log("Telemetry dialog result:", result);
+                // Send the acknowledgment result to the backend
+                this.send_command({
+                    type: "telemetry_acknowledgment",
+                    timestamp: new Date().toISOString(),
+                    acknowledged: result === true
+                });
             });
         });
     }

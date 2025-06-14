@@ -1,0 +1,18 @@
+mat-dialog-content {
+  min-width: 400px;
+  max-width: 500px;
+  margin-bottom: 16px;
+}
+
+p {
+  margin: 8px 0;
+}
+
+ul {
+  margin: 12px 0;
+  padding-left: 24px;
+}
+
+li {
+  margin: 4px 0;
+} 

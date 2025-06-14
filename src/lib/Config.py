@@ -393,6 +393,7 @@ class Config(TypedDict):
     ed_appdata_path: str
     qol_autobrake: bool  # Quality of life: Auto brake when approaching stations
     qol_autoscan: bool  # Quality of life: Auto scan when entering new systems
+    telemetry_acknowledged: bool  # Whether user has acknowledged telemetry collection
 
     plugin_settings: dict[str, Any]
 
@@ -641,7 +642,8 @@ def load_config() -> Config:
                 "react_to_material": 'opal, diamond, alexandrite',
                 "react_to_danger_mining_var": False,
                 "react_to_danger_onfoot_var": False,
-                "react_to_danger_supercruise_var": False
+                "react_to_danger_supercruise_var": False,
+                "idle_timeout_var": 300
             }
         ],
         'active_character_index': 0,  # -1 means using the default legacy character
@@ -682,6 +684,7 @@ def load_config() -> Config:
         "ed_appdata_path": "",
         "qol_autobrake": False,  # Quality of life: Auto brake when approaching stations
         "qol_autoscan": False,   # Quality of life: Auto scan when entering new systems
+        "telemetry_acknowledged": False,  # Whether user has acknowledged telemetry collection
         "plugin_settings": {}
     }
     try:

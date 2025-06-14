@@ -367,6 +367,8 @@ if __name__ == "__main__":
                     config = update_config(config, data["config"])
                 if data.get("type") == "change_event_config":
                     config = update_event_config(config, data["section"], data["event"], data["value"])
+                if data.get("type") == "telemetry_acknowledgment":
+                    config = update_config(config, {"telemetry_acknowledged": data.get("acknowledged", False)})
                 if data.get("type") == "clear_history":
                     EventManager.clear_history()
                     #ActionManager.clear_action_cache()
