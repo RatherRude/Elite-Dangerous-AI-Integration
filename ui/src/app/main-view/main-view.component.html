@@ -14,7 +14,7 @@
           Starting...
         </button>
       } @else {
-        <button mat-raised-button color="primary" (click)="start()" [disabled]="isLoading">
+        <button mat-raised-button color="primary" (click)="start()" [disabled]="isLoading || !usageDisclaimerAccepted">
           <mat-icon>play_arrow</mat-icon>
           Start AI Assistant
         </button>
