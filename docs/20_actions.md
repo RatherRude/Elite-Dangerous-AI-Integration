@@ -200,7 +200,33 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 
     Describe what's currently visible to the Commander. Answers the question that lead to tool usage.
 
-2. Send Message
+2. Engineer Finder
+
+    - `name`: String (optional)
+    - `system`: String (optional)
+    - `modifications`: String (optional)
+    - `progress`: String (optional, options: "Unknown", "Known", "Invited", "Unlocked")
+
+    Get information about engineers' location, standing and modifications.
+
+3. Blueprint Finder
+
+    - `modifications`: Array of strings (optional)
+    - `engineer`: String (optional)
+    - `module`: String (optional)
+    - `grade`: Integer (optional)
+
+    Find engineer blueprints based on search criteria. Returns material costs with grade calculations.
+
+4. Material Finder
+
+    - `name`: Array of strings (optional)
+    - `grade`: Integer (optional, 1-5)
+    - `type`: String (optional, options: "raw", "manufactured", "encoded", "items", "components", "data", "consumables", "ship", "suit")
+
+    Find and search a list of materials for both ship and suit engineering from the commander's inventory.
+
+5. Send Message
 
    - `message`: String (required)
    - `channel`: String (required, options: "local", "system", "wing", "squadron", "commander")
