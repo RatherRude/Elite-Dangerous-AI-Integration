@@ -215,7 +215,7 @@ class Assistant:
                         continue
 
                 if event.content.get("event") == "ProspectedAsteroid":
-                    chunks = [chunk.strip() for chunk in self.config["react_to_material"].split(",")]
+                    chunks = [chunk.strip() for chunk in character["react_to_material"].split(",")]
                     contains_material = False
                     for chunk in chunks:
                         for material in event.content.get("Materials"):
