@@ -40,24 +40,11 @@ jobs:
           echo "VAD_MODEL=$VAD_MODEL" >> $GITHUB_ENV
           echo "VEC_EXTENSION=$VEC_EXTENSION" >> $GITHUB_ENV
 
-      - name: Create Executable for AIGUI
-        uses: GabrielBB/xvfb-action@v1
-        with:
-          run: |
-            pyinstaller ./src/AIGUI.py -y --onedir --clean --noconsole --add-data ./docs/screen/EDAI_logo.png:./screen
-
       - name: Create Executable for Chat
         uses: GabrielBB/xvfb-action@v1
         with:
           run: >-
             pyinstaller ./src/Chat.py -y --onedir --clean --console --add-data ./src:. --add-binary ${{ env.VAD_MODEL }}:./pysilero_vad/models --add-binary ${{ env.VEC_EXTENSION }}:./sqlite_vec
-
-      - name: Create start.sh script
-        run: |
-          echo "#!/bin/bash" > ./dist/start.sh
-          echo 'cd "$(dirname "$0")"' >> ./dist/start.sh
-          echo "./AIGUI/AIGUI --chat=./Chat/Chat" >> ./dist/start.sh
-          chmod +x ./dist/start.sh
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
@@ -247,7 +234,5 @@ jobs:
         with:
           run: |
             python --version
-            chmod +x ./dist/start.sh
             chmod +x ./dist/Chat/Chat
-            chmod +x ./dist/AIGUI/AIGUI
             python e2e/test_ChatExecutable.py
