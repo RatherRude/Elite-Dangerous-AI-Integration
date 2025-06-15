@@ -560,7 +560,13 @@ def migrate(data: dict) -> dict:
         if 'llm_provider' in data and data['llm_provider'] == 'openai':
             if 'llm_model_name' in data and data['llm_model_name'] == 'gpt-4o-mini':
                 data['llm_model_name'] = 'gpt-4.1-mini'
-        
+
+    if data['config_version'] == 1:
+        data['config_version'] = 2
+        if 'llm_provider' in data and data['llm_provider'] == 'google-ai-studio':
+            if 'llm_model_name' in data and data['llm_model_name'] == 'gemini-2.5-flash-preview-04-17':
+                data['llm_model_name'] = 'gemini-2.5-flash-preview-05-20'
+
     if len(data.get('characters', [])) > 0:
         data['characters'][0]['game_events'] = game_events
 
