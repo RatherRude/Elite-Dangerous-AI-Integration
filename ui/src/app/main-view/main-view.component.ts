@@ -17,6 +17,7 @@ import { MatTabsModule } from "@angular/material/tabs";
 import { ChatContainerComponent } from "../components/chat-container/chat-container.component.js";
 import { ProjectionsService } from "../services/projections.service";
 import { MetricsService } from "../services/metrics.service.js";
+import { PolicyService } from "../services/policy.service.js";
 
 @Component({
     selector: "app-main-view",
@@ -44,6 +45,7 @@ export class MainViewComponent implements OnInit, OnDestroy {
     private configSubscription!: Subscription;
     private inDangerSubscription!: Subscription;
     private hasAutoStarted = false;
+    public usageDisclaimerAccepted = false;
 
     constructor(
         private tauri: TauriService,
@@ -52,7 +54,14 @@ export class MainViewComponent implements OnInit, OnDestroy {
         private configService: ConfigService,
         private projectionsService: ProjectionsService,
         private metricsService: MetricsService,
-    ) {}
+        private policyService: PolicyService,
+    ) {
+        this.policyService.usageDisclaimerAccepted$.subscribe(
+            (accepted) => {
+                this.usageDisclaimerAccepted = accepted;
+            },
+        );
+    }
 
     ngOnInit(): void {
         this.configSubscription = this.configService.config$.subscribe(
