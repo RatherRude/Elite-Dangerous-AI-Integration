@@ -13,6 +13,11 @@
           <mat-icon>hourglass_empty</mat-icon>
           Starting...
         </button>
+      } @else if (!usageDisclaimerAccepted) {
+        <button mat-raised-button color="primary" (click)="acceptUsageDisclaimer()" [disabled]="isLoading">
+          <mat-icon>info</mat-icon>
+          Accept Policy
+        </button>
       } @else {
         <button mat-raised-button color="primary" (click)="start()" [disabled]="isLoading || !usageDisclaimerAccepted">
           <mat-icon>play_arrow</mat-icon>

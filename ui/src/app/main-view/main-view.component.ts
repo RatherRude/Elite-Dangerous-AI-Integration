@@ -91,6 +91,10 @@ export class MainViewComponent implements OnInit, OnDestroy {
         }
     }
 
+    acceptUsageDisclaimer() {
+        this.policyService.acceptUsageDisclaimer();
+    }
+
     async start(): Promise<void> {
         try {
             this.isLoading = true;
