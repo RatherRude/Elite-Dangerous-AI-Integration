@@ -24,7 +24,7 @@ export class InputContainerComponent {
     this.value = input.value;
     // emit the value to the parent when pressing enter and clear the input
     if (event instanceof KeyboardEvent && event.key === "Enter") {
-      this.tauri.send_message(
+      this.tauri.send_command(
         { type: "submit_input", input: input.value } as SubmitInputMessage,
       );
       input.value = "";
