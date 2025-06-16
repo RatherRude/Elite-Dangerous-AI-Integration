@@ -993,13 +993,15 @@ def validate_config(config: Config) -> Config | None:
 
 def update_config(config: Config, data: dict) -> Config:
     # Check if we need to reset game events
+    # TODO this shouldn't be here, use dedicated message type instead
     if data.get("reset_game_events", False):
-        config = reset_game_events(config)
+        config = reset_game_events(config, data.get("character_index"))
         # Remove the reset_game_events flag from data to avoid confusion
         if "reset_game_events" in data:
             del data["reset_game_events"]
     
     # Handle character management operations
+    # TODO this shouldn't be here, use dedicated message type instead
     if data.get("operation"):
         print(f"Processing character operation: {data['operation']}")
         operation = data["operation"]
@@ -1209,17 +1211,16 @@ def update_event_config(config: Config, section: str, event: str, value: bool) -
     return config
 
 
-def reset_game_events(config: Config) -> Config:
+def reset_game_events(config: Config, character_index: int|None=None) -> Config:
     """Reset game events to the default values defined in the game_events dictionary"""
     # Check if we're dealing with a character's game events
-    active_index = config.get("active_character_index", -1)
+    active_index = character_index if character_index != None else config.get("active_character_index", -1)
     if active_index >= 0 and "characters" in config:
         # Reset game events for the active character
         if active_index < len(config["characters"]):
             config["characters"][active_index]["game_events"] = {k: v for k, v in game_events.items()}
     else:
-        # Reset global game events
-        config["game_events"] = {k: v for k, v in game_events.items()}
+        log('warn', 'Trying to reset character events that does exist')
     
     print(json.dumps({"type": "config", "config": config}) + '\n', flush=True)
     save_config(config)

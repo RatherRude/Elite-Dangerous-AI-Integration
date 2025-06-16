@@ -18,6 +18,8 @@ import { MatSnackBar } from "@angular/material/snack-bar";
 import { FormsModule } from "@angular/forms";
 import { MatDivider } from "@angular/material/divider";
 import { MatInputModule } from "@angular/material/input";
+import { MatButtonModule } from "@angular/material/button";
+import { Character, CharacterService } from "../../services/character.service.js";
 
 @Component({
     selector: "app-advanced-settings",
@@ -27,6 +29,7 @@ import { MatInputModule } from "@angular/material/input";
         MatInputModule,
         MatFormFieldModule,
         FormsModule,
+        MatButtonModule,
         MatFormField,
         MatLabel,
         MatSlideToggle,
@@ -42,12 +45,15 @@ import { MatInputModule } from "@angular/material/input";
 export class AdvancedSettingsComponent {
     config: Config | null = null;
     system: SystemInfo | null = null;
+    character: Character | null = null;
     configSubscription: Subscription;
     systemSubscription: Subscription;
+    characterSubscription: Subscription;
     voiceInstructionSupportedModels: string[] = ["gpt-4o-mini-tts"];
 
     constructor(
         private configService: ConfigService,
+        private characterService: CharacterService,
         private snackBar: MatSnackBar,
     ) {
         this.configSubscription = this.configService.config$.subscribe(
@@ -60,12 +66,27 @@ export class AdvancedSettingsComponent {
                 this.system = system;
             },
         );
+        this.characterSubscription = this.characterService.character$.subscribe(
+            (character) => {
+                this.character = character;
+            }
+        );
     }
     ngOnDestroy() {
         // Unsubscribe from the config observable to prevent memory leaks
         if (this.configSubscription) {
             this.configSubscription.unsubscribe();
         }
+    }
+
+    updateTTSVoice(voice: string) {
+        this.characterService.setCharacterProperty("tts_voice", voice);
+    }
+    updateTTSSpeed(speed: string) {
+        this.characterService.setCharacterProperty("tts_speed", speed);
+    }
+    updateTTSPrompt(prompt: string) {
+        this.characterService.setCharacterProperty("tts_prompt", prompt);
     }
 
     async onConfigChange(partialConfig: Partial<Config>) {

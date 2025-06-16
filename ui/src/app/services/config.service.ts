@@ -19,16 +19,6 @@ export interface ChangeEventConfigMessage extends BaseCommand {
     value: any;
 }
 
-export interface CharacterOperationMessage extends BaseCommand {
-    type: "change_config";
-    config: {
-        operation: "add" | "update" | "delete" | "set_active";
-        index?: number;
-        character?: Character;
-        set_active?: boolean;
-    };
-}
-
 export interface ModelValidationMessage extends BaseMessage {
     type: "model_validation";
     success: boolean;
@@ -51,54 +41,11 @@ export interface SystemInfoMessage extends BaseMessage {
     system: SystemInfo;
 }
 
-export interface Character {
-    name: string;
-    character: string;
-    personality_preset: string;
-    personality_verbosity: number;
-    personality_vulgarity: number;
-    personality_empathy: number;
-    personality_formality: number;
-    personality_confidence: number;
-    personality_ethical_alignment: string;
-    personality_moral_alignment: string;
-    personality_tone: string;
-    personality_character_inspiration: string;
-    personality_language: string;
-    personality_knowledge_pop_culture: boolean;
-    personality_knowledge_scifi: boolean;
-    personality_knowledge_history: boolean;
-    tts_voice?: string;
-    tts_speed?: string;
-    tts_prompt?: string;
-
-    // Event reaction properties
-    event_reaction_enabled_var?: boolean;
-    react_to_text_local_var?: boolean;
-    react_to_text_starsystem_var?: boolean;
-    react_to_text_npc_var?: boolean;
-    react_to_text_squadron_var?: boolean;
-    react_to_material?: string;
-    idle_timeout_var?: number;
-    react_to_danger_mining_var?: boolean;
-    react_to_danger_onfoot_var?: boolean;
-    react_to_danger_supercruise_var?: boolean;
-    game_events?: { [key: string]: boolean };
-
-    // Add index signature to allow string indexing
-    [key: string]:
-        | string
-        | number
-        | boolean
-        | { [key: string]: boolean }
-        | undefined;
-}
-
 export interface Config {
     api_key: string;
     commander_name: string;
     // Stored characters
-    characters: Character[];
+    characters: unknown[];
     active_character_index: number;
     // Other config settings
     llm_provider:
@@ -148,11 +95,6 @@ export interface Config {
     reset_game_events?: boolean; // Flag to request resetting game events to defaults
     qol_autobrake: boolean; // Quality of life: Auto brake when approaching stations
     qol_autoscan: boolean; // Quality of life: Auto scan when entering new systems
-
-    // Add index signature to allow string indexing
-    [key: string]: string | number | boolean | Character[] | {
-        [key: string]: boolean;
-    } | undefined;
 
     plugin_settings: { [key: string]: any };
 }
@@ -272,66 +214,6 @@ export class ConfigService {
         return currentConfig?.plugin_settings?.[key] ?? null;
     }
 
-    public async addCharacter(
-        character: Character,
-        setActive: boolean = false,
-    ): Promise<void> {
-        const message: CharacterOperationMessage = {
-            type: "change_config",
-            timestamp: new Date().toISOString(),
-            config: {
-                operation: "add",
-                character: character,
-                set_active: setActive,
-            },
-        };
-
-        await this.tauriService.send_command(message);
-    }
-
-    public async updateCharacter(
-        index: number,
-        character: Character,
-    ): Promise<void> {
-        const message: CharacterOperationMessage = {
-            type: "change_config",
-            timestamp: new Date().toISOString(),
-            config: {
-                operation: "update",
-                index: index,
-                character: character,
-            },
-        };
-
-        await this.tauriService.send_command(message);
-    }
-
-    public async deleteCharacter(index: number): Promise<void> {
-        const message: CharacterOperationMessage = {
-            type: "change_config",
-            timestamp: new Date().toISOString(),
-            config: {
-                operation: "delete",
-                index: index,
-            },
-        };
-
-        await this.tauriService.send_command(message);
-    }
-
-    public async setActiveCharacter(index: number): Promise<void> {
-        const message: CharacterOperationMessage = {
-            type: "change_config",
-            timestamp: new Date().toISOString(),
-            config: {
-                operation: "set_active",
-                index: index,
-            },
-        };
-
-        await this.tauriService.send_command(message);
-    }
-
     public getCurrentConfig(): Config | null {
         return this.configSubject.getValue();
     }
@@ -345,22 +227,6 @@ export class ConfigService {
         await this.tauriService.send_command(message);
     }
 
-    public async resetGameEvents(): Promise<void> {
-        const message: ChangeConfigMessage = {
-            type: "change_config",
-            timestamp: new Date().toISOString(),
-            config: {
-                reset_game_events: true,
-            },
-        };
-
-        try {
-            await this.tauriService.send_command(message);
-        } catch (error) {
-            console.error("Error sending reset game events request:", error);
-        }
-    }
-
     public async clearHistory(): Promise<void> {
         const message: BaseCommand = {
             type: "clear_history",
@@ -371,6 +237,24 @@ export class ConfigService {
             await this.tauriService.send_command(message);
         } catch (error) {
             console.error("Error sending clear history request:", error);
+        }
+    }
+
+    // TODO move this into character service
+    public async resetGameEvents(character_index: number): Promise<void> {
+        const message: any = {
+            type: "change_config",
+            timestamp: new Date().toISOString(),
+            config: {
+                reset_game_events: true,
+                character_index: character_index,
+            },
+        };
+
+        try {
+            await this.tauriService.send_command(message);
+        } catch (error) {
+            console.error("Error sending reset game events request:", error);
         }
     }
 }

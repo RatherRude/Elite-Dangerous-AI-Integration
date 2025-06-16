@@ -7,6 +7,7 @@ import { MatSnackBar } from "@angular/material/snack-bar";
 import { FormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
+import { MatButtonModule } from "@angular/material/button";
 
 @Component({
     selector: "app-behavior-settings",
@@ -16,6 +17,7 @@ import { MatInputModule } from "@angular/material/input";
         MatInputModule,
         MatFormFieldModule,
         FormsModule,
+        MatButtonModule,
         MatSlideToggle,
     ],
     templateUrl: "./behavior-settings.component.html",

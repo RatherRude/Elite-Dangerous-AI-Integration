@@ -17,7 +17,11 @@ import { CharacterSettingsComponent } from "../character-settings/character-sett
 import { GeneralSettingsComponent } from "../general-settings/general-settings.component";
 import { MatOption } from "@angular/material/core";
 import { MatIcon } from "@angular/material/icon";
-import { MatFormField, MatLabel } from "@angular/material/form-field";
+import {
+    MatFormField,
+    MatFormFieldModule,
+    MatLabel,
+} from "@angular/material/form-field";
 import { MatSelect } from "@angular/material/select";
 import {
     MatExpansionPanel,
@@ -26,12 +30,16 @@ import {
 } from "@angular/material/expansion";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { FormsModule } from "@angular/forms";
+import { MatInputModule } from "@angular/material/input";
 
 @Component({
     selector: "app-settings-menu",
     standalone: true,
     imports: [
         CommonModule,
+        MatInputModule,
+        MatFormFieldModule,
+        FormsModule,
         MatCardModule,
         MatTabsModule,
         MatOption,
@@ -43,7 +51,6 @@ import { FormsModule } from "@angular/forms";
         MatExpansionPanel,
         MatExpansionPanelHeader,
         MatExpansionPanelTitle,
-        FormsModule,
         PluginSettingsComponent,
         AdvancedSettingsComponent,
         BehaviorSettingsComponent,

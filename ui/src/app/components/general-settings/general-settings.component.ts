@@ -19,6 +19,7 @@ import { Subscription } from "rxjs";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { FormsModule } from "@angular/forms";
 import { MatInputModule } from "@angular/material/input";
+import { MatButtonModule } from "@angular/material/button";
 
 @Component({
     selector: "app-general-settings",
@@ -27,6 +28,7 @@ import { MatInputModule } from "@angular/material/input";
         CommonModule,
         MatInputModule,
         MatFormFieldModule,
+        MatButtonModule,
         FormsModule,
         MatFormField,
         MatLabel,

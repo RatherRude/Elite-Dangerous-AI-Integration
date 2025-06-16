@@ -11,7 +11,6 @@ import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatOptgroup, MatOption, MatSelect } from "@angular/material/select";
 import { Subscription } from "rxjs";
 import {
-    Character,
     Config,
     ConfigService,
 } from "../../services/config.service.js";
@@ -33,6 +32,9 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { TooltipDirective } from "./tooltip.directive.js";
 import { MatDivider } from "@angular/material/divider";
 import { MatInputModule } from "@angular/material/input";
+import { MatButtonModule } from "@angular/material/button";
+import { CharacterService, ConfigWithCharacters, Character } from "../../services/character.service.js";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 
 interface PromptSettings {
     // Existing settings
@@ -63,6 +65,8 @@ interface PromptSettings {
         MatInputModule,
         MatFormFieldModule,
         FormsModule,
+        MatButtonModule,
+        MatCheckboxModule,
         MatFormField,
         MatLabel,
         MatIcon,
@@ -83,10 +87,13 @@ interface PromptSettings {
     styleUrl: "./character-settings.component.scss",
 })
 export class CharacterSettingsComponent {
-    config: Config | null = null;
+    config: ConfigWithCharacters | null = null;
     configSubscription: Subscription;
-    selectedCharacterIndex: number = -1;
+    characterSubscription: Subscription;
+    activeCharacter: Character | null = null;
+    selectedCharacterIndex: number | null = null;
     editMode = false;
+    initializing: boolean = true;
     private localCharacterCopy: Character | null = null;
     expandedSection: string | null = null;
     filteredGameEvents: Record<string, Record<string, boolean>> = {};
@@ -554,92 +561,29 @@ export class CharacterSettingsComponent {
 
     constructor(
         private configService: ConfigService,
+        private characterService: CharacterService,
         private snackBar: MatSnackBar,
         private confirmationDialog: ConfirmationDialogService,
         private dialog: MatDialog,
     ) {
         this.configSubscription = this.configService.config$.subscribe(
             (config) => {
-                this.config = config;
-
+                this.config = config as ConfigWithCharacters;
+                this.selectedCharacterIndex = config?.active_character_index ?? null;
                 this.filterEvents(this.eventSearchQuery);
             },
         );
+        this.characterSubscription = this.characterService.character$.subscribe(
+            (character) => {
+                this.activeCharacter = character;
+            }
+        )
     }
     ngOnDestroy() {
         // Unsubscribe from the config observable to prevent memory leaks
         if (this.configSubscription) {
             this.configSubscription.unsubscribe();
         }
-    }
-
-    // TODO check how this works and move to proper default state init using config migration paths
-    private onConfigChangeEvent(config: Config) {
-        /*
-        if (config) {
-            console.log("New config received from backend");
-
-            // Skip processing if we're in the middle of applying our own changes
-            if (this.isApplyingChange) {
-                console.log(
-                    "Skipping config update as we are applying our own changes",
-                );
-                return;
-            }
-
-            // Store the new config
-            const previousConfig = this.config;
-            this.config = config;
-
-            // Set the selected character to match active_character_index
-            if (
-                previousConfig?.active_character_index !==
-                    config.active_character_index
-            ) {
-                console.log(
-                    `Active character index changed from ${previousConfig?.active_character_index} to ${config.active_character_index}`,
-                );
-                this.selectedCharacterIndex = config.active_character_index;
-            }
-
-            // Reset edit mode when receiving a new config, but only if not actively editing
-            if (!this.editMode) {
-                this.editMode = false;
-            }
-
-            // If initializing, load settings from the active character
-            if (this.initializing) {
-                const activeChar = this.getActiveCharacter();
-
-                // If the active character doesn't have a personality_preset, set a default
-                if (activeChar && !activeChar.personality_preset) {
-                    this.updateActiveCharacterProperty(
-                        "personality_preset",
-                        "default",
-                    );
-                } else if (!activeChar) {
-                    // Fallback for transition: if no active character and no preset set at config level
-                    this.onConfigChange({ personality_preset: "default" });
-                }
-
-                // Load settings from the config or active character
-                this.loadSettingsFromConfig(config);
-                this.initializing = false;
-            }
-
-            this.filterEvents(this.eventSearchQuery);
-
-            // Log key properties to debug config loading issues
-            console.log("Config loaded:", {
-                commander_name: config.commander_name,
-                active_character_index: config.active_character_index,
-                character_count: config.characters?.length || 0,
-                active_character: this.getActiveCharacter()?.name || "None",
-            });
-        } else {
-            console.error("Received null config");
-        }
-            */
     }
 
     // Comparator function to ensure consistent ordering
@@ -723,7 +667,7 @@ export class CharacterSettingsComponent {
                 updatedCharacters[activeIndex] = updatedChar;
 
                 // Update the config with the entire characters array
-                await this.configService.updateCharacter(
+                await this.characterService.updateCharacter(
                     activeIndex,
                     updatedChar,
                 );
@@ -787,29 +731,18 @@ export class CharacterSettingsComponent {
                 try {
                     // For character-specific events
                     const activeChar = this.getActiveCharacter();
-                    const activeIndex = this.config?.active_character_index;
+                    const activeIndex = this.config!.active_character_index;
+                    await this.characterService.resetGameEvents(activeIndex);
 
                     if (
                         activeChar && activeIndex !== undefined &&
                         activeIndex >= 0
                     ) {
                         // Get the default game events from the backend
-                        await this.configService.resetGameEvents();
-
-                        // The backend will send back the updated config
-                        // Now we need to copy the reset events to the character
-                        setTimeout(() => {
-                            if (this.config && this.config["game_events"]) {
-                                // Copy the reset events to the character
-                                this.updateEventProperty(
-                                    "game_events",
-                                    this.config["game_events"],
-                                );
-                            }
-                        }, 300);
+                        
                     } else {
                         // Send the reset request to the backend as normal for global config
-                        await this.configService.resetGameEvents();
+                        await this.configService.resetGameEvents(activeIndex);
                     }
 
                     this.snackBar.open(
@@ -1603,68 +1536,49 @@ export class CharacterSettingsComponent {
         }
     }
 
-    // Modify the existing updatePrompt method to work with custom mode
-    updatePrompt(): void {
-        // Ensure config is initialized
+    
+    public async setCharacterProperty<T extends keyof Character>(
+        propName: T,
+        value: Character[T],
+    ): Promise<void> {
+        return this.characterService.setCharacterProperty(propName, value);
+    }
 
-        // Set the flag to prevent overriding
-        this.isApplyingChange = true;
+    public async setCharacterPropertyAndUpdatePrompt<T extends keyof Character>(
+        propName: T,
+        value: Character[T],
+    ): Promise<void> {
+        if (!this.activeCharacter) return;
 
-        const activeChar = this.getActiveCharacter();
+        const char = structuredClone(this.activeCharacter);
+        char[propName] = value;
+        const newPrompt = this.buildCharacterPrompt(char);
+        await this.characterService.setCharacterProperty(propName, value);
+        await this.characterService.setCharacterProperty('character', newPrompt);
+    }
+
+    buildCharacterPrompt(activeChar: Character): string {
         const personalityPreset = activeChar?.personality_preset || "default";
 
         console.log("Updating prompt for preset:", personalityPreset);
 
         // For custom mode, don't overwrite the existing character text unless it's empty
         if (personalityPreset === "custom") {
-            // If there's no character text at all, generate one so there's something to edit
-            if (!activeChar?.character || activeChar.character.trim() === "") {
-                const charName = activeChar?.name || "COVAS:NEXT";
-                const character =
-                    `You are ${charName}. I am here to assist you with Elite Dangerous. {commander_name} is the commander of this ship.`;
-
-                console.log(
-                    "No character text found in custom mode, generating default text",
-                );
-
-                if (activeChar) {
-                    // Update character in the array
-                    this.updateActiveCharacterProperty("character", character);
-                } else {
-                    // Fallback for transition
-                    this.onConfigChange({ character: character }).finally(
-                        () => {
-                            // Reset the flag after a delay
-                            setTimeout(() => {
-                                this.isApplyingChange = false;
-                            }, 200);
-                        },
-                    );
-                }
-            } else {
-                console.log(
-                    "Custom mode with existing character text - preserving it",
-                );
-                // Reset the flag if we don't make any changes
-                setTimeout(() => {
-                    this.isApplyingChange = false;
-                }, 200);
-            }
-            return;
+            return activeChar.character || "";
         }
 
         // Generate prompt based on active character values
         const promptParts: string[] = [];
 
         // Add prompt parts using active character properties
-        promptParts.push(this.generateVerbosityTextFromConfig());
-        promptParts.push(this.generateToneTextFromConfig());
-        promptParts.push(this.generateKnowledgeTextFromConfig());
+        promptParts.push(this.generateVerbosityTextFromConfig(activeChar));
+        promptParts.push(this.generateToneTextFromConfig(activeChar));
+        promptParts.push(this.generateKnowledgeTextFromConfig(activeChar));
 
         const charInspiration = activeChar?.personality_character_inspiration ||
             "";
         if (charInspiration) {
-            promptParts.push(this.generateCharacterInspirationTextFromConfig());
+            promptParts.push(this.generateCharacterInspirationTextFromConfig(activeChar));
         }
 
         const charName = activeChar?.name || "COVAS:NEXT";
@@ -1680,17 +1594,17 @@ export class CharacterSettingsComponent {
         }
 
         // Add character traits
-        promptParts.push(this.generateEmpathyTextFromConfig());
-        promptParts.push(this.generateFormalityTextFromConfig());
-        promptParts.push(this.generateConfidenceTextFromConfig());
-        promptParts.push(this.generateEthicalAlignmentTextFromConfig());
-        promptParts.push(this.generateMoralAlignmentTextFromConfig());
+        promptParts.push(this.generateEmpathyTextFromConfig(activeChar));
+        promptParts.push(this.generateFormalityTextFromConfig(activeChar));
+        promptParts.push(this.generateConfidenceTextFromConfig(activeChar));
+        promptParts.push(this.generateEthicalAlignmentTextFromConfig(activeChar));
+        promptParts.push(this.generateMoralAlignmentTextFromConfig(activeChar));
 
         // Add vulgarity with randomization
         const vulgarity = activeChar?.personality_vulgarity || 0;
         if (vulgarity > 0) {
             if (Math.random() * 100 <= vulgarity) {
-                promptParts.push(this.generateVulgarityTextFromConfig());
+                promptParts.push(this.generateVulgarityTextFromConfig(activeChar));
             }
         }
 
@@ -1702,24 +1616,12 @@ export class CharacterSettingsComponent {
             ? character + " I am {commander_name}, pilot of this ship."
             : character;
 
-        console.log(
-            "Generated character prompt:",
-            finalCharacter.substring(0, 100) + "...",
-        );
+        return finalCharacter;
+    }
 
-        // Update the character in the active character or config
-        if (activeChar) {
-            // Just update the character property - updateActiveCharacterProperty will reset the flag
-            this.updateActiveCharacterProperty("character", finalCharacter);
-        } else {
-            // Fallback for transition
-            this.onConfigChange({ character: finalCharacter }).finally(() => {
-                // Reset the flag after a delay
-                setTimeout(() => {
-                    this.isApplyingChange = false;
-                }, 200);
-            });
-        }
+    // Modify the existing updatePrompt method to work with custom mode
+    updatePrompt(): void {
+        // TODO delete
     }
 
     // Helper method to update a property on the active character
@@ -1793,7 +1695,7 @@ export class CharacterSettingsComponent {
 
     // Add new methods to use config values
 
-    generateVerbosityTextFromConfig(): string {
+    generateVerbosityTextFromConfig(activeChar: Character): string {
         const options = [
             "Keep your responses extremely brief and minimal.",
             "Keep your responses brief and to the point.",
@@ -1802,15 +1704,13 @@ export class CharacterSettingsComponent {
             "Be comprehensive in your explanations and provide abundant details.",
         ];
 
-        const activeChar = this.getActiveCharacter();
         const verbosity = activeChar?.personality_verbosity || 50;
 
         const index = Math.min(Math.floor(verbosity / 25), options.length - 1);
         return options[index];
     }
 
-    generateToneTextFromConfig(): string {
-        const activeChar = this.getActiveCharacter();
+    generateToneTextFromConfig(activeChar: Character): string {
         const tone = activeChar?.personality_tone || "serious";
 
         switch (tone) {
@@ -1825,8 +1725,7 @@ export class CharacterSettingsComponent {
         }
     }
 
-    generateKnowledgeTextFromConfig(): string {
-        const activeChar = this.getActiveCharacter();
+    generateKnowledgeTextFromConfig(activeChar: Character): string {
         const knowledgeAreas = [];
 
         if (activeChar?.personality_knowledge_pop_culture) {
@@ -1856,13 +1755,12 @@ export class CharacterSettingsComponent {
         } when relevant to the conversation.`;
     }
 
-    generateCharacterInspirationTextFromConfig(): string {
-        const activeChar = this.getActiveCharacter();
+    generateCharacterInspirationTextFromConfig(activeChar: Character): string {
         const inspiration = activeChar?.personality_character_inspiration || "";
         return `Your responses should be inspired by the character or persona of ${inspiration}. Adopt their speech patterns, mannerisms, and viewpoints.`;
     }
 
-    generateVulgarityTextFromConfig(): string {
+    generateVulgarityTextFromConfig(activeChar: Character): string {
         const options = [
             "Maintain completely clean language with no vulgarity.",
             "You may occasionally use mild language when appropriate.",
@@ -1871,14 +1769,13 @@ export class CharacterSettingsComponent {
             "Use explicit language and profanity freely in your responses.",
         ];
 
-        const activeChar = this.getActiveCharacter();
         const vulgarity = activeChar?.personality_vulgarity || 0;
 
         const index = Math.min(Math.floor(vulgarity / 25), options.length - 1);
         return options[index];
     }
 
-    generateEmpathyTextFromConfig(): string {
+    generateEmpathyTextFromConfig(activeChar: Character): string {
         const options = [
             [
                 "Focus exclusively on facts and logic, with no emotional considerations.",
@@ -1902,7 +1799,6 @@ export class CharacterSettingsComponent {
             ],
         ];
 
-        const activeChar = this.getActiveCharacter();
         const empathy = activeChar?.personality_empathy || 50;
 
         const index = Math.min(Math.floor(empathy / 25), options.length - 1);
@@ -1911,7 +1807,7 @@ export class CharacterSettingsComponent {
         ];
     }
 
-    generateFormalityTextFromConfig(): string {
+    generateFormalityTextFromConfig(activeChar: Character): string {
         const options = [
             [
                 "Use extremely casual language with slang and informal expressions.",
@@ -1935,7 +1831,6 @@ export class CharacterSettingsComponent {
             ],
         ];
 
-        const activeChar = this.getActiveCharacter();
         const formality = activeChar?.personality_formality || 50;
 
         const index = Math.min(Math.floor(formality / 25), options.length - 1);
@@ -1944,7 +1839,7 @@ export class CharacterSettingsComponent {
         ];
     }
 
-    generateConfidenceTextFromConfig(): string {
+    generateConfidenceTextFromConfig(activeChar: Character): string {
         const options = [
             [
                 "Express thoughts with extreme caution and frequent uncertainty.",
@@ -1968,7 +1863,6 @@ export class CharacterSettingsComponent {
             ],
         ];
 
-        const activeChar = this.getActiveCharacter();
         const confidence = activeChar?.personality_confidence || 50;
 
         const index = Math.min(Math.floor(confidence / 25), options.length - 1);
@@ -1977,8 +1871,7 @@ export class CharacterSettingsComponent {
         ];
     }
 
-    generateEthicalAlignmentTextFromConfig(): string {
-        const activeChar = this.getActiveCharacter();
+    generateEthicalAlignmentTextFromConfig(activeChar: Character): string {
         const alignment = activeChar?.personality_ethical_alignment ||
             "neutral";
 
@@ -1994,8 +1887,7 @@ export class CharacterSettingsComponent {
         }
     }
 
-    generateMoralAlignmentTextFromConfig(): string {
-        const activeChar = this.getActiveCharacter();
+    generateMoralAlignmentTextFromConfig(activeChar: Character): string {
         const alignment = activeChar?.personality_moral_alignment || "neutral";
 
         switch (alignment) {
@@ -2011,16 +1903,16 @@ export class CharacterSettingsComponent {
     }
 
     // Generate text for the name field
-    generateNameTextFromConfig(): string {
+    generateNameTextFromConfig(activeChar: Character): string {
         return `Your name is ${
-            this.getCharacterProperty("personality_name", "COVAS:NEXT")
+            activeChar.name
         }.`;
     }
 
     // Generate text for the language field
-    generateLanguageTextFromConfig(): string {
+    generateLanguageTextFromConfig(activeChar: Character): string {
         return `Always respond in ${
-            this.getCharacterProperty("personality_language", "english")
+            activeChar.personality_language || "english"
         } regardless of the language spoken to you.`;
     }
 
@@ -2126,76 +2018,28 @@ export class CharacterSettingsComponent {
             }).subscribe((result) => {
                 if (result) {
                     // User chose to discard changes, proceed with character selection
-                    this.performCharacterSelection(index);
+                    this.characterService.setActiveCharacter(index);
                 }
                 // If false, stay in edit mode with current character
             });
         } else {
             // Not in edit mode, proceed directly
-            this.performCharacterSelection(index);
+            this.characterService.setActiveCharacter(index);
         }
-    }
-
-    // Helper method to perform the actual character selection
-    private performCharacterSelection(index: number) {
-        if (!this.config) return;
-
-        console.log(`Selecting character at index ${index}`);
-
-        // Exit edit mode directly
-        this.editMode = false;
-
-        // Set the selected character index
-        this.selectedCharacterIndex = index;
-
-        // For saved characters
-        if (index >= 0) {
-            console.log("Selecting saved character");
-
-            // Set the active character in the backend
-            this.configService.setActiveCharacter(index).then(() => {
-                console.log("Active character set in backend");
-
-                // Load character data with a slight delay to ensure the config update is processed
-                setTimeout(() => {
-                    this.loadCharacter(index);
-                }, 100);
-            });
-        } // For the default character
-        else if (index === -1) {
-            console.log("Selecting default character");
-
-            // Reset to default settings
-            this.configService.setActiveCharacter(-1).then(() => {
-                console.log("Default character set in backend");
-
-                // Reset UI to default with a slight delay
-                setTimeout(() => {
-                    this.loadSettingsFromConfig(this.config!);
-                    this.updatePrompt();
-                }, 100);
-            });
-        }
-
-        // Ensure edit mode is still off after all operations
-        setTimeout(() => {
-            this.editMode = false;
-        }, 200);
     }
 
     toggleEditMode() {
         if (!this.config) return;
+        if (this.selectedCharacterIndex === null) return;
 
         // If not in edit mode, enter edit mode
         if (!this.editMode) {
             // Store a copy of the current character state before entering edit mode
-            if (this.selectedCharacterIndex >= 0 && this.config.characters) {
-                this.localCharacterCopy = JSON.parse(
-                    JSON.stringify(
-                        this.config.characters[this.selectedCharacterIndex],
-                    ),
-                );
-            }
+            this.localCharacterCopy = JSON.parse(
+                JSON.stringify(
+                    this.config.characters[this.selectedCharacterIndex],
+                ),
+            );
             this.editMode = true;
         } else {
             // If already in edit mode, exit with confirmation for unsaved changes
@@ -2217,6 +2061,7 @@ export class CharacterSettingsComponent {
 
     saveCurrentAsCharacter() {
         if (!this.config) return;
+        if (this.selectedCharacterIndex === null) return;
 
         // Always ensure prompt is updated
         this.updatePrompt();
@@ -2253,7 +2098,7 @@ export class CharacterSettingsComponent {
             }
 
             // Check if there's already a character with this name
-            const existingIndex = this.config.characters.findIndex((c) =>
+            const existingIndex = this.config.characters.findIndex((c: Character) =>
                 c.name === newCharacter.name
             );
             if (existingIndex >= 0) {
@@ -2442,50 +2287,19 @@ export class CharacterSettingsComponent {
             tts_voice: this.getCharacterProperty("tts_voice", "nova"),
             tts_speed: this.getCharacterProperty("tts_speed", "1.2"),
             tts_prompt: this.getCharacterProperty("tts_prompt", ""),
-        };
 
-        // Event reaction settings using bracket notation
-        character["event_reaction_enabled_var"] = this.getEventProperty(
-            "event_reaction_enabled_var",
-            true,
-        );
-        character["react_to_text_local_var"] = this.getEventProperty(
-            "react_to_text_local_var",
-            true,
-        );
-        character["react_to_text_starsystem_var"] = this.getEventProperty(
-            "react_to_text_starsystem_var",
-            true,
-        );
-        character["react_to_text_squadron_var"] = this.getEventProperty(
-            "react_to_text_squadron_var",
-            true,
-        );
-        character["react_to_text_npc_var"] = this.getEventProperty(
-            "react_to_text_npc_var",
-            false,
-        );
-        character["react_to_material"] = this.getEventProperty(
-            "react_to_material",
-            "",
-        );
-        character["idle_timeout_var"] = this.getEventProperty(
-            "idle_timeout_var",
-            300,
-        );
-        character["react_to_danger_mining_var"] = this.getEventProperty(
-            "react_to_danger_mining_var",
-            false,
-        );
-        character["react_to_danger_onfoot_var"] = this.getEventProperty(
-            "react_to_danger_onfoot_var",
-            false,
-        );
-        character["react_to_danger_supercruise_var"] = this.getEventProperty(
-            "react_to_danger_supercruise_var",
-            false,
-        );
-        character["game_events"] = this.getEventProperty("game_events", {});
+            event_reaction_enabled_var: this.getEventProperty("event_reaction_enabled_var",true),
+            react_to_text_local_var:  this.getEventProperty("react_to_text_local_var", true),
+            react_to_text_starsystem_var: this.getEventProperty("react_to_text_starsystem_var", true),
+            react_to_text_squadron_var: this.getEventProperty("react_to_text_squadron_var", true),
+            react_to_text_npc_var: this.getEventProperty("react_to_text_npc_var", false),
+            react_to_material: this.getEventProperty("react_to_material", ""),
+            idle_timeout_var: this.getEventProperty("idle_timeout_var", 300),
+            react_to_danger_mining_var: this.getEventProperty("react_to_danger_mining_var", false),
+            react_to_danger_onfoot_var: this.getEventProperty("react_to_danger_onfoot_var", false),
+            react_to_danger_supercruise_var: this.getEventProperty("react_to_danger_supercruise_var", false),
+            game_events: this.getEventProperty("game_events", {}),
+        }
 
         return character;
     }
@@ -2493,11 +2307,12 @@ export class CharacterSettingsComponent {
     // Helper method to save characters
     private saveCharacters() {
         if (!this.config || !this.config.characters) return;
+        if (this.selectedCharacterIndex === null) return;
 
         // Use the appropriate ConfigService methods based on the operation
         if (this.selectedCharacterIndex >= 0) {
             // Update an existing character
-            this.configService.updateCharacter(
+            this.characterService.updateCharacter(
                 this.selectedCharacterIndex,
                 this.config.characters[this.selectedCharacterIndex],
             );
@@ -2527,9 +2342,8 @@ export class CharacterSettingsComponent {
         // Set the flag to prevent overriding
         this.isApplyingChange = true;
 
-        const character = this.config.characters[index];
+        const character: Character = this.config.characters[index];
         console.log("Character to load:", character);
-        console.log("Character game events:", character["game_events"]);
 
         // First, set active_character_index directly in our local config
         // to prevent race conditions with the backend
@@ -2624,21 +2438,18 @@ export class CharacterSettingsComponent {
 
     cancelEditMode(): void {
         if (!this.config) return;
+        if (this.selectedCharacterIndex===null) return;
 
         // If we were editing an existing character, restore it from the local copy
         if (
-            this.selectedCharacterIndex >= 0 && this.config.characters &&
             this.localCharacterCopy
         ) {
-            // Restore the character from our local copy
-            this.config.characters[this.selectedCharacterIndex] = JSON.parse(
-                JSON.stringify(this.localCharacterCopy),
-            );
-
             // Update the backend with the restored character
-            this.configService.updateCharacter(
+            this.characterService.updateCharacter(
                 this.selectedCharacterIndex,
-                this.config.characters[this.selectedCharacterIndex],
+                JSON.parse(
+                    JSON.stringify(this.localCharacterCopy),
+                )
             );
 
             // Reload the character to ensure UI is in sync
@@ -2679,6 +2490,18 @@ export class CharacterSettingsComponent {
             tts_voice: this.getCharacterProperty("tts_voice", "nova"),
             tts_speed: this.getCharacterProperty("tts_speed", "1.2"),
             tts_prompt: this.getCharacterProperty("tts_prompt", ""),
+
+            event_reaction_enabled_var: true,
+            react_to_text_local_var: true,
+            react_to_text_starsystem_var: true,
+            react_to_text_squadron_var: true,
+            react_to_text_npc_var: true,
+            react_to_material: "opal, diamond, alexandrite",
+            react_to_danger_mining_var: true,
+            react_to_danger_onfoot_var: true,
+            react_to_danger_supercruise_var: true,
+            idle_timeout_var: 300,
+
             // Add default game events
             game_events: {
                 "Idle": false,
@@ -2956,18 +2779,6 @@ export class CharacterSettingsComponent {
             },
         };
 
-        // Add default event reaction settings
-        newCharacter["event_reaction_enabled_var"] = true;
-        newCharacter["react_to_text_local_var"] = true;
-        newCharacter["react_to_text_starsystem_var"] = true;
-        newCharacter["react_to_text_squadron_var"] = true;
-        newCharacter["react_to_text_npc_var"] = true;
-        newCharacter["react_to_material"] = "opal, diamond, alexandrite";
-        newCharacter["react_to_danger_mining_var"] = true;
-        newCharacter["react_to_danger_onfoot_var"] = true;
-        newCharacter["react_to_danger_supercruise_var"] = true;
-        newCharacter["idle_timeout_var"] = 300;
-
         // Add the new character to the config
         if (!this.config.characters) {
             this.config.characters = [];
@@ -2984,7 +2795,7 @@ export class CharacterSettingsComponent {
                 this.selectedCharacterIndex = newIndex;
 
                 // Set this as the active character
-                this.configService.setActiveCharacter(newIndex);
+                this.characterService.setActiveCharacter(newIndex);
 
                 // Show success message
                 this.snackBar.open(
@@ -3003,7 +2814,7 @@ export class CharacterSettingsComponent {
     }
 
     deleteSelectedCharacter(): void {
-        if (!this.config || this.selectedCharacterIndex < 0) return;
+        if (!this.config || this.selectedCharacterIndex === null) return;
 
         // Make sure we have a characters array and the selected index is valid
         if (
@@ -3025,6 +2836,7 @@ export class CharacterSettingsComponent {
             cancelButtonText: "Cancel",
         }).subscribe((confirmed) => {
             if (confirmed && this.config && this.config.characters) {
+                if (this.selectedCharacterIndex === null) return;
                 // Get the current character name for the message
                 const charName =
                     this.config.characters[this.selectedCharacterIndex].name;
@@ -3039,7 +2851,7 @@ export class CharacterSettingsComponent {
                 this.saveCharacters();
 
                 // Set active_character_index to -1 (default)
-                this.configService.setActiveCharacter(-1);
+                this.characterService.setActiveCharacter(-1);
 
                 // Show success message
                 this.snackBar.open(
@@ -3086,26 +2898,10 @@ export class CharacterSettingsComponent {
     getEventProperty<T>(propName: string, defaultValue: T): T {
         const activeChar = this.getActiveCharacter();
 
-        // Log the active character for debugging
-        console.log(
-            `Getting event property ${propName} for character:`,
-            activeChar ? activeChar.name : "No active character",
-        );
-
         // Special handling for game_events
         if (propName === "game_events") {
             if (activeChar && activeChar["game_events"]) {
-                console.log(
-                    `Found game_events in character ${activeChar.name}:`,
-                    activeChar["game_events"],
-                );
                 return activeChar["game_events"] as unknown as T;
-            }
-
-            // Fallback to config game_events
-            if (this.config && this.config["game_events"]) {
-                console.log("Using global config game_events as fallback");
-                return this.config["game_events"] as unknown as T;
             }
 
             console.log(`No game_events found, using default:`, defaultValue);
@@ -3114,20 +2910,7 @@ export class CharacterSettingsComponent {
 
         // For other event properties
         if (activeChar && propName in activeChar) {
-            console.log(
-                `Found ${propName} in character:`,
-                (activeChar as any)[propName],
-            );
             return (activeChar as any)[propName] as T;
-        }
-
-        // Fallback to direct config property
-        if (this.config && propName in this.config) {
-            console.log(
-                `Using global config for ${propName}:`,
-                (this.config as any)[propName],
-            );
-            return (this.config as any)[propName] as T;
         }
 
         return defaultValue;
@@ -3223,6 +3006,7 @@ export class CharacterSettingsComponent {
         console.log(`Trait changed: ${traitName} = ${value}`);
 
         // Determine if this is a personality trait that should update the prompt
+        // TODO why do we not fix this at the source? why rename them here?
         const isPersonalityTrait = traitName.startsWith("personality_") ||
             [
                 "verbosity",
@@ -3239,12 +3023,6 @@ export class CharacterSettingsComponent {
                 "knowledge_history",
             ].includes(traitName);
 
-        // Special case for 'name' which should be handled differently
-        if (traitName === "name") {
-            this.updateActiveCharacterProperty("name", value);
-            return;
-        }
-
         // For traits that might not be prefixed with 'personality_'
         let propName = traitName;
         if (isPersonalityTrait && !traitName.startsWith("personality_")) {
@@ -3253,14 +3031,7 @@ export class CharacterSettingsComponent {
 
         // Update the property
         this.updateActiveCharacterProperty(propName, value);
-
-        // Only update the prompt automatically for personality traits that affect the character's behavior
-        if (isPersonalityTrait) {
-            // Then update the prompt with a slight delay to ensure the property is saved first
-            setTimeout(() => {
-                this.updatePrompt();
-            }, 100);
-        }
+        this.updatePrompt();
     }
 
     // Modify applyPersonalityPreset to work with the active character
@@ -3343,7 +3114,7 @@ export class CharacterSettingsComponent {
     }
 
     duplicateSelectedCharacter(): void {
-        if (!this.config || this.selectedCharacterIndex < 0) return;
+        if (!this.config || this.selectedCharacterIndex === null) return;
 
         // Make sure we have a characters array and the selected index is valid
         if (
@@ -3384,7 +3155,7 @@ export class CharacterSettingsComponent {
                 this.selectedCharacterIndex = newIndex;
 
                 // Set this as the active character
-                this.configService.setActiveCharacter(newIndex);
+                this.characterService.setActiveCharacter(newIndex);
 
                 // Show success message
                 this.snackBar.open(`Character "${newName}" created`, "OK", {
