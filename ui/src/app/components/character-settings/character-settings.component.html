@@ -108,7 +108,7 @@
 
                         <!-- When in edit mode, show Save and Cancel buttons -->
                         @if (editMode) {
-                            <button mat-raised-button color="primary" (click)="saveCurrentAsCharacter()"
+                            <button mat-raised-button color="primary" (click)="saveCharacters()"
                                     [matTooltip]="'Save character.'" >
                                 <mat-icon>save</mat-icon> Save
                             </button>
@@ -134,7 +134,7 @@
                                 <input matInput
                                     [ngModel]="activeCharacter.name"
                                     [ngModelOptions]="{updateOn: 'blur'}"
-                                    (ngModelChange)="updateActiveCharacterProperty('name', $event)">
+                                    (ngModelChange)="setCharacterProperty('name', $event)">
                             </mat-form-field>
                         </div>
                         <div class="trait-input">
@@ -241,7 +241,7 @@
                         <mat-form-field appearance="fill">
                             <mat-label>Personality Preset</mat-label>
                             <mat-select [value]="activeCharacter.personality_preset" 
-                                        (selectionChange)="applyPersonalityPreset($event.value)"  
+                                        (selectionChange)="applySettingsFromPreset($event.value)"  
                                         [matTooltip]="'Select a predefined personality role or write your own.'"
                                         tooltipPosition="right">
                                 <mat-option value="default">Default</mat-option>
@@ -298,7 +298,7 @@
                                     <input matInput
                                         [ngModel]="activeCharacter.personality_character_inspiration"
                                         [ngModelOptions]="{updateOn: 'blur'}"
-                                        (ngModelChange)="setCharacterPropertyAndUpdatePrompt('character_inspiration', $event)">
+                                        (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_character_inspiration', $event)">
                                 </mat-form-field>
                             </div>
                         </div>
@@ -309,7 +309,7 @@
                                 <mat-form-field appearance="outline">
                                     <mat-label>Verbosity</mat-label>
                                     <mat-select [ngModel]="activeCharacter.personality_verbosity"
-                                        (ngModelChange)="setCharacterPropertyAndUpdatePrompt('verbosity', $event)">
+                                        (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_verbosity', $event)">
                                         <mat-option [value]="0">Minimal</mat-option>
                                         <mat-option [value]="25">Brief</mat-option>
                                         <mat-option [value]="50">Balanced</mat-option>
@@ -324,7 +324,7 @@
                                 <mat-form-field appearance="outline">
                                     <mat-label>Tone</mat-label>
                                     <mat-select [ngModel]="activeCharacter.personality_tone"
-                                        (ngModelChange)="setCharacterPropertyAndUpdatePrompt('tone', $event)">
+                                        (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_tone', $event)">
                                         <mat-option value="serious">Serious</mat-option>
                                         <mat-option value="humorous">Humorous</mat-option>
                                         <mat-option value="sarcastic">Sarcastic</mat-option>
@@ -337,7 +337,7 @@
                                 <mat-form-field appearance="outline">
                                     <mat-label>Vulgarity</mat-label>
                                     <mat-select [ngModel]="activeCharacter.personality_vulgarity"
-                                        (ngModelChange)="setCharacterPropertyAndUpdatePrompt('vulgarity', $event)">
+                                        (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_vulgarity', $event)">
                                         <mat-option [value]="0">None</mat-option>
                                         <mat-option [value]="25">Mild</mat-option>
                                         <mat-option [value]="50">Moderate</mat-option>
@@ -354,7 +354,7 @@
                                 <mat-form-field appearance="outline">
                                     <mat-label>Empathy</mat-label>
                                     <mat-select [ngModel]="activeCharacter.personality_empathy"
-                                        (ngModelChange)="setCharacterPropertyAndUpdatePrompt('empathy', $event)">
+                                        (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_empathy', $event)">
                                         <mat-option [value]="0">Cold</mat-option>
                                         <mat-option [value]="25">Detached</mat-option>
                                         <mat-option [value]="50">Balanced</mat-option>
@@ -369,7 +369,7 @@
                                 <mat-form-field appearance="outline">
                                     <mat-label>Formality</mat-label>
                                     <mat-select [ngModel]="activeCharacter.personality_formality"
-                                        (ngModelChange)="setCharacterPropertyAndUpdatePrompt('formality', $event)">
+                                        (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_formality', $event)">
                                         <mat-option [value]="0">Casual</mat-option>
                                         <mat-option [value]="25">Relaxed</mat-option>
                                         <mat-option [value]="50">Balanced</mat-option>
@@ -384,7 +384,7 @@
                                 <mat-form-field appearance="outline">
                                     <mat-label>Confidence</mat-label>
                                     <mat-select [ngModel]="activeCharacter.personality_confidence"
-                                        (ngModelChange)="setCharacterPropertyAndUpdatePrompt('confidence', $event)">
+                                        (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_confidence', $event)">
                                         <mat-option [value]="0">Uncertain</mat-option>
                                         <mat-option [value]="25">Tentative</mat-option>
                                         <mat-option [value]="50">Balanced</mat-option>
@@ -401,7 +401,7 @@
                                 <mat-form-field appearance="outline">
                                     <mat-label>Ethical Alignment</mat-label>
                                     <mat-select [ngModel]="activeCharacter.personality_ethical_alignment"
-                                        (ngModelChange)="setCharacterPropertyAndUpdatePrompt('ethical_alignment', $event)">
+                                        (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_ethical_alignment', $event)">
                                         <mat-option value="lawful">Lawful (Order, Rules, Structure)</mat-option>
                                         <mat-option value="neutral">Neutral (Balance, Pragmatism)</mat-option>
                                         <mat-option value="chaotic">Chaotic (Freedom, Flexibility, Spontaneity)</mat-option>
@@ -414,7 +414,7 @@
                                 <mat-form-field appearance="outline">
                                     <mat-label>Moral Alignment</mat-label>
                                     <mat-select [ngModel]="activeCharacter.personality_moral_alignment"
-                                        (ngModelChange)="setCharacterPropertyAndUpdatePrompt('moral_alignment', $event)">
+                                        (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_moral_alignment', $event)">
                                         <mat-option value="good">Good (Altruism, Compassion)</mat-option>
                                         <mat-option value="neutral">Neutral (Self-Interest, Balance)</mat-option>
                                         <mat-option value="evil">Evil (Selfishness, Ruthlessness)</mat-option>
@@ -428,11 +428,11 @@
                             <label class="knowledge-label">Knowledge Areas</label>
                             <div class="knowledge-checkboxes">
                                 <mat-checkbox [ngModel]="activeCharacter.personality_knowledge_pop_culture"
-                                            (ngModelChange)="setCharacterPropertyAndUpdatePrompt('knowledge_pop_culture', $event)">Pop Culture</mat-checkbox>
+                                            (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_knowledge_pop_culture', $event)">Pop Culture</mat-checkbox>
                                 <mat-checkbox [ngModel]="activeCharacter.personality_knowledge_scifi"
-                                            (ngModelChange)="setCharacterPropertyAndUpdatePrompt('knowledge_scifi', $event)">Sci-Fi</mat-checkbox>
+                                            (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_knowledge_scifi', $event)">Sci-Fi</mat-checkbox>
                                 <mat-checkbox [ngModel]="activeCharacter.personality_knowledge_history"
-                                            (ngModelChange)="setCharacterPropertyAndUpdatePrompt('knowledge_history', $event)">History</mat-checkbox>
+                                            (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_knowledge_history', $event)">History</mat-checkbox>
                             </div>
                         </div>
                     </div>
@@ -461,8 +461,8 @@
         @if (editMode) {
         <h2>Reactions</h2>
 
-            <mat-slide-toggle [ngModel]="getEventProperty('event_reaction_enabled_var', false)"
-                                (ngModelChange)="onEventReactionFeatureToggle('event_reaction_enabled_var', $event)">
+            <mat-slide-toggle [ngModel]="getCharacterProperty('event_reaction_enabled_var', false)"
+                                (ngModelChange)="setCharacterProperty('event_reaction_enabled_var', $event)">
                 Enable Event Reactions
             </mat-slide-toggle>
             <p>Events are caused by the game and your actions within it. By default, the AI will react to those
@@ -474,7 +474,7 @@
             <p>This section allows you to customize the event reactions for the game and will allow you to make
                 the AI react less or more often.</p>
 
-            @if (getEventProperty('event_reaction_enabled_var', false)) {
+            @if (getCharacterProperty('event_reaction_enabled_var', false)) {
                 <div class="event-search-and-reset">
                     <mat-form-field class="search-box" subscriptSizing="dynamic">
                         <mat-label>Search events</mat-label>
@@ -516,7 +516,7 @@
                                     <mat-form-field>
                                         <mat-label>React to material</mat-label>
                                         <mat-select multiple
-                                                    [value]="getMaterialsArray(getEventProperty('react_to_material', ''))"
+                                                    [value]="getMaterialsArray(getCharacterProperty('react_to_material', ''))"
                                                     (selectionChange)="onMaterialsChange($event.value)">
                                             <mat-option value="Alexandrite">Alexandrite</mat-option>
                                             <mat-option value="Benitoite">Benitoite</mat-option>
@@ -537,8 +537,8 @@
                                 @if (e.key === "InDanger") {
                                 <div class="event-suboption">
                                     <mat-slide-toggle
-                                        [ngModel]="getEventProperty('react_to_danger_mining_var', false)"
-                                        (ngModelChange)="onEventReactionFeatureToggle('react_to_danger_mining_var', $event)"
+                                        [ngModel]="getCharacterProperty('react_to_danger_mining_var', false)"
+                                        (ngModelChange)="setCharacterProperty('react_to_danger_mining_var', $event)"
                                         [appTooltip]="'React to in danger whilst mining or not.'"
                                         tooltipPosition="right"
                                     >
@@ -548,8 +548,8 @@
 
                                 <div class="event-suboption">
                                     <mat-slide-toggle
-                                        [ngModel]="getEventProperty('react_to_danger_onfoot_var', false)"
-                                        (ngModelChange)="onEventReactionFeatureToggle('react_to_danger_onfoot_var', $event)"
+                                        [ngModel]="getCharacterProperty('react_to_danger_onfoot_var', false)"
+                                        (ngModelChange)="setCharacterProperty('react_to_danger_onfoot_var', $event)"
                                         [appTooltip]="'React to in danger whilst on foot or not.'"
                                         tooltipPosition="right"
                                     >
@@ -559,8 +559,8 @@
 
                                 <div class="event-suboption">
                                     <mat-slide-toggle
-                                        [ngModel]="getEventProperty('react_to_danger_supercruise_var', false)"
-                                        (ngModelChange)="onEventReactionFeatureToggle('react_to_danger_supercruise_var', $event)"
+                                        [ngModel]="getCharacterProperty('react_to_danger_supercruise_var', false)"
+                                        (ngModelChange)="setCharacterProperty('react_to_danger_supercruise_var', $event)"
                                         [appTooltip]="'React to in danger whilst in supercruise or not.'"
                                         tooltipPosition="right"
                                     >
@@ -572,8 +572,8 @@
                                 @if (e.key === "ReceiveText") {
                                 <div class="event-suboption">
                                     <mat-slide-toggle
-                                        [ngModel]="getEventProperty('react_to_text_local_var', false)"
-                                        (ngModelChange)="onEventReactionFeatureToggle('react_to_text_local_var', $event)"
+                                        [ngModel]="getCharacterProperty('react_to_text_local_var', false)"
+                                        (ngModelChange)="setCharacterProperty('react_to_text_local_var', $event)"
                                         [appTooltip]="'React to local text or not'"
                                         tooltipPosition="right"
                                     >
@@ -583,8 +583,8 @@
 
                                 <div class="event-suboption">
                                     <mat-slide-toggle
-                                        [ngModel]="getEventProperty('react_to_text_starsystem_var', false)"
-                                        (ngModelChange)="onEventReactionFeatureToggle('react_to_text_starsystem_var', $event)"
+                                        [ngModel]="getCharacterProperty('react_to_text_starsystem_var', false)"
+                                        (ngModelChange)="setCharacterProperty('react_to_text_starsystem_var', $event)"
                                         [appTooltip]="'React to starsystem text or not'"
                                         tooltipPosition="right"
                                     >
@@ -594,8 +594,8 @@
 
                                 <div class="event-suboption">
                                     <mat-slide-toggle
-                                        [ngModel]="getEventProperty('react_to_text_squadron_var', false)"
-                                        (ngModelChange)="onEventReactionFeatureToggle('react_to_text_squadron_var', $event)"
+                                        [ngModel]="getCharacterProperty('react_to_text_squadron_var', false)"
+                                        (ngModelChange)="setCharacterProperty('react_to_text_squadron_var', $event)"
                                         [appTooltip]="'React to squadron text or not'"
                                         tooltipPosition="right"
                                     >
@@ -605,8 +605,8 @@
 
                                 <div class="event-suboption">
                                     <mat-slide-toggle
-                                        [ngModel]="getEventProperty('react_to_text_npc_var', false)"
-                                        (ngModelChange)="onEventReactionFeatureToggle('react_to_text_npc_var', $event)"
+                                        [ngModel]="getCharacterProperty('react_to_text_npc_var', false)"
+                                        (ngModelChange)="setCharacterProperty('react_to_text_npc_var', $event)"
                                         [appTooltip]="'React to npc text or not'"
                                         tooltipPosition="right"
                                     >
@@ -619,8 +619,8 @@
                                     <mat-form-field>
                                         <mat-label>Idle Timeout (seconds)</mat-label>
                                         <input matInput type="number" 
-                                                [ngModel]="getEventProperty('idle_timeout_var', 300)"
-                                                (ngModelChange)="onEventPropertyChange('idle_timeout_var', $event)"
+                                                [ngModel]="getCharacterProperty('idle_timeout_var', 300)"
+                                                (ngModelChange)="setCharacterProperty('idle_timeout_var', $event)"
                                                 min="60">
                                         <mat-hint>Time in seconds before AI considers you idle (min 60)</mat-hint>
                                     </mat-form-field>

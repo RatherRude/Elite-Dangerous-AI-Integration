@@ -29,6 +29,8 @@ export interface Character {
     tts_speed: string;
     tts_prompt: string;
 
+    
+
     // Event reaction properties
     event_reaction_enabled_var: boolean;
     react_to_text_local_var: boolean;
@@ -41,14 +43,6 @@ export interface Character {
     react_to_danger_onfoot_var: boolean;
     react_to_danger_supercruise_var: boolean;
     game_events: { [key: string]: boolean };
-
-    // Add index signature to allow string indexing
-    [key: string]:
-        | string
-        | number
-        | boolean
-        | { [key: string]: boolean }
-        | undefined;
 }
 
 export interface CharacterOperationMessage extends BaseCommand {
@@ -115,6 +109,30 @@ export class CharacterService {
         );
     }
 
+    public getCharacterEventProperty<T extends keyof Character["game_events"]>(
+        eventName: T,
+        defaultValue: Character["game_events"][T],
+    ): Character["game_events"][T] {
+        const character = this.characterSubject.getValue();
+        if (!character) return defaultValue;
+        return character.game_events[eventName] ?? defaultValue;
+    }
+
+    public async setCharacterEventProperty<T extends keyof Character["game_events"]>(
+        eventName: T,
+        value: Character["game_events"][T],
+    ): Promise<void> {
+        const character = this.characterSubject.getValue();
+        if (!character) return;
+        character.game_events[eventName] = value;
+        this.characterSubject.next(character);
+        // Update the active character in the config
+        await this.updateCharacter(
+            this.activeCharacterIndex ?? 0,
+            character,
+        );
+    }
+
     public async addCharacter(
         character: Character,
         setActive: boolean = false,
@@ -160,6 +178,7 @@ export class CharacterService {
         };
 
         await this.tauriService.send_command(message);
+        await this.setActiveCharacter(0);
     }
 
     public async setActiveCharacter(index: number): Promise<void> {
