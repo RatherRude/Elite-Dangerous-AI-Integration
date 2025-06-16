@@ -1,0 +1,446 @@
+
+<div class="settings-grid">
+    @if (config) {
+        <p>This section allows you to customize advanced settings. It is recommended to leave these settings
+            at their default values unless you know what you are doing.</p>
+        <h3>LLM Settings</h3>
+        <mat-form-field>
+            <mat-label>LLM Provider</mat-label>
+            <mat-select [(ngModel)]="config.llm_provider"
+                        (ngModelChange)="onConfigChange({llm_provider: $event})">
+                <mat-option value="openai">OpenAI</mat-option>
+                <mat-option value="openrouter">OpenRouter</mat-option>
+                <mat-option value="google-ai-studio">Google AI Studio</mat-option>
+                <mat-option value="local-ai-server">Local AIServer</mat-option>
+                <mat-option value="custom">Custom</mat-option>
+            </mat-select>
+        </mat-form-field>
+        @if (config.llm_provider === "openai")
+        {
+            <mat-form-field>
+                <mat-label>LLM Model Name</mat-label>
+                <input matInput [(ngModel)]="config.llm_model_name"
+                        (ngModelChange)="onConfigChange({llm_model_name: $event})">
+            </mat-form-field>
+
+            <mat-form-field>
+                <mat-label>Override LLM API Key</mat-label>
+                <input matInput type="password" [(ngModel)]="config.llm_api_key"
+                        (ngModelChange)="onConfigChange({llm_api_key: $event})">
+            </mat-form-field>
+        }
+        @if (config.llm_provider === "openrouter")
+        {
+            <mat-form-field>
+                <mat-label>LLM Model Name</mat-label>
+                <input matInput [(ngModel)]="config.llm_model_name"
+                        (ngModelChange)="onConfigChange({llm_model_name: $event})">
+            </mat-form-field>
+
+            <mat-form-field>
+                <mat-label>Override LLM API Key</mat-label>
+                <input matInput type="password" [(ngModel)]="config.llm_api_key"
+                        (ngModelChange)="onConfigChange({llm_api_key: $event})">
+            </mat-form-field>
+
+            <label>
+                <mat-slide-toggle [(ngModel)]="config.tools_var"
+                                    (ngModelChange)="onConfigChange({tools_var: $event})">
+                    Allow Actions (Tool Use)
+                </mat-slide-toggle>
+            </label>
+        }
+        @if (config.llm_provider === "google-ai-studio")
+        {
+            <mat-form-field>
+                <mat-label>LLM Model Name</mat-label>
+                <input matInput [(ngModel)]="config.llm_model_name"
+                        (ngModelChange)="onConfigChange({llm_model_name: $event})">
+            </mat-form-field>
+
+            <mat-form-field>
+                <mat-label>Override LLM API Key</mat-label>
+                <input matInput type="password" [(ngModel)]="config.llm_api_key"
+                        (ngModelChange)="onConfigChange({llm_api_key: $event})">
+            </mat-form-field>
+        }
+        @if (config.llm_provider === "local-ai-server")
+        {
+            <mat-form-field>
+                <mat-label>LLM Endpoint</mat-label>
+                <input matInput [(ngModel)]="config.llm_endpoint"
+                        (ngModelChange)="onConfigChange({llm_endpoint: $event})">
+            </mat-form-field>
+
+            <label>
+                <mat-slide-toggle [(ngModel)]="config.tools_var"
+                                    (ngModelChange)="onConfigChange({tools_var: $event})">
+                    Allow Actions (Tool Use)
+                </mat-slide-toggle>
+            </label>
+        }
+        @if (config.llm_provider === "custom")
+        {
+
+            <mat-form-field>
+                <mat-label>LLM Endpoint</mat-label>
+                <input matInput [(ngModel)]="config.llm_endpoint"
+                        (ngModelChange)="onConfigChange({llm_endpoint: $event})">
+            </mat-form-field>
+
+            <mat-form-field>
+                <mat-label>LLM Model Name</mat-label>
+                <input matInput [(ngModel)]="config.llm_model_name"
+                        (ngModelChange)="onConfigChange({llm_model_name: $event})">
+            </mat-form-field>
+
+            <mat-form-field>
+                <mat-label>Override LLM API Key</mat-label>
+                <input matInput type="password" [(ngModel)]="config.llm_api_key"
+                        (ngModelChange)="onConfigChange({llm_api_key: $event})">
+            </mat-form-field>
+
+
+            <label>
+                <mat-slide-toggle [(ngModel)]="config.tools_var"
+                                    (ngModelChange)="onConfigChange({tools_var: $event})">
+                    Allow Actions (Tool Use)
+                </mat-slide-toggle>
+            </label>
+        }
+        
+
+        <hr>
+        <h3>STT Settings</h3>
+        <mat-form-field>
+            <mat-label>STT Provider</mat-label>
+            <mat-select [(ngModel)]="config.stt_provider"
+                        (ngModelChange)="onConfigChange({stt_provider: $event})">
+                <mat-option value="openai">OpenAI</mat-option>
+                <mat-option value="google-ai-studio">Google AI Studio (Multi-Modal)</mat-option>
+                <mat-option value="local-ai-server">Local AIServer</mat-option>
+                <mat-option value="custom">Custom</mat-option>
+                <mat-option value="custom-multi-modal">Custom Multi-Modal</mat-option>
+                <mat-option value="none">None</mat-option>
+            </mat-select>
+        </mat-form-field>
+        @if (config.stt_provider === "openai") {
+            <mat-form-field>
+                <mat-label>STT Model Name</mat-label>
+                <input matInput [(ngModel)]="config.stt_model_name"
+                        (ngModelChange)="onConfigChange({stt_model_name: $event})">
+            </mat-form-field>
+            <mat-form-field>
+                <mat-label>Override STT API Key</mat-label>
+                <input matInput type="password" [(ngModel)]="config.stt_api_key"
+                        (ngModelChange)="onConfigChange({stt_api_key: $event})">
+            </mat-form-field>
+        }
+        @if (config.stt_provider === "google-ai-studio") {
+            <mat-form-field>
+                <mat-label>STT Model Name</mat-label>
+                <input matInput [(ngModel)]="config.stt_model_name"
+                        (ngModelChange)="onConfigChange({stt_model_name: $event})">
+            </mat-form-field>
+            <mat-form-field>
+                <mat-label>Override STT API Key</mat-label>
+                <input matInput type="password" [(ngModel)]="config.stt_api_key"
+                        (ngModelChange)="onConfigChange({stt_api_key: $event})">
+            </mat-form-field>
+        }
+        @if (config.stt_provider === "local-ai-server") {
+            <mat-form-field>
+                <mat-label>STT Endpoint</mat-label>
+                <input matInput [(ngModel)]="config.stt_endpoint"
+                        (ngModelChange)="onConfigChange({stt_endpoint: $event})">
+            </mat-form-field>
+        }
+        @if (config.stt_provider === "custom") {
+            <mat-form-field>
+                <mat-label>STT Endpoint</mat-label>
+                <input matInput [(ngModel)]="config.stt_endpoint"
+                        (ngModelChange)="onConfigChange({stt_endpoint: $event})">
+            </mat-form-field>
+            <mat-form-field>
+                <mat-label>STT Model Name</mat-label>
+                <input matInput [(ngModel)]="config.stt_model_name"
+                        (ngModelChange)="onConfigChange({stt_model_name: $event})">
+            </mat-form-field>
+            <mat-form-field>
+                <mat-label>Override STT API Key</mat-label>
+                <input matInput type="password" [(ngModel)]="config.stt_api_key"
+                        (ngModelChange)="onConfigChange({stt_api_key: $event})">
+            </mat-form-field>
+        }
+        @if (config.stt_provider === "custom-multi-modal") {
+            <mat-form-field>
+                <mat-label>STT Endpoint</mat-label>
+                <input matInput [(ngModel)]="config.stt_endpoint"
+                        (ngModelChange)="onConfigChange({stt_endpoint: $event})">
+            </mat-form-field>
+            <mat-form-field>
+                <mat-label>STT Model Name</mat-label>
+                <input matInput [(ngModel)]="config.stt_model_name"
+                        (ngModelChange)="onConfigChange({stt_model_name: $event})">
+            </mat-form-field>
+            <mat-form-field>
+                <mat-label>Override STT API Key</mat-label>
+                <input matInput type="password" [(ngModel)]="config.stt_api_key"
+                        (ngModelChange)="onConfigChange({stt_api_key: $event})">
+            </mat-form-field>
+        }
+        @if (config.stt_provider === "none") {
+            <p>STT is disabled</p>
+        }
+
+
+        <hr>
+        <h3>TTS Settings</h3>
+        <mat-form-field>
+            <mat-label>TTS Provider</mat-label>
+            <mat-select [(ngModel)]="config.tts_provider"
+                        (ngModelChange)="onConfigChange({tts_provider: $event})">
+                <mat-option value="openai">OpenAI</mat-option>
+                <mat-option value="edge-tts">Edge TTS</mat-option>
+                <mat-option value="local-ai-server">Local AIServer</mat-option>
+                <mat-option value="custom">Custom</mat-option>
+                <mat-option value="none">None</mat-option>
+            </mat-select>
+        </mat-form-field>
+        @if (config.tts_provider === "openai") {
+            <mat-form-field>
+                <mat-label>TTS Model Name</mat-label>
+                <input matInput [(ngModel)]="config.tts_model_name"
+                        (ngModelChange)="onConfigChange({tts_model_name: $event})">
+            </mat-form-field>
+            <!-- TODO
+            <mat-form-field>
+                <mat-label>TTS Voice</mat-label>
+                <mat-select [ngModel]="getCharacterProperty('tts_voice', 'nova')"
+                            (ngModelChange)="onTraitChange('tts_voice', $event)">
+                    <mat-option value="alloy">Alloy - Neutral, versatile voice</mat-option>
+                    <mat-option value="ash">Ash - New voice</mat-option>
+                    <mat-option value="ballad">Ballad - New voice</mat-option>
+                    <mat-option value="coral">Coral - New voice</mat-option>
+                    <mat-option value="echo">Echo - Deeper, experienced voice</mat-option>
+                    <mat-option value="fable">Fable - Warm, soft-spoken voice</mat-option>
+                    <mat-option value="nova">Nova - Bright, friendly voice</mat-option>
+                    <mat-option value="onyx">Onyx - Deep, authoritative voice</mat-option>
+                    <mat-option value="sage">Sage - New voice</mat-option>
+                    <mat-option value="shimmer">Shimmer - Clear, warm voice</mat-option>
+                </mat-select>
+            </mat-form-field>
+            -->
+            <mat-form-field>
+                <mat-label>Override TTS API Key</mat-label>
+                <input matInput type="password" [(ngModel)]="config.tts_api_key"
+                        (ngModelChange)="onConfigChange({tts_api_key: $event})">
+            </mat-form-field>
+
+            @if (!voiceInstructionSupportedModels.includes(config.tts_model_name)) {
+                <!-- TODO
+                <mat-form-field>
+                    <mat-label>TTS Speed</mat-label>
+                    <input matInput [ngModel]="getCharacterProperty('tts_speed', '1,2')"
+                            (ngModelChange)="onTraitChange('tts_speed', $event)">
+                </mat-form-field>
+                -->
+            }
+            @if (voiceInstructionSupportedModels.includes(config.tts_model_name)) {
+                <!-- TODO
+                <mat-hint>Voice instructions: Enter a detailed description of how you want your voice to sound. You can include things such as: accent, emotional range, tone, impressions and speed.<br>
+                    Warning: This will increase the cost of each query!</mat-hint>
+                <mat-form-field>
+                    <mat-label>Voice Tone Instructions</mat-label>
+                    <textarea matInput [ngModel]="getCharacterProperty('tts_prompt', '')"
+                            (ngModelChange)="onTraitChange('tts_prompt', $event)"></textarea>
+
+                </mat-form-field>
+                -->
+            }
+        }
+        @if (config.tts_provider === "edge-tts") {
+            <!-- TODO
+            <mat-form-field>
+                <mat-label>TTS Voice</mat-label>
+                <mat-select [ngModel]="getCharacterProperty('tts_voice', 'en-US-AvaMultilingualNeural')"
+                            (selectionChange)="onVoiceSelectionChange($event.value)">
+                    @if (isCustomVoice(getCharacterProperty('tts_voice', 'en-US-AvaMultilingualNeural'))) {
+                        <mat-option [value]="getCharacterProperty('tts_voice', 'en-US-AvaMultilingualNeural')" style="font-style: italic">
+                            {{ getVoiceDisplayName(getCharacterProperty('tts_voice', 'en-US-AvaMultilingualNeural')) }}
+                        </mat-option>
+                        <mat-divider class="custom-voice-divider"></mat-divider>
+                    }
+                    <mat-optgroup label="English - United States">
+                        <mat-option value="en-US-AvaMultilingualNeural">Ava Multilingual (Female)</mat-option>
+                        <mat-option value="en-US-AndrewMultilingualNeural">Andrew Multilingual (Male)</mat-option>
+                        <mat-option value="en-US-AriaNeural">Aria (Female) - Positive, Confident</mat-option>
+                        <mat-option value="en-US-AnaNeural">Ana (Female) - Cute</mat-option>
+                        <mat-option value="en-US-ChristopherNeural">Christopher (Male) - Reliable, Authority</mat-option>
+                        <mat-option value="en-US-EricNeural">Eric (Male) - Rational</mat-option>
+                        <mat-option value="en-US-GuyNeural">Guy (Male) - Passion</mat-option>
+                        <mat-option value="en-US-JennyNeural">Jenny (Female) - Friendly, Considerate</mat-option>
+                        <mat-option value="en-US-MichelleNeural">Michelle (Female) - Friendly, Pleasant</mat-option>
+                        <mat-option value="en-US-RogerNeural">Roger (Male) - Lively</mat-option>
+                        <mat-option value="en-US-SteffanNeural">Steffan (Male) - Rational</mat-option>
+                    </mat-optgroup>
+                    <mat-optgroup label="English - United Kingdom">
+                        <mat-option value="en-GB-LibbyNeural">Libby (Female)</mat-option>
+                        <mat-option value="en-GB-MaisieNeural">Maisie (Female)</mat-option>
+                        <mat-option value="en-GB-RyanNeural">Ryan (Male)</mat-option>
+                        <mat-option value="en-GB-SoniaNeural">Sonia (Female)</mat-option>
+                        <mat-option value="en-GB-ThomasNeural">Thomas (Male)</mat-option>
+                    </mat-optgroup>
+                    <mat-optgroup label="English - Australia">
+                        <mat-option value="en-AU-NatashaNeural">Natasha (Female)</mat-option>
+                        <mat-option value="en-AU-WilliamNeural">William (Male)</mat-option>
+                    </mat-optgroup>
+                    <mat-option value="show-all-voices">Show All Voices...</mat-option>
+                </mat-select>
+            </mat-form-field>
+            <mat-form-field>
+                <mat-label>TTS Speed</mat-label>
+                <input matInput [ngModel]="getCharacterProperty('tts_speed', '1,2')"
+                (ngModelChange)="onTraitChange('tts_speed', $event)">
+            </mat-form-field>
+            -->
+        }
+        @if (config.tts_provider === "local-ai-server") {
+            <mat-form-field>
+                <mat-label>TTS Endpoint</mat-label>
+                <input matInput [(ngModel)]="config.tts_endpoint"
+                        (ngModelChange)="onConfigChange({tts_endpoint: $event})">
+            </mat-form-field>
+            <!-- TODO
+            <mat-form-field>
+                <mat-label>TTS Voice</mat-label>
+                <input matInput [ngModel]="getCharacterProperty('tts_voice', 'nova')"
+                        (ngModelChange)="onTraitChange('tts_voice', $event)">
+            </mat-form-field>
+            <mat-form-field>
+                <mat-label>TTS Speed</mat-label>
+                <input matInput [ngModel]="getCharacterProperty('tts_speed', '1,2')"
+                        (ngModelChange)="onTraitChange('tts_speed', $event)">
+            </mat-form-field>
+            -->
+        }
+        @if (config.tts_provider === "custom") {
+            <mat-form-field>
+                <mat-label>TTS Endpoint</mat-label>
+                <input matInput [(ngModel)]="config.tts_endpoint"
+                        (ngModelChange)="onConfigChange({tts_endpoint: $event})">
+            </mat-form-field>
+            <mat-form-field>
+                <mat-label>TTS Model Name</mat-label>
+                <input matInput [(ngModel)]="config.tts_model_name"
+                        (ngModelChange)="onConfigChange({tts_model_name: $event})">
+            </mat-form-field>
+            <!-- TODO
+            <mat-form-field>
+                <mat-label>TTS Voice</mat-label>
+                <input matInput [ngModel]="getCharacterProperty('tts_voice', 'nova')"
+                        (ngModelChange)="onTraitChange('tts_voice', $event)">
+            </mat-form-field>
+            <mat-form-field>
+                <mat-label>TTS Speed</mat-label>
+                <input matInput [ngModel]="getCharacterProperty('tts_speed', '1,2')"
+                        (ngModelChange)="onTraitChange('tts_speed', $event)">
+            </mat-form-field>
+            <mat-form-field>
+                <mat-label>Override TTS API Key</mat-label>
+                <input matInput type="password" [(ngModel)]="config.tts_api_key"
+                        (ngModelChange)="onConfigChange({tts_api_key: $event})">
+            </mat-form-field>
+            -->
+        }
+        @if (config.tts_provider === "none") {
+            <p>TTS is disabled</p>
+        }
+
+        <hr>
+        <h3>Vision Settings</h3>
+        <mat-form-field>
+            <mat-label>Vision Provider</mat-label>
+            <mat-select [(ngModel)]="config.vision_provider"
+                        (ngModelChange)="onConfigChange({vision_provider: $event, vision_var: $event !== 'none'})">
+                <mat-option value="openai">OpenAI</mat-option>
+                <mat-option value="google-ai-studio">Google AI Studio</mat-option>
+                <mat-option value="custom">Custom</mat-option>
+                <mat-option value="none">None</mat-option>
+            </mat-select>
+        </mat-form-field>
+
+        @if (config.vision_provider && config.vision_provider !== 'none') {
+            @if (config.vision_provider === "openai") {
+                <mat-form-field>
+                    <mat-label>Vision Model Name</mat-label>
+                    <input matInput [(ngModel)]="config.vision_model_name"
+                            (ngModelChange)="onConfigChange({vision_model_name: $event})">
+                </mat-form-field>
+                <mat-form-field>
+                    <mat-label>Override Vision API Key</mat-label>
+                    <input matInput type="password" [(ngModel)]="config.vision_api_key"
+                            (ngModelChange)="onConfigChange({vision_api_key: $event})">
+                </mat-form-field>
+            }
+
+            @if (config.vision_provider === "google-ai-studio") {
+                <mat-form-field>
+                    <mat-label>Vision Model Name</mat-label>
+                    <input matInput [(ngModel)]="config.vision_model_name"
+                            (ngModelChange)="onConfigChange({vision_model_name: $event})">
+                </mat-form-field>
+                <mat-form-field>
+                    <mat-label>Override Vision API Key</mat-label>
+                    <input matInput type="password" [(ngModel)]="config.vision_api_key"
+                            (ngModelChange)="onConfigChange({vision_api_key: $event})">
+                </mat-form-field>
+            }
+
+            @if (config.vision_provider === "custom") {
+                <mat-form-field>
+                    <mat-label>Vision Endpoint</mat-label>
+                    <input matInput [(ngModel)]="config.vision_endpoint"
+                            (ngModelChange)="onConfigChange({vision_endpoint: $event})">
+                </mat-form-field>
+                <mat-form-field>
+                    <mat-label>Vision Model Name</mat-label>
+                    <input matInput [(ngModel)]="config.vision_model_name"
+                            (ngModelChange)="onConfigChange({vision_model_name: $event})">
+                </mat-form-field>
+                <mat-form-field>
+                    <mat-label>Override Vision API Key</mat-label>
+                    <input matInput type="password" [(ngModel)]="config.vision_api_key"
+                            (ngModelChange)="onConfigChange({vision_api_key: $event})">
+                </mat-form-field>
+            }
+        }
+        @if (config.vision_provider === "none") {
+            <p>Vision is disabled</p>
+        }
+        @if (config && (config.commander_name || config.api_key)) {
+            <h3>Autostart</h3>
+            <mat-slide-toggle [(ngModel)]="config.cn_autostart"
+                    (ngModelChange)="onConfigChange({cn_autostart: $event})">
+                    Autostart assistant on application start
+            </mat-slide-toggle>
+        }
+        
+        @if (system?.os === 'Linux') {
+            <h3>Linux Settings</h3>
+            <p>Learn more about this setup <a target="_blank" rel="noopener noreferrer"
+                                                href="https://ratherrude.github.io/Elite-Dangerous-AI-Integration/advanced/linux/">here.</a>
+            </p>
+            <mat-form-field>
+                <mat-label>ED AppData Path</mat-label>
+                <input matInput [(ngModel)]="config.ed_appdata_path"
+                        (ngModelChange)="onConfigChange({ed_appdata_path: $event})">
+            </mat-form-field>
+            <mat-form-field>
+                <mat-label>ED Journal Path</mat-label>
+                <input matInput [(ngModel)]="config.ed_journal_path"
+                        (ngModelChange)="onConfigChange({ed_journal_path: $event})">
+            </mat-form-field>
+        }
+    }
+</div>

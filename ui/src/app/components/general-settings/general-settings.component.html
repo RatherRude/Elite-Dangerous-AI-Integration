@@ -1,0 +1,76 @@
+
+    @if (config) {
+        <mat-form-field>
+            <mat-label>Commander Name</mat-label>
+            <input required matInput [(ngModel)]="config.commander_name"
+                    (ngModelChange)="onConfigChange({commander_name: $event})">
+        </mat-form-field>
+
+        <p>Enter your API key from 
+            <a target="_blank" rel="noopener noreferrer" href="https://platform.openai.com/api-keys">OpenAI</a>, 
+            <a target="_blank" rel="noopener noreferrer" href="https://aistudio.google.com/app/apikey">Google AI Studio</a>, or 
+            <a target="_blank" rel="noopener noreferrer" href="https://openrouter.ai/settings/keys">OpenRouter</a>. 
+            The system will automatically detect the key type and configure settings.</p>
+        <mat-form-field>
+            <mat-label>Main API Key (OpenAI/Openrouter/Google AI Studio)</mat-label>
+            <input required matInput [type]="hideApiKey ? 'password' : 'text'" [(ngModel)]="config.api_key"
+                    (ngModelChange)="onApiKeyChange($event)"
+                    pattern="^[A-Za-z0-9_.-]+$"
+                    #apiKeyInput="ngModel">
+            <button matSuffix mat-icon-button (mousedown)="hideApiKey = false" (mouseup)="hideApiKey = true"
+                    (mouseleave)="hideApiKey = true">
+                <mat-icon>{{ hideApiKey ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+            <mat-hint *ngIf="apiKeyType">Detected: {{ apiKeyType }} - Advanced settings have been configured automatically</mat-hint>
+            <mat-error *ngIf="apiKeyInput.errors?.['pattern']">
+                API key can only contain letters, numbers, underscores, dots, and hyphens
+            </mat-error>
+        </mat-form-field>
+
+        <p>This setting allows you choose when the AI will listen to you. We recommend using Push-to-Talk to
+            avoid accidental activation. Voice activation should only be used when wearing headphones.</p>
+        <div class="ptt-container">
+            <mat-form-field>
+                <mat-label>Voice Activation Mode</mat-label>
+                <mat-select [value]="config.ptt_var ? 'ptt' : 'continuous'"
+                            (selectionChange)="onConfigChange({ptt_var: $event.value === 'ptt'})">
+                    <mat-option value="continuous">Voice Activation</mat-option>
+                    <mat-option value="ptt">Push-to-Talk</mat-option>
+                </mat-select>
+            </mat-form-field>
+            @if (config.ptt_var) {
+                <mat-form-field (click)="onAssignPTT()">
+                    <mat-label>Push-to-Talk Key</mat-label>
+                    <input required matInput [value]="config.ptt_key" readonly>
+                    <button matSuffix mat-icon-button>
+                        <mat-icon>keyboard</mat-icon>
+                    </button>
+                </mat-form-field>
+            }
+            @if (!config.ptt_var) {
+                <mat-slide-toggle [(ngModel)]="config.mute_during_response_var"
+                                    (ngModelChange)="onConfigChange({mute_during_response_var: $event})">
+                    Mute microphone during response
+                </mat-slide-toggle>
+            }
+        </div>
+
+        <mat-form-field>
+            <mat-label>Input Device</mat-label>
+            <mat-select [(ngModel)]="config.input_device_name"
+                        (ngModelChange)="onConfigChange({input_device_name: $event})">
+                @for (device of system?.input_device_names; track device) {
+                    <mat-option [value]="device">{{ device }}</mat-option>
+                }
+            </mat-select>
+        </mat-form-field>
+        <mat-form-field>
+            <mat-label>Output Device</mat-label>
+            <mat-select [(ngModel)]="config.output_device_name"
+                        (ngModelChange)="onConfigChange({output_device_name: $event})">
+                @for (device of system?.output_device_names; track device) {
+                    <mat-option [value]="device">{{ device }}</mat-option>
+                }
+            </mat-select>
+        </mat-form-field>
+    }
