@@ -735,11 +735,6 @@ export class CharacterSettingsComponent {
         return finalCharacter;
     }
 
-    // Modify the existing updatePrompt method to work with custom mode
-    updatePrompt(): void {
-        // TODO delete
-    }
-
     generateVerbosityTextFromConfig(activeChar: Character): string {
         const options = [
             "Keep your responses extremely brief and minimal.",

@@ -134,7 +134,7 @@
                                 <input matInput
                                     [ngModel]="activeCharacter.name"
                                     [ngModelOptions]="{updateOn: 'blur'}"
-                                    (ngModelChange)="setCharacterProperty('name', $event)">
+                                    (ngModelChange)="setCharacterPropertyAndUpdatePrompt('name', $event)">
                             </mat-form-field>
                         </div>
                         <div class="trait-input">
