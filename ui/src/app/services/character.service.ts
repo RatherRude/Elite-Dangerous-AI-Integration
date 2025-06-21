@@ -54,6 +54,11 @@ export interface CharacterOperationMessage extends BaseCommand {
     set_active?: boolean;
 }
 
+export interface ResetCharacterEventsMessage extends BaseCommand {
+    type: "reset_game_events";
+    character_index: number;
+}
+
 @Injectable({
     providedIn: "root",
 })
@@ -186,6 +191,12 @@ export class CharacterService {
     }
 
     public async resetGameEvents(character_index: number): Promise<void> {
-        return this.configService.resetGameEvents(character_index);
+        const message: ResetCharacterEventsMessage = {
+            type: "reset_game_events",
+            timestamp: new Date().toISOString(),
+            character_index: character_index,
+        };
+
+        await this.tauriService.send_command(message);
     }
 }

@@ -239,22 +239,4 @@ export class ConfigService {
             console.error("Error sending clear history request:", error);
         }
     }
-
-    // TODO move this into character service
-    public async resetGameEvents(character_index: number): Promise<void> {
-        const message: any = {
-            type: "change_config",
-            timestamp: new Date().toISOString(),
-            config: {
-                reset_game_events: true,
-                character_index: character_index,
-            },
-        };
-
-        try {
-            await this.tauriService.send_command(message);
-        } catch (error) {
-            console.error("Error sending reset game events request:", error);
-        }
-    }
 }

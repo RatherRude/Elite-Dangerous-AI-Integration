@@ -1169,7 +1169,7 @@ export class CharacterSettingsComponent {
         if (!this.config || !this.config.characters) return;
         if (this.selectedCharacterIndex === null) return;
 
-        // TODO actually its all saved already, all we need it to clear the local backup
+        // actually its all saved already, all we need it to clear the local backup
 
         this.localCharacterCopy = null;
         this.editMode = false;

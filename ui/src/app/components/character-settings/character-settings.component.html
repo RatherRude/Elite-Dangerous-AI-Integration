@@ -501,7 +501,7 @@
                             </mat-expansion-panel-header>
                             @for (e of section.value | keyvalue:orderByKey; track e.key) {
                                 <mat-slide-toggle
-                                        [(ngModel)]="e.value"
+                                        [(ngModel)]="activeCharacter.game_events[e.key]"
                                         (ngModelChange)="onEventConfigChange(section.key, e.key, $event)"
                                         [appTooltip]="GameEventTooltips[e.key]"
                                         tooltipPosition="right"
