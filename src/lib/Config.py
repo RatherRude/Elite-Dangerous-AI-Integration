@@ -990,6 +990,60 @@ def validate_config(config: Config) -> Config | None:
 
     return config
 
+class UpdateCharacterRequest(TypedDict):
+    index: int | None
+    operation: Literal['add', 'update', 'delete', 'set_active']
+    character: Character | None
+    set_active: bool | None
+
+def update_character(config: Config, data: UpdateCharacterRequest) -> Config:
+    old_config = config.copy()
+    if data.get('operation') == "add":
+        # Add a new character
+        if "character" in data and data["character"]:
+            config["characters"] = config.get("characters", [])
+            config["characters"].append(data["character"])
+            print(f"Added new character: {data['character'].get('name')}")
+            # Set as active character if requested
+            if data.get("set_active", False):
+                config["active_character_index"] = len(config["characters"]) - 1
+                print(f"Set active character index to {config['active_character_index']}")
+    
+    elif data.get('operation') == "update":
+        # Update an existing character
+        if data.get("index") is not None and "character" in data and data["character"]:
+            index = int(data["index"])
+            if 0 <= index < len(config.get("characters", [])):
+                config["characters"][index] = data["character"]
+                print(f"Updated character at index {index}: {data['character'].get('name')}")
+    
+    elif data.get('operation') == "delete":
+        # Delete a character
+        if data.get("index") is not None:
+            index = int(data["index"])
+            if 0 <= index < len(config.get("characters", [])):
+                deleted_name = config["characters"][index].get("name", "unknown")
+                config["characters"].pop(index)
+                print(f"Deleted character at index {index}: {deleted_name}")
+                # Adjust active index if needed
+                if config["active_character_index"] == index:
+                    config["active_character_index"] = -1
+                    print("Reset active character index to -1")
+                elif config["active_character_index"] > index:
+                    config["active_character_index"] -= 1
+                    print(f"Adjusted active character index to {config['active_character_index']}")
+    
+    elif data.get('operation') == "set_active":
+        # Set the active character
+        if data.get("index") is not None:
+            index = int(data["index"])
+            if -1 <= index < len(config.get("characters", [])):
+                config["active_character_index"] = index
+
+    return update_config(old_config, {
+        "active_character_index": config["active_character_index"],
+        "characters": config["characters"]
+    })
 
 def update_config(config: Config, data: dict) -> Config:
     # Check if we need to reset game events
@@ -1000,61 +1054,6 @@ def update_config(config: Config, data: dict) -> Config:
         if "reset_game_events" in data:
             del data["reset_game_events"]
     
-    # Handle character management operations
-    # TODO this shouldn't be here, use dedicated message type instead
-    if data.get("operation"):
-        print(f"Processing character operation: {data['operation']}")
-        operation = data["operation"]
-        
-        if operation == "add":
-            # Add a new character
-            if data.get("character"):
-                config["characters"] = config.get("characters", [])
-                config["characters"].append(data["character"])
-                print(f"Added new character: {data['character'].get('name')}")
-                # Set as active character if requested
-                if data.get("set_active", False):
-                    config["active_character_index"] = len(config["characters"]) - 1
-                    print(f"Set active character index to {config['active_character_index']}")
-        
-        elif operation == "update":
-            # Update an existing character
-            if data.get("index") is not None and data.get("character"):
-                index = int(data["index"])
-                if 0 <= index < len(config.get("characters", [])):
-                    config["characters"][index] = data["character"]
-                    print(f"Updated character at index {index}: {data['character'].get('name')}")
-        
-        elif operation == "delete":
-            # Delete a character
-            if data.get("index") is not None:
-                index = int(data["index"])
-                if 0 <= index < len(config.get("characters", [])):
-                    deleted_name = config["characters"][index].get("name", "unknown")
-                    config["characters"].pop(index)
-                    print(f"Deleted character at index {index}: {deleted_name}")
-                    # Adjust active index if needed
-                    if config["active_character_index"] == index:
-                        config["active_character_index"] = -1
-                        print("Reset active character index to -1")
-                    elif config["active_character_index"] > index:
-                        config["active_character_index"] -= 1
-                        print(f"Adjusted active character index to {config['active_character_index']}")
-        
-        elif operation == "set_active":
-            # Set the active character
-            if data.get("index") is not None:
-                index = int(data["index"])
-                if -1 <= index < len(config.get("characters", [])):
-                    config["active_character_index"] = index
-
-                    # Write the config to disk
-                    save_config(config)
-
-    # Remove temporary operation fields so they are NOT persisted
-    for key in ["operation", "index", "character", "set_active"]:
-        if key in data:
-            data.pop(key)
 
     # Update provider-specific settings
     if data.get("llm_provider"):

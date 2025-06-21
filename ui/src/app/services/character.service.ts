@@ -45,14 +45,13 @@ export interface Character {
     game_events: { [key: string]: boolean };
 }
 
+
 export interface CharacterOperationMessage extends BaseCommand {
-    type: "change_config";
-    config: {
-        operation: "add" | "update" | "delete" | "set_active";
-        index?: number;
-        character?: Character;
-        set_active?: boolean;
-    };
+    type: "change_character";
+    operation: "add" | "update" | "delete" | "set_active";
+    index?: number;
+    character?: Character;
+    set_active?: boolean;
 }
 
 @Injectable({
@@ -138,13 +137,11 @@ export class CharacterService {
         setActive: boolean = false,
     ): Promise<void> {
         const message: CharacterOperationMessage = {
-            type: "change_config",
+            type: "change_character",
             timestamp: new Date().toISOString(),
-            config: {
-                operation: "add",
-                character: character,
-                set_active: setActive,
-            },
+            operation: "add",
+            character: character,
+            set_active: setActive,
         };
 
         await this.tauriService.send_command(message);
@@ -155,13 +152,11 @@ export class CharacterService {
         character: Character,
     ): Promise<void> {
         const message: CharacterOperationMessage = {
-            type: "change_config",
+            type: "change_character",
             timestamp: new Date().toISOString(),
-            config: {
-                operation: "update",
-                index: index,
-                character: character,
-            },
+            operation: "update",
+            index: index,
+            character: character,
         };
 
         await this.tauriService.send_command(message);
@@ -169,12 +164,10 @@ export class CharacterService {
 
     public async deleteCharacter(index: number): Promise<void> {
         const message: CharacterOperationMessage = {
-            type: "change_config",
+            type: "change_character",
             timestamp: new Date().toISOString(),
-            config: {
-                operation: "delete",
-                index: index,
-            },
+            operation: "delete",
+            index: index,
         };
 
         await this.tauriService.send_command(message);
@@ -183,12 +176,10 @@ export class CharacterService {
 
     public async setActiveCharacter(index: number): Promise<void> {
         const message: CharacterOperationMessage = {
-            type: "change_config",
+            type: "change_character",
             timestamp: new Date().toISOString(),
-            config: {
-                operation: "set_active",
-                index: index,
-            },
+            operation: "set_active",
+            index: index,
         };
 
         await this.tauriService.send_command(message);
