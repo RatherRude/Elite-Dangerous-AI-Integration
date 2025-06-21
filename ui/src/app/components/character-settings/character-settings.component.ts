@@ -35,7 +35,7 @@ import { MatInputModule } from "@angular/material/input";
 import { MatButtonModule } from "@angular/material/button";
 import { CharacterService, ConfigWithCharacters, Character } from "../../services/character.service";
 import { MatCheckboxModule } from "@angular/material/checkbox";
-import { CharacterPresets, DefaultCharacter } from "./character-presets";
+import { CharacterPresets } from "./character-presets";
 
 interface PromptSettings {
     // Existing settings
