@@ -49,7 +49,7 @@ export class AdvancedSettingsComponent {
     configSubscription: Subscription;
     systemSubscription: Subscription;
     characterSubscription: Subscription;
-    voiceInstructionSupportedModels: string[] = ["gpt-4o-mini-tts"];
+    voiceInstructionSupportedModels: string[] = this.characterService.voiceInstructionSupportedModels;
 
     constructor(
         private configService: ConfigService,

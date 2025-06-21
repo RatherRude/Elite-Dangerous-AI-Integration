@@ -101,7 +101,7 @@ export class CharacterSettingsComponent {
     eventSearchQuery: string = "";
     isApplyingChange: boolean = false;
     public GameEventTooltips = GameEventTooltips;
-    voiceInstructionSupportedModels: string[] = ["gpt-4o-mini-tts"]; // TODO remove duplicate with advanced settings
+    voiceInstructionSupportedModels: string[] = this.characterService.voiceInstructionSupportedModels;
 
     gameEventCategories = GameEventCategories;
 
@@ -1203,11 +1203,7 @@ export class CharacterSettingsComponent {
     addNewCharacter(): void {
         if (!this.config) return;
 
-        // Create a base character with default values
-        const newCharacter: Character = DefaultCharacter;
-        newCharacter.character = this.buildCharacterPrompt(newCharacter)
-
-        this.characterService.addCharacter(newCharacter, true)
+        this.characterService.addDefaultCharacter()
     }
 
     deleteSelectedCharacter(): void {

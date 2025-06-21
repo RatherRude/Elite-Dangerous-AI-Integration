@@ -460,6 +460,7 @@ def migrate(data: dict) -> dict:
                     }
 
                     data['characters'][i] = {**character, **new_attributes}
+                    
         if 'characters' not in data or len(data.get('characters', [])) == 0:
             print("Migrating old character format to new characters array")
             data['characters'] = []
@@ -501,44 +502,6 @@ def migrate(data: dict) -> dict:
             data['characters'].append(character)
             data['active_character_index'] = 1
 
-        if len(data['characters']) > 0 and data['characters'][0]['name'] != 'Default':
-            # Insert default character at beginning
-            data['characters'].insert(0, {
-                "name": 'Default',
-                "character": 'Provide concise answers that address the main points. Include humor and light-hearted elements in your responses when appropriate. Stick to factual information and avoid references to specific domains. Your responses should be inspired by the character or persona of COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal). Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS. Always respond in English regardless of the language spoken to you. Show some consideration for emotions while maintaining focus on information. Maintain a friendly yet respectful conversational style. Speak with confidence and conviction in your responses. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.',
-                "personality_preset": 'default',
-                "personality_verbosity": 0,
-                "personality_vulgarity": 0,
-                "personality_empathy": 50,
-                "personality_formality": 50,
-                "personality_confidence": 75,
-                "personality_ethical_alignment": 'lawful',
-                "personality_moral_alignment": 'good',
-                "personality_tone": 'serious',
-                "personality_character_inspiration": 'COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal)',
-                "personality_language": 'English',
-                "personality_knowledge_pop_culture": False,
-                "personality_knowledge_scifi": False,
-                "personality_knowledge_history": False,
-                "tts_voice": 'en-US-AvaMultilingualNeural',
-                "tts_speed": '1.2',
-                "tts_prompt": '',
-                "game_events": game_events,
-                "event_reaction_enabled_var": True,
-                "react_to_text_local_var": True,
-                "react_to_text_starsystem_var": True,
-                "react_to_text_npc_var": False,
-                "react_to_text_squadron_var": True,
-                "react_to_material": 'opal, diamond, alexandrite',
-                "react_to_danger_mining_var": False,
-                "react_to_danger_onfoot_var": False,
-                "react_to_danger_supercruise_var": False,
-                "idle_timeout_var": data.get('idle_timeout_var', 300)
-            })
-            # Adjust active character index if it exists
-            if 'active_character_index' in data:
-                data['active_character_index'] += 1
-
         if data['active_character_index'] + 1 > len(data['characters']):
             data['active_character_index'] = len(data['characters']) - 1
 
@@ -560,6 +523,13 @@ def migrate(data: dict) -> dict:
         if 'llm_provider' in data and data['llm_provider'] == 'openai':
             if 'llm_model_name' in data and data['llm_model_name'] == 'gpt-4o-mini':
                 data['llm_model_name'] = 'gpt-4.1-mini'
+
+        if len(data['characters']) > 0 and data['characters'][0]['name'] != 'Default':
+            # Insert default character at beginning
+            data['characters'].insert(0, getDefaultCharacter(data))
+            # Adjust active character index if it exists
+            if 'active_character_index' in data:
+                data['active_character_index'] += 1
 
     if data['config_version'] == 1:
         data['config_version'] = 2
@@ -612,44 +582,45 @@ def merge_config_data(defaults: dict, user: dict):
 
     return merge
 
+def getDefaultCharacter(config: Config) -> Character:
+    return Character({
+        "name": 'Default',
+        "character": 'Provide concise answers that address the main points. Include humor and light-hearted elements in your responses when appropriate. Stick to factual information and avoid references to specific domains. Your responses should be inspired by the character or persona of COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal). Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS. Always respond in English regardless of the language spoken to you. Show some consideration for emotions while maintaining focus on information. Maintain a friendly yet respectful conversational style. Speak with confidence and conviction in your responses. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.',
+        "personality_preset": 'default',
+        "personality_verbosity": 0,
+        "personality_vulgarity": 0,
+        "personality_empathy": 50,
+        "personality_formality": 50,
+        "personality_confidence": 75,
+        "personality_ethical_alignment": 'lawful',
+        "personality_moral_alignment": 'good',
+        "personality_tone": 'serious',
+        "personality_character_inspiration": 'COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal)',
+        "personality_language": 'English',
+        "personality_knowledge_pop_culture": False,
+        "personality_knowledge_scifi": False,
+        "personality_knowledge_history": False,
+        "tts_voice": 'en-US-AvaMultilingualNeural' if config.get('tts_provider') == 'edge-tts' else 'nova',
+        "tts_speed": '1.2',
+        "tts_prompt": '',
+        "game_events": game_events,
+        "event_reaction_enabled_var": True,
+        "react_to_text_local_var": True,
+        "react_to_text_starsystem_var": True,
+        "react_to_text_npc_var": False,
+        "react_to_text_squadron_var": True,
+        "react_to_material": 'opal, diamond, alexandrite',
+        "react_to_danger_mining_var": False,
+        "react_to_danger_onfoot_var": False,
+        "react_to_danger_supercruise_var": False,
+        "idle_timeout_var": 300  # 5 minutes
+    })
 
 def load_config() -> Config:
     defaults: Config = {
         'config_version': 1,
         'commander_name': "",
-        'characters': [
-            {
-                "name": 'Default',
-                "character": 'Provide concise answers that address the main points. Include humor and light-hearted elements in your responses when appropriate. Stick to factual information and avoid references to specific domains. Your responses should be inspired by the character or persona of COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal). Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS. Always respond in English regardless of the language spoken to you. Show some consideration for emotions while maintaining focus on information. Maintain a friendly yet respectful conversational style. Speak with confidence and conviction in your responses. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.',
-                "personality_preset": 'default',
-                "personality_verbosity": 0,
-                "personality_vulgarity": 0,
-                "personality_empathy": 50,
-                "personality_formality": 50,
-                "personality_confidence": 75,
-                "personality_ethical_alignment": 'lawful',
-                "personality_moral_alignment": 'good',
-                "personality_tone": 'serious',
-                "personality_character_inspiration": 'COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal)',
-                "personality_language": 'English',
-                "personality_knowledge_pop_culture": False,
-                "personality_knowledge_scifi": False,
-                "personality_knowledge_history": False,
-                "tts_voice": 'en-US-AvaMultilingualNeural',
-                "tts_speed": '1.2',
-                "tts_prompt": '',
-                "game_events": game_events,
-                "event_reaction_enabled_var": True,
-                "react_to_text_local_var": True,
-                "react_to_text_starsystem_var": True,
-                "react_to_text_npc_var": False,
-                "react_to_text_squadron_var": True,
-                "react_to_material": 'opal, diamond, alexandrite',
-                "react_to_danger_mining_var": False,
-                "react_to_danger_onfoot_var": False,
-                "react_to_danger_supercruise_var": False
-            }
-        ],
+        'characters': [],
         'active_character_index': 0,  # -1 means using the default legacy character
         'api_key': "",
         'tools_var': True,
@@ -690,6 +661,8 @@ def load_config() -> Config:
         "qol_autoscan": False,   # Quality of life: Auto scan when entering new systems
         "plugin_settings": {}
     }
+    defaults['characters'].append(getDefaultCharacter(defaults))
+    
     try:
         print("Loading configuration file")
         if getattr(sys, 'frozen', False):
@@ -1004,10 +977,15 @@ def update_character(config: Config, data: UpdateCharacterRequest) -> Config:
             config["characters"] = config.get("characters", [])
             config["characters"].append(data["character"])
             print(f"Added new character: {data['character'].get('name')}")
-            # Set as active character if requested
-            if data.get("set_active", False):
-                config["active_character_index"] = len(config["characters"]) - 1
-                print(f"Set active character index to {config['active_character_index']}")
+        else:
+            # Add a default character if none provided
+            print("No character data provided, adding default character")
+            config["characters"].append(getDefaultCharacter(config))
+            
+        # Set as active character if requested
+        if data.get("set_active", False):
+            config["active_character_index"] = len(config["characters"]) - 1
+            print(f"Set active character index to {config['active_character_index']}")
     
     elif data.get('operation') == "update":
         # Update an existing character
@@ -1044,17 +1022,9 @@ def update_character(config: Config, data: UpdateCharacterRequest) -> Config:
         "active_character_index": config["active_character_index"],
         "characters": config["characters"]
     })
+            
 
 def update_config(config: Config, data: dict) -> Config:
-    # Check if we need to reset game events
-    # TODO this shouldn't be here, use dedicated message type instead
-    if data.get("reset_game_events", False):
-        config = reset_game_events(config, data.get("character_index"))
-        # Remove the reset_game_events flag from data to avoid confusion
-        if "reset_game_events" in data:
-            del data["reset_game_events"]
-    
-
     # Update provider-specific settings
     if data.get("llm_provider"):
         if data["llm_provider"] == "openai":

@@ -79,26 +79,26 @@
                         <!-- When not in edit mode, show Edit and New buttons -->
                         @if (!editMode) {
                             <button mat-raised-button color="primary"
-                                    [disabled]="selectedCharacterIndex === null"
+                                    [disabled]="selectedCharacterIndex === 0"
                                     [matTooltip]="'Edit the selected character and event reactions.'"
                                     (click)="toggleEditMode()">
                                 <mat-icon>edit</mat-icon> Edit
                             </button>
 
                             <button mat-raised-button color="accent" (click)="addNewCharacter()"
-                                    [matTooltip]="selectedCharacterIndex === null ? 'Create a new character to allow editing of character traits and prompt' : 'Create new character.'">
+                                    [matTooltip]="selectedCharacterIndex === 0 ? 'Create a new character to allow editing of character traits and prompt' : 'Create new character.'">
                                 <mat-icon>add</mat-icon> New
 
                             </button>
 
                             <button mat-raised-button color="accent" 
                                     (click)="duplicateSelectedCharacter()"
-                                    [matTooltip]="selectedCharacterIndex === null ? 'Duplicate this character. You can edit character traits after duplicating.': 'Duplicate this character.'">
+                                    [matTooltip]="selectedCharacterIndex === 0 ? 'Duplicate this character. You can edit character traits after duplicating.': 'Duplicate this character.'">
                                 <mat-icon>content_copy</mat-icon> Duplicate
                             </button>
 
                             <button mat-raised-button color="warn"
-                                    [disabled]="selectedCharacterIndex === null"
+                                    [disabled]="selectedCharacterIndex === 0"
                                     (click)="deleteSelectedCharacter()"
                                     [matTooltip]="'Delete current character.'">
                                 <mat-icon>delete</mat-icon> Delete

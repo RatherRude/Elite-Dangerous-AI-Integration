@@ -70,6 +70,8 @@ export class CharacterService {
     private characterListSubject = new BehaviorSubject<Character[]>([]);
     public characterList$ = this.characterListSubject.asObservable();
 
+    public voiceInstructionSupportedModels = ["gpt-4o-mini-tts"]
+
     constructor(
         private tauriService: TauriService,
         private configService: ConfigService,
@@ -147,6 +149,16 @@ export class CharacterService {
             operation: "add",
             character: character,
             set_active: setActive,
+        };
+
+        await this.tauriService.send_command(message);
+    }
+    public async addDefaultCharacter(): Promise<void> {
+        const message: CharacterOperationMessage = {
+            type: "change_character",
+            timestamp: new Date().toISOString(),
+            operation: "add",
+            set_active: true,
         };
 
         await this.tauriService.send_command(message);
