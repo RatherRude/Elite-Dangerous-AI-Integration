@@ -1,5 +1,5 @@
 import math
-from typing import Any, Literal, TypedDict, final
+from typing import Any, Literal, TypedDict, final, List
 from datetime import datetime, timezone, timedelta
 
 from typing_extensions import NotRequired, override
@@ -48,20 +48,6 @@ class CurrentStatus(Projection[Status]):
         if isinstance(event, StatusEvent) and event.status.get("event") == "Status":
             self.state = event.status
 
-
-LocationState = TypedDict('LocationState', {
-    "StarSystem": str,
-    "Star": NotRequired[str],
-    "Planet": NotRequired[str],
-    "PlanetaryRing": NotRequired[str],
-    "StellarRing": NotRequired[str],
-    "Station": NotRequired[str],
-    "AsteroidCluster": NotRequired[str],
-    "Docked": NotRequired[Literal[True]],
-    "Landed": NotRequired[Literal[True]], # only set when true
-    "NearestDestination": NotRequired[str], # only when landed on a planet
-})
-
 CargoState = TypedDict('CargoState', {
     "Inventory": list[dict],
     "TotalItems": int,
@@ -104,6 +90,20 @@ class Cargo(Projection[CargoState]):
             if 'Cargo' in event.status:
                 self.state['TotalItems'] = event.status.get('Cargo', 0)
 
+LocationState = TypedDict('LocationState', {
+    "StarSystem": str,
+    "Star": NotRequired[str],
+    "StarPos": List[float],
+    "Planet": NotRequired[str],
+    "PlanetaryRing": NotRequired[str],
+    "StellarRing": NotRequired[str],
+    "Station": NotRequired[str],
+    "AsteroidCluster": NotRequired[str],
+    "Docked": NotRequired[Literal[True]],
+    "Landed": NotRequired[Literal[True]], # only set when true
+    "NearestDestination": NotRequired[str], # only when landed on a planet
+})
+
 @final
 class Location(Projection[LocationState]):
     @override
@@ -120,21 +120,24 @@ class Location(Projection[LocationState]):
             body = event.content.get('Body', 'Unknown')
             station = event.content.get('StationName')
             docked = event.content.get('Docked', False)
-            
+            star_pos = event.content.get('StarPos', [0,0,0])
+
             self.state = {
                 "StarSystem": star_system,
+                "StarPos": star_pos,
             }
             if station:
                 self.state["Station"] = station
                 self.state["Docked"] = docked
             if body_type and body_type != 'Null':
                 self.state[body_type] = body
-                
+
         if isinstance(event, GameEvent) and event.content.get('event') == 'SupercruiseEntry':
             star_system = event.content.get('StarSystem', 'Unknown')
             
             self.state = {
                 "StarSystem": star_system,
+                "StarPos": self.state.get('StarPos', [0,0,0]),
             }
                 
         if isinstance(event, GameEvent) and event.content.get('event') == 'SupercruiseExit':
@@ -144,21 +147,24 @@ class Location(Projection[LocationState]):
             
             self.state = {
                 "StarSystem": star_system,
+                "StarPos": self.state.get('StarPos', [0,0,0]),
             }
             if body_type and body_type != 'Null':
                 self.state[body_type] = body
         
         if isinstance(event, GameEvent) and event.content.get('event') == 'FSDJump':
             star_system = event.content.get('StarSystem', 'Unknown')
+            star_pos = event.content.get('StarPos', [0,0,0])
             body_type = event.content.get('BodyType', 'Null')
             body = event.content.get('Body', 'Unknown')
             self.state = {
                 "StarSystem": star_system,
+                "StarPos": star_pos,
             }
             
             if body_type and body_type != 'Null':
                 self.state[body_type] = body
-                
+
         if isinstance(event, GameEvent) and event.content.get('event') == 'Docked':
             self.state['Docked'] = True
             self.state['Station'] = event.content.get('StationName', 'Unknown')
@@ -184,6 +190,7 @@ class Location(Projection[LocationState]):
         if isinstance(event, GameEvent) and event.content.get('event') == 'LeaveBody':
             self.state = {
                 "StarSystem": self.state.get('StarSystem', 'Unknown'),
+                "StarPos": self.state.get('StarPos', [0,0,0]),
             }
 
 MissionState = TypedDict('MissionState', {
