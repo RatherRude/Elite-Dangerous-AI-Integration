@@ -1,4 +1,4 @@
-
+<div class="settings-grid">
     @if (config) {
         <mat-form-field>
             <mat-label>Commander Name</mat-label>
@@ -39,9 +39,9 @@
                 </mat-select>
             </mat-form-field>
             @if (config.ptt_var) {
-                <mat-form-field (click)="onAssignPTT()">
+                <mat-form-field (click)="onAssignPTT($event)">
                     <mat-label>Push-to-Talk Key</mat-label>
-                    <input required matInput [value]="config.ptt_key" readonly>
+                    <input required matInput [value]="isAssigningPTT ? 'Press any key...' : config.ptt_key" readonly>
                     <button matSuffix mat-icon-button>
                         <mat-icon>keyboard</mat-icon>
                     </button>
@@ -72,5 +72,6 @@
                     <mat-option [value]="device">{{ device }}</mat-option>
                 }
             </mat-select>
-        </mat-form-field>
+        </mat-form-field>    
     }
+</div>

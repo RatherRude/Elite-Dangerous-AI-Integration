@@ -49,6 +49,7 @@ export class GeneralSettingsComponent implements OnDestroy {
     private systemSubscription: Subscription;
     hideApiKey = true;
     apiKeyType: string | null = null;
+    isAssigningPTT = false;
 
     constructor(
         private configService: ConfigService,
@@ -57,6 +58,7 @@ export class GeneralSettingsComponent implements OnDestroy {
         this.configSubscription = this.configService.config$.subscribe(
             (config) => {
                 this.config = config;
+                this.isAssigningPTT = false;
             },
         );
         this.systemSubscription = this.configService.system$.subscribe(
@@ -125,7 +127,9 @@ export class GeneralSettingsComponent implements OnDestroy {
         await this.onConfigChange(providerChanges);
     }
 
-    async onAssignPTT() {
+    async onAssignPTT(e: Event) {
+        e.preventDefault();
+        this.isAssigningPTT = true;
         await this.configService.assignPTT();
     }
 
