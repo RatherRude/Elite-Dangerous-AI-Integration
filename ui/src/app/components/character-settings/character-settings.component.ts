@@ -645,7 +645,10 @@ export class CharacterSettingsComponent {
         const newChar: Character = {
             ...this.activeCharacter,
             ...changes,
+            personality_preset: preset,
         };
+
+        console.log('newChar', newChar)
 
         newChar.character = this.buildCharacterPrompt(newChar);
 
@@ -1269,7 +1272,7 @@ export class CharacterSettingsComponent {
             "default",
         );
         // Use String() to ensure we're working with a string type
-        return String(value) === "custom";
+        return value === "custom";
     }
 
 
