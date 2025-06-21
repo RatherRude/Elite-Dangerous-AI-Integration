@@ -4,6 +4,7 @@ import threading
 from time import sleep
 import traceback
 import math
+import yaml
 from typing import Any, Literal, Optional
 from pyautogui import typewrite
 from datetime import datetime, timezone
@@ -24,7 +25,8 @@ llm_model_name: str = None
 vision_model_name: str | None = None
 event_manager: EventManager = None
 
-#Checking status projection to exit game actions early if not applicable
+
+# Checking status projection to exit game actions early if not applicable
 def checkStatus(projected_states: dict[str, dict], blocked_status_dict: dict[str, bool]):
     current_status = projected_states.get("CurrentStatus")
 
@@ -35,10 +37,11 @@ def checkStatus(projected_states: dict[str, dict], blocked_status_dict: dict[str
                     if current_status[flag_group][blocked_status] == expected_value:
                         raise Exception(f"Action not possible due to {'not ' if not expected_value else ''}being in a state of {blocked_status}!")
 
+
 # Define functions for each action
 # General Ship Actions
 def fire_weapons(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True})
+    checkStatus(projected_states, {'Docked': True, 'Landed': True})
     setGameWindowActive()
 
     # Parse arguments with defaults
@@ -95,11 +98,11 @@ def fire_weapons(args, projected_states):
 
 
 def set_speed(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True})
+    checkStatus(projected_states, {'Docked': True, 'Landed': True})
     setGameWindowActive()
 
     if 'speed' in args:
-        if args['speed'] in ["Minus100","Minus75","Minus50","Minus25","Zero","25","50","75","100"]:
+        if args['speed'] in ["Minus100", "Minus75", "Minus50", "Minus25", "Zero", "25", "50", "75", "100"]:
             keys.send(f"SetSpeed{args['speed']}")
         else:
             raise Exception(f"Invalid speed {args['speed']}")
@@ -108,14 +111,14 @@ def set_speed(args, projected_states):
 
 
 def deploy_heat_sink(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True})
+    checkStatus(projected_states, {'Docked': True, 'Landed': True})
     setGameWindowActive()
     keys.send('DeployHeatSink')
     return f"Heat sink deployed"
 
 
 def deploy_hardpoint_toggle(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True})
+    checkStatus(projected_states, {'Docked': True, 'Landed': True})
     setGameWindowActive()
     keys.send('DeployHardpointToggle')
     return f"Hardpoints {'deployed ' if not projected_states.get('CurrentStatus').get('flags').get('HardpointsDeployed') else 'retracted'}"
@@ -168,6 +171,7 @@ def manage_power_distribution(args, projected_states):
 
     return message
 
+
 def cycle_target(args, projected_states):
     setGameWindowActive()
 
@@ -181,8 +185,8 @@ def cycle_target(args, projected_states):
         keys.send('CycleNextTarget')
         return "Selected next target"
 
-def change_hud_mode(args, projected_states):
 
+def change_hud_mode(args, projected_states):
     mode = args.get('hud mode', 'toggle').lower()
     if projected_states.get('CurrentStatus').get('flags').get('HudInAnalysisMode'):
         current_hud_mode = "analysis"
@@ -219,7 +223,7 @@ def cycle_fire_group(args, projected_states):
 
     elif firegroup_ask == initial_firegroup:
         return f"Fire group {chr(65 + firegroup_ask)} was already selected. No changes."
-    elif firegroup_ask > 7:   # max allowed is up to H which is 7 starting with A=0
+    elif firegroup_ask > 7:  # max allowed is up to H which is 7 starting with A=0
         return f"Cannot switch to Firegroup {firegroup_ask} as it does not exist."
     else:
         for loop in range(abs(firegroup_ask - initial_firegroup)):
@@ -231,10 +235,10 @@ def cycle_fire_group(args, projected_states):
     try:
 
         status_event = event_manager.wait_for_condition('CurrentStatus',
-                                                            lambda s: s.get('FireGroup') == firegroup_ask, 2)
+                                                        lambda s: s.get('FireGroup') == firegroup_ask, 2)
         new_firegroup = status_event["FireGroup"]
     except TimeoutError:
-        #handles case where we cycle back round to zero
+        # handles case where we cycle back round to zero
         return "Failed to cycle to requested fire group. Please ensure it exists."
 
     return f"Fire group {chr(65 + new_firegroup)} is now selected."
@@ -247,7 +251,7 @@ def ship_spot_light_toggle(args, projected_states):
 
 
 def fire_chaff_launcher(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True,'Supercruise':True})
+    checkStatus(projected_states, {'Docked': True, 'Landed': True, 'Supercruise': True})
     setGameWindowActive()
     keys.send('FireChaffLauncher')
     return f"Chaff launcher fired"
@@ -266,7 +270,7 @@ def select_highest_threat(args, projected_states):
 
 
 def charge_ecm(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True,'Supercruise':True})
+    checkStatus(projected_states, {'Docked': True, 'Landed': True, 'Supercruise': True})
     setGameWindowActive()
     keys.send('ChargeECM')
     return "ECM is attempting to charge"
@@ -274,7 +278,7 @@ def charge_ecm(args, projected_states):
 
 def calculate_navigation_distance_and_timing(current_system: str, target_system: str) -> tuple[float, int]:
     distance_ly = 0.0  # Default value in case API call fails
-    
+
     if current_system != 'Unknown' and target_system:
         try:
             # Request coordinates for both systems from EDSM API
@@ -283,32 +287,32 @@ def calculate_navigation_distance_and_timing(current_system: str, target_system:
                 'systemName[]': [current_system, target_system],
                 'showCoordinates': 1
             }
-            
+
             log('debug', 'Distance Calculation', f"Requesting coordinates for {current_system} -> {target_system}")
             response = requests.get(edsm_url, params=params, timeout=5)
-            
+
             if response.status_code == 200:
                 systems_data = response.json()
-                
+
                 if len(systems_data) >= 2:
                     # Find the systems in the response
                     current_coords = None
                     target_coords = None
-                    
+
                     for system in systems_data:
                         if system.get('name', '').lower() == current_system.lower():
                             current_coords = system.get('coords')
                         elif system.get('name', '').lower() == target_system.lower():
                             target_coords = system.get('coords')
-                    
+
                     # Calculate distance if both coordinate sets are available
                     if current_coords and target_coords:
                         x1, y1, z1 = current_coords['x'], current_coords['y'], current_coords['z']
                         x2, y2, z2 = target_coords['x'], target_coords['y'], target_coords['z']
-                        
+
                         distance_ly = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2)
                         distance_ly = round(distance_ly, 2)
-                        
+
                         # Check if distance is too far to plot
                         if distance_ly > 20000:
                             raise Exception(f"Distance of {distance_ly} LY from {current_system} to {target_system} is too far to plot (max 20000 LY)")
@@ -318,7 +322,7 @@ def calculate_navigation_distance_and_timing(current_system: str, target_system:
                     log('warn', 'Distance Calculation', f"EDSM API returned insufficient data for systems: {current_system}, {target_system}")
             else:
                 log('warn', 'Distance Calculation', f"EDSM API request failed with status {response.status_code}")
-                
+
         except requests.RequestException as e:
             log('error', 'Distance Calculation', f"Failed to request system coordinates from EDSM API: {str(e)}")
         except Exception as e:
@@ -326,20 +330,20 @@ def calculate_navigation_distance_and_timing(current_system: str, target_system:
             if "too far to plot" in str(e):
                 raise
             log('error', 'Distance Calculation', f"Unexpected error during distance calculation: {str(e)}")
-    
+
     # Determine wait time based on distance
     zoom_wait_time = 3
-    
+
     # Add additional second for every 1000 LY
     if distance_ly > 0:
         additional_time = int(distance_ly / 1000)
         zoom_wait_time += additional_time
-    
+
     # Add additional 2 seconds if distance couldn't be determined (still 0)
     if distance_ly == 0:
         zoom_wait_time += 2
         log('warn', 'Navigation Timing', f"Distance could not be determined, adding 2 extra seconds to wait time")
-        
+
     return distance_ly, zoom_wait_time
 
 
@@ -347,8 +351,6 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
     # Trigger the GUI open
     setGameWindowActive()
     current_gui = projected_states.get('CurrentStatus', {}).get('GuiFocus', '')
-
-
 
     if 'start_navigation' in args and args['start_navigation']:
         nav_route = projected_states.get('NavInfo', {}).get('NavRoute', [])
@@ -374,7 +376,6 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
             event_manager.wait_for_condition('CurrentStatus', lambda s: s.get('GuiFocus') == "GalaxyMap", 5)
         except TimeoutError:
             return "Galaxy map can not be opened currently, the current GUI needs to be closed first"
-
 
     if 'system_name' in args:
 
@@ -426,7 +427,7 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
             # Get current location from projected states and calculate distance/timing
             current_system = projected_states.get('Location', {}).get('StarSystem', 'Unknown')
             target_system = args['system_name']
-            
+
             distance_ly, zoom_wait_time = calculate_navigation_distance_and_timing(current_system, target_system)
             log('info', 'zoom_wait_time', zoom_wait_time)
             # Continue with the navigation logic
@@ -439,7 +440,7 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
 
             try:
                 data = event_manager.wait_for_condition('NavInfo',
-                                                                     lambda s: s.get('NavRoute') and len(s.get('NavRoute', [])) > 0 and s.get('NavRoute')[-1].get('StarSystem').lower() == args['system_name'].lower(), zoom_wait_time)
+                                                        lambda s: s.get('NavRoute') and len(s.get('NavRoute', [])) > 0 and s.get('NavRoute')[-1].get('StarSystem').lower() == args['system_name'].lower(), zoom_wait_time)
                 jumpAmount = len(data.get('NavRoute', []))  # amount of jumps to do
 
                 if not current_gui == "GalaxyMap":  # if we are already in the galaxy map we don't want to close it
@@ -455,9 +456,7 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
     return "Galaxy map opened"
 
 
-
 def galaxy_map_close(args, projected_states, galaxymap_key="GalaxyMapOpen"):
-
     if projected_states.get('CurrentStatus').get('GuiFocus') == 'GalaxyMap':
         keys.send(galaxymap_key)
     else:
@@ -466,25 +465,24 @@ def galaxy_map_close(args, projected_states, galaxymap_key="GalaxyMapOpen"):
     return "Galaxy map closed"
 
 
-def system_map_open_or_close(args, projected_states, sys_map_key = 'SystemMapOpen'):
+def system_map_open_or_close(args, projected_states, sys_map_key='SystemMapOpen'):
     # Trigger the GUI open
     setGameWindowActive()
 
     current_gui = projected_states.get('CurrentStatus', {}).get('GuiFocus', '')
 
     if args['desired_state'] == "close":
-        if  current_gui == "SystemMap":
+        if current_gui == "SystemMap":
             keys.send(sys_map_key)
             return "System map has been closed."
         else:
             return "System map is not open, nothing to close."
 
-
     if current_gui in ['SAA', 'FSS', 'Codex']:
         raise Exception('System map can not be opened currently, the active GUI needs to be closed first')
 
     if current_gui == 'SystemMap':
-            return "System map is already open"
+        return "System map is already open"
 
     keys.send(sys_map_key)
 
@@ -508,8 +506,9 @@ def eject_all_cargo(args, projected_states):
     keys.send('EjectAllCargo')
     return f"All cargo ejected"
 
+
 def landing_gear_toggle(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True,'Supercruise':True})
+    checkStatus(projected_states, {'Docked': True, 'Landed': True, 'Supercruise': True})
     setGameWindowActive()
     keys.send('LandingGearToggle')
     return f"Landing gear {'deployed ' if not projected_states.get('CurrentStatus').get('flags').get('LandingGearDown') else 'retracted'}"
@@ -522,14 +521,14 @@ def use_shield_cell(args, projected_states):
 
 
 def toggle_cargo_scoop(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True,'Supercruise':True})
+    checkStatus(projected_states, {'Docked': True, 'Landed': True, 'Supercruise': True})
     setGameWindowActive()
     keys.send('ToggleCargoScoop')
     return f"Cargo scoop {'deployed ' if not projected_states.get('CurrentStatus').get('flags').get('CargoScoopDeployed') else 'retracted'}"
 
 
 def fsd_jump(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True,'FsdMassLocked':True,'FsdCooldown':True,'FsdCharging':True})
+    checkStatus(projected_states, {'Docked': True, 'Landed': True, 'FsdMassLocked': True, 'FsdCooldown': True, 'FsdCharging': True})
     setGameWindowActive()
 
     return_message = ""
@@ -560,6 +559,7 @@ def fsd_jump(args, projected_states):
 
     return return_message + "Frame Shift Drive is now charging for a jump"
 
+
 def next_system_in_route(args, projected_states):
     nav_info = projected_states.get('NavInfo', {})
     if not nav_info['NextJumpTarget']:
@@ -568,12 +568,12 @@ def next_system_in_route(args, projected_states):
     keys.send('TargetNextRouteSystem')
     return "Targeting next system in route"
 
+
 def undock(args, projected_states):
     setGameWindowActive()
     # Early return if we're not docked
     if not projected_states.get('CurrentStatus').get('flags').get('Docked'):
         raise Exception("The ship currently isn't docked.")
-
 
     if projected_states.get('CurrentStatus').get('GuiFocus') in ['InternalPanel', 'CommsPanel', 'RolePanel', 'ExternalPanel']:
         keys.send('UIFocus')
@@ -589,21 +589,22 @@ def undock(args, projected_states):
 
     return 'The ship is now undocking'
 
+
 def docking_key_press_sequence(stop_event):
     keys.send('UI_Left')
     keys.send('UI_Right')
-    keys.send("UI_Select",hold = 0.2)
+    keys.send("UI_Select", hold=0.2)
     for _ in range(6):
         if stop_event.is_set():
             break
         keys.send("CyclePreviousPanel")
         keys.send('UI_Left')
         keys.send('UI_Right')
-        keys.send("UI_Select",hold = 0.2)
+        keys.send("UI_Select", hold=0.2)
 
 
 def request_docking(args, projected_states):
-    checkStatus(projected_states, {'Supercruise':True})
+    checkStatus(projected_states, {'Supercruise': True})
     setGameWindowActive()
     if projected_states.get('CurrentStatus').get('GuiFocus') in ['NoFocus', 'InternalPanel', 'CommsPanel', 'RolePanel']:
         keys.send('FocusLeftPanel')
@@ -622,17 +623,16 @@ def request_docking(args, projected_states):
         old_timestamp = projected_states.get('DockingEvents').get('Timestamp', "1970-01-01T00:00:01Z")
         # Wait for a docking event with a timestamp newer than when we started
         event_manager.wait_for_condition('DockingEvents',
-            lambda s: ((s.get('LastEventType') in ['DockingGranted', 'DockingRequested', 'DockingCanceled', 'DockingDenied', 'DockingTimeout'])
-                      and (s.get('Timestamp', "1970-01-01T00:00:02Z") != old_timestamp)), 10)
+                                         lambda s: ((s.get('LastEventType') in ['DockingGranted', 'DockingRequested', 'DockingCanceled', 'DockingDenied', 'DockingTimeout'])
+                                                    and (s.get('Timestamp', "1970-01-01T00:00:02Z") != old_timestamp)), 10)
         msg = ""
     except:
         msg = "Failed to request docking via menu"
 
-    stop_event.set() # stop the keypress thread
+    stop_event.set()  # stop the keypress thread
 
     keys.send('UIFocus')
     return msg
-
 
 
 # Ship Launched Fighter Actions
@@ -644,7 +644,7 @@ def fighter_request_dock(args, projected_states):
 
 # NPC Crew Order Actions
 def npc_order(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True,'Supercruise':True})
+    checkStatus(projected_states, {'Docked': True, 'Landed': True, 'Supercruise': True})
     setGameWindowActive()
     if 'orders' in args:
         for order in args['orders']:
@@ -660,6 +660,7 @@ def toggle_drive_assist(args, projected_states):
     # return f"Landing gear {'deployed ' if not projected_states.get('CurrentStatus').get('flags').get('HardpointsDeployed') else 'retracted'}"
     return f"Drive assist has been {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('SrvDriveAssist') else 'deactivated'}."
 
+
 def fire_weapons_buggy(args, projected_states):
     """
     Simple buggy weapon firing action with three clear controls.
@@ -668,15 +669,15 @@ def fire_weapons_buggy(args, projected_states):
     - start: Begin continuous firing
     - stop: Stop continuous firing
     """
-    checkStatus(projected_states, {'SrvTurretRetracted':True})
+    checkStatus(projected_states, {'SrvTurretRetracted': True})
     setGameWindowActive()
-    
+
     # Parse arguments with defaults
     weapon_type = args.get('weaponType', 'primary').lower()
     action = args.get('action', 'fire').lower()
     duration = args.get('duration', None)  # Duration to hold fire button
     repetitions = args.get('repetitions', 0)  # 0 = one action, 1+ = repeat
-    
+
     # Determine key mapping
     if weapon_type == 'secondary':
         key_name = 'BuggySecondaryFireButton'
@@ -684,12 +685,12 @@ def fire_weapons_buggy(args, projected_states):
     else:  # default to primary
         key_name = 'BuggyPrimaryFireButton'
         weapon_desc = 'buggy primary weapons'
-    
+
     # Handle different actions
     if action == 'fire':
         # Single shot with optional duration and repetitions
         repeat_count = repetitions + 1  # 0 repetitions = 1 shot total
-        
+
         if duration:
             keys.send(key_name, hold=duration, repeat=repeat_count)
             if repetitions > 0:
@@ -702,36 +703,40 @@ def fire_weapons_buggy(args, projected_states):
                 return f"Fired {weapon_desc} {repeat_count} times."
             else:
                 return f"Fired {weapon_desc}."
-        
+
     elif action == 'start':
         # Start continuous firing
         keys.send(key_name, state=1)
         return f"Started continuous firing with {weapon_desc}."
-        
+
     elif action == 'stop':
         # Stop continuous firing
         keys.send(key_name, state=0)
         return f"Stopped firing {weapon_desc}."
-        
+
     else:
         return f"Invalid action '{action}'. Use: fire, start, or stop."
 
+
 def buggy_primary_fire(args, projected_states):
-    checkStatus(projected_states, {'SrvTurretRetracted':True})
+    checkStatus(projected_states, {'SrvTurretRetracted': True})
     setGameWindowActive()
     keys.send('BuggyPrimaryFireButton')
     return "Buggy primary fire triggered."
 
+
 def buggy_secondary_fire(args, projected_states):
-    checkStatus(projected_states, {'SrvTurretRetracted':True})
+    checkStatus(projected_states, {'SrvTurretRetracted': True})
     setGameWindowActive()
     keys.send('BuggySecondaryFireButton')
     return "Buggy secondary fire triggered."
+
 
 def auto_break_buggy(args, projected_states):
     setGameWindowActive()
     keys.send('AutoBreakBuggyButton')
     return "Auto-brake for buggy  {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('SrvHandbrake') else 'deactivated'}."
+
 
 def headlights_buggy(args, projected_states):
     setGameWindowActive()
@@ -779,16 +784,19 @@ def headlights_buggy(args, projected_states):
     else:
         return f"Buggy headlights set to {mode_names[final_mode]} mode."
 
+
 def toggle_buggy_turret(args, projected_states):
-    checkStatus(projected_states, {'SrvTurretRetracted':True})
+    checkStatus(projected_states, {'SrvTurretRetracted': True})
     setGameWindowActive()
     keys.send('ToggleBuggyTurretButton')
     return f"Buggy turret mode  {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('SrvUsingTurretView') else 'deactivated'}."
+
 
 def select_target_buggy(args, projected_states):
     setGameWindowActive()
     keys.send('SelectTarget_Buggy')
     return "Buggy target selection activated."
+
 
 def manage_power_distribution_buggy(args, projected_states):
     """
@@ -843,15 +851,18 @@ def toggle_cargo_scoop_buggy(args, projected_states):
     keys.send('ToggleCargoScoop_Buggy')
     return f"Buggy cargo scoop {'deployed ' if not projected_states.get('CurrentStatus').get('flags').get('CargoScoopDeployed') else 'retracted'}"
 
+
 def eject_all_cargo_buggy(args, projected_states):
     setGameWindowActive()
     keys.send('EjectAllCargo_Buggy')
     return "All cargo ejected from buggy."
 
+
 def recall_dismiss_ship_buggy(args, projected_states):
     setGameWindowActive()
     keys.send('RecallDismissShip')
     return "Remote ship has been recalled or dismissed."
+
 
 def galaxy_map_open_buggy(args, projected_states) -> Any | Literal['Galaxy map is already closed', 'Galaxy map closed']:
     setGameWindowActive()
@@ -861,6 +872,7 @@ def galaxy_map_open_buggy(args, projected_states) -> Any | Literal['Galaxy map i
         response = galaxy_map_close(args, projected_states, "GalaxyMapOpen_Buggy")
 
     return response
+
 
 def system_map_open_buggy(args, projected_states):
     setGameWindowActive()
@@ -884,70 +896,82 @@ def system_map_open_buggy(args, projected_states):
 
     return msg
 
+
 # On-Foot Actions (Odyssey)
 def primary_interact_humanoid(args, projected_states):
     setGameWindowActive()
     keys.send('HumanoidPrimaryInteractButton')
     return "Primary interaction initiated."
 
+
 def secondary_interact_humanoid(args, projected_states):
     setGameWindowActive()
     keys.send('HumanoidSecondaryInteractButton')
     return "Secondary interaction initiated."
 
+
 def equip_humanoid(args, projected_states):
-    checkStatus(projected_states, {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
+    checkStatus(projected_states, {'OnFootInStation': True, 'OnFootInHangar': True, 'OnFootSocialSpace': True})
     if 'equipment' in args:
         keys.send(args['equipment'])
     return f"{args['equipment']} has been triggered."
+
 
 def toggle_flashlight_humanoid(args, projected_states):
     setGameWindowActive()
     keys.send('HumanoidToggleFlashlightButton')
     return "Flashlight toggled."
 
+
 def toggle_night_vision_humanoid(args, projected_states):
     setGameWindowActive()
     keys.send('HumanoidToggleNightVisionButton')
     return f"Night vision {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('NightVision') else 'deactivated'}"
 
+
 def toggle_shields_humanoid(args, projected_states):
-    checkStatus(projected_states, {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
+    checkStatus(projected_states, {'OnFootInStation': True, 'OnFootInHangar': True, 'OnFootSocialSpace': True})
     setGameWindowActive()
     keys.send('HumanoidToggleShieldsButton')
 
     return f"Shields {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('ShieldsUp') else 'deactivated'}."
 
+
 def clear_authority_level_humanoid(args, projected_states):
-    checkStatus(projected_states, {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
+    checkStatus(projected_states, {'OnFootInStation': True, 'OnFootInHangar': True, 'OnFootSocialSpace': True})
     setGameWindowActive()
     keys.send('HumanoidClearAuthorityLevel')
     return "Authority level cleared."
 
+
 def health_pack_humanoid(args, projected_states):
-    checkStatus(projected_states, {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
+    checkStatus(projected_states, {'OnFootInStation': True, 'OnFootInHangar': True, 'OnFootSocialSpace': True})
     setGameWindowActive()
     keys.send('HumanoidHealthPack')
     return "Health pack used."
 
+
 def battery_humanoid(args, projected_states):
-    checkStatus(projected_states, {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
+    checkStatus(projected_states, {'OnFootInStation': True, 'OnFootInHangar': True, 'OnFootSocialSpace': True})
     setGameWindowActive()
     keys.send('HumanoidBattery')
     return "Battery used."
+
 
 def galaxy_map_open_humanoid(args, projected_states):
     setGameWindowActive()
     keys.send('GalaxyMapOpen_Humanoid')
     return "Galaxy map opened or closed."
 
+
 def system_map_open_humanoid(args, projected_states):
     setGameWindowActive()
     keys.send('SystemMapOpen_Humanoid')
     return "System map opened or closed."
 
+
 def recall_dismiss_ship_humanoid(args, projected_states):
-    checkStatus(projected_states, {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
+    checkStatus(projected_states, {'OnFootInStation': True, 'OnFootInHangar': True, 'OnFootSocialSpace': True})
     setGameWindowActive()
     keys.send('HumanoidOpenAccessPanelButton', state=1)
     sleep(.3)
@@ -1103,6 +1127,3590 @@ def get_galnet_news(obj, projected_states):
         return "News feed currently unavailable"
 
 
+# Here could be a json
+
+# Engineering modifications database
+ENGINEERING_MODIFICATIONS = {
+    "Efficient": {
+        "module_recipes": {
+            "Beam Laser": {
+                1: {"cost": {"Sulphur": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                2: {"cost": {"Heat Dispersion Plate": 1, "Sulphur": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                3: {"cost": {"Chromium": 1, "Exceptional Scrambled Emission Data": 1, "Heat Exchangers": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                4: {"cost": {"Heat Vanes": 1, "Irregular Emission Data": 1, "Selenium": 1}, "engineers": ["Broo Tarquin"]},
+                5: {"cost": {"Cadmium": 1, "Proto Heat Radiators": 1, "Unexpected Emission Data": 1}, "engineers": ["Broo Tarquin"]}
+            },
+            "Burst Laser": {
+                1: {"cost": {"Sulphur": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                2: {"cost": {"Heat Dispersion Plate": 1, "Sulphur": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                3: {"cost": {"Chromium": 1, "Exceptional Scrambled Emission Data": 1, "Heat Exchangers": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                4: {"cost": {"Heat Vanes": 1, "Irregular Emission Data": 1, "Selenium": 1}, "engineers": ["Broo Tarquin"]},
+                5: {"cost": {"Cadmium": 1, "Proto Heat Radiators": 1, "Unexpected Emission Data": 1}, "engineers": ["Broo Tarquin"]}
+            },
+            "Cannon": {
+                1: {"cost": {"Sulphur": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "The Sarge", "Marsha Hicks"]},
+                2: {"cost": {"Heat Dispersion Plate": 1, "Sulphur": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "The Sarge", "Marsha Hicks"]},
+                3: {"cost": {"Chromium": 1, "Exceptional Scrambled Emission Data": 1, "Heat Exchangers": 1}, "engineers": ["The Sarge", "Marsha Hicks"]},
+                4: {"cost": {"Heat Vanes": 1, "Irregular Emission Data": 1, "Selenium": 1}, "engineers": ["The Sarge", "Marsha Hicks"]},
+                5: {"cost": {"Cadmium": 1, "Proto Heat Radiators": 1, "Unexpected Emission Data": 1}, "engineers": ["The Sarge", "Marsha Hicks"]}
+            },
+            "Fragment Cannon": {
+                1: {"cost": {"Sulphur": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                2: {"cost": {"Heat Dispersion Plate": 1, "Sulphur": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                3: {"cost": {"Chromium": 1, "Exceptional Scrambled Emission Data": 1, "Heat Exchangers": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                4: {"cost": {"Heat Vanes": 1, "Irregular Emission Data": 1, "Selenium": 1}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]},
+                5: {"cost": {"Cadmium": 1, "Proto Heat Radiators": 1, "Unexpected Emission Data": 1}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]}
+            },
+            "Multi-cannon": {
+                1: {"cost": {"Sulphur": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                2: {"cost": {"Heat Dispersion Plate": 1, "Sulphur": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                3: {"cost": {"Chromium": 1, "Exceptional Scrambled Emission Data": 1, "Heat Exchangers": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                4: {"cost": {"Heat Vanes": 1, "Irregular Emission Data": 1, "Selenium": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]},
+                5: {"cost": {"Cadmium": 1, "Proto Heat Radiators": 1, "Unexpected Emission Data": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]}
+            },
+            "Plasma Accelerator": {
+                1: {"cost": {"Sulphur": 1}, "engineers": ["Zacariah Nemo", "Bill Turner"]},
+                2: {"cost": {"Heat Dispersion Plate": 1, "Sulphur": 1}, "engineers": ["Zacariah Nemo", "Bill Turner"]},
+                3: {"cost": {"Chromium": 1, "Exceptional Scrambled Emission Data": 1, "Heat Exchangers": 1}, "engineers": ["Bill Turner"]},
+                4: {"cost": {"Heat Vanes": 1, "Irregular Emission Data": 1, "Selenium": 1}, "engineers": ["Bill Turner"]},
+                5: {"cost": {"Cadmium": 1, "Proto Heat Radiators": 1, "Unexpected Emission Data": 1}, "engineers": ["Bill Turner"]}
+            },
+            "Pulse Laser": {
+                1: {"cost": {"Sulphur": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                2: {"cost": {"Heat Dispersion Plate": 1, "Sulphur": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                3: {"cost": {"Chromium": 1, "Exceptional Scrambled Emission Data": 1, "Heat Exchangers": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                4: {"cost": {"Heat Vanes": 1, "Irregular Emission Data": 1, "Selenium": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                5: {"cost": {"Cadmium": 1, "Proto Heat Radiators": 1, "Unexpected Emission Data": 1}, "engineers": ["Broo Tarquin"]}
+            }
+        }
+    },
+    "Lightweight": {
+        "module_recipes": {
+            "Beam Laser": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                2: {"cost": {"Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                3: {"cost": {"Conductive Ceramics": 1, "Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                4: {"cost": {"Conductive Components": 1, "Phase Alloys": 1, "Proto Light Alloys": 1}, "engineers": ["Broo Tarquin"]},
+                5: {"cost": {"Conductive Ceramics": 1, "Proto Light Alloys": 1, "Proto Radiolic Alloys": 1}, "engineers": ["Broo Tarquin"]}
+            },
+            "Burst Laser": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                2: {"cost": {"Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                3: {"cost": {"Conductive Ceramics": 1, "Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                4: {"cost": {"Conductive Components": 1, "Phase Alloys": 1, "Proto Light Alloys": 1}, "engineers": ["Broo Tarquin"]},
+                5: {"cost": {"Conductive Ceramics": 1, "Proto Light Alloys": 1, "Proto Radiolic Alloys": 1}, "engineers": ["Broo Tarquin"]}
+            },
+            "Cannon": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "The Sarge", "Marsha Hicks"]},
+                2: {"cost": {"Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "The Sarge", "Marsha Hicks"]},
+                3: {"cost": {"Conductive Ceramics": 1, "Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["The Sarge", "Marsha Hicks"]},
+                4: {"cost": {"Conductive Components": 1, "Phase Alloys": 1, "Proto Light Alloys": 1}, "engineers": ["The Sarge", "Marsha Hicks"]},
+                5: {"cost": {"Conductive Ceramics": 1, "Proto Light Alloys": 1, "Proto Radiolic Alloys": 1}, "engineers": ["The Sarge", "Marsha Hicks"]}
+            },
+            "Fragment Cannon": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                2: {"cost": {"Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                3: {"cost": {"Conductive Ceramics": 1, "Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                4: {"cost": {"Conductive Components": 1, "Phase Alloys": 1, "Proto Light Alloys": 1}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]},
+                5: {"cost": {"Conductive Ceramics": 1, "Proto Light Alloys": 1, "Proto Radiolic Alloys": 1}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]}
+            },
+            "Mine Launcher": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Liz Ryder", "Juri Ishmaak", "Petra Olmanova"]},
+                2: {"cost": {"Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Liz Ryder", "Juri Ishmaak", "Petra Olmanova"]},
+                3: {"cost": {"Conductive Ceramics": 1, "Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Liz Ryder", "Juri Ishmaak", "Petra Olmanova"]},
+                4: {"cost": {"Conductive Components": 1, "Phase Alloys": 1, "Proto Light Alloys": 1}, "engineers": ["Juri Ishmaak", "Petra Olmanova"]},
+                5: {"cost": {"Conductive Ceramics": 1, "Proto Light Alloys": 1, "Proto Radiolic Alloys": 1}, "engineers": ["Juri Ishmaak", "Petra Olmanova"]}
+            },
+            "Missile Rack": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
+                2: {"cost": {"Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
+                3: {"cost": {"Conductive Ceramics": 1, "Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
+                4: {"cost": {"Conductive Components": 1, "Phase Alloys": 1, "Proto Light Alloys": 1}, "engineers": ["Liz Ryder", "Petra Olmanova"]},
+                5: {"cost": {"Conductive Ceramics": 1, "Proto Light Alloys": 1, "Proto Radiolic Alloys": 1}, "engineers": ["Liz Ryder", "Petra Olmanova"]}
+            },
+            "Multi-cannon": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Zacariah Nemo", "Tod 'The Blaster' McQuinn", "Marsha Hicks"]},
+                2: {"cost": {"Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Zacariah Nemo", "Tod 'The Blaster' McQuinn", "Marsha Hicks"]},
+                3: {"cost": {"Conductive Ceramics": 1, "Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Zacariah Nemo", "Tod 'The Blaster' McQuinn", "Marsha Hicks"]},
+                4: {"cost": {"Conductive Components": 1, "Phase Alloys": 1, "Proto Light Alloys": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]},
+                5: {"cost": {"Conductive Ceramics": 1, "Proto Light Alloys": 1, "Proto Radiolic Alloys": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]}
+            },
+            "Plasma Accelerator": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Zacariah Nemo", "Bill Turner"]},
+                2: {"cost": {"Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Zacariah Nemo", "Bill Turner"]},
+                3: {"cost": {"Conductive Ceramics": 1, "Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Bill Turner"]},
+                4: {"cost": {"Conductive Components": 1, "Phase Alloys": 1, "Proto Light Alloys": 1}, "engineers": ["Bill Turner"]},
+                5: {"cost": {"Conductive Ceramics": 1, "Proto Light Alloys": 1, "Proto Radiolic Alloys": 1}, "engineers": ["Bill Turner"]}
+            },
+            "Pulse Laser": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                2: {"cost": {"Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                3: {"cost": {"Conductive Ceramics": 1, "Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                4: {"cost": {"Conductive Components": 1, "Phase Alloys": 1, "Proto Light Alloys": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                5: {"cost": {"Conductive Ceramics": 1, "Proto Light Alloys": 1, "Proto Radiolic Alloys": 1}, "engineers": ["Broo Tarquin"]}
+            },
+            "Rail Gun": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["The Sarge", "Tod 'The Blaster' McQuinn"]},
+                2: {"cost": {"Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["The Sarge", "Tod 'The Blaster' McQuinn"]},
+                3: {"cost": {"Conductive Ceramics": 1, "Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["The Sarge", "Tod 'The Blaster' McQuinn"]},
+                4: {"cost": {"Conductive Components": 1, "Phase Alloys": 1, "Proto Light Alloys": 1}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                5: {"cost": {"Conductive Ceramics": 1, "Proto Light Alloys": 1, "Proto Radiolic Alloys": 1}, "engineers": ["Tod 'The Blaster' McQuinn"]}
+            },
+            "Torpedo Pylon": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
+                2: {"cost": {"Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
+                3: {"cost": {"Conductive Ceramics": 1, "Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
+                4: {"cost": {"Conductive Components": 1, "Phase Alloys": 1, "Proto Light Alloys": 1}, "engineers": ["Liz Ryder", "Petra Olmanova"]},
+                5: {"cost": {"Conductive Ceramics": 1, "Proto Light Alloys": 1, "Proto Radiolic Alloys": 1}, "engineers": ["Liz Ryder", "Petra Olmanova"]}
+            },
+            "Chaff Launcher": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Ram Tah"]},
+                2: {"cost": {"Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Ram Tah"]},
+                3: {"cost": {"Conductive Ceramics": 1, "Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Ram Tah"]},
+                4: {"cost": {"Conductive Components": 1, "Phase Alloys": 1, "Proto Light Alloys": 1}, "engineers": ["Ram Tah"]},
+                5: {"cost": {"Conductive Ceramics": 1, "Proto Light Alloys": 1, "Proto Radiolic Alloys": 1}, "engineers": ["Ram Tah"]}
+            },
+            "Electronic Countermeasure": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Ram Tah"]},
+                2: {"cost": {"Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Ram Tah"]},
+                3: {"cost": {"Conductive Ceramics": 1, "Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Ram Tah"]},
+                4: {"cost": {"Conductive Components": 1, "Phase Alloys": 1, "Proto Light Alloys": 1}, "engineers": ["Ram Tah"]},
+                5: {"cost": {"Conductive Ceramics": 1, "Proto Light Alloys": 1, "Proto Radiolic Alloys": 1}, "engineers": ["Ram Tah"]}
+            },
+            "Heat Sink Launcher": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                2: {"cost": {"Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                3: {"cost": {"Conductive Ceramics": 1, "Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                4: {"cost": {"Conductive Components": 1, "Phase Alloys": 1, "Proto Light Alloys": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                5: {"cost": {"Conductive Ceramics": 1, "Proto Light Alloys": 1, "Proto Radiolic Alloys": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]}
+            },
+            "Point Defence": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Ram Tah"]},
+                2: {"cost": {"Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Ram Tah"]},
+                3: {"cost": {"Conductive Ceramics": 1, "Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Ram Tah"]},
+                4: {"cost": {"Conductive Components": 1, "Phase Alloys": 1, "Proto Light Alloys": 1}, "engineers": ["Ram Tah"]},
+                5: {"cost": {"Conductive Ceramics": 1, "Proto Light Alloys": 1, "Proto Radiolic Alloys": 1}, "engineers": ["Ram Tah"]}
+            },
+            "Frame Shift Wake Scanner": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                2: {"cost": {"Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                3: {"cost": {"Conductive Ceramics": 1, "Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                4: {"cost": {"Conductive Components": 1, "Phase Alloys": 1, "Proto Light Alloys": 1}, "engineers": ["Tiana Fortune"]},
+                5: {"cost": {"Conductive Ceramics": 1, "Proto Light Alloys": 1, "Proto Radiolic Alloys": 1}, "engineers": ["Tiana Fortune"]}
+            },
+            "Kill Warrant Scanner": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                2: {"cost": {"Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                3: {"cost": {"Conductive Ceramics": 1, "Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                4: {"cost": {"Conductive Components": 1, "Phase Alloys": 1, "Proto Light Alloys": 1}, "engineers": ["Tiana Fortune"]},
+                5: {"cost": {"Conductive Ceramics": 1, "Proto Light Alloys": 1, "Proto Radiolic Alloys": 1}, "engineers": ["Tiana Fortune"]}
+            },
+            "Life Support": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Etienne Dorn"]},
+                2: {"cost": {"Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Etienne Dorn"]},
+                3: {"cost": {"Conductive Ceramics": 1, "Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Etienne Dorn"]},
+                4: {"cost": {"Conductive Components": 1, "Phase Alloys": 1, "Proto Light Alloys": 1}, "engineers": ["Lori Jameson", "Etienne Dorn"]},
+                5: {"cost": {"Conductive Ceramics": 1, "Proto Light Alloys": 1, "Proto Radiolic Alloys": 1}, "engineers": ["Etienne Dorn"]}
+            },
+            "Collector Limpet Controller": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Ram Tah", "Marsha Hicks", "The Sarge", "Tiana Fortune"]},
+                2: {"cost": {"Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Ram Tah", "Marsha Hicks", "The Sarge", "Tiana Fortune"]},
+                3: {"cost": {"Conductive Ceramics": 1, "Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Ram Tah", "Marsha Hicks", "The Sarge", "Tiana Fortune"]},
+                4: {"cost": {"Conductive Components": 1, "Phase Alloys": 1, "Proto Light Alloys": 1}, "engineers": ["Ram Tah", "Marsha Hicks", "The Sarge", "Tiana Fortune"]},
+                5: {"cost": {"Conductive Ceramics": 1, "Proto Light Alloys": 1, "Proto Radiolic Alloys": 1}, "engineers": ["Marsha Hicks", "The Sarge", "Tiana Fortune"]}
+            },
+            "Fuel Transfer Limpet Controller": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Ram Tah", "Marsha Hicks", "The Sarge", "Tiana Fortune"]},
+                2: {"cost": {"Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Ram Tah", "Marsha Hicks", "The Sarge", "Tiana Fortune"]},
+                3: {"cost": {"Conductive Ceramics": 1, "Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Ram Tah", "Marsha Hicks", "The Sarge", "Tiana Fortune"]},
+                4: {"cost": {"Conductive Components": 1, "Phase Alloys": 1, "Proto Light Alloys": 1}, "engineers": ["Ram Tah", "Marsha Hicks", "The Sarge", "Tiana Fortune"]},
+                5: {"cost": {"Conductive Ceramics": 1, "Proto Light Alloys": 1, "Proto Radiolic Alloys": 1}, "engineers": ["Marsha Hicks", "The Sarge", "Tiana Fortune"]}
+            },
+            "Hatch Breaker Limpet Controller": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Ram Tah", "Marsha Hicks", "The Sarge", "Tiana Fortune"]},
+                2: {"cost": {"Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Ram Tah", "Marsha Hicks", "The Sarge", "Tiana Fortune"]},
+                3: {"cost": {"Conductive Ceramics": 1, "Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Ram Tah", "Marsha Hicks", "The Sarge", "Tiana Fortune"]},
+                4: {"cost": {"Conductive Components": 1, "Phase Alloys": 1, "Proto Light Alloys": 1}, "engineers": ["Marsha Hicks", "The Sarge", "Tiana Fortune"]},
+                5: {"cost": {"Conductive Ceramics": 1, "Proto Light Alloys": 1, "Proto Radiolic Alloys": 1}, "engineers": ["Marsha Hicks", "The Sarge", "Tiana Fortune"]}
+            },
+            "Prospector Limpet Controller": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Ram Tah", "Marsha Hicks", "The Sarge", "Tiana Fortune"]},
+                2: {"cost": {"Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Ram Tah", "Marsha Hicks", "The Sarge", "Tiana Fortune"]},
+                3: {"cost": {"Conductive Ceramics": 1, "Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Ram Tah", "Marsha Hicks", "The Sarge", "Tiana Fortune"]},
+                4: {"cost": {"Conductive Components": 1, "Phase Alloys": 1, "Proto Light Alloys": 1}, "engineers": ["Ram Tah", "Marsha Hicks", "The Sarge", "Tiana Fortune"]},
+                5: {"cost": {"Conductive Ceramics": 1, "Proto Light Alloys": 1, "Proto Radiolic Alloys": 1}, "engineers": ["Marsha Hicks", "The Sarge", "Tiana Fortune"]}
+            },
+            "Manifest Scanner": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                2: {"cost": {"Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                3: {"cost": {"Conductive Ceramics": 1, "Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                4: {"cost": {"Conductive Components": 1, "Phase Alloys": 1, "Proto Light Alloys": 1}, "engineers": ["Tiana Fortune"]},
+                5: {"cost": {"Conductive Ceramics": 1, "Proto Light Alloys": 1, "Proto Radiolic Alloys": 1}, "engineers": ["Tiana Fortune"]}
+            },
+            "Sensors": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Bill Turner", "Felicity Farseer", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]},
+                2: {"cost": {"Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Bill Turner", "Felicity Farseer", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]},
+                3: {"cost": {"Conductive Ceramics": 1, "Manganese": 1, "Salvaged Alloys": 1}, "engineers": ["Bill Turner", "Felicity Farseer", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]},
+                4: {"cost": {"Conductive Components": 1, "Phase Alloys": 1, "Proto Light Alloys": 1}, "engineers": ["Bill Turner", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]},
+                5: {"cost": {"Conductive Ceramics": 1, "Proto Light Alloys": 1, "Proto Radiolic Alloys": 1}, "engineers": ["Bill Turner", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]}
+            }
+        }
+    },
+    "Long range": {
+        "module_recipes": {
+            "Beam Laser": {
+                1: {"cost": {"Sulphur": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                2: {"cost": {"Modified Consumer Firmware": 1, "Sulphur": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                3: {"cost": {"Focus Crystals": 1, "Modified Consumer Firmware": 1, "Sulphur": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                4: {"cost": {"Conductive Polymers": 1, "Focus Crystals": 1, "Modified Consumer Firmware": 1}, "engineers": ["Broo Tarquin"]},
+                5: {"cost": {"Biotech Conductors": 1, "Cracked Industrial Firmware": 1, "Thermic Alloys": 1}, "engineers": ["Broo Tarquin"]}
+            },
+            "Burst Laser": {
+                1: {"cost": {"Sulphur": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                2: {"cost": {"Modified Consumer Firmware": 1, "Sulphur": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                3: {"cost": {"Focus Crystals": 1, "Modified Consumer Firmware": 1, "Sulphur": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                4: {"cost": {"Conductive Polymers": 1, "Focus Crystals": 1, "Modified Consumer Firmware": 1}, "engineers": ["Broo Tarquin"]},
+                5: {"cost": {"Biotech Conductors": 1, "Cracked Industrial Firmware": 1, "Thermic Alloys": 1}, "engineers": ["Broo Tarquin"]}
+            },
+            "Cannon": {
+                1: {"cost": {"Sulphur": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "The Sarge"]},
+                2: {"cost": {"Modified Consumer Firmware": 1, "Sulphur": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "The Sarge"]},
+                3: {"cost": {"Focus Crystals": 1, "Modified Consumer Firmware": 1, "Sulphur": 1}, "engineers": ["The Sarge"]},
+                4: {"cost": {"Conductive Polymers": 1, "Focus Crystals": 1, "Modified Consumer Firmware": 1}, "engineers": ["The Sarge"]},
+                5: {"cost": {"Biotech Conductors": 1, "Cracked Industrial Firmware": 1, "Thermic Alloys": 1}, "engineers": ["The Sarge"]}
+            },
+            "Multi-cannon": {
+                1: {"cost": {"Sulphur": 1}, "engineers": ["Zacariah Nemo", "Tod 'The Blaster' McQuinn"]},
+                2: {"cost": {"Modified Consumer Firmware": 1, "Sulphur": 1}, "engineers": ["Zacariah Nemo", "Tod 'The Blaster' McQuinn"]},
+                3: {"cost": {"Focus Crystals": 1, "Modified Consumer Firmware": 1, "Sulphur": 1}, "engineers": ["Zacariah Nemo", "Tod 'The Blaster' McQuinn"]},
+                4: {"cost": {"Conductive Polymers": 1, "Focus Crystals": 1, "Modified Consumer Firmware": 1}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                5: {"cost": {"Biotech Conductors": 1, "Cracked Industrial Firmware": 1, "Thermic Alloys": 1}, "engineers": ["Tod 'The Blaster' McQuinn"]}
+            },
+            "Plasma Accelerator": {
+                1: {"cost": {"Sulphur": 1}, "engineers": ["Zacariah Nemo", "Bill Turner"]},
+                2: {"cost": {"Modified Consumer Firmware": 1, "Sulphur": 1}, "engineers": ["Zacariah Nemo", "Bill Turner"]},
+                3: {"cost": {"Focus Crystals": 1, "Modified Consumer Firmware": 1, "Sulphur": 1}, "engineers": ["Bill Turner"]},
+                4: {"cost": {"Conductive Polymers": 1, "Focus Crystals": 1, "Modified Consumer Firmware": 1}, "engineers": ["Bill Turner"]},
+                5: {"cost": {"Biotech Conductors": 1, "Cracked Industrial Firmware": 1, "Thermic Alloys": 1}, "engineers": ["Bill Turner"]}
+            },
+            "Pulse Laser": {
+                1: {"cost": {"Sulphur": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                2: {"cost": {"Modified Consumer Firmware": 1, "Sulphur": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                3: {"cost": {"Focus Crystals": 1, "Modified Consumer Firmware": 1, "Sulphur": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                4: {"cost": {"Conductive Polymers": 1, "Focus Crystals": 1, "Modified Consumer Firmware": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                5: {"cost": {"Biotech Conductors": 1, "Cracked Industrial Firmware": 1, "Thermic Alloys": 1}, "engineers": ["Broo Tarquin"]}
+            },
+            "Rail Gun": {
+                1: {"cost": {"Sulphur": 1}, "engineers": ["The Sarge", "Tod 'The Blaster' McQuinn"]},
+                2: {"cost": {"Modified Consumer Firmware": 1, "Sulphur": 1}, "engineers": ["The Sarge", "Tod 'The Blaster' McQuinn"]},
+                3: {"cost": {"Focus Crystals": 1, "Modified Consumer Firmware": 1, "Sulphur": 1}, "engineers": ["The Sarge", "Tod 'The Blaster' McQuinn"]},
+                4: {"cost": {"Conductive Polymers": 1, "Focus Crystals": 1, "Modified Consumer Firmware": 1}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                5: {"cost": {"Biotech Conductors": 1, "Cracked Industrial Firmware": 1, "Thermic Alloys": 1}, "engineers": ["Tod 'The Blaster' McQuinn"]}
+            },
+            "Frame Shift Wake Scanner": {
+                1: {"cost": {"Iron": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                2: {"cost": {"Hybrid Capacitors": 1, "Iron": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                3: {"cost": {"Hybrid Capacitors": 1, "Iron": 1, "Unexpected Emission Data": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                4: {"cost": {"Decoded Emission Data": 1, "Electrochemical Arrays": 1, "Germanium": 1}, "engineers": ["Tiana Fortune"]},
+                5: {"cost": {"Abnormal Compact Emissions Data": 1, "Niobium": 1, "Polymer Capacitors": 1}, "engineers": ["Tiana Fortune"]}
+            },
+            "Kill Warrant Scanner": {
+                1: {"cost": {"Iron": 1}, "engineers": ["Bill Turner", "Juri Ishmaak", "Lori Jameson", "Tiana Fortune"]},
+                2: {"cost": {"Hybrid Capacitors": 1, "Iron": 1}, "engineers": ["Bill Turner", "Juri Ishmaak", "Lori Jameson", "Tiana Fortune"]},
+                3: {"cost": {"Hybrid Capacitors": 1, "Iron": 1, "Unexpected Emission Data": 1}, "engineers": ["Bill Turner", "Juri Ishmaak", "Lori Jameson", "Tiana Fortune"]},
+                4: {"cost": {"Decoded Emission Data": 1, "Electrochemical Arrays": 1, "Germanium": 1}, "engineers": ["Tiana Fortune"]},
+                5: {"cost": {"Abnormal Compact Emissions Data": 1, "Niobium": 1, "Polymer Capacitors": 1}, "engineers": ["Tiana Fortune"]}
+            },
+            "Manifest Scanner": {
+                1: {"cost": {"Iron": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                2: {"cost": {"Hybrid Capacitors": 1, "Iron": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                3: {"cost": {"Hybrid Capacitors": 1, "Iron": 1, "Unexpected Emission Data": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                4: {"cost": {"Decoded Emission Data": 1, "Electrochemical Arrays": 1, "Germanium": 1}, "engineers": ["Tiana Fortune"]},
+                5: {"cost": {"Abnormal Compact Emissions Data": 1, "Niobium": 1, "Polymer Capacitors": 1}, "engineers": ["Tiana Fortune"]}
+            },
+            "Frame Shift Drive Interdictor": {
+                1: {"cost": {"Mechanical Scrap": 1}, "engineers": ["Felicity Farseer", "Tiana Fortune", "Colonel Bris Dekker", "Mel Brandon"]},
+                2: {"cost": {"Atypical Disrupted Wake Echoes": 1, "Tagged Encryption Codes": 1}, "engineers": ["Tiana Fortune", "Colonel Bris Dekker", "Mel Brandon"]},
+                3: {"cost": {"Anomalous Bulk Scan Data": 1, "Anomalous FSD Telemetry": 1, "Open Symmetric Keys": 1}, "engineers": ["Tiana Fortune", "Colonel Bris Dekker", "Mel Brandon"]},
+                4: {"cost": {"Unidentified Scan Archives": 1, "Strange Wake Solutions": 1, "Atypical Encryption Archives": 1}, "engineers": ["Colonel Bris Dekker", "Mel Brandon"]},
+                5: {"cost": {"Classified Scan Databanks": 1, "Eccentric Hyperspace Trajectories": 1, "Adaptive Encryptors Capture": 1}, "engineers": ["Mel Brandon"]}
+            },
+            "Sensors": {
+                1: {"cost": {"Iron": 1}, "engineers": ["Bill Turner", "Felicity Farseer", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]},
+                2: {"cost": {"Hybrid Capacitors": 1, "Iron": 1}, "engineers": ["Bill Turner", "Felicity Farseer", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]},
+                3: {"cost": {"Hybrid Capacitors": 1, "Iron": 1, "Unexpected Emission Data": 1}, "engineers": ["Bill Turner", "Felicity Farseer", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]},
+                4: {"cost": {"Decoded Emission Data": 1, "Electrochemical Arrays": 1, "Germanium": 1}, "engineers": ["Bill Turner", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]},
+                5: {"cost": {"Abnormal Compact Emissions Data": 1, "Niobium": 1, "Polymer Capacitors": 1}, "engineers": ["Bill Turner", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]}
+            }
+        }
+    },
+    "Overcharged": {
+        "module_recipes": {
+            "Beam Laser": {
+                1: {"cost": {"Nickel": 1}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]},
+                2: {"cost": {"Conductive Components": 1, "Nickel": 1}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]},
+                3: {"cost": {"Conductive Components": 1, "Electrochemical Arrays": 1, "Nickel": 1}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]},
+                4: {"cost": {"Conductive Ceramics": 1, "Polymer Capacitors": 1, "Zinc": 1}, "engineers": ["Broo Tarquin", "Mel Brandon"]},
+                5: {"cost": {"Conductive Polymers": 1, "Modified Embedded Firmware": 1, "Zirconium": 1}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
+            },
+            "Burst Laser": {
+                1: {"cost": {"Nickel": 1}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]},
+                2: {"cost": {"Conductive Components": 1, "Nickel": 1}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]},
+                3: {"cost": {"Conductive Components": 1, "Electrochemical Arrays": 1, "Nickel": 1}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]},
+                4: {"cost": {"Conductive Ceramics": 1, "Polymer Capacitors": 1, "Zinc": 1}, "engineers": ["Broo Tarquin", "Mel Brandon"]},
+                5: {"cost": {"Conductive Polymers": 1, "Modified Embedded Firmware": 1, "Zirconium": 1}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
+            },
+            "Cannon": {
+                1: {"cost": {"Nickel": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks", "The Sarge"]},
+                2: {"cost": {"Conductive Components": 1, "Nickel": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks", "The Sarge"]},
+                3: {"cost": {"Conductive Components": 1, "Electrochemical Arrays": 1, "Nickel": 1}, "engineers": ["Marsha Hicks", "The Sarge"]},
+                4: {"cost": {"Conductive Ceramics": 1, "Polymer Capacitors": 1, "Zinc": 1}, "engineers": ["Marsha Hicks", "The Sarge"]},
+                5: {"cost": {"Conductive Polymers": 1, "Modified Embedded Firmware": 1, "Zirconium": 1}, "engineers": ["Marsha Hicks", "The Sarge"]}
+            },
+            "Fragment Cannon": {
+                1: {"cost": {"Nickel": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                2: {"cost": {"Conductive Components": 1, "Nickel": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                3: {"cost": {"Conductive Components": 1, "Electrochemical Arrays": 1, "Nickel": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                4: {"cost": {"Conductive Ceramics": 1, "Polymer Capacitors": 1, "Zinc": 1}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]},
+                5: {"cost": {"Conductive Polymers": 1, "Modified Embedded Firmware": 1, "Zirconium": 1}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]}
+            },
+            "Multi-cannon": {
+                1: {"cost": {"Nickel": 1}, "engineers": ["Zacariah Nemo", "Tod 'The Blaster' McQuinn", "Marsha Hicks"]},
+                2: {"cost": {"Conductive Components": 1, "Nickel": 1}, "engineers": ["Zacariah Nemo", "Tod 'The Blaster' McQuinn", "Marsha Hicks"]},
+                3: {"cost": {"Conductive Components": 1, "Electrochemical Arrays": 1, "Nickel": 1}, "engineers": ["Zacariah Nemo", "Tod 'The Blaster' McQuinn", "Marsha Hicks"]},
+                4: {"cost": {"Conductive Ceramics": 1, "Polymer Capacitors": 1, "Zinc": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]},
+                5: {"cost": {"Conductive Polymers": 1, "Modified Embedded Firmware": 1, "Zirconium": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]}
+            },
+            "Plasma Accelerator": {
+                1: {"cost": {"Nickel": 1}, "engineers": ["Zacariah Nemo", "Bill Turner", "Etienne Dorn"]},
+                2: {"cost": {"Conductive Components": 1, "Nickel": 1}, "engineers": ["Zacariah Nemo", "Bill Turner", "Etienne Dorn"]},
+                3: {"cost": {"Conductive Components": 1, "Electrochemical Arrays": 1, "Nickel": 1}, "engineers": ["Bill Turner", "Etienne Dorn"]},
+                4: {"cost": {"Conductive Ceramics": 1, "Polymer Capacitors": 1, "Zinc": 1}, "engineers": ["Bill Turner", "Etienne Dorn"]},
+                5: {"cost": {"Conductive Polymers": 1, "Modified Embedded Firmware": 1, "Zirconium": 1}, "engineers": ["Bill Turner", "Etienne Dorn"]}
+            },
+            "Pulse Laser": {
+                1: {"cost": {"Nickel": 1}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]},
+                2: {"cost": {"Conductive Components": 1, "Nickel": 1}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]},
+                3: {"cost": {"Conductive Components": 1, "Electrochemical Arrays": 1, "Nickel": 1}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]},
+                4: {"cost": {"Conductive Ceramics": 1, "Polymer Capacitors": 1, "Zinc": 1}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]},
+                5: {"cost": {"Conductive Polymers": 1, "Modified Embedded Firmware": 1, "Zirconium": 1}, "engineers": ["Broo Tarquin", "Mel Brandon"]}
+            },
+            "Power Plant": {
+                1: {"cost": {"Sulphur": 1}, "engineers": ["Felicity Farseer", "Marco Qwent", "Hera Tani", "Etienne Dorn"]},
+                2: {"cost": {"Conductive Components": 1, "Heat Conduction Wiring": 1}, "engineers": ["Marco Qwent", "Hera Tani", "Etienne Dorn"]},
+                3: {"cost": {"Conductive Components": 1, "Heat Conduction Wiring": 1, "Selenium": 1}, "engineers": ["Marco Qwent", "Hera Tani", "Etienne Dorn"]},
+                4: {"cost": {"Cadmium": 1, "Conductive Ceramics": 1, "Heat Dispersion Plate": 1}, "engineers": ["Marco Qwent", "Hera Tani", "Etienne Dorn"]},
+                5: {"cost": {"Chemical Manipulators": 1, "Conductive Ceramics": 1, "Tellurium": 1}, "engineers": ["Hera Tani", "Etienne Dorn"]}
+            }
+        }
+    },
+    "Short range": {
+        "module_recipes": {
+            "Beam Laser": {
+                1: {"cost": {"Nickel": 1}, "engineers": ["The Dweller"]},
+                2: {"cost": {"Modified Consumer Firmware": 1, "Nickel": 1}, "engineers": ["The Dweller"]},
+                3: {"cost": {"Electrochemical Arrays": 1, "Modified Consumer Firmware": 1, "Nickel": 1}, "engineers": ["The Dweller"]},
+                4: {"cost": {"Conductive Polymers": 1, "Electrochemical Arrays": 1, "Modified Consumer Firmware": 1}, "engineers": ["Broo Tarquin"]},
+                5: {"cost": {"Biotech Conductors": 1, "Configurable Components": 1, "Cracked Industrial Firmware": 1}, "engineers": ["Broo Tarquin"]}
+            },
+            "Burst Laser": {
+                1: {"cost": {"Nickel": 1}, "engineers": ["The Dweller"]},
+                2: {"cost": {"Modified Consumer Firmware": 1, "Nickel": 1}, "engineers": ["The Dweller"]},
+                3: {"cost": {"Electrochemical Arrays": 1, "Modified Consumer Firmware": 1, "Nickel": 1}, "engineers": ["The Dweller"]},
+                4: {"cost": {"Conductive Polymers": 1, "Electrochemical Arrays": 1, "Modified Consumer Firmware": 1}, "engineers": ["Broo Tarquin"]},
+                5: {"cost": {"Biotech Conductors": 1, "Configurable Components": 1, "Cracked Industrial Firmware": 1}, "engineers": ["Broo Tarquin"]}
+            },
+            "Cannon": {
+                1: {"cost": {"Nickel": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "The Sarge", "Marsha Hicks"]},
+                2: {"cost": {"Modified Consumer Firmware": 1, "Nickel": 1}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                3: {"cost": {"Electrochemical Arrays": 1, "Modified Consumer Firmware": 1, "Nickel": 1}, "engineers": ["The Sarge", "Marsha Hicks"]},
+                4: {"cost": {"Conductive Polymers": 1, "Electrochemical Arrays": 1, "Modified Consumer Firmware": 1}, "engineers": ["The Sarge", "Marsha Hicks"]},
+                5: {"cost": {"Biotech Conductors": 1, "Configurable Components": 1, "Cracked Industrial Firmware": 1}, "engineers": ["The Sarge", "Marsha Hicks"]}
+            },
+            "Multi-cannon": {
+                1: {"cost": {"Nickel": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                2: {"cost": {"Modified Consumer Firmware": 1, "Nickel": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                3: {"cost": {"Electrochemical Arrays": 1, "Modified Consumer Firmware": 1, "Nickel": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                4: {"cost": {"Conductive Polymers": 1, "Electrochemical Arrays": 1, "Modified Consumer Firmware": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]},
+                5: {"cost": {"Biotech Conductors": 1, "Configurable Components": 1, "Cracked Industrial Firmware": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]}
+            },
+            "Plasma Accelerator": {
+                1: {"cost": {"Nickel": 1}, "engineers": ["Zacariah Nemo", "Bill Turner", "Etienne Dorn"]},
+                2: {"cost": {"Modified Consumer Firmware": 1, "Nickel": 1}, "engineers": ["Zacariah Nemo"]},
+                3: {"cost": {"Electrochemical Arrays": 1, "Modified Consumer Firmware": 1, "Nickel": 1}, "engineers": ["Bill Turner", "Etienne Dorn"]},
+                4: {"cost": {"Conductive Polymers": 1, "Electrochemical Arrays": 1, "Modified Consumer Firmware": 1}, "engineers": ["Bill Turner", "Etienne Dorn"]},
+                5: {"cost": {"Biotech Conductors": 1, "Configurable Components": 1, "Cracked Industrial Firmware": 1}, "engineers": ["Bill Turner", "Etienne Dorn"]}
+            },
+            "Rail Gun": {
+                1: {"cost": {"Nickel": 1}, "engineers": ["The Sarge", "Tod 'The Blaster' McQuinn", "Etienne Dorn"]},
+                2: {"cost": {"Modified Consumer Firmware": 1, "Nickel": 1}, "engineers": ["The Sarge", "Tod 'The Blaster' McQuinn", "Etienne Dorn"]},
+                3: {"cost": {"Electrochemical Arrays": 1, "Modified Consumer Firmware": 1, "Nickel": 1}, "engineers": ["The Sarge"]},
+                4: {"cost": {"Conductive Polymers": 1, "Electrochemical Arrays": 1, "Modified Consumer Firmware": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Etienne Dorn"]},
+                5: {"cost": {"Biotech Conductors": 1, "Configurable Components": 1, "Cracked Industrial Firmware": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Etienne Dorn"]}
+            }
+        }
+    },
+    "Sturdy": {
+        "module_recipes": {
+            "Beam Laser": {
+                1: {"cost": {"Nickel": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                2: {"cost": {"Nickel": 1, "Shield Emitters": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                3: {"cost": {"Nickel": 1, "Shield Emitters": 1, "Tungsten": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                4: {"cost": {"Molybdenum": 1, "Tungsten": 1, "Zinc": 1}, "engineers": ["Broo Tarquin"]},
+                5: {"cost": {"High Density Composites": 1, "Molybdenum": 1, "Technetium": 1}, "engineers": ["Broo Tarquin"]}
+            },
+            "Burst Laser": {
+                1: {"cost": {"Nickel": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                2: {"cost": {"Nickel": 1, "Shield Emitters": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                3: {"cost": {"Nickel": 1, "Shield Emitters": 1, "Tungsten": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                4: {"cost": {"Molybdenum": 1, "Tungsten": 1, "Zinc": 1}, "engineers": ["Broo Tarquin"]},
+                5: {"cost": {"High Density Composites": 1, "Molybdenum": 1, "Technetium": 1}, "engineers": ["Broo Tarquin"]}
+            },
+            "Cannon": {
+                1: {"cost": {"Nickel": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "The Sarge", "Marsha Hicks"]},
+                2: {"cost": {"Nickel": 1, "Shield Emitters": 1}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                3: {"cost": {"Nickel": 1, "Shield Emitters": 1, "Tungsten": 1}, "engineers": ["The Sarge", "Marsha Hicks"]},
+                4: {"cost": {"Molybdenum": 1, "Tungsten": 1, "Zinc": 1}, "engineers": ["The Sarge", "Marsha Hicks"]},
+                5: {"cost": {"High Density Composites": 1, "Molybdenum": 1, "Technetium": 1}, "engineers": ["The Sarge", "Marsha Hicks"]}
+            },
+            "Fragment Cannon": {
+                1: {"cost": {"Nickel": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                2: {"cost": {"Nickel": 1, "Shield Emitters": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                3: {"cost": {"Nickel": 1, "Shield Emitters": 1, "Tungsten": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                4: {"cost": {"Molybdenum": 1, "Tungsten": 1, "Zinc": 1}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]},
+                5: {"cost": {"High Density Composites": 1, "Molybdenum": 1, "Technetium": 1}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]}
+            },
+            "Mine Launcher": {
+                1: {"cost": {"Nickel": 1}, "engineers": ["Liz Ryder", "Juri Ishmaak", "Petra Olmanova"]},
+                2: {"cost": {"Nickel": 1, "Shield Emitters": 1}, "engineers": ["Liz Ryder", "Juri Ishmaak", "Petra Olmanova"]},
+                3: {"cost": {"Nickel": 1, "Shield Emitters": 1, "Tungsten": 1}, "engineers": ["Liz Ryder", "Juri Ishmaak", "Petra Olmanova"]},
+                4: {"cost": {"Molybdenum": 1, "Tungsten": 1, "Zinc": 1}, "engineers": ["Juri Ishmaak", "Petra Olmanova"]},
+                5: {"cost": {"High Density Composites": 1, "Molybdenum": 1, "Technetium": 1}, "engineers": ["Juri Ishmaak", "Petra Olmanova"]}
+            },
+            "Missile Rack": {
+                1: {"cost": {"Nickel": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
+                2: {"cost": {"Nickel": 1, "Shield Emitters": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
+                3: {"cost": {"Nickel": 1, "Shield Emitters": 1, "Tungsten": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
+                4: {"cost": {"Molybdenum": 1, "Tungsten": 1, "Zinc": 1}, "engineers": ["Liz Ryder", "Petra Olmanova"]},
+                5: {"cost": {"High Density Composites": 1, "Molybdenum": 1, "Technetium": 1}, "engineers": ["Liz Ryder", "Petra Olmanova"]}
+            },
+            "Multi-cannon": {
+                1: {"cost": {"Nickel": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                2: {"cost": {"Nickel": 1, "Shield Emitters": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                3: {"cost": {"Nickel": 1, "Shield Emitters": 1, "Tungsten": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                4: {"cost": {"Molybdenum": 1, "Tungsten": 1, "Zinc": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]},
+                5: {"cost": {"High Density Composites": 1, "Molybdenum": 1, "Technetium": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]}
+            },
+            "Plasma Accelerator": {
+                1: {"cost": {"Nickel": 1}, "engineers": ["Zacariah Nemo", "Bill Turner"]},
+                2: {"cost": {"Nickel": 1, "Shield Emitters": 1}, "engineers": ["Zacariah Nemo"]},
+                3: {"cost": {"Nickel": 1, "Shield Emitters": 1, "Tungsten": 1}, "engineers": ["Bill Turner"]},
+                4: {"cost": {"Molybdenum": 1, "Tungsten": 1, "Zinc": 1}, "engineers": ["Bill Turner"]},
+                5: {"cost": {"High Density Composites": 1, "Molybdenum": 1, "Technetium": 1}, "engineers": ["Bill Turner"]}
+            },
+            "Pulse Laser": {
+                1: {"cost": {"Nickel": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                2: {"cost": {"Nickel": 1, "Shield Emitters": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                3: {"cost": {"Nickel": 1, "Shield Emitters": 1, "Tungsten": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                4: {"cost": {"Molybdenum": 1, "Tungsten": 1, "Zinc": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                5: {"cost": {"High Density Composites": 1, "Molybdenum": 1, "Technetium": 1}, "engineers": ["Broo Tarquin"]}
+            },
+            "Rail Gun": {
+                1: {"cost": {"Nickel": 1}, "engineers": ["The Sarge", "Tod 'The Blaster' McQuinn"]},
+                2: {"cost": {"Nickel": 1, "Shield Emitters": 1}, "engineers": ["The Sarge", "Tod 'The Blaster' McQuinn"]},
+                3: {"cost": {"Nickel": 1, "Shield Emitters": 1, "Tungsten": 1}, "engineers": ["The Sarge"]},
+                4: {"cost": {"Molybdenum": 1, "Tungsten": 1, "Zinc": 1}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                5: {"cost": {"High Density Composites": 1, "Molybdenum": 1, "Technetium": 1}, "engineers": ["Tod 'The Blaster' McQuinn"]}
+            },
+            "Seeker Missile Rack": {
+                1: {"cost": {"Nickel": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
+                2: {"cost": {"Nickel": 1, "Shield Emitters": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
+                3: {"cost": {"Nickel": 1, "Shield Emitters": 1, "Tungsten": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
+                4: {"cost": {"Molybdenum": 1, "Tungsten": 1, "Zinc": 1}, "engineers": ["Liz Ryder", "Petra Olmanova"]},
+                5: {"cost": {"High Density Composites": 1, "Molybdenum": 1, "Technetium": 1}, "engineers": ["Liz Ryder", "Petra Olmanova"]}
+            },
+            "Torpedo Pylon": {
+                1: {"cost": {"Nickel": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
+                2: {"cost": {"Nickel": 1, "Shield Emitters": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
+                3: {"cost": {"Nickel": 1, "Shield Emitters": 1, "Tungsten": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]},
+                4: {"cost": {"Molybdenum": 1, "Tungsten": 1, "Zinc": 1}, "engineers": ["Liz Ryder", "Petra Olmanova"]},
+                5: {"cost": {"High Density Composites": 1, "Molybdenum": 1, "Technetium": 1}, "engineers": ["Liz Ryder", "Petra Olmanova"]}
+            }
+        }
+    },
+    "Focused": {
+        "module_recipes": {
+            "Burst Laser": {
+                1: {"cost": {"Iron": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                2: {"cost": {"Conductive Components": 1, "Iron": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                3: {"cost": {"Chromium": 1, "Conductive Ceramics": 1, "Iron": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                4: {"cost": {"Focus Crystals": 1, "Germanium": 1, "Polymer Capacitors": 1}, "engineers": ["Broo Tarquin"]},
+                5: {"cost": {"Military Supercapacitors": 1, "Niobium": 1, "Refined Focus Crystals": 1}, "engineers": ["Broo Tarquin"]}
+            },
+            "Plasma Accelerator": {
+                1: {"cost": {"Iron": 1}, "engineers": ["Zacariah Nemo", "Bill Turner"]},
+                2: {"cost": {"Conductive Components": 1, "Iron": 1}, "engineers": ["Zacariah Nemo"]},
+                3: {"cost": {"Chromium": 1, "Conductive Ceramics": 1, "Iron": 1}, "engineers": ["Bill Turner"]},
+                4: {"cost": {"Focus Crystals": 1, "Germanium": 1, "Polymer Capacitors": 1}, "engineers": ["Bill Turner"]},
+                5: {"cost": {"Military Supercapacitors": 1, "Niobium": 1, "Refined Focus Crystals": 1}, "engineers": ["Bill Turner"]}
+            },
+            "Pulse Laser": {
+                1: {"cost": {"Iron": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                2: {"cost": {"Conductive Components": 1, "Iron": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                3: {"cost": {"Chromium": 1, "Conductive Ceramics": 1, "Iron": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                4: {"cost": {"Focus Crystals": 1, "Germanium": 1, "Polymer Capacitors": 1}, "engineers": ["The Dweller", "Broo Tarquin"]},
+                5: {"cost": {"Military Supercapacitors": 1, "Niobium": 1, "Refined Focus Crystals": 1}, "engineers": ["Broo Tarquin"]}
+            }
+        }
+    },
+    "High capacity": {
+        "module_recipes": {
+            "Cannon": {
+                1: {"cost": {"Mechanical Scrap": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "The Sarge", "Marsha Hicks"]},
+                2: {"cost": {"Mechanical Scrap": 1, "Vanadium": 1}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                3: {"cost": {"Mechanical Scrap": 1, "Niobium": 1, "Vanadium": 1}, "engineers": ["The Sarge", "Marsha Hicks"]},
+                4: {"cost": {"High Density Composites": 1, "Mechanical Equipment": 1, "Tin": 1}, "engineers": ["The Sarge", "Marsha Hicks"]},
+                5: {"cost": {"Mechanical Components": 1, "Military Supercapacitors": 1, "Proprietary Composites": 1}, "engineers": ["The Sarge", "Marsha Hicks"]}
+            },
+            "Fragment Cannon": {
+                1: {"cost": {"Mechanical Scrap": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                2: {"cost": {"Mechanical Scrap": 1, "Vanadium": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                3: {"cost": {"Mechanical Scrap": 1, "Niobium": 1, "Vanadium": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                4: {"cost": {"High Density Composites": 1, "Mechanical Equipment": 1, "Tin": 1}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]},
+                5: {"cost": {"Mechanical Components": 1, "Military Supercapacitors": 1, "Proprietary Composites": 1}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]}
+            },
+            "Mine Launcher": {
+                1: {"cost": {"Mechanical Scrap": 1}, "engineers": ["Liz Ryder", "Juri Ishmaak"]},
+                2: {"cost": {"Mechanical Scrap": 1, "Vanadium": 1}, "engineers": ["Liz Ryder", "Juri Ishmaak"]},
+                3: {"cost": {"Mechanical Scrap": 1, "Niobium": 1, "Vanadium": 1}, "engineers": ["Liz Ryder", "Juri Ishmaak"]},
+                4: {"cost": {"High Density Composites": 1, "Mechanical Equipment": 1, "Tin": 1}, "engineers": ["Juri Ishmaak"]},
+                5: {"cost": {"Mechanical Components": 1, "Military Supercapacitors": 1, "Proprietary Composites": 1}, "engineers": ["Juri Ishmaak"]}
+            },
+            "Missile Rack": {
+                1: {"cost": {"Mechanical Scrap": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder"]},
+                2: {"cost": {"Mechanical Scrap": 1, "Vanadium": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder"]},
+                3: {"cost": {"Mechanical Scrap": 1, "Niobium": 1, "Vanadium": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder"]},
+                4: {"cost": {"High Density Composites": 1, "Mechanical Equipment": 1, "Tin": 1}, "engineers": ["Liz Ryder"]},
+                5: {"cost": {"Mechanical Components": 1, "Military Supercapacitors": 1, "Proprietary Composites": 1}, "engineers": ["Liz Ryder"]}
+            },
+            "Multi-cannon": {
+                1: {"cost": {"Mechanical Scrap": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                2: {"cost": {"Mechanical Scrap": 1, "Vanadium": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                3: {"cost": {"Mechanical Scrap": 1, "Niobium": 1, "Vanadium": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                4: {"cost": {"High Density Composites": 1, "Mechanical Equipment": 1, "Tin": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]},
+                5: {"cost": {"Mechanical Components": 1, "Military Supercapacitors": 1, "Proprietary Composites": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Marsha Hicks"]}
+            },
+            "Rail Gun": {
+                1: {"cost": {"Mechanical Scrap": 1}, "engineers": ["The Sarge", "Tod 'The Blaster' McQuinn"]},
+                2: {"cost": {"Mechanical Scrap": 1, "Vanadium": 1}, "engineers": ["The Sarge", "Tod 'The Blaster' McQuinn"]},
+                3: {"cost": {"Mechanical Scrap": 1, "Niobium": 1, "Vanadium": 1}, "engineers": ["The Sarge"]},
+                4: {"cost": {"High Density Composites": 1, "Mechanical Equipment": 1, "Tin": 1}, "engineers": ["Tod 'The Blaster' McQuinn"]},
+                5: {"cost": {"Mechanical Components": 1, "Military Supercapacitors": 1, "Proprietary Composites": 1}, "engineers": ["Tod 'The Blaster' McQuinn"]}
+            }
+        }
+    },
+    "Double shot": {
+        "module_recipes": {
+            "Fragment Cannon": {
+                1: {"cost": {"Carbon": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                2: {"cost": {"Carbon": 1, "Mechanical Equipment": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                3: {"cost": {"Carbon": 1, "Cracked Industrial Firmware": 1, "Mechanical Equipment": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]},
+                4: {"cost": {"Mechanical Components": 1, "Security Firmware Patch": 1, "Vanadium": 1}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]},
+                5: {"cost": {"Configurable Components": 1, "High Density Composites": 1, "Modified Embedded Firmware": 1}, "engineers": ["Zacariah Nemo", "Marsha Hicks"]}
+            }
+        }
+    },
+    "Anti-Guardian Zone Resistance": {
+        "module_recipes": {
+            "Guardian Gauss Cannon": {
+                1: {"cost": {"Hardened Surface Fragments": 2, "Caustic Crystal": 1}, "engineers": ["Ram Tah"]}
+            },
+            "Guardian Plasma Charger": {
+                1: {"cost": {"Hardened Surface Fragments": 2, "Caustic Crystal": 1}, "engineers": ["Ram Tah"]}
+            },
+            "Guardian Shard Cannon": {
+                1: {"cost": {"Hardened Surface Fragments": 2, "Caustic Crystal": 1}, "engineers": ["Ram Tah"]}
+            },
+            "Guardian Hybrid Power Plant": {
+                1: {"cost": {"Hardened Surface Fragments": 2, "Caustic Crystal": 1}, "engineers": ["Ram Tah"]}
+            },
+            "Guardian Hybrid Power Distributor": {
+                1: {"cost": {"Hardened Surface Fragments": 2, "Caustic Crystal": 1}, "engineers": ["Ram Tah"]}
+            },
+            "Guardian Shield Reinforcement Package": {
+                1: {"cost": {"Hardened Surface Fragments": 2, "Caustic Crystal": 1}, "engineers": ["Ram Tah"]}
+            },
+            "Guardian Module Reinforcement Package": {
+                1: {"cost": {"Hardened Surface Fragments": 2, "Caustic Crystal": 1}, "engineers": ["Ram Tah"]}
+            },
+            "Guardian Frame Shift Drive Booster": {
+                1: {"cost": {"Hardened Surface Fragments": 2, "Caustic Crystal": 1}, "engineers": ["Ram Tah"]}
+            }
+        }
+    },
+    "Ammo capacity": {
+        "module_recipes": {
+            "Chaff Launcher": {
+                1: {"cost": {"Mechanical Scrap": 1, "Niobium": 1, "Vanadium": 1}, "engineers": ["Ram Tah"]},
+            },
+            "Heat Sink Launcher": {
+                1: {"cost": {"Mechanical Scrap": 1, "Niobium": 1, "Vanadium": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+            },
+            "Point Defence": {
+                1: {"cost": {"Mechanical Scrap": 1, "Niobium": 1, "Vanadium": 1}, "engineers": ["Ram Tah"]},
+            }
+        }
+    },
+    "Reinforced": {
+        "module_recipes": {
+            "Chaff Launcher": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Ram Tah"]},
+                2: {"cost": {"Conductive Components": 1, "Phosphorus": 1}, "engineers": ["Ram Tah"]},
+                3: {"cost": {"Conductive Components": 1, "Mechanical Components": 1, "Phosphorus": 1}, "engineers": ["Ram Tah"]},
+                4: {"cost": {"Conductive Ceramics": 1, "Configurable Components": 1, "Manganese": 1}, "engineers": ["Ram Tah"]},
+                5: {"cost": {"Arsenic": 1, "Conductive Polymers": 1, "Improvised Components": 1}, "engineers": ["Ram Tah"]}
+            },
+            "Electronic Countermeasure": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Ram Tah"]},
+                2: {"cost": {"Conductive Components": 1, "Phosphorus": 1}, "engineers": ["Ram Tah"]},
+                3: {"cost": {"Conductive Components": 1, "Mechanical Components": 1, "Phosphorus": 1}, "engineers": ["Ram Tah"]},
+                4: {"cost": {"Conductive Ceramics": 1, "Configurable Components": 1, "Manganese": 1}, "engineers": ["Ram Tah"]},
+                5: {"cost": {"Arsenic": 1, "Conductive Polymers": 1, "Improvised Components": 1}, "engineers": ["Ram Tah"]}
+            },
+            "Frame Shift Wake Scanner": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                2: {"cost": {"Conductive Components": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                3: {"cost": {"Conductive Components": 1, "Mechanical Components": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                4: {"cost": {"Conductive Ceramics": 1, "Configurable Components": 1, "Manganese": 1}, "engineers": ["Tiana Fortune"]},
+                5: {"cost": {"Arsenic": 1, "Conductive Polymers": 1, "Improvised Components": 1}, "engineers": ["Tiana Fortune"]}
+            },
+            "Heat Sink Launcher": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Ram Tah"]},
+                2: {"cost": {"Conductive Components": 1, "Phosphorus": 1}, "engineers": ["Ram Tah"]},
+                3: {"cost": {"Conductive Components": 1, "Mechanical Components": 1, "Phosphorus": 1}, "engineers": ["Ram Tah"]},
+                4: {"cost": {"Conductive Ceramics": 1, "Configurable Components": 1, "Manganese": 1}, "engineers": ["Ram Tah"]},
+                5: {"cost": {"Arsenic": 1, "Conductive Polymers": 1, "Improvised Components": 1}, "engineers": ["Ram Tah"]}
+            },
+            "Kill Warrant Scanner": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                2: {"cost": {"Conductive Components": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                3: {"cost": {"Conductive Components": 1, "Mechanical Components": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                4: {"cost": {"Conductive Ceramics": 1, "Configurable Components": 1, "Manganese": 1}, "engineers": ["Tiana Fortune"]},
+                5: {"cost": {"Arsenic": 1, "Conductive Polymers": 1, "Improvised Components": 1}, "engineers": ["Tiana Fortune"]}
+            },
+            "Life Support": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Etienne Dorn"]},
+                2: {"cost": {"Conductive Components": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Etienne Dorn"]},
+                3: {"cost": {"Conductive Components": 1, "Mechanical Components": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Etienne Dorn"]},
+                4: {"cost": {"Conductive Ceramics": 1, "Configurable Components": 1, "Manganese": 1}, "engineers": ["Lori Jameson", "Etienne Dorn"]},
+                5: {"cost": {"Arsenic": 1, "Conductive Polymers": 1, "Improvised Components": 1}, "engineers": ["Etienne Dorn"]}
+            },
+            "Collector Limpet Controller": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                2: {"cost": {"Conductive Components": 1, "Phosphorus": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                3: {"cost": {"Conductive Components": 1, "Mechanical Components": 1, "Phosphorus": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                4: {"cost": {"Conductive Ceramics": 1, "Configurable Components": 1, "Manganese": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                5: {"cost": {"Arsenic": 1, "Conductive Polymers": 1, "Improvised Components": 1}, "engineers": ["Marsha Hicks", "The Sarge", "Tiana Fortune"]}
+            },
+            "Fuel Transfer Limpet Controller": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                2: {"cost": {"Conductive Components": 1, "Phosphorus": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                3: {"cost": {"Conductive Components": 1, "Mechanical Components": 1, "Phosphorus": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                4: {"cost": {"Conductive Ceramics": 1, "Configurable Components": 1, "Manganese": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                5: {"cost": {"Arsenic": 1, "Conductive Polymers": 1, "Improvised Components": 1}, "engineers": ["Marsha Hicks", "The Sarge", "Tiana Fortune"]}
+            },
+            "Hatch Breaker Limpet Controller": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                2: {"cost": {"Conductive Components": 1, "Phosphorus": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                3: {"cost": {"Conductive Components": 1, "Mechanical Components": 1, "Phosphorus": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                4: {"cost": {"Conductive Ceramics": 1, "Configurable Components": 1, "Manganese": 1}, "engineers": ["Marsha Hicks", "The Sarge", "Tiana Fortune"]},
+                5: {"cost": {"Arsenic": 1, "Conductive Polymers": 1, "Improvised Components": 1}, "engineers": ["Marsha Hicks", "The Sarge", "Tiana Fortune"]}
+            },
+            "Prospector Limpet Controller": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                2: {"cost": {"Conductive Components": 1, "Phosphorus": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                3: {"cost": {"Conductive Components": 1, "Mechanical Components": 1, "Phosphorus": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                4: {"cost": {"Conductive Ceramics": 1, "Configurable Components": 1, "Manganese": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                5: {"cost": {"Arsenic": 1, "Conductive Polymers": 1, "Improvised Components": 1}, "engineers": ["Marsha Hicks", "The Sarge", "Tiana Fortune"]}
+            },
+            "Manifest Scanner": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                2: {"cost": {"Conductive Components": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                3: {"cost": {"Conductive Components": 1, "Mechanical Components": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                4: {"cost": {"Conductive Ceramics": 1, "Configurable Components": 1, "Manganese": 1}, "engineers": ["Tiana Fortune"]},
+                5: {"cost": {"Arsenic": 1, "Conductive Polymers": 1, "Improvised Components": 1}, "engineers": ["Tiana Fortune"]}
+            },
+            "Point Defence": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Ram Tah"]},
+                2: {"cost": {"Conductive Components": 1, "Phosphorus": 1}, "engineers": ["Ram Tah"]},
+                3: {"cost": {"Conductive Components": 1, "Mechanical Components": 1, "Phosphorus": 1}, "engineers": ["Ram Tah"]},
+                4: {"cost": {"Conductive Ceramics": 1, "Configurable Components": 1, "Manganese": 1}, "engineers": ["Ram Tah"]},
+                5: {"cost": {"Arsenic": 1, "Conductive Polymers": 1, "Improvised Components": 1}, "engineers": ["Ram Tah"]}
+            },
+            "Shield Generator": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung", "Mel Brandon"]},
+                2: {"cost": {"Conductive Components": 1, "Phosphorus": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung", "Mel Brandon"]},
+                3: {"cost": {"Conductive Components": 1, "Mechanical Components": 1, "Phosphorus": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung", "Mel Brandon"]},
+                4: {"cost": {"Conductive Ceramics": 1, "Configurable Components": 1, "Manganese": 1}, "engineers": ["Lei Cheung", "Mel Brandon"]},
+                5: {"cost": {"Arsenic": 1, "Conductive Polymers": 1, "Improvised Components": 1}, "engineers": ["Lei Cheung", "Mel Brandon"]}
+            }
+        }
+    },
+    "Shielded": {
+        "module_recipes": {
+            "Auto Field-Maintenance Unit": {
+                1: {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Petra Olmanova"]},
+                2: {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Petra Olmanova"]},
+                3: {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Petra Olmanova"]},
+                4: {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Lori Jameson", "Petra Olmanova"]},
+                5: {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Petra Olmanova"]}
+            },
+            "Chaff Launcher": {
+                1: {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                2: {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                3: {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                4: {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                5: {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]}
+            },
+            "Electronic Countermeasure": {
+                1: {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                2: {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                3: {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                4: {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                5: {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]}
+            },
+            "Frame Shift Wake Scanner": {
+                1: {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
+                2: {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
+                3: {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
+                4: {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Tiana Fortune", "Etienne Dorn"]},
+                5: {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Tiana Fortune", "Etienne Dorn"]}
+            },
+            "Fuel Scoop": {
+                1: {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Marsha Hicks"]},
+                2: {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Marsha Hicks"]},
+                3: {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Marsha Hicks"]},
+                4: {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Lori Jameson", "Marsha Hicks"]},
+                5: {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Marsha Hicks"]}
+            },
+            "Heat Sink Launcher": {
+                1: {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                2: {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                3: {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                4: {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                5: {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]}
+            },
+            "Kill Warrant Scanner": {
+                1: {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
+                2: {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
+                3: {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
+                4: {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Tiana Fortune", "Etienne Dorn"]},
+                5: {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Tiana Fortune", "Etienne Dorn"]}
+            },
+            "Life Support": {
+                1: {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Etienne Dorn"]},
+                2: {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Etienne Dorn"]},
+                3: {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Etienne Dorn"]},
+                4: {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Lori Jameson", "Etienne Dorn"]},
+                5: {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Etienne Dorn"]}
+            },
+            "Collector Limpet Controller": {
+                1: {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                2: {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                3: {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                4: {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                5: {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Marsha Hicks", "The Sarge", "Tiana Fortune"]}
+            },
+            "Fuel Transfer Limpet Controller": {
+                1: {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                2: {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                3: {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                4: {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                5: {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Marsha Hicks", "The Sarge", "Tiana Fortune"]}
+            },
+            "Hatch Breaker Limpet Controller": {
+                1: {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                2: {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                3: {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                4: {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Marsha Hicks", "The Sarge", "Tiana Fortune"]},
+                5: {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Marsha Hicks", "The Sarge", "Tiana Fortune"]}
+            },
+            "Prospector Limpet Controller": {
+                1: {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                2: {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                3: {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                4: {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Marsha Hicks", "Ram Tah", "The Sarge", "Tiana Fortune"]},
+                5: {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Marsha Hicks", "The Sarge", "Tiana Fortune"]}
+            },
+            "Manifest Scanner": {
+                1: {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
+                2: {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
+                3: {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune", "Etienne Dorn"]},
+                4: {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Tiana Fortune", "Etienne Dorn"]},
+                5: {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Tiana Fortune", "Etienne Dorn"]}
+            },
+            "Point Defence": {
+                1: {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                2: {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                3: {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                4: {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]},
+                5: {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Ram Tah", "Petra Olmanova"]}
+            },
+            "Refinery": {
+                1: {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Marsha Hicks"]},
+                2: {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Marsha Hicks"]},
+                3: {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Marsha Hicks"]},
+                4: {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Lori Jameson", "Marsha Hicks"]},
+                5: {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Marsha Hicks"]}
+            },
+            "Frame Shift Drive": {
+                1: {"cost": {"Nickel": 1}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Mel Brandon", "Professor Palin", "Colonel Bris Dekker", "Chloe Sedesi"]},
+                2: {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Mel Brandon", "Professor Palin", "Colonel Bris Dekker", "Chloe Sedesi"]},
+                3: {"cost": {"Carbon": 1, "Shielding Sensors": 1, "Zinc": 1}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Mel Brandon", "Professor Palin", "Colonel Bris Dekker", "Chloe Sedesi"]},
+                4: {"cost": {"Compound Shielding": 1, "High Density Composites": 1, "Vanadium": 1}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Mel Brandon"]},
+                5: {"cost": {"Imperial Shielding": 1, "Proprietary Composites": 1, "Tungsten": 1}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Mel Brandon"]}
+            },
+            "Power Distributor": {
+                1: {"cost": {"Worn Shield Emitters": 1}, "engineers": ["The Dweller", "Etienne Dorn", "Marco Qwent", "Hera Tani"]},
+                2: {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["The Dweller", "Etienne Dorn", "Marco Qwent", "Hera Tani"]},
+                3: {"cost": {"Carbon": 1, "Shield Emitters": 1, "High Density Composites": 1}, "engineers": ["The Dweller", "Etienne Dorn", "Marco Qwent", "Hera Tani"]},
+                4: {"cost": {"Vanadium": 1, "Shielding Sensors": 1, "Proprietary Composites": 1}, "engineers": ["The Dweller", "Etienne Dorn"]},
+                5: {"cost": {"Tungsten": 1, "Compound Shielding": 1, "Core Dynamics Composites": 1}, "engineers": ["The Dweller", "Etienne Dorn"]}
+            }
+        }
+    },
+    "Fast scan": {
+        "module_recipes": {
+            "Frame Shift Wake Scanner": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                2: {"cost": {"Flawed Focus Crystals": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                3: {"cost": {"Flawed Focus Crystals": 1, "Open Symmetric Keys": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                4: {"cost": {"Atypical Encryption Archives": 1, "Focus Crystals": 1, "Manganese": 1}, "engineers": ["Tiana Fortune"]},
+                5: {"cost": {"Adaptive Encryptors Capture": 1, "Arsenic": 1, "Refined Focus Crystals": 1}, "engineers": ["Tiana Fortune"]}
+            },
+            "Kill Warrant Scanner": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                2: {"cost": {"Flawed Focus Crystals": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                3: {"cost": {"Flawed Focus Crystals": 1, "Open Symmetric Keys": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                4: {"cost": {"Atypical Encryption Archives": 1, "Focus Crystals": 1, "Manganese": 1}, "engineers": ["Tiana Fortune"]},
+                5: {"cost": {"Adaptive Encryptors Capture": 1, "Arsenic": 1, "Refined Focus Crystals": 1}, "engineers": ["Tiana Fortune"]}
+            },
+            "Manifest Scanner": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                2: {"cost": {"Flawed Focus Crystals": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                3: {"cost": {"Flawed Focus Crystals": 1, "Open Symmetric Keys": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                4: {"cost": {"Atypical Encryption Archives": 1, "Focus Crystals": 1, "Manganese": 1}, "engineers": ["Tiana Fortune"]},
+                5: {"cost": {"Adaptive Encryptors Capture": 1, "Arsenic": 1, "Refined Focus Crystals": 1}, "engineers": ["Tiana Fortune"]}
+            },
+            "Detailed Surface Scanner": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Bill Turner", "Felicity Farseer", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]},
+                2: {"cost": {"Flawed Focus Crystals": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Felicity Farseer", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]},
+                3: {"cost": {"Flawed Focus Crystals": 1, "Open Symmetric Keys": 1, "Phosphorus": 1}, "engineers": ["Bill Turner", "Felicity Farseer", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]},
+                4: {"cost": {"Atypical Encryption Archives": 1, "Focus Crystals": 1, "Manganese": 1}, "engineers": ["Bill Turner", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson"]},
+                5: {"cost": {"Adaptive Encryptors Capture": 1, "Arsenic": 1, "Refined Focus Crystals": 1}, "engineers": ["Bill Turner", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson"]}
+            }
+        }
+    },
+    "Wide angle": {
+        "module_recipes": {
+            "Frame Shift Wake Scanner": {
+                1: {"cost": {"Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                2: {"cost": {"Germanium": 1, "Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                3: {"cost": {"Classified Scan Databanks": 1, "Germanium": 1, "Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                4: {"cost": {"Divergent Scan Data": 1, "Mechanical Equipment": 1, "Niobium": 1}, "engineers": ["Tiana Fortune"]},
+                5: {"cost": {"Classified Scan Fragment": 1, "Mechanical Components": 1, "Tin": 1}, "engineers": ["Tiana Fortune"]}
+            },
+            "Kill Warrant Scanner": {
+                1: {"cost": {"Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                2: {"cost": {"Germanium": 1, "Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                3: {"cost": {"Classified Scan Databanks": 1, "Germanium": 1, "Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                4: {"cost": {"Divergent Scan Data": 1, "Mechanical Equipment": 1, "Niobium": 1}, "engineers": ["Tiana Fortune"]},
+                5: {"cost": {"Classified Scan Fragment": 1, "Mechanical Components": 1, "Tin": 1}, "engineers": ["Tiana Fortune"]}
+            },
+            "Manifest Scanner": {
+                1: {"cost": {"Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                2: {"cost": {"Germanium": 1, "Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                3: {"cost": {"Classified Scan Databanks": 1, "Germanium": 1, "Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Lori Jameson", "Tiana Fortune"]},
+                4: {"cost": {"Divergent Scan Data": 1, "Mechanical Equipment": 1, "Niobium": 1}, "engineers": ["Tiana Fortune"]},
+                5: {"cost": {"Classified Scan Fragment": 1, "Mechanical Components": 1, "Tin": 1}, "engineers": ["Tiana Fortune"]}
+            },
+            "Sensors": {
+                1: {"cost": {"Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Felicity Farseer", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]},
+                2: {"cost": {"Germanium": 1, "Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Felicity Farseer", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]},
+                3: {"cost": {"Classified Scan Databanks": 1, "Germanium": 1, "Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Felicity Farseer", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]},
+                4: {"cost": {"Divergent Scan Data": 1, "Mechanical Equipment": 1, "Niobium": 1}, "engineers": ["Bill Turner", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson"]},
+                5: {"cost": {"Classified Scan Fragment": 1, "Mechanical Components": 1, "Tin": 1}, "engineers": ["Bill Turner", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]}
+            },
+            "Detailed Surface Scanner": {
+                1: {"cost": {"Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Felicity Farseer", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]},
+                2: {"cost": {"Germanium": 1, "Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Felicity Farseer", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]},
+                3: {"cost": {"Classified Scan Databanks": 1, "Germanium": 1, "Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Felicity Farseer", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]},
+                4: {"cost": {"Divergent Scan Data": 1, "Mechanical Equipment": 1, "Niobium": 1}, "engineers": ["Bill Turner", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson"]},
+                5: {"cost": {"Classified Scan Fragment": 1, "Mechanical Components": 1, "Tin": 1}, "engineers": ["Bill Turner", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]}
+            }
+        }
+    },
+    "Blast resistant": {
+        "module_recipes": {
+            "Shield Booster": {
+                1: {"cost": {"Iron": 1}, "engineers": ["Didi Vatermann", "Mel Brandon", "Felicity Farseer", "Lei Cheung"]},
+                2: {"cost": {"Conductive Components": 1, "Iron": 1}, "engineers": ["Didi Vatermann", "Mel Brandon", "Lei Cheung"]},
+                3: {"cost": {"Conductive Components": 1, "Focus Crystals": 1, "Iron": 1}, "engineers": ["Didi Vatermann", "Mel Brandon", "Lei Cheung"]},
+                4: {"cost": {"Germanium": 1, "Refined Focus Crystals": 1, "Untypical Shield Scans": 1}, "engineers": ["Didi Vatermann", "Mel Brandon"]},
+                5: {"cost": {"Aberrant Shield Pattern Analysis": 1, "Exquisite Focus Crystals": 1, "Niobium": 1}, "engineers": ["Didi Vatermann", "Mel Brandon"]}
+            },
+            "Hull Reinforcement Package": {
+                1: {"cost": {"Nickel": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                2: {"cost": {"Carbon": 1, "Zinc": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                3: {"cost": {"Salvaged Alloys": 1, "Vanadium": 1, "Zirconium": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                4: {"cost": {"Galvanising Alloys": 1, "Mercury": 1, "Tungsten": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                5: {"cost": {"Molybdenum": 1, "Phase Alloys": 1, "Ruthenium": 1}, "engineers": ["Selene Jean"]}
+            },
+            "Armour": {
+                1: {"cost": {"Nickel": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                2: {"cost": {"Carbon": 1, "Zinc": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                3: {"cost": {"Salvaged Alloys": 1, "Vanadium": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                4: {"cost": {"Galvanising Alloys": 1, "Mercury": 1, "Tungsten": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                5: {"cost": {"Molybdenum": 1, "Phase Alloys": 1, "Ruthenium": 1}, "engineers": ["Selene Jean"]}
+            }
+        }
+    },
+    "Heavy duty": {
+        "module_recipes": {
+            "Shield Booster": {
+                1: {"cost": {"Grid Resistors": 1}, "engineers": ["Didi Vatermann", "Felicity Farseer", "Lei Cheung"]},
+                2: {"cost": {"Distorted Shield Cycle Recordings": 1, "Hybrid Capacitors": 1}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
+                3: {"cost": {"Distorted Shield Cycle Recordings": 1, "Hybrid Capacitors": 1, "Niobium": 1}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
+                4: {"cost": {"Electrochemical Arrays": 1, "Inconsistent Shield Soak Analysis": 1, "Tin": 1}, "engineers": ["Didi Vatermann"]},
+                5: {"cost": {"Antimony": 1, "Polymer Capacitors": 1, "Untypical Shield Scans": 1}, "engineers": ["Didi Vatermann"]}
+            },
+            "Hull Reinforcement Package": {
+                1: {"cost": {"Carbon": 1}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]},
+                2: {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]},
+                3: {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]},
+                4: {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]},
+                5: {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Petra Olmanova", "Selene Jean"]}
+            },
+            "Armour": {
+                1: {"cost": {"Carbon": 1}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]},
+                2: {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]},
+                3: {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]},
+                4: {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]},
+                5: {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Petra Olmanova", "Selene Jean"]}
+            }
+        }
+    },
+    "Kinetic resistant": {
+        "module_recipes": {
+            "Shield Booster": {
+                1: {"cost": {"Iron": 1}, "engineers": ["Didi Vatermann", "Felicity Farseer", "Lei Cheung"]},
+                2: {"cost": {"Germanium": 1, "Grid Resistors": 1}, "engineers": ["Didi Vatermann", "Felicity Farseer", "Lei Cheung"]},
+                3: {"cost": {"Focus Crystals": 1, "Hybrid Capacitors": 1, "Salvaged Alloys": 1}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
+                4: {"cost": {"Galvanising Alloys": 1, "Refined Focus Crystals": 1, "Untypical Shield Scans": 1}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
+                5: {"cost": {"Aberrant Shield Pattern Analysis": 1, "Exquisite Focus Crystals": 1, "Phase Alloys": 1}, "engineers": ["Didi Vatermann"]}
+            },
+            "Shield Generator": {
+                1: {"cost": {"Distorted Shield Cycle Recordings": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung"]},
+                2: {"cost": {"Distorted Shield Cycle Recordings": 1, "Modified Consumer Firmware": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung"]},
+                3: {"cost": {"Distorted Shield Cycle Recordings": 1, "Modified Consumer Firmware": 1, "Selenium": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung"]},
+                4: {"cost": {"Focus Crystals": 1, "Inconsistent Shield Soak Analysis": 1, "Mercury": 1}, "engineers": ["Lei Cheung"]},
+                5: {"cost": {"Refined Focus Crystals": 1, "Ruthenium": 1, "Untypical Shield Scans": 1}, "engineers": ["Lei Cheung"]}
+            },
+            "Armour": {
+                1: {"cost": {"Nickel": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                2: {"cost": {"Nickel": 1, "Vanadium": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                3: {"cost": {"High Density Composites": 1, "Salvaged Alloys": 1, "Vanadium": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                4: {"cost": {"Galvanising Alloys": 1, "Proprietary Composites": 1, "Tungsten": 1}, "engineers": ["Selene Jean"]},
+                5: {"cost": {"Core Dynamics Composites": 1, "Molybdenum": 1, "Phase Alloys": 1}, "engineers": ["Selene Jean"]}
+            },
+            "Hull Reinforcement Package": {
+                1: {"cost": {"Nickel": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                2: {"cost": {"Nickel": 1, "Vanadium": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                3: {"cost": {"High Density Composites": 1, "Salvaged Alloys": 1, "Vanadium": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                4: {"cost": {"Galvanising Alloys": 1, "Proprietary Composites": 1, "Tungsten": 1}, "engineers": ["Selene Jean"]},
+                5: {"cost": {"Core Dynamics Composites": 1, "Molybdenum": 1, "Phase Alloys": 1}, "engineers": ["Selene Jean"]}
+            }
+        }
+    },
+    "Resistance augmented": {
+        "module_recipes": {
+            "Shield Booster": {
+                1: {"cost": {"Phosphorus": 1}, "engineers": ["Didi Vatermann", "Felicity Farseer", "Lei Cheung"]},
+                2: {"cost": {"Conductive Components": 1, "Phosphorus": 1}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
+                3: {"cost": {"Conductive Components": 1, "Focus Crystals": 1, "Phosphorus": 1}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
+                4: {"cost": {"Conductive Ceramics": 1, "Manganese": 1, "Refined Focus Crystals": 1}, "engineers": ["Didi Vatermann"]},
+                5: {"cost": {"Conductive Ceramics": 1, "Imperial Shielding": 1, "Refined Focus Crystals": 1}, "engineers": ["Didi Vatermann"]}
+            }
+        }
+    },
+    "Thermal resistant": {
+        "module_recipes": {
+            "Shield Booster": {
+                1: {"cost": {"Iron": 1}, "engineers": ["Didi Vatermann", "Felicity Farseer", "Lei Cheung"]},
+                2: {"cost": {"Germanium": 1, "Heat Conduction Wiring": 1}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
+                3: {"cost": {"Focus Crystals": 1, "Heat Conduction Wiring": 1, "Heat Dispersion Plate": 1}, "engineers": ["Didi Vatermann", "Lei Cheung"]},
+                4: {"cost": {"Heat Dispersion Plate": 1, "Refined Focus Crystals": 1, "Untypical Shield Scans": 1}, "engineers": ["Didi Vatermann"]},
+                5: {"cost": {"Aberrant Shield Pattern Analysis": 1, "Exquisite Focus Crystals": 1, "Heat Exchangers": 1}, "engineers": ["Didi Vatermann"]}
+            },
+            "Hull Reinforcement Package": {
+                1: {"cost": {"Heat Conduction Wiring": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                2: {"cost": {"Heat Dispersion Plate": 1, "Nickel": 1}, "engineers": ["Selene Jean"]},
+                3: {"cost": {"Heat Exchangers": 1, "Salvaged Alloys": 1, "Vanadium": 1}, "engineers": ["Selene Jean"]},
+                4: {"cost": {"Galvanising Alloys": 1, "Heat Vanes": 1, "Tungsten": 1}, "engineers": ["Selene Jean"]},
+                5: {"cost": {"Molybdenum": 1, "Phase Alloys": 1, "Proto Heat Radiators": 1}, "engineers": ["Selene Jean"]}
+            },
+            "Shield Generator": {
+                1: {"cost": {"Distorted Shield Cycle Recordings": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung"]},
+                2: {"cost": {"Distorted Shield Cycle Recordings": 1, "Germanium": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung"]},
+                3: {"cost": {"Distorted Shield Cycle Recordings": 1, "Germanium": 1, "Selenium": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung"]},
+                4: {"cost": {"Focus Crystals": 1, "Inconsistent Shield Soak Analysis": 1, "Mercury": 1}, "engineers": ["Lei Cheung"]},
+                5: {"cost": {"Refined Focus Crystals": 1, "Ruthenium": 1, "Untypical Shield Scans": 1}, "engineers": ["Lei Cheung"]}
+            },
+            "Armour": {
+                1: {"cost": {"Heat Conduction Wiring": 1}, "engineers": ["Liz Ryder", "Selene Jean"]},
+                2: {"cost": {"Heat Dispersion Plate": 1, "Nickel": 1}, "engineers": ["Selene Jean"]},
+                3: {"cost": {"Heat Exchangers": 1, "Salvaged Alloys": 1, "Vanadium": 1}, "engineers": ["Selene Jean"]},
+                4: {"cost": {"Galvanising Alloys": 1, "Heat Vanes": 1, "Tungsten": 1}, "engineers": ["Selene Jean"]},
+                5: {"cost": {"Molybdenum": 1, "Phase Alloys": 1, "Proto Heat Radiators": 1}, "engineers": ["Selene Jean"]}
+            }
+        }
+    },
+    "Expanded probe scanning radius": {
+        "module_recipes": {
+            "Detailed Surface Scanner": {
+                1: {"cost": {"Mechanical Scrap": 1}, "engineers": ["Bill Turner", "Etienne Dorn", "Felicity Farseer", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]},
+                2: {"cost": {"Mechanical Scrap": 1, "Germanium": 1}, "engineers": ["Bill Turner", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson"]},
+                3: {"cost": {"Mechanical Scrap": 1, "Germanium": 1, "Phase Alloys": 1}, "engineers": ["Bill Turner", "Felicity Farseer", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson", "Tiana Fortune"]},
+                4: {"cost": {"Mechanical Equipment": 1, "Niobium": 1, "Proto Light Alloys": 1}, "engineers": ["Bill Turner", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson"]},
+                5: {"cost": {"Mechanical Components": 1, "Tin": 1, "Proto Radiolic Alloys": 1}, "engineers": ["Bill Turner", "Hera Tani", "Juri Ishmaak", "Lei Cheung", "Lori Jameson"]}
+            }
+        }
+    },
+    "Expanded capture arc": {
+        "module_recipes": {
+            "Frame Shift Drive Interdictor": {
+                1: {"cost": {"Mechanical Scrap": 1}, "engineers": ["Colonel Bris Dekker", "Felicity Farseer", "Mel Brandon", "Tiana Fortune"]},
+                2: {"cost": {"Mechanical Equipment": 1, "Unusual Encrypted Files": 1}, "engineers": ["Colonel Bris Dekker", "Mel Brandon", "Tiana Fortune"]},
+                3: {"cost": {"Grid Resistors": 1, "Mechanical Components": 1, "Tagged Encryption Codes": 1}, "engineers": ["Colonel Bris Dekker", "Mel Brandon", "Tiana Fortune"]},
+                4: {"cost": {"Divergent Scan Data": 1, "Mechanical Equipment": 1, "Strange Wake Solutions": 1}, "engineers": ["Colonel Bris Dekker", "Mel Brandon"]},
+                5: {"cost": {"Mechanical Components": 1, "Eccentric Hyperspace Trajectories": 1, "Classified Scan Fragment": 1}, "engineers": ["Mel Brandon"]}
+            }
+        }
+    },
+    "Rapid charge": {
+        "module_recipes": {
+            "Shield Cell Bank": {
+                1: {"cost": {"Sulphur": 1}, "engineers": ["Elvira Martuuk", "Lori Jameson", "Mel Brandon"]},
+                2: {"cost": {"Chromium": 1, "Grid Resistors": 1}, "engineers": ["Lori Jameson", "Mel Brandon"]},
+                3: {"cost": {"Hybrid Capacitors": 1, "Precipitated Alloys": 1, "Sulphur": 1}, "engineers": ["Lori Jameson", "Mel Brandon"]},
+                4: {"cost": {"Chromium": 1, "Thermic Alloys": 1, "Electrochemical Arrays": 1}, "engineers": ["Mel Brandon"]}
+            }
+        }
+    },
+    "Specialised": {
+        "module_recipes": {
+            "Shield Cell Bank": {
+                1: {"cost": {"Specialised Legacy Firmware": 1}, "engineers": ["Elvira Martuuk", "Lori Jameson", "Mel Brandon"]},
+                2: {"cost": {"Conductive Components": 1, "Specialised Legacy Firmware": 1}, "engineers": ["Lori Jameson", "Mel Brandon"]},
+                3: {"cost": {"Conductive Components": 1, "Cracked Industrial Firmware": 1, "Exceptional Scrambled Emission Data": 1}, "engineers": ["Lori Jameson", "Mel Brandon"]},
+                4: {"cost": {"Conductive Components": 1, "Cracked Industrial Firmware": 1, "Yttrium": 1}, "engineers": ["Mel Brandon"]}
+            }
+        }
+    },
+    "Enhanced low power": {
+        "module_recipes": {
+            "Shield Generator": {
+                1: {"cost": {"Distorted Shield Cycle Recordings": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung", "Mel Brandon"]},
+                2: {"cost": {"Distorted Shield Cycle Recordings": 1, "Germanium": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung", "Mel Brandon"]},
+                3: {"cost": {"Distorted Shield Cycle Recordings": 1, "Germanium": 1, "Precipitated Alloys": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung", "Mel Brandon"]},
+                4: {"cost": {"Inconsistent Shield Soak Analysis": 1, "Niobium": 1, "Thermic Alloys": 1}, "engineers": ["Lei Cheung", "Mel Brandon"]},
+                5: {"cost": {"Military Grade Alloys": 1, "Tin": 1, "Untypical Shield Scans": 1}, "engineers": ["Lei Cheung", "Mel Brandon"]}
+            }
+        }
+    },
+    "Faster boot sequence": {
+        "module_recipes": {
+            "Frame Shift Drive": {
+                1: {"cost": {"Grid Resistors": 1}, "engineers": ["Colonel Bris Dekker", "Chloe Sedesi", "Elvira Martuuk", "Felicity Farseer", "Mel Brandon", "Professor Palin"]},
+                2: {"cost": {"Chromium": 1, "Grid Resistors": 1}, "engineers": ["Colonel Bris Dekker", "Chloe Sedesi", "Elvira Martuuk", "Felicity Farseer", "Mel Brandon", "Professor Palin"]},
+                3: {"cost": {"Grid Resistors": 1, "Heat Dispersion Plate": 1, "Selenium": 1}, "engineers": ["Colonel Bris Dekker", "Chloe Sedesi", "Elvira Martuuk", "Felicity Farseer", "Mel Brandon", "Professor Palin"]},
+                4: {"cost": {"Cadmium": 1, "Heat Exchangers": 1, "Hybrid Capacitors": 1}, "engineers": ["Elvira Martuuk", "Felicity Farseer", "Mel Brandon"]},
+                5: {"cost": {"Electrochemical Arrays": 1, "Heat Vanes": 1, "Tellurium": 1}, "engineers": ["Elvira Martuuk", "Felicity Farseer", "Mel Brandon"]}
+            }
+        }
+    },
+    "Increased range": {
+        "module_recipes": {
+            "Frame Shift Drive": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 1}, "engineers": ["Colonel Bris Dekker", "Chloe Sedesi", "Elvira Martuuk", "Felicity Farseer", "Mel Brandon", "Professor Palin"]},
+                2: {"cost": {"Atypical Disrupted Wake Echoes": 1, "Chemical Processors": 1}, "engineers": ["Colonel Bris Dekker", "Chloe Sedesi", "Elvira Martuuk", "Felicity Farseer", "Mel Brandon", "Professor Palin"]},
+                3: {"cost": {"Chemical Processors": 1, "Phosphorus": 1, "Strange Wake Solutions": 1}, "engineers": ["Colonel Bris Dekker", "Chloe Sedesi", "Elvira Martuuk", "Felicity Farseer", "Mel Brandon", "Professor Palin"]},
+                4: {"cost": {"Chemical Distillery": 1, "Eccentric Hyperspace Trajectories": 1, "Manganese": 1}, "engineers": ["Elvira Martuuk", "Felicity Farseer", "Mel Brandon"]},
+                5: {"cost": {"Arsenic": 1, "Chemical Manipulators": 1, "Datamined Wake Exceptions": 1}, "engineers": ["Elvira Martuuk", "Felicity Farseer", "Mel Brandon"]}
+            }
+        }
+    },
+    "Charge enhanced": {
+        "module_recipes": {
+            "Power Distributor": {
+                1: {"cost": {"Specialised Legacy Firmware": 1}, "engineers": ["Etienne Dorn", "Hera Tani", "Marco Qwent", "The Dweller"]},
+                2: {"cost": {"Chemical Processors": 1, "Specialised Legacy Firmware": 1}, "engineers": ["Etienne Dorn", "Hera Tani", "Marco Qwent", "The Dweller"]},
+                3: {"cost": {"Chemical Distillery": 1, "Grid Resistors": 1, "Modified Consumer Firmware": 1}, "engineers": ["Etienne Dorn", "Hera Tani", "Marco Qwent", "The Dweller"]},
+                4: {"cost": {"Chemical Manipulators": 1, "Cracked Industrial Firmware": 1, "Hybrid Capacitors": 1}, "engineers": ["Etienne Dorn", "The Dweller"]},
+                5: {"cost": {"Chemical Manipulators": 1, "Cracked Industrial Firmware": 1, "Exquisite Focus Crystals": 1}, "engineers": ["Etienne Dorn", "The Dweller"]}
+            }
+        }
+    },
+    "Engine focused": {
+        "module_recipes": {
+            "Power Distributor": {
+                1: {"cost": {"Sulphur": 1}, "engineers": ["Etienne Dorn", "Hera Tani", "Marco Qwent", "The Dweller"]},
+                2: {"cost": {"Conductive Components": 1, "Sulphur": 1}, "engineers": ["Etienne Dorn", "Hera Tani", "Marco Qwent", "The Dweller"]},
+                3: {"cost": {"Anomalous Bulk Scan Data": 1, "Chromium": 1, "Electrochemical Arrays": 1}, "engineers": ["Etienne Dorn", "Hera Tani", "Marco Qwent", "The Dweller"]},
+                4: {"cost": {"Unidentified Scan Archives": 1, "Selenium": 1, "Polymer Capacitors": 1}, "engineers": ["Etienne Dorn", "The Dweller"]},
+                5: {"cost": {"Classified Scan Databanks": 1, "Cadmium": 1, "Military Supercapacitors": 1}, "engineers": ["Etienne Dorn", "The Dweller"]}
+            }
+        }
+    },
+    "System focused": {
+        "module_recipes": {
+            "Power Distributor": {
+                1: {"cost": {"Sulphur": 1}, "engineers": ["Etienne Dorn", "Hera Tani", "Marco Qwent", "The Dweller"]},
+                2: {"cost": {"Conductive Components": 1, "Sulphur": 1}, "engineers": ["Etienne Dorn", "Hera Tani", "Marco Qwent", "The Dweller"]},
+                3: {"cost": {"Anomalous Bulk Scan Data": 1, "Chromium": 1, "Electrochemical Arrays": 1}, "engineers": ["Etienne Dorn", "Hera Tani", "Marco Qwent", "The Dweller"]},
+                4: {"cost": {"Unidentified Scan Archives": 1, "Selenium": 1, "Polymer Capacitors": 1}, "engineers": ["Etienne Dorn", "The Dweller"]},
+                5: {"cost": {"Classified Scan Databanks": 1, "Cadmium": 1, "Military Supercapacitors": 1}, "engineers": ["Etienne Dorn", "The Dweller"]}
+            }
+        }
+    },
+    "Weapon focused": {
+        "module_recipes": {
+            "Power Distributor": {
+                1: {"cost": {"Sulphur": 1}, "engineers": ["Etienne Dorn", "Hera Tani", "Marco Qwent", "The Dweller"]},
+                2: {"cost": {"Conductive Components": 1, "Sulphur": 1}, "engineers": ["Etienne Dorn", "Hera Tani", "Marco Qwent", "The Dweller"]},
+                3: {"cost": {"Anomalous Bulk Scan Data": 1, "Hybrid Capacitors": 1, "Selenium": 1}, "engineers": ["Etienne Dorn", "Hera Tani", "Marco Qwent", "The Dweller"]},
+                4: {"cost": {"Unidentified Scan Archives": 1, "Electrochemical Arrays": 1, "Cadmium": 1}, "engineers": ["Etienne Dorn", "The Dweller"]},
+                5: {"cost": {"Classified Scan Databanks": 1, "Polymer Capacitors": 1, "Tellurium": 1}, "engineers": ["Etienne Dorn", "The Dweller"]}
+            }
+        }
+    },
+    "Armoured": {
+        "module_recipes": {
+            "Power Plant": {
+                1: {"cost": {"Worn Shield Emitters": 1}, "engineers": ["Felicity Farseer", "Marco Qwent", "Hera Tani", "Etienne Dorn"]},
+                2: {"cost": {"Carbon": 1, "Shield Emitters": 1}, "engineers": ["Marco Qwent", "Hera Tani", "Etienne Dorn"]},
+                3: {"cost": {"Carbon": 1, "High Density Composites": 1, "Shield Emitters": 1}, "engineers": ["Marco Qwent", "Hera Tani", "Etienne Dorn"]},
+                4: {"cost": {"Proprietary Composites": 1, "Shielding Sensors": 1, "Vanadium": 1}, "engineers": ["Marco Qwent", "Hera Tani", "Etienne Dorn"]},
+                5: {"cost": {"Compound Shielding": 1, "Core Dynamics Composites": 1, "Tungsten": 1}, "engineers": ["Hera Tani", "Etienne Dorn"]}
+            }
+        }
+    },
+    "Low emissions": {
+        "module_recipes": {
+            "Power Plant": {
+                1: {"cost": {"Iron": 1}, "engineers": ["Felicity Farseer", "Marco Qwent", "Hera Tani", "Etienne Dorn"]},
+                2: {"cost": {"Iron": 1, "Irregular Emission Data": 1}, "engineers": ["Marco Qwent", "Hera Tani", "Etienne Dorn"]},
+                3: {"cost": {"Heat Exchangers": 1, "Iron": 1, "Irregular Emission Data": 1}, "engineers": ["Marco Qwent", "Hera Tani", "Etienne Dorn"]},
+                4: {"cost": {"Germanium": 1, "Heat Vanes": 1, "Unexpected Emission Data": 1}, "engineers": ["Marco Qwent", "Hera Tani", "Etienne Dorn"]},
+                5: {"cost": {"Niobium": 1, "Proto Heat Radiators": 1, "Decoded Emission Data": 1}, "engineers": ["Hera Tani", "Etienne Dorn"]}
+            }
+        }
+    },
+    "Clean": {
+        "module_recipes": {
+            "Thrusters": {
+                1: {"cost": {"Sulphur": 1}, "engineers": ["Elvira Martuuk", "Felicity Farseer", "Professor Palin", "Chloe Sedesi"]},
+                2: {"cost": {"Conductive Components": 1, "Specialised Legacy Firmware": 1}, "engineers": ["Elvira Martuuk", "Felicity Farseer", "Professor Palin", "Chloe Sedesi"]},
+                3: {"cost": {"Conductive Components": 1, "Specialised Legacy Firmware": 1, "Unexpected Emission Data": 1}, "engineers": ["Felicity Farseer", "Professor Palin", "Chloe Sedesi"]},
+                4: {"cost": {"Conductive Ceramics": 1, "Decoded Emission Data": 1, "Modified Consumer Firmware": 1}, "engineers": ["Professor Palin", "Chloe Sedesi"]},
+                5: {"cost": {"Abnormal Compact Emissions Data": 1, "Conductive Ceramics": 1, "Tin": 1}, "engineers": ["Professor Palin", "Chloe Sedesi"]}
+            }
+        }
+    },
+    "Dirty": {
+        "module_recipes": {
+            "Thrusters": {
+                1: {"cost": {"Specialised Legacy Firmware": 1}, "engineers": ["Elvira Martuuk", "Felicity Farseer", "Professor Palin", "Chloe Sedesi", "Mel Brandon"]},
+                2: {"cost": {"Mechanical Equipment": 1, "Specialised Legacy Firmware": 1}, "engineers": ["Elvira Martuuk", "Felicity Farseer", "Professor Palin", "Chloe Sedesi", "Mel Brandon"]},
+                3: {"cost": {"Chromium": 1, "Mechanical Components": 1, "Specialised Legacy Firmware": 1}, "engineers": ["Felicity Farseer", "Professor Palin", "Chloe Sedesi", "Mel Brandon"]},
+                4: {"cost": {"Configurable Components": 1, "Modified Consumer Firmware": 1, "Selenium": 1}, "engineers": ["Professor Palin", "Chloe Sedesi", "Mel Brandon"]},
+                5: {"cost": {"Cadmium": 1, "Cracked Industrial Firmware": 1, "Pharmaceutical Isolators": 1}, "engineers": ["Professor Palin", "Chloe Sedesi", "Mel Brandon"]}
+            }
+        }
+    },
+    "Target Lock Breaker": {
+        "experimental": True,
+        "module_recipes": {
+            "Plasma Accelerator": {
+                1: {"cost": {"Selenium": 5, "Security Firmware Patch": 3, "Adaptive Encryptors Capture": 1}, "engineers": ["Zacariah Nemo", "Bill Turner", "Etienne Dorn"]}
+            }
+        }
+    },
+    "Plasma Slug": {
+        "experimental": True,
+        "module_recipes": {
+            "Plasma Accelerator": {
+                1: {"cost": {"Heat Exchangers": 3, "Modified Embedded Firmware": 2, "Refined Focus Crystals": 2, "Mercury": 4}, "engineers": ["Zacariah Nemo", "Bill Turner", "Etienne Dorn"]}
+            },
+            "Rail Gun": {
+                1: {"cost": {"Heat Exchangers": 3, "Modified Embedded Firmware": 2, "Refined Focus Crystals": 2, "Mercury": 4}, "engineers": ["The Sarge", "Tod 'The Blaster' McQuinn", "Etienne Dorn"]}
+            }
+        }
+    },
+    "Ion Disruptor": {
+        "experimental": True,
+        "module_recipes": {
+            "Mine Launcher": {
+                1: {"cost": {"Sulphur": 5, "Phosphorus": 5, "Chemical Distillery": 3, "Electrochemical Arrays": 3}, "engineers": ["Liz Ryder", "Juri Ishmaak", "Petra Olmanova"]}
+            }
+        }
+    },
+    "Overload Munitions": {
+        "experimental": True,
+        "module_recipes": {
+            "Mine Launcher": {
+                1: {"cost": {"Germanium": 3, "Filament Composites": 5, "Tagged Encryption Codes": 4, "Aberrant Shield Pattern Analysis": 2}, "engineers": ["Liz Ryder", "Juri Ishmaak", "Petra Olmanova"]}
+            },
+            "Missile Rack": {
+                1: {"cost": {"Germanium": 3, "Filament Composites": 5, "Tagged Encryption Codes": 4, "Aberrant Shield Pattern Analysis": 2}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]}
+            },
+            "Pack-Hound Missile Rack": {
+                1: {"cost": {"Germanium": 3, "Filament Composites": 5, "Tagged Encryption Codes": 4, "Aberrant Shield Pattern Analysis": 2}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]}
+            },
+            "Seeker Missile Rack": {
+                1: {"cost": {"Germanium": 3, "Filament Composites": 5, "Tagged Encryption Codes": 4, "Aberrant Shield Pattern Analysis": 2}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]}
+            }
+        }
+    },
+    "Radiant Canister": {
+        "experimental": True,
+        "module_recipes": {
+            "Mine Launcher": {
+                1: {"cost": {"Polonium": 1, "Phase Alloys": 3, "Heat Dispersion Plate": 4}, "engineers": ["Liz Ryder", "Juri Ishmaak", "Petra Olmanova"]}
+            }
+        }
+    },
+    "Reverberating Cascade": {
+        "experimental": True,
+        "module_recipes": {
+            "Mine Launcher": {
+                1: {"cost": {"Chromium": 4, "Configurable Components": 2, "Filament Composites": 4, "Classified Scan Databanks": 3}, "engineers": ["Liz Ryder", "Juri Ishmaak", "Petra Olmanova"]}
+            },
+            "Torpedo Pylon": {
+                1: {"cost": {"Chromium": 4, "Configurable Components": 2, "Filament Composites": 4, "Classified Scan Databanks": 3}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]}
+            }
+        }
+    },
+    "Shift-Lock Canister": {
+        "experimental": True,
+        "module_recipes": {
+            "Mine Launcher": {
+                1: {"cost": {"Tempered Alloys": 5, "Salvaged Alloys": 5, "Strange Wake Solutions": 3}, "engineers": ["Liz Ryder", "Juri Ishmaak", "Petra Olmanova"]}
+            }
+        }
+    },
+    "FSD Interrupt": {
+        "experimental": True,
+        "module_recipes": {
+            "Missile Rack": {
+                1: {"cost": {"Strange Wake Solutions": 3, "Anomalous FSD Telemetry": 5, "Mechanical Equipment": 5, "Configurable Components": 3}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]}
+            },
+            "Containment Missile": {
+                1: {"cost": {"Strange Wake Solutions": 3, "Anomalous FSD Telemetry": 5, "Mechanical Equipment": 5, "Configurable Components": 3}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]}
+            }
+        }
+    },
+    "Penetrator Munitions": {
+        "experimental": True,
+        "module_recipes": {
+            "Missile Rack": {
+                1: {"cost": {"Galvanising Alloys": 5, "Electrochemical Arrays": 3, "Zirconium": 3}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]}
+            }
+        }
+    },
+    "Feedback Cascade": {
+        "experimental": True,
+        "module_recipes": {
+            "Rail Gun": {
+                1: {"cost": {"Open Symmetric Keys": 5, "Shield Emitters": 5, "Filament Composites": 5}, "engineers": ["The Sarge", "Tod 'The Blaster' McQuinn", "Etienne Dorn"]}
+            }
+        }
+    },
+    "Super Penetrator": {
+        "experimental": True,
+        "module_recipes": {
+            "Rail Gun": {
+                1: {"cost": {"Proto Light Alloys": 3, "Refined Focus Crystals": 3, "Zirconium": 3, "Untypical Shield Scans": 5}, "engineers": ["The Sarge", "Tod 'The Blaster' McQuinn", "Etienne Dorn"]}
+            }
+        }
+    },
+    "Mass Lock Munitions": {
+        "experimental": True,
+        "module_recipes": {
+            "Torpedo Pylon": {
+                1: {"cost": {"Mechanical Equipment": 5, "High Density Composites": 3, "Aberrant Shield Pattern Analysis": 3}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]}
+            }
+        }
+    },
+    "Penetrator Payload": {
+        "experimental": True,
+        "module_recipes": {
+            "Torpedo Pylon": {
+                1: {"cost": {"Anomalous Bulk Scan Data": 5, "Tungsten": 3, "Selenium": 3, "Mechanical Components": 3}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]}
+            }
+        }
+    },
+    "Concordant Sequence": {
+        "experimental": True,
+        "module_recipes": {
+            "Beam Laser": {
+                1: {"cost": {"Focus Crystals": 5, "Modified Embedded Firmware": 3, "Zirconium": 1}, "engineers": ["The Dweller", "Broo Tarquin"]}
+            },
+            "Burst Laser": {
+                1: {"cost": {"Focus Crystals": 5, "Modified Embedded Firmware": 3, "Zirconium": 1}, "engineers": ["The Dweller", "Broo Tarquin"]}
+            },
+            "Pulse Laser": {
+                1: {"cost": {"Focus Crystals": 5, "Modified Embedded Firmware": 3, "Zirconium": 1}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]}
+            }
+        }
+    },
+    "Double Braced": {
+        "experimental": True,
+        "module_recipes": {
+            "Frame Shift Drive": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Mel Brandon", "Professor Palin", "Colonel Bris Dekker", "Chloe Sedesi"]}
+            },
+            "Beam Laser": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": ["The Dweller", "Broo Tarquin"]}
+            },
+            "Burst Laser": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": ["The Dweller", "Broo Tarquin"]}
+            },
+            "Pulse Laser": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]}
+            },
+            "Multi-cannon": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
+            },
+            "Plasma Accelerator": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": ["Zacariah Nemo", "Bill Turner", "Etienne Dorn"]}
+            },
+            "Fragment Cannon": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
+            },
+            "Cannon": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "The Sarge", "Marsha Hicks"]}
+            },
+            "Rail Gun": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": ["The Sarge", "Tod 'The Blaster' McQuinn", "Etienne Dorn"]}
+            },
+            "Mine Launcher": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": ["Liz Ryder", "Juri Ishmaak", "Petra Olmanova"]}
+            },
+            "Torpedo Pylon": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]}
+            },
+            "Shield Generator": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung", "Mel Brandon"]}
+            },
+            "Thrusters": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": ["Elvira Martuuk", "Felicity Farseer", "Professor Palin", "Chloe Sedesi", "Mel Brandon"]}
+            },
+            "Power Plant": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": ["Felicity Farseer", "Marco Qwent", "Hera Tani", "Etienne Dorn"]}
+            },
+            "Power Distributor": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": ["The Dweller", "Etienne Dorn", "Marco Qwent", "Hera Tani"]}
+            },
+            "Shield Cell Bank": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": ["Elvira Martuuk", "Lori Jameson", "Mel Brandon"]}
+            },
+            "Shield Booster": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Configurable Components": 1}, "engineers": ["Didi Vatermann", "Mel Brandon", "Felicity Farseer", "Lei Cheung"]}
+            }
+        }
+    },
+    "Flow Control": {
+        "experimental": True,
+        "module_recipes": {
+            "Shield Booster": {
+                1: {"cost": {"Inconsistent Shield Soak Analysis": 5, "Security Firmware Patch": 3, "Focus Crystals": 3, "Niobium": 3}, "engineers": ["Didi Vatermann", "Mel Brandon", "Felicity Farseer", "Lei Cheung"]}
+            },
+            "Power Distributor": {
+                1: {"cost": {"Phosphorus": 5, "Heat Resistant Ceramics": 3, "Conductive Polymers": 1}, "engineers": ["The Dweller", "Etienne Dorn", "Marco Qwent", "Hera Tani"]}
+            },
+            "Shield Cell Bank": {
+                1: {"cost": {"Chemical Storage Units": 5, "Chromium": 3, "Conductive Polymers": 1}, "engineers": ["Elvira Martuuk", "Lori Jameson", "Mel Brandon"]}
+            },
+            "Beam Laser": {
+                1: {"cost": {"Mechanical Scrap": 5, "Hybrid Capacitors": 3, "Modified Embedded Firmware": 1}, "engineers": ["The Dweller", "Broo Tarquin"]}
+            },
+            "Burst Laser": {
+                1: {"cost": {"Mechanical Scrap": 5, "Hybrid Capacitors": 3, "Modified Embedded Firmware": 1}, "engineers": ["The Dweller", "Broo Tarquin"]}
+            },
+            "Pulse Laser": {
+                1: {"cost": {"Mechanical Scrap": 5, "Hybrid Capacitors": 3, "Modified Embedded Firmware": 1}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]}
+            },
+            "Multi-cannon": {
+                1: {"cost": {"Mechanical Scrap": 5, "Hybrid Capacitors": 3, "Modified Embedded Firmware": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
+            },
+            "Plasma Accelerator": {
+                1: {"cost": {"Mechanical Scrap": 5, "Hybrid Capacitors": 3, "Modified Embedded Firmware": 1}, "engineers": ["Zacariah Nemo", "Bill Turner", "Etienne Dorn"]}
+            },
+            "Fragment Cannon": {
+                1: {"cost": {"Mechanical Scrap": 5, "Hybrid Capacitors": 3, "Modified Embedded Firmware": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
+            },
+            "Cannon": {
+                1: {"cost": {"Mechanical Scrap": 5, "Hybrid Capacitors": 3, "Modified Embedded Firmware": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "The Sarge", "Marsha Hicks"]}
+            },
+            "Rail Gun": {
+                1: {"cost": {"Mechanical Scrap": 5, "Hybrid Capacitors": 3, "Modified Embedded Firmware": 1}, "engineers": ["The Sarge", "Tod 'The Blaster' McQuinn", "Etienne Dorn"]}
+            },
+            "Missile Rack": {
+                1: {"cost": {"Mechanical Scrap": 5, "Hybrid Capacitors": 3, "Modified Embedded Firmware": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]}
+            },
+            "Seeker Missile Rack": {
+                1: {"cost": {"Mechanical Scrap": 5, "Hybrid Capacitors": 3, "Modified Embedded Firmware": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]}
+            }
+        }
+    },
+    "Oversized": {
+        "experimental": True,
+        "module_recipes": {
+            "Beam Laser": {
+                1: {"cost": {"Mechanical Scrap": 5, "Mechanical Components": 3, "Ruthenium": 1}, "engineers": ["The Dweller", "Broo Tarquin"]}
+            },
+            "Burst Laser": {
+                1: {"cost": {"Mechanical Scrap": 5, "Mechanical Components": 3, "Ruthenium": 1}, "engineers": ["The Dweller", "Broo Tarquin"]}
+            },
+            "Pulse Laser": {
+                1: {"cost": {"Mechanical Scrap": 5, "Mechanical Components": 3, "Ruthenium": 1}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]}
+            },
+            "Multi-cannon": {
+                1: {"cost": {"Mechanical Scrap": 5, "Mechanical Components": 3, "Ruthenium": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
+            },
+            "Plasma Accelerator": {
+                1: {"cost": {"Mechanical Scrap": 5, "Mechanical Components": 3, "Ruthenium": 1}, "engineers": ["Zacariah Nemo", "Bill Turner", "Etienne Dorn"]}
+            },
+            "Fragment Cannon": {
+                1: {"cost": {"Mechanical Scrap": 5, "Mechanical Components": 3, "Ruthenium": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
+            },
+            "Cannon": {
+                1: {"cost": {"Mechanical Scrap": 5, "Mechanical Components": 3, "Ruthenium": 1}, "engineers": ["Tod 'The Blaster' McQuinn", "The Sarge", "Marsha Hicks"]}
+            },
+            "Rail Gun": {
+                1: {"cost": {"Mechanical Scrap": 5, "Mechanical Components": 3, "Ruthenium": 1}, "engineers": ["The Sarge", "Tod 'The Blaster' McQuinn", "Etienne Dorn"]}
+            },
+            "Mine Launcher": {
+                1: {"cost": {"Mechanical Scrap": 5, "Mechanical Components": 3, "Ruthenium": 1}, "engineers": ["Liz Ryder", "Juri Ishmaak", "Petra Olmanova"]}
+            },
+            "Torpedo Pylon": {
+                1: {"cost": {"Mechanical Scrap": 5, "Mechanical Components": 3, "Ruthenium": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]}
+            },
+            "Missile Rack": {
+                1: {"cost": {"Mechanical Scrap": 5, "Mechanical Components": 3, "Ruthenium": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]}
+            },
+            "Seeker Missile Rack": {
+                1: {"cost": {"Mechanical Scrap": 5, "Mechanical Components": 3, "Ruthenium": 1}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]}
+            }
+        }
+    },
+    "Regeneration Sequence": {
+        "experimental": True,
+        "module_recipes": {
+            "Beam Laser": {
+                1: {"cost": {"Refined Focus Crystals": 3, "Shielding Sensors": 4, "Peculiar Shield Frequency Data": 1}, "engineers": ["The Dweller", "Broo Tarquin"]}
+            }
+        }
+    },
+    "Thermal Conduit": {
+        "experimental": True,
+        "module_recipes": {
+            "Beam Laser": {
+                1: {"cost": {"Heat Dispersion Plate": 5, "Sulphur": 5, "Tempered Alloys": 5}, "engineers": ["The Dweller", "Broo Tarquin"]}
+            },
+            "Plasma Accelerator": {
+                1: {"cost": {"Heat Dispersion Plate": 5, "Sulphur": 5, "Tempered Alloys": 5}, "engineers": ["Zacariah Nemo", "Bill Turner", "Etienne Dorn"]}
+            }
+        }
+    },
+    "Thermal Shock": {
+        "experimental": True,
+        "module_recipes": {
+            "Beam Laser": {
+                1: {"cost": {"Flawed Focus Crystals": 5, "Heat Resistant Ceramics": 3, "Conductive Components": 3, "Tungsten": 3}, "engineers": ["The Dweller", "Broo Tarquin"]}
+            },
+            "Burst Laser": {
+                1: {"cost": {"Flawed Focus Crystals": 5, "Heat Resistant Ceramics": 3, "Conductive Components": 3, "Tungsten": 3}, "engineers": ["The Dweller", "Broo Tarquin"]}
+            },
+            "Pulse Laser": {
+                1: {"cost": {"Flawed Focus Crystals": 5, "Heat Resistant Ceramics": 3, "Conductive Components": 3, "Tungsten": 3}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]}
+            },
+            "Multi-cannon": {
+                1: {"cost": {"Flawed Focus Crystals": 5, "Heat Resistant Ceramics": 3, "Conductive Components": 3, "Tungsten": 3}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
+            }
+        }
+    },
+    "Thermal Vent": {
+        "experimental": True,
+        "module_recipes": {
+            "Beam Laser": {
+                1: {"cost": {"Flawed Focus Crystals": 5, "Conductive Polymers": 3, "Precipitated Alloys": 3}, "engineers": ["The Dweller", "Broo Tarquin"]}
+            }
+        }
+    },
+    "Inertial Impact": {
+        "experimental": True,
+        "module_recipes": {
+            "Burst Laser": {
+                1: {"cost": {"Flawed Focus Crystals": 5, "Distorted Shield Cycle Recordings": 5, "Atypical Disrupted Wake Echoes": 5}, "engineers": ["The Dweller", "Broo Tarquin"]}
+            }
+        }
+    },
+    "Multi-Servos": {
+        "experimental": True,
+        "module_recipes": {
+            "Burst Laser": {
+                1: {"cost": {"Mechanical Scrap": 5, "Conductive Polymers": 2, "Configurable Components": 2, "Focus Crystals": 4}, "engineers": ["The Dweller", "Broo Tarquin"]}
+            },
+            "Pulse Laser": {
+                1: {"cost": {"Mechanical Scrap": 5, "Conductive Polymers": 2, "Configurable Components": 2, "Focus Crystals": 4}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]}
+            },
+            "Multi-cannon": {
+                1: {"cost": {"Mechanical Scrap": 5, "Conductive Polymers": 2, "Configurable Components": 2, "Focus Crystals": 4}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
+            },
+            "Plasma Accelerator": {
+                1: {"cost": {"Mechanical Scrap": 5, "Conductive Polymers": 2, "Configurable Components": 2, "Focus Crystals": 4}, "engineers": ["Zacariah Nemo", "Bill Turner", "Etienne Dorn"]}
+            },
+            "Fragment Cannon": {
+                1: {"cost": {"Mechanical Scrap": 5, "Conductive Polymers": 2, "Configurable Components": 2, "Focus Crystals": 4}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
+            },
+            "Cannon": {
+                1: {"cost": {"Mechanical Scrap": 5, "Conductive Polymers": 2, "Configurable Components": 2, "Focus Crystals": 4}, "engineers": ["Tod 'The Blaster' McQuinn", "The Sarge", "Marsha Hicks"]}
+            },
+            "Rail Gun": {
+                1: {"cost": {"Mechanical Scrap": 5, "Conductive Polymers": 2, "Configurable Components": 2, "Focus Crystals": 4}, "engineers": ["The Sarge", "Tod 'The Blaster' McQuinn", "Etienne Dorn"]}
+            },
+            "Missile Rack": {
+                1: {"cost": {"Mechanical Scrap": 5, "Conductive Polymers": 2, "Configurable Components": 2, "Focus Crystals": 4}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]}
+            },
+            "Seeker Missile Rack": {
+                1: {"cost": {"Mechanical Scrap": 5, "Conductive Polymers": 2, "Configurable Components": 2, "Focus Crystals": 4}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]}
+            }
+        }
+    },
+    "Phasing Sequence": {
+        "experimental": True,
+        "module_recipes": {
+            "Burst Laser": {
+                1: {"cost": {"Focus Crystals": 5, "Aberrant Shield Pattern Analysis": 3, "Niobium": 3, "Configurable Components": 3}, "engineers": ["The Dweller", "Broo Tarquin"]}
+            },
+            "Plasma Accelerator": {
+                1: {"cost": {"Focus Crystals": 5, "Aberrant Shield Pattern Analysis": 3, "Niobium": 3, "Configurable Components": 3}, "engineers": ["Zacariah Nemo", "Bill Turner", "Etienne Dorn"]}
+            },
+            "Pulse Laser": {
+                1: {"cost": {"Focus Crystals": 5, "Aberrant Shield Pattern Analysis": 3, "Niobium": 3, "Configurable Components": 3}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]}
+            }
+        }
+    },
+    "Scramble Spectrum": {
+        "experimental": True,
+        "module_recipes": {
+            "Burst Laser": {
+                1: {"cost": {"Crystal Shards": 5, "Untypical Shield Scans": 3, "Exceptional Scrambled Emission Data": 5}, "engineers": ["The Dweller", "Broo Tarquin"]}
+            },
+            "Pulse Laser": {
+                1: {"cost": {"Crystal Shards": 5, "Untypical Shield Scans": 3, "Exceptional Scrambled Emission Data": 5}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]}
+            }
+        }
+    },
+    "Emissive Munitions": {
+        "experimental": True,
+        "module_recipes": {
+            "Mine Launcher": {
+                1: {"cost": {"Manganese": 3, "Mechanical Equipment": 4, "Heat Exchangers": 3, "Unexpected Emission Data": 3}, "engineers": ["Liz Ryder", "Juri Ishmaak", "Petra Olmanova"]}
+            },
+            "Missile Rack": {
+                1: {"cost": {"Manganese": 3, "Mechanical Equipment": 4, "Heat Exchangers": 3, "Unexpected Emission Data": 3}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]}
+            },
+            "Multi-cannon": {
+                1: {"cost": {"Manganese": 3, "Mechanical Equipment": 4, "Heat Exchangers": 3, "Unexpected Emission Data": 3}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
+            },
+            "Pulse Laser": {
+                1: {"cost": {"Manganese": 3, "Mechanical Equipment": 4, "Heat Exchangers": 3, "Unexpected Emission Data": 3}, "engineers": ["The Dweller", "Broo Tarquin", "Mel Brandon"]}
+            },
+            "Seeker Missile Rack": {
+                1: {"cost": {"Manganese": 3, "Mechanical Equipment": 4, "Heat Exchangers": 3, "Unexpected Emission Data": 3}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]}
+            }
+        }
+    },
+    "Auto Loader": {
+        "experimental": True,
+        "module_recipes": {
+            "Cannon": {
+                1: {"cost": {"Mechanical Equipment": 4, "Mechanical Components": 3, "High Density Composites": 3}, "engineers": ["Tod 'The Blaster' McQuinn", "The Sarge", "Marsha Hicks"]}
+            },
+            "Multi-cannon": {
+                1: {"cost": {"Mechanical Equipment": 4, "Mechanical Components": 3, "High Density Composites": 3}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
+            }
+        }
+    },
+    "Dispersal Field": {
+        "experimental": True,
+        "module_recipes": {
+            "Cannon": {
+                1: {"cost": {"Conductive Components": 5, "Hybrid Capacitors": 5, "Worn Shield Emitters": 5, "Irregular Emission Data": 5}, "engineers": ["Tod 'The Blaster' McQuinn", "The Sarge", "Marsha Hicks"]}
+            },
+            "Plasma Accelerator": {
+                1: {"cost": {"Conductive Components": 5, "Hybrid Capacitors": 5, "Worn Shield Emitters": 5, "Irregular Emission Data": 5}, "engineers": ["Zacariah Nemo", "Bill Turner", "Etienne Dorn"]}
+            }
+        }
+    },
+    "Force Shell": {
+        "experimental": True,
+        "module_recipes": {
+            "Cannon": {
+                1: {"cost": {"Zinc": 5, "Mechanical Scrap": 5, "Phase Alloys": 3, "Heat Conduction Wiring": 3}, "engineers": ["Tod 'The Blaster' McQuinn", "The Sarge", "Marsha Hicks"]}
+            }
+        }
+    },
+    "High Yield Shell": {
+        "experimental": True,
+        "module_recipes": {
+            "Cannon": {
+                1: {"cost": {"Nickel": 5, "Mechanical Scrap": 5, "Proto Light Alloys": 3, "Chemical Manipulators": 3}, "engineers": ["Tod 'The Blaster' McQuinn", "The Sarge", "Marsha Hicks"]}
+            }
+        }
+    },
+    "Smart Rounds": {
+        "experimental": True,
+        "module_recipes": {
+            "Cannon": {
+                1: {"cost": {"Decoded Emission Data": 3, "Security Firmware Patch": 3, "Classified Scan Databanks": 3, "Mechanical Scrap": 5}, "engineers": ["Tod 'The Blaster' McQuinn", "The Sarge", "Marsha Hicks"]}
+            },
+            "Multi-cannon": {
+                1: {"cost": {"Decoded Emission Data": 3, "Security Firmware Patch": 3, "Classified Scan Databanks": 3, "Mechanical Scrap": 5}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
+            }
+        }
+    },
+    "Thermal Cascade": {
+        "experimental": True,
+        "module_recipes": {
+            "Cannon": {
+                1: {"cost": {"Heat Conduction Wiring": 5, "Hybrid Capacitors": 4, "High Density Composites": 3, "Phosphorus": 5}, "engineers": ["Tod 'The Blaster' McQuinn", "The Sarge", "Marsha Hicks"]}
+            },
+            "Missile Rack": {
+                1: {"cost": {"Heat Conduction Wiring": 5, "Hybrid Capacitors": 4, "High Density Composites": 3, "Phosphorus": 5}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]}
+            },
+            "Seeker Missile Rack": {
+                1: {"cost": {"Heat Conduction Wiring": 5, "Hybrid Capacitors": 4, "High Density Composites": 3, "Phosphorus": 5}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]}
+            }
+        }
+    },
+    "Corrosive Shell": {
+        "experimental": True,
+        "module_recipes": {
+            "Fragment Cannon": {
+                1: {"cost": {"Chemical Storage Units": 5, "Precipitated Alloys": 4, "Arsenic": 3}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
+            },
+            "Multi-cannon": {
+                1: {"cost": {"Chemical Storage Units": 5, "Precipitated Alloys": 4, "Arsenic": 3}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
+            }
+        }
+    },
+    "Dazzle Shell": {
+        "experimental": True,
+        "module_recipes": {
+            "Fragment Cannon": {
+                1: {"cost": {"Manganese": 4, "Mechanical Scrap": 5, "Mechanical Components": 5, "Hybrid Capacitors": 5}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
+            },
+            "Plasma Accelerator": {
+                1: {"cost": {"Manganese": 4, "Mechanical Scrap": 5, "Mechanical Components": 5, "Hybrid Capacitors": 5}, "engineers": ["Zacariah Nemo", "Bill Turner", "Etienne Dorn"]}
+            }
+        }
+    },
+    "Drag Munitions": {
+        "experimental": True,
+        "module_recipes": {
+            "Fragment Cannon": {
+                1: {"cost": {"Carbon": 5, "Grid Resistors": 5, "Molybdenum": 2}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
+            },
+            "Seeker Missile Rack": {
+                1: {"cost": {"Carbon": 5, "Grid Resistors": 5, "Molybdenum": 2}, "engineers": ["Juri Ishmaak", "Liz Ryder", "Petra Olmanova"]}
+            }
+        }
+    },
+    "Incendiary Rounds": {
+        "experimental": True,
+        "module_recipes": {
+            "Fragment Cannon": {
+                1: {"cost": {"Heat Conduction Wiring": 5, "Phosphorus": 5, "Sulphur": 5, "Phase Alloys": 3}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
+            },
+            "Multi-cannon": {
+                1: {"cost": {"Heat Conduction Wiring": 5, "Phosphorus": 5, "Sulphur": 5, "Phase Alloys": 3}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
+            }
+        }
+    },
+    "Screening Shell": {
+        "experimental": True,
+        "module_recipes": {
+            "Fragment Cannon": {
+                1: {"cost": {"Niobium": 3, "Mechanical Scrap": 5, "Distorted Shield Cycle Recordings": 5, "Modified Consumer Firmware": 5}, "engineers": ["Tod 'The Blaster' McQuinn", "Zacariah Nemo", "Marsha Hicks"]}
+            }
+        }
+    },
+    "Angled Plating": {
+        "experimental": True,
+        "module_recipes": {
+            "Bulkheads": {
+                1: {"cost": {"Compact Composites": 5, "Mechanical Equipment": 3, "Molybdenum": 2}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]}
+            },
+            "Hull Reinforcement Package": {
+                1: {"cost": {"Tempered Alloys": 5, "Carbon": 5, "High Density Composites": 3, "Zirconium": 3}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]}
+            }
+        }
+    },
+    "Deep Plating": {
+        "experimental": True,
+        "module_recipes": {
+            "Bulkheads": {
+                1: {"cost": {"Compact Composites": 5, "Mechanical Equipment": 3, "Molybdenum": 2}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]}
+            },
+            "Hull Reinforcement Package": {
+                1: {"cost": {"Compact Composites": 5, "Molybdenum": 3, "Ruthenium": 2}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]}
+            }
+        }
+    },
+    "Layered Plating": {
+        "experimental": True,
+        "module_recipes": {
+            "Bulkheads": {
+                1: {"cost": {"Heat Conduction Wiring": 5, "High Density Composites": 3, "Niobium": 1}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]}
+            },
+            "Hull Reinforcement Package": {
+                1: {"cost": {"Heat Conduction Wiring": 5, "Shielding Sensors": 3, "Tungsten": 3}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]}
+            }
+        }
+    },
+    "Reflective Plating": {
+        "experimental": True,
+        "module_recipes": {
+            "Bulkheads": {
+                1: {"cost": {"Compact Composites": 5, "Heat Dispersion Plate": 3, "Thermic Alloys": 2}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]}
+            },
+            "Hull Reinforcement Package": {
+                1: {"cost": {"Heat Conduction Wiring": 5, "Zinc": 4, "Heat Dispersion Plate": 3, "Proto Light Alloys": 1}, "engineers": ["Liz Ryder", "Petra Olmanova", "Selene Jean"]}
+            }
+        }
+    },
+    "Monstered": {
+        "experimental": True,
+        "module_recipes": {
+            "Power Plant": {
+                1: {"cost": {"Grid Resistors": 5, "Vanadium": 3, "Polymer Capacitors": 1}, "engineers": ["Felicity Farseer", "Marco Qwent", "Hera Tani", "Etienne Dorn"]}
+            }
+        }
+    },
+    "Thermal Spread": {
+        "experimental": True,
+        "module_recipes": {
+            "Power Plant": {
+                1: {"cost": {"Grid Resistors": 5, "Vanadium": 3, "Heat Vanes": 1}, "engineers": ["Felicity Farseer", "Marco Qwent", "Hera Tani", "Etienne Dorn"]}
+            },
+            "Frame Shift Drive": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Heat Vanes": 1, "Grid Resistors": 3}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Mel Brandon", "Professor Palin", "Colonel Bris Dekker", "Chloe Sedesi"]}
+            },
+            "Thrusters": {
+                1: {"cost": {"Iron": 5, "Hybrid Capacitors": 3, "Heat Vanes": 1}, "engineers": ["Elvira Martuuk", "Felicity Farseer", "Professor Palin", "Chloe Sedesi", "Mel Brandon"]}
+            }
+        }
+    },
+    "Drag Drives": {
+        "experimental": True,
+        "module_recipes": {
+            "Thrusters": {
+                1: {"cost": {"Iron": 5, "Hybrid Capacitors": 3, "Security Firmware Patch": 1}, "engineers": ["Elvira Martuuk", "Felicity Farseer", "Professor Palin", "Chloe Sedesi", "Mel Brandon"]}
+            }
+        }
+    },
+    "Drive Distributors": {
+        "experimental": True,
+        "module_recipes": {
+            "Thrusters": {
+                1: {"cost": {"Iron": 5, "Hybrid Capacitors": 3, "Security Firmware Patch": 1}, "engineers": ["Elvira Martuuk", "Felicity Farseer", "Professor Palin", "Chloe Sedesi", "Mel Brandon"]}
+            }
+        }
+    },
+    "Deep Charge": {
+        "experimental": True,
+        "module_recipes": {
+            "Frame Shift Drive": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Eccentric Hyperspace Trajectories": 1}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Mel Brandon", "Professor Palin", "Colonel Bris Dekker", "Chloe Sedesi"]}
+            }
+        }
+    },
+    "Mass Manager": {
+        "experimental": True,
+        "module_recipes": {
+            "Frame Shift Drive": {
+                1: {"cost": {"Atypical Disrupted Wake Echoes": 5, "Galvanising Alloys": 3, "Eccentric Hyperspace Trajectories": 1}, "engineers": ["Felicity Farseer", "Elvira Martuuk", "Mel Brandon", "Professor Palin", "Colonel Bris Dekker", "Chloe Sedesi"]}
+            }
+        }
+    },
+    "Cluster Capacitors": {
+        "experimental": True,
+        "module_recipes": {
+            "Power Distributor": {
+                1: {"cost": {"Phosphorus": 5, "Heat Resistant Ceramics": 3, "Cadmium": 1}, "engineers": ["The Dweller", "Etienne Dorn", "Marco Qwent", "Hera Tani"]}
+            }
+        }
+    },
+    "Super Conduits": {
+        "experimental": True,
+        "module_recipes": {
+            "Power Distributor": {
+                1: {"cost": {"Phosphorus": 5, "Heat Resistant Ceramics": 3, "Security Firmware Patch": 1}, "engineers": ["The Dweller", "Etienne Dorn", "Marco Qwent", "Hera Tani"]}
+            }
+        }
+    },
+    "Boss Cells": {
+        "experimental": True,
+        "module_recipes": {
+            "Shield Cell Bank": {
+                1: {"cost": {"Chromium": 3, "Chemical Storage Units": 5, "Polymer Capacitors": 1}, "engineers": ["Elvira Martuuk", "Lori Jameson", "Mel Brandon"]}
+            }
+        }
+    },
+    "Recycling Cells": {
+        "experimental": True,
+        "module_recipes": {
+            "Shield Cell Bank": {
+                1: {"cost": {"Chromium": 3, "Chemical Storage Units": 5, "Configurable Components": 1}, "engineers": ["Elvira Martuuk", "Lori Jameson", "Mel Brandon"]}
+            }
+        }
+    },
+    "Fast Charge": {
+        "experimental": True,
+        "module_recipes": {
+            "Shield Generator": {
+                1: {"cost": {"Worn Shield Emitters": 5, "Flawed Focus Crystals": 3, "Compound Shielding": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung", "Mel Brandon"]}
+            }
+        }
+    },
+    "Force Block": {
+        "experimental": True,
+        "module_recipes": {
+            "Shield Booster": {
+                1: {"cost": {"Unidentified Scan Archives": 5, "Shielding Sensors": 3, "Aberrant Shield Pattern Analysis": 2}, "engineers": ["Didi Vatermann", "Mel Brandon", "Felicity Farseer", "Lei Cheung"]}
+            },
+            "Shield Generator": {
+                1: {"cost": {"Worn Shield Emitters": 5, "Flawed Focus Crystals": 3, "Decoded Emission Data": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung", "Mel Brandon"]}
+            }
+        }
+    },
+    "Hi-Cap": {
+        "experimental": True,
+        "module_recipes": {
+            "Shield Generator": {
+                1: {"cost": {"Worn Shield Emitters": 5, "Flawed Focus Crystals": 3, "Conductive Polymers": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung", "Mel Brandon"]}
+            }
+        }
+    },
+    "Lo-Draw": {
+        "experimental": True,
+        "module_recipes": {
+            "Shield Generator": {
+                1: {"cost": {"Worn Shield Emitters": 5, "Flawed Focus Crystals": 3, "Conductive Polymers": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung", "Mel Brandon"]}
+            }
+        }
+    },
+    "Multi-Weave": {
+        "experimental": True,
+        "module_recipes": {
+            "Shield Generator": {
+                1: {"cost": {"Worn Shield Emitters": 5, "Flawed Focus Crystals": 3, "Aberrant Shield Pattern Analysis": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung", "Mel Brandon"]}
+            }
+        }
+    },
+    "Thermo Block": {
+        "experimental": True,
+        "module_recipes": {
+            "Shield Booster": {
+                1: {"cost": {"Anomalous Bulk Scan Data": 5, "Conductive Ceramics": 3, "Heat Vanes": 3}, "engineers": ["Didi Vatermann", "Mel Brandon", "Felicity Farseer", "Lei Cheung"]}
+            },
+            "Shield Generator": {
+                1: {"cost": {"Worn Shield Emitters": 5, "Flawed Focus Crystals": 3, "Heat Vanes": 1}, "engineers": ["Didi Vatermann", "Elvira Martuuk", "Lei Cheung", "Mel Brandon"]}
+            }
+        }
+    },
+    "Blast Block": {
+        "experimental": True,
+        "module_recipes": {
+            "Shield Booster": {
+                1: {"cost": {"Inconsistent Shield Soak Analysis": 5, "Heat Resistant Ceramics": 3, "Heat Dispersion Plate": 3, "Selenium": 2}, "engineers": ["Didi Vatermann", "Mel Brandon", "Felicity Farseer", "Lei Cheung"]}
+            }
+        }
+    },
+    "Super Capacitors": {
+        "experimental": True,
+        "module_recipes": {
+            "Shield Booster": {
+                1: {"cost": {"Untypical Shield Scans": 3, "Compact Composites": 5, "Cadmium": 2}, "engineers": ["Didi Vatermann", "Mel Brandon", "Felicity Farseer", "Lei Cheung"]}
+            }
+        }
+    },
+    "Added Melee Damage": {
+        "module_recipes": {
+            "suit": {
+                1: {"cost": {"Combat Training Material": 5, "Combatant Performance": 5, "Epinephrine": 5, "Micro Thrusters": 8}, "engineers": ["Eleanor Bresa", "Jude Navarro", "Kit Fowler"]}
+            }
+        }
+    },
+    "Combat Movement Speed": {
+        "module_recipes": {
+            "suit": {
+                1: {"cost": {"Credits": 750000, "Evacuation Protocols": 5, "Genetic Research": 3, "Epinephrine": 5, "PH Neutraliser": 8}, "engineers": ["Baltanos", "Terra Velasquez", "Yarden Bond"]}
+            }
+        }
+    },
+    "Damage resistance": {
+        "module_recipes": {
+            "suit": {
+                1: {"cost": {"Credits": 750000, "Weapon Inventory": 5, "Ballistics Data": 5, "Titanium Plating": 3, "Carbon Fibre Plating": 3, "Epoxy Adhesive": 8}, "engineers": ["Eleanor Bresa", "Jude Navarro", "Uma Laszlo"]}
+            }
+        }
+    },
+    "Enhanced Tracking": {
+        "module_recipes": {
+            "suit": {
+                1: {"cost": {"Credits": 750000, "Topographical Surveys": 5, "Stellar Activity Logs": 5, "Spectral Analysis Data": 5, "Transmitter": 3, "Circuit Board": 3}, "engineers": ["Domino Green", "Oden Geiger", "Rosa Dayette"]}
+            }
+        }
+    },
+    "Extra Ammo Capacity": {
+        "module_recipes": {
+            "suit": {
+                1: {"cost": {"Credits": 750000, "Recycling Logs": 8, "Weapon Test Data": 5, "Production Reports": 5, "Weapon Component": 3}, "engineers": ["Eleanor Bresa", "Jude Navarro", "Kit Fowler"]}
+            }
+        }
+    },
+    "Extra Backpack Capacity": {
+        "module_recipes": {
+            "suit": {
+                1: {"cost": {"Credits": 750000, "Weapon Inventory": 5, "Chemical Inventory": 5, "Digital Designs": 5, "Epoxy Adhesive": 5, "Memory Chip": 3}, "engineers": ["Domino Green", "Rosa Dayette", "Wellington Beck"]}
+            }
+        }
+    },
+    "Faster Shield Regen": {
+        "module_recipes": {
+            "suit": {
+                1: {"cost": {"Credits": 750000, "Reactor Output Review": 5, "Ion Battery": 3, "Micro Transformer": 8, "Electrical Wiring": 8}, "engineers": ["Eleanor Bresa", "Kit Fowler", "Uma Laszlo"]}
+            }
+        }
+    },
+    "Improved Battery Capacity": {
+        "module_recipes": {
+            "suit": {
+                1: {"cost": {"Credits": 750000, "Reactor Output Review": 5, "Maintenance Logs": 8, "Ion Battery": 3, "Micro Supercapacitor": 5, "Electrical Wiring": 5}, "engineers": ["Oden Geiger", "Rosa Dayette", "Wellington Beck"]}
+            }
+        }
+    },
+    "Improved Jump Assist": {
+        "module_recipes": {
+            "suit": {
+                1: {"cost": {"Credits": 750000, "Topographical Surveys": 5, "G-Meds": 5, "Micro Thrusters": 3, "Motor": 5}, "engineers": ["Baltanos", "Hero Ferrari", "Yarden Bond"]}
+            }
+        }
+    },
+    "Increased Air Reserves": {
+        "module_recipes": {
+            "suit": {
+                1: {"cost": {"Pharmaceutical Patents": 3, "Air Quality Reports": 8, "Oxygenic Bacteria": 5, "PH Neutraliser": 8}, "engineers": ["Baltanos", "Hero Ferrari", "Terra Velasquez"]}
+            }
+        }
+    },
+    "Increased Sprint Duration": {
+        "module_recipes": {
+            "suit": {
+                1: {"cost": {"Credits": 750000, "Troop Deployment Records": 3, "Gene Sequencing Data": 3, "Clinical Trial Records": 3, "Oxygenic Bacteria": 5, "Chemical Catalyst": 8}, "engineers": ["Baltanos", "Hero Ferrari", "Terra Velasquez"]}
+            }
+        }
+    },
+    "Night Vision": {
+        "module_recipes": {
+            "suit": {
+                1: {"cost": {"Credits": 1000000, "Surveillance Logs": 3, "Radioactivity Data": 3, "NOC Data": 3, "Surveillance Equipment": 5, "Circuit Switch": 5}, "engineers": ["Oden Geiger", "Yi Shen"]}
+            }
+        }
+    },
+    "Quieter Footsteps": {
+        "module_recipes": {
+            "suit": {
+                1: {"cost": {"Credits": 1000000, "Settlement Assault Plans": 2, "Tactical Plans": 5, "Patrol Routes": 5, "Micro Hydraulics": 3, "Viscoelastic Polymer": 8}, "engineers": ["Yarden Bond", "Yi Shen"]}
+            }
+        }
+    },
+    "Reduced Tool Battery Consumption": {
+        "module_recipes": {
+            "suit": {
+                1: {"cost": {"Credits": 500000, "Reactor Output Review": 5, "Electrical Fuse": 3, "Micro Transformer": 5, "Electrical Wiring": 8}, "engineers": ["Domino Green", "Rosa Dayette", "Wellington Beck"]}
+            }
+        }
+    },
+    "Audio Masking": {
+        "module_recipes": {
+            "Kinematic Armaments Weapons": {
+                1: {"cost": {"Credits": 1000000, "Audio Logs": 3, "Patrol Routes": 5, "Scrambler": 5, "Transmitter": 8, "Circuit Board": 3}, "engineers": ["Yarden Bond", "Yi Shen"]}
+            },
+            "Takada Weapons": {
+                1: {"cost": {"Credits": 1000000, "Audio Logs": 3, "Patrol Routes": 5, "Scrambler": 5, "Transmitter": 8, "Circuit Board": 3}, "engineers": ["Yarden Bond", "Yi Shen"]}
+            },
+            "Manticore weapons": {
+                1: {"cost": {"Credits": 1000000, "Audio Logs": 3, "Patrol Routes": 5, "Scrambler": 5, "Transmitter": 8, "Circuit Board": 3}, "engineers": ["Yarden Bond", "Yi Shen"]}
+            }
+        }
+    },
+    "Faster handling": {
+        "module_recipes": {
+            "Kinematic Armaments Weapons": {
+                1: {"cost": {"Credits": 500000, "Operational Manual": 5, "Combatant Performance": 5, "Combat Training Material": 5, "Viscoelastic Polymer": 3}, "engineers": ["Baltanos", "Hero Ferrari", "Yarden Bond"]}
+            },
+            "Takada Weapons": {
+                1: {"cost": {"Credits": 500000, "Operational Manual": 5, "Combatant Performance": 5, "Combat Training Material": 5, "Viscoelastic Polymer": 3}, "engineers": ["Baltanos", "Hero Ferrari", "Yarden Bond"]}
+            },
+            "Manticore weapons": {
+                1: {"cost": {"Credits": 500000, "Operational Manual": 5, "Combatant Performance": 5, "Combat Training Material": 5, "Viscoelastic Polymer": 3}, "engineers": ["Baltanos", "Hero Ferrari", "Yarden Bond"]}
+            }
+        }
+    },
+    "Greater Range": {
+        "module_recipes": {
+            "Kinematic Armaments Weapons": {
+                1: {"cost": {"Credits": 500000, "Ballistics Data": 10, "Topographical Surveys": 10, "Metal Coil": 10, "RDX": 10, "Weapon Component": 5}, "engineers": ["Domino Green", "Rosa Dayette", "Wellington Beck"]}
+            },
+            "Takada Weapons": {
+                1: {"cost": {"Credits": 500000, "Stellar Activity Logs": 10, "Risk Assessments": 15, "Optical Lens": 5, "Micro Transformer": 15, "Circuit Board": 5}, "engineers": ["Domino Green", "Rosa Dayette", "Wellington Beck"]}
+            },
+            "Manticore weapons": {
+                1: {"cost": {"Credits": 500000, "Chemical Formulae": 10, "Mineral Survey": 15, "Electromagnet": 10, "Electrical Fuse": 5, "Motor": 5}, "engineers": ["Domino Green", "Rosa Dayette", "Wellington Beck"]}
+            }
+        }
+    },
+    "Headshot Damage": {
+        "module_recipes": {
+            "Kinematic Armaments Weapons": {
+                1: {"cost": {"Credits": 500000, "Weapon Test Data": 10, "Medical Records": 5, "Chemical Catalyst": 10, "RDX": 15, "Weapon Component": 5}, "engineers": ["Uma Laszlo", "Yi Shen"]}
+            },
+            "Takada Weapons": {
+                1: {"cost": {"Credits": 500000, "Weapon Test Data": 10, "Medical Records": 5, "Chemical Catalyst": 10, "RDX": 15, "Weapon Component": 5}, "engineers": ["Uma Laszlo", "Yi Shen"]}
+            },
+            "Manticore weapons": {
+                1: {"cost": {"Credits": 500000, "Weapon Test Data": 10, "Medical Records": 5, "Chemical Catalyst": 10, "RDX": 15, "Weapon Component": 5}, "engineers": ["Uma Laszlo", "Yi Shen"]}
+            }
+        }
+    },
+    "Improved Hip Fire Accuracy": {
+        "module_recipes": {
+            "Kinematic Armaments Weapons": {
+                1: {"cost": {"Credits": 500000, "Biometric Data": 5, "Combatant Performance": 10, "Extraction Yield Data": 10, "Viscoelastic Polymer": 10, "Metal Coil": 20, "Electromagnet": 20, "RDX": 10, "Weapon Component": 5}, "engineers": ["Baltanos", "Terra Velasquez", "Yarden Bond"]}
+            },
+            "Takada Weapons": {
+                1: {"cost": {"Credits": 500000, "Radioactivity Data": 5, "Combatant Performance": 10, "Aerogel": 20, "Electrical Wiring": 15, "Optical Fibre": 25, "Metal Coil": 10, "Optical Lens": 5}, "engineers": ["Baltanos", "Terra Velasquez", "Yarden Bond"]}
+            },
+            "Manticore weapons": {
+                1: {"cost": {"Credits": 500000, "Chemical Patents": 5, "Combatant Performance": 10, "Electromagnet": 10, "Chemical Catalyst": 10, "Metal Coil": 10, "Microelectrode": 20, "Weapon Component": 5}, "engineers": ["Baltanos", "Terra Velasquez", "Yarden Bond"]}
+            }
+        }
+    },
+    "Magazine Size": {
+        "module_recipes": {
+            "Kinematic Armaments Weapons": {
+                1: {"cost": {"Credits": 750000, "Weapon Test Data": 5, "Security Expenses": 3, "Tungsten Carbide": 3, "Metal Coil": 5, "Weapon Component": 3}, "engineers": ["Eleanor Bresa", "Jude Navarro", "Kit Fowler"]}
+            },
+            "Takada Weapons": {
+                1: {"cost": {"Credits": 750000, "Weapon Test Data": 5, "Security Expenses": 3, "Tungsten Carbide": 3, "Metal Coil": 5, "Weapon Component": 3}, "engineers": ["Eleanor Bresa", "Jude Navarro", "Kit Fowler"]}
+            },
+            "Manticore weapons": {
+                1: {"cost": {"Credits": 750000, "Weapon Test Data": 5, "Security Expenses": 3, "Tungsten Carbide": 3, "Metal Coil": 5, "Weapon Component": 3}, "engineers": ["Eleanor Bresa", "Jude Navarro", "Kit Fowler"]}
+            }
+        }
+    },
+    "Noise Suppressor": {
+        "module_recipes": {
+            "Kinematic Armaments Weapons": {
+                1: {"cost": {"Credits": 1000000, "Atmospheric Data": 10, "Mining Analytics": 10, "Viscoelastic Polymer": 15, "Weapon Component": 5}, "engineers": ["Baltanos", "Hero Ferrari", "Terra Velasquez"]}
+            },
+            "Takada Weapons": {
+                1: {"cost": {"Credits": 1000000, "Atmospheric Data": 10, "Mining Analytics": 10, "Viscoelastic Polymer": 15, "Weapon Component": 5}, "engineers": ["Baltanos", "Hero Ferrari", "Terra Velasquez"]}
+            },
+            "Manticore weapons": {
+                1: {"cost": {"Credits": 1000000, "Atmospheric Data": 10, "Mining Analytics": 10, "Viscoelastic Polymer": 15, "Weapon Component": 5}, "engineers": ["Baltanos", "Hero Ferrari", "Terra Velasquez"]}
+            }
+        }
+    },
+    "Reload Speed": {
+        "module_recipes": {
+            "Kinematic Armaments Weapons": {
+                1: {"cost": {"Credits": 500000, "Operational Manual": 5, "Production Reports": 5, "Combat Training Material": 5, "Micro Hydraulics": 5, "Electromagnet": 5}, "engineers": ["Eleanor Bresa", "Jude Navarro", "Uma Laszlo"]}
+            },
+            "Takada Weapons": {
+                1: {"cost": {"Credits": 500000, "Operational Manual": 5, "Production Reports": 5, "Combat Training Material": 5, "Micro Hydraulics": 5, "Electromagnet": 5}, "engineers": ["Eleanor Bresa", "Jude Navarro", "Uma Laszlo"]}
+            },
+            "Manticore weapons": {
+                1: {"cost": {"Credits": 500000, "Operational Manual": 5, "Production Reports": 5, "Combat Training Material": 5, "Micro Hydraulics": 5, "Electromagnet": 5}, "engineers": ["Eleanor Bresa", "Jude Navarro", "Uma Laszlo"]}
+            }
+        }
+    },
+    "Stability": {
+        "module_recipes": {
+            "Kinematic Armaments Weapons": {
+                1: {"cost": {"Credits": 500000, "Mining Analytics": 5, "Risk Assessments": 8, "Viscoelastic Polymer": 5, "Micro Hydraulics": 5}, "engineers": ["Domino Green", "Oden Geiger", "Rosa Dayette"]}
+            },
+            "Takada Weapons": {
+                1: {"cost": {"Credits": 500000, "Mining Analytics": 5, "Risk Assessments": 8, "Viscoelastic Polymer": 5, "Micro Hydraulics": 5}, "engineers": ["Domino Green", "Oden Geiger", "Rosa Dayette"]}
+            },
+            "Manticore weapons": {
+                1: {"cost": {"Credits": 500000, "Mining Analytics": 5, "Risk Assessments": 8, "Viscoelastic Polymer": 5, "Micro Hydraulics": 5}, "engineers": ["Domino Green", "Oden Geiger", "Rosa Dayette"]}
+            }
+        }
+    },
+    "Stowed Reloading": {
+        "module_recipes": {
+            "Kinematic Armaments Weapons": {
+                1: {"cost": {"Credits": 1000000, "Digital Designs": 5, "Operational Manual": 5, "Production Schedule": 5, "Encrypted Memory Chip": 8, "Circuit Board": 3}, "engineers": ["Eleanor Bresa", "Kit Fowler", "Uma Laszlo"]}
+            },
+            "Takada Weapons": {
+                1: {"cost": {"Credits": 1000000, "Digital Designs": 5, "Operational Manual": 5, "Production Schedule": 5, "Encrypted Memory Chip": 8, "Circuit Board": 3}, "engineers": ["Eleanor Bresa", "Kit Fowler", "Uma Laszlo"]}
+            },
+            "Manticore weapons": {
+                1: {"cost": {"Credits": 1000000, "Digital Designs": 5, "Operational Manual": 5, "Production Schedule": 5, "Encrypted Memory Chip": 8, "Circuit Board": 3}, "engineers": ["Eleanor Bresa", "Kit Fowler", "Uma Laszlo"]}
+            }
+        }
+    }
+}
+
+
+def levenshtein_distance(s1, s2):
+    if len(s1) < len(s2):
+        return levenshtein_distance(s2, s1)
+
+    if len(s2) == 0:
+        return len(s1)
+
+    previous_row = list(range(len(s2) + 1))
+    for i, c1 in enumerate(s1):
+        current_row = [i + 1]
+        for j, c2 in enumerate(s2):
+            insertions = previous_row[j + 1] + 1
+            deletions = current_row[j] + 1
+            substitutions = previous_row[j] + (c1 != c2)
+            current_row.append(min(insertions, deletions, substitutions))
+        previous_row = current_row
+
+    return previous_row[-1]
+
+def blueprint_finder(obj, projected_states):
+    import yaml
+
+    # Extract search parameters - can be combined
+    search_modifications = []
+    if obj and obj.get('modifications'):
+        modifications_param = obj.get('modifications')
+        # Only accept arrays of modifications now
+        if isinstance(modifications_param, list):
+            search_modifications = [mod.lower().strip() for mod in modifications_param if mod]
+    search_engineer = obj.get('engineer', '').lower().strip() if obj else ''
+    search_module = obj.get('module', '').lower().strip() if obj else ''
+    search_grade = obj.get('grade', '') if obj else ''
+
+    # Convert search_grade to int if provided
+    if search_grade and str(search_grade).isdigit():
+        search_grade = int(search_grade)
+    else:
+        search_grade = None
+
+    # Get inventory data from projected states
+    materials_data = projected_states.get('Materials', {})
+    shiploader_data = projected_states.get('ShipLocker', {})
+
+    # Helper function to get inventory count for a material
+    def get_inventory_count(material_name):
+        """Get the total count of a material from both Materials and ShipLocker inventories"""
+        total_count = 0
+        material_name_lower = material_name.lower()
+        
+        # Check Materials projection (ship materials)
+        for material_type in ['Raw', 'Manufactured', 'Encoded']:
+            type_materials = materials_data.get(material_type, [])
+            for material in type_materials:
+                # Check both Name and Name_Localised for matching
+                if (material.get('Name', '').lower() == material_name_lower or
+                    material.get('Name_Localised', '').lower() == material_name_lower):
+                    total_count += material.get('Count', 0)
+        
+        # Check ShipLocker projection (suit materials)
+        for locker_type in ['Items', 'Components', 'Data', 'Consumables']:
+            type_materials = shiploader_data.get(locker_type, [])
+            for material in type_materials:
+                # Check both Name and Name_Localised for matching
+                if (material.get('Name', '').lower() == material_name_lower or
+                    material.get('Name_Localised', '').lower() == material_name_lower):
+                    total_count += material.get('Count', 0)
+        
+        return total_count
+
+    # Helper function to check material availability and create inventory info
+    def check_material_availability(materials_needed):
+        """Check availability of materials and return simplified info"""
+        missing_materials = {}
+        has_all_materials = True
+        
+        for material_name, needed_count in materials_needed.items():
+            # Skip credits as they're not tracked in material inventory
+            if material_name.lower() == 'credits':
+                continue
+                
+            available_count = get_inventory_count(material_name)
+            if available_count < needed_count:
+                has_all_materials = False
+                shortage = needed_count - available_count
+                missing_materials[material_name] = shortage
+        
+        return missing_materials, has_all_materials
+
+
+    # Helper function for fuzzy matching using Levenshtein distance
+    def matches_fuzzy(search_term, target_string):
+        if not search_term or not target_string:
+            return False
+
+        # Module synonyms mapping - maps synonyms to their main module names
+        MODULE_SYNONYMS = {
+            # Kinematic Armaments Weapons synonyms
+            "karma p-15": "Kinematic Armaments Weapons",
+            "karma l-6": "Kinematic Armaments Weapons", 
+            "karma c-44": "Kinematic Armaments Weapons",
+            "karma ar-50": "Kinematic Armaments Weapons",
+            "karma": "Kinematic Armaments Weapons",
+            
+            # Takada Weapons synonyms
+            "tk aphelion": "Takada Weapons",
+            "tk eclipse": "Takada Weapons", 
+            "tk zenith": "Takada Weapons",
+            "takada": "Takada Weapons",
+            
+            # Manticore weapons synonyms
+            "manticore executioner": "Manticore weapons",
+            "manticore intimidator": "Manticore weapons",
+            "manticore oppressor": "Manticore weapons", 
+            "manticore tormentor": "Manticore weapons",
+            "manticore": "Manticore weapons",
+            
+            # Suit synonyms
+            "flight suit": "suit",
+            "artemis suit": "suit",
+            "maverick suit": "suit", 
+            "dominator suit": "suit"
+        }
+
+        search_lower = search_term.lower()
+        target_lower = target_string.lower()
+
+        # First check if the search term is a synonym
+        if search_lower in MODULE_SYNONYMS:
+            # If the search term is a synonym, check if it maps to the target
+            if MODULE_SYNONYMS[search_lower].lower() == target_lower:
+                return True
+
+        # Check if any part of the search term matches a synonym
+        search_words = search_lower.split()
+        for word in search_words:
+            if word in MODULE_SYNONYMS:
+                if MODULE_SYNONYMS[word].lower() == target_lower:
+                    return True
+
+        # Original fuzzy matching logic - check for exact substring matches
+        if search_lower in target_lower:
+            return True
+
+        # Split into words for fuzzy matching  
+        target_words = target_lower.replace(',', ' ').replace('(', ' ').replace(')', ' ').split()
+
+        # Fuzzy matching using Levenshtein distance
+        for search_word in search_words:
+            for target_word in target_words:
+                # Allow some fuzzy matching based on word length
+                max_distance = max(1, len(search_word) // 3)  # Allow 1 error per 3 characters
+                if levenshtein_distance(search_word, target_word) <= max_distance:
+                    return True
+
+        return False
+
+        # Helper function to calculate total materials needed for a grade
+
+    def calculate_materials_for_grade(base_cost, grade):
+        """Calculate total materials needed for a specific grade"""
+        total_materials = {}
+
+        # Multiply each material by the grade level
+        for material, amount in base_cost.items():
+            total_materials[material] = amount * grade
+
+        return total_materials
+
+    # Build results
+    results = {}
+
+    # Prepare lists for fuzzy matching
+    all_modifications = list(ENGINEERING_MODIFICATIONS.keys())
+    all_engineers = set()
+    all_modules = set()
+
+    # Collect all unique engineers and modules
+    for mod_name, mod_data in ENGINEERING_MODIFICATIONS.items():
+        if "module_recipes" in mod_data:
+            for module_name, grades in mod_data["module_recipes"].items():
+                all_modules.add(module_name)
+                for grade, grade_info in grades.items():
+                    for engineer in grade_info.get("engineers", []):
+                        all_engineers.add(engineer)
+
+    all_engineers = list(all_engineers)
+    all_modules = list(all_modules)
+
+    # Search through all modifications
+    for mod_name, mod_data in ENGINEERING_MODIFICATIONS.items():
+        # Check if modification matches search criteria
+        if search_modifications:
+            modification_match = False
+            for search_mod in search_modifications:
+                if matches_fuzzy(search_mod, mod_name):
+                    modification_match = True
+                    break
+            if not modification_match:
+                continue
+
+        if "module_recipes" not in mod_data:
+            continue
+
+        mod_results = {}
+
+        for module_name, grades in mod_data["module_recipes"].items():
+            # Check if module matches search criteria
+            if search_module and not matches_fuzzy(search_module, module_name):
+                continue
+
+            module_results = {}
+
+            for grade, grade_info in grades.items():
+                # Check if grade matches search criteria
+                if search_grade is not None and grade != search_grade:
+                    continue
+
+                # Check if any engineer matches search criteria
+                engineers = grade_info.get("engineers", [])
+                if search_engineer:
+                    matching_engineers = [eng for eng in engineers if matches_fuzzy(search_engineer, eng)]
+                    if not matching_engineers:
+                        continue
+                    engineers = matching_engineers
+
+                    # Calculate total materials needed for this grade
+                base_cost = grade_info.get("cost", {})
+                total_materials = calculate_materials_for_grade(base_cost, grade)
+
+                # Check material availability
+                missing_materials, has_all_materials = check_material_availability(total_materials)
+
+                grade_results = {
+                    "materials_needed": total_materials,
+                    "engineers": engineers,
+                    "enough_mats": has_all_materials
+                }
+
+                # Only add materials_missing if there are missing materials
+                if missing_materials:
+                    grade_results["materials_missing"] = missing_materials
+
+                module_results[f"Grade {grade}"] = grade_results
+
+            if module_results:
+                mod_results[module_name] = module_results
+
+        if mod_results:
+            # Check if this is an experimental modification and add suffix
+            display_name = mod_name
+            if mod_data.get("experimental", False):
+                display_name = f"{mod_name} (Experimental)"
+            results[display_name] = mod_results
+
+    # Check if any blueprints were found
+    if not results:
+        search_terms = []
+        if search_modifications:
+            if len(search_modifications) == 1:
+                search_terms.append(f"modifications: '{search_modifications[0]}'")
+            else:
+                mod_list = ', '.join([f"'{mod}'" for mod in search_modifications])
+                search_terms.append(f"modifications: {mod_list}")
+        if search_engineer:
+            search_terms.append(f"engineer: '{search_engineer}'")
+        if search_module:
+            search_terms.append(f"module: '{search_module}'")
+        if search_grade:
+            search_terms.append(f"grade: {search_grade}")
+
+        if search_terms:
+            # If searching by modifications failed, show available options
+            if search_modifications:
+                if len(search_modifications) == 1:
+                    return f"No blueprints found matching modifications: '{search_modifications[0]}'\n\nAvailable modification types:\n" + yaml.dump(sorted(all_modifications))
+                else:
+                    mod_list = ', '.join([f"'{mod}'" for mod in search_modifications])
+                    return f"No blueprints found matching modifications: {mod_list}\n\nAvailable modification types:\n" + yaml.dump(sorted(all_modifications))
+            elif search_engineer:
+                return f"No blueprints found matching engineer: '{search_engineer}'\n\nAvailable engineers:\n" + yaml.dump(sorted(all_engineers))
+            elif search_module:
+                return f"No blueprints found matching module: '{search_module}'\n\nAvailable modules:\n" + yaml.dump(sorted(all_modules))
+            else:
+                return f"No blueprints found matching search criteria: {', '.join(search_terms)}"
+        else:
+            return "No search criteria provided. Please specify modifications, engineer, module, or grade."
+
+    # Convert to YAML format
+    yaml_output = yaml.dump(results, default_flow_style=False, sort_keys=False)
+
+    # Add search info to the output if filters were applied
+    search_info = []
+    if search_modifications:
+        if len(search_modifications) == 1:
+            search_info.append(f"modifications: '{search_modifications[0]}'")
+        else:
+            mod_list = ', '.join([f"'{mod}'" for mod in search_modifications])
+            search_info.append(f"modifications: {mod_list}")
+    if search_engineer:
+        search_info.append(f"engineer: '{search_engineer}'")
+    if search_module:
+        search_info.append(f"module: '{search_module}'")
+    if search_grade:
+        search_info.append(f"grade: {search_grade}")
+
+    if search_info:
+        return f"Blueprint Search Results (filtered by {', '.join(search_info)}):\n\n```yaml\n{yaml_output}```"
+    else:
+        return f"All Available Blueprints:\n\n```yaml\n{yaml_output}```"
+
+
+def engineer_finder(obj, projected_states):
+    ship_engineers = {
+        300260: {"Engineer": "Tod 'The Blaster' McQuinn", "Location": "Wolf 397", "Workshop": "Trophy Camp",
+                 "Coords": {"x": 40, "y": 79.21875, "z": -10.40625},
+                 "Modifies": {"Multi-cannon": 5, "Rail Gun": 5, "Cannon": 2, "Fragment Cannon": 2},
+                 "HowToFind": "Available from start", "HowToGetInvite": "15 bounty vouchers earned",
+                 "HowToUnlock": "100,001 CR of bounty vouchers provided", "HowToGainRep": "Modules crafted or Alliance vouchers handed in"},
+        300100: {"Engineer": "Felicity Farseer", "Location": "Deciat", "Workshop": "Farseer Inc",
+                 "Coords": {"x": 122.625, "y": -0.8125, "z": -47.28125},
+                 "Modifies": {"Frame Shift Drive": 5, "Detailed Surface Scanner": 3, "Sensors": 3, "Thrusters": 3, "Power Plant": 1, "Frame Shift Drive Interdictor": 1, "Shield Booster": 1},
+                 "HowToFind": "Available from start", "HowToGetInvite": "Exploration rank Scout or higher reached",
+                 "HowToUnlock": "1 Meta-Alloy provided", "HowToGainRep": "Modules crafted or exploration data sold"},
+        300160: {"Engineer": "Elvira Martuuk", "Location": "Khun", "Workshop": "Long Sight Base",
+                 "Coords": {"x": -171.59375, "y": 19.96875, "z": -56.96875},
+                 "Modifies": {"Frame Shift Drive": 5, "Shield Generator": 3, "Thrusters": 2, "Shield Cell Bank": 1},
+                 "HowToFind": "Available from start", "HowToGetInvite": "300+ ly from starting system traveled",
+                 "HowToUnlock": "3 Soontill Relics provided", "HowToGainRep": "Modules crafted or exploration data sold"},
+        300080: {"Engineer": "Liz Ryder", "Location": "Eurybia", "Workshop": "Demolition Unlimited",
+                 "Coords": {"x": 51.40625, "y": -54.40625, "z": -30.5},
+                 "Modifies": {"Missile Rack": 5, "Seeker Missile Rack": 5, "Torpedo Pylon": 5, "Mine Launcher": 3, "Hull Reinforcement Package": 1, "Armour": 1},
+                 "HowToFind": "Available from start", "HowToGetInvite": "Friendly with Eurybia Blue Mafia achieved",
+                 "HowToUnlock": "200 Landmines provided", "HowToGainRep": "Modules crafted or commodities sold"},
+        300180: {"Engineer": "The Dweller", "Location": "Wyrd", "Workshop": "Black Hide",
+                 "Coords": {"x": -11.625, "y": 31.53125, "z": -3.9375},
+                 "Modifies": {"Beam Laser": 3, "Burst Laser": 3, "Pulse Laser": 4, "Power Distributor": 5},
+                 "HowToFind": "Available from start", "HowToGetInvite": "5 Black Markets dealt with",
+                 "HowToUnlock": "500,000 CR paid", "HowToGainRep": "Modules crafted or commodities sold"},
+        300120: {"Engineer": "Lei Cheung", "Location": "Laksak", "Workshop": "Trader's Rest",
+                 "Coords": {"x": -21.53125, "y": -6.3125, "z": 116.03125},
+                 "Modifies": {"Shield Generator": 5, "Detailed Surface Scanner": 5, "Sensors": 5, "Shield Booster": 3},
+                 "HowToFind": "Introduced by The Dweller", "HowToGetInvite": "50 markets traded with",
+                 "HowToUnlock": "200 Gold provided", "HowToGainRep": "Modules crafted"},
+        300210: {"Engineer": "Selene Jean", "Location": "Kuk", "Workshop": "Prospector's Rest",
+                 "Coords": {"x": -21.28125, "y": 69.09375, "z": -16.3125},
+                 "Modifies": {"Armour": 5, "Hull Reinforcement Package": 5},
+                 "HowToFind": "Introduced by Tod McQuinn", "HowToGetInvite": "500 tons of ore mined",
+                 "HowToUnlock": "10 Painite provided", "HowToGainRep": "Modules crafted or commodities/data sold"},
+        300090: {"Engineer": "Hera Tani", "Location": "Kuwemaki", "Workshop": "The Jet's Hole",
+                 "Coords": {"x": 134.65625, "y": -226.90625, "z": -7.8125},
+                 "Modifies": {"Detailed Surface Scanner": 5, "Power Plant": 5, "Power Distributor": 3, "Sensors": 3},
+                 "HowToFind": "Introduced by Liz Ryder", "HowToGetInvite": "Imperial Navy rank Outsider achieved",
+                 "HowToUnlock": "50 Kamitra Cigars provided", "HowToGainRep": "Modules crafted or commodities sold"},
+        300030: {"Engineer": "Broo Tarquin", "Location": "Muang", "Workshop": "Broo's Legacy",
+                 "Coords": {"x": 17.03125, "y": -172.78125, "z": -3.46875},
+                 "Modifies": {"Beam Laser": 5, "Burst Laser": 5, "Pulse Laser": 5},
+                 "HowToFind": "Introduced by Hera Tani", "HowToGetInvite": "Combat rank Competent or higher achieved",
+                 "HowToUnlock": "50 Fujin Tea provided", "HowToGainRep": "Modules crafted"},
+        300200: {"Engineer": "Marco Qwent", "Location": "Sirius (Permit Required)", "Workshop": "Qwent Research Base",
+                 "Coords": {"x": 6.25, "y": -1.28125, "z": -5.75},
+                 "Modifies": {"Power Plant": 4, "Power Distributor": 3},
+                 "HowToFind": "Introduced by Elvira Martuuk", "HowToGetInvite": "Sirius Corporation invitation obtained",
+                 "HowToUnlock": "25 Modular Terminals provided", "HowToGainRep": "Modules crafted or commodities sold"},
+        300050: {"Engineer": "Zacariah Nemo", "Location": "Yoru", "Workshop": "Nemo Cyber Party Base",
+                 "Coords": {"x": 97.875, "y": -86.90625, "z": 64.125},
+                 "Modifies": {"Fragment Cannon": 5, "Multi-cannon": 3, "Plasma Accelerator": 2},
+                 "HowToFind": "Introduced by Elvira Martuuk", "HowToGetInvite": "Party of Yoru invitation received",
+                 "HowToUnlock": "25 Xihe Biomorphic Companions provided", "HowToGainRep": "Modules crafted or commodities sold"},
+        300000: {"Engineer": "Didi Vatermann", "Location": "Leesti", "Workshop": "Vatermann LLC",
+                 "Coords": {"x": 72.75, "y": 48.75, "z": 68.25},
+                 "Modifies": {"Shield Booster": 5, "Shield Generator": 3},
+                 "HowToFind": "Introduced by Selene Jean", "HowToGetInvite": "Trade rank Merchant or higher achieved",
+                 "HowToUnlock": "50 Lavian Brandy provided", "HowToGainRep": "Modules crafted"},
+        300140: {"Engineer": "Colonel Bris Dekker", "Location": "Sol (Permit Required)", "Workshop": "Dekker's Yard",
+                 "Coords": {"x": 0, "y": 0, "z": 0},
+                 "Modifies": {"Frame Shift Drive Interdictor": 4, "Frame Shift Drive": 3},
+                 "HowToFind": "Introduced by Juri Ishmaak", "HowToGetInvite": "Federation friendly status achieved",
+                 "HowToUnlock": "1,000,000 CR of combat bonds provided", "HowToGainRep": "Modules crafted"},
+        300250: {"Engineer": "Juri Ishmaak", "Location": "Giryak", "Workshop": "Pater's Memorial",
+                 "Coords": {"x": 14.6875, "y": 27.65625, "z": 108.65625},
+                 "Modifies": {"Detailed Surface Scanner": 5, "Mine Launcher": 5, "Sensors": 5, "Frame Shift Wake Scanner": 3, "Kill Warrant Scanner": 3, "Manifest Scanner": 3, "Missile Rack": 3, "Seeker Missile Rack": 3, "Torpedo Pylon": 3},
+                 "HowToFind": "Introduced by Felicity Farseer", "HowToGetInvite": "50+ combat bonds earned",
+                 "HowToUnlock": "100,000 CR of combat bonds provided", "HowToGainRep": "Modules crafted or combat bonds handed in"},
+        300220: {"Engineer": "Professor Palin", "Location": "Arque", "Workshop": "Abel Laboratory",
+                 "Coords": {"x": 66.5, "y": 38.0625, "z": 61.125},
+                 "Modifies": {"Thrusters": 5, "Frame Shift Drive": 3},
+                 "HowToFind": "Introduced by Marco Qwent", "HowToGetInvite": "5,000 ly from start location traveled",
+                 "HowToUnlock": "25 Sensor Fragments provided", "HowToGainRep": "Modules crafted or exploration data sold"},
+        300010: {"Engineer": "Bill Turner", "Location": "Alioth (Permit Required)", "Workshop": "Turner Metallics Inc",
+                 "Coords": {"x": -33.65625, "y": 72.46875, "z": -20.65625},
+                 "Modifies": {"Sensors": 5, "Plasma Accelerator": 5, "AFMU": 3, "Detailed Surface Scanner": 5, "Frame Shift Wake Scanner": 3, "Fuel Scoop": 3, "Kill Warrant Scanner": 3, "Life Support": 3, "Manifest Scanner": 3, "Refinery": 3},
+                 "HowToFind": "Introduced by Selene Jean", "HowToGetInvite": "Alliance friendly status achieved",
+                 "HowToUnlock": "50 Bromellite provided", "HowToGainRep": "Modules crafted"},
+        300230: {"Engineer": "Lori Jameson", "Location": "Shinrarta Dezhra (Permit Required)", "Workshop": "Jameson Base",
+                 "Coords": {"x": 55.71875, "y": 17.59375, "z": 27.15625},
+                 "Modifies": {"Detailed Surface Scanner": 5, "Sensors": 5, "AFMU": 4, "Fuel Scoop": 4, "Life Support": 4, "Refinery": 4, "Frame Shift Wake Scanner": 3, "Manifest Scanner": 3, "Shield Cell Bank": 3},
+                 "HowToFind": "Introduced by Marco Qwent", "HowToGetInvite": "Combat rank Dangerous or higher achieved",
+                 "HowToUnlock": "25 Konnga Ale provided", "HowToGainRep": "Modules crafted or exploration data sold"},
+        300110: {"Engineer": "Ram Tah", "Location": "Meene", "Workshop": "Phoenix Base",
+                 "Coords": {"x": 118.78125, "y": -56.4375, "z": -97.1875},
+                 "Modifies": {"Chaff Launcher": 5, "ECM": 5, "Heat Sink Launcher": 5, "Point Defence": 5, "Collector Limpet Controller": 4, "Fuel Transfer Limpet Controller": 4, "Prospector Limpet Controller": 4, "Hatch Breaker Limpet Controller": 3},
+                 "HowToFind": "Introduced by Lei Cheung", "HowToGetInvite": "Exploration rank Surveyor or higher achieved",
+                 "HowToUnlock": "50 Classified Scan Databanks provided", "HowToGainRep": "Modules crafted or exploration data sold"},
+        300270: {"Engineer": "Tiana Fortune", "Location": "Achenar (Permit Required)", "Workshop": "Fortune's Loss",
+                 "Coords": {"x": 67.5, "y": -119.46875, "z": 24.84375},
+                 "Modifies": {"Manifest Scanner": 5, "Collector Limpet Controller": 5, "Frame Shift Wake Scanner": 5, "Fuel Transfer Limpet Controller": 5, "Hatch Breaker Limpet Controller": 5, "Kill Warrant Scanner": 5, "Prospector Limpet Controller": 5, "Sensors": 5, "Detailed Surface Scanner": 3, "Frame Shift Drive Interdictor": 3},
+                 "HowToFind": "Introduced by Hera Tani", "HowToGetInvite": "Empire friendly status achieved",
+                 "HowToUnlock": "50 Decoded Emission Data provided", "HowToGainRep": "Modules crafted or commodities sold"},
+        300040: {"Engineer": "The Sarge", "Location": "Beta-3 Tucani", "Workshop": "The Beach",
+                 "Coords": {"x": 32.25, "y": -55.1875, "z": 23.875},
+                 "Modifies": {"Cannon": 5, "Collector Limpet Controller": 5, "Fuel Transfer Limpet Controller": 5, "Hatch Breaker Limpet Controller": 5, "Prospector Limpet Controller": 5, "Rail Gun": 3},
+                 "HowToFind": "Introduced by Juri Ishmaak", "HowToGetInvite": "Federal Navy rank Midshipman achieved",
+                 "HowToUnlock": "50 Aberrant Shield Pattern Analysis provided", "HowToGainRep": "Modules crafted or exploration data sold"},
+        300290: {"Engineer": "Etienne Dorn", "Location": "Los", "Workshop": "Kraken's Retreat",
+                 "Coords": {"x": -9509.34375, "y": -886.3125, "z": 19820.125},
+                 "Modifies": {"Detailed Surface Scanner": 5, "Frame Shift Wake Scanner": 5, "Kill Warrant Scanner": 5, "Life Support": 5, "Manifest Scanner": 5, "Plasma Accelerator": 5, "Power Distributor": 5, "Power Plant": 5, "Sensors": 5, "Rail Gun": 5},
+                 "HowToFind": "Introduced by Liz Ryder", "HowToGetInvite": "Trade rank Dealer or higher achieved",
+                 "HowToUnlock": "25 Occupied Escape Pods provided", "HowToGainRep": "Modules crafted"},
+        300150: {"Engineer": "Marsha Hicks", "Location": "Tir", "Workshop": "The Watchtower",
+                 "Coords": {"x": -9532.9375, "y": -923.4375, "z": 19799.125},
+                 "Modifies": {"Cannon": 5, "Fragment Cannon": 5, "Fuel Scoop": 5, "Fuel Transfer Limpet Controller": 5, "Hatch Breaker Limpet Controller": 5, "Multi-cannon": 5, "Prospector Limpet Controller": 5, "Refinery": 5},
+                 "HowToFind": "Introduced by The Dweller", "HowToGetInvite": "Exploration rank Surveyor or higher achieved",
+                 "HowToUnlock": "10 Osmium mined", "HowToGainRep": "Modules crafted"},
+        300280: {"Engineer": "Mel Brandon", "Location": "Luchtaine", "Workshop": "The Brig",
+                 "Coords": {"x": -9523.3125, "y": -914.46875, "z": 19825.90625},
+                 "Modifies": {"Beam Laser": 5, "Burst Laser": 5, "Pulse Laser": 5, "Shield Generator": 5, "Thrusters": 5, "Shield Booster": 5, "Frame Shift Drive": 5, "Frame Shift Drive Interdictor": 5, "Shield Cell Bank": 4},
+                 "HowToFind": "Introduced by Elvira Martuuk", "HowToGetInvite": "Colonia Council invitation received",
+                 "HowToUnlock": "100,000 CR of bounty vouchers provided", "HowToGainRep": "Modules crafted"},
+        300130: {"Engineer": "Petra Olmanova", "Location": "Asura", "Workshop": "Sanctuary",
+                 "Coords": {"x": -9550.28125, "y": -916.65625, "z": 19816.1875},
+                 "Modifies": {"Armour": 5, "AFMU": 5, "Chaff Launcher": 5, "ECM": 5, "Heat Sink Launcher": 5, "Hull Reinforcement Package": 5, "Mine Launcher": 5, "Missile Rack": 5, "Point Defence": 5, "Seeker Missile Rack": 5, "Torpedo Pylon": 5},
+                 "HowToFind": "Introduced by Tod McQuinn", "HowToGetInvite": "Combat rank Expert or higher achieved",
+                 "HowToUnlock": "200 Progenitor Cells provided", "HowToGainRep": "Modules crafted"},
+        300300: {"Engineer": "Chloe Sedesi", "Location": "Shenve", "Workshop": "Cinder Dock",
+                 "Coords": {"x": 351.96875, "y": -373.46875, "z": -711.09375},
+                 "Modifies": {"Thrusters": 5, "Frame Shift Drive": 3},
+                 "HowToFind": "Introduced by Marco Qwent", "HowToGetInvite": "5,000 ly from start location traveled",
+                 "HowToUnlock": "25 Sensor Fragments provided", "HowToGainRep": "Modules crafted or exploration data sold"}
+    }
+
+    # Define suit engineers data
+    suit_engineers = {
+        400002: {"Engineer": "Domino Green", "Location": "Orishis",
+                 "Coords": {"x": -31, "y": 93.96875, "z": -3.5625},
+                 "Modifies": {"Enhanced Tracking": 1, "Extra Backpack Capacity": 1, "Reduced Tool Battery Consumption": 1, "Greater Range": 1, "Stability": 1},
+                 "HowToFind": "Available from start", "HowToGetInvite": "100ly in Apex Transport traveled",
+                 "HowToReferral": "5 Push required"},
+        400003: {"Engineer": "Hero Ferrari", "Location": "Siris",
+                 "Coords": {"x": 131.0625, "y": -73.59375, "z": -11.25},
+                 "Modifies": {"Improved Jump Assist": 1, "Increased Air Reserves": 1, "Faster Handling": 1, "Noise Suppressor": 1},
+                 "HowToFind": "Available from start", "HowToGetInvite": "10 Conflict Zones completed",
+                 "HowToReferral": "15 Settlement Defence Plans required"},
+        400001: {"Engineer": "Jude Navarro", "Location": "Aurai",
+                 "Coords": {"x": 0.9375, "y": -47.8125, "z": 46.28125},
+                 "Modifies": {"Added Melee Damage": 1, "Damage Resistance": 1, "Extra Ammo Capacity": 1, "Magazine Size": 1, "Reload Speed": 1},
+                 "HowToFind": "Available from start", "HowToGetInvite": "10 Restore/Reactivation missions completed",
+                 "HowToReferral": "5 Genetic Repair Meds required"},
+        400004: {"Engineer": "Kit Fowler", "Location": "Capoya",
+                 "Coords": {"x": -60.65625, "y": 82.4375, "z": -45.0625},
+                 "Modifies": {"Added Melee Damage": 1, "Extra Ammo Capacity": 1, "Faster Shield Regen": 1, "Magazine Size": 1, "Stowed Reloading": 1},
+                 "HowToFind": "Introduced by Domino Green", "HowToGetInvite": "10 Opinion Polls sold to Bartenders",
+                 "HowToReferral": "5 Surveillance Equipment required"},
+        400008: {"Engineer": "Oden Geiger", "Location": "Candiaei",
+                 "Coords": {"x": -113.5, "y": -4.9375, "z": 66.84375},
+                 "Modifies": {"Enhanced Tracking": 1, "Improved Battery Capacity": 1, "Night Vision": 1, "Scope": 1, "Stability": 1},
+                 "HowToFind": "Introduced by Terra Velasquez", "HowToGetInvite": "20 Biological/Genetic items sold to Bartenders",
+                 "HowToReferral": "N/A"},
+        400006: {"Engineer": "Terra Velasquez", "Location": "Shou Xing",
+                 "Coords": {"x": -16.28125, "y": -44.53125, "z": 94.375},
+                 "Modifies": {"Combat Movement Speed": 1, "Increased Air Reserves": 1, "Increased Sprint Duration": 1, "Improved Hip Fire Accuracy": 1, "Noise Suppressor": 1},
+                 "HowToFind": "Introduced by Jude Navarro", "HowToGetInvite": "12 Covert missions completed",
+                 "HowToReferral": "15 Financial Projections required"},
+        400007: {"Engineer": "Uma Laszlo", "Location": "Xuane",
+                 "Coords": {"x": 93.875, "y": -9.25, "z": -32.53125},
+                 "Modifies": {"Damage Resistance": 1, "Faster Shield Regen": 1, "Headshot Damage": 1, "Reload Speed": 1, "Stowed Reloading": 1},
+                 "HowToFind": "Introduced by Wellington Beck", "HowToGetInvite": "Sirius Corp unfriendly status reached",
+                 "HowToReferral": "N/A"},
+        400005: {"Engineer": "Wellington Beck", "Location": "Jolapa",
+                 "Coords": {"x": 100.1875, "y": -41.34375, "z": -78},
+                 "Modifies": {"Extra Backpack Capacity": 1, "Improved Battery Capacity": 1, "Reduced Tool Battery Consumption": 1, "Greater Range": 1, "Scope": 1},
+                 "HowToFind": "Introduced by Hero Ferrari", "HowToGetInvite": "25 Entertainment items sold to Bartenders",
+                 "HowToReferral": "5 InSight Entertainment Suites required"},
+        400009: {"Engineer": "Yarden Bond", "Location": "Bayan",
+                 "Coords": {"x": -19.96875, "y": 117.625, "z": -90.46875},
+                 "Modifies": {"Combat Movement Speed": 1, "Improved Jump Assist": 1, "Quieter Footsteps": 1, "Audio Masking": 1, "Faster Handling": 1, "Improved Hip Fire Accuracy": 1},
+                 "HowToFind": "Introduced by Kit Fowler", "HowToGetInvite": "8 Smear Campaign Plans sold to Bartenders",
+                 "HowToReferral": "N/A"},
+        400010: {"Engineer": "Baltanos", "Location": "Deriso",
+                 "Coords": {"x": -9520.3125, "y": -909.5, "z": 19808.75},
+                 "Modifies": {"Combat Movement Speed": 1, "Improved Jump Assist": 1, "Increased Air Reserves": 1, "Increased Sprint Duration": 1, "Faster Handling": 1, "Improved Hip Fire Accuracy": 1, "Noise Suppressor": 1},
+                 "HowToFind": "Available in Colonia", "HowToGetInvite": "Colonia Council friendly status achieved",
+                 "HowToReferral": "10 Faction Associates required"},
+        400011: {"Engineer": "Eleanor Bresa", "Location": "Desy",
+                 "Coords": {"x": -9534.21875, "y": -912.21875, "z": 19792.375},
+                 "Modifies": {"Added Melee Damage": 1, "Damage Resistance": 1, "Extra Ammo Capacity": 1, "Faster Shield Regen": 1, "Magazine Size": 1, "Reload Speed": 1, "Stowed Reloading": 1},
+                 "HowToFind": "Available in Colonia", "HowToGetInvite": "5 Settlements in Colonia visited",
+                 "HowToReferral": "10 Digital Designs required"},
+        400012: {"Engineer": "Rosa Dayette", "Location": "Kojeara",
+                 "Coords": {"x": -9513.09375, "y": -908.84375, "z": 19814.28125},
+                 "Modifies": {"Enhanced Tracking": 1, "Extra Backpack Capacity": 1, "Improved Battery Capacity": 1, "Reduced Tool Battery Consumption": 1, "Greater Range": 1, "Scope": 1, "Stability": 1},
+                 "HowToFind": "Available in Colonia", "HowToGetInvite": "10 Recipe items sold to Bartenders in Colonia",
+                 "HowToReferral": "10 Manufacturing Instructions required"},
+        400013: {"Engineer": "Yi Shen", "Location": "Einheriar",
+                 "Coords": {"x": -9557.8125, "y": -880.1875, "z": 19801.5625},
+                 "Modifies": {"Night Vision": 1, "Quieter Footsteps": 1, "Audio Masking": 1, "Headshot Damage": 1},
+                 "HowToFind": "Introduced by Colonia engineers", "HowToGetInvite": "All Colonia engineers' referral tasks completed",
+                 "HowToReferral": "N/A"}
+    }
+
+    # Extract search parameters - can be combined
+    search_name = obj.get('name', '').lower().strip() if obj else ''
+    search_system = obj.get('system', '').lower().strip() if obj else ''
+    search_modifications = obj.get('modifications', '').lower().strip() if obj else ''
+    search_progress = obj.get('progress', '').strip() if obj else ''
+
+    engineer_progress = projected_states.get('EngineerProgress')
+
+    if not engineer_progress:
+        return "No engineer progress found"
+
+    engineers = engineer_progress.get('Engineers', [])
+
+    # Create a lookup for engineers from game data
+    game_engineers = {}
+    for engineer in engineers:
+        game_engineers[engineer.get('EngineerID')] = engineer
+
+    # Helper function for fuzzy matching modifications using Levenshtein distance
+    def matches_modifications(modifies_dict, search_term):
+        search_terms = search_term.split()
+        modifies_words = []
+
+        # Extract all words from modification names
+        for mod_name in modifies_dict.keys():
+            mod_lower = mod_name.lower()
+            # First check for exact substring matches
+            for term in search_terms:
+                if term in mod_lower:
+                    return True
+            # Add words for fuzzy matching
+            mod_words = mod_lower.replace(',', ' ').replace('(', ' ').replace(')', ' ').split()
+            modifies_words.extend(mod_words)
+
+        # Fuzzy matching using Levenshtein distance
+        for search_word in search_terms:
+            for modifies_word in modifies_words:
+                # Allow some fuzzy matching based on word length
+                max_distance = max(1, len(search_word) // 3)  # Allow 1 error per 3 characters
+                if levenshtein_distance(search_word, modifies_word) <= max_distance:
+                    return True
+
+        return False
+
+    # Helper function to check if engineer matches search criteria
+    def matches_search_criteria(engineer_info, engineer_name, engineer_progress):
+        # Check name match
+        if search_name and search_name not in engineer_name.lower():
+            return False
+
+        # Check system/location match
+        if search_system:
+            location = engineer_info.get('Location', '').lower()
+            # Remove permit required text for matching
+            location_clean = location.replace(' (permit required)', '')
+            if search_system not in location_clean:
+                return False
+
+        # Check modifications match
+        if search_modifications:
+            modifies = engineer_info.get('Modifies', '')
+            if not matches_modifications(modifies, search_modifications):
+                return False
+
+        # Check progress match
+        if search_progress and search_progress != engineer_progress:
+            return False
+
+        return True
+
+    # Build the comprehensive engineer overview
+    engineer_overview = {
+        'ship_engineers': {},
+        'suit_engineers': {}
+    }
+
+    # Process ALL ship engineers
+    for engineer_id, engineer_info in ship_engineers.items():
+        engineer_name = engineer_info['Engineer']
+
+        engineer_data = engineer_info.copy()
+        game_data = game_engineers.get(engineer_id)
+
+        if game_data:
+            # Engineer is known in game
+            progress = game_data.get('Progress')
+            rank = game_data.get('Rank')
+            rank_progress = game_data.get('RankProgress', 0)
+
+            engineer_data['Progress'] = progress
+
+            if progress == 'Unlocked':
+                engineer_data['Rank'] = rank
+                if rank_progress > 0:
+                    engineer_data['RankProgress'] = f"{rank_progress}% towards rank {rank + 1}"
+                else:
+                    engineer_data['RankProgress'] = "Max rank achieved" if rank >= 5 else "No progress towards next rank"
+
+                # Keep HowToGainRep if not max rank
+                if rank < 5:
+                    engineer_data['HowToGainRep'] = engineer_info['HowToGainRep']
+
+            elif progress == 'Invited':
+                engineer_data['NextStep'] = f"To unlock: {engineer_info['HowToUnlock']}"
+            elif progress == 'Known':
+                engineer_data['NextStep'] = f"To get invite: {engineer_info['HowToGetInvite']}"
+        else:
+            # Engineer is unknown - show how to find them
+            progress = 'Unknown'
+            engineer_data['Progress'] = progress
+            engineer_data['NextStep'] = f"To discover: {engineer_info['HowToFind']}"
+
+        # Check if engineer matches search criteria
+        if not matches_search_criteria(engineer_info, engineer_name, progress):
+            continue
+
+        # Clean up fields not needed in final output (except HowToGainRep for unlocked engineers with rank < 5)
+        fields_to_remove = ['HowToGetInvite', 'HowToUnlock', 'HowToFind']
+        if game_data and game_data.get('Progress') == 'Unlocked' and game_data.get('Rank', 0) < 5:
+            # Keep HowToGainRep for unlocked engineers not at max rank
+            fields_to_remove.append('HowToGainRep')  # Remove from list since we want to keep it
+            fields_to_remove = ['HowToGetInvite', 'HowToUnlock', 'HowToFind']
+        else:
+            fields_to_remove.append('HowToGainRep')
+
+        for field in fields_to_remove:
+            engineer_data.pop(field, None)
+
+        engineer_overview['ship_engineers'][engineer_name] = engineer_data
+
+    # Process ALL suit engineers
+    for engineer_id, engineer_info in suit_engineers.items():
+        engineer_name = engineer_info['Engineer']
+
+        engineer_data = engineer_info.copy()
+        game_data = game_engineers.get(engineer_id)
+
+        if game_data:
+            # Engineer is known in game
+            progress = game_data.get('Progress')
+            engineer_data['Progress'] = progress
+
+            if progress == 'Unlocked':
+                engineer_data['Status'] = 'Available for modifications'
+                if engineer_info.get('HowToReferral') != 'N/A':
+                    engineer_data['ReferralTask'] = engineer_info['HowToReferral']
+            elif progress == 'Invited':
+                engineer_data['NextStep'] = f"To unlock: Visit {engineer_info['Location']}"
+            elif progress == 'Known':
+                engineer_data['NextStep'] = f"To get invite: {engineer_info['HowToGetInvite']}"
+        else:
+            # Engineer is unknown - show how to find them
+            progress = 'Unknown'
+            engineer_data['Progress'] = progress
+            engineer_data['NextStep'] = f"To discover: {engineer_info['HowToFind']}"
+
+        # Check if engineer matches search criteria
+        if not matches_search_criteria(engineer_info, engineer_name, progress):
+            continue
+
+        # Clean up fields not needed in final output for suit engineers
+        fields_to_remove = ['HowToGetInvite', 'HowToFind', 'HowToReferral']
+        for field in fields_to_remove:
+            engineer_data.pop(field, None)
+
+        # Convert modifications from dict to list for suit engineers (no ranks)
+        if 'Modifies' in engineer_data:
+            engineer_data['Modifies'] = list(engineer_data['Modifies'].keys())
+
+        engineer_overview['suit_engineers'][engineer_name] = engineer_data
+
+    # Check if any engineers were found
+    total_engineers = len(engineer_overview['ship_engineers']) + len(engineer_overview['suit_engineers'])
+    if total_engineers == 0:
+        search_terms = []
+        if search_name:
+            search_terms.append(f"name: '{search_name}'")
+        if search_system:
+            search_terms.append(f"system: '{search_system}'")
+        if search_modifications:
+            search_terms.append(f"modifications: '{search_modifications}'")
+        if search_progress:
+            search_terms.append(f"progress: '{search_progress}'")
+
+        if search_terms:
+            # If searching by modifications failed, show available options
+            if search_modifications:
+                # Collect all unique modification values
+                all_modifications = set()
+                for engineer_info in ship_engineers.values():
+                    mods = engineer_info.get('Modifies', {})
+                    # Add all modification names from dict keys
+                    for mod_name in mods.keys():
+                        all_modifications.add(mod_name)
+
+                for engineer_info in suit_engineers.values():
+                    mods = engineer_info.get('Modifies', {})
+                    # Add all modification names from dict keys
+                    for mod_name in mods.keys():
+                        all_modifications.add(mod_name)
+
+                sorted_mods = sorted(list(all_modifications))
+                return f"No engineers found matching modifications: '{search_modifications}'\n\nValid modification types:\n" + yaml.dump(sorted_mods)
+
+            return f"No engineers found matching search criteria: {', '.join(search_terms)}"
+        else:
+            return "No engineers found"
+
+    # Convert to YAML format
+    yaml_output = yaml.dump(engineer_overview, default_flow_style=False, sort_keys=False)
+    # log('debug', 'engineers', yaml_output)
+
+    # Add search info to the output if filters were applied
+    search_info = []
+    if search_name:
+        search_info.append(f"name: '{search_name}'")
+    if search_system:
+        search_info.append(f"system: '{search_system}'")
+    if search_modifications:
+        search_info.append(f"modifications: '{search_modifications}'")
+    if search_progress:
+        search_info.append(f"progress: '{search_progress}'")
+
+    if search_info:
+        return f"Engineer Progress Overview (filtered by {', '.join(search_info)}):\n\n```{yaml_output}```"
+    else:
+        return f"Engineer Progress Overview:\n\n```yaml\n{yaml_output}```"
+
+
+def material_finder(obj, projected_states):
+    import yaml
+
+    # Ship engineering materials (from Materials projection)
+    ship_raw_materials_map = {
+        1: {1: ['carbon'], 2: ['vanadium'], 3: ['niobium'], 4: ['yttrium']},
+        2: {1: ['phosphorus'], 2: ['chromium'], 3: ['molybdenum'], 4: ['technetium']},
+        3: {1: ['sulphur'], 2: ['manganese'], 3: ['cadmium'], 4: ['ruthenium']},
+        4: {1: ['iron'], 2: ['zinc'], 3: ['tin'], 4: ['selenium']},
+        5: {1: ['nickel'], 2: ['germanium'], 3: ['tungsten'], 4: ['tellurium']},
+        6: {1: ['rhenium'], 2: ['arsenic'], 3: ['mercury'], 4: ['polonium']},
+        7: {1: ['lead'], 2: ['zirconium'], 3: ['boron'], 4: ['antimony']}
+    }
+
+    ship_manufactured_materials_map = {
+        'Chemical': {
+            1: ['chemicalstorageunits'], 2: ['chemicalprocessors'], 3: ['chemicaldistillery'],
+            4: ['chemicalmanipulators'], 5: ['pharmaceuticalisolators']
+        },
+        'Thermic': {
+            1: ['temperedalloys'], 2: ['heatresistantceramics'], 3: ['precipitatedalloys'],
+            4: ['thermicalloys'], 5: ['militarygradealloys']
+        },
+        'Heat': {
+            1: ['heatconductionwiring'], 2: ['heatdispersionplate'], 3: ['heatexchangers'],
+            4: ['heatvanes'], 5: ['protoheatradiators']
+        },
+        'Conductive': {
+            1: ['basicconductors'], 2: ['conductivecomponents'], 3: ['conductiveceramics'],
+            4: ['conductivepolymers'], 5: ['biotechconductors']
+        },
+        'Mechanical Components': {
+            1: ['mechanicalscrap'], 2: ['mechanicalequipment'], 3: ['mechanicalcomponents'],
+            4: ['configurablecomponents'], 5: ['improvisedcomponents']
+        },
+        'Capacitors': {
+            1: ['gridresistors'], 2: ['hybridcapacitors'], 3: ['electrochemicalarrays'],
+            4: ['polymercapacitors'], 5: ['militarysupercapacitors']
+        },
+        'Shielding': {
+            1: ['wornshieldemitters'], 2: ['shieldemitters'], 3: ['shieldingsensors'],
+            4: ['compoundshielding'], 5: ['imperialshielding']
+        },
+        'Composite': {
+            1: ['compactcomposites'], 2: ['filamentcomposites'], 3: ['highdensitycomposites'],
+            4: ['proprietarycomposites'], 5: ['coredynamicscomposites']
+        },
+        'Crystals': {
+            1: ['crystalshards'], 2: ['flawedfocuscrystals'], 3: ['focuscrystals'],
+            4: ['refinedfocuscrystals'], 5: ['exquisitefocuscrystals']
+        },
+        'Alloys': {
+            1: ['salvagedalloys'], 2: ['galvanisingalloys'], 3: ['phasealloys'],
+            4: ['protolightalloys'], 5: ['protoradiolicalloys']
+        },
+        'Guardian Technology': {
+            1: ['guardian_sentinel_wreckagecomponents', 'guardianwreckagecomponents'],
+            2: ['guardian_powercell', 'guardianpowercell'],
+            3: ['guardian_powerconduit', 'guardianpowerconduit'],
+            4: ['guardian_sentinel_weaponparts', 'guardiansentinelweaponparts'],
+            5: ['guardian_techcomponent', 'techcomponent']
+        },
+        'Thargoid Technology': {
+            1: ['tg_wreckagecomponents', 'wreckagecomponents', 'tg_abrasion02', 'tgabrasion02'],
+            2: ['tg_biomechanicalconduits', 'biomechanicalconduits', 'tg_abrasion03', 'tgabrasion03'],
+            3: ['tg_weaponparts', 'weaponparts', 'unknowncarapace', 'tg_causticshard', 'tgcausticshard'],
+            4: ['tg_propulsionelement', 'propulsionelement', 'unknownenergycell', 'unknowncorechip'],
+            5: ['tg_causticgeneratorparts', 'causticgeneratorparts', 'tg_causticcrystal', 'tgcausticcrystal', 'unknowntechnologycomponents']
+        }
+    }
+
+    ship_encoded_materials_map = {
+        'Emission Data': {
+            1: ['scrambledemissiondata'], 2: ['archivedemissiondata'], 3: ['emissiondata'],
+            4: ['decodedemissiondata'], 5: ['compactemissionsdata']
+        },
+        'Wake Scans': {
+            1: ['disruptedwakeechoes'], 2: ['fsdtelemetry'], 3: ['wakesolutions'],
+            4: ['hyperspacetrajectories'], 5: ['dataminedwake']
+        },
+        'Shield Data': {
+            1: ['shieldcyclerecordings'], 2: ['shieldsoakanalysis'], 3: ['shielddensityreports'],
+            4: ['shieldpatternanalysis'], 5: ['shieldfrequencydata']
+        },
+        'Encryption Files': {
+            1: ['encryptedfiles'], 2: ['encryptioncodes'], 3: ['symmetrickeys'],
+            4: ['encryptionarchives'], 5: ['adaptiveencryptors']
+        },
+        'Data Archives': {
+            1: ['bulkscandata'], 2: ['scanarchives'], 3: ['scandatabanks'],
+            4: ['encodedscandata'], 5: ['classifiedscandata']
+        },
+        'Encoded Firmware': {
+            1: ['legacyfirmware'], 2: ['consumerfirmware'], 3: ['industrialfirmware'],
+            4: ['securityfirmware'], 5: ['embeddedfirmware']
+        },
+        'Guardian Data': {
+            1: ['ancientbiologicaldata'],
+            2: ['ancientculturaldata'],
+            3: ['ancienthistoricaldata'],
+            4: ['ancienttechnologicaldata'],
+            5: ['guardian_vesselblueprint']
+        },
+        'Thargoid Data': {
+            1: ['tg_interdictiondata'],
+            2: ['tg_shipflightdata'],
+            3: ['tg_shipsystemsdata'],
+            4: ['tg_shutdowndata'],
+            5: ['unknownshipsignature']
+        }
+    }
+
+    # Suit engineering materials (from ShipLocker projection) - no grades
+    suit_items_materials = [
+        'weaponschematic', 'chemicalprocesssample', 'insightdatabank', 'personaldocuments',
+        'chemicalsample', 'biochemicalagent', 'geneticsample', 'gmeds', 'healthmonitor',
+        'inertiacanister', 'insight', 'ionisedgas', 'personalcomputer', 'syntheticgenome',
+        'geneticrepairmeds', 'buildingschematic', 'compactlibrary', 'deepmantlesample',
+        'hush', 'infinity', 'insightentertainmentsuite', 'lazarus', 'microbialinhibitor',
+        'nutritionalconcentrate', 'push', 'shipschematic', 'surveillanceequipment',
+        'universaltranslator', 'vehicleschematic', 'pyrolyticcatalyst', 'inorganiccontaminant',
+        'agriculturalprocesssample', 'refinementprocesssample', 'compressionliquefiedgas',
+        'degradedpowerregulator', 'largecapacitypowerregulator', 'powermiscindust',
+        'powermisccomputer', 'powerequipment'
+    ]
+
+    suit_components_materials = [
+        'aerogel', 'chemicalcatalyst', 'chemicalsuperbase', 'circuitboard', 'circuitswitch',
+        'electricalfuse', 'electricalwiring', 'encryptedmemorychip', 'epoxyadhesive',
+        'memorychip', 'metalcoil', 'microhydraulics', 'microsupercapacitor', 'microthrusters',
+        'microtransformer', 'motor', 'opticalfibre', 'opticallens', 'scrambler',
+        'titaniumplating', 'transmitter', 'tungstencarbide', 'viscoelasticpolymer', 'rdx',
+        'electromagnet', 'oxygenicbacteria', 'epinephrine', 'phneutraliser', 'microelectrode',
+        'ionbattery', 'weaponcomponent'
+    ]
+
+    suit_data_materials = [
+        'internalcorrespondence', 'biometricdata', 'nocdata', 'axcombatlogs', 'airqualityreports',
+        'audiologs', 'ballisticsdata', 'biologicalweapondata', 'catmedia', 'chemicalexperimentdata',
+        'chemicalformulae', 'chemicalinventory', 'chemicalpatents', 'cocktailrecipes',
+        'combatantperformance', 'conflicthistory', 'digitaldesigns', 'dutyrota', 'espionagematerial',
+        'evacuationprotocols', 'explorationjournals', 'extractionyielddata', 'factionassociates',
+        'financialprojections', 'factionnews', 'geneticresearch', 'influenceprojections',
+        'kompromat', 'maintenancelogs', 'manufacturinginstructions', 'medicalrecords',
+        'medicaltrialrecords', 'meetingminutes', 'mininganalytics', 'networkaccesshistory',
+        'operationalmanual', 'opinionpolls', 'patrolroutes', 'politicalaffiliations',
+        'productionreports', 'productionschedule', 'propaganda', 'radioactivitydata',
+        'reactoroutputreview', 'recyclinglogs', 'securityexpenses', 'seedgeneaology',
+        'settlementassaultplans', 'settlementdefenceplans', 'shareholderinformation',
+        'smearcampaignplans', 'spectralanalysisdata', 'stellaractivitylogs', 'surveilleancelogs',
+        'tacticalplans', 'taxrecords', 'topographicalsurveys', 'vaccineresearch',
+        'visitorregister', 'weaponinventory', 'weapontestdata', 'xenodefenceprotocols',
+        'geologicaldata', 'factiondonatorlist', 'pharmaceuticalpatents', 'powerresearchdata',
+        'powerpropagandadata', 'poweremployeedata', 'powerclassifieddata', 'powerpreparationspyware'
+    ]
+
+    suit_consumables_materials = [
+        'healthpack', 'energycell', 'amm_grenade_emp', 'amm_grenade_frag',
+        'amm_grenade_shield', 'bypass'
+    ]
+
+    # Display names from game data
+    display_names = {
+        # Ship materials - Raw
+        'carbon': 'Carbon', 'vanadium': 'Vanadium', 'niobium': 'Niobium', 'yttrium': 'Yttrium',
+        'phosphorus': 'Phosphorus', 'chromium': 'Chromium', 'molybdenum': 'Molybdenum',
+        'technetium': 'Technetium', 'sulphur': 'Sulphur', 'manganese': 'Manganese',
+        'cadmium': 'Cadmium', 'ruthenium': 'Ruthenium', 'iron': 'Iron', 'zinc': 'Zinc',
+        'tin': 'Tin', 'selenium': 'Selenium', 'nickel': 'Nickel', 'germanium': 'Germanium',
+        'tungsten': 'Tungsten', 'tellurium': 'Tellurium', 'rhenium': 'Rhenium',
+        'arsenic': 'Arsenic', 'mercury': 'Mercury', 'polonium': 'Polonium', 'lead': 'Lead',
+        'zirconium': 'Zirconium', 'boron': 'Boron', 'antimony': 'Antimony',
+
+        # Ship materials - Manufactured (key examples)
+        'chemicalstorageunits': 'Chemical Storage Units', 'temperedalloys': 'Tempered Alloys',
+        'heatconductionwiring': 'Heat Conduction Wiring', 'basicconductors': 'Basic Conductors',
+        'mechanicalscrap': 'Mechanical Scrap', 'gridresistors': 'Grid Resistors',
+        'wornshieldemitters': 'Worn Shield Emitters', 'compactcomposites': 'Compact Composites',
+        'crystalshards': 'Crystal Shards', 'salvagedalloys': 'Salvaged Alloys',
+
+        # Ship materials - Encoded (key examples)
+        'scrambledemissiondata': 'Exceptional Scrambled Emission Data',
+        'disruptedwakeechoes': 'Atypical Disrupted Wake Echoes',
+        'shieldcyclerecordings': 'Distorted Shield Cycle Recordings',
+        'encryptedfiles': 'Unusual Encrypted Files', 'bulkscandata': 'Anomalous Bulk Scan Data',
+        'legacyfirmware': 'Specialised Legacy Firmware',
+
+        # Suit materials - Items
+        'weaponschematic': 'Weapon Schematic', 'chemicalprocesssample': 'Chemical Process Sample',
+        'insightdatabank': 'Insight Data Bank', 'personaldocuments': 'Personal Documents',
+        'chemicalsample': 'Chemical Sample', 'biochemicalagent': 'Biochemical Agent',
+        'geneticsample': 'Biological Sample', 'gmeds': 'G-Meds', 'healthmonitor': 'Health Monitor',
+        'inertiacanister': 'Inertia Canister', 'ionisedgas': 'Ionised Gas',
+        'personalcomputer': 'Personal Computer', 'syntheticgenome': 'Synthetic Genome',
+        'geneticrepairmeds': 'Genetic Repair Meds', 'buildingschematic': 'Building Schematic',
+        'compactlibrary': 'Compact Library', 'deepmantlesample': 'Deep Mantle Sample',
+        'insightentertainmentsuite': 'Insight Entertainment Suite',
+        'microbialinhibitor': 'Microbial Inhibitor', 'nutritionalconcentrate': 'Nutritional Concentrate',
+        'shipschematic': 'Ship Schematic', 'surveillanceequipment': 'Surveillance Equipment',
+        'universaltranslator': 'Universal Translator', 'vehicleschematic': 'Vehicle Schematic',
+        'pyrolyticcatalyst': 'Pyrolytic Catalyst', 'inorganiccontaminant': 'Inorganic Contaminant',
+        'agriculturalprocesssample': 'Agricultural Process Sample',
+        'refinementprocesssample': 'Refinement Process Sample',
+        'compressionliquefiedgas': 'Compression-Liquefied Gas',
+        'degradedpowerregulator': 'Degraded Power Regulator',
+        'largecapacitypowerregulator': 'Power Regulator', 'powermiscindust': 'Industrial Machinery',
+        'powermisccomputer': 'Data Storage Device', 'powerequipment': 'Personal Protective Equipment',
+
+        # Suit materials - Components
+        'chemicalcatalyst': 'Chemical Catalyst', 'chemicalsuperbase': 'Chemical Superbase',
+        'circuitboard': 'Circuit Board', 'circuitswitch': 'Circuit Switch',
+        'electricalfuse': 'Electrical Fuse', 'electricalwiring': 'Electrical Wiring',
+        'encryptedmemorychip': 'Encrypted Memory Chip', 'epoxyadhesive': 'Epoxy Adhesive',
+        'memorychip': 'Memory Chip', 'metalcoil': 'Metal Coil', 'microhydraulics': 'Micro Hydraulics',
+        'microsupercapacitor': 'Micro Supercapacitor', 'microthrusters': 'Micro Thrusters',
+        'microtransformer': 'Micro Transformer', 'opticalfibre': 'Optical Fibre',
+        'opticallens': 'Optical Lens', 'titaniumplating': 'Titanium Plating',
+        'tungstencarbide': 'Tungsten Carbide', 'viscoelasticpolymer': 'Viscoelastic Polymer',
+        'oxygenicbacteria': 'Oxygenic Bacteria', 'phneutraliser': 'pH Neutraliser',
+        'ionbattery': 'Ion Battery', 'weaponcomponent': 'Weapon Component',
+
+        # Suit materials - Data
+        'internalcorrespondence': 'Internal Correspondence', 'biometricdata': 'Biometric Data',
+        'nocdata': 'NOC Data', 'axcombatlogs': 'AX Combat Logs', 'airqualityreports': 'Air Quality Reports',
+        'audiologs': 'Audio Logs', 'ballisticsdata': 'Ballistics Data',
+        'biologicalweapondata': 'Biological Weapon Data', 'catmedia': 'Cat Media',
+        'chemicalexperimentdata': 'Chemical Experiment Data', 'chemicalformulae': 'Chemical Formulae',
+        'chemicalinventory': 'Chemical Inventory', 'chemicalpatents': 'Chemical Patents',
+        'cocktailrecipes': 'Cocktail Recipes', 'combatantperformance': 'Combatant Performance',
+        'conflicthistory': 'Conflict History', 'digitaldesigns': 'Digital Designs',
+        'dutyrota': 'Duty Rota', 'espionagematerial': 'Espionage Material',
+        'evacuationprotocols': 'Evacuation Protocols', 'explorationjournals': 'Exploration Journals',
+        'extractionyielddata': 'Extraction Yield Data', 'factionassociates': 'Faction Associates',
+        'financialprojections': 'Financial Projections', 'factionnews': 'Faction News',
+        'geneticresearch': 'Genetic Research', 'influenceprojections': 'Influence Projections',
+        'maintenancelogs': 'Maintenance Logs', 'manufacturinginstructions': 'Manufacturing Instructions',
+        'medicalrecords': 'Medical Records', 'medicaltrialrecords': 'Clinical Trial Records',
+        'meetingminutes': 'Meeting Minutes', 'mininganalytics': 'Mining Analytics',
+        'networkaccesshistory': 'Network Access History', 'operationalmanual': 'Operational Manual',
+        'opinionpolls': 'Opinion Polls', 'patrolroutes': 'Patrol Routes',
+        'politicalaffiliations': 'Political Affiliations', 'productionreports': 'Production Reports',
+        'productionschedule': 'Production Schedule', 'radioactivitydata': 'Radioactivity Data',
+        'reactoroutputreview': 'Reactor Output Review', 'recyclinglogs': 'Recycling Logs',
+        'securityexpenses': 'Security Expenses', 'seedgeneaology': 'Seed Geneaology',
+        'settlementassaultplans': 'Settlement Assault Plans',
+        'settlementdefenceplans': 'Settlement Defence Plans',
+        'shareholderinformation': 'Shareholder Information',
+        'smearcampaignplans': 'Smear Campaign Plans', 'spectralanalysisdata': 'Spectral Analysis Data',
+        'stellaractivitylogs': 'Stellar Activity Logs', 'surveilleancelogs': 'Surveillance Logs',
+        'tacticalplans': 'Tactical Plans', 'taxrecords': 'Tax Records',
+        'topographicalsurveys': 'Topographical Surveys', 'vaccineresearch': 'Vaccine Research',
+        'visitorregister': 'Visitor Register', 'weaponinventory': 'Weapon Inventory',
+        'weapontestdata': 'Weapon Test Data', 'xenodefenceprotocols': 'Xeno-Defence Protocols',
+        'geologicaldata': 'Geological Data', 'factiondonatorlist': 'Faction Donator List',
+        'pharmaceuticalpatents': 'Pharmaceutical Patents', 'powerresearchdata': 'Power Research Data',
+        'powerpropagandadata': 'Power Political Data', 'poweremployeedata': 'Power Association Data',
+        'powerclassifieddata': 'Power Classified Data', 'powerpreparationspyware': 'Power Injection Malware',
+
+        # Suit materials - Consumables
+        'healthpack': 'Medkit', 'energycell': 'Energy Cell', 'amm_grenade_emp': 'Shield Disruptor',
+        'amm_grenade_frag': 'Frag Grenade', 'amm_grenade_shield': 'Shield Projector', 'bypass': 'E-Breach'
+    }
+
+    # Extract search parameters
+    search_names = []
+    if obj and obj.get('name'):
+        name_param = obj.get('name')
+        if isinstance(name_param, list):
+            search_names = [name.lower().strip() for name in name_param if name]
+
+    search_grade = obj.get('grade', 0) if obj else 0
+    search_type = obj.get('type', '').lower().strip() if obj else ''
+
+    # Get data from projected states
+    materials_data = projected_states.get('Materials', {})
+    shiploader_data = projected_states.get('ShipLocker', {})
+
+    # Helper function to find ship material info
+    def find_ship_material_info(material_name):
+        material_name_lower = material_name.lower()
+
+        # Check raw materials
+        for category, grades in ship_raw_materials_map.items():
+            for grade, materials in grades.items():
+                if material_name_lower in materials:
+                    return {'category': 'Ship', 'type': 'Raw', 'grade': grade, 'section': f'Category {category}'}
+
+        # Check manufactured materials
+        for section, grades in ship_manufactured_materials_map.items():
+            for grade, materials in grades.items():
+                if material_name_lower in materials:
+                    return {'category': 'Ship', 'type': 'Manufactured', 'grade': grade, 'section': section}
+
+        # Check encoded materials
+        for section, grades in ship_encoded_materials_map.items():
+            for grade, materials in grades.items():
+                if material_name_lower in materials:
+                    return {'category': 'Ship', 'type': 'Encoded', 'grade': grade, 'section': section}
+
+        return None
+
+    # Helper function to find suit material info
+    def find_suit_material_info(material_name):
+        material_name_lower = material_name.lower()
+
+        if material_name_lower in suit_items_materials:
+            return {'category': 'Suit', 'type': 'Items', 'grade': None, 'section': 'Items'}
+        elif material_name_lower in suit_components_materials:
+            return {'category': 'Suit', 'type': 'Components', 'grade': None, 'section': 'Components'}
+        elif material_name_lower in suit_data_materials:
+            return {'category': 'Suit', 'type': 'Data', 'grade': None, 'section': 'Data'}
+        elif material_name_lower in suit_consumables_materials:
+            return {'category': 'Suit', 'type': 'Consumables', 'grade': None, 'section': 'Consumables'}
+
+        return None
+
+    # Helper function to get higher grade materials from the same family
+    def get_higher_materials(material_info, current_material):
+        higher_materials = []
+
+        if material_info['category'] != 'Ship' or material_info['grade'] is None:
+            return higher_materials  # Only ship materials have grades
+
+        if material_info['type'] == 'Raw':
+            materials_map = ship_raw_materials_map
+            max_grade = 4  # Raw materials go up to grade 4
+            # For raw materials, find the category that contains this material
+            material_category = None
+            for category, grades in materials_map.items():
+                for grade, materials in grades.items():
+                    if current_material in materials:
+                        material_category = category
+                        break
+                if material_category:
+                    break
+
+            if material_category and material_category in materials_map:
+                for grade in range(material_info['grade'] + 1, max_grade + 1):
+                    if grade in materials_map[material_category]:
+                        for mat_name in materials_map[material_category][grade]:
+                            # Check if player has this material
+                            player_materials = materials_data.get('Raw', [])
+                            for player_mat in player_materials:
+                                if player_mat.get('Name', '').lower() == mat_name:
+                                    display_name = display_names.get(mat_name, mat_name.title())
+                                    higher_materials.append({
+                                        'name': display_name,
+                                        'count': player_mat.get('Count', 0),
+                                        'grade': grade
+                                    })
+
+        elif material_info['type'] in ['Manufactured', 'Encoded']:
+            materials_map = ship_manufactured_materials_map if material_info['type'] == 'Manufactured' else ship_encoded_materials_map
+            max_grade = 5  # Manufactured and Encoded materials go up to grade 5
+
+            # Find the section that contains this material
+            material_section = material_info['section']
+            if material_section in materials_map:
+                for grade in range(material_info['grade'] + 1, max_grade + 1):
+                    if grade in materials_map[material_section]:
+                        for mat_name in materials_map[material_section][grade]:
+                            # Check if player has this material
+                            player_materials = materials_data.get(material_info['type'], [])
+                            for player_mat in player_materials:
+                                if player_mat.get('Name', '').lower() == mat_name:
+                                    display_name = display_names.get(mat_name, mat_name.title())
+                                    higher_materials.append({
+                                        'name': display_name,
+                                        'count': player_mat.get('Count', 0),
+                                        'grade': grade
+                                    })
+
+        return higher_materials
+
+    # Helper function to check if material matches search criteria
+    def matches_criteria(material_name, material_info, count):
+        # Check name match using fuzzy search
+        if search_names:
+            display_name = display_names.get(material_name, material_name)
+            name_match = False
+            for search_name in search_names:
+                # First check for exact substring matches (case insensitive)
+                if search_name in material_name or search_name in display_name.lower():
+                    name_match = True
+                    break
+                
+                # Then use more restrictive fuzzy matching based on string length
+                max_distance = max(1, min(len(search_name), len(material_name)) // 4)  # Allow 1 error per 4 characters, minimum 1
+                if (levenshtein_distance(search_name, material_name) <= max_distance or 
+                    levenshtein_distance(search_name, display_name.lower()) <= max_distance):
+                    name_match = True
+                    break
+            if not name_match:
+                return False
+
+        # Check grade match (only for ship materials)
+        if search_grade > 0 and material_info['grade'] is not None:
+            if material_info['grade'] != search_grade:
+                return False
+
+        # Check type match
+        if search_type:
+            type_matches = {
+                'raw': 'Raw', 'manufactured': 'Manufactured', 'encoded': 'Encoded',
+                'items': 'Items', 'components': 'Components', 'data': 'Data', 'consumables': 'Consumables',
+                'ship': 'Ship', 'suit': 'Suit'
+            }
+            expected_type = type_matches.get(search_type)
+            if expected_type in ['Raw', 'Manufactured', 'Encoded', 'Items', 'Components', 'Data', 'Consumables']:
+                if material_info['type'] != expected_type:
+                    return False
+            elif expected_type in ['Ship', 'Suit']:
+                if material_info['category'] != expected_type:
+                    return False
+
+        return True
+
+    # Build results
+    results = []
+
+    # Process ship materials from Materials projection
+    if materials_data:
+        for material_type in ['Raw', 'Manufactured', 'Encoded']:
+            type_materials = materials_data.get(material_type, [])
+
+            for material in type_materials:
+                material_name = material.get('Name', '').lower()
+                count = material.get('Count', 0)
+
+                if count == 0:
+                    continue
+
+                material_info = find_ship_material_info(material_name)
+                if not material_info:
+                    continue
+
+                if not matches_criteria(material_name, material_info, count):
+                    continue
+
+                display_name = display_names.get(material_name, material_name.title())
+
+                # Get higher grade materials for trading info
+                higher_materials = get_higher_materials(material_info, material_name)
+
+                result = {
+                    'name': display_name,
+                    'count': count,
+                    'category': material_info['category'],
+                    'type': material_info['type'],
+                    'grade': material_info['grade'],
+                    'section': material_info['section']
+                }
+
+                if higher_materials:
+                    result['tradeable_higher_grades'] = higher_materials
+
+                results.append(result)
+
+    # Process suit materials from ShipLocker projection
+    if shiploader_data:
+        # Process Items
+        for item in shiploader_data.get('Items', []):
+            material_name = item.get('Name', '').lower()
+            count = item.get('Count', 0)
+
+            if count == 0:
+                continue
+
+            material_info = find_suit_material_info(material_name)
+            if not material_info:
+                continue
+
+            if not matches_criteria(material_name, material_info, count):
+                continue
+
+            display_name = display_names.get(material_name, item.get('Name_Localised', material_name.title()))
+
+            result = {
+                'name': display_name,
+                'count': count,
+                'category': material_info['category'],
+                'type': material_info['type'],
+                'section': material_info['section']
+            }
+
+            results.append(result)
+
+        # Process Components
+        for component in shiploader_data.get('Components', []):
+            material_name = component.get('Name', '').lower()
+            count = component.get('Count', 0)
+
+            if count == 0:
+                continue
+
+            material_info = find_suit_material_info(material_name)
+            if not material_info:
+                continue
+
+            if not matches_criteria(material_name, material_info, count):
+                continue
+
+            display_name = display_names.get(material_name, component.get('Name_Localised', material_name.title()))
+
+            result = {
+                'name': display_name,
+                'count': count,
+                'category': material_info['category'],
+                'type': material_info['type'],
+                'section': material_info['section']
+            }
+
+            results.append(result)
+
+        # Process Data
+        for data_item in shiploader_data.get('Data', []):
+            material_name = data_item.get('Name', '').lower()
+            count = data_item.get('Count', 0)
+
+            if count == 0:
+                continue
+
+            material_info = find_suit_material_info(material_name)
+            if not material_info:
+                continue
+
+            if not matches_criteria(material_name, material_info, count):
+                continue
+
+            display_name = display_names.get(material_name, data_item.get('Name_Localised', material_name.title()))
+
+            result = {
+                'name': display_name,
+                'count': count,
+                'category': material_info['category'],
+                'type': material_info['type'],
+                'section': material_info['section']
+            }
+
+            results.append(result)
+
+        # Process Consumables
+        for consumable in shiploader_data.get('Consumables', []):
+            material_name = consumable.get('Name', '').lower()
+            count = consumable.get('Count', 0)
+
+            if count == 0:
+                continue
+
+            material_info = find_suit_material_info(material_name)
+            if not material_info:
+                continue
+
+            if not matches_criteria(material_name, material_info, count):
+                continue
+
+            display_name = display_names.get(material_name, consumable.get('Name_Localised', material_name.title()))
+
+            result = {
+                'name': display_name,
+                'count': count,
+                'category': material_info['category'],
+                'type': material_info['type'],
+                'section': material_info['section']
+            }
+
+            results.append(result)
+
+    # Check if any materials were found
+    if not results:
+        search_terms = []
+        if search_names:
+            name_list = ', '.join([f"'{name}'" for name in search_names])
+            search_terms.append(f"name(s): {name_list}")
+        if search_grade > 0:
+            search_terms.append(f"grade: {search_grade}")
+        if search_type:
+            search_terms.append(f"type: '{search_type}'")
+
+        if search_terms:
+            return f"No materials found matching search criteria: {', '.join(search_terms)}"
+        else:
+            return "No materials found"
+
+    # Format results
+    formatted_results = []
+    for result in results:
+        if result['category'] == 'Ship':
+            material_line = f"{result['count']}x {result['name']} ({result['category']} {result['type']}, Grade {result['grade']})"
+        else:  # Suit materials
+            material_line = f"{result['count']}x {result['name']} ({result['category']} {result['type']})"
+
+        if result.get('tradeable_higher_grades'):
+            trading_lines = ["Tradeable, higher grades:"]
+            for higher_mat in result['tradeable_higher_grades']:
+                if higher_mat['count'] > 0:
+                    trading_lines.append(f"- {higher_mat['count']}x {higher_mat['name']} (Grade {higher_mat['grade']})")
+
+            if len(trading_lines) > 1:  # Only add if there are actual tradeable materials
+                formatted_results.append(material_line)
+                formatted_results.extend(trading_lines)
+            else:
+                formatted_results.append(material_line)
+        else:
+            formatted_results.append(material_line)
+
+    # Sort results while preserving trading info structure
+    def sort_key(item):
+        if isinstance(item, str) and 'x ' in item and '(' in item:
+            if 'Ship Raw' in item:
+                type_order = 0
+            elif 'Ship Manufactured' in item:
+                type_order = 1
+            elif 'Ship Encoded' in item:
+                type_order = 2
+            elif 'Suit Items' in item:
+                type_order = 3
+            elif 'Suit Components' in item:
+                type_order = 4
+            elif 'Suit Data' in item:
+                type_order = 5
+            elif 'Suit Consumables' in item:
+                type_order = 6
+            else:
+                type_order = 7
+
+            # Extract grade for ship materials
+            import re
+            match = re.search(r'Grade (\d)', item)
+            grade = int(match.group(1)) if match else 0
+
+            # Extract name for sorting
+            name_match = re.search(r'\d+x ([^(]+)', item)
+            name = name_match.group(1).strip() if name_match else ''
+
+            return (type_order, grade, name)
+        else:
+            return (999, 999, item)  # Put non-material lines at end
+
+    # Sort while preserving trading info structure
+    material_blocks = []
+    current_block = []
+
+    for line in formatted_results:
+        if isinstance(line, str) and 'x ' in line and '(' in line:
+            if current_block:
+                material_blocks.append(current_block)
+            current_block = [line]
+        else:
+            current_block.append(line)
+
+    if current_block:
+        material_blocks.append(current_block)
+
+    # Sort blocks by their main material line
+    material_blocks.sort(key=lambda block: sort_key(block[0]))
+
+    # Flatten back to single list
+    sorted_results = []
+    for block in material_blocks:
+        sorted_results.extend(block)
+
+    # Add search info to the output if filters were applied
+    search_info = []
+    if search_names:
+        if len(search_names) == 1:
+            search_info.append(f"name: '{search_names[0]}'")
+        else:
+            name_list = ', '.join([f"'{name}'" for name in search_names])
+            search_info.append(f"names: {name_list}")
+    if search_grade > 0:
+        search_info.append(f"grade: {search_grade}")
+    if search_type:
+        search_info.append(f"type: '{search_type}'")
+
+    yaml_output = yaml.dump(sorted_results, default_flow_style=False, sort_keys=False)
+
+    if search_info:
+        return f"Materials Inventory (filtered by {', '.join(search_info)}):\n\n```yaml\n{yaml_output}```"
+    else:
+        return f"Materials Inventory:\n\n```yaml\n{yaml_output}```"
+
+
 def send_message(obj, projected_states):
     from pyautogui import typewrite
     setGameWindowActive()
@@ -1112,7 +4720,6 @@ def send_message(obj, projected_states):
     if obj:
         chunk_size = 100
         start = 0
-
 
         in_ship = projected_states.get('CurrentStatus').get('flags').get('InMainShip') or projected_states.get('CurrentStatus').get('flags').get('InFighter')
         in_buggy = projected_states.get('CurrentStatus').get('flags').get('InSRV')
@@ -1142,7 +4749,7 @@ def send_message(obj, projected_states):
                 return_message += " to wing chat"
             elif obj.get("channel").lower() == "system":
                 typewrite("/sy ", interval=0.02)
-                keys.send('UI_Down',repeat=2)
+                keys.send('UI_Down', repeat=2)
                 keys.send('UI_Select')
                 return_message += " to squadron chat"
             elif obj.get("channel").lower() == "squadron":
@@ -1184,29 +4791,65 @@ def get_visuals(obj, projected_states):
 
 
 def educated_guesses_message(search_query, valid_list):
+    search_lower = search_query.lower()
+    suggestions = []
+
+    # First try substring matching (existing behavior)
     split_string = search_query.split()
-
-    caught_items = []
-
-    # Iterate over each word in the split string
     for word in split_string:
-        # Check if the word is part of any value in the array
         for element in valid_list:
-            if word in element:
-                caught_items.append(element)
+            if word.lower() in element.lower() and element not in suggestions:
+                suggestions.append(element)
+
+    # If we don't have enough suggestions, add fuzzy matches
+    if len(suggestions) < 5:
+        scored_matches = []
+        max_distance = max(2, len(search_query) // 3)  # Allow more errors for suggestions
+
+        for element in valid_list:
+            if element not in suggestions:  # Don't duplicate existing suggestions
+                distance = levenshtein_distance(search_lower, element.lower())
+                if distance <= max_distance:
+                    scored_matches.append((distance, element))
+
+        # Sort by distance and add the best fuzzy matches
+        scored_matches.sort(key=lambda x: x[0])
+        for distance, element in scored_matches[:5 - len(suggestions)]:
+            suggestions.append(element)
 
     message = ""
-    if caught_items:
-        guesses_str = ', '.join(caught_items)
+    if suggestions:
+        guesses_str = ', '.join(suggestions[:5])  # Limit to 5 suggestions
         message = (
             f"Restart search with valid inputs, here are suggestions: {guesses_str}"
         )
 
     return message
 
+# Helper function
+def find_best_match(search_term, known_list):
+    search_lower = search_term.lower()
+
+    # First try exact match
+    for item in known_list:
+        if item.lower() == search_lower:
+            return item
+
+    # Then try fuzzy matching
+    best_match = None
+    best_distance = float('inf')
+    max_distance = max(1, len(search_term) // 3)  # Allow 1 error per 3 characters
+
+    for item in known_list:
+        distance = levenshtein_distance(search_lower, item.lower())
+        if distance <= max_distance and distance < best_distance:
+            best_distance = distance
+            best_match = item
+
+    return best_match
 
 # Prepare a request for the spansh station finder
-def prepare_station_request(obj, projected_states):
+def prepare_station_request(obj, projected_states):# Helper function for fuzzy matching
     known_modules = [
         "AX Missile Rack",
         "AX Multi-Cannon",
@@ -1830,9 +5473,8 @@ def prepare_station_request(obj, projected_states):
     if "commodities" in obj and obj["commodities"]:
         market_filters = []
         for market_item in obj["commodities"]:
-            # Find matching commodity name while preserving original capitalization
-            market_item_name_lower = market_item["name"].lower()
-            matching_commodity = next((commodity for commodity in known_commodities if commodity.lower() == market_item_name_lower), None)
+            # Find matching commodity name using fuzzy matching
+            matching_commodity = find_best_match(market_item["name"], known_commodities)
             if not matching_commodity:
                 raise Exception(
                     f"Invalid commodity name: {market_item['name']}. {educated_guesses_message(market_item['name'], known_commodities)}")
@@ -1861,7 +5503,7 @@ def prepare_station_request(obj, projected_states):
     if "modules" in obj:
         modules_filter = {}
         for module in obj["modules"]:
-            # Find matching module name while preserving original capitalization
+            # Find matching module name using exact matching only
             module_name_lower = module["name"].lower()
             matching_module = next((m for m in known_modules if m.lower() == module_name_lower), None)
             if not matching_module:
@@ -1871,9 +5513,8 @@ def prepare_station_request(obj, projected_states):
         filters["modules"] = obj["modules"]
     if "ships" in obj:
         for ship in obj["ships"]:
-            # Find matching ship name while preserving original capitalization
-            ship_name_lower = ship["name"].lower()
-            matching_ship = next((s for s in known_ships if s.lower() == ship_name_lower), None)
+            # Find matching ship name using fuzzy matching
+            matching_ship = find_best_match(ship["name"], known_ships)
             if not matching_ship:
                 raise Exception(
                     f"Invalid ship name: {ship['name']}. {educated_guesses_message(ship['name'], known_ships)}")
@@ -1881,9 +5522,8 @@ def prepare_station_request(obj, projected_states):
         filters["ships"] = {"value": obj["ships"]}
     if "services" in obj:
         for service in obj["services"]:
-            # Find matching service name while preserving original capitalization
-            service_name_lower = service["name"].lower()
-            matching_service = next((s for s in known_services if s.lower() == service_name_lower), None)
+            # Find matching service name using fuzzy matching
+            matching_service = find_best_match(service["name"], known_services)
             if not matching_service:
                 raise Exception(
                     f"Invalid service name: {service['name']}. {educated_guesses_message(service['name'], known_services)}")
@@ -1894,12 +5534,12 @@ def prepare_station_request(obj, projected_states):
             "value": obj["name"]
         }
 
-    sort_object = { "distance": { "direction": "asc" } }
+    sort_object = {"distance": {"direction": "asc"}}
     if filters.get("market") and len(filters["market"]) > 0:
         if filters.get("market")[0].get("demand"):
-            sort_object = {"market_sell_price":[{"name":filters["market"][0]["name"],"direction":"desc"}]}
+            sort_object = {"market_sell_price": [{"name": filters["market"][0]["name"], "direction": "desc"}]}
         elif filters["market"][0].get("demand"):
-            sort_object = {"market_buy_price":[{"name":filters["market"][0]["name"],"direction":"asc"}]}
+            sort_object = {"market_buy_price": [{"name": filters["market"][0]["name"], "direction": "asc"}]}
 
     # Build the request body
     request_body = {
@@ -1983,7 +5623,7 @@ def filter_station_response(request, response):
     }
 
 
-def station_finder(obj,projected_states):
+def station_finder(obj, projected_states):
     # Initialize the filters
     request_body = prepare_station_request(obj, projected_states)
     log('debug', 'station search input', request_body)
@@ -2000,8 +5640,8 @@ def station_finder(obj,projected_states):
         if obj.get("technology_broker") or obj.get("material_trader"):
             if len(filtered_data["results"]) > 0:
                 return galaxy_map_open({
-                    "system_name":filtered_data["results"][0]["system"],
-                    "start_navigation":True,
+                    "system_name": filtered_data["results"][0]["system"],
+                    "start_navigation": True,
                     "details": filtered_data["results"][0]
                 }, projected_states)
             else:
@@ -2013,7 +5653,7 @@ def station_finder(obj,projected_states):
         return 'An error has occurred. The station finder seems currently not available.'
 
 
-def prepare_system_request(obj, projected_states):
+def prepare_system_request(obj, projected_states):# Helper function for fuzzy matching
     known_allegiances = [
         "Alliance", "Empire", "Federation", "Guardian",
         "Independent", "Pilots Federation", "Player Pilots", "Thargoid"
@@ -2049,74 +5689,81 @@ def prepare_system_request(obj, projected_states):
 
     # Add optional filters if they exist
     if "allegiance" in obj and obj["allegiance"]:
+        validated_allegiances = []
         for allegiance in obj["allegiance"]:
-            # Find matching allegiance while preserving original capitalization
-            allegiance_lower = allegiance.lower()
-            matching_allegiance = next((a for a in known_allegiances if a.lower() == allegiance_lower), None)
+            # Find matching allegiance using fuzzy matching
+            matching_allegiance = find_best_match(allegiance, known_allegiances)
             if not matching_allegiance:
                 raise Exception(
                     f"Invalid allegiance: {allegiance}. {educated_guesses_message(allegiance, known_allegiances)}")
-        filters["allegiance"] = {"value": [a for a in obj["allegiance"] if next((k for k in known_allegiances if k.lower() == a.lower()), None)]}
+            validated_allegiances.append(matching_allegiance)
+        filters["allegiance"] = {"value": validated_allegiances}
 
     if "state" in obj and obj["state"]:
+        validated_states = []
         for state in obj["state"]:
-            # Find matching state while preserving original capitalization
-            state_lower = state.lower()
-            matching_state = next((s for s in known_states if s.lower() == state_lower), None)
+            # Find matching state using fuzzy matching
+            matching_state = find_best_match(state, known_states)
             if not matching_state:
                 raise Exception(
                     f"Invalid state: {state}. {educated_guesses_message(state, known_states)}")
-        filters["state"] = {"value": [s for s in obj["state"] if next((k for k in known_states if k.lower() == s.lower()), None)]}
+            validated_states.append(matching_state)
+        filters["state"] = {"value": validated_states}
 
     if "government" in obj and obj["government"]:
+        validated_governments = []
         for government in obj["government"]:
-            # Find matching government while preserving original capitalization
-            government_lower = government.lower()
-            matching_government = next((g for g in known_governments if g.lower() == government_lower), None)
+            # Find matching government using fuzzy matching
+            matching_government = find_best_match(government, known_governments)
             if not matching_government:
                 raise Exception(
                     f"Invalid government: {government}. {educated_guesses_message(government, known_governments)}")
-        filters["government"] = {"value": [g for g in obj["government"] if next((k for k in known_governments if k.lower() == g.lower()), None)]}
+            validated_governments.append(matching_government)
+        filters["government"] = {"value": validated_governments}
 
     if "power" in obj and obj["power"]:
+        validated_powers = []
         for power in obj["power"]:
-            # Find matching power while preserving original capitalization
-            power_lower = power.lower()
-            matching_power = next((p for p in known_powers if p.lower() == power_lower), None)
+            # Find matching power using fuzzy matching
+            matching_power = find_best_match(power, known_powers)
             if not matching_power:
                 raise Exception(
                     f"Invalid power: {power}. {educated_guesses_message(power, known_powers)}")
-        filters["controlling_power"] = {"value": [p for p in obj["power"] if next((k for k in known_powers if k.lower() == p.lower()), None)]}
+            validated_powers.append(matching_power)
+        filters["controlling_power"] = {"value": validated_powers}
 
     if "primary_economy" in obj and obj["primary_economy"]:
+        validated_economies = []
         for economy in obj["primary_economy"]:
-            # Find matching economy while preserving original capitalization
-            economy_lower = economy.lower()
-            matching_economy = next((e for e in known_economies if e.lower() == economy_lower), None)
+            # Find matching economy using fuzzy matching
+            matching_economy = find_best_match(economy, known_economies)
             if not matching_economy:
                 raise Exception(
                     f"Invalid primary economy: {economy}. {educated_guesses_message(economy, known_economies)}")
-        filters["primary_economy"] = {"value": [e for e in obj["primary_economy"] if next((k for k in known_economies if k.lower() == e.lower()), None)]}
+            validated_economies.append(matching_economy)
+        filters["primary_economy"] = {"value": validated_economies}
 
     if "security" in obj and obj["security"]:
+        validated_security = []
         for security_level in obj["security"]:
-            # Find matching security level while preserving original capitalization
-            security_lower = security_level.lower()
-            matching_security = next((s for s in known_security_levels if s.lower() == security_lower), None)
+            # Find matching security level using fuzzy matching
+            matching_security = find_best_match(security_level, known_security_levels)
             if not matching_security:
                 raise Exception(
                     f"Invalid security level: {security_level}. {educated_guesses_message(security_level, known_security_levels)}")
-        filters["security"] = {"value": [s for s in obj["security"] if next((k for k in known_security_levels if k.lower() == s.lower()), None)]}
+            validated_security.append(matching_security)
+        filters["security"] = {"value": validated_security}
 
     if "thargoid_war_state" in obj and obj["thargoid_war_state"]:
+        validated_thargoid_states = []
         for thargoid_war_state in obj["thargoid_war_state"]:
-            # Find matching thargoid war state while preserving original capitalization
-            state_lower = thargoid_war_state.lower()
-            matching_state = next((s for s in known_thargoid_war_states if s.lower() == state_lower), None)
+            # Find matching thargoid war state using fuzzy matching
+            matching_state = find_best_match(thargoid_war_state, known_thargoid_war_states)
             if not matching_state:
                 raise Exception(
                     f"Invalid thargoid war state: {thargoid_war_state}. {educated_guesses_message(thargoid_war_state, known_thargoid_war_states)}")
-        filters["thargoid_war_state"] = {"value": [s for s in obj["thargoid_war_state"] if next((k for k in known_thargoid_war_states if k.lower() == s.lower()), None)]}
+            validated_thargoid_states.append(matching_state)
+        filters["thargoid_war_state"] = {"value": validated_thargoid_states}
 
     if "population" in obj and obj["population"]:
         comparison = obj["population"].get("comparison", ">")
@@ -2207,7 +5854,7 @@ def filter_system_response(request, response):
 # System finder function that sends the request to the Spansh API
 def system_finder(obj, projected_states):
     # Build the request body
-    request_body = prepare_system_request(obj,projected_states)
+    request_body = prepare_system_request(obj, projected_states)
 
     url = "https://spansh.co.uk/api/systems/search"
 
@@ -2786,24 +6433,24 @@ def prepare_body_request(obj, projected_states):
 
     # Add optional filters if they exist
     if "subtype" in obj and obj["subtype"]:
+        validated_subtypes = []
         for subtype in obj["subtype"]:
-            # Find matching subtype while preserving original capitalization
-            subtype_lower = subtype.lower()
-            matching_subtype = next((s for s in known_subtypes if s.lower() == subtype_lower), None)
+            # Find matching subtype using fuzzy matching
+            matching_subtype = find_best_match(subtype, known_subtypes)
             if not matching_subtype:
                 raise Exception(
                     f"Invalid celestial body subtype: {subtype}. {educated_guesses_message(subtype, known_subtypes)}")
-        filters["subtype"] = {"value": [s for s in obj["subtype"] if next((k for k in known_subtypes if k.lower() == s.lower()), None)]}
+            validated_subtypes.append(matching_subtype)
+        filters["subtype"] = {"value": validated_subtypes}
 
     if "landmark_subtype" in obj and obj["landmark_subtype"]:
         for landmark_subtype in obj["landmark_subtype"]:
-            # Find matching landmark subtype while preserving original capitalization
-            landmark_lower = landmark_subtype.lower()
-            matching_landmark = next((l for l in known_landmarks if l.lower() == landmark_lower), None)
+            # Find matching landmark subtype using fuzzy matching
+            matching_landmark = find_best_match(landmark_subtype, known_landmarks)
             if not matching_landmark:
                 raise Exception(
                     f"Invalid Landmark Subtype: {landmark_subtype}. {educated_guesses_message(landmark_subtype, known_landmarks)}")
-        filters["landmarks"] = [{"subtype": next((k for k in known_landmarks if k.lower() == obj["landmark_subtype"].lower()), None)}]
+        filters["landmarks"] = [{"subtype": matching_landmark}]
 
     if "name" in obj and obj["name"]:
         filters["name"] = {
@@ -2870,10 +6517,10 @@ def filter_body_response(request, response):
     }
 
 
-# System finder function that sends the request to the Spansh API
-def body_finder(obj,projected_states):
+# Body finder function that sends the request to the Spansh API
+def body_finder(obj, projected_states):
     # Build the request body
-    request_body = prepare_body_request(obj,projected_states)
+    request_body = prepare_body_request(obj, projected_states)
 
     url = "https://spansh.co.uk/api/bodies/search"
 
@@ -2890,6 +6537,7 @@ def body_finder(obj,projected_states):
     except Exception as e:
         log('error', f"Error: {e}")
         return 'An error occurred. The system finder seems to be currently unavailable.'
+
 
 def target_subsystem_thread(current_subsystem: str, current_event_id: str, desired_subsystem: str):
     if not current_subsystem:
@@ -2916,6 +6564,7 @@ def target_subsystem_thread(current_subsystem: str, current_event_id: str, desir
         current_event_id = new_state.get('EventID')
     log('debug', 'desired subsystem targeted', current_subsystem)
 
+
 def target_subsystem(args, projected_states):
     current_target = projected_states.get('Target')
 
@@ -2930,6 +6579,7 @@ def target_subsystem(args, projected_states):
     threading.Thread(target=target_subsystem_thread, args=(current_target.get('Subsystem'), current_target.get('EventID'), args['subsystem'],), daemon=True).start()
 
     return f"The submodule {args['subsystem']} is being targeted."
+
 
 def register_actions(actionManager: ActionManager, eventManager: EventManager, llmClient: openai.OpenAI,
                      llmModelName: str, visionClient: Optional[openai.OpenAI], visionModelName: Optional[str],
@@ -2948,39 +6598,39 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('fireWeapons', "Fire weapons with simple controls: single shot, start continuous, or stop", {
         "type": "object",
         "properties": {
-          "weaponType": {
-            "type": "string",
-            "description": "Type of weapons to fire",
-            "enum": [
-              "primary",
-              "secondary",
-              "discovery_scanner"
-            ],
-            "default": "primary"
-          },
-          "action": {
-            "type": "string",
-            "description": "Action to perform with weapons",
-            "enum": [
-              "fire",
-              "start",
-              "stop"
-            ],
-            "default": "fire"
-          },
-          "duration": {
-            "type": "number",
-            "description": "Duration to hold fire button in seconds (for fire action only)",
-            "minimum": 0,
-            "maximum": 30
-          },
-          "repetitions": {
-            "type": "integer",
-            "description": "Number of additional repetitions (0 = single action, 1+ = repeat that many extra times)",
-            "minimum": 0,
-            "maximum": 10,
-            "default": 0
-          }
+            "weaponType": {
+                "type": "string",
+                "description": "Type of weapons to fire",
+                "enum": [
+                    "primary",
+                    "secondary",
+                    "discovery_scanner"
+                ],
+                "default": "primary"
+            },
+            "action": {
+                "type": "string",
+                "description": "Action to perform with weapons",
+                "enum": [
+                    "fire",
+                    "start",
+                    "stop"
+                ],
+                "default": "fire"
+            },
+            "duration": {
+                "type": "number",
+                "description": "Duration to hold fire button in seconds (for fire action only)",
+                "minimum": 0,
+                "maximum": 30
+            },
+            "repetitions": {
+                "type": "integer",
+                "description": "Number of additional repetitions (0 = single action, 1+ = repeat that many extra times)",
+                "minimum": 0,
+                "maximum": 10,
+                "default": 0
+            }
         },
         "required": ["weaponType", "action"]
     }, fire_weapons, 'ship')
@@ -3018,36 +6668,36 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     }, deploy_hardpoint_toggle, 'ship')
 
     actionManager.registerAction('managePowerDistribution',
-     "Manage power distribution between ship systems. Apply pips to one or more power systems or balance the power across two or if unspecified, across all 3",
-     {
-         "type": "object",
-         "properties": {
-             "power_category": {
-                 "type": "array",
-                 "description": "Array of the system(s) being asked to change. if not specified return default",
-                 "items": {
-                     "type": "string",
-                     "enum": ["Engines", "Weapons", "Systems"],
-                     "default":["Engines", "Weapons", "Systems"]
-                 }
-             },
-             "balance_power": {
-                 "type": "boolean",
-                 "description": "Whether the user asks to balance power"
-             },
-             "pips": {
-                 "type": "array",
-                 "description": "Number of pips to allocate (ignored for balance), one per power_category",
-                 "items": {
-                     "type": "integer",
-                     "minimum": 1,
-                     "maximum": 4,
-                     "default": 1
-                 }
-             }
-         },
-         "required": ["power_category"]
-     }, manage_power_distribution, 'ship')
+                                 "Manage power distribution between ship systems. Apply pips to one or more power systems or balance the power across two or if unspecified, across all 3",
+                                 {
+                                     "type": "object",
+                                     "properties": {
+                                         "power_category": {
+                                             "type": "array",
+                                             "description": "Array of the system(s) being asked to change. if not specified return default",
+                                             "items": {
+                                                 "type": "string",
+                                                 "enum": ["Engines", "Weapons", "Systems"],
+                                                 "default": ["Engines", "Weapons", "Systems"]
+                                             }
+                                         },
+                                         "balance_power": {
+                                             "type": "boolean",
+                                             "description": "Whether the user asks to balance power"
+                                         },
+                                         "pips": {
+                                             "type": "array",
+                                             "description": "Number of pips to allocate (ignored for balance), one per power_category",
+                                             "items": {
+                                                 "type": "integer",
+                                                 "minimum": 1,
+                                                 "maximum": 4,
+                                                 "default": 1
+                                             }
+                                         }
+                                     },
+                                     "required": ["power_category"]
+                                 }, manage_power_distribution, 'ship')
 
     actionManager.registerAction('galaxyMapOpen', "Open galaxy map. If asked, also focus on a system or start a navigation route", {
         "type": "object",
@@ -3090,7 +6740,6 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             }
         }
     }, cycle_target, 'ship')
-
 
     actionManager.registerAction(
         'cycle_fire_group',
@@ -3136,9 +6785,6 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             }
         }
     }, cycle_fire_group, 'ship')
-
-    
-
 
     actionManager.registerAction('shipSpotLightToggle', "Toggle ship spotlight", {
         "type": "object",
@@ -3210,23 +6856,23 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
 
     # Register actions - Mainship Actions
     actionManager.registerAction('FsdJump',
-        "initiate FSD jump (jump to the next system or enter supercruise)", {
-        "type": "object",
-        "properties": {
-            "jump_type": {
-                "type": "string",
-                "description": "Jump to next system, enter supercruise or auto if unspecified",
-                "enum": ["next_system", "supercruise", "auto"]
-            }
-        }
-    }, fsd_jump, 'mainship')
+                                 "initiate FSD jump (jump to the next system or enter supercruise)", {
+                                     "type": "object",
+                                     "properties": {
+                                         "jump_type": {
+                                             "type": "string",
+                                             "description": "Jump to next system, enter supercruise or auto if unspecified",
+                                             "enum": ["next_system", "supercruise", "auto"]
+                                         }
+                                     }
+                                 }, fsd_jump, 'mainship')
 
     actionManager.registerAction('target_next_system_in_route',
-        "When we have a nav route set, this will automatically target the next system in the route",
-        {
-        "type": "object",
-        "properties": {}
-    }, next_system_in_route, 'mainship')
+                                 "When we have a nav route set, this will automatically target the next system in the route",
+                                 {
+                                     "type": "object",
+                                     "properties": {}
+                                 }, next_system_in_route, 'mainship')
 
     actionManager.registerAction('toggleCargoScoop', "Toggles cargo scoop", {
         "type": "object",
@@ -3344,39 +6990,37 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, select_target_buggy, 'buggy')
 
-
     actionManager.registerAction('managePowerDistributionBuggy',
-     "Manage power distribution between buggy power systems. Apply pips to one or more power systems or balance the power across two or if unspecified, across all 3",
-     {
-         "type": "object",
-         "properties": {
-             "power_category": {
-                 "type": "array",
-                 "description": "Array of the system(s) being asked to change. if not specified return default",
-                 "items": {
-                     "type": "string",
-                     "enum": ["Engines", "Weapons", "Systems"],
-                     "default": ["Engines", "Weapons", "Systems"]
-                 }
-             },
-             "balance_power": {
-                 "type": "boolean",
-                 "description": "Whether the user asks to balance power"
-             },
-             "pips": {
-                 "type": "array",
-                 "description": "Number of pips to allocate (ignored for balance), one per power_category",
-                 "items": {
-                     "type": "integer",
-                     "minimum": 1,
-                     "maximum": 4,
-                     "default": 1
-                 }
-             }
-         },
-         "required": ["power_category"]
-     }, manage_power_distribution_buggy, 'buggy')
-
+                                 "Manage power distribution between buggy power systems. Apply pips to one or more power systems or balance the power across two or if unspecified, across all 3",
+                                 {
+                                     "type": "object",
+                                     "properties": {
+                                         "power_category": {
+                                             "type": "array",
+                                             "description": "Array of the system(s) being asked to change. if not specified return default",
+                                             "items": {
+                                                 "type": "string",
+                                                 "enum": ["Engines", "Weapons", "Systems"],
+                                                 "default": ["Engines", "Weapons", "Systems"]
+                                             }
+                                         },
+                                         "balance_power": {
+                                             "type": "boolean",
+                                             "description": "Whether the user asks to balance power"
+                                         },
+                                         "pips": {
+                                             "type": "array",
+                                             "description": "Number of pips to allocate (ignored for balance), one per power_category",
+                                             "items": {
+                                                 "type": "integer",
+                                                 "minimum": 1,
+                                                 "maximum": 4,
+                                                 "default": 1
+                                             }
+                                         }
+                                     },
+                                     "required": ["power_category"]
+                                 }, manage_power_distribution_buggy, 'buggy')
 
     actionManager.registerAction('toggleCargoScoopBuggy', "Toggle cargo scoop", {
         "type": "object",
@@ -3437,24 +7081,24 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('equipGearHumanoid', "Equip or hide a piece of gear", {
         "type": "object",
         "properties": {
-        "equipment": {
-            "type": "string",
-            "description": "Gear to equip",
-            "enum": [
-                "HumanoidSelectPrimaryWeaponButton",
-                "HumanoidSelectSecondaryWeaponButton",
-                "HumanoidSelectUtilityWeaponButton",
-                "HumanoidSwitchToRechargeTool",
-                "HumanoidSwitchToCompAnalyser",
-                "HumanoidSwitchToSuitTool",
-                "HumanoidHideWeaponButton",
-                "HumanoidSelectFragGrenade",
-                "HumanoidSelectEMPGrenade",
-                "HumanoidSelectShieldGrenade"
-            ]
-        }
-    },
-    "required": ["equipment"]
+            "equipment": {
+                "type": "string",
+                "description": "Gear to equip",
+                "enum": [
+                    "HumanoidSelectPrimaryWeaponButton",
+                    "HumanoidSelectSecondaryWeaponButton",
+                    "HumanoidSelectUtilityWeaponButton",
+                    "HumanoidSwitchToRechargeTool",
+                    "HumanoidSwitchToCompAnalyser",
+                    "HumanoidSwitchToSuitTool",
+                    "HumanoidHideWeaponButton",
+                    "HumanoidSelectFragGrenade",
+                    "HumanoidSelectEMPGrenade",
+                    "HumanoidSelectShieldGrenade"
+                ]
+            }
+        },
+        "required": ["equipment"]
     }, equip_humanoid, 'humanoid')
 
     actionManager.registerAction('toggleFlashlightHumanoid', "Toggle flashlight", {
@@ -3865,8 +7509,91 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "example": "RatherRude.TTV",
             },
         },
-        "required": ["message","channel"]
+        "required": ["message", "channel"]
     }, send_message, 'global')
+
+    actionManager.registerAction(
+        'engineer_finder', "Get information about engineers' location, standing and modifications.", {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Filter engineers by name"
+                },
+                "system": {
+                    "type": "string",
+                    "description": "Filter engineers by system/location"
+                },
+                "modifications": {
+                    "type": "string",
+                    "description": "Filter engineers by what they modify"
+                },
+                "progress": {
+                    "type": "string",
+                    "enum": ["Unknown", "Known", "Invited", "Unlocked"],
+                    "description": "Filter engineers by their current progress status"
+                }
+            }
+        },
+        engineer_finder,
+        'web'
+    )
+
+    # Register AI action for blueprint finder
+    actionManager.registerAction(
+        'blueprint_finder', "Find engineer blueprints based on search criteria. Returns material costs with grade calculations.", {
+            "type": "object",
+            "properties": {
+                "modifications": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Array of modification names to search for - supports fuzzy search."
+                },
+                "engineer": {
+                    "type": "string",
+                    "description": "Engineer name to search for"
+                },
+                "module": {
+                    "type": "string",
+                    "description": "Module/hardware name to search for"
+                },
+                "grade": {
+                    "type": "integer",
+                    "description": "Grade to search for"
+                }
+            }
+        },
+        blueprint_finder,
+        'web'
+    )
+
+    actionManager.registerAction(
+        'material_finder',
+        "Find and search a list of materials for both ship and suit engineering from my inventory.",
+        {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Array of material names to search for - supports fuzzy search."
+                },
+                "grade": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5,
+                    "description": "Filter ship materials by grade (1-5). Suit materials don't have grades."
+                },
+                "type": {
+                    "type": "string",
+                    "enum": ["raw", "manufactured", "encoded", "items", "components", "data", "consumables", "ship", "suit"],
+                    "description": "Filter by material type. Ship types: raw, manufactured, encoded. Suit types: items, components, data, consumables. Category filters: ship, suit."
+                }
+            }
+        },
+        material_finder,
+        'web'
+    )
 
     if vision_client:
         actionManager.registerAction('getVisuals', "Describes what's currently visible to the Commander.", {
@@ -3914,6 +7641,7 @@ def format_commodity_name(name: str) -> str:
         formatted_parts.append(part.capitalize())
 
     return ' '.join(formatted_parts)
+
 
 def normalize_string(s: str) -> str:
     """
