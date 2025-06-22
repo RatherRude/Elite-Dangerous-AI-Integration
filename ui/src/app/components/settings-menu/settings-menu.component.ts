@@ -65,6 +65,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     has_plugin_settings: boolean = false;
     system: SystemInfo | null = null;
     private configSubscription?: Subscription;
+    private systemSubscription?: Subscription;
     private plugin_settings_message_subscription?: Subscription;
     private validationSubscription?: Subscription;
     public usageDisclaimerAccepted = false;
@@ -91,6 +92,17 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
                 this.config = config;
             },
         );
+        this.systemSubscription = this.configService.system$
+            .subscribe(
+                (system) => {
+                this.system = system;
+                if (system) {
+                    console.log("System info loaded");
+                } else {
+                    console.error("Received null system info");
+                }
+                },
+            );
         this.plugin_settings_message_subscription = this.configService
             .plugin_settings_message$
             .subscribe(
@@ -98,7 +110,7 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
                     this.has_plugin_settings =
                         plugin_settings_message?.has_plugin_settings || false;
                     if (plugin_settings_message?.plugin_settings_configs) {
-                        console.log("Plugin settings count received", {
+                        console.log("Receieved has_plugin_settings", {
                             has_plugin_settings:
                                 plugin_settings_message.has_plugin_settings,
                         });
@@ -128,6 +140,9 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     ngOnDestroy() {
         if (this.configSubscription) {
             this.configSubscription.unsubscribe();
+        }
+        if (this.systemSubscription) {
+            this.systemSubscription.unsubscribe();
         }
         if (this.validationSubscription) {
             this.validationSubscription.unsubscribe();
