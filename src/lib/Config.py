@@ -548,6 +548,11 @@ def merge_config_data(defaults: dict, user: dict):
     print("Merge config data")
     # Create new merge dict
     merge = {}
+    
+    # First, copy all defaults
+    for key in defaults:
+        merge[key] = defaults.get(key)
+
     # Then, override with user values if they exist and are of the correct type
     for key in user:
         if key in defaults:
@@ -700,7 +705,8 @@ def load_config() -> Config:
             if data:
                 data = migrate(data)
                 merged_config = merge_config_data(defaults, data)
-                print(f"Configuration loaded successfully. Commander: {merged_config.get('commander_name')}, Characters: {len(merged_config.get('characters', []))}")
+                
+                print(f"Configuration loaded successfully. Commander: {merged_config.get('commander_name')}, Characters: {len(merged_config.get('characters', []))}, temp {merged_config.get('llm_temperature')}")
                 return cast(Config, merged_config)  # pyright: ignore[reportInvalidCast]
             else:
                 print("Empty config file, using defaults")
