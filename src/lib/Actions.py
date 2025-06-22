@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 import openai
 import requests
 
-from src.lib.Config import get_asset_path
+from .Config import get_asset_path
 from .ScreenReader import ScreenReader
 from .Logger import log, show_chat_message
 from .EDKeys import EDKeys
@@ -27,9 +27,9 @@ vision_model_name: str | None = None
 event_manager: EventManager = None
 
 # imported JSONs
-ship_engineers = None
-suit_engineers = None
-engineering_modifications = None
+ship_engineers:dict = {}
+suit_engineers:dict = {}
+engineering_modifications:dict = {}
 
 # Checking status projection to exit game actions early if not applicable
 def checkStatus(projected_states: dict[str, dict], blocked_status_dict: dict[str, bool]):
@@ -1331,8 +1331,11 @@ def blueprint_finder(obj, projected_states):
             module_results = {}
 
             for grade, grade_info in grades.items():
+                # Convert grade to integer for comparison and calculations
+                grade_int = int(grade) if grade.isdigit() else 0
+                
                 # Check if grade matches search criteria
-                if search_grade is not None and grade != search_grade:
+                if search_grade is not None and grade_int != search_grade:
                     continue
 
                 # Check if any engineer matches search criteria
@@ -1345,7 +1348,7 @@ def blueprint_finder(obj, projected_states):
 
                     # Calculate total materials needed for this grade
                 base_cost = grade_info.get("cost", {})
-                total_materials = calculate_materials_for_grade(base_cost, grade)
+                total_materials = calculate_materials_for_grade(base_cost, grade_int)
 
                 # Check material availability
                 missing_materials, has_all_materials = check_material_availability(total_materials)
@@ -4219,9 +4222,9 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
 
     setGameWindowActive()
 
-    suit_engineers: dict = json.load(open(get_asset_path('suit_engineers.json')))
-    ship_engineers: dict = json.load(open(get_asset_path('ship_engineers.json')))
-    engineering_modifications: dict = json.load(open(get_asset_path('engineering_modifications.json')))
+    suit_engineers = json.load(open(get_asset_path('suit_engineers.json')))
+    ship_engineers = json.load(open(get_asset_path('ship_engineers.json')))
+    engineering_modifications = json.load(open(get_asset_path('engineering_modifications.json')))
 
     # Register actions - General Ship Actions
     actionManager.registerAction('fireWeapons', "Fire weapons with simple controls: single shot, start continuous, or stop", {
