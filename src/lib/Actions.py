@@ -4148,7 +4148,7 @@ def material_finder(obj, projected_states):
             3: ['ancienthistoricaldata'],
             4: ['ancienttechnologicaldata'],
             5: ['guardian_vesselblueprint'],
-            'source': ''
+            'source': 'Guardian obelisks: Synuefe XR-H D11-102, planet 1 B (4 obelisks together)'
         },
         'Thargoid Data': {
             1: ['tg_interdictiondata'],
