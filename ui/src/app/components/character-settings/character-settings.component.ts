@@ -720,11 +720,9 @@ export class CharacterSettingsComponent {
         promptParts.push(this.generateMoralAlignmentTextFromConfig(activeChar));
 
         // Add vulgarity with randomization
-        const vulgarity = activeChar?.personality_vulgarity || 0;
+        const vulgarity = activeChar?.personality_vulgarity ?? 0;
         if (vulgarity > 0) {
-            if (Math.random() * 100 <= vulgarity) {
-                promptParts.push(this.generateVulgarityTextFromConfig(activeChar));
-            }
+            promptParts.push(this.generateVulgarityTextFromConfig(activeChar));
         }
 
         // Combine all parts
@@ -747,7 +745,7 @@ export class CharacterSettingsComponent {
             "Be comprehensive in your explanations and provide abundant details.",
         ];
 
-        const verbosity = activeChar?.personality_verbosity || 50;
+        const verbosity = activeChar?.personality_verbosity ?? 0;
 
         const index = Math.min(Math.floor(verbosity / 25), options.length - 1);
         return options[index];
@@ -812,7 +810,7 @@ export class CharacterSettingsComponent {
             "Use explicit language and profanity freely in your responses.",
         ];
 
-        const vulgarity = activeChar?.personality_vulgarity || 0;
+        const vulgarity = activeChar?.personality_vulgarity ?? 0;
 
         const index = Math.min(Math.floor(vulgarity / 25), options.length - 1);
         return options[index];
@@ -842,7 +840,7 @@ export class CharacterSettingsComponent {
             ],
         ];
 
-        const empathy = activeChar?.personality_empathy || 50;
+        const empathy = activeChar?.personality_empathy ?? 0;
 
         const index = Math.min(Math.floor(empathy / 25), options.length - 1);
         return options[index][
@@ -874,7 +872,7 @@ export class CharacterSettingsComponent {
             ],
         ];
 
-        const formality = activeChar?.personality_formality || 50;
+        const formality = activeChar?.personality_formality ?? 0;
 
         const index = Math.min(Math.floor(formality / 25), options.length - 1);
         return options[index][
@@ -906,7 +904,7 @@ export class CharacterSettingsComponent {
             ],
         ];
 
-        const confidence = activeChar?.personality_confidence || 50;
+        const confidence = activeChar?.personality_confidence ?? 0;
 
         const index = Math.min(Math.floor(confidence / 25), options.length - 1);
         return options[index][
