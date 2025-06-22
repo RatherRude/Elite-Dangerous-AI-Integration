@@ -4033,110 +4033,130 @@ def material_finder(obj, projected_states):
 
     # Ship engineering materials (from Materials projection)
     ship_raw_materials_map = {
-        1: {1: ['carbon'], 2: ['vanadium'], 3: ['niobium'], 4: ['yttrium']},
-        2: {1: ['phosphorus'], 2: ['chromium'], 3: ['molybdenum'], 4: ['technetium']},
-        3: {1: ['sulphur'], 2: ['manganese'], 3: ['cadmium'], 4: ['ruthenium']},
-        4: {1: ['iron'], 2: ['zinc'], 3: ['tin'], 4: ['selenium']},
-        5: {1: ['nickel'], 2: ['germanium'], 3: ['tungsten'], 4: ['tellurium']},
-        6: {1: ['rhenium'], 2: ['arsenic'], 3: ['mercury'], 4: ['polonium']},
-        7: {1: ['lead'], 2: ['zirconium'], 3: ['boron'], 4: ['antimony']}
+        1: {1: ['carbon'], 2: ['vanadium'], 3: ['niobium'], 4: ['yttrium'], 'source': 'Crystal Shards: Outotz LS-K D8-3, planet B 5 A'},
+        2: {1: ['phosphorus'], 2: ['chromium'], 3: ['molybdenum'], 4: ['technetium'], 'source': 'Crystal Shards: HIP 36601, planet C 5 A'},
+        3: {1: ['sulphur'], 2: ['manganese'], 3: ['cadmium'], 4: ['ruthenium'], 'source': 'Crystal Shards: HIP 36601, planet C 1 D and Outotz LS-K D8-3, planet B 7 B'},
+        4: {1: ['iron'], 2: ['zinc'], 3: ['tin'], 4: ['selenium'], 'source': 'Brain Trees: Kappa-1 Volantis, B 3 F A and HR 3230, 3 A A'},
+        5: {1: ['nickel'], 2: ['germanium'], 3: ['tungsten'], 4: ['tellurium'], 'source': 'Crystal Shards: HIP 36601, planet C 3 B'},
+        6: {1: ['rhenium'], 2: ['arsenic'], 3: ['mercury'], 4: ['polonium'], 'source': 'Crystal Shards: HIP 36601, planet C 1 A'},
+        7: {1: ['lead'], 2: ['zirconium'], 3: ['boron'], 4: ['antimony'], 'source': 'Crystal Shards: Outotz LS-K D8-3, planet B 5 C'}
     }
 
     ship_manufactured_materials_map = {
         'Chemical': {
             1: ['chemicalstorageunits'], 2: ['chemicalprocessors'], 3: ['chemicaldistillery'],
-            4: ['chemicalmanipulators'], 5: ['pharmaceuticalisolators']
+            4: ['chemicalmanipulators'], 5: ['pharmaceuticalisolators'],
+            'source': 'High Grade Emissions (Outbreak system states with pop >1000000), Mission reward'
         },
         'Thermic': {
             1: ['temperedalloys'], 2: ['heatresistantceramics'], 3: ['precipitatedalloys'],
-            4: ['thermicalloys'], 5: ['militarygradealloys']
+            4: ['thermicalloys'], 5: ['militarygradealloys'],
+            'source': 'High Grade Emissions (War, Civil War or Civil Unrest system states with pop >1000000), Mission reward'
         },
         'Heat': {
             1: ['heatconductionwiring'], 2: ['heatdispersionplate'], 3: ['heatexchangers'],
-            4: ['heatvanes'], 5: ['protoheatradiators']
+            4: ['heatvanes'], 5: ['protoheatradiators'],
+            'source': 'High Grade Emissions (Boom state systems with pop >1000000), Mission reward'
         },
         'Conductive': {
             1: ['basicconductors'], 2: ['conductivecomponents'], 3: ['conductiveceramics'],
-            4: ['conductivepolymers'], 5: ['biotechconductors']
+            4: ['conductivepolymers'], 5: ['biotechconductors'],
+            'source': 'Mission Reward'
         },
         'Mechanical Components': {
             1: ['mechanicalscrap'], 2: ['mechanicalequipment'], 3: ['mechanicalcomponents'],
-            4: ['configurablecomponents'], 5: ['improvisedcomponents']
+            4: ['configurablecomponents'], 5: ['improvisedcomponents'],
+            'source': 'High Grade Emissions in Independent (Civil Unrest systems system states with pop >1000000)'
         },
         'Capacitors': {
             1: ['gridresistors'], 2: ['hybridcapacitors'], 3: ['electrochemicalarrays'],
-            4: ['polymercapacitors'], 5: ['militarysupercapacitors']
+            4: ['polymercapacitors'], 5: ['militarysupercapacitors'],
+            'source': 'High Grade Emissions in Independent and Alliance (War and Civil War system states with pop >1000000), Mission reward'
         },
         'Shielding': {
             1: ['wornshieldemitters'], 2: ['shieldemitters'], 3: ['shieldingsensors'],
-            4: ['compoundshielding'], 5: ['imperialshielding']
+            4: ['compoundshielding'], 5: ['imperialshielding'],
+            'source': 'High Grade Emissions in Imperial systems (None and Election system states with pop >1000000), Mission reward'
         },
         'Composite': {
             1: ['compactcomposites'], 2: ['filamentcomposites'], 3: ['highdensitycomposites'],
-            4: ['proprietarycomposites'], 5: ['coredynamicscomposites']
+            4: ['proprietarycomposites'], 5: ['coredynamicscomposites'],
+            'source': 'High Grade Emissions in Federation systems (with pop >1000000)'
         },
         'Crystals': {
             1: ['crystalshards'], 2: ['flawedfocuscrystals'], 3: ['focuscrystals'],
-            4: ['refinedfocuscrystals'], 5: ['exquisitefocuscrystals']
+            4: ['refinedfocuscrystals'], 5: ['exquisitefocuscrystals'],
+            'source': 'Mission reward'
         },
         'Alloys': {
             1: ['salvagedalloys'], 2: ['galvanisingalloys'], 3: ['phasealloys'],
-            4: ['protolightalloys'], 5: ['protoradiolicalloys']
+            4: ['protolightalloys'], 5: ['protoradiolicalloys'],
+            'source': 'High Grade Emissions (Boom state systems with pop >1000000)'
         },
         'Guardian Technology': {
             1: ['guardian_sentinel_wreckagecomponents', 'guardianwreckagecomponents'],
             2: ['guardian_powercell', 'guardianpowercell'],
             3: ['guardian_powerconduit', 'guardianpowerconduit'],
             4: ['guardian_sentinel_weaponparts', 'guardiansentinelweaponparts'],
-            5: ['guardian_techcomponent', 'techcomponent']
+            5: ['guardian_techcomponent', 'techcomponent'],
+            'source': ''
         },
         'Thargoid Technology': {
             1: ['tg_wreckagecomponents', 'wreckagecomponents', 'tg_abrasion02', 'tgabrasion02'],
             2: ['tg_biomechanicalconduits', 'biomechanicalconduits', 'tg_abrasion03', 'tgabrasion03'],
             3: ['tg_weaponparts', 'weaponparts', 'unknowncarapace', 'tg_causticshard', 'tgcausticshard'],
             4: ['tg_propulsionelement', 'propulsionelement', 'unknownenergycell', 'unknowncorechip'],
-            5: ['tg_causticgeneratorparts', 'causticgeneratorparts', 'tg_causticcrystal', 'tgcausticcrystal', 'unknowntechnologycomponents']
+            5: ['tg_causticgeneratorparts', 'causticgeneratorparts', 'tg_causticcrystal', 'tgcausticcrystal', 'unknowntechnologycomponents'],
+            'source': ''
         }
     }
-
+    jameson_desc = 'Jameson crash site - HIP 12099 Planet 1B'
     ship_encoded_materials_map = {
         'Emission Data': {
             1: ['scrambledemissiondata'], 2: ['archivedemissiondata'], 3: ['emissiondata'],
-            4: ['decodedemissiondata'], 5: ['compactemissionsdata']
+            4: ['decodedemissiondata'], 5: ['compactemissionsdata'],
+            'source': jameson_desc
         },
         'Wake Scans': {
             1: ['disruptedwakeechoes'], 2: ['fsdtelemetry'], 3: ['wakesolutions'],
-            4: ['hyperspacetrajectories'], 5: ['dataminedwake']
+            4: ['hyperspacetrajectories'], 5: ['dataminedwake'],
+            'source': jameson_desc
         },
         'Shield Data': {
             1: ['shieldcyclerecordings'], 2: ['shieldsoakanalysis'], 3: ['shielddensityreports'],
-            4: ['shieldpatternanalysis'], 5: ['shieldfrequencydata']
+            4: ['shieldpatternanalysis'], 5: ['shieldfrequencydata'],
+            'source': jameson_desc
         },
         'Encryption Files': {
             1: ['encryptedfiles'], 2: ['encryptioncodes'], 3: ['symmetrickeys'],
-            4: ['encryptionarchives'], 5: ['adaptiveencryptors']
+            4: ['encryptionarchives'], 5: ['adaptiveencryptors'],
+            'source': jameson_desc
         },
         'Data Archives': {
             1: ['bulkscandata'], 2: ['scanarchives'], 3: ['scandatabanks'],
-            4: ['encodedscandata'], 5: ['classifiedscandata']
+            4: ['encodedscandata'], 5: ['classifiedscandata'],
+            'source': jameson_desc
         },
         'Encoded Firmware': {
             1: ['legacyfirmware'], 2: ['consumerfirmware'], 3: ['industrialfirmware'],
-            4: ['securityfirmware'], 5: ['embeddedfirmware']
+            4: ['securityfirmware'], 5: ['embeddedfirmware'],
+            'source': jameson_desc
         },
         'Guardian Data': {
             1: ['ancientbiologicaldata'],
             2: ['ancientculturaldata'],
             3: ['ancienthistoricaldata'],
             4: ['ancienttechnologicaldata'],
-            5: ['guardian_vesselblueprint']
+            5: ['guardian_vesselblueprint'],
+            'source': jameson_desc
         },
         'Thargoid Data': {
             1: ['tg_interdictiondata'],
             2: ['tg_shipflightdata'],
             3: ['tg_shipsystemsdata'],
             4: ['tg_shutdowndata'],
-            5: ['unknownshipsignature']
+            5: ['unknownshipsignature'],
+            'source': jameson_desc
         }
     }
 
