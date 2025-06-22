@@ -40,28 +40,12 @@ jobs:
           echo "VAD_MODEL=$VAD_MODEL" >> $env:GITHUB_ENV
           echo "VEC_EXTENSION=$VEC_EXTENSION" >> $env:GITHUB_ENV
 
-      - name: Create Executable for AIGUI
-        run: |
-          pyinstaller .\src\AIGUI.py -y --onedir --clean --noconsole --add-data .\docs\screen\EDAI_logo.png:.\screen
-
       - name: Create Executable for Chat
         run: |
           pyinstaller .\src\Chat.py -y --onedir --clean --console --hidden-import=comtypes.stream `
             --add-data .\src:. `
             --add-binary ${{ env.VAD_MODEL }}:.\pysilero_vad\models `
             --add-binary ${{ env.VEC_EXTENSION }}:.\sqlite_vec
-
-      - name: Get current commit ID
-        id: get_commit
-        run: |
-          $COMMIT_ID = git rev-parse HEAD
-          echo "COMMIT_ID=$COMMIT_ID" >> $env:GITHUB_ENV
-
-      - name: Create start.bat script
-        run: |
-          $commitId = "${{ github.sha }}"
-          $start = "@echo off`r`nstart """" .\\AIGUI\\AIGUI.exe --chat=Chat\\Chat.exe --release=$commitId`r`nexit"
-          $start | Out-File -Encoding ASCII .\\dist\\start.bat
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
@@ -202,13 +186,9 @@ jobs:
           name: COVAS_NEXT_v${{ github.sha }}
           path: dist
 
-      - name: List contents (debug)
-        run: dir dist\AIGUI
-
       - name: Run Windows Defender
         run: |
           & "C:\Program Files\Windows Defender\MpCmdRun.exe" -Scan -ScanType 3 -Trace -File "$(pwd)\dist"
-          # & "C:\Program Files\Windows Defender\MpCmdRun.exe" -Scan -ScanType 3 -Trace -File "$(pwd)\dist\AIGUI\AIGUI.exe"
           # & "C:\Program Files\Windows Defender\MpCmdRun.exe" -Scan -ScanType 3 -Trace -File "$(pwd)\dist\Chat\Chat.exe"
 
           # Do not enable this as possible, too slow ... Scanning all folders with this option? :<

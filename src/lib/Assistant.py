@@ -127,7 +127,7 @@ class Assistant:
                     response = self.llmClient.chat.completions.with_raw_response.create(
                         model=self.config["llm_model_name"],
                         messages=prompt,
-                        temperature=0,
+                        temperature=self.config["llm_temperature"],
                         tools=tool_list
                     )
                     end_time = time()

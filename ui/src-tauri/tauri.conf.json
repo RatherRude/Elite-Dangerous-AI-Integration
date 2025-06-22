@@ -19,20 +19,7 @@
       }
     ],
     "security": {
-      "csp": {
-        "default-src": "'self' asset:",
-        "style-src": "'self' 'unsafe-inline'",
-        "script-src": "'self'",
-        "img-src": "'self' asset: http://asset.localhost blob: data:",
-        "connect-src": "'self' https://*.covaslabs.com ipc: http://ipc.localhost",
-        "font-src": "'self' https://fonts.gstatic.com",
-        "require-trusted-types-for": "'script'"
-      },
-      "dangerousDisableAssetCspModification": [
-        "style-src",
-        "connect-src",
-        "font-src"
-      ],
+      "csp": null,
       "capabilities": [
         "default",
         "overlay",
