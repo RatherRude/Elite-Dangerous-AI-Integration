@@ -4099,7 +4099,7 @@ def material_finder(obj, projected_states):
             3: ['guardian_powerconduit', 'guardianpowerconduit'],
             4: ['guardian_sentinel_weaponparts', 'guardiansentinelweaponparts'],
             5: ['guardian_techcomponent', 'techcomponent'],
-            'source': ''
+            'source': 'Guardian sites: Synuefe HT-F D12-29 C3 (Technology Components), Synuefe LQ-T B50-1 B2 (modules), Synuefe GV-T B50-4 B1 (weapons)'
         },
         'Thargoid Technology': {
             1: ['tg_wreckagecomponents', 'wreckagecomponents', 'tg_abrasion02', 'tgabrasion02'],
@@ -4107,7 +4107,7 @@ def material_finder(obj, projected_states):
             3: ['tg_weaponparts', 'weaponparts', 'unknowncarapace', 'tg_causticshard', 'tgcausticshard'],
             4: ['tg_propulsionelement', 'propulsionelement', 'unknownenergycell', 'unknowncorechip'],
             5: ['tg_causticgeneratorparts', 'causticgeneratorparts', 'tg_causticcrystal', 'tgcausticcrystal', 'unknowntechnologycomponents'],
-            'source': ''
+            'source': 'Titan graveyards, Non-Human Signal Sources Threat 4-5, Sensor Fragments: Solati - planet Halla (36.9423, -100.2683)'
         }
     }
     jameson_desc = 'Jameson crash site - HIP 12099 Planet 1B'
@@ -4148,7 +4148,7 @@ def material_finder(obj, projected_states):
             3: ['ancienthistoricaldata'],
             4: ['ancienttechnologicaldata'],
             5: ['guardian_vesselblueprint'],
-            'source': jameson_desc
+            'source': ''
         },
         'Thargoid Data': {
             1: ['tg_interdictiondata'],
@@ -4156,7 +4156,7 @@ def material_finder(obj, projected_states):
             3: ['tg_shipsystemsdata'],
             4: ['tg_shutdowndata'],
             5: ['unknownshipsignature'],
-            'source': jameson_desc
+            'source': 'Scanning thargoid ships and wakes'
         }
     }
 
