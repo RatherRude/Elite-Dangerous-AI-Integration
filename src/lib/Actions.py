@@ -3331,7 +3331,7 @@ def blueprint_finder(obj, projected_states):
 
     # Get inventory data from projected states
     materials_data = projected_states.get('Materials', {})
-    shiploader_data = projected_states.get('ShipLocker', {})
+    shiplocker_data = projected_states.get('ShipLocker', {})
 
     # Helper function to get inventory count for a material
     def get_inventory_count(material_name):
@@ -3350,7 +3350,7 @@ def blueprint_finder(obj, projected_states):
         
         # Check ShipLocker projection (suit materials)
         for locker_type in ['Items', 'Components', 'Data', 'Consumables']:
-            type_materials = shiploader_data.get(locker_type, [])
+            type_materials = shiplocker_data.get(locker_type, [])
             for material in type_materials:
                 # Check both Name and Name_Localised for matching
                 if (material.get('Name', '').lower() == material_name_lower or
@@ -4323,7 +4323,7 @@ def material_finder(obj, projected_states):
 
     # Get data from projected states
     materials_data = projected_states.get('Materials', {})
-    shiploader_data = projected_states.get('ShipLocker', {})
+    shiplocker_data = projected_states.get('ShipLocker', {})
 
     # Helper function to find ship material info
     def find_ship_material_info(material_name):
@@ -4507,114 +4507,35 @@ def material_finder(obj, projected_states):
                 results.append(result)
 
     # Process suit materials from ShipLocker projection
-    if shiploader_data:
-        # Process Items
-        for item in shiploader_data.get('Items', []):
-            material_name = item.get('Name', '').lower()
-            count = item.get('Count', 0)
+    if shiplocker_data:
+        for material_type in ['Items', 'Components', 'Data', 'Consumables']:
+            type_materials = shiplocker_data.get(material_type, [])
 
-            if count == 0:
-                continue
+            for material in type_materials:
+                material_name = material.get('Name', '').lower()
+                count = material.get('Count', 0)
 
-            material_info = find_suit_material_info(material_name)
-            if not material_info:
-                continue
+                if count == 0:
+                    continue
 
-            if not matches_criteria(material_name, material_info, count):
-                continue
+                material_info = find_suit_material_info(material_name)
+                if not material_info:
+                    continue
 
-            display_name = display_names.get(material_name, item.get('Name_Localised', material_name.title()))
+                if not matches_criteria(material_name, material_info, count):
+                    continue
 
-            result = {
-                'name': display_name,
-                'count': count,
-                'category': material_info['category'],
-                'type': material_info['type'],
-                'section': material_info['section']
-            }
+                display_name = display_names.get(material_name, material.get('Name_Localised', material_name.title()))
 
-            results.append(result)
+                result = {
+                    'name': display_name,
+                    'count': count,
+                    'category': material_info['category'],
+                    'type': material_info['type'],
+                    'section': material_info['section']
+                }
 
-        # Process Components
-        for component in shiploader_data.get('Components', []):
-            material_name = component.get('Name', '').lower()
-            count = component.get('Count', 0)
-
-            if count == 0:
-                continue
-
-            material_info = find_suit_material_info(material_name)
-            if not material_info:
-                continue
-
-            if not matches_criteria(material_name, material_info, count):
-                continue
-
-            display_name = display_names.get(material_name, component.get('Name_Localised', material_name.title()))
-
-            result = {
-                'name': display_name,
-                'count': count,
-                'category': material_info['category'],
-                'type': material_info['type'],
-                'section': material_info['section']
-            }
-
-            results.append(result)
-
-        # Process Data
-        for data_item in shiploader_data.get('Data', []):
-            material_name = data_item.get('Name', '').lower()
-            count = data_item.get('Count', 0)
-
-            if count == 0:
-                continue
-
-            material_info = find_suit_material_info(material_name)
-            if not material_info:
-                continue
-
-            if not matches_criteria(material_name, material_info, count):
-                continue
-
-            display_name = display_names.get(material_name, data_item.get('Name_Localised', material_name.title()))
-
-            result = {
-                'name': display_name,
-                'count': count,
-                'category': material_info['category'],
-                'type': material_info['type'],
-                'section': material_info['section']
-            }
-
-            results.append(result)
-
-        # Process Consumables
-        for consumable in shiploader_data.get('Consumables', []):
-            material_name = consumable.get('Name', '').lower()
-            count = consumable.get('Count', 0)
-
-            if count == 0:
-                continue
-
-            material_info = find_suit_material_info(material_name)
-            if not material_info:
-                continue
-
-            if not matches_criteria(material_name, material_info, count):
-                continue
-
-            display_name = display_names.get(material_name, consumable.get('Name_Localised', material_name.title()))
-
-            result = {
-                'name': display_name,
-                'count': count,
-                'category': material_info['category'],
-                'type': material_info['type'],
-                'section': material_info['section']
-            }
-
-            results.append(result)
+                results.append(result)
 
     # Check if any materials were found
     if not results:
