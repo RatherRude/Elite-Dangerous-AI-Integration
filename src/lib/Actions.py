@@ -4033,30 +4033,30 @@ def material_finder(obj, projected_states):
 
     # Ship engineering materials (from Materials projection)
     ship_raw_materials_map = {
-        1: {1: ['carbon'], 2: ['vanadium'], 3: ['niobium'], 4: ['yttrium'], 'source': 'Crystal Shards: Outotz LS-K D8-3, planet B 5 A'},
-        2: {1: ['phosphorus'], 2: ['chromium'], 3: ['molybdenum'], 4: ['technetium'], 'source': 'Crystal Shards: HIP 36601, planet C 5 A'},
-        3: {1: ['sulphur'], 2: ['manganese'], 3: ['cadmium'], 4: ['ruthenium'], 'source': 'Crystal Shards: HIP 36601, planet C 1 D and Outotz LS-K D8-3, planet B 7 B'},
-        4: {1: ['iron'], 2: ['zinc'], 3: ['tin'], 4: ['selenium'], 'source': 'Brain Trees: Kappa-1 Volantis, B 3 F A and HR 3230, 3 A A'},
-        5: {1: ['nickel'], 2: ['germanium'], 3: ['tungsten'], 4: ['tellurium'], 'source': 'Crystal Shards: HIP 36601, planet C 3 B'},
-        6: {1: ['rhenium'], 2: ['arsenic'], 3: ['mercury'], 4: ['polonium'], 'source': 'Crystal Shards: HIP 36601, planet C 1 A'},
-        7: {1: ['lead'], 2: ['zirconium'], 3: ['boron'], 4: ['antimony'], 'source': 'Crystal Shards: Outotz LS-K D8-3, planet B 5 C'}
+        1: {1: ['carbon'], 2: ['vanadium'], 3: ['niobium'], 4: ['yttrium'], 'source': 'Yttrium Crystal Shards: Outotz LS-K D8-3, planet B 5 A - trade afterwards at material trader'},
+        2: {1: ['phosphorus'], 2: ['chromium'], 3: ['molybdenum'], 4: ['technetium'], 'source': 'Technetium Crystal Shards: HIP 36601, planet C 5 A - trade afterwards at material trader'},
+        3: {1: ['sulphur'], 2: ['manganese'], 3: ['cadmium'], 4: ['ruthenium'], 'source': 'Ruthenium Crystal Shards: HIP 36601, planet C 1 D and Outotz LS-K D8-3, planet B 7 B - trade afterwards at material trader'},
+        4: {1: ['iron'], 2: ['zinc'], 3: ['tin'], 4: ['selenium'], 'source': 'Selenium Brain Trees: Kappa-1 Volantis, B 3 F A and HR 3230, 3 A A - trade afterwards at material trader'},
+        5: {1: ['nickel'], 2: ['germanium'], 3: ['tungsten'], 4: ['tellurium'], 'source': 'Tellurium Crystal Shards: HIP 36601, planet C 3 B - trade afterwards at material trader'},
+        6: {1: ['rhenium'], 2: ['arsenic'], 3: ['mercury'], 4: ['polonium'], 'source': 'Polonium Crystal Shards: HIP 36601, planet C 1 A - trade afterwards at material trader'},
+        7: {1: ['lead'], 2: ['zirconium'], 3: ['boron'], 4: ['antimony'], 'source': 'Antimony Crystal Shards: Outotz LS-K D8-3, planet B 5 C - trade afterwards at material trader'}
     }
 
     ship_manufactured_materials_map = {
         'Chemical': {
             1: ['chemicalstorageunits'], 2: ['chemicalprocessors'], 3: ['chemicaldistillery'],
             4: ['chemicalmanipulators'], 5: ['pharmaceuticalisolators'],
-            'source': 'High Grade Emissions (Outbreak system states with pop >1000000), Mission reward'
+            'source': 'High Grade Emissions (Outbreak system states with pop >1000000) - trade afterwards at material trader, Mission reward'
         },
         'Thermic': {
             1: ['temperedalloys'], 2: ['heatresistantceramics'], 3: ['precipitatedalloys'],
             4: ['thermicalloys'], 5: ['militarygradealloys'],
-            'source': 'High Grade Emissions (War, Civil War or Civil Unrest system states with pop >1000000), Mission reward'
+            'source': 'High Grade Emissions (War, Civil War or Civil Unrest system states with pop >1000000) - trade afterwards at material trader, Mission reward'
         },
         'Heat': {
             1: ['heatconductionwiring'], 2: ['heatdispersionplate'], 3: ['heatexchangers'],
             4: ['heatvanes'], 5: ['protoheatradiators'],
-            'source': 'High Grade Emissions (Boom state systems with pop >1000000), Mission reward'
+            'source': 'High Grade Emissions (Boom state systems with pop >1000000) - trade afterwards at material trader, Mission reward'
         },
         'Conductive': {
             1: ['basicconductors'], 2: ['conductivecomponents'], 3: ['conductiveceramics'],
@@ -4066,22 +4066,22 @@ def material_finder(obj, projected_states):
         'Mechanical Components': {
             1: ['mechanicalscrap'], 2: ['mechanicalequipment'], 3: ['mechanicalcomponents'],
             4: ['configurablecomponents'], 5: ['improvisedcomponents'],
-            'source': 'High Grade Emissions in Independent (Civil Unrest systems system states with pop >1000000)'
+            'source': 'High Grade Emissions in Independent (Civil Unrest systems system states with pop >1000000) - trade afterwards at material trader'
         },
         'Capacitors': {
             1: ['gridresistors'], 2: ['hybridcapacitors'], 3: ['electrochemicalarrays'],
             4: ['polymercapacitors'], 5: ['militarysupercapacitors'],
-            'source': 'High Grade Emissions in Independent and Alliance (War and Civil War system states with pop >1000000), Mission reward'
+            'source': 'High Grade Emissions in Independent and Alliance (War and Civil War system states with pop >1000000) - trade afterwards at material trader, Mission reward'
         },
         'Shielding': {
             1: ['wornshieldemitters'], 2: ['shieldemitters'], 3: ['shieldingsensors'],
             4: ['compoundshielding'], 5: ['imperialshielding'],
-            'source': 'High Grade Emissions in Imperial systems (None and Election system states with pop >1000000), Mission reward'
+            'source': 'High Grade Emissions in Imperial systems (None and Election system states with pop >1000000) - trade afterwards at material trader, Mission reward'
         },
         'Composite': {
             1: ['compactcomposites'], 2: ['filamentcomposites'], 3: ['highdensitycomposites'],
             4: ['proprietarycomposites'], 5: ['coredynamicscomposites'],
-            'source': 'High Grade Emissions in Federation systems (with pop >1000000)'
+            'source': 'High Grade Emissions in Federation systems (with pop >1000000) - trade afterwards at material trader'
         },
         'Crystals': {
             1: ['crystalshards'], 2: ['flawedfocuscrystals'], 3: ['focuscrystals'],
@@ -4091,7 +4091,7 @@ def material_finder(obj, projected_states):
         'Alloys': {
             1: ['salvagedalloys'], 2: ['galvanisingalloys'], 3: ['phasealloys'],
             4: ['protolightalloys'], 5: ['protoradiolicalloys'],
-            'source': 'High Grade Emissions (Boom state systems with pop >1000000)'
+            'source': 'High Grade Emissions (Boom state systems with pop >1000000) - trade afterwards at material trader'
         },
         'Guardian Technology': {
             1: ['guardian_sentinel_wreckagecomponents', 'guardianwreckagecomponents'],
@@ -4110,7 +4110,7 @@ def material_finder(obj, projected_states):
             'source': 'Titan graveyards, Non-Human Signal Sources Threat 4-5, Sensor Fragments: Solati - planet Halla (36.9423, -100.2683)'
         }
     }
-    jameson_desc = 'Jameson crash site - HIP 12099 Planet 1B'
+    jameson_desc = 'HIP 12099 Planet 1B(Jameson crash site) - trade afterwards at material trader'
     ship_encoded_materials_map = {
         'Emission Data': {
             1: ['scrambledemissiondata'], 2: ['archivedemissiondata'], 3: ['emissiondata'],
@@ -4640,11 +4640,26 @@ def material_finder(obj, projected_states):
         else:  # Suit materials
             material_line = f"{result['count']}x {result['name']} ({result['category']} {result['type']})"
 
+        # Get source information for this material category
+        source_info = ""
+        if result['type'] == 'Raw':
+            # Extract category number from "Category X" format
+            category_num = int(result['section'].replace('Category ', ''))
+            if category_num in ship_raw_materials_map:
+                source_info = ship_raw_materials_map[category_num].get('source', '')
+        elif result['type'] == 'Manufactured' and result['section'] in ship_manufactured_materials_map:
+            source_info = ship_manufactured_materials_map[result['section']].get('source', '')
+        elif result['type'] == 'Encoded' and result['section'] in ship_encoded_materials_map:
+            source_info = ship_encoded_materials_map[result['section']].get('source', '')
+
         if result.get('tradeable_higher_grades'):
             trading_lines = ["Tradeable, higher grades:"]
             for higher_mat in result['tradeable_higher_grades']:
                 if higher_mat['count'] > 0:
                     trading_lines.append(f"- {higher_mat['count']}x {higher_mat['name']} (Grade {higher_mat['grade']})")
+
+            if source_info:
+                trading_lines.append(f"Source: {source_info}")
 
             if len(trading_lines) > 1:  # Only add if there are actual tradeable materials
                 formatted_results.append(material_line)
@@ -4652,7 +4667,10 @@ def material_finder(obj, projected_states):
             else:
                 formatted_results.append(material_line)
         else:
+            # No higher grades available, but still show source if available
             formatted_results.append(material_line)
+            if source_info:
+                formatted_results.append(f"Source: {source_info}")
 
     # Sort results while preserving trading info structure
     def sort_key(item):
@@ -7589,7 +7607,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
 
     actionManager.registerAction(
         'material_finder',
-        "Find and search a list of materials for both ship and suit engineering from my inventory.",
+        "Find and search a list of materials for both ship and suit engineering from my inventory and where to source them from.",
         {
             "type": "object",
             "properties": {
