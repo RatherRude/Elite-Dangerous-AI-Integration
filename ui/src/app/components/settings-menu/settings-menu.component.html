@@ -78,8 +78,8 @@
                 Plugins
             </ng-template>
             <div class="tab-content">
-                @if (config && system) {
-                    @if (system.edcopilot_installed) {
+                @if (config) {
+                    @if (system && system.edcopilot_installed) {
                         <mat-expansion-panel>
                             <mat-expansion-panel-header>
                                 <mat-panel-title>
