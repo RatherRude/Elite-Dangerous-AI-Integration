@@ -2919,7 +2919,7 @@ class PromptGenerator:
 
         # Add colonisation construction status if available
         colonisation_info = projected_states.get('ColonisationConstruction', {})
-        if colonisation_info and colonisation_info.get('Location', 'Unknown') != 'Unknown':
+        if colonisation_info and colonisation_info.get('StarSystem', 'Unknown') != 'Unknown':
             progress = colonisation_info.get('ConstructionProgress', 0.0)
             complete = colonisation_info.get('ConstructionComplete', False)
             failed = colonisation_info.get('ConstructionFailed', False)

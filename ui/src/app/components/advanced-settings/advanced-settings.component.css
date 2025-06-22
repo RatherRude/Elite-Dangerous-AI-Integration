@@ -1,0 +1,14 @@
+.settings-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+  padding: 20px;
+}
+
+mat-form-field {
+  width: 100%;
+}
+
+mat-slide-toggle {
+  margin: 10px 0;
+}

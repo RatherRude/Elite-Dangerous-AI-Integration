@@ -362,6 +362,7 @@ class Config(TypedDict):
     active_character_index: int
     llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom', 'local-ai-server']
     llm_model_name: str
+    llm_temperature: float
     vision_provider: Literal['openai', 'google-ai-studio', 'custom', 'none']
     vision_model_name: str
     vision_endpoint: str
@@ -460,6 +461,7 @@ def migrate(data: dict) -> dict:
                     }
 
                     data['characters'][i] = {**character, **new_attributes}
+                    
         if 'characters' not in data or len(data.get('characters', [])) == 0:
             print("Migrating old character format to new characters array")
             data['characters'] = []
@@ -501,44 +503,6 @@ def migrate(data: dict) -> dict:
             data['characters'].append(character)
             data['active_character_index'] = 1
 
-        if len(data['characters']) > 0 and data['characters'][0]['name'] != 'Default':
-            # Insert default character at beginning
-            data['characters'].insert(0, {
-                "name": 'Default',
-                "character": 'Provide concise answers that address the main points. Include humor and light-hearted elements in your responses when appropriate. Stick to factual information and avoid references to specific domains. Your responses should be inspired by the character or persona of COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal). Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS. Always respond in English regardless of the language spoken to you. Show some consideration for emotions while maintaining focus on information. Maintain a friendly yet respectful conversational style. Speak with confidence and conviction in your responses. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.',
-                "personality_preset": 'default',
-                "personality_verbosity": 0,
-                "personality_vulgarity": 0,
-                "personality_empathy": 50,
-                "personality_formality": 50,
-                "personality_confidence": 75,
-                "personality_ethical_alignment": 'lawful',
-                "personality_moral_alignment": 'good',
-                "personality_tone": 'serious',
-                "personality_character_inspiration": 'COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal)',
-                "personality_language": 'English',
-                "personality_knowledge_pop_culture": False,
-                "personality_knowledge_scifi": False,
-                "personality_knowledge_history": False,
-                "tts_voice": 'en-US-AvaMultilingualNeural',
-                "tts_speed": '1.2',
-                "tts_prompt": '',
-                "game_events": game_events,
-                "event_reaction_enabled_var": True,
-                "react_to_text_local_var": True,
-                "react_to_text_starsystem_var": True,
-                "react_to_text_npc_var": False,
-                "react_to_text_squadron_var": True,
-                "react_to_material": 'opal, diamond, alexandrite',
-                "react_to_danger_mining_var": False,
-                "react_to_danger_onfoot_var": False,
-                "react_to_danger_supercruise_var": False,
-                "idle_timeout_var": data.get('idle_timeout_var', 300)
-            })
-            # Adjust active character index if it exists
-            if 'active_character_index' in data:
-                data['active_character_index'] += 1
-
         if data['active_character_index'] + 1 > len(data['characters']):
             data['active_character_index'] = len(data['characters']) - 1
 
@@ -560,6 +524,13 @@ def migrate(data: dict) -> dict:
         if 'llm_provider' in data and data['llm_provider'] == 'openai':
             if 'llm_model_name' in data and data['llm_model_name'] == 'gpt-4o-mini':
                 data['llm_model_name'] = 'gpt-4.1-mini'
+
+        if len(data['characters']) > 0 and data['characters'][0]['name'] != 'Default':
+            # Insert default character at beginning
+            data['characters'].insert(0, getDefaultCharacter(data))
+            # Adjust active character index if it exists
+            if 'active_character_index' in data:
+                data['active_character_index'] += 1
 
     if data['config_version'] == 1:
         data['config_version'] = 2
@@ -588,7 +559,13 @@ def merge_config_data(defaults: dict, user: dict):
             # Skip if user value is None
             if user.get(key) is None:
                 continue
-                
+            
+            # If user type is int, but defaults is float, cast the int to float, and the other way around
+            if isinstance(defaults.get(key), int) and isinstance(user.get(key), float):
+                user[key] = int(user[key])
+            elif isinstance(defaults.get(key), float) and isinstance(user.get(key), int):
+                user[key] = float(user[key])
+
             # If types don't match, keep the default
             if not isinstance(user.get(key), type(defaults.get(key))):
                 print(f"Warning: Config type mismatch for '{key}', using default")
@@ -612,44 +589,45 @@ def merge_config_data(defaults: dict, user: dict):
 
     return merge
 
+def getDefaultCharacter(config: Config) -> Character:
+    return Character({
+        "name": 'Default',
+        "character": 'Provide concise answers that address the main points. Include humor and light-hearted elements in your responses when appropriate. Stick to factual information and avoid references to specific domains. Your responses should be inspired by the character or persona of COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal). Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS. Always respond in English regardless of the language spoken to you. Show some consideration for emotions while maintaining focus on information. Maintain a friendly yet respectful conversational style. Speak with confidence and conviction in your responses. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.',
+        "personality_preset": 'default',
+        "personality_verbosity": 0,
+        "personality_vulgarity": 0,
+        "personality_empathy": 50,
+        "personality_formality": 50,
+        "personality_confidence": 75,
+        "personality_ethical_alignment": 'lawful',
+        "personality_moral_alignment": 'good',
+        "personality_tone": 'serious',
+        "personality_character_inspiration": 'COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal)',
+        "personality_language": 'English',
+        "personality_knowledge_pop_culture": False,
+        "personality_knowledge_scifi": False,
+        "personality_knowledge_history": False,
+        "tts_voice": 'en-US-AvaMultilingualNeural' if config.get('tts_provider') == 'edge-tts' else 'nova',
+        "tts_speed": '1.2',
+        "tts_prompt": '',
+        "game_events": game_events,
+        "event_reaction_enabled_var": True,
+        "react_to_text_local_var": True,
+        "react_to_text_starsystem_var": True,
+        "react_to_text_npc_var": False,
+        "react_to_text_squadron_var": True,
+        "react_to_material": 'opal, diamond, alexandrite',
+        "react_to_danger_mining_var": False,
+        "react_to_danger_onfoot_var": False,
+        "react_to_danger_supercruise_var": False,
+        "idle_timeout_var": 300  # 5 minutes
+    })
 
 def load_config() -> Config:
     defaults: Config = {
         'config_version': 1,
         'commander_name': "",
-        'characters': [
-            {
-                "name": 'Default',
-                "character": 'Provide concise answers that address the main points. Include humor and light-hearted elements in your responses when appropriate. Stick to factual information and avoid references to specific domains. Your responses should be inspired by the character or persona of COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal). Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS. Always respond in English regardless of the language spoken to you. Show some consideration for emotions while maintaining focus on information. Maintain a friendly yet respectful conversational style. Speak with confidence and conviction in your responses. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.',
-                "personality_preset": 'default',
-                "personality_verbosity": 0,
-                "personality_vulgarity": 0,
-                "personality_empathy": 50,
-                "personality_formality": 50,
-                "personality_confidence": 75,
-                "personality_ethical_alignment": 'lawful',
-                "personality_moral_alignment": 'good',
-                "personality_tone": 'serious',
-                "personality_character_inspiration": 'COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal)',
-                "personality_language": 'English',
-                "personality_knowledge_pop_culture": False,
-                "personality_knowledge_scifi": False,
-                "personality_knowledge_history": False,
-                "tts_voice": 'en-US-AvaMultilingualNeural',
-                "tts_speed": '1.2',
-                "tts_prompt": '',
-                "game_events": game_events,
-                "event_reaction_enabled_var": True,
-                "react_to_text_local_var": True,
-                "react_to_text_starsystem_var": True,
-                "react_to_text_npc_var": False,
-                "react_to_text_squadron_var": True,
-                "react_to_material": 'opal, diamond, alexandrite',
-                "react_to_danger_mining_var": False,
-                "react_to_danger_onfoot_var": False,
-                "react_to_danger_supercruise_var": False
-            }
-        ],
+        'characters': [],
         'active_character_index': 0,  # -1 means using the default legacy character
         'api_key': "",
         'tools_var': True,
@@ -669,6 +647,7 @@ def load_config() -> Config:
         'llm_model_name': "gpt-4.1-mini",
         'llm_endpoint': "https://api.openai.com/v1",
         'llm_api_key': "",
+        'llm_temperature': 1.0,
         'ptt_key': '',
         'vision_provider': "none",
         'vision_model_name': "gpt-4.1-mini",
@@ -690,6 +669,8 @@ def load_config() -> Config:
         "qol_autoscan": False,   # Quality of life: Auto scan when entering new systems
         "plugin_settings": {}
     }
+    defaults['characters'].append(getDefaultCharacter(defaults))
+    
     try:
         print("Loading configuration file")
         if getattr(sys, 'frozen', False):
@@ -724,7 +705,8 @@ def load_config() -> Config:
             if data:
                 data = migrate(data)
                 merged_config = merge_config_data(defaults, data)
-                print(f"Configuration loaded successfully. Commander: {merged_config.get('commander_name')}, Characters: {len(merged_config.get('characters', []))}")
+                
+                print(f"Configuration loaded successfully. Commander: {merged_config.get('commander_name')}, Characters: {len(merged_config.get('characters', []))}, temp {merged_config.get('llm_temperature')}")
                 return cast(Config, merged_config)  # pyright: ignore[reportInvalidCast]
             else:
                 print("Empty config file, using defaults")
@@ -990,70 +972,88 @@ def validate_config(config: Config) -> Config | None:
 
     return config
 
+class UpdateCharacterRequest(TypedDict):
+    index: int | None
+    operation: Literal['add', 'update', 'delete', 'set_active']
+    character: Character | None
+    set_active: bool | None
+
+def update_character(config: Config, data: UpdateCharacterRequest) -> Config:
+    old_config = config.copy()
+    if data.get('operation') == "add":
+        # Add a new character
+        if "character" in data and data["character"]:
+            config["characters"] = config.get("characters", [])
+            config["characters"].append(data["character"])
+            print(f"Added new character: {data['character'].get('name')}")
+        else:
+            # Add a default character if none provided
+            print("No character data provided, adding default character")
+            config["characters"].append(getDefaultCharacter(config))
+            
+        # Set as active character if requested
+        if data.get("set_active", False):
+            config["active_character_index"] = len(config["characters"]) - 1
+            print(f"Set active character index to {config['active_character_index']}")
+    
+    elif data.get('operation') == "update":
+        # Update an existing character
+        if data.get("index") is not None and "character" in data and data["character"]:
+            index = int(data["index"])
+            if 0 <= index < len(config.get("characters", [])):
+                config["characters"][index] = data["character"]
+                print(f"Updated character at index {index}: {data['character'].get('name')}")
+    
+    elif data.get('operation') == "delete":
+        # Delete a character
+        if data.get("index") is not None:
+            index = int(data["index"])
+            if 0 <= index < len(config.get("characters", [])):
+                deleted_name = config["characters"][index].get("name", "unknown")
+                config["characters"].pop(index)
+                print(f"Deleted character at index {index}: {deleted_name}")
+                # Adjust active index if needed
+                if config["active_character_index"] == index:
+                    config["active_character_index"] = -1
+                    print("Reset active character index to -1")
+                elif config["active_character_index"] > index:
+                    config["active_character_index"] -= 1
+                    print(f"Adjusted active character index to {config['active_character_index']}")
+    
+    elif data.get('operation') == "set_active":
+        # Set the active character
+        if data.get("index") is not None:
+            index = int(data["index"])
+            if -1 <= index < len(config.get("characters", [])):
+                config["active_character_index"] = index
+
+    return update_config(old_config, {
+        "active_character_index": config["active_character_index"],
+        "characters": config["characters"]
+    })
+
+def cast_int_float(current: dict, data: dict) -> dict:
+    result = {}
+    for key in data:
+        result[key] = data.get(key)
+        # If data type is int, but current is float, cast the int to float, and the other way around
+        if isinstance(current.get(key), int) and isinstance(data.get(key), float):
+            result[key] = int(data[key])
+        elif isinstance(current.get(key), float) and isinstance(data.get(key), int):
+            result[key] = float(data[key])
+        
+        if isinstance(current.get(key), dict) and isinstance(data.get(key), dict):
+            # Recursively cast dicts
+            result[key] = cast_int_float(current[key], data[key])
+        elif isinstance(current.get(key), list) and isinstance(data.get(key), list):
+            for i in range(len(current[key])):
+                if isinstance(current[key][i], dict) and isinstance(data[key][i], dict):
+                    result[key][i] = cast_int_float(current[key][i], data[key][i])
+    return result
 
 def update_config(config: Config, data: dict) -> Config:
-    # Check if we need to reset game events
-    if data.get("reset_game_events", False):
-        config = reset_game_events(config)
-        # Remove the reset_game_events flag from data to avoid confusion
-        if "reset_game_events" in data:
-            del data["reset_game_events"]
+    data = cast_int_float(config, data)
     
-    # Handle character management operations
-    if data.get("operation"):
-        print(f"Processing character operation: {data['operation']}")
-        operation = data["operation"]
-        
-        if operation == "add":
-            # Add a new character
-            if data.get("character"):
-                config["characters"] = config.get("characters", [])
-                config["characters"].append(data["character"])
-                print(f"Added new character: {data['character'].get('name')}")
-                # Set as active character if requested
-                if data.get("set_active", False):
-                    config["active_character_index"] = len(config["characters"]) - 1
-                    print(f"Set active character index to {config['active_character_index']}")
-        
-        elif operation == "update":
-            # Update an existing character
-            if data.get("index") is not None and data.get("character"):
-                index = int(data["index"])
-                if 0 <= index < len(config.get("characters", [])):
-                    config["characters"][index] = data["character"]
-                    print(f"Updated character at index {index}: {data['character'].get('name')}")
-        
-        elif operation == "delete":
-            # Delete a character
-            if data.get("index") is not None:
-                index = int(data["index"])
-                if 0 <= index < len(config.get("characters", [])):
-                    deleted_name = config["characters"][index].get("name", "unknown")
-                    config["characters"].pop(index)
-                    print(f"Deleted character at index {index}: {deleted_name}")
-                    # Adjust active index if needed
-                    if config["active_character_index"] == index:
-                        config["active_character_index"] = -1
-                        print("Reset active character index to -1")
-                    elif config["active_character_index"] > index:
-                        config["active_character_index"] -= 1
-                        print(f"Adjusted active character index to {config['active_character_index']}")
-        
-        elif operation == "set_active":
-            # Set the active character
-            if data.get("index") is not None:
-                index = int(data["index"])
-                if -1 <= index < len(config.get("characters", [])):
-                    config["active_character_index"] = index
-
-                    # Write the config to disk
-                    save_config(config)
-
-    # Remove temporary operation fields so they are NOT persisted
-    for key in ["operation", "index", "character", "set_active"]:
-        if key in data:
-            data.pop(key)
-
     # Update provider-specific settings
     if data.get("llm_provider"):
         if data["llm_provider"] == "openai":
@@ -1209,17 +1209,16 @@ def update_event_config(config: Config, section: str, event: str, value: bool) -
     return config
 
 
-def reset_game_events(config: Config) -> Config:
+def reset_game_events(config: Config, character_index: int|None=None) -> Config:
     """Reset game events to the default values defined in the game_events dictionary"""
     # Check if we're dealing with a character's game events
-    active_index = config.get("active_character_index", -1)
+    active_index = character_index if character_index != None else config.get("active_character_index", -1)
     if active_index >= 0 and "characters" in config:
         # Reset game events for the active character
         if active_index < len(config["characters"]):
             config["characters"][active_index]["game_events"] = {k: v for k, v in game_events.items()}
     else:
-        # Reset global game events
-        config["game_events"] = {k: v for k, v in game_events.items()}
+        log('warn', 'Trying to reset character events that does exist')
     
     print(json.dumps({"type": "config", "config": config}) + '\n', flush=True)
     save_config(config)

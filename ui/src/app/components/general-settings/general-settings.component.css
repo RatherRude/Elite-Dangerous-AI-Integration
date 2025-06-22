@@ -1,0 +1,35 @@
+.settings-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+  padding: 20px;
+}
+
+mat-form-field {
+  width: 100%;
+}
+
+mat-slide-toggle {
+  margin: 10px 0;
+}
+
+.ptt-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.ptt-container mat-form-field {
+  flex: 1;
+  margin: 0;
+}
+
+.ptt-container mat-slide-toggle {
+  flex: 1;
+  padding-bottom: 1rem;
+}
+
+ul {
+  margin-top: 0;
+}

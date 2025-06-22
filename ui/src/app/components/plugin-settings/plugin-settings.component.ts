@@ -7,10 +7,7 @@ import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { FormsModule } from "@angular/forms";
-import {
-  Config,
-  ConfigService,
-} from "../../services/config.service";
+import { Config, ConfigService } from "../../services/config.service";
 import { Subscription } from "rxjs";
 import { MatButtonModule } from "@angular/material/button";
 import { KeyValue, KeyValuePipe } from "@angular/common";
@@ -19,11 +16,19 @@ import { MatSnackBar, MatSnackBarModule } from "@angular/material/snack-bar";
 import { CommonModule } from "@angular/common";
 import { MatDividerModule } from "@angular/material/divider";
 import { MatCheckboxModule } from "@angular/material/checkbox";
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { ConfirmationDialogComponent, ConfirmationDialogData } from '../../components/confirmation-dialog/confirmation-dialog.component';
-import { ConfirmationDialogService } from '../../services/confirmation-dialog.service';
-import { PluginSettings, SelectSetting, SettingBase, TextAreaSetting } from "../../services/plugin-settings";
+import { MatDialog, MatDialogModule } from "@angular/material/dialog";
+import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
+import {
+  ConfirmationDialogComponent,
+  ConfirmationDialogData,
+} from "../../components/confirmation-dialog/confirmation-dialog.component";
+import { ConfirmationDialogService } from "../../services/confirmation-dialog.service";
+import {
+  PluginSettings,
+  SelectSetting,
+  SettingBase,
+  TextAreaSetting,
+} from "../../services/plugin-settings";
 
 @Component({
   selector: "app-plugin-settings",
@@ -48,7 +53,7 @@ import { PluginSettings, SelectSetting, SettingBase, TextAreaSetting } from "../
     MatProgressSpinnerModule,
   ],
   templateUrl: "./plugin-settings.component.html",
-  styleUrls: ["../settings-menu/settings-menu.component.scss"]
+  styleUrls: ["../settings-menu/settings-menu.component.scss"],
 })
 export class PluginSettingsComponent implements OnInit, OnDestroy {
   config: Config | null = null;
@@ -56,38 +61,41 @@ export class PluginSettingsComponent implements OnInit, OnDestroy {
   private plugin_settings_message_subscription?: Subscription;
 
   // Plugin settings
-  plugin_settings_configs: PluginSettings[] = []
+  plugin_settings_configs: PluginSettings[] = [];
 
   constructor(
     private configService: ConfigService,
     private snackBar: MatSnackBar,
     private dialog: MatDialog,
-    private confirmationDialog: ConfirmationDialogService
+    private confirmationDialog: ConfirmationDialogService,
   ) {}
-  
+
   ngOnInit() {
     this.configSubscription = this.configService.config$.subscribe(
       (config) => {
         if (config) {
           // Store the new config
           this.config = config;
-          
-          console.log('Config loaded in plugin settings component');
+
+          console.log("Config loaded in plugin settings component");
         } else {
-          console.error('Received null config in plugin settings component');
+          console.error("Received null config in plugin settings component");
         }
       },
     );
-    this.plugin_settings_message_subscription = this.configService.plugin_settings_message$
+    this.plugin_settings_message_subscription = this.configService
+      .plugin_settings_message$
       .subscribe(
         (plugin_settings_message) => {
-          this.plugin_settings_configs = plugin_settings_message?.plugin_settings_configs || [];
+          this.plugin_settings_configs =
+            plugin_settings_message?.plugin_settings_configs || [];
           if (plugin_settings_message?.plugin_settings_configs) {
-            console.log('Plugin settings loaded', {
-              plugin_settings_configs: plugin_settings_message.plugin_settings_configs,
+            console.log("Plugin settings loaded", {
+              plugin_settings_configs:
+                plugin_settings_message.plugin_settings_configs,
             });
           } else {
-            console.error('Received null plugin settings');
+            console.error("Received null plugin settings");
           }
         },
       );
@@ -107,8 +115,10 @@ export class PluginSettingsComponent implements OnInit, OnDestroy {
       try {
         await this.configService.changeConfig(partialConfig);
       } catch (error) {
-        console.error('Error updating config:', error);
-        this.snackBar.open('Error updating configuration', 'OK', { duration: 5000 });
+        console.error("Error updating config:", error);
+        this.snackBar.open("Error updating configuration", "OK", {
+          duration: 5000,
+        });
       }
     }
   }
@@ -120,11 +130,22 @@ export class PluginSettingsComponent implements OnInit, OnDestroy {
     }
   }
 
-  getPluginSetting(pluginKey: string, gridKey: string, fieldKey: string, defaultValue: any): boolean {
-    return this.config?.plugin_settings?.[pluginKey]?.[gridKey]?.[fieldKey] ?? defaultValue;
+  getPluginSetting(
+    pluginKey: string,
+    gridKey: string,
+    fieldKey: string,
+    defaultValue: any,
+  ): boolean {
+    return this.config?.plugin_settings?.[pluginKey]?.[gridKey]?.[fieldKey] ??
+      defaultValue;
   }
 
-  setPluginSetting(pluginKey: string, gridKey: string, fieldKey: string, value: any): void {
+  setPluginSetting(
+    pluginKey: string,
+    gridKey: string,
+    fieldKey: string,
+    value: any,
+  ): void {
     if (this.config == null) {
       return;
     }
@@ -132,6 +153,6 @@ export class PluginSettingsComponent implements OnInit, OnDestroy {
     this.config.plugin_settings[pluginKey] ??= {};
     this.config.plugin_settings[pluginKey][gridKey] ??= {};
     this.config.plugin_settings[pluginKey][gridKey][fieldKey] = value;
-    this.onConfigChange({plugin_settings: this.config.plugin_settings});
+    this.onConfigChange({ plugin_settings: this.config.plugin_settings });
   }
 }
