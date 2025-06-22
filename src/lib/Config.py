@@ -362,6 +362,7 @@ class Config(TypedDict):
     active_character_index: int
     llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom', 'local-ai-server']
     llm_model_name: str
+    llm_temperature: float
     vision_provider: Literal['openai', 'google-ai-studio', 'custom', 'none']
     vision_model_name: str
     vision_endpoint: str
@@ -547,18 +548,19 @@ def merge_config_data(defaults: dict, user: dict):
     print("Merge config data")
     # Create new merge dict
     merge = {}
-    
-    # First, copy all defaults
-    for key in defaults:
-        merge[key] = defaults.get(key)
-
     # Then, override with user values if they exist and are of the correct type
     for key in user:
         if key in defaults:
             # Skip if user value is None
             if user.get(key) is None:
                 continue
-                
+            
+            # If user type is int, but defaults is float, cast the int to float, and the other way around
+            if isinstance(defaults.get(key), int) and isinstance(user.get(key), float):
+                user[key] = int(user[key])
+            elif isinstance(defaults.get(key), float) and isinstance(user.get(key), int):
+                user[key] = float(user[key])
+
             # If types don't match, keep the default
             if not isinstance(user.get(key), type(defaults.get(key))):
                 print(f"Warning: Config type mismatch for '{key}', using default")
@@ -640,6 +642,7 @@ def load_config() -> Config:
         'llm_model_name': "gpt-4.1-mini",
         'llm_endpoint': "https://api.openai.com/v1",
         'llm_api_key': "",
+        'llm_temperature': 1.0,
         'ptt_key': '',
         'vision_provider': "none",
         'vision_model_name': "gpt-4.1-mini",
@@ -1022,9 +1025,29 @@ def update_character(config: Config, data: UpdateCharacterRequest) -> Config:
         "active_character_index": config["active_character_index"],
         "characters": config["characters"]
     })
-            
+
+def cast_int_float(current: dict, data: dict) -> dict:
+    result = {}
+    for key in data:
+        result[key] = data.get(key)
+        # If data type is int, but current is float, cast the int to float, and the other way around
+        if isinstance(current.get(key), int) and isinstance(data.get(key), float):
+            result[key] = int(data[key])
+        elif isinstance(current.get(key), float) and isinstance(data.get(key), int):
+            result[key] = float(data[key])
+        
+        if isinstance(current.get(key), dict) and isinstance(data.get(key), dict):
+            # Recursively cast dicts
+            result[key] = cast_int_float(current[key], data[key])
+        elif isinstance(current.get(key), list) and isinstance(data.get(key), list):
+            for i in range(len(current[key])):
+                if isinstance(current[key][i], dict) and isinstance(data[key][i], dict):
+                    result[key][i] = cast_int_float(current[key][i], data[key][i])
+    return result
 
 def update_config(config: Config, data: dict) -> Config:
+    data = cast_int_float(config, data)
+    
     # Update provider-specific settings
     if data.get("llm_provider"):
         if data["llm_provider"] == "openai":

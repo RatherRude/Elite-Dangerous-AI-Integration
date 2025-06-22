@@ -24,6 +24,12 @@
             </mat-form-field>
 
             <mat-form-field>
+                <mat-label>LLM Temperature</mat-label>
+                <input matInput type="number" [(ngModel)]="config.llm_temperature"
+                        (ngModelChange)="onConfigChange({llm_temperature: $event})" min="0" max="2" step="0.01">
+            </mat-form-field>
+
+            <mat-form-field>
                 <mat-label>Override LLM API Key</mat-label>
                 <input matInput type="password" [(ngModel)]="config.llm_api_key"
                         (ngModelChange)="onConfigChange({llm_api_key: $event})">
@@ -35,6 +41,12 @@
                 <mat-label>LLM Model Name</mat-label>
                 <input matInput [(ngModel)]="config.llm_model_name"
                         (ngModelChange)="onConfigChange({llm_model_name: $event})">
+            </mat-form-field>
+            
+            <mat-form-field>
+                <mat-label>LLM Temperature</mat-label>
+                <input matInput type="number" [(ngModel)]="config.llm_temperature"
+                        (ngModelChange)="onConfigChange({llm_temperature: $event})" min="0" max="2" step="0.01">
             </mat-form-field>
 
             <mat-form-field>
@@ -57,6 +69,12 @@
                 <input matInput [(ngModel)]="config.llm_model_name"
                         (ngModelChange)="onConfigChange({llm_model_name: $event})">
             </mat-form-field>
+            
+            <mat-form-field>
+                <mat-label>LLM Temperature</mat-label>
+                <input matInput type="number" [(ngModel)]="config.llm_temperature"
+                        (ngModelChange)="onConfigChange({llm_temperature: $event})" min="0" max="2" step="0.01">
+            </mat-form-field>
 
             <mat-form-field>
                 <mat-label>Override LLM API Key</mat-label>
@@ -70,6 +88,12 @@
                 <mat-label>LLM Endpoint</mat-label>
                 <input matInput [(ngModel)]="config.llm_endpoint"
                         (ngModelChange)="onConfigChange({llm_endpoint: $event})">
+            </mat-form-field>
+            
+            <mat-form-field>
+                <mat-label>LLM Temperature</mat-label>
+                <input matInput type="number" [(ngModel)]="config.llm_temperature"
+                        (ngModelChange)="onConfigChange({llm_temperature: $event})" min="0" max="2" step="0.01">
             </mat-form-field>
 
             <label>
@@ -92,6 +116,12 @@
                 <mat-label>LLM Model Name</mat-label>
                 <input matInput [(ngModel)]="config.llm_model_name"
                         (ngModelChange)="onConfigChange({llm_model_name: $event})">
+            </mat-form-field>
+            
+            <mat-form-field>
+                <mat-label>LLM Temperature</mat-label>
+                <input matInput type="number" [(ngModel)]="config.llm_temperature"
+                        (ngModelChange)="onConfigChange({llm_temperature: parseFloat($event)})" min="0" max="2" step="0.01">
             </mat-form-field>
 
             <mat-form-field>

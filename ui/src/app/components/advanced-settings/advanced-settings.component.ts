@@ -89,6 +89,10 @@ export class AdvancedSettingsComponent {
         this.characterService.setCharacterProperty("tts_prompt", prompt);
     }
 
+    parseFloat(value: string): number {
+        return parseFloat(value.replaceAll(",", "."));
+    }
+
     async onConfigChange(partialConfig: Partial<Config>) {
         if (this.config) {
             console.log("Sending config update to backend:", partialConfig);
