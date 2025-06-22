@@ -1139,6 +1139,63 @@ def levenshtein_distance(s1, s2):
 
 def blueprint_finder(obj, projected_states):
     import yaml
+    # Get current location coordinates for distance calculation
+    current_location = projected_states.get('Location', {})
+    current_coords = current_location.get('StarPos', [0, 0, 0])
+    
+    # Helper function to calculate distance to engineer
+    def calculate_distance_to_engineer(engineer_coords):
+        if not current_coords or len(current_coords) != 3:
+            return "Unknown"
+        
+        x1, y1, z1 = current_coords
+        x2, y2, z2 = engineer_coords['x'], engineer_coords['y'], engineer_coords['z']
+        
+        distance_ly = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2)
+        return round(distance_ly, 2)
+
+    # Get engineer progress data
+    engineer_progress = projected_states.get('EngineerProgress')
+    game_engineers = {}
+    if engineer_progress:
+        engineers = engineer_progress.get('Engineers', [])
+        for engineer in engineers:
+            # Convert EngineerID to string to match ship_engineers.json keys
+            engineer_id = str(engineer.get('EngineerID'))
+            game_engineers[engineer_id] = engineer
+
+    # Helper function to format engineer name with location/status
+    def format_engineer_info(engineer_name):
+        """Format engineer name with location and unlock status"""
+        # Find engineer in ship_engineers data
+        engineer_info = None
+        engineer_id = None
+        
+        # Search through ship_engineers to find matching engineer
+        for eng_id, eng_data in ship_engineers.items():
+            if eng_data['Engineer'] == engineer_name:
+                engineer_info = eng_data
+                engineer_id = eng_id
+                break
+        
+        if not engineer_info:
+            # Fallback: return just the name if not found in ship_engineers
+            return engineer_name
+        
+        # Check if engineer is unlocked
+        game_data = game_engineers.get(engineer_id)
+        if game_data and game_data.get('Progress') == 'Unlocked':
+            # Engineer is unlocked - show location and distance
+            distance = calculate_distance_to_engineer(engineer_info['Coords'])
+            location = engineer_info['Location'].replace(' (permit required)', '')
+            
+            if distance != "Unknown":
+                return f"{engineer_name} ({location} {distance}LY)"
+            else:
+                return f"{engineer_name} ({location})"
+        else:
+            # Engineer is not unlocked - show as locked
+            return f"{engineer_name} (Locked)"
 
     # Extract search parameters - can be combined
     search_modifications = []
@@ -1353,9 +1410,12 @@ def blueprint_finder(obj, projected_states):
                 # Check material availability
                 missing_materials, has_all_materials = check_material_availability(total_materials)
 
+                # Format engineers with location and status info
+                formatted_engineers = [format_engineer_info(eng) for eng in engineers]
+                
                 grade_results = {
                     "materials_needed": total_materials,
-                    "engineers": engineers,
+                    "engineers": formatted_engineers,
                     "enough_mats": has_all_materials
                 }
 
