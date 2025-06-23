@@ -3054,7 +3054,7 @@ class PromptGenerator:
             time_offset = humanize.naturaltime(reference_time - event_time)
 
             if isinstance(event, GameEvent) or isinstance(event, ProjectedEvent) or isinstance(event, ExternalEvent):
-                if len(conversational_pieces) < 20 or is_pending:
+                if len(conversational_pieces) < 20:
                     is_important = is_pending and event.content.get('event') in self.important_game_events
                     message = self.event_message(event, time_offset, is_important)
                     if message:
