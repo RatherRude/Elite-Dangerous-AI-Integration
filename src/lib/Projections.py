@@ -1,5 +1,5 @@
 import math
-from typing import Any, Literal, TypedDict, final, List
+from typing import Any, Literal, TypedDict, final, List, cast
 from datetime import datetime, timezone, timedelta
 
 from typing_extensions import NotRequired, override
@@ -93,7 +93,7 @@ class Cargo(Projection[CargoState]):
 LocationState = TypedDict('LocationState', {
     "StarSystem": str,
     "Star": NotRequired[str],
-    "StarPos": List[float],
+    "StarPos": list[float],
     "Planet": NotRequired[str],
     "PlanetaryRing": NotRequired[str],
     "StellarRing": NotRequired[str],
@@ -346,6 +346,77 @@ class Missions(Projection[MissionsState]):
                 if not self.state["Unknown"]:
                     self.state.pop("Unknown", None)
 
+# Define types for EngineerProgress Projection
+EngineerState = TypedDict('EngineerState', {
+    "Engineer": str,
+    "EngineerID": int,
+    "Progress": NotRequired[str],  # Invited/Acquainted/Unlocked/Barred
+    "Rank": NotRequired[int],
+    "RankProgress": NotRequired[int],
+})
+
+EngineerProgressState = TypedDict('EngineerProgressState', {
+    "event": str,
+    "timestamp": str,
+    "Engineers": list[EngineerState],
+})
+
+@final
+class EngineerProgress(Projection[EngineerProgressState]):
+    @override
+    def get_default_state(self) -> EngineerProgressState:
+        return {
+            "event": "EngineerProgress",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "Engineers": [],
+        }
+    
+    @override
+    def process(self, event: Event) -> None:
+        if isinstance(event, GameEvent) and event.content.get('event') == 'EngineerProgress':
+            # Handle startup form - save entire event
+            if 'Engineers' in event.content:
+                self.state = event.content
+            
+            # Handle update form - single engineer update
+            elif 'Engineer' in event.content and 'EngineerID' in event.content:
+                engineer_id = event.content.get('EngineerID', 0)
+                
+                # Ensure Engineers list exists
+                if 'Engineers' not in self.state:
+                    self.state["Engineers"] = []
+                
+                # Find existing engineer or create new one
+                existing_engineer = None
+                for i, engineer in enumerate(self.state["Engineers"]):
+                    if engineer["EngineerID"] == engineer_id:
+                        existing_engineer = self.state["Engineers"][i]
+                        break
+                
+                if existing_engineer:
+                    # Update existing engineer
+                    if 'Engineer' in event.content:
+                        existing_engineer["Engineer"] = event.content.get('Engineer', 'Unknown')
+                    if 'Progress' in event.content:
+                        existing_engineer["Progress"] = event.content.get('Progress', 'Unknown')
+                    if 'Rank' in event.content:
+                        existing_engineer["Rank"] = event.content.get('Rank', 0)
+                    if 'RankProgress' in event.content:
+                        existing_engineer["RankProgress"] = event.content.get('RankProgress', 0)
+                else:
+                    # Create new engineer entry
+                    new_engineer: EngineerState = {
+                        "Engineer": event.content.get('Engineer', 'Unknown'),
+                        "EngineerID": engineer_id,
+                    }
+                    if 'Progress' in event.content:
+                        new_engineer["Progress"] = event.content.get('Progress', 'Unknown')
+                    if 'Rank' in event.content:
+                        new_engineer["Rank"] = event.content.get('Rank', 0)
+                    if 'RankProgress' in event.content:
+                        new_engineer["RankProgress"] = event.content.get('RankProgress', 0)
+                    
+                    self.state["Engineers"].append(new_engineer)
 
 ship_sizes: dict[str, Literal['S', 'M', 'L', 'Unknown']] = {
     'adder':                         'S',
@@ -1175,6 +1246,7 @@ def registerProjections(event_manager: EventManager, system_db: SystemDatabase, 
     event_manager.register_projection(CurrentStatus())
     event_manager.register_projection(Location())
     event_manager.register_projection(Missions())
+    event_manager.register_projection(EngineerProgress())
     event_manager.register_projection(ShipInfo())
     event_manager.register_projection(Target())
     event_manager.register_projection(NavInfo(system_db))
@@ -1196,7 +1268,6 @@ def registerProjections(event_manager: EventManager, system_db: SystemDatabase, 
         'Rank',
         'Progress',
         'Reputation',
-        'EngineerProgress',
         'SquadronStartup',
         'Statistics',
         'Powerplay',
