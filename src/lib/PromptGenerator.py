@@ -1974,13 +1974,7 @@ class PromptGenerator:
             return f"{self.commander_name} has {operation} {count} units of {commodity} for mission {mission_id} (Total: {total})."
 
         if event_name == 'CommunityGoal':
-            cg_event = cast(Dict[str, Any], content)
-            if cg_event.get('CurrentGoals'):
-                goals = []
-                for goal in cg_event.get('CurrentGoals', []):
-                    goals.append(f"{goal.get('Title')} at {goal.get('System')}")
-                return f"Community Goals available: {', '.join(goals)}."
-            return f"No active Community Goals found."
+            return None
 
         if event_name == 'CrimeVictim':
             # @ToDo: Filter only if offender isn't commander
@@ -2001,18 +1995,10 @@ class PromptGenerator:
             return f"{self.commander_name} has cancelled the docking request at {docking_cancelled_event.get('StationName')}."
 
         if event_name == 'EngineerContribution':
-            engineer_contribution_event = cast(Dict[str, Any], content)
-            engineer = engineer_contribution_event.get('Engineer', 'an engineer')
-            type = engineer_contribution_event.get('Type', 'unknown')
-            commodity = engineer_contribution_event.get('Commodity', engineer_contribution_event.get('Material', 'unknown'))
-            quantity = engineer_contribution_event.get('Quantity', 0)
-            total = engineer_contribution_event.get('TotalQuantity', 0)
-            return f"{self.commander_name} has contributed {quantity} {commodity} ({type}) to {engineer}. Total: {total}."
+            return None
 
         if event_name == 'EngineerLegacyConvert':
-            legacy_convert_event = cast(Dict[str, Any], content)
-            engineer = legacy_convert_event.get('Engineer', 'an engineer')
-            return f"{self.commander_name} has converted legacy modifications with {engineer}."
+            return None
 
         if event_name == 'FetchRemoteModule':
             fetch_module_event = cast(Dict[str, Any], content)
@@ -2735,6 +2721,37 @@ class PromptGenerator:
             status_entries.append(("Location", location_info))
             status_entries.append(("Local system", system_info))
             status_entries.append(("Stations in local system", stations_info))
+
+        # Community Goal
+        community_goal = projected_states.get('CommunityGoal', {})
+        if community_goal and 'CurrentGoals' in community_goal:
+            current_goals = community_goal.get('CurrentGoals', [])
+            if current_goals:
+                goals_info = {}
+                for goal in current_goals:
+                    goal_title = goal.get('Title', 'Unknown Goal')
+                    
+                    # Extract tier numbers for simplified display
+                    tier_reached = goal.get('TierReached', 'Tier 0')
+                    top_tier = goal.get('TopTier', {}).get('Name', 'Tier 0')
+                    
+                    # Extract just the numbers from tier strings
+                    tier_reached_num = tier_reached.replace('Tier ', '')
+                    top_tier_num = top_tier.replace('Tier ', '')
+                    
+                    goal_info = {
+                        'Location': f"{goal.get('MarketName', 'Unknown')} ({goal.get('SystemName', 'Unknown')})",
+                        'Tier': f"{tier_reached_num}/{top_tier_num}",
+                        'Player_Contribution': f"{goal.get('PlayerContribution', 0):,}",
+                        'Contributors': f"{goal.get('NumContributors', 0):,}",
+                        'Player_Percentile': f"{goal.get('PlayerPercentileBand', 0)}%",
+                        'Reward': f"{goal.get('Bonus', 0):,} CR",
+                        'Expires': goal.get('Expiry', 'Unknown')
+                    }
+                    
+                    goals_info[goal_title] = goal_info
+                
+                status_entries.append(("Community Goals", goals_info))
 
         # Nav Route 
         if "NavInfo" in projected_states and projected_states["NavInfo"].get("NavRoute"):

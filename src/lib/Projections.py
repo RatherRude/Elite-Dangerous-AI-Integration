@@ -418,6 +418,67 @@ class EngineerProgress(Projection[EngineerProgressState]):
                     
                     self.state["Engineers"].append(new_engineer)
 
+# Define types for CommunityGoal Projection
+CommunityGoalTopTier = TypedDict('CommunityGoalTopTier', {
+    "Name": str,
+    "Bonus": str,
+})
+
+CommunityGoalItem = TypedDict('CommunityGoalItem', {
+    "CGID": int,
+    "Title": str,
+    "SystemName": str,
+    "MarketName": str,
+    "Expiry": str,
+    "IsComplete": bool,
+    "CurrentTotal": int,
+    "PlayerContribution": int,
+    "NumContributors": int,
+    "TopTier": CommunityGoalTopTier,
+    "TopRankSize": NotRequired[int],
+    "PlayerInTopRank": NotRequired[bool],
+    "TierReached": str,
+    "PlayerPercentileBand": int,
+    "Bonus": int,
+})
+
+CommunityGoalState = TypedDict('CommunityGoalState', {
+    "event": NotRequired[str],
+    "timestamp": NotRequired[str],
+    "CurrentGoals": NotRequired[list[CommunityGoalItem]],
+})
+
+@final
+class CommunityGoal(Projection[CommunityGoalState]):
+    @override
+    def get_default_state(self) -> CommunityGoalState:
+        return {}
+
+    @override
+    def process(self, event: Event) -> None:
+        if isinstance(event, GameEvent) and event.content.get('event') == 'CommunityGoal':
+            # Save entire event content when receiving CommunityGoal event
+            self.state = cast(CommunityGoalState, event.content)
+        
+        elif isinstance(event, GameEvent) and event.content.get('event') == 'LoadGame':
+            # Check for expired goals and remove them
+            from datetime import datetime
+            current_time = event.timestamp
+            current_dt = datetime.fromisoformat(current_time.replace('Z', '+00:00'))
+            
+            # Filter out expired goals
+            active_goals = []
+            for goal in self.state.get("CurrentGoals", []):
+                expiry_time = goal.get("Expiry", "1970-01-01T00:00:00Z")
+                expiry_dt = datetime.fromisoformat(expiry_time.replace('Z', '+00:00'))
+                
+                # Keep goal if it hasn't expired yet
+                if current_dt < expiry_dt:
+                    active_goals.append(goal)
+            
+            # Update state with only non-expired goals
+            self.state["CurrentGoals"] = active_goals
+
 ship_sizes: dict[str, Literal['S', 'M', 'L', 'Unknown']] = {
     'adder':                         'S',
     'anaconda':                      'L',
@@ -1247,6 +1308,7 @@ def registerProjections(event_manager: EventManager, system_db: SystemDatabase, 
     event_manager.register_projection(Location())
     event_manager.register_projection(Missions())
     event_manager.register_projection(EngineerProgress())
+    event_manager.register_projection(CommunityGoal())
     event_manager.register_projection(ShipInfo())
     event_manager.register_projection(Target())
     event_manager.register_projection(NavInfo(system_db))

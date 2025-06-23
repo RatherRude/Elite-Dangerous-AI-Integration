@@ -1526,7 +1526,9 @@ def engineer_finder(obj, projected_states):
     # Create a lookup for engineers from game data
     game_engineers = {}
     for engineer in engineers:
-        game_engineers[engineer.get('EngineerID')] = engineer
+        # Convert EngineerID to string to match ship_engineers.json keys
+        engineer_id = str(engineer.get('EngineerID'))
+        game_engineers[engineer_id] = engineer
 
     # Helper function for fuzzy matching modifications using Levenshtein distance
     def matches_modifications(modifies_dict, search_term):
