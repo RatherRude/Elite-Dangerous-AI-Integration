@@ -639,7 +639,25 @@ def npc_order(args, projected_states):
     setGameWindowActive()
     if 'orders' in args:
         for order in args['orders']:
-            keys.send(f"Order{order}")
+            if order in ['LaunchFighter1', 'LaunchFighter2']:
+                keys.send('FocusRadarPanel')
+                keys.send('UI_Left', repeat=2)
+                keys.send('UI_Up', repeat=3)
+                keys.send('UI_Down')
+                keys.send('UI_Right')
+                if order == 'LaunchFighter1':
+                    keys.send('UI_Up')
+                else:
+                    keys.send('UI_Down')
+                keys.send('UI_Select')
+                keys.send('UI_Up')
+                keys.send('UI_Down')
+                keys.send('UI_Select')
+                keys.send('UIFocus')
+            else:
+                if order == 'ReturnToShip':
+                    order = 'RequestDock'
+                keys.send(f"Order{order}")
     return f"Orders {', '.join(str(x) for x in args['orders'])} have been transmitted."
 
 
@@ -4541,7 +4559,9 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                         "HoldFire",
                         "HoldPosition",
                         "Follow",
-                        "RequestDock",
+                        "ReturnToShip",
+                        "LaunchFighter1",
+                        "LaunchFighter2",
                     ]
                 }
             }

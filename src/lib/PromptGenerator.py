@@ -63,58 +63,47 @@ class PromptGenerator:
             "2":  {"clock": 6, "depth": "front"},
             "3":  {"clock": 6, "depth": "back"},
             "4":  {"clock": 6, "depth": "very back"},
-            
             "5":  {"clock": 7, "depth": "very front"},
             "6":  {"clock": 7, "depth": "front"},
             "7":  {"clock": 7, "depth": "back"},
             "8":  {"clock": 7, "depth": "very back"},
-            
             "9":  {"clock": 8, "depth": "front"},
             "10": {"clock": 8, "depth": "back"},
-            
             "11": {"clock": 9, "depth": "very front"},
             "12": {"clock": 9, "depth": "front"},
             "13": {"clock": 9, "depth": "center"},
             "14": {"clock": 9, "depth": "back"},
             "15": {"clock": 9, "depth": "very back"},
-            
             "16": {"clock": 10, "depth": "very front"},
             "17": {"clock": 10, "depth": "front"},
             "18": {"clock": 10, "depth": "back"},
             "19": {"clock": 10, "depth": "very back"},
-            
             "20": {"clock": 11, "depth": "very front"},
             "21": {"clock": 11, "depth": "front"},
             "22": {"clock": 11, "depth": "back"},
             "23": {"clock": 11, "depth": "very back"},
-            
             "24": {"clock": 12, "depth": "front"},
             "25": {"clock": 12, "depth": "back"},
-            
             "26": {"clock": 1, "depth": "very front"},
             "27": {"clock": 1, "depth": "front"},
             "28": {"clock": 1, "depth": "center"},
             "29": {"clock": 1, "depth": "back"},
             "30": {"clock": 1, "depth": "very back"},
-            
             "31": {"clock": 2, "depth": "very front"},
             "32": {"clock": 2, "depth": "front"},
             "33": {"clock": 2, "depth": "back"},
             "34": {"clock": 2, "depth": "very back"},
-            
             "35": {"clock": 3, "depth": "very front"},
             "36": {"clock": 3, "depth": "front"},
             "37": {"clock": 3, "depth": "center"},
             "38": {"clock": 3, "depth": "back"},
-            
             "39": {"clock": 4, "depth": "front"},
             "40": {"clock": 4, "depth": "back"},
-            
             "41": {"clock": 5, "depth": "very front"},
             "42": {"clock": 5, "depth": "front"},
-            "43": {"clock": 5, "depth": "back"},
-            "44": {"clock": 5, "depth": "very back"},
-            "45": {"clock": 5, "depth": "center"}
+            "43": {"clock": 5, "depth": "center"},
+            "44": {"clock": 5, "depth": "back"},
+            "45": {"clock": 5, "depth": "very back"}
         }
 
     def announce_pad(self, pad_number):
@@ -1754,10 +1743,7 @@ class PromptGenerator:
 
         if event_name == 'LaunchFighter':
             fighter_event = cast(Dict[str, Any], content)
-            player_controlled = "player-controlled" if fighter_event.get('PlayerControlled') else "AI-controlled"
-            loadout = fighter_event.get('Loadout', '')
-            loadout_info = f" ({loadout})" if loadout else ""
-            return f"{self.commander_name} has launched a {player_controlled} fighter{loadout_info}."
+            return f"{self.commander_name if fighter_event.get('PlayerControlled') else "An NPC crew"} has launched in a fighter."
 
         if event_name == 'LaunchSRV':
             srv_event = cast(Dict[str, Any], content)
