@@ -8,6 +8,7 @@ import yaml
 import requests
 import humanize
 import json
+from jinja2.sandbox import SandboxedEnvironment
 
 from lib.EventModels import (
     ApproachBodyEvent, ApproachSettlementEvent, BookTaxiEvent, BountyEvent, BuyExplorationDataEvent, CodexEntryEvent, CommanderEvent, CommitCrimeEvent,
@@ -53,9 +54,13 @@ class PromptGenerator:
         self.registered_prompt_event_handlers: list[Callable[[Event], list[ChatCompletionMessageParam]]] = []
         self.registered_status_generators: list[Callable[[dict[str, dict]], list[tuple[str, Any]]]] = []
         self.commander_name = commander_name
-        self.character_prompt = character_prompt
         self.important_game_events = important_game_events
         self.system_db = system_db
+        # instantiate jinja template
+        character_text = character_prompt#.replace('\{commander_name\}', '{{ commander_name }}').replace('\{ commander_name \}', '{{ commander_name }}')
+        print(character_text)
+        env = SandboxedEnvironment()
+        self.character_prompt = env.from_string(character_text)
 
     def get_event_template(self, event: Union[GameEvent, ProjectedEvent, ExternalEvent]):
         content: Any = event.content
@@ -2504,7 +2509,7 @@ class PromptGenerator:
 
         return active_mode, status_info
 
-    def generate_status_message(self, projected_states: dict[str, dict]):
+    def generate_status_message(self, projected_states: dict[str, Any]):
         status_entries: list[tuple[str, Any]] = []
 
         active_mode, vehicle_status = self.generate_vehicle_status(projected_states.get('CurrentStatus', {}), projected_states.get('InCombat', {}))
@@ -3091,20 +3096,23 @@ class PromptGenerator:
             conversational_pieces.append(
                 {
                     "role": "system",
-                    "content": "The universe of Elite:Dangerous is your reality. Never mention it or refer to it as a game. "
+                    "content": "The universe of Elite Dangerous is your reality. Never mention it or refer to it as a game. "
                     + "Your purpose is to provide information, status updates, and execute tools as required. Only use tools you are given from me. "
                     + "You do not ask questions or initiate conversations. You respond only when addressed and in a single sentence. "
                     + "Don't repeat the same words and sentences, mix it up. "
-                    + "I will provide game events in parentheses; do not create new ones. Only react to game events marked with 'IMPORTANT:'.  "
+                    + "I will provide game events in parentheses; do not create new ones. Only react to game events marked with 'IMPORTANT'.  "
                     + "Stay consistent with the lived experience and character. Do not hallucinate any information that is not given to you. "
                     + "Do not use markdown in your responses. "
                     # The character_prompt now contains all the generated settings
-                    + self.character_prompt.format(commander_name=self.commander_name),
+                    + self.character_prompt.render(
+                        commander_name=self.commander_name, 
+                        pending_events=[e for e in pending_events]
+                    )
                 }
             )
         except Exception as e:
             log('error', e, traceback.format_exc())
-            log('error', 'Invalid character prompt, please keep the {commander_name} placeholder in the prompt.')
+            log('error', 'Invalid character prompt', e)
 
         conversational_pieces.reverse()  # Restore the original order
 
