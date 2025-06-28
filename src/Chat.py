@@ -269,11 +269,6 @@ class Chat:
                     self.copilot.output_commander(text)
                     self.event_manager.add_conversation_event('user', text)
 
-                # todo add finished event to tts and assistant
-                if self.is_replying and not self.tts.get_is_playing():
-                    self.event_manager.add_assistant_complete_event()
-                    self.is_replying = False
-
                 # check EDJournal files for updates
                 while not self.jn.events.empty():
                     event = self.jn.events.get()
@@ -290,13 +285,12 @@ class Chat:
 
                 self.event_manager.process()
 
-                if self.assistant.reply_pending and not self.tts.get_is_playing() and not self.stt.recording:
+                if self.assistant.reply_pending and not self.assistant.is_replying and not self.stt.recording:
                     all_events, projected_states = self.event_manager.get_current_state()
-                    self.is_replying = True
                     self.assistant.reply(all_events, projected_states)
                     
                 # Infinite loops are bad for processors, must sleep.
-                sleep(0.25)
+                sleep(0.1)
             except KeyboardInterrupt:
                 break
             except Exception as e:

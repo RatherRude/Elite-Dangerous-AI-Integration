@@ -9,6 +9,7 @@
   -background-color: #ff000020;
   grid-template: 
     ". ." 1fr
+    ". pngtuber" 400px
     ". content" 200px
     / 1fr 400px;
   padding: 20px;
@@ -19,6 +20,29 @@
   justify-content: center;
   align-items: center;
 }
+
+.overlay-pngtuber {
+  display: block;
+  width: 400px;
+  height: 400px;
+  grid-area: pngtuber;
+  background:  url('../../assets/cn_avatar1.png');
+  background-size: 200%;
+  background-position: 0% 0%;
+  &.listening {
+    background-position: 0% 0%;
+  }
+  &.speaking {
+    background-position: 100% 0%;
+  }
+  &.thinking {
+    background-position: 0% 100%;
+  }
+  &.acting {
+    background-position: 100% 100%;
+  }
+}
+
 
 .overlay-content {
   grid-area: content;
