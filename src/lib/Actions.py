@@ -1336,7 +1336,7 @@ def blueprint_finder(obj, projected_states):
         if search_lower in target_lower:
             return True
 
-        # Split into words for fuzzy matching  
+        # Split into words for fuzzy matching
         target_words = target_lower.replace(',', ' ').replace('(', ' ').replace(')', ' ').split()
 
         # Fuzzy matching using Levenshtein distance
@@ -1430,7 +1430,7 @@ def blueprint_finder(obj, projected_states):
 
                 # Format engineers with location and status info
                 formatted_engineers = [format_engineer_info(eng) for eng in engineers]
-                
+
                 grade_results = {
                     "materials_needed": total_materials,
                     "engineers": formatted_engineers,
@@ -1790,7 +1790,6 @@ def material_finder(obj, projected_states):
         6: {1: ['rhenium'], 2: ['arsenic'], 3: ['mercury'], 4: ['polonium'], 'source': 'Polonium Crystal Shards: HIP 36601, planet C 1 A - trade afterwards at material trader'},
         7: {1: ['lead'], 2: ['zirconium'], 3: ['boron'], 4: ['antimony'], 'source': 'Antimony Crystal Shards: Outotz LS-K D8-3, planet B 5 C - trade afterwards at material trader'}
     }
-
     ship_manufactured_materials_map = {
         'Chemical': {
             1: ['chemicalstorageunits'], 2: ['chemicalprocessors'], 3: ['chemicaldistillery'],
@@ -1922,7 +1921,6 @@ def material_finder(obj, projected_states):
         'degradedpowerregulator', 'largecapacitypowerregulator', 'powermiscindust',
         'powermisccomputer', 'powerequipment'
     ]
-
     suit_components_materials = [
         'aerogel', 'chemicalcatalyst', 'chemicalsuperbase', 'circuitboard', 'circuitswitch',
         'electricalfuse', 'electricalwiring', 'encryptedmemorychip', 'epoxyadhesive',
@@ -1932,7 +1930,6 @@ def material_finder(obj, projected_states):
         'electromagnet', 'oxygenicbacteria', 'epinephrine', 'phneutraliser', 'microelectrode',
         'ionbattery', 'weaponcomponent'
     ]
-
     suit_data_materials = [
         'internalcorrespondence', 'biometricdata', 'nocdata', 'axcombatlogs', 'airqualityreports',
         'audiologs', 'ballisticsdata', 'biologicalweapondata', 'catmedia', 'chemicalexperimentdata',
@@ -2076,6 +2073,8 @@ def material_finder(obj, projected_states):
 
     # Helper function to find ship material info
     def find_ship_material_info(material_name):
+        if not material_name:
+            return None
         material_name_lower = material_name.lower()
 
         # Check raw materials
@@ -2100,6 +2099,8 @@ def material_finder(obj, projected_states):
 
     # Helper function to find suit material info
     def find_suit_material_info(material_name):
+        if not material_name:
+            return None
         material_name_lower = material_name.lower()
 
         if material_name_lower in suit_items_materials:
@@ -2286,7 +2287,55 @@ def material_finder(obj, projected_states):
 
                 results.append(result)
 
-    # Check if any materials were found
+    # Check if any materials were found and handle missing materials when searching by name - this is due to E:D omitting missing materials
+    if not results and search_names:
+        missing_materials = []
+        
+        for search_name in search_names:
+            # Skip if search_name is None or empty
+            if not search_name:
+                continue
+
+            # Check if this is a valid ship material
+            ship_material_info = find_ship_material_info(search_name)
+            if ship_material_info:
+                display_name = display_names.get(search_name, search_name.title())
+                
+                # Get higher grade materials for trading info (same as found materials)
+                higher_materials = get_higher_materials(ship_material_info, search_name)
+
+                result = {
+                    'name': display_name,
+                        'count': 0,
+                        'category': ship_material_info['category'],
+                        'type': ship_material_info['type'],
+                        'grade': ship_material_info['grade'],
+                        'section': ship_material_info['section']
+                    }
+
+                if higher_materials:
+                    result['tradeable_higher_grades'] = higher_materials
+                
+                missing_materials.append(result)
+                continue
+
+            # Check if this is a valid suit material
+            suit_material_info = find_suit_material_info(search_name)
+            if suit_material_info:
+                display_name = display_names.get(search_name, search_name.title())
+                missing_materials.append({
+                'name': display_name,
+                    'count': 0,
+                    'category': suit_material_info['category'],
+                    'type': suit_material_info['type'],
+                    'section': suit_material_info['section']
+                })
+        
+        # If we found valid materials that are just missing, show them with count 0
+        if missing_materials:
+            results.extend(missing_materials)
+
+    # Check if any materials were found after checking for missing ones
     if not results:
         search_terms = []
         if search_names:
