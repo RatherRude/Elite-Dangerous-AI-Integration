@@ -11,7 +11,7 @@ export interface StatesMessage extends BaseMessage {
     providedIn: "root",
 })
 export class ProjectionsService {
-    private projectionsSubject = new BehaviorSubject<Record<string, any> | null>(null);
+    private projectionsSubject = new BehaviorSubject<Record<string, any>>({});
     public projections$ = this.projectionsSubject.asObservable();
 
     constructor(private tauriService: TauriService) {
@@ -19,7 +19,8 @@ export class ProjectionsService {
         this.tauriService.output$.pipe(
             filter((message): message is StatesMessage => message.type === "states")
         ).subscribe((message) => {
-            this.projectionsSubject.next(message.states);
+            const currentState = this.projectionsSubject.getValue()
+            this.projectionsSubject.next({...currentState, ...message.states});
         });
     }
 

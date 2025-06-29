@@ -158,11 +158,16 @@ class Chat:
         log("debug", "Registering plugin provided status generators...")
         self.plugin_manager.register_status_generators(self.plugin_helper)
 
+        self.previous_states = {}
+
     def on_event(self, event: Event, projected_states: dict[str, Any]):
-        send_message({
-            "type": "states",
-            "states": projected_states
-        })
+        for key, value in projected_states.items():
+            if self.previous_states.get(key, None) != value:
+                send_message({
+                    "type": "states",
+                    "states": {key: value},
+                })
+        self.previous_states = projected_states
         send_message({
             "type": "event",
             "event": event,

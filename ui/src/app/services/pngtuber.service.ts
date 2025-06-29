@@ -14,8 +14,8 @@ export class PngTuberService {
         "starting",
     );
     public runMode$ = this.runModeSubject.asObservable();
-    private actionSubject = new BehaviorSubject<"listening" | "thinking" | "speaking" | "acting">(
-        "listening"
+    private actionSubject = new BehaviorSubject<"idle" | "listening" | "thinking" | "speaking" | "acting">(
+        "idle"
     )
     public action$ = this.actionSubject.asObservable();
 
@@ -46,7 +46,7 @@ export class PngTuberService {
                     this.actionSubject.next('speaking');
                 }
                 if (message.event.kind === 'assistant_completed') {
-                    this.actionSubject.next('listening');
+                    this.actionSubject.next('idle');
                 }
                 if (message.event.kind === 'assistant_acting') {
                     this.actionSubject.next('acting');

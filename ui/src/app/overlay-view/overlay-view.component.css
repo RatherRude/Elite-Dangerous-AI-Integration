@@ -12,31 +12,37 @@
   -background-color: #ff000020;
   grid-template: 
     ". ." 1fr
-    ". pngtuber" 400px
-    ". content" 200px
+    ". character" 600px
     / 1fr 400px;
-  padding: 20px;
   box-sizing: border-box;
-/* 16:9 aspect ratio */
-  width: 100vw;
-  height: 56.25vw; /* 9 / 16 * 100 */
-
-  max-width: 177.78vh; /* 16 / 9 * 100 */
-  max-height: 100vh;
+  aspect-ratio: 16/9;
+  height: 100vh;
   margin: 0 auto;
   overflow: hidden;
   justify-content: center;
   align-items: center;
 }
 
+.overlay-character {
+  grid-area: character;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(0);
+  transition: transform 0.26s ease-out;
+  &.idle {
+    transform: translateX(100%)
+  }
+}
+
 .overlay-pngtuber {
   display: block;
-  width: 400px;
+  width: 100%;
   height: 400px;
   grid-area: pngtuber;
-  background:  url('../../assets/cn_avatar2.png');
+  background:  url('../../assets/cn_avatar1.png');
   background-size: 200%;
   background-position: 0% 0%;
+  transform: scaleX(-1);
   &.listening {
     background-position: 0% 0%;
   }
@@ -49,17 +55,19 @@
   &.acting {
     background-position: 100% 100%;
   }
-  transform: scaleX(-1);
+  &.idle {
+    background-position: 0% 0%;
+  }
 }
 
 
-.overlay-content {
+.overlay-chat {
   grid-area: content;
   padding: 20px;
   border-radius: 10px;
   background-color: rgba(0, 0, 0, 0.5);
   box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
-  text-align: center;
+  text-align: left;
   align-self: stretch;
   justify-self: stretch;
 }
@@ -75,42 +83,6 @@ p {
   color: white;
   font-size: 1rem;
   text-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
-}
-
-.status-indicator {
-  display: flex;
-  align-items: center;
-  margin: 15px 0;
-  padding: 10px;
-  border-radius: 5px;
-  background-color: rgba(0, 0, 0, 0.3);
-  transition: background-color 0.3s ease;
-}
-
-.status-indicator.active {
-  background-color: rgba(0, 128, 0, 0.3);
-}
-
-.status-indicator.inactive {
-  background-color: rgba(128, 0, 0, 0.3);
-}
-
-.status-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  margin-right: 10px;
-  background-color: red;
-  box-shadow: 0 0 5px rgba(255, 0, 0, 0.8);
-}
-
-.status-indicator.active .status-dot {
-  background-color: #00ff00;
-  box-shadow: 0 0 8px rgba(0, 255, 0, 0.8);
-}
-
-.status-text {
-  margin: 0;
 }
 
 .ready-text {

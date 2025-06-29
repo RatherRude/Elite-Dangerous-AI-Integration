@@ -76,7 +76,6 @@ export class CharacterService {
         private tauriService: TauriService,
         private configService: ConfigService,
     ) {
-        // Subscribe to states messages from the TauriService
         this.configService.config$.pipe().subscribe(
             (config: Config | null) => {
                 if (!config) return;
