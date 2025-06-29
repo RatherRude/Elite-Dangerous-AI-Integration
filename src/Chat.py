@@ -49,7 +49,7 @@ class Chat:
 
         self.voice_instructions = self.character["tts_prompt"]
 
-        self.backstory = self.character["character"].replace("{commander_name}", self.config['commander_name'])
+        self.backstory = self.character["character"]
 
         self.enabled_game_events: list[str] = []
         if self.character["event_reaction_enabled_var"]:
