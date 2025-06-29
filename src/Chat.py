@@ -134,6 +134,7 @@ class Chat:
             copilot=self.copilot,
         )
         self.is_replying = False
+        self.listening = False
 
         log("debug", "Registering side effect...")
         self.event_manager.register_sideeffect(self.on_event)
@@ -258,9 +259,14 @@ class Chat:
 
                 # check STT recording
                 if self.stt.recording:
+                    if not self.listening:
+                        self.listening = True
+                        self.event_manager.add_user_speaking()
                     if self.tts.get_is_playing():
                         log('debug', 'interrupting TTS')
                         self.tts.abort()
+                else:
+                    self.listening = False
 
                 # check STT result queue
                 if not self.stt.resultQueue.empty():

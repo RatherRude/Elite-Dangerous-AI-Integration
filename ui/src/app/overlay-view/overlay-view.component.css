@@ -34,7 +34,7 @@
   width: 400px;
   height: 400px;
   grid-area: pngtuber;
-  background:  url('../../assets/cn_avatar1.png');
+  background:  url('../../assets/cn_avatar2.png');
   background-size: 200%;
   background-position: 0% 0%;
   &.listening {
@@ -49,6 +49,7 @@
   &.acting {
     background-position: 100% 100%;
   }
+  transform: scaleX(-1);
 }
 
 

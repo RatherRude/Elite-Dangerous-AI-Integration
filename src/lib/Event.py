@@ -4,7 +4,7 @@ from typing import Dict, List, Literal, TypedDict
 
 
 class Event:
-    kind: Literal['game', 'user', 'assistant', 'assistant_completed', 'tool', 'status', 'projected', 'external', 'archive']
+    kind: Literal['game', 'user', 'user_speaking', 'assistant', 'assistant_acting', 'assistant_completed', 'tool', 'status', 'projected', 'external', 'archive']
     timestamp: str
     processed_at: float
 
@@ -45,7 +45,7 @@ class ExternalEvent(Event):
 @dataclass
 class ConversationEvent(Event):
     content: str
-    kind: Literal['user', 'assistant', 'assistant_completed']
+    kind: Literal['user_speaking', 'user', 'assistant', 'assistant_acting', 'assistant_completed']
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     processed_at: float = field(default=0.0)
 

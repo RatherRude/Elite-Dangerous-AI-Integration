@@ -181,6 +181,7 @@ class Assistant:
                 self.copilot.output_covas(response_text, reasons)
 
             if response_actions:
+                self.event_manager.add_assistant_acting()
                 self.execute_actions(response_actions, projected_states)
 
                 if not predicted_actions and self.config["use_action_cache_var"]:

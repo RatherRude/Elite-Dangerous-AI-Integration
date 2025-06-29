@@ -39,13 +39,16 @@ export class PngTuberService {
                 if (message.event.kind === 'user') {
                     this.actionSubject.next('thinking');
                 }
+                if (message.event.kind === 'user_speaking') {
+                    this.actionSubject.next('listening');
+                }
                 if (message.event.kind === 'assistant') {
                     this.actionSubject.next('speaking');
                 }
                 if (message.event.kind === 'assistant_completed') {
                     this.actionSubject.next('listening');
                 }
-                if (message.event.kind === 'tool') {
+                if (message.event.kind === 'assistant_acting') {
                     this.actionSubject.next('acting');
                 }
             }
