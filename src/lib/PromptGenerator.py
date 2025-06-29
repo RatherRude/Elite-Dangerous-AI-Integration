@@ -57,7 +57,7 @@ class PromptGenerator:
         self.important_game_events = important_game_events
         self.system_db = system_db
         # instantiate jinja template
-        character_text = character_prompt#.replace('\{commander_name\}', '{{ commander_name }}').replace('\{ commander_name \}', '{{ commander_name }}')
+        character_text = character_prompt.replace('\{commander_name\}', '{{ commander_name }}').replace('\{ commander_name \}', '{{ commander_name }}')
         print(character_text)
         env = SandboxedEnvironment()
         self.character_prompt = env.from_string(character_text)
