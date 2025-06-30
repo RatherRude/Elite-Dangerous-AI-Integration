@@ -29,7 +29,7 @@ export class OverlayViewComponent {
       this.action = action
     });
     chatService.chat$.subscribe(chat=>{
-      this.chat = chat.slice(-2)
+      this.chat = chat.filter(value => ['covas', 'cmdr', 'action'].includes(value.role)).slice(-2)
     })
 
     // Make sure the background is transparent
