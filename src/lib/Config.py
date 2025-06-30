@@ -396,6 +396,7 @@ class Config(TypedDict):
     qol_autoscan: bool  # Quality of life: Auto scan when entering new systems
 
     plugin_settings: dict[str, Any]
+    pngtuber: bool
 
 
 def get_cn_appdata_path() -> str:
@@ -667,7 +668,8 @@ def load_config() -> Config:
         "ed_appdata_path": "",
         "qol_autobrake": False,  # Quality of life: Auto brake when approaching stations
         "qol_autoscan": False,   # Quality of life: Auto scan when entering new systems
-        "plugin_settings": {}
+        "plugin_settings": {},
+        "pngtuber": False
     }
     defaults['characters'].append(getDefaultCharacter(defaults))
     

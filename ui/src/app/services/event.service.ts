@@ -50,7 +50,7 @@ export interface StatusEvent {
 export interface ConversationEvent {
     content: string;
     timestamp: string;
-    kind: "user" | "assistant" | "assistant_completed";
+    kind: "user" | "user_speaking" | "assistant" | "assistant_acting" | "assistant_completed";
     processed_at: number;
 }
 

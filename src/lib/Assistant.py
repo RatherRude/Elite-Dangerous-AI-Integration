@@ -181,6 +181,7 @@ class Assistant:
                 self.copilot.output_covas(response_text, reasons)
 
             if response_actions:
+                self.event_manager.add_assistant_acting()
                 self.execute_actions(response_actions, projected_states)
 
                 if not predicted_actions and self.config["use_action_cache_var"]:
@@ -190,6 +191,8 @@ class Assistant:
             log("debug", "LLM error during reply:", e, traceback.format_exc())
             show_chat_message("error", "LLM error: An unknown error occurred during reply")
         finally:
+            self.tts.wait_for_completion()
+            self.event_manager.add_assistant_complete_event()
             self.is_replying = False
 
     def should_reply(self, states:dict[str, Any]):
@@ -263,7 +266,7 @@ class Assistant:
                 if should_reply_according_to_plugins :
                     return True
                 elif should_reply_according_to_plugins is False:
-                    return False
+                    pass
                 else:
                     continue
 

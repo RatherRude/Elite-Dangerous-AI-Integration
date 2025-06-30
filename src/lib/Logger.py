@@ -6,14 +6,14 @@ import logging
 import json
 from pythonjsonlogger.json import JsonFormatter
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', write_through=True)
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', write_through=True)
 
 logger = logging.getLogger()
 
 logHandler = logging.StreamHandler(stream=sys.stdout)
 formatter = JsonFormatter(
-    static_fields={"type": "log", "timestamp": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")}, 
+    static_fields={"type": "log"},
     reserved_attrs=[], 
     datefmt="%Y-%m-%dT%H:%M:%SZ",
     rename_fields={'levelname': 'prefix', 'asctime': 'timestamp'}
@@ -65,10 +65,7 @@ def show_chat_message(role: str, *args: Any):
     
     logger.info(contents)
     
-    print(json.dumps(message))
-    
-    if sys.stdout:
-        sys.stdout.flush()
+    print(json.dumps(message), flush=True)
 
 def log(prefix: Literal['info', 'debug', 'warn', 'error'], message: Any, *args: Any):
     output = io.StringIO()
@@ -91,3 +88,5 @@ def log(prefix: Literal['info', 'debug', 'warn', 'error'], message: Any, *args: 
         logging.info(contents, extra={"timestamp": timestamp})
     if sys.stdout:
         sys.stdout.flush()
+    if sys.stderr:
+        sys.stderr.flush()

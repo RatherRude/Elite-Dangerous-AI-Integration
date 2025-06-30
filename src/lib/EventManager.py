@@ -87,8 +87,18 @@ class EventManager:
         event = ConversationEvent(kind=role, content=content)
         self.incoming.put(event)
 
+    def add_user_speaking(self):
+        event = ConversationEvent(kind='user_speaking', content='')
+        self.incoming.put(event)
+        # log('debug', event)
+
     def add_assistant_complete_event(self):
         event = ConversationEvent(kind='assistant_completed', content='')
+        self.incoming.put(event)
+        # log('debug', event)
+
+    def add_assistant_acting(self):
+        event = ConversationEvent(kind='assistant_acting', content='')
         self.incoming.put(event)
         # log('debug', event)
 

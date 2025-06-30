@@ -43,4 +43,4 @@ def send_message(message: dict):
     if 'timestamp' not in message_dict:
         message_dict['timestamp'] = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     
-    print(json.dumps(message_dict))
+    print(json.dumps(message_dict), flush=True)

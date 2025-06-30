@@ -1,10 +1,16 @@
 <div class="overlay-container">
-  <div class="overlay-content">
-    <h1>Status Overlay</h1>
-    <div class="status-indicator" [class.active]="isRunning" [class.inactive]="!isRunning">
-      <div class="status-dot"></div>
-      <p class="status-text">AI Assistant: <strong>{{ isRunning ? 'ACTIVE' : 'INACTIVE' }}</strong></p>
+    <div class="overlay-character" [ngClass]="action">
+        <div class="overlay-pngtuber" [ngClass]="action"></div>
+        <div class="overlay-chat">
+            <p class="ready-text" *ngIf="runMode=='starting'">System preparing...</p>
+            @for (msg of chat; track msg.index) {
+              <div class="chat-entry">
+                <span class="timestamp">{{ msg.timestamp | date:'HH:mm:ss' }}</span>
+                <span class="prefix" [style.color]="getLogColor(msg.role)">{{ msg.role }}</span>
+                <span class="message">{{ msg.message }}</span>
+              </div>
+            }
+
+        </div>
     </div>
-    <p class="ready-text" *ngIf="!isReady">System preparing...</p>
-  </div>
 </div>

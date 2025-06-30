@@ -213,6 +213,10 @@ class TTS:
     def get_is_playing(self):
         return self._is_playing or not self.read_queue.empty()
 
+    def wait_for_completion(self):
+        while self.get_is_playing():
+            sleep(0.2)
+
     def quit(self):
         pass
 
