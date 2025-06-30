@@ -224,7 +224,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - `grade`: Integer (optional, 1-5)
     - `type`: String (optional, options: "raw", "manufactured", "encoded", "items", "components", "data", "consumables", "ship", "suit")
 
-    Find and search a list of materials for both ship and suit engineering from the commander's inventory.
+    Find and search a list of materials for both ship and suit engineering from the commander's inventory and where to source them from.
 
 5. Send Message
 
