@@ -56,6 +56,65 @@ class PromptGenerator:
         self.character_prompt = character_prompt
         self.important_game_events = important_game_events
         self.system_db = system_db
+        
+        # Pad map for station docking positions
+        self.pad_map = {
+            "1":  {"clock": 6, "depth": "very front"},
+            "2":  {"clock": 6, "depth": "front"},
+            "3":  {"clock": 6, "depth": "back"},
+            "4":  {"clock": 6, "depth": "very back"},
+            "5":  {"clock": 7, "depth": "very front"},
+            "6":  {"clock": 7, "depth": "front"},
+            "7":  {"clock": 7, "depth": "back"},
+            "8":  {"clock": 7, "depth": "very back"},
+            "9":  {"clock": 8, "depth": "front"},
+            "10": {"clock": 8, "depth": "back"},
+            "11": {"clock": 9, "depth": "very front"},
+            "12": {"clock": 9, "depth": "front"},
+            "13": {"clock": 9, "depth": "center"},
+            "14": {"clock": 9, "depth": "back"},
+            "15": {"clock": 9, "depth": "very back"},
+            "16": {"clock": 10, "depth": "very front"},
+            "17": {"clock": 10, "depth": "front"},
+            "18": {"clock": 10, "depth": "back"},
+            "19": {"clock": 10, "depth": "very back"},
+            "20": {"clock": 11, "depth": "very front"},
+            "21": {"clock": 11, "depth": "front"},
+            "22": {"clock": 11, "depth": "back"},
+            "23": {"clock": 11, "depth": "very back"},
+            "24": {"clock": 12, "depth": "front"},
+            "25": {"clock": 12, "depth": "back"},
+            "26": {"clock": 1, "depth": "very front"},
+            "27": {"clock": 1, "depth": "front"},
+            "28": {"clock": 1, "depth": "center"},
+            "29": {"clock": 1, "depth": "back"},
+            "30": {"clock": 1, "depth": "very back"},
+            "31": {"clock": 2, "depth": "very front"},
+            "32": {"clock": 2, "depth": "front"},
+            "33": {"clock": 2, "depth": "back"},
+            "34": {"clock": 2, "depth": "very back"},
+            "35": {"clock": 3, "depth": "very front"},
+            "36": {"clock": 3, "depth": "front"},
+            "37": {"clock": 3, "depth": "center"},
+            "38": {"clock": 3, "depth": "back"},
+            "39": {"clock": 4, "depth": "front"},
+            "40": {"clock": 4, "depth": "back"},
+            "41": {"clock": 5, "depth": "very front"},
+            "42": {"clock": 5, "depth": "front"},
+            "43": {"clock": 5, "depth": "center"},
+            "44": {"clock": 5, "depth": "back"},
+            "45": {"clock": 5, "depth": "very back"}
+        }
+
+    def announce_pad(self, pad_number):
+        """Generate a detailed description of the landing pad location."""
+        pad = self.pad_map.get(str(pad_number))
+        if not pad:
+            return f"Pad {pad_number} (location unknown)"
+
+        clock = pad['clock']
+        depth = pad['depth']
+        return f"Pad {pad_number} ({clock} o'clock, {depth})"
 
     def get_event_template(self, event: Union[GameEvent, ProjectedEvent, ExternalEvent]):
         content: Any = event.content
@@ -222,7 +281,14 @@ class PromptGenerator:
             
         if event_name == 'DockingGranted':
             docking_granted_event = cast(DockingGrantedEvent, content)
-            return f"Docking request granted at {docking_granted_event.get('StationName')} on landing pad {docking_granted_event.get('LandingPad')}"
+            station_type = docking_granted_event.get('StationType')
+            
+            # Only provide detailed pad info for standard station types with known layouts
+            if station_type in ['Coriolis', 'Orbis', 'Ocellus']:
+                pad_info = self.announce_pad(docking_granted_event.get('LandingPad'))
+                return f"Docking request granted at {docking_granted_event.get('StationName')} on {pad_info} (clock orientation: mail slot entry with green on right)"
+            else:
+                return f"Docking request granted at {docking_granted_event.get('StationName')} on landing pad {docking_granted_event.get('LandingPad')}"
             
         if event_name == 'DockingRequested':
             docking_requested_event = cast(DockingRequestedEvent, content)
@@ -1677,10 +1743,7 @@ class PromptGenerator:
 
         if event_name == 'LaunchFighter':
             fighter_event = cast(Dict[str, Any], content)
-            player_controlled = "player-controlled" if fighter_event.get('PlayerControlled') else "AI-controlled"
-            loadout = fighter_event.get('Loadout', '')
-            loadout_info = f" ({loadout})" if loadout else ""
-            return f"{self.commander_name} has launched a {player_controlled} fighter{loadout_info}."
+            return f"{self.commander_name if fighter_event.get('PlayerControlled') else "An NPC crew"} has launched in a fighter."
 
         if event_name == 'LaunchSRV':
             srv_event = cast(Dict[str, Any], content)
@@ -1974,13 +2037,7 @@ class PromptGenerator:
             return f"{self.commander_name} has {operation} {count} units of {commodity} for mission {mission_id} (Total: {total})."
 
         if event_name == 'CommunityGoal':
-            cg_event = cast(Dict[str, Any], content)
-            if cg_event.get('CurrentGoals'):
-                goals = []
-                for goal in cg_event.get('CurrentGoals', []):
-                    goals.append(f"{goal.get('Title')} at {goal.get('System')}")
-                return f"Community Goals available: {', '.join(goals)}."
-            return f"No active Community Goals found."
+            return None
 
         if event_name == 'CrimeVictim':
             # @ToDo: Filter only if offender isn't commander
@@ -2001,18 +2058,10 @@ class PromptGenerator:
             return f"{self.commander_name} has cancelled the docking request at {docking_cancelled_event.get('StationName')}."
 
         if event_name == 'EngineerContribution':
-            engineer_contribution_event = cast(Dict[str, Any], content)
-            engineer = engineer_contribution_event.get('Engineer', 'an engineer')
-            type = engineer_contribution_event.get('Type', 'unknown')
-            commodity = engineer_contribution_event.get('Commodity', engineer_contribution_event.get('Material', 'unknown'))
-            quantity = engineer_contribution_event.get('Quantity', 0)
-            total = engineer_contribution_event.get('TotalQuantity', 0)
-            return f"{self.commander_name} has contributed {quantity} {commodity} ({type}) to {engineer}. Total: {total}."
+            return None
 
         if event_name == 'EngineerLegacyConvert':
-            legacy_convert_event = cast(Dict[str, Any], content)
-            engineer = legacy_convert_event.get('Engineer', 'an engineer')
-            return f"{self.commander_name} has converted legacy modifications with {engineer}."
+            return None
 
         if event_name == 'FetchRemoteModule':
             fetch_module_event = cast(Dict[str, Any], content)
@@ -2730,9 +2779,42 @@ class PromptGenerator:
             if altitude:
                 location_info["Altitude"] = f"{altitude} km"
 
+            location_info.pop('StarPos', None)
+
             status_entries.append(("Location", location_info))
             status_entries.append(("Local system", system_info))
             status_entries.append(("Stations in local system", stations_info))
+
+        # Community Goal
+        community_goal = projected_states.get('CommunityGoal', {})
+        if community_goal and 'CurrentGoals' in community_goal:
+            current_goals = community_goal.get('CurrentGoals', [])
+            if current_goals:
+                goals_info = {}
+                for goal in current_goals:
+                    goal_title = goal.get('Title', 'Unknown Goal')
+                    
+                    # Extract tier numbers for simplified display
+                    tier_reached = goal.get('TierReached', 'Tier 0')
+                    top_tier = goal.get('TopTier', {}).get('Name', 'Tier 0')
+                    
+                    # Extract just the numbers from tier strings
+                    tier_reached_num = tier_reached.replace('Tier ', '')
+                    top_tier_num = top_tier.replace('Tier ', '')
+                    
+                    goal_info = {
+                        'Location': f"{goal.get('MarketName', 'Unknown')} ({goal.get('SystemName', 'Unknown')})",
+                        'Tier': f"{tier_reached_num}/{top_tier_num}",
+                        'Player_Contribution': f"{goal.get('PlayerContribution', 0):,}",
+                        'Contributors': f"{goal.get('NumContributors', 0):,}",
+                        'Player_Percentile': f"{goal.get('PlayerPercentileBand', 0)}%",
+                        'Reward': f"{goal.get('Bonus', 0):,} CR",
+                        'Expires': goal.get('Expiry', 'Unknown')
+                    }
+                    
+                    goals_info[goal_title] = goal_info
+                
+                status_entries.append(("Community Goals", goals_info))
 
         # Nav Route 
         if "NavInfo" in projected_states and projected_states["NavInfo"].get("NavRoute"):
@@ -3052,7 +3134,7 @@ class PromptGenerator:
             time_offset = humanize.naturaltime(reference_time - event_time)
 
             if isinstance(event, GameEvent) or isinstance(event, ProjectedEvent) or isinstance(event, ExternalEvent):
-                if len(conversational_pieces) < 20 or is_pending:
+                if len(conversational_pieces) < 20:
                     is_important = is_pending and event.content.get('event') in self.important_game_events
                     message = self.event_message(event, time_offset, is_important)
                     if message:
@@ -3097,7 +3179,7 @@ class PromptGenerator:
                     + "Don't repeat the same words and sentences, mix it up. "
                     + "I will provide game events in parentheses; do not create new ones. Only react to game events marked with 'IMPORTANT:'.  "
                     + "Stay consistent with the lived experience and character. Do not hallucinate any information that is not given to you. "
-                    + "Do not use markdown in your responses. "
+                    + "Do not use markdown in your responses, and no commas in numbers. "
                     # The character_prompt now contains all the generated settings
                     + self.character_prompt.format(commander_name=self.commander_name),
                 }

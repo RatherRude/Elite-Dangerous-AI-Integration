@@ -2,7 +2,7 @@
     <div class="overlay-character" [ngClass]="action">
         <div class="overlay-pngtuber" [ngClass]="action"></div>
         <div class="overlay-chat">
-            <p class="ready-text" *ngIf="runMode=='starting'">System preparing...</p>
+<!--            <p class="ready-text" *ngIf="runMode=='starting'">System preparing...</p>-->
             @for (msg of chat; track msg.index) {
               <div class="chat-entry">
                 <span class="timestamp">{{ msg.timestamp | date:'HH:mm:ss' }}</span>
