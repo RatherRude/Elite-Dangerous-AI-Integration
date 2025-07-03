@@ -22,6 +22,8 @@ import { ConfirmationDialogService } from "../../services/confirmation-dialog.se
 import { MatDialog } from "@angular/material/dialog";
 import { EdgeTtsVoicesDialogComponent } from "../edge-tts-voices-dialog/edge-tts-voices-dialog.component.js";
 import { ConfirmationDialogComponent } from "../confirmation-dialog/confirmation-dialog.component.js";
+import { AvatarCatalogDialogComponent, AvatarCatalogResult } from "../avatar-catalog-dialog/avatar-catalog-dialog.component.js";
+import { AvatarService } from "../../services/avatar.service.js";
 import {
     MatAccordion,
     MatExpansionPanel,
@@ -102,6 +104,7 @@ export class CharacterSettingsComponent {
     isApplyingChange: boolean = false;
     public GameEventTooltips = GameEventTooltips;
     voiceInstructionSupportedModels: string[] = this.characterService.voiceInstructionSupportedModels;
+    currentAvatarUrl: string | null = null;
 
     gameEventCategories = GameEventCategories;
 
@@ -547,6 +550,7 @@ export class CharacterSettingsComponent {
         private snackBar: MatSnackBar,
         private confirmationDialog: ConfirmationDialogService,
         private dialog: MatDialog,
+        private avatarService: AvatarService,
     ) {
         this.configSubscription = this.configService.config$.subscribe(
             (config) => {
@@ -558,6 +562,7 @@ export class CharacterSettingsComponent {
         this.characterSubscription = this.characterService.character$.subscribe(
             (character) => {
                 this.activeCharacter = character;
+                this.loadCharacterAvatar();
             }
         )
     }
@@ -1351,6 +1356,41 @@ export class CharacterSettingsComponent {
         dialogRef.afterClosed().subscribe(async (result) => {
             if (result) {
                 await this.configService.clearHistory();
+            }
+        });
+    }
+
+    // Avatar-related methods
+    async loadCharacterAvatar() {
+        if (this.currentAvatarUrl) {
+            URL.revokeObjectURL(this.currentAvatarUrl);
+            this.currentAvatarUrl = null;
+        }
+
+        if (this.activeCharacter?.avatar) {
+            try {
+                this.currentAvatarUrl = await this.avatarService.getAvatar(this.activeCharacter.avatar);
+            } catch (error) {
+                console.error('Error loading character avatar:', error);
+            }
+        }
+    }
+
+    getAvatarUrl(): string {
+        return this.currentAvatarUrl || 'assets/cn_avatar1.png';
+    }
+
+    openAvatarCatalog() {
+        const dialogRef = this.dialog.open(AvatarCatalogDialogComponent, {
+            width: '850px',
+            maxWidth: '95vw',
+            data: { currentAvatarId: this.activeCharacter?.avatar }
+        });
+
+        dialogRef.afterClosed().subscribe((result: AvatarCatalogResult) => {
+            if (result !== undefined && this.activeCharacter) {
+                this.setCharacterProperty('avatar', result.avatarId);
+                this.loadCharacterAvatar();
             }
         });
     }

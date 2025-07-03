@@ -1,0 +1,210 @@
+.avatar-catalog-dialog {
+  width: 800px;
+  max-width: 95vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+
+  .upload-section {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--mat-divider-color);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+
+    .uploading-text {
+      color: var(--mat-text-secondary);
+      font-style: italic;
+    }
+  }
+
+  [mat-dialog-content] {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .avatar-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 20px;
+    overflow-y: auto;
+    padding: 0 4px;
+    flex: 1;
+
+    .no-avatars {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--mat-text-secondary);
+
+      mat-icon {
+        font-size: 48px;
+        width: 48px;
+        height: 48px;
+        margin-bottom: 16px;
+        opacity: 0.5;
+      }
+
+      p {
+        margin: 0;
+        font-size: 14px;
+      }
+    }
+
+    .avatar-card {
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 2px solid transparent;
+      
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      &.selected {
+        border-color: var(--mat-primary);
+        box-shadow: 0 0 0 1px var(--mat-primary);
+      }
+
+      mat-card-content {
+        padding: 8px !important;
+      }
+
+      .avatar-image-container {
+        position: relative;
+        width: 100%;
+        height: 120px;
+        overflow: hidden;
+        border-radius: 8px;
+        margin-bottom: 8px;
+        cursor: pointer;
+
+        .avatar-image {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: transform 0.2s ease;
+        }
+
+        .avatar-overlay {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.6);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          opacity: 0;
+          transition: opacity 0.2s ease;
+
+          .selected-indicator {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--mat-primary);
+            text-align: center;
+            
+            mat-icon {
+              font-size: 32px;
+              width: 32px;
+              height: 32px;
+              margin-bottom: 4px;
+            }
+            
+            span {
+              font-size: 12px;
+              font-weight: 500;
+            }
+          }
+
+          .selection-prompt {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: white;
+            text-align: center;
+            
+            mat-icon {
+              font-size: 24px;
+              width: 24px;
+              height: 24px;
+              margin-bottom: 4px;
+            }
+            
+            span {
+              font-size: 11px;
+              font-weight: 500;
+            }
+          }
+
+          .delete-button {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: rgba(255, 255, 255, 0.95);
+            background-size: auto;
+            //color: var(--mat-warn) !important;
+            width: 32px;
+            height: 32px;
+            z-index: 10;
+            border-radius: 50%;
+            
+            &:hover {
+              background: rgba(255, 255, 255, 1);
+              transform: scale(1.1);
+            }
+            
+            mat-icon {
+              font-size: 18px !important;
+              width: 18px !important;
+              height: 18px !important;
+              line-height: 18px;
+            }
+          }
+        }
+
+        &:hover .avatar-overlay {
+          opacity: 1;
+        }
+
+        &:hover .avatar-image {
+          transform: scale(1.02);
+        }
+      }
+
+      .avatar-info {
+        text-align: center;
+
+        .avatar-filename {
+          font-size: 12px;
+          font-weight: 500;
+          margin-bottom: 4px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .avatar-upload-time {
+          font-size: 10px;
+          color: var(--mat-text-secondary);
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+      }
+    }
+  }
+}
+
+[mat-dialog-actions] {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+} 

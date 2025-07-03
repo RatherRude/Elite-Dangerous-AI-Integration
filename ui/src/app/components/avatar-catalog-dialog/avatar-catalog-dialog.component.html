@@ -1,0 +1,83 @@
+<div class="avatar-catalog-dialog">
+  <h2 mat-dialog-title>Select Avatar</h2>
+  
+  <div mat-dialog-content>
+    <!-- Upload Section -->
+    <div class="upload-section">
+      <input 
+        type="file" 
+        accept="image/*" 
+        (change)="onFileSelected($event)"
+        #fileInput
+        style="display: none">
+      
+      <button 
+        mat-raised-button 
+        color="primary" 
+        (click)="fileInput.click()"
+        [disabled]="uploading">
+        <mat-icon>upload</mat-icon>
+        Upload New Avatar
+      </button>
+      
+      @if (uploading) {
+        <span class="uploading-text">Uploading...</span>
+      }
+    </div>
+
+    <!-- Avatar Grid -->
+    <div class="avatar-grid">
+      @if (avatars.length === 0) {
+        <div class="no-avatars">
+          <mat-icon>image</mat-icon>
+          <p>No avatars uploaded yet. Upload one to get started!</p>
+        </div>
+      } @else {
+        @for (avatar of avatars; track avatar.id) {
+          <mat-card class="avatar-card" [class.selected]="avatar.id === data.currentAvatarId">
+            <mat-card-content>
+              <div class="avatar-image-container" (click)="selectAvatar(avatar.id)">
+                <img 
+                  [src]="getAvatarUrl(avatar.id)" 
+                  [alt]="avatar.fileName"
+                  class="avatar-image">
+                
+                <div class="avatar-overlay">
+                  @if (avatar.id === data.currentAvatarId) {
+                    <div class="selected-indicator">
+                      <mat-icon>check_circle</mat-icon>
+                      <span>Selected</span>
+                    </div>
+                  } @else {
+                    <div class="selection-prompt">
+                      <mat-icon>touch_app</mat-icon>
+                      <span>Click to Select</span>
+                    </div>
+                  }
+                  
+                  <button 
+                    mat-icon-button 
+                    class="delete-button"
+                    color="warn"
+                    (click)="deleteAvatar(avatar.id); $event.stopPropagation()"
+                    matTooltip="Delete avatar">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+              </div>
+              
+              <div class="avatar-info">
+                <div class="avatar-filename">{{ avatar.fileName }}</div>
+                <div class="avatar-upload-time">{{ formatUploadTime(avatar.uploadTime) }}</div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        }
+      }
+    </div>
+  </div>
+
+  <div mat-dialog-actions>
+    <button mat-button (click)="onCancel()">Cancel</button>
+  </div>
+</div> 
