@@ -339,6 +339,7 @@ class Character(TypedDict, total=False):
     tts_voice: str
     tts_speed: str
     tts_prompt: str
+    avatar: str  # IndexedDB key for the avatar image
     game_events: dict[str, bool]
     event_reaction_enabled_var: bool
     react_to_text_local_var: bool
@@ -528,7 +529,7 @@ def migrate(data: dict) -> dict:
 
         if len(data['characters']) > 0 and data['characters'][0]['name'] != 'Default':
             # Insert default character at beginning
-            data['characters'].insert(0, getDefaultCharacter(data))
+            data['characters'].insert(0, getDefaultCharacter(cast(Config, data)))
             # Adjust active character index if it exists
             if 'active_character_index' in data:
                 data['active_character_index'] += 1
@@ -580,7 +581,7 @@ def merge_config_data(defaults: dict, user: dict):
                 
             # Handle dict type specially
             if isinstance(defaults.get(key), dict) and isinstance(user.get(key), dict):
-                merge[key] = merge_config_data(defaults.get(key), user.get(key))
+                merge[key] = merge_config_data(cast(dict, defaults.get(key)), cast(dict, user.get(key)))
             # Skip list type (not supported in merge)
             elif isinstance(defaults.get(key), list):
                 # Just copy the user list directly
@@ -611,6 +612,7 @@ def getDefaultCharacter(config: Config) -> Character:
         "tts_voice": 'en-US-AvaMultilingualNeural' if config.get('tts_provider') == 'edge-tts' else 'nova',
         "tts_speed": '1.2',
         "tts_prompt": '',
+        "avatar": '',  # No avatar by default
         "game_events": game_events,
         "event_reaction_enabled_var": True,
         "react_to_text_local_var": True,

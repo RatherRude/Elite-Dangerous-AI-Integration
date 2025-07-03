@@ -20,6 +20,11 @@
                     </mat-form-field>
                     @if (!editMode) {
                         <div class="character-display" [class.with-traits]="!isCustomPreset()">
+                            <div class="character-avatar-preview">
+                                <img [src]="getAvatarUrl()" 
+                                     [alt]="activeCharacter.name + ' avatar'"
+                                     class="avatar-preview-image">
+                            </div>
                             <div class="character-content">
                                 <span class="trait-label">{{activeCharacter.name}}:</span>
                                 {{activeCharacter.character}}
@@ -124,6 +129,23 @@
 
             <!-- Character settings - only visible when editing -->
             <div id="character-creation" *ngIf="editMode">
+                <!-- Avatar Section -->
+                <div class="avatar-edit-section">
+                    <div class="avatar-display-container">
+                        <div class="avatar-full-display">
+                            <img [src]="getAvatarUrl()" 
+                                 [alt]="activeCharacter.name + ' avatar'"
+                                 class="avatar-full-image">
+                            <button mat-icon-button 
+                                    class="avatar-edit-button"
+                                    (click)="openAvatarCatalog()"
+                                    matTooltip="Change avatar">
+                                <mat-icon>edit</mat-icon>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Character Name -->
                 <div class="character-settings">
                     <div class="trait-container">
