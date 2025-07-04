@@ -293,9 +293,6 @@ ul {
   .avatar-preview-image {
     width: 200%; // Make image larger so we only see 1/4 
     height: 200%; // Make image larger so we only see 1/4
-    object-fit: cover;
-    object-position: top left; // Show upper-left corner
-    transform: translate(0, 0); // Position at top-left
   }
 }
 

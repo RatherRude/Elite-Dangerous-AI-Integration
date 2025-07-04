@@ -3,6 +3,7 @@ import { BaseMessage, TauriService } from "./tauri.service";
 import {BehaviorSubject} from "rxjs";
 import {ChatMessage, ChatService} from "./chat.service";
 import {EventService} from "./event.service";
+import {CharacterService} from "./character.service";
 
 @Injectable({
     providedIn: "root",
@@ -18,10 +19,15 @@ export class PngTuberService {
         "idle"
     )
     public action$ = this.actionSubject.asObservable();
+    
+    // Add avatar tracking
+    private avatarIdSubject = new BehaviorSubject<string | null>(null);
+    public avatarId$ = this.avatarIdSubject.asObservable();
 
     constructor(
         private tauriService: TauriService,
-        private eventService: EventService
+        private eventService: EventService,
+        private characterService: CharacterService
     ) {
         this.tauriService.output$.pipe().subscribe(
             (message: BaseMessage) => {
@@ -53,6 +59,17 @@ export class PngTuberService {
                 }
             }
         )
+        
+        // Subscribe to character changes to track avatar
+        this.characterService.character$.subscribe(character => {
+            this.avatarIdSubject.next(character?.avatar || null);
+        });
+        
+        // Get initial character state immediately
+        const currentCharacter = this.characterService.getCurrentCharacter();
+        if (currentCharacter) {
+            this.avatarIdSubject.next(currentCharacter.avatar || null);
+        }
     }
 
 }

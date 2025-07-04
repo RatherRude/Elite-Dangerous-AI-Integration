@@ -100,6 +100,11 @@ export class CharacterService {
         const value = character?.[propName] ?? defaultValue;
         return value;
     }
+    
+    public getCurrentCharacter(): Character | null {
+        return this.characterSubject.getValue();
+    }
+
     public async setCharacterProperty<T extends keyof Character>(
         propName: T,
         value: Character[T],

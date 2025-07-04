@@ -426,7 +426,9 @@ def get_ed_appdata_path(config: Config) -> str:
     from os import environ
     return environ['LOCALAPPDATA'] + "\\Frontier Developments\\Elite Dangerous"
 
-
+def get_color_matrix():
+    from os import environ
+    return environ['LOCALAPPDATA'] + "\\Frontier Developments\\Elite Dangerous\\Options\\Graphics"
 def get_asset_path(filename: str) -> str:
     assets_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../assets'))
     if hasattr(sys, 'frozen'):
@@ -803,6 +805,7 @@ class SystemInfo(TypedDict):
     input_device_names: list[str]
     output_device_names: list[str]
     edcopilot_installed: bool
+    hud_color_matrix: list[list[float]]
 
 
 def get_system_info() -> SystemInfo:
@@ -812,6 +815,7 @@ def get_system_info() -> SystemInfo:
         "input_device_names": get_input_device_names(),
         "output_device_names": get_output_device_names(),
         "edcopilot_installed": get_install_path() is not None,
+        "hud_color_matrix": [[0.2, 0, 0], [-2, 1, 0], [0, 0, 1]]
     }
 
 
