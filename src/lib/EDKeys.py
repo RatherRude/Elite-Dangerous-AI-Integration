@@ -78,6 +78,7 @@ class EDKeys:
             'CycleNextPanel',
             'CyclePreviousPanel',
             'FocusLeftPanel',
+            'FocusRadarPanel',
             'UI_Up',
             'UI_Down',
             'UI_Left',

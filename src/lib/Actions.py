@@ -4,6 +4,7 @@ import threading
 from time import sleep
 import traceback
 import math
+import yaml
 from typing import Any, Literal, Optional
 from pyautogui import typewrite
 from datetime import datetime, timezone
@@ -11,6 +12,7 @@ from datetime import datetime, timezone
 import openai
 import requests
 
+from .Config import get_asset_path
 from .ScreenReader import ScreenReader
 from .Logger import log, show_chat_message
 from .EDKeys import EDKeys
@@ -24,7 +26,12 @@ llm_model_name: str = None
 vision_model_name: str | None = None
 event_manager: EventManager = None
 
-#Checking status projection to exit game actions early if not applicable
+# imported JSONs
+ship_engineers:dict = {}
+suit_engineers:dict = {}
+engineering_modifications:dict = {}
+
+# Checking status projection to exit game actions early if not applicable
 def checkStatus(projected_states: dict[str, dict], blocked_status_dict: dict[str, bool]):
     current_status = projected_states.get("CurrentStatus")
 
@@ -35,10 +42,11 @@ def checkStatus(projected_states: dict[str, dict], blocked_status_dict: dict[str
                     if current_status[flag_group][blocked_status] == expected_value:
                         raise Exception(f"Action not possible due to {'not ' if not expected_value else ''}being in a state of {blocked_status}!")
 
+
 # Define functions for each action
 # General Ship Actions
 def fire_weapons(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True})
+    checkStatus(projected_states, {'Docked': True, 'Landed': True})
     setGameWindowActive()
 
     # Parse arguments with defaults
@@ -95,11 +103,11 @@ def fire_weapons(args, projected_states):
 
 
 def set_speed(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True})
+    checkStatus(projected_states, {'Docked': True, 'Landed': True})
     setGameWindowActive()
 
     if 'speed' in args:
-        if args['speed'] in ["Minus100","Minus75","Minus50","Minus25","Zero","25","50","75","100"]:
+        if args['speed'] in ["Minus100", "Minus75", "Minus50", "Minus25", "Zero", "25", "50", "75", "100"]:
             keys.send(f"SetSpeed{args['speed']}")
         else:
             raise Exception(f"Invalid speed {args['speed']}")
@@ -108,34 +116,20 @@ def set_speed(args, projected_states):
 
 
 def deploy_heat_sink(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True})
+    checkStatus(projected_states, {'Docked': True, 'Landed': True})
     setGameWindowActive()
     keys.send('DeployHeatSink')
     return f"Heat sink deployed"
 
 
 def deploy_hardpoint_toggle(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True})
+    checkStatus(projected_states, {'Docked': True, 'Landed': True})
     setGameWindowActive()
     keys.send('DeployHardpointToggle')
     return f"Hardpoints {'deployed ' if not projected_states.get('CurrentStatus').get('flags').get('HardpointsDeployed') else 'retracted'}"
 
 
 def manage_power_distribution(args, projected_states):
-    """
-    Handle power distribution between ship systems.
-
-    Args:
-        args (dict): {
-            "power_category": ["engines", "weapons"],
-            "balance_power": True/False,
-            "pips": [3, 2]  # only if balance_power is False
-        }
-        projected_states (dict): (optional, can be used for context)
-
-    Returns:
-        str: A summary message for the tool response.
-    """
     power_categories = args.get("power_category", [])
     balance_power = args.get("balance_power", False)
     pips = args.get("pips", [])
@@ -168,6 +162,7 @@ def manage_power_distribution(args, projected_states):
 
     return message
 
+
 def cycle_target(args, projected_states):
     setGameWindowActive()
 
@@ -181,8 +176,8 @@ def cycle_target(args, projected_states):
         keys.send('CycleNextTarget')
         return "Selected next target"
 
-def change_hud_mode(args, projected_states):
 
+def change_hud_mode(args, projected_states):
     mode = args.get('hud mode', 'toggle').lower()
     if projected_states.get('CurrentStatus').get('flags').get('HudInAnalysisMode'):
         current_hud_mode = "analysis"
@@ -219,7 +214,7 @@ def cycle_fire_group(args, projected_states):
 
     elif firegroup_ask == initial_firegroup:
         return f"Fire group {chr(65 + firegroup_ask)} was already selected. No changes."
-    elif firegroup_ask > 7:   # max allowed is up to H which is 7 starting with A=0
+    elif firegroup_ask > 7:  # max allowed is up to H which is 7 starting with A=0
         return f"Cannot switch to Firegroup {firegroup_ask} as it does not exist."
     else:
         for loop in range(abs(firegroup_ask - initial_firegroup)):
@@ -231,10 +226,10 @@ def cycle_fire_group(args, projected_states):
     try:
 
         status_event = event_manager.wait_for_condition('CurrentStatus',
-                                                            lambda s: s.get('FireGroup') == firegroup_ask, 2)
+                                                        lambda s: s.get('FireGroup') == firegroup_ask, 2)
         new_firegroup = status_event["FireGroup"]
     except TimeoutError:
-        #handles case where we cycle back round to zero
+        # handles case where we cycle back round to zero
         return "Failed to cycle to requested fire group. Please ensure it exists."
 
     return f"Fire group {chr(65 + new_firegroup)} is now selected."
@@ -247,7 +242,7 @@ def ship_spot_light_toggle(args, projected_states):
 
 
 def fire_chaff_launcher(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True,'Supercruise':True})
+    checkStatus(projected_states, {'Docked': True, 'Landed': True, 'Supercruise': True})
     setGameWindowActive()
     keys.send('FireChaffLauncher')
     return f"Chaff launcher fired"
@@ -266,7 +261,7 @@ def select_highest_threat(args, projected_states):
 
 
 def charge_ecm(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True,'Supercruise':True})
+    checkStatus(projected_states, {'Docked': True, 'Landed': True, 'Supercruise': True})
     setGameWindowActive()
     keys.send('ChargeECM')
     return "ECM is attempting to charge"
@@ -274,7 +269,7 @@ def charge_ecm(args, projected_states):
 
 def calculate_navigation_distance_and_timing(current_system: str, target_system: str) -> tuple[float, int]:
     distance_ly = 0.0  # Default value in case API call fails
-    
+
     if current_system != 'Unknown' and target_system:
         try:
             # Request coordinates for both systems from EDSM API
@@ -283,32 +278,32 @@ def calculate_navigation_distance_and_timing(current_system: str, target_system:
                 'systemName[]': [current_system, target_system],
                 'showCoordinates': 1
             }
-            
+
             log('debug', 'Distance Calculation', f"Requesting coordinates for {current_system} -> {target_system}")
             response = requests.get(edsm_url, params=params, timeout=5)
-            
+
             if response.status_code == 200:
                 systems_data = response.json()
-                
+
                 if len(systems_data) >= 2:
                     # Find the systems in the response
                     current_coords = None
                     target_coords = None
-                    
+
                     for system in systems_data:
                         if system.get('name', '').lower() == current_system.lower():
                             current_coords = system.get('coords')
                         elif system.get('name', '').lower() == target_system.lower():
                             target_coords = system.get('coords')
-                    
+
                     # Calculate distance if both coordinate sets are available
                     if current_coords and target_coords:
                         x1, y1, z1 = current_coords['x'], current_coords['y'], current_coords['z']
                         x2, y2, z2 = target_coords['x'], target_coords['y'], target_coords['z']
-                        
+
                         distance_ly = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2)
                         distance_ly = round(distance_ly, 2)
-                        
+
                         # Check if distance is too far to plot
                         if distance_ly > 20000:
                             raise Exception(f"Distance of {distance_ly} LY from {current_system} to {target_system} is too far to plot (max 20000 LY)")
@@ -318,7 +313,7 @@ def calculate_navigation_distance_and_timing(current_system: str, target_system:
                     log('warn', 'Distance Calculation', f"EDSM API returned insufficient data for systems: {current_system}, {target_system}")
             else:
                 log('warn', 'Distance Calculation', f"EDSM API request failed with status {response.status_code}")
-                
+
         except requests.RequestException as e:
             log('error', 'Distance Calculation', f"Failed to request system coordinates from EDSM API: {str(e)}")
         except Exception as e:
@@ -326,20 +321,20 @@ def calculate_navigation_distance_and_timing(current_system: str, target_system:
             if "too far to plot" in str(e):
                 raise
             log('error', 'Distance Calculation', f"Unexpected error during distance calculation: {str(e)}")
-    
+
     # Determine wait time based on distance
     zoom_wait_time = 3
-    
+
     # Add additional second for every 1000 LY
     if distance_ly > 0:
         additional_time = int(distance_ly / 1000)
         zoom_wait_time += additional_time
-    
+
     # Add additional 2 seconds if distance couldn't be determined (still 0)
     if distance_ly == 0:
         zoom_wait_time += 2
         log('warn', 'Navigation Timing', f"Distance could not be determined, adding 2 extra seconds to wait time")
-        
+
     return distance_ly, zoom_wait_time
 
 
@@ -347,8 +342,6 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
     # Trigger the GUI open
     setGameWindowActive()
     current_gui = projected_states.get('CurrentStatus', {}).get('GuiFocus', '')
-
-
 
     if 'start_navigation' in args and args['start_navigation']:
         nav_route = projected_states.get('NavInfo', {}).get('NavRoute', [])
@@ -374,7 +367,6 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
             event_manager.wait_for_condition('CurrentStatus', lambda s: s.get('GuiFocus') == "GalaxyMap", 5)
         except TimeoutError:
             return "Galaxy map can not be opened currently, the current GUI needs to be closed first"
-
 
     if 'system_name' in args:
 
@@ -426,7 +418,7 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
             # Get current location from projected states and calculate distance/timing
             current_system = projected_states.get('Location', {}).get('StarSystem', 'Unknown')
             target_system = args['system_name']
-            
+
             distance_ly, zoom_wait_time = calculate_navigation_distance_and_timing(current_system, target_system)
             log('info', 'zoom_wait_time', zoom_wait_time)
             # Continue with the navigation logic
@@ -439,7 +431,7 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
 
             try:
                 data = event_manager.wait_for_condition('NavInfo',
-                                                                     lambda s: s.get('NavRoute') and len(s.get('NavRoute', [])) > 0 and s.get('NavRoute')[-1].get('StarSystem').lower() == args['system_name'].lower(), zoom_wait_time)
+                                                        lambda s: s.get('NavRoute') and len(s.get('NavRoute', [])) > 0 and s.get('NavRoute')[-1].get('StarSystem').lower() == args['system_name'].lower(), zoom_wait_time)
                 jumpAmount = len(data.get('NavRoute', []))  # amount of jumps to do
 
                 if not current_gui == "GalaxyMap":  # if we are already in the galaxy map we don't want to close it
@@ -455,9 +447,7 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
     return "Galaxy map opened"
 
 
-
 def galaxy_map_close(args, projected_states, galaxymap_key="GalaxyMapOpen"):
-
     if projected_states.get('CurrentStatus').get('GuiFocus') == 'GalaxyMap':
         keys.send(galaxymap_key)
     else:
@@ -466,25 +456,24 @@ def galaxy_map_close(args, projected_states, galaxymap_key="GalaxyMapOpen"):
     return "Galaxy map closed"
 
 
-def system_map_open_or_close(args, projected_states, sys_map_key = 'SystemMapOpen'):
+def system_map_open_or_close(args, projected_states, sys_map_key='SystemMapOpen'):
     # Trigger the GUI open
     setGameWindowActive()
 
     current_gui = projected_states.get('CurrentStatus', {}).get('GuiFocus', '')
 
     if args['desired_state'] == "close":
-        if  current_gui == "SystemMap":
+        if current_gui == "SystemMap":
             keys.send(sys_map_key)
             return "System map has been closed."
         else:
             return "System map is not open, nothing to close."
 
-
     if current_gui in ['SAA', 'FSS', 'Codex']:
         raise Exception('System map can not be opened currently, the active GUI needs to be closed first')
 
     if current_gui == 'SystemMap':
-            return "System map is already open"
+        return "System map is already open"
 
     keys.send(sys_map_key)
 
@@ -508,8 +497,9 @@ def eject_all_cargo(args, projected_states):
     keys.send('EjectAllCargo')
     return f"All cargo ejected"
 
+
 def landing_gear_toggle(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True,'Supercruise':True})
+    checkStatus(projected_states, {'Docked': True, 'Landed': True, 'Supercruise': True})
     setGameWindowActive()
     keys.send('LandingGearToggle')
     return f"Landing gear {'deployed ' if not projected_states.get('CurrentStatus').get('flags').get('LandingGearDown') else 'retracted'}"
@@ -522,14 +512,14 @@ def use_shield_cell(args, projected_states):
 
 
 def toggle_cargo_scoop(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True,'Supercruise':True})
+    checkStatus(projected_states, {'Docked': True, 'Landed': True, 'Supercruise': True})
     setGameWindowActive()
     keys.send('ToggleCargoScoop')
     return f"Cargo scoop {'deployed ' if not projected_states.get('CurrentStatus').get('flags').get('CargoScoopDeployed') else 'retracted'}"
 
 
 def fsd_jump(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True,'FsdMassLocked':True,'FsdCooldown':True,'FsdCharging':True})
+    checkStatus(projected_states, {'Docked': True, 'Landed': True, 'FsdMassLocked': True, 'FsdCooldown': True, 'FsdCharging': True})
     setGameWindowActive()
 
     return_message = ""
@@ -560,6 +550,7 @@ def fsd_jump(args, projected_states):
 
     return return_message + "Frame Shift Drive is now charging for a jump"
 
+
 def next_system_in_route(args, projected_states):
     nav_info = projected_states.get('NavInfo', {})
     if not nav_info['NextJumpTarget']:
@@ -568,12 +559,12 @@ def next_system_in_route(args, projected_states):
     keys.send('TargetNextRouteSystem')
     return "Targeting next system in route"
 
+
 def undock(args, projected_states):
     setGameWindowActive()
     # Early return if we're not docked
     if not projected_states.get('CurrentStatus').get('flags').get('Docked'):
         raise Exception("The ship currently isn't docked.")
-
 
     if projected_states.get('CurrentStatus').get('GuiFocus') in ['InternalPanel', 'CommsPanel', 'RolePanel', 'ExternalPanel']:
         keys.send('UIFocus')
@@ -589,21 +580,22 @@ def undock(args, projected_states):
 
     return 'The ship is now undocking'
 
+
 def docking_key_press_sequence(stop_event):
     keys.send('UI_Left')
     keys.send('UI_Right')
-    keys.send("UI_Select",hold = 0.2)
+    keys.send("UI_Select", hold=0.2)
     for _ in range(6):
         if stop_event.is_set():
             break
         keys.send("CyclePreviousPanel")
         keys.send('UI_Left')
         keys.send('UI_Right')
-        keys.send("UI_Select",hold = 0.2)
+        keys.send("UI_Select", hold=0.2)
 
 
 def request_docking(args, projected_states):
-    checkStatus(projected_states, {'Supercruise':True})
+    checkStatus(projected_states, {'Supercruise': True})
     setGameWindowActive()
     if projected_states.get('CurrentStatus').get('GuiFocus') in ['NoFocus', 'InternalPanel', 'CommsPanel', 'RolePanel']:
         keys.send('FocusLeftPanel')
@@ -622,17 +614,16 @@ def request_docking(args, projected_states):
         old_timestamp = projected_states.get('DockingEvents').get('Timestamp', "1970-01-01T00:00:01Z")
         # Wait for a docking event with a timestamp newer than when we started
         event_manager.wait_for_condition('DockingEvents',
-            lambda s: ((s.get('LastEventType') in ['DockingGranted', 'DockingRequested', 'DockingCanceled', 'DockingDenied', 'DockingTimeout'])
-                      and (s.get('Timestamp', "1970-01-01T00:00:02Z") != old_timestamp)), 10)
+                                         lambda s: ((s.get('LastEventType') in ['DockingGranted', 'DockingRequested', 'DockingCanceled', 'DockingDenied', 'DockingTimeout'])
+                                                    and (s.get('Timestamp', "1970-01-01T00:00:02Z") != old_timestamp)), 10)
         msg = ""
     except:
         msg = "Failed to request docking via menu"
 
-    stop_event.set() # stop the keypress thread
+    stop_event.set()  # stop the keypress thread
 
     keys.send('UIFocus')
     return msg
-
 
 
 # Ship Launched Fighter Actions
@@ -644,11 +635,29 @@ def fighter_request_dock(args, projected_states):
 
 # NPC Crew Order Actions
 def npc_order(args, projected_states):
-    checkStatus(projected_states, {'Docked':True,'Landed':True,'Supercruise':True})
+    checkStatus(projected_states, {'Docked': True, 'Landed': True, 'Supercruise': True})
     setGameWindowActive()
     if 'orders' in args:
         for order in args['orders']:
-            keys.send(f"Order{order}")
+            if order in ['LaunchFighter1', 'LaunchFighter2']:
+                keys.send('FocusRadarPanel')
+                keys.send('UI_Left', repeat=2)
+                keys.send('UI_Up', repeat=3)
+                keys.send('UI_Down')
+                keys.send('UI_Right')
+                if order == 'LaunchFighter1':
+                    keys.send('UI_Up')
+                else:
+                    keys.send('UI_Down')
+                keys.send('UI_Select')
+                keys.send('UI_Up')
+                keys.send('UI_Down')
+                keys.send('UI_Select')
+                keys.send('UIFocus')
+            else:
+                if order == 'ReturnToShip':
+                    order = 'RequestDock'
+                keys.send(f"Order{order}")
     return f"Orders {', '.join(str(x) for x in args['orders'])} have been transmitted."
 
 
@@ -660,6 +669,7 @@ def toggle_drive_assist(args, projected_states):
     # return f"Landing gear {'deployed ' if not projected_states.get('CurrentStatus').get('flags').get('HardpointsDeployed') else 'retracted'}"
     return f"Drive assist has been {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('SrvDriveAssist') else 'deactivated'}."
 
+
 def fire_weapons_buggy(args, projected_states):
     """
     Simple buggy weapon firing action with three clear controls.
@@ -668,15 +678,15 @@ def fire_weapons_buggy(args, projected_states):
     - start: Begin continuous firing
     - stop: Stop continuous firing
     """
-    checkStatus(projected_states, {'SrvTurretRetracted':True})
+    checkStatus(projected_states, {'SrvTurretRetracted': True})
     setGameWindowActive()
-    
+
     # Parse arguments with defaults
     weapon_type = args.get('weaponType', 'primary').lower()
     action = args.get('action', 'fire').lower()
     duration = args.get('duration', None)  # Duration to hold fire button
     repetitions = args.get('repetitions', 0)  # 0 = one action, 1+ = repeat
-    
+
     # Determine key mapping
     if weapon_type == 'secondary':
         key_name = 'BuggySecondaryFireButton'
@@ -684,12 +694,12 @@ def fire_weapons_buggy(args, projected_states):
     else:  # default to primary
         key_name = 'BuggyPrimaryFireButton'
         weapon_desc = 'buggy primary weapons'
-    
+
     # Handle different actions
     if action == 'fire':
         # Single shot with optional duration and repetitions
         repeat_count = repetitions + 1  # 0 repetitions = 1 shot total
-        
+
         if duration:
             keys.send(key_name, hold=duration, repeat=repeat_count)
             if repetitions > 0:
@@ -702,36 +712,40 @@ def fire_weapons_buggy(args, projected_states):
                 return f"Fired {weapon_desc} {repeat_count} times."
             else:
                 return f"Fired {weapon_desc}."
-        
+
     elif action == 'start':
         # Start continuous firing
         keys.send(key_name, state=1)
         return f"Started continuous firing with {weapon_desc}."
-        
+
     elif action == 'stop':
         # Stop continuous firing
         keys.send(key_name, state=0)
         return f"Stopped firing {weapon_desc}."
-        
+
     else:
         return f"Invalid action '{action}'. Use: fire, start, or stop."
 
+
 def buggy_primary_fire(args, projected_states):
-    checkStatus(projected_states, {'SrvTurretRetracted':True})
+    checkStatus(projected_states, {'SrvTurretRetracted': True})
     setGameWindowActive()
     keys.send('BuggyPrimaryFireButton')
     return "Buggy primary fire triggered."
 
+
 def buggy_secondary_fire(args, projected_states):
-    checkStatus(projected_states, {'SrvTurretRetracted':True})
+    checkStatus(projected_states, {'SrvTurretRetracted': True})
     setGameWindowActive()
     keys.send('BuggySecondaryFireButton')
     return "Buggy secondary fire triggered."
+
 
 def auto_break_buggy(args, projected_states):
     setGameWindowActive()
     keys.send('AutoBreakBuggyButton')
     return "Auto-brake for buggy  {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('SrvHandbrake') else 'deactivated'}."
+
 
 def headlights_buggy(args, projected_states):
     setGameWindowActive()
@@ -779,16 +793,19 @@ def headlights_buggy(args, projected_states):
     else:
         return f"Buggy headlights set to {mode_names[final_mode]} mode."
 
+
 def toggle_buggy_turret(args, projected_states):
-    checkStatus(projected_states, {'SrvTurretRetracted':True})
+    checkStatus(projected_states, {'SrvTurretRetracted': True})
     setGameWindowActive()
     keys.send('ToggleBuggyTurretButton')
     return f"Buggy turret mode  {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('SrvUsingTurretView') else 'deactivated'}."
+
 
 def select_target_buggy(args, projected_states):
     setGameWindowActive()
     keys.send('SelectTarget_Buggy')
     return "Buggy target selection activated."
+
 
 def manage_power_distribution_buggy(args, projected_states):
     """
@@ -843,15 +860,18 @@ def toggle_cargo_scoop_buggy(args, projected_states):
     keys.send('ToggleCargoScoop_Buggy')
     return f"Buggy cargo scoop {'deployed ' if not projected_states.get('CurrentStatus').get('flags').get('CargoScoopDeployed') else 'retracted'}"
 
+
 def eject_all_cargo_buggy(args, projected_states):
     setGameWindowActive()
     keys.send('EjectAllCargo_Buggy')
     return "All cargo ejected from buggy."
 
+
 def recall_dismiss_ship_buggy(args, projected_states):
     setGameWindowActive()
     keys.send('RecallDismissShip')
     return "Remote ship has been recalled or dismissed."
+
 
 def galaxy_map_open_buggy(args, projected_states) -> Any | Literal['Galaxy map is already closed', 'Galaxy map closed']:
     setGameWindowActive()
@@ -861,6 +881,7 @@ def galaxy_map_open_buggy(args, projected_states) -> Any | Literal['Galaxy map i
         response = galaxy_map_close(args, projected_states, "GalaxyMapOpen_Buggy")
 
     return response
+
 
 def system_map_open_buggy(args, projected_states):
     setGameWindowActive()
@@ -884,70 +905,82 @@ def system_map_open_buggy(args, projected_states):
 
     return msg
 
+
 # On-Foot Actions (Odyssey)
 def primary_interact_humanoid(args, projected_states):
     setGameWindowActive()
     keys.send('HumanoidPrimaryInteractButton')
     return "Primary interaction initiated."
 
+
 def secondary_interact_humanoid(args, projected_states):
     setGameWindowActive()
     keys.send('HumanoidSecondaryInteractButton')
     return "Secondary interaction initiated."
 
+
 def equip_humanoid(args, projected_states):
-    checkStatus(projected_states, {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
+    checkStatus(projected_states, {'OnFootInStation': True, 'OnFootInHangar': True, 'OnFootSocialSpace': True})
     if 'equipment' in args:
         keys.send(args['equipment'])
     return f"{args['equipment']} has been triggered."
+
 
 def toggle_flashlight_humanoid(args, projected_states):
     setGameWindowActive()
     keys.send('HumanoidToggleFlashlightButton')
     return "Flashlight toggled."
 
+
 def toggle_night_vision_humanoid(args, projected_states):
     setGameWindowActive()
     keys.send('HumanoidToggleNightVisionButton')
     return f"Night vision {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('NightVision') else 'deactivated'}"
 
+
 def toggle_shields_humanoid(args, projected_states):
-    checkStatus(projected_states, {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
+    checkStatus(projected_states, {'OnFootInStation': True, 'OnFootInHangar': True, 'OnFootSocialSpace': True})
     setGameWindowActive()
     keys.send('HumanoidToggleShieldsButton')
 
     return f"Shields {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('ShieldsUp') else 'deactivated'}."
 
+
 def clear_authority_level_humanoid(args, projected_states):
-    checkStatus(projected_states, {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
+    checkStatus(projected_states, {'OnFootInStation': True, 'OnFootInHangar': True, 'OnFootSocialSpace': True})
     setGameWindowActive()
     keys.send('HumanoidClearAuthorityLevel')
     return "Authority level cleared."
 
+
 def health_pack_humanoid(args, projected_states):
-    checkStatus(projected_states, {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
+    checkStatus(projected_states, {'OnFootInStation': True, 'OnFootInHangar': True, 'OnFootSocialSpace': True})
     setGameWindowActive()
     keys.send('HumanoidHealthPack')
     return "Health pack used."
 
+
 def battery_humanoid(args, projected_states):
-    checkStatus(projected_states, {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
+    checkStatus(projected_states, {'OnFootInStation': True, 'OnFootInHangar': True, 'OnFootSocialSpace': True})
     setGameWindowActive()
     keys.send('HumanoidBattery')
     return "Battery used."
+
 
 def galaxy_map_open_humanoid(args, projected_states):
     setGameWindowActive()
     keys.send('GalaxyMapOpen_Humanoid')
     return "Galaxy map opened or closed."
 
+
 def system_map_open_humanoid(args, projected_states):
     setGameWindowActive()
     keys.send('SystemMapOpen_Humanoid')
     return "System map opened or closed."
 
+
 def recall_dismiss_ship_humanoid(args, projected_states):
-    checkStatus(projected_states, {'OnFootInStation':True,'OnFootInHangar':True,'OnFootSocialSpace':True})
+    checkStatus(projected_states, {'OnFootInStation': True, 'OnFootInHangar': True, 'OnFootSocialSpace': True})
     setGameWindowActive()
     keys.send('HumanoidOpenAccessPanelButton', state=1)
     sleep(.3)
@@ -1103,6 +1136,1338 @@ def get_galnet_news(obj, projected_states):
         return "News feed currently unavailable"
 
 
+def levenshtein_distance(s1, s2):
+    if len(s1) < len(s2):
+        return levenshtein_distance(s2, s1)
+
+    if len(s2) == 0:
+        return len(s1)
+
+    previous_row = list(range(len(s2) + 1))
+    for i, c1 in enumerate(s1):
+        current_row = [i + 1]
+        for j, c2 in enumerate(s2):
+            insertions = previous_row[j + 1] + 1
+            deletions = current_row[j] + 1
+            substitutions = previous_row[j] + (c1 != c2)
+            current_row.append(min(insertions, deletions, substitutions))
+        previous_row = current_row
+
+    return previous_row[-1]
+
+def blueprint_finder(obj, projected_states):
+    import yaml
+    # Get current location coordinates for distance calculation
+    current_location = projected_states.get('Location', {})
+    current_coords = current_location.get('StarPos', [0, 0, 0])
+    
+    # Helper function to calculate distance to engineer
+    def calculate_distance_to_engineer(engineer_coords):
+        if not current_coords or len(current_coords) != 3:
+            return "Unknown"
+        
+        x1, y1, z1 = current_coords
+        x2, y2, z2 = engineer_coords['x'], engineer_coords['y'], engineer_coords['z']
+        
+        distance_ly = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2)
+        return round(distance_ly, 2)
+
+    # Get engineer progress data
+    engineer_progress = projected_states.get('EngineerProgress')
+    game_engineers = {}
+    if engineer_progress:
+        engineers = engineer_progress.get('Engineers', [])
+        for engineer in engineers:
+            # Convert EngineerID to string to match ship_engineers.json keys
+            engineer_id = str(engineer.get('EngineerID'))
+            game_engineers[engineer_id] = engineer
+
+    # Helper function to format engineer name with location/status
+    def format_engineer_info(engineer_name):
+        """Format engineer name with location and unlock status"""
+        # Find engineer in ship_engineers data
+        engineer_info = None
+        engineer_id = None
+        
+        # Search through ship_engineers to find matching engineer
+        for eng_id, eng_data in ship_engineers.items():
+            if eng_data['Engineer'] == engineer_name:
+                engineer_info = eng_data
+                engineer_id = eng_id
+                break
+        
+        if not engineer_info:
+            # Fallback: return just the name if not found in ship_engineers
+            return engineer_name
+        
+        # Check if engineer is unlocked
+        game_data = game_engineers.get(engineer_id)
+        if game_data and game_data.get('Progress') == 'Unlocked':
+            # Engineer is unlocked - show location and distance
+            distance = calculate_distance_to_engineer(engineer_info['Coords'])
+            location = engineer_info['Location'].replace(' (permit required)', '')
+            
+            if distance != "Unknown":
+                return f"{engineer_name} ({location} {distance}LY)"
+            else:
+                return f"{engineer_name} ({location})"
+        else:
+            # Engineer is not unlocked - show as locked
+            return f"{engineer_name} (Locked)"
+
+    # Extract search parameters - can be combined
+    search_modifications = []
+    if obj and obj.get('modifications'):
+        modifications_param = obj.get('modifications')
+        # Only accept arrays of modifications now
+        if isinstance(modifications_param, list):
+            search_modifications = [mod.lower().strip() for mod in modifications_param if mod]
+    search_engineer = obj.get('engineer', '').lower().strip() if obj else ''
+    search_module = obj.get('module', '').lower().strip() if obj else ''
+    search_grade = obj.get('grade', '') if obj else ''
+
+    # Convert search_grade to int if provided
+    if search_grade and str(search_grade).isdigit():
+        search_grade = int(search_grade)
+    else:
+        search_grade = None
+
+    # Get inventory data from projected states
+    materials_data = projected_states.get('Materials', {})
+    shiplocker_data = projected_states.get('ShipLocker', {})
+
+    # Helper function to get inventory count for a material
+    def get_inventory_count(material_name):
+        """Get the total count of a material from both Materials and ShipLocker inventories"""
+        total_count = 0
+        material_name_lower = material_name.lower()
+        
+        # Check Materials projection (ship materials)
+        for material_type in ['Raw', 'Manufactured', 'Encoded']:
+            type_materials = materials_data.get(material_type, [])
+            for material in type_materials:
+                # Check both Name and Name_Localised for matching
+                if (material.get('Name', '').lower() == material_name_lower or
+                    material.get('Name_Localised', '').lower() == material_name_lower):
+                    total_count += material.get('Count', 0)
+        
+        # Check ShipLocker projection (suit materials)
+        for locker_type in ['Items', 'Components', 'Data', 'Consumables']:
+            type_materials = shiplocker_data.get(locker_type, [])
+            for material in type_materials:
+                # Check both Name and Name_Localised for matching
+                if (material.get('Name', '').lower() == material_name_lower or
+                    material.get('Name_Localised', '').lower() == material_name_lower):
+                    total_count += material.get('Count', 0)
+        
+        return total_count
+
+    # Helper function to check material availability and create inventory info
+    def check_material_availability(materials_needed):
+        """Check availability of materials and return simplified info"""
+        missing_materials = {}
+        has_all_materials = True
+        
+        for material_name, needed_count in materials_needed.items():
+            # Skip credits as they're not tracked in material inventory
+            if material_name.lower() == 'credits':
+                continue
+                
+            available_count = get_inventory_count(material_name)
+            if available_count < needed_count:
+                has_all_materials = False
+                shortage = needed_count - available_count
+                missing_materials[material_name] = shortage
+        
+        return missing_materials, has_all_materials
+
+
+    # Helper function for fuzzy matching using Levenshtein distance
+    def matches_fuzzy(search_term, target_string):
+        if not search_term or not target_string:
+            return False
+
+        # Module synonyms mapping - maps synonyms to their main module names
+        MODULE_SYNONYMS = {
+            # Kinematic Armaments Weapons synonyms
+            "karma p-15": "Kinematic Armaments Weapons",
+            "karma l-6": "Kinematic Armaments Weapons", 
+            "karma c-44": "Kinematic Armaments Weapons",
+            "karma ar-50": "Kinematic Armaments Weapons",
+            "karma": "Kinematic Armaments Weapons",
+            
+            # Takada Weapons synonyms
+            "tk aphelion": "Takada Weapons",
+            "tk eclipse": "Takada Weapons", 
+            "tk zenith": "Takada Weapons",
+            "takada": "Takada Weapons",
+            
+            # Manticore weapons synonyms
+            "manticore executioner": "Manticore weapons",
+            "manticore intimidator": "Manticore weapons",
+            "manticore oppressor": "Manticore weapons", 
+            "manticore tormentor": "Manticore weapons",
+            "manticore": "Manticore weapons",
+            
+            # Suit synonyms
+            "flight suit": "suit",
+            "artemis suit": "suit",
+            "maverick suit": "suit", 
+            "dominator suit": "suit"
+        }
+
+        search_lower = search_term.lower()
+        target_lower = target_string.lower()
+
+        # First check if the search term is a synonym
+        if search_lower in MODULE_SYNONYMS:
+            # If the search term is a synonym, check if it maps to the target
+            if MODULE_SYNONYMS[search_lower].lower() == target_lower:
+                return True
+
+        # Check if any part of the search term matches a synonym
+        search_words = search_lower.split()
+        for word in search_words:
+            if word in MODULE_SYNONYMS:
+                if MODULE_SYNONYMS[word].lower() == target_lower:
+                    return True
+
+        # Original fuzzy matching logic - check for exact substring matches
+        if search_lower in target_lower:
+            return True
+
+        # Split into words for fuzzy matching
+        target_words = target_lower.replace(',', ' ').replace('(', ' ').replace(')', ' ').split()
+
+        # Fuzzy matching using Levenshtein distance
+        for search_word in search_words:
+            for target_word in target_words:
+                # Allow some fuzzy matching based on word length
+                max_distance = max(1, len(search_word) // 3)  # Allow 1 error per 3 characters
+                if levenshtein_distance(search_word, target_word) <= max_distance:
+                    return True
+
+        return False
+
+        # Helper function to calculate total materials needed for a grade
+
+    def calculate_materials_for_grade(base_cost, grade):
+        """Calculate total materials needed for a specific grade"""
+        total_materials = {}
+
+        # Multiply each material by the grade level
+        for material, amount in base_cost.items():
+            total_materials[material] = amount * grade
+
+        return total_materials
+
+    # Build results
+    results = {}
+
+    # Prepare lists for fuzzy matching
+    all_modifications = list(engineering_modifications.keys())
+    all_engineers = set()
+    all_modules = set()
+
+    # Collect all unique engineers and modules
+    for mod_name, mod_data in engineering_modifications.items():
+        if "module_recipes" in mod_data:
+            for module_name, grades in mod_data["module_recipes"].items():
+                all_modules.add(module_name)
+                for grade, grade_info in grades.items():
+                    for engineer in grade_info.get("engineers", []):
+                        all_engineers.add(engineer)
+
+    all_engineers = list(all_engineers)
+    all_modules = list(all_modules)
+
+    # Search through all modifications
+    for mod_name, mod_data in engineering_modifications.items():
+        # Check if modification matches search criteria
+        if search_modifications:
+            modification_match = False
+            for search_mod in search_modifications:
+                if matches_fuzzy(search_mod, mod_name):
+                    modification_match = True
+                    break
+            if not modification_match:
+                continue
+
+        if "module_recipes" not in mod_data:
+            continue
+
+        mod_results = {}
+
+        for module_name, grades in mod_data["module_recipes"].items():
+            # Check if module matches search criteria
+            if search_module and not matches_fuzzy(search_module, module_name):
+                continue
+
+            module_results = {}
+
+            for grade, grade_info in grades.items():
+                # Convert grade to integer for comparison and calculations
+                grade_int = int(grade) if grade.isdigit() else 0
+                
+                # Check if grade matches search criteria
+                if search_grade is not None and grade_int != search_grade:
+                    continue
+
+                # Check if any engineer matches search criteria
+                engineers = grade_info.get("engineers", [])
+                if search_engineer:
+                    matching_engineers = [eng for eng in engineers if matches_fuzzy(search_engineer, eng)]
+                    if not matching_engineers:
+                        continue
+                    engineers = matching_engineers
+
+                    # Calculate total materials needed for this grade
+                base_cost = grade_info.get("cost", {})
+                total_materials = calculate_materials_for_grade(base_cost, grade_int)
+
+                # Check material availability
+                missing_materials, has_all_materials = check_material_availability(total_materials)
+
+                # Format engineers with location and status info
+                formatted_engineers = [format_engineer_info(eng) for eng in engineers]
+
+                grade_results = {
+                    "materials_needed": total_materials,
+                    "engineers": formatted_engineers,
+                    "enough_mats": has_all_materials
+                }
+
+                # Only add materials_missing if there are missing materials
+                if missing_materials:
+                    grade_results["materials_missing"] = missing_materials
+
+                module_results[f"Grade {grade}"] = grade_results
+
+            if module_results:
+                mod_results[module_name] = module_results
+
+        if mod_results:
+            # Check if this is an experimental modification and add suffix
+            display_name = mod_name
+            if mod_data.get("experimental", False):
+                display_name = f"{mod_name} (Experimental)"
+            results[display_name] = mod_results
+
+    # Check if any blueprints were found
+    if not results:
+        search_terms = []
+        if search_modifications:
+            if len(search_modifications) == 1:
+                search_terms.append(f"modifications: '{search_modifications[0]}'")
+            else:
+                mod_list = ', '.join([f"'{mod}'" for mod in search_modifications])
+                search_terms.append(f"modifications: {mod_list}")
+        if search_engineer:
+            search_terms.append(f"engineer: '{search_engineer}'")
+        if search_module:
+            search_terms.append(f"module: '{search_module}'")
+        if search_grade:
+            search_terms.append(f"grade: {search_grade}")
+
+        if search_terms:
+            # If searching by modifications failed, show available options
+            if search_modifications:
+                if len(search_modifications) == 1:
+                    return f"No blueprints found matching modifications: '{search_modifications[0]}'\n\nAvailable modification types:\n" + yaml.dump(sorted(all_modifications))
+                else:
+                    mod_list = ', '.join([f"'{mod}'" for mod in search_modifications])
+                    return f"No blueprints found matching modifications: {mod_list}\n\nAvailable modification types:\n" + yaml.dump(sorted(all_modifications))
+            elif search_engineer:
+                return f"No blueprints found matching engineer: '{search_engineer}'\n\nAvailable engineers:\n" + yaml.dump(sorted(all_engineers))
+            elif search_module:
+                return f"No blueprints found matching module: '{search_module}'\n\nAvailable modules:\n" + yaml.dump(sorted(all_modules))
+            else:
+                return f"No blueprints found matching search criteria: {', '.join(search_terms)}"
+        else:
+            return "No search criteria provided. Please specify modifications, engineer, module, or grade."
+
+    # Convert to YAML format
+    yaml_output = yaml.dump(results, default_flow_style=False, sort_keys=False)
+
+    # Add search info to the output if filters were applied
+    search_info = []
+    if search_modifications:
+        if len(search_modifications) == 1:
+            search_info.append(f"modifications: '{search_modifications[0]}'")
+        else:
+            mod_list = ', '.join([f"'{mod}'" for mod in search_modifications])
+            search_info.append(f"modifications: {mod_list}")
+    if search_engineer:
+        search_info.append(f"engineer: '{search_engineer}'")
+    if search_module:
+        search_info.append(f"module: '{search_module}'")
+    if search_grade:
+        search_info.append(f"grade: {search_grade}")
+
+    if search_info:
+        return f"Blueprint Search Results (filtered by {', '.join(search_info)}):\n\n```yaml\n{yaml_output}```"
+    else:
+        return f"All Available Blueprints:\n\n```yaml\n{yaml_output}```"
+
+
+def engineer_finder(obj, projected_states):
+    # Get current location coordinates for distance calculation
+    current_location = projected_states.get('Location', {})
+    current_coords = current_location.get('StarPos', [0, 0, 0])
+    
+    # Helper function to calculate distance to engineer
+    def calculate_distance_to_engineer(engineer_coords):
+        if not current_coords or len(current_coords) != 3:
+            return "Unknown"
+        
+        x1, y1, z1 = current_coords
+        x2, y2, z2 = engineer_coords['x'], engineer_coords['y'], engineer_coords['z']
+        
+        distance_ly = math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2 + (z2 - z1) ** 2)
+        return round(distance_ly, 2)
+    
+
+
+    # Extract search parameters - can be combined
+    search_name = obj.get('name', '').lower().strip() if obj else ''
+    search_system = obj.get('system', '').lower().strip() if obj else ''
+    search_modifications = obj.get('modifications', '').lower().strip() if obj else ''
+    search_progress = obj.get('progress', '').strip() if obj else ''
+
+    engineer_progress = projected_states.get('EngineerProgress')
+
+    if not engineer_progress:
+        return "No engineer progress found"
+
+    engineers = engineer_progress.get('Engineers', [])
+
+    # Create a lookup for engineers from game data
+    game_engineers = {}
+    for engineer in engineers:
+        # Convert EngineerID to string to match ship_engineers.json keys
+        engineer_id = str(engineer.get('EngineerID'))
+        game_engineers[engineer_id] = engineer
+
+    # Helper function for fuzzy matching modifications using Levenshtein distance
+    def matches_modifications(modifies_dict, search_term):
+        search_terms = search_term.split()
+        modifies_words = []
+
+        # Extract all words from modification names
+        for mod_name in modifies_dict.keys():
+            mod_lower = mod_name.lower()
+            # First check for exact substring matches
+            for term in search_terms:
+                if term in mod_lower:
+                    return True
+            # Add words for fuzzy matching
+            mod_words = mod_lower.replace(',', ' ').replace('(', ' ').replace(')', ' ').split()
+            modifies_words.extend(mod_words)
+
+        # Fuzzy matching using Levenshtein distance
+        for search_word in search_terms:
+            for modifies_word in modifies_words:
+                # Allow some fuzzy matching based on word length
+                max_distance = max(1, len(search_word) // 3)  # Allow 1 error per 3 characters
+                if levenshtein_distance(search_word, modifies_word) <= max_distance:
+                    return True
+
+        return False
+
+    # Helper function to check if engineer matches search criteria
+    def matches_search_criteria(engineer_info, engineer_name, engineer_progress):
+        # Check name match
+        if search_name and search_name not in engineer_name.lower():
+            return False
+
+        # Check system/location match
+        if search_system:
+            location = engineer_info.get('Location', '').lower()
+            # Remove permit required text for matching
+            location_clean = location.replace(' (permit required)', '')
+            if search_system not in location_clean:
+                return False
+
+        # Check modifications match
+        if search_modifications:
+            modifies = engineer_info.get('Modifies', '')
+            if not matches_modifications(modifies, search_modifications):
+                return False
+
+        # Check progress match
+        if search_progress and search_progress != engineer_progress:
+            return False
+
+        return True
+
+    # Build the comprehensive engineer overview
+    engineer_overview = {
+        'ship_engineers': {},
+        'suit_engineers': {}
+    }
+
+    # Process ALL ship engineers
+    for engineer_id, engineer_info in ship_engineers.items():
+        engineer_name = engineer_info['Engineer']
+
+        engineer_data = engineer_info.copy()
+        game_data = game_engineers.get(engineer_id)
+
+        if game_data:
+            # Engineer is known in game
+            progress = game_data.get('Progress')
+            rank = game_data.get('Rank')
+            rank_progress = game_data.get('RankProgress', 0)
+
+            engineer_data['Progress'] = progress
+
+            if progress == 'Unlocked':
+                engineer_data['Rank'] = rank
+                if rank_progress > 0:
+                    engineer_data['RankProgress'] = f"{rank_progress}% towards rank {rank + 1}"
+                else:
+                    engineer_data['RankProgress'] = "Max rank achieved" if rank >= 5 else "No progress towards next rank"
+
+                # Keep HowToGainRep if not max rank
+                if rank < 5:
+                    engineer_data['HowToGainRep'] = engineer_info['HowToGainRep']
+
+            elif progress == 'Invited':
+                engineer_data['NextStep'] = f"To unlock: {engineer_info['HowToUnlock']}"
+            elif progress == 'Known':
+                engineer_data['NextStep'] = f"To get invite: {engineer_info['HowToGetInvite']}"
+        else:
+            # Engineer is unknown - show how to find them
+            progress = 'Unknown'
+            engineer_data['Progress'] = progress
+            engineer_data['NextStep'] = f"To discover: {engineer_info['HowToFind']}"
+
+        # Check if engineer matches search criteria
+        if not matches_search_criteria(engineer_info, engineer_name, progress):
+            continue
+
+        # Calculate distance and create new Location format
+        distance = calculate_distance_to_engineer(engineer_info['Coords'])
+        workshop = engineer_info['Workshop']
+        location = engineer_info['Location']
+        
+        if distance != "Unknown":
+            engineer_data['Location'] = f"{workshop} ({location} {distance}LY)"
+        else:
+            engineer_data['Location'] = f"{workshop} ({location})"
+
+        # Clean up fields not needed in final output (except HowToGainRep for unlocked engineers with rank < 5)
+        fields_to_remove = ['HowToGetInvite', 'HowToUnlock', 'HowToFind', 'Engineer', 'Workshop', 'Coords']
+        if game_data and game_data.get('Progress') == 'Unlocked' and game_data.get('Rank', 0) < 5:
+            # Keep HowToGainRep for unlocked engineers not at max rank
+            pass  # Don't add HowToGainRep to removal list
+        else:
+            fields_to_remove.append('HowToGainRep')
+
+        for field in fields_to_remove:
+            engineer_data.pop(field, None)
+
+        engineer_overview['ship_engineers'][engineer_name] = engineer_data
+
+    # Process ALL suit engineers
+    for engineer_id, engineer_info in suit_engineers.items():
+        engineer_name = engineer_info['Engineer']
+
+        engineer_data = engineer_info.copy()
+        game_data = game_engineers.get(engineer_id)
+
+        if game_data:
+            # Engineer is known in game
+            progress = game_data.get('Progress')
+            engineer_data['Progress'] = progress
+
+            if progress == 'Unlocked':
+                engineer_data['Status'] = 'Available for modifications'
+                if engineer_info.get('HowToReferral') != 'N/A':
+                    engineer_data['ReferralTask'] = engineer_info['HowToReferral']
+            elif progress == 'Invited':
+                engineer_data['NextStep'] = f"To unlock: Visit {engineer_info['Location']}"
+            elif progress == 'Known':
+                engineer_data['NextStep'] = f"To get invite: {engineer_info['HowToGetInvite']}"
+        else:
+            # Engineer is unknown - show how to find them
+            progress = 'Unknown'
+            engineer_data['Progress'] = progress
+            engineer_data['NextStep'] = f"To discover: {engineer_info['HowToFind']}"
+
+        # Check if engineer matches search criteria
+        if not matches_search_criteria(engineer_info, engineer_name, progress):
+            continue
+
+        # Calculate distance and create new Location format
+        distance = calculate_distance_to_engineer(engineer_info['Coords'])
+        location = engineer_info['Location']
+        
+        if distance != "Unknown":
+            engineer_data['Location'] = f"{location} ({distance}LY)"
+        else:
+            engineer_data['Location'] = location
+
+        # Clean up fields not needed in final output for suit engineers
+        fields_to_remove = ['HowToGetInvite', 'HowToFind', 'HowToReferral', 'Engineer', 'Coords']
+        for field in fields_to_remove:
+            engineer_data.pop(field, None)
+
+        # Convert modifications from dict to list for suit engineers (no ranks)
+        if 'Modifies' in engineer_data:
+            engineer_data['Modifies'] = list(engineer_data['Modifies'].keys())
+
+        engineer_overview['suit_engineers'][engineer_name] = engineer_data
+
+    # Check if any engineers were found
+    total_engineers = len(engineer_overview['ship_engineers']) + len(engineer_overview['suit_engineers'])
+    if total_engineers == 0:
+        search_terms = []
+        if search_name:
+            search_terms.append(f"name: '{search_name}'")
+        if search_system:
+            search_terms.append(f"system: '{search_system}'")
+        if search_modifications:
+            search_terms.append(f"modifications: '{search_modifications}'")
+        if search_progress:
+            search_terms.append(f"progress: '{search_progress}'")
+
+        if search_terms:
+            # If searching by modifications failed, show available options
+            if search_modifications:
+                # Collect all unique modification values
+                all_modifications = set()
+                for engineer_info in ship_engineers.values():
+                    mods = engineer_info.get('Modifies', {})
+                    # Add all modification names from dict keys
+                    for mod_name in mods.keys():
+                        all_modifications.add(mod_name)
+
+                for engineer_info in suit_engineers.values():
+                    mods = engineer_info.get('Modifies', {})
+                    # Add all modification names from dict keys
+                    for mod_name in mods.keys():
+                        all_modifications.add(mod_name)
+
+                sorted_mods = sorted(list(all_modifications))
+                return f"No engineers found matching modifications: '{search_modifications}'\n\nValid modification types:\n" + yaml.dump(sorted_mods)
+
+            return f"No engineers found matching search criteria: {', '.join(search_terms)}"
+        else:
+            return "No engineers found"
+
+    # Convert to YAML format
+    yaml_output = yaml.dump(engineer_overview, default_flow_style=False, sort_keys=False)
+    # log('debug', 'engineers', yaml_output)
+
+    # Add search info to the output if filters were applied
+    search_info = []
+    if search_name:
+        search_info.append(f"name: '{search_name}'")
+    if search_system:
+        search_info.append(f"system: '{search_system}'")
+    if search_modifications:
+        search_info.append(f"modifications: '{search_modifications}'")
+    if search_progress:
+        search_info.append(f"progress: '{search_progress}'")
+
+    if search_info:
+        return f"Engineer Progress Overview (filtered by {', '.join(search_info)}):\n\n```{yaml_output}```"
+    else:
+        return f"Engineer Progress Overview:\n\n```yaml\n{yaml_output}```"
+
+
+def material_finder(obj, projected_states):
+    import yaml
+
+    # Ship engineering materials (from Materials projection)
+    ship_raw_materials_map = {
+        1: {1: ['carbon'], 2: ['vanadium'], 3: ['niobium'], 4: ['yttrium'], 'source': 'Yttrium Crystal Shards: Outotz LS-K D8-3, planet B 5 A - trade afterwards at material trader'},
+        2: {1: ['phosphorus'], 2: ['chromium'], 3: ['molybdenum'], 4: ['technetium'], 'source': 'Technetium Crystal Shards: HIP 36601, planet C 5 A - trade afterwards at material trader'},
+        3: {1: ['sulphur'], 2: ['manganese'], 3: ['cadmium'], 4: ['ruthenium'], 'source': 'Ruthenium Crystal Shards: HIP 36601, planet C 1 D and Outotz LS-K D8-3, planet B 7 B - trade afterwards at material trader'},
+        4: {1: ['iron'], 2: ['zinc'], 3: ['tin'], 4: ['selenium'], 'source': 'Selenium Brain Trees: Kappa-1 Volantis, B 3 F A and HR 3230, 3 A A - trade afterwards at material trader'},
+        5: {1: ['nickel'], 2: ['germanium'], 3: ['tungsten'], 4: ['tellurium'], 'source': 'Tellurium Crystal Shards: HIP 36601, planet C 3 B - trade afterwards at material trader'},
+        6: {1: ['rhenium'], 2: ['arsenic'], 3: ['mercury'], 4: ['polonium'], 'source': 'Polonium Crystal Shards: HIP 36601, planet C 1 A - trade afterwards at material trader'},
+        7: {1: ['lead'], 2: ['zirconium'], 3: ['boron'], 4: ['antimony'], 'source': 'Antimony Crystal Shards: Outotz LS-K D8-3, planet B 5 C - trade afterwards at material trader'}
+    }
+    ship_manufactured_materials_map = {
+        'Chemical': {
+            1: ['chemicalstorageunits'], 2: ['chemicalprocessors'], 3: ['chemicaldistillery'],
+            4: ['chemicalmanipulators'], 5: ['pharmaceuticalisolators'],
+            'source': 'High Grade Emissions (Outbreak system states with pop >1000000) - trade afterwards at material trader, Mission reward'
+        },
+        'Thermic': {
+            1: ['temperedalloys'], 2: ['heatresistantceramics'], 3: ['precipitatedalloys'],
+            4: ['thermicalloys'], 5: ['militarygradealloys'],
+            'source': 'High Grade Emissions (War, Civil War or Civil Unrest system states with pop >1000000) - trade afterwards at material trader, Mission reward'
+        },
+        'Heat': {
+            1: ['heatconductionwiring'], 2: ['heatdispersionplate'], 3: ['heatexchangers'],
+            4: ['heatvanes'], 5: ['protoheatradiators'],
+            'source': 'High Grade Emissions (Boom state systems with pop >1000000) - trade afterwards at material trader, Mission reward'
+        },
+        'Conductive': {
+            1: ['basicconductors'], 2: ['conductivecomponents'], 3: ['conductiveceramics'],
+            4: ['conductivepolymers'], 5: ['biotechconductors'],
+            'source': 'Mission Reward'
+        },
+        'Mechanical Components': {
+            1: ['mechanicalscrap'], 2: ['mechanicalequipment'], 3: ['mechanicalcomponents'],
+            4: ['configurablecomponents'], 5: ['improvisedcomponents'],
+            'source': 'High Grade Emissions in Independent (Civil Unrest systems system states with pop >1000000) - trade afterwards at material trader'
+        },
+        'Capacitors': {
+            1: ['gridresistors'], 2: ['hybridcapacitors'], 3: ['electrochemicalarrays'],
+            4: ['polymercapacitors'], 5: ['militarysupercapacitors'],
+            'source': 'High Grade Emissions in Independent and Alliance (War and Civil War system states with pop >1000000) - trade afterwards at material trader, Mission reward'
+        },
+        'Shielding': {
+            1: ['wornshieldemitters'], 2: ['shieldemitters'], 3: ['shieldingsensors'],
+            4: ['compoundshielding'], 5: ['imperialshielding'],
+            'source': 'High Grade Emissions in Imperial systems (None and Election system states with pop >1000000) - trade afterwards at material trader, Mission reward'
+        },
+        'Composite': {
+            1: ['compactcomposites'], 2: ['filamentcomposites'], 3: ['highdensitycomposites'],
+            4: ['proprietarycomposites'], 5: ['coredynamicscomposites'],
+            'source': 'High Grade Emissions in Federation systems (with pop >1000000) - trade afterwards at material trader'
+        },
+        'Crystals': {
+            1: ['crystalshards'], 2: ['flawedfocuscrystals'], 3: ['focuscrystals'],
+            4: ['refinedfocuscrystals'], 5: ['exquisitefocuscrystals'],
+            'source': 'Mission reward'
+        },
+        'Alloys': {
+            1: ['salvagedalloys'], 2: ['galvanisingalloys'], 3: ['phasealloys'],
+            4: ['protolightalloys'], 5: ['protoradiolicalloys'],
+            'source': 'High Grade Emissions (Boom state systems with pop >1000000) - trade afterwards at material trader'
+        },
+        'Guardian Technology': {
+            1: ['guardian_sentinel_wreckagecomponents', 'guardianwreckagecomponents'],
+            2: ['guardian_powercell', 'guardianpowercell'],
+            3: ['guardian_powerconduit', 'guardianpowerconduit'],
+            4: ['guardian_sentinel_weaponparts', 'guardiansentinelweaponparts'],
+            5: ['guardian_techcomponent', 'techcomponent'],
+            'source': 'Guardian sites: Synuefe HT-F D12-29 C3 (Technology Components), Synuefe LQ-T B50-1 B2 (modules), Synuefe GV-T B50-4 B1 (weapons)'
+        },
+        'Thargoid Technology': {
+            1: ['tg_wreckagecomponents', 'wreckagecomponents', 'tg_abrasion02', 'tgabrasion02'],
+            2: ['tg_biomechanicalconduits', 'biomechanicalconduits', 'tg_abrasion03', 'tgabrasion03'],
+            3: ['tg_weaponparts', 'weaponparts', 'unknowncarapace', 'tg_causticshard', 'tgcausticshard'],
+            4: ['tg_propulsionelement', 'propulsionelement', 'unknownenergycell', 'unknowncorechip'],
+            5: ['tg_causticgeneratorparts', 'causticgeneratorparts', 'tg_causticcrystal', 'tgcausticcrystal', 'unknowntechnologycomponents'],
+            'source': 'Titan graveyards, Non-Human Signal Sources Threat 4-5, Sensor Fragments: Solati - planet Halla (36.9423, -100.2683)'
+        }
+    }
+    jameson_desc = 'HIP 12099 Planet 1B(Jameson crash site) - trade afterwards at material trader'
+    ship_encoded_materials_map = {
+        'Emission Data': {
+            1: ['scrambledemissiondata'], 2: ['archivedemissiondata'], 3: ['emissiondata'],
+            4: ['decodedemissiondata'], 5: ['compactemissionsdata'],
+            'source': jameson_desc
+        },
+        'Wake Scans': {
+            1: ['disruptedwakeechoes'], 2: ['fsdtelemetry'], 3: ['wakesolutions'],
+            4: ['hyperspacetrajectories'], 5: ['dataminedwake'],
+            'source': jameson_desc
+        },
+        'Shield Data': {
+            1: ['shieldcyclerecordings'], 2: ['shieldsoakanalysis'], 3: ['shielddensityreports'],
+            4: ['shieldpatternanalysis'], 5: ['shieldfrequencydata'],
+            'source': jameson_desc
+        },
+        'Encryption Files': {
+            1: ['encryptedfiles'], 2: ['encryptioncodes'], 3: ['symmetrickeys'],
+            4: ['encryptionarchives'], 5: ['adaptiveencryptors'],
+            'source': jameson_desc
+        },
+        'Data Archives': {
+            1: ['bulkscandata'], 2: ['scanarchives'], 3: ['scandatabanks'],
+            4: ['encodedscandata'], 5: ['classifiedscandata'],
+            'source': jameson_desc
+        },
+        'Encoded Firmware': {
+            1: ['legacyfirmware'], 2: ['consumerfirmware'], 3: ['industrialfirmware'],
+            4: ['securityfirmware'], 5: ['embeddedfirmware'],
+            'source': jameson_desc
+        },
+        'Guardian Data': {
+            1: ['ancientbiologicaldata'],
+            2: ['ancientculturaldata'],
+            3: ['ancienthistoricaldata'],
+            4: ['ancienttechnologicaldata'],
+            5: ['guardian_vesselblueprint'],
+            'source': 'Guardian obelisks: Synuefe XR-H D11-102, planet 1 B (4 obelisks together)'
+        },
+        'Thargoid Data': {
+            1: ['tg_interdictiondata'],
+            2: ['tg_shipflightdata'],
+            3: ['tg_shipsystemsdata'],
+            4: ['tg_shutdowndata'],
+            5: ['unknownshipsignature'],
+            'source': 'Scanning thargoid ships and wakes'
+        }
+    }
+
+    # Suit engineering materials (from ShipLocker projection) - no grades
+    suit_items_materials = [
+        'weaponschematic', 'chemicalprocesssample', 'insightdatabank', 'personaldocuments',
+        'chemicalsample', 'biochemicalagent', 'geneticsample', 'gmeds', 'healthmonitor',
+        'inertiacanister', 'insight', 'ionisedgas', 'personalcomputer', 'syntheticgenome',
+        'geneticrepairmeds', 'buildingschematic', 'compactlibrary', 'deepmantlesample',
+        'hush', 'infinity', 'insightentertainmentsuite', 'lazarus', 'microbialinhibitor',
+        'nutritionalconcentrate', 'push', 'shipschematic', 'surveillanceequipment',
+        'universaltranslator', 'vehicleschematic', 'pyrolyticcatalyst', 'inorganiccontaminant',
+        'agriculturalprocesssample', 'refinementprocesssample', 'compressionliquefiedgas',
+        'degradedpowerregulator', 'largecapacitypowerregulator', 'powermiscindust',
+        'powermisccomputer', 'powerequipment'
+    ]
+    suit_components_materials = [
+        'aerogel', 'chemicalcatalyst', 'chemicalsuperbase', 'circuitboard', 'circuitswitch',
+        'electricalfuse', 'electricalwiring', 'encryptedmemorychip', 'epoxyadhesive',
+        'memorychip', 'metalcoil', 'microhydraulics', 'microsupercapacitor', 'microthrusters',
+        'microtransformer', 'motor', 'opticalfibre', 'opticallens', 'scrambler',
+        'titaniumplating', 'transmitter', 'tungstencarbide', 'viscoelasticpolymer', 'rdx',
+        'electromagnet', 'oxygenicbacteria', 'epinephrine', 'phneutraliser', 'microelectrode',
+        'ionbattery', 'weaponcomponent'
+    ]
+    suit_data_materials = [
+        'internalcorrespondence', 'biometricdata', 'nocdata', 'axcombatlogs', 'airqualityreports',
+        'audiologs', 'ballisticsdata', 'biologicalweapondata', 'catmedia', 'chemicalexperimentdata',
+        'chemicalformulae', 'chemicalinventory', 'chemicalpatents', 'cocktailrecipes',
+        'combatantperformance', 'conflicthistory', 'digitaldesigns', 'dutyrota', 'espionagematerial',
+        'evacuationprotocols', 'explorationjournals', 'extractionyielddata', 'factionassociates',
+        'financialprojections', 'factionnews', 'geneticresearch', 'influenceprojections',
+        'kompromat', 'maintenancelogs', 'manufacturinginstructions', 'medicalrecords',
+        'medicaltrialrecords', 'meetingminutes', 'mininganalytics', 'networkaccesshistory',
+        'operationalmanual', 'opinionpolls', 'patrolroutes', 'politicalaffiliations',
+        'productionreports', 'productionschedule', 'propaganda', 'radioactivitydata',
+        'reactoroutputreview', 'recyclinglogs', 'securityexpenses', 'seedgeneaology',
+        'settlementassaultplans', 'settlementdefenceplans', 'shareholderinformation',
+        'smearcampaignplans', 'spectralanalysisdata', 'stellaractivitylogs', 'surveilleancelogs',
+        'tacticalplans', 'taxrecords', 'topographicalsurveys', 'vaccineresearch',
+        'visitorregister', 'weaponinventory', 'weapontestdata', 'xenodefenceprotocols',
+        'geologicaldata', 'factiondonatorlist', 'pharmaceuticalpatents', 'powerresearchdata',
+        'powerpropagandadata', 'poweremployeedata', 'powerclassifieddata', 'powerpreparationspyware'
+    ]
+
+    suit_consumables_materials = [
+        'healthpack', 'energycell', 'amm_grenade_emp', 'amm_grenade_frag',
+        'amm_grenade_shield', 'bypass'
+    ]
+
+    # Display names from game data
+    display_names = {
+        # Ship materials - Raw
+        'carbon': 'Carbon', 'vanadium': 'Vanadium', 'niobium': 'Niobium', 'yttrium': 'Yttrium',
+        'phosphorus': 'Phosphorus', 'chromium': 'Chromium', 'molybdenum': 'Molybdenum',
+        'technetium': 'Technetium', 'sulphur': 'Sulphur', 'manganese': 'Manganese',
+        'cadmium': 'Cadmium', 'ruthenium': 'Ruthenium', 'iron': 'Iron', 'zinc': 'Zinc',
+        'tin': 'Tin', 'selenium': 'Selenium', 'nickel': 'Nickel', 'germanium': 'Germanium',
+        'tungsten': 'Tungsten', 'tellurium': 'Tellurium', 'rhenium': 'Rhenium',
+        'arsenic': 'Arsenic', 'mercury': 'Mercury', 'polonium': 'Polonium', 'lead': 'Lead',
+        'zirconium': 'Zirconium', 'boron': 'Boron', 'antimony': 'Antimony',
+
+        # Ship materials - Manufactured (key examples)
+        'chemicalstorageunits': 'Chemical Storage Units', 'temperedalloys': 'Tempered Alloys',
+        'heatconductionwiring': 'Heat Conduction Wiring', 'basicconductors': 'Basic Conductors',
+        'mechanicalscrap': 'Mechanical Scrap', 'gridresistors': 'Grid Resistors',
+        'wornshieldemitters': 'Worn Shield Emitters', 'compactcomposites': 'Compact Composites',
+        'crystalshards': 'Crystal Shards', 'salvagedalloys': 'Salvaged Alloys',
+
+        # Ship materials - Encoded (key examples)
+        'scrambledemissiondata': 'Exceptional Scrambled Emission Data',
+        'disruptedwakeechoes': 'Atypical Disrupted Wake Echoes',
+        'shieldcyclerecordings': 'Distorted Shield Cycle Recordings',
+        'encryptedfiles': 'Unusual Encrypted Files', 'bulkscandata': 'Anomalous Bulk Scan Data',
+        'legacyfirmware': 'Specialised Legacy Firmware',
+
+        # Suit materials - Items
+        'weaponschematic': 'Weapon Schematic', 'chemicalprocesssample': 'Chemical Process Sample',
+        'insightdatabank': 'Insight Data Bank', 'personaldocuments': 'Personal Documents',
+        'chemicalsample': 'Chemical Sample', 'biochemicalagent': 'Biochemical Agent',
+        'geneticsample': 'Biological Sample', 'gmeds': 'G-Meds', 'healthmonitor': 'Health Monitor',
+        'inertiacanister': 'Inertia Canister', 'ionisedgas': 'Ionised Gas',
+        'personalcomputer': 'Personal Computer', 'syntheticgenome': 'Synthetic Genome',
+        'geneticrepairmeds': 'Genetic Repair Meds', 'buildingschematic': 'Building Schematic',
+        'compactlibrary': 'Compact Library', 'deepmantlesample': 'Deep Mantle Sample',
+        'insightentertainmentsuite': 'Insight Entertainment Suite',
+        'microbialinhibitor': 'Microbial Inhibitor', 'nutritionalconcentrate': 'Nutritional Concentrate',
+        'shipschematic': 'Ship Schematic', 'surveillanceequipment': 'Surveillance Equipment',
+        'universaltranslator': 'Universal Translator', 'vehicleschematic': 'Vehicle Schematic',
+        'pyrolyticcatalyst': 'Pyrolytic Catalyst', 'inorganiccontaminant': 'Inorganic Contaminant',
+        'agriculturalprocesssample': 'Agricultural Process Sample',
+        'refinementprocesssample': 'Refinement Process Sample',
+        'compressionliquefiedgas': 'Compression-Liquefied Gas',
+        'degradedpowerregulator': 'Degraded Power Regulator',
+        'largecapacitypowerregulator': 'Power Regulator', 'powermiscindust': 'Industrial Machinery',
+        'powermisccomputer': 'Data Storage Device', 'powerequipment': 'Personal Protective Equipment',
+
+        # Suit materials - Components
+        'chemicalcatalyst': 'Chemical Catalyst', 'chemicalsuperbase': 'Chemical Superbase',
+        'circuitboard': 'Circuit Board', 'circuitswitch': 'Circuit Switch',
+        'electricalfuse': 'Electrical Fuse', 'electricalwiring': 'Electrical Wiring',
+        'encryptedmemorychip': 'Encrypted Memory Chip', 'epoxyadhesive': 'Epoxy Adhesive',
+        'memorychip': 'Memory Chip', 'metalcoil': 'Metal Coil', 'microhydraulics': 'Micro Hydraulics',
+        'microsupercapacitor': 'Micro Supercapacitor', 'microthrusters': 'Micro Thrusters',
+        'microtransformer': 'Micro Transformer', 'opticalfibre': 'Optical Fibre',
+        'opticallens': 'Optical Lens', 'titaniumplating': 'Titanium Plating',
+        'tungstencarbide': 'Tungsten Carbide', 'viscoelasticpolymer': 'Viscoelastic Polymer',
+        'oxygenicbacteria': 'Oxygenic Bacteria', 'phneutraliser': 'pH Neutraliser',
+        'ionbattery': 'Ion Battery', 'weaponcomponent': 'Weapon Component',
+
+        # Suit materials - Data
+        'internalcorrespondence': 'Internal Correspondence', 'biometricdata': 'Biometric Data',
+        'nocdata': 'NOC Data', 'axcombatlogs': 'AX Combat Logs', 'airqualityreports': 'Air Quality Reports',
+        'audiologs': 'Audio Logs', 'ballisticsdata': 'Ballistics Data',
+        'biologicalweapondata': 'Biological Weapon Data', 'catmedia': 'Cat Media',
+        'chemicalexperimentdata': 'Chemical Experiment Data', 'chemicalformulae': 'Chemical Formulae',
+        'chemicalinventory': 'Chemical Inventory', 'chemicalpatents': 'Chemical Patents',
+        'cocktailrecipes': 'Cocktail Recipes', 'combatantperformance': 'Combatant Performance',
+        'conflicthistory': 'Conflict History', 'digitaldesigns': 'Digital Designs',
+        'dutyrota': 'Duty Rota', 'espionagematerial': 'Espionage Material',
+        'evacuationprotocols': 'Evacuation Protocols', 'explorationjournals': 'Exploration Journals',
+        'extractionyielddata': 'Extraction Yield Data', 'factionassociates': 'Faction Associates',
+        'financialprojections': 'Financial Projections', 'factionnews': 'Faction News',
+        'geneticresearch': 'Genetic Research', 'influenceprojections': 'Influence Projections',
+        'maintenancelogs': 'Maintenance Logs', 'manufacturinginstructions': 'Manufacturing Instructions',
+        'medicalrecords': 'Medical Records', 'medicaltrialrecords': 'Clinical Trial Records',
+        'meetingminutes': 'Meeting Minutes', 'mininganalytics': 'Mining Analytics',
+        'networkaccesshistory': 'Network Access History', 'operationalmanual': 'Operational Manual',
+        'opinionpolls': 'Opinion Polls', 'patrolroutes': 'Patrol Routes',
+        'politicalaffiliations': 'Political Affiliations', 'productionreports': 'Production Reports',
+        'productionschedule': 'Production Schedule', 'radioactivitydata': 'Radioactivity Data',
+        'reactoroutputreview': 'Reactor Output Review', 'recyclinglogs': 'Recycling Logs',
+        'securityexpenses': 'Security Expenses', 'seedgeneaology': 'Seed Geneaology',
+        'settlementassaultplans': 'Settlement Assault Plans',
+        'settlementdefenceplans': 'Settlement Defence Plans',
+        'shareholderinformation': 'Shareholder Information',
+        'smearcampaignplans': 'Smear Campaign Plans', 'spectralanalysisdata': 'Spectral Analysis Data',
+        'stellaractivitylogs': 'Stellar Activity Logs', 'surveilleancelogs': 'Surveillance Logs',
+        'tacticalplans': 'Tactical Plans', 'taxrecords': 'Tax Records',
+        'topographicalsurveys': 'Topographical Surveys', 'vaccineresearch': 'Vaccine Research',
+        'visitorregister': 'Visitor Register', 'weaponinventory': 'Weapon Inventory',
+        'weapontestdata': 'Weapon Test Data', 'xenodefenceprotocols': 'Xeno-Defence Protocols',
+        'geologicaldata': 'Geological Data', 'factiondonatorlist': 'Faction Donator List',
+        'pharmaceuticalpatents': 'Pharmaceutical Patents', 'powerresearchdata': 'Power Research Data',
+        'powerpropagandadata': 'Power Political Data', 'poweremployeedata': 'Power Association Data',
+        'powerclassifieddata': 'Power Classified Data', 'powerpreparationspyware': 'Power Injection Malware',
+
+        # Suit materials - Consumables
+        'healthpack': 'Medkit', 'energycell': 'Energy Cell', 'amm_grenade_emp': 'Shield Disruptor',
+        'amm_grenade_frag': 'Frag Grenade', 'amm_grenade_shield': 'Shield Projector', 'bypass': 'E-Breach'
+    }
+
+    # Extract search parameters
+    search_names = []
+    if obj and obj.get('name'):
+        name_param = obj.get('name')
+        if isinstance(name_param, list):
+            search_names = [name.lower().strip() for name in name_param if name]
+
+    search_grade = obj.get('grade', 0) if obj else 0
+    search_type = obj.get('type', '').lower().strip() if obj else ''
+
+    # Get data from projected states
+    materials_data = projected_states.get('Materials', {})
+    shiplocker_data = projected_states.get('ShipLocker', {})
+
+    # Helper function to find ship material info
+    def find_ship_material_info(material_name):
+        if not material_name:
+            return None
+        material_name_lower = material_name.lower()
+
+        # Check raw materials
+        for category, grades in ship_raw_materials_map.items():
+            for grade, materials in grades.items():
+                if material_name_lower in materials:
+                    return {'category': 'Ship', 'type': 'Raw', 'grade': grade, 'section': f'Category {category}'}
+
+        # Check manufactured materials
+        for section, grades in ship_manufactured_materials_map.items():
+            for grade, materials in grades.items():
+                if material_name_lower in materials:
+                    return {'category': 'Ship', 'type': 'Manufactured', 'grade': grade, 'section': section}
+
+        # Check encoded materials
+        for section, grades in ship_encoded_materials_map.items():
+            for grade, materials in grades.items():
+                if material_name_lower in materials:
+                    return {'category': 'Ship', 'type': 'Encoded', 'grade': grade, 'section': section}
+
+        return None
+
+    # Helper function to find suit material info
+    def find_suit_material_info(material_name):
+        if not material_name:
+            return None
+        material_name_lower = material_name.lower()
+
+        if material_name_lower in suit_items_materials:
+            return {'category': 'Suit', 'type': 'Items', 'grade': None, 'section': 'Items'}
+        elif material_name_lower in suit_components_materials:
+            return {'category': 'Suit', 'type': 'Components', 'grade': None, 'section': 'Components'}
+        elif material_name_lower in suit_data_materials:
+            return {'category': 'Suit', 'type': 'Data', 'grade': None, 'section': 'Data'}
+        elif material_name_lower in suit_consumables_materials:
+            return {'category': 'Suit', 'type': 'Consumables', 'grade': None, 'section': 'Consumables'}
+
+        return None
+
+    # Helper function to get higher grade materials from the same family
+    def get_higher_materials(material_info, current_material):
+        higher_materials = []
+
+        if material_info['category'] != 'Ship' or material_info['grade'] is None:
+            return higher_materials  # Only ship materials have grades
+
+        if material_info['type'] == 'Raw':
+            materials_map = ship_raw_materials_map
+            max_grade = 4  # Raw materials go up to grade 4
+            # For raw materials, find the category that contains this material
+            material_category = None
+            for category, grades in materials_map.items():
+                for grade, materials in grades.items():
+                    if current_material in materials:
+                        material_category = category
+                        break
+                if material_category:
+                    break
+
+            if material_category and material_category in materials_map:
+                for grade in range(material_info['grade'] + 1, max_grade + 1):
+                    if grade in materials_map[material_category]:
+                        for mat_name in materials_map[material_category][grade]:
+                            # Check if player has this material
+                            player_materials = materials_data.get('Raw', [])
+                            for player_mat in player_materials:
+                                if player_mat.get('Name', '').lower() == mat_name:
+                                    display_name = display_names.get(mat_name, mat_name.title())
+                                    higher_materials.append({
+                                        'name': display_name,
+                                        'count': player_mat.get('Count', 0),
+                                        'grade': grade
+                                    })
+
+        elif material_info['type'] in ['Manufactured', 'Encoded']:
+            materials_map = ship_manufactured_materials_map if material_info['type'] == 'Manufactured' else ship_encoded_materials_map
+            max_grade = 5  # Manufactured and Encoded materials go up to grade 5
+
+            # Find the section that contains this material
+            material_section = material_info['section']
+            if material_section in materials_map:
+                for grade in range(material_info['grade'] + 1, max_grade + 1):
+                    if grade in materials_map[material_section]:
+                        for mat_name in materials_map[material_section][grade]:
+                            # Check if player has this material
+                            player_materials = materials_data.get(material_info['type'], [])
+                            for player_mat in player_materials:
+                                if player_mat.get('Name', '').lower() == mat_name:
+                                    display_name = display_names.get(mat_name, mat_name.title())
+                                    higher_materials.append({
+                                        'name': display_name,
+                                        'count': player_mat.get('Count', 0),
+                                        'grade': grade
+                                    })
+
+        return higher_materials
+
+    # Helper function to check if material matches search criteria
+    def matches_criteria(material_name, material_info, count):
+        # Check name match using fuzzy search
+        if search_names:
+            display_name = display_names.get(material_name, material_name)
+            name_match = False
+            for search_name in search_names:
+                # First check for exact substring matches (case insensitive)
+                if search_name in material_name or search_name in display_name.lower():
+                    name_match = True
+                    break
+                
+                # Then use more restrictive fuzzy matching based on string length
+                max_distance = max(1, min(len(search_name), len(material_name)) // 4)  # Allow 1 error per 4 characters, minimum 1
+                if (levenshtein_distance(search_name, material_name) <= max_distance or 
+                    levenshtein_distance(search_name, display_name.lower()) <= max_distance):
+                    name_match = True
+                    break
+            if not name_match:
+                return False
+
+        # Check grade match (only for ship materials)
+        if search_grade > 0 and material_info['grade'] is not None:
+            if material_info['grade'] != search_grade:
+                return False
+
+        # Check type match
+        if search_type:
+            type_matches = {
+                'raw': 'Raw', 'manufactured': 'Manufactured', 'encoded': 'Encoded',
+                'items': 'Items', 'components': 'Components', 'data': 'Data', 'consumables': 'Consumables',
+                'ship': 'Ship', 'suit': 'Suit'
+            }
+            expected_type = type_matches.get(search_type)
+            if expected_type in ['Raw', 'Manufactured', 'Encoded', 'Items', 'Components', 'Data', 'Consumables']:
+                if material_info['type'] != expected_type:
+                    return False
+            elif expected_type in ['Ship', 'Suit']:
+                if material_info['category'] != expected_type:
+                    return False
+
+        return True
+
+    # Build results
+    results = []
+
+    # Process ship materials from Materials projection
+    if materials_data:
+        for material_type in ['Raw', 'Manufactured', 'Encoded']:
+            type_materials = materials_data.get(material_type, [])
+
+            for material in type_materials:
+                material_name = material.get('Name', '').lower()
+                count = material.get('Count', 0)
+
+                if count == 0:
+                    continue
+
+                material_info = find_ship_material_info(material_name)
+                if not material_info:
+                    continue
+
+                if not matches_criteria(material_name, material_info, count):
+                    continue
+
+                display_name = display_names.get(material_name, material_name.title())
+
+                # Get higher grade materials for trading info
+                higher_materials = get_higher_materials(material_info, material_name)
+
+                result = {
+                    'name': display_name,
+                    'count': count,
+                    'category': material_info['category'],
+                    'type': material_info['type'],
+                    'grade': material_info['grade'],
+                    'section': material_info['section']
+                }
+
+                if higher_materials:
+                    result['tradeable_higher_grades'] = higher_materials
+
+                results.append(result)
+
+    # Process suit materials from ShipLocker projection
+    if shiplocker_data:
+        for material_type in ['Items', 'Components', 'Data', 'Consumables']:
+            type_materials = shiplocker_data.get(material_type, [])
+
+            for material in type_materials:
+                material_name = material.get('Name', '').lower()
+                count = material.get('Count', 0)
+
+                if count == 0:
+                    continue
+
+                material_info = find_suit_material_info(material_name)
+                if not material_info:
+                    continue
+
+                if not matches_criteria(material_name, material_info, count):
+                    continue
+
+                display_name = display_names.get(material_name, material.get('Name_Localised', material_name.title()))
+
+                result = {
+                    'name': display_name,
+                    'count': count,
+                    'category': material_info['category'],
+                    'type': material_info['type'],
+                    'section': material_info['section']
+                }
+
+                results.append(result)
+
+    # Check if any materials were found and handle missing materials when searching by name - this is due to E:D omitting missing materials
+    if not results and search_names:
+        missing_materials = []
+        
+        for search_name in search_names:
+            # Skip if search_name is None or empty
+            if not search_name:
+                continue
+
+            # Check if this is a valid ship material
+            ship_material_info = find_ship_material_info(search_name)
+            if ship_material_info:
+                display_name = display_names.get(search_name, search_name.title())
+                
+                # Get higher grade materials for trading info (same as found materials)
+                higher_materials = get_higher_materials(ship_material_info, search_name)
+
+                result = {
+                    'name': display_name,
+                        'count': 0,
+                        'category': ship_material_info['category'],
+                        'type': ship_material_info['type'],
+                        'grade': ship_material_info['grade'],
+                        'section': ship_material_info['section']
+                    }
+
+                if higher_materials:
+                    result['tradeable_higher_grades'] = higher_materials
+                
+                missing_materials.append(result)
+                continue
+
+            # Check if this is a valid suit material
+            suit_material_info = find_suit_material_info(search_name)
+            if suit_material_info:
+                display_name = display_names.get(search_name, search_name.title())
+                missing_materials.append({
+                'name': display_name,
+                    'count': 0,
+                    'category': suit_material_info['category'],
+                    'type': suit_material_info['type'],
+                    'section': suit_material_info['section']
+                })
+        
+        # If we found valid materials that are just missing, show them with count 0
+        if missing_materials:
+            results.extend(missing_materials)
+
+    # Check if any materials were found after checking for missing ones
+    if not results:
+        search_terms = []
+        if search_names:
+            name_list = ', '.join([f"'{name}'" for name in search_names])
+            search_terms.append(f"name(s): {name_list}")
+        if search_grade > 0:
+            search_terms.append(f"grade: {search_grade}")
+        if search_type:
+            search_terms.append(f"type: '{search_type}'")
+
+        if search_terms:
+            return f"No materials found matching search criteria: {', '.join(search_terms)}"
+        else:
+            return "No materials found"
+
+    # Format results
+    formatted_results = []
+    for result in results:
+        if result['category'] == 'Ship':
+            material_line = f"{result['count']}x {result['name']} ({result['category']} {result['type']}, Grade {result['grade']})"
+        else:  # Suit materials
+            material_line = f"{result['count']}x {result['name']} ({result['category']} {result['type']})"
+
+        # Get source information for this material category
+        source_info = ""
+        if result['type'] == 'Raw':
+            # Extract category number from "Category X" format
+            category_num = int(result['section'].replace('Category ', ''))
+            if category_num in ship_raw_materials_map:
+                source_info = ship_raw_materials_map[category_num].get('source', '')
+        elif result['type'] == 'Manufactured' and result['section'] in ship_manufactured_materials_map:
+            source_info = ship_manufactured_materials_map[result['section']].get('source', '')
+        elif result['type'] == 'Encoded' and result['section'] in ship_encoded_materials_map:
+            source_info = ship_encoded_materials_map[result['section']].get('source', '')
+
+        if result.get('tradeable_higher_grades'):
+            trading_lines = ["Tradeable, higher grades:"]
+            for higher_mat in result['tradeable_higher_grades']:
+                if higher_mat['count'] > 0:
+                    trading_lines.append(f"- {higher_mat['count']}x {higher_mat['name']} (Grade {higher_mat['grade']})")
+
+            if source_info:
+                trading_lines.append(f"Source: {source_info}")
+
+            if len(trading_lines) > 1:  # Only add if there are actual tradeable materials
+                formatted_results.append(material_line)
+                formatted_results.extend(trading_lines)
+            else:
+                formatted_results.append(material_line)
+        else:
+            # No higher grades available, but still show source if available
+            formatted_results.append(material_line)
+            if source_info:
+                formatted_results.append(f"Source: {source_info}")
+
+    # Sort results while preserving trading info structure
+    def sort_key(item):
+        if isinstance(item, str) and 'x ' in item and '(' in item:
+            if 'Ship Raw' in item:
+                type_order = 0
+            elif 'Ship Manufactured' in item:
+                type_order = 1
+            elif 'Ship Encoded' in item:
+                type_order = 2
+            elif 'Suit Items' in item:
+                type_order = 3
+            elif 'Suit Components' in item:
+                type_order = 4
+            elif 'Suit Data' in item:
+                type_order = 5
+            elif 'Suit Consumables' in item:
+                type_order = 6
+            else:
+                type_order = 7
+
+            # Extract grade for ship materials
+            import re
+            match = re.search(r'Grade (\d)', item)
+            grade = int(match.group(1)) if match else 0
+
+            # Extract name for sorting
+            name_match = re.search(r'\d+x ([^(]+)', item)
+            name = name_match.group(1).strip() if name_match else ''
+
+            return (type_order, grade, name)
+        else:
+            return (999, 999, item)  # Put non-material lines at end
+
+    # Sort while preserving trading info structure
+    material_blocks = []
+    current_block = []
+
+    for line in formatted_results:
+        if isinstance(line, str) and 'x ' in line and '(' in line:
+            if current_block:
+                material_blocks.append(current_block)
+            current_block = [line]
+        else:
+            current_block.append(line)
+
+    if current_block:
+        material_blocks.append(current_block)
+
+    # Sort blocks by their main material line
+    material_blocks.sort(key=lambda block: sort_key(block[0]))
+
+    # Flatten back to single list
+    sorted_results = []
+    for block in material_blocks:
+        sorted_results.extend(block)
+
+    # Add search info to the output if filters were applied
+    search_info = []
+    if search_names:
+        if len(search_names) == 1:
+            search_info.append(f"name: '{search_names[0]}'")
+        else:
+            name_list = ', '.join([f"'{name}'" for name in search_names])
+            search_info.append(f"names: {name_list}")
+    if search_grade > 0:
+        search_info.append(f"grade: {search_grade}")
+    if search_type:
+        search_info.append(f"type: '{search_type}'")
+
+    yaml_output = yaml.dump(sorted_results, default_flow_style=False, sort_keys=False)
+
+    if search_info:
+        return f"Materials Inventory (filtered by {', '.join(search_info)}):\n\n```yaml\n{yaml_output}```"
+    else:
+        return f"Materials Inventory:\n\n```yaml\n{yaml_output}```"
+
+
 def send_message(obj, projected_states):
     from pyautogui import typewrite
     setGameWindowActive()
@@ -1112,7 +2477,6 @@ def send_message(obj, projected_states):
     if obj:
         chunk_size = 100
         start = 0
-
 
         in_ship = projected_states.get('CurrentStatus').get('flags').get('InMainShip') or projected_states.get('CurrentStatus').get('flags').get('InFighter')
         in_buggy = projected_states.get('CurrentStatus').get('flags').get('InSRV')
@@ -1142,7 +2506,7 @@ def send_message(obj, projected_states):
                 return_message += " to wing chat"
             elif obj.get("channel").lower() == "system":
                 typewrite("/sy ", interval=0.02)
-                keys.send('UI_Down',repeat=2)
+                keys.send('UI_Down', repeat=2)
                 keys.send('UI_Select')
                 return_message += " to squadron chat"
             elif obj.get("channel").lower() == "squadron":
@@ -1184,29 +2548,65 @@ def get_visuals(obj, projected_states):
 
 
 def educated_guesses_message(search_query, valid_list):
+    search_lower = search_query.lower()
+    suggestions = []
+
+    # First try substring matching (existing behavior)
     split_string = search_query.split()
-
-    caught_items = []
-
-    # Iterate over each word in the split string
     for word in split_string:
-        # Check if the word is part of any value in the array
         for element in valid_list:
-            if word in element:
-                caught_items.append(element)
+            if word.lower() in element.lower() and element not in suggestions:
+                suggestions.append(element)
+
+    # If we don't have enough suggestions, add fuzzy matches
+    if len(suggestions) < 5:
+        scored_matches = []
+        max_distance = max(2, len(search_query) // 3)  # Allow more errors for suggestions
+
+        for element in valid_list:
+            if element not in suggestions:  # Don't duplicate existing suggestions
+                distance = levenshtein_distance(search_lower, element.lower())
+                if distance <= max_distance:
+                    scored_matches.append((distance, element))
+
+        # Sort by distance and add the best fuzzy matches
+        scored_matches.sort(key=lambda x: x[0])
+        for distance, element in scored_matches[:5 - len(suggestions)]:
+            suggestions.append(element)
 
     message = ""
-    if caught_items:
-        guesses_str = ', '.join(caught_items)
+    if suggestions:
+        guesses_str = ', '.join(suggestions[:5])  # Limit to 5 suggestions
         message = (
             f"Restart search with valid inputs, here are suggestions: {guesses_str}"
         )
 
     return message
 
+# Helper function
+def find_best_match(search_term, known_list):
+    search_lower = search_term.lower()
+
+    # First try exact match
+    for item in known_list:
+        if item.lower() == search_lower:
+            return item
+
+    # Then try fuzzy matching
+    best_match = None
+    best_distance = float('inf')
+    max_distance = max(1, len(search_term) // 3)  # Allow 1 error per 3 characters
+
+    for item in known_list:
+        distance = levenshtein_distance(search_lower, item.lower())
+        if distance <= max_distance and distance < best_distance:
+            best_distance = distance
+            best_match = item
+
+    return best_match
 
 # Prepare a request for the spansh station finder
-def prepare_station_request(obj, projected_states):
+def prepare_station_request(obj, projected_states):# Helper function for fuzzy matching
     known_modules = [
         "AX Missile Rack",
         "AX Multi-Cannon",
@@ -1830,9 +3230,8 @@ def prepare_station_request(obj, projected_states):
     if "commodities" in obj and obj["commodities"]:
         market_filters = []
         for market_item in obj["commodities"]:
-            # Find matching commodity name while preserving original capitalization
-            market_item_name_lower = market_item["name"].lower()
-            matching_commodity = next((commodity for commodity in known_commodities if commodity.lower() == market_item_name_lower), None)
+            # Find matching commodity name using fuzzy matching
+            matching_commodity = find_best_match(market_item["name"], known_commodities)
             if not matching_commodity:
                 raise Exception(
                     f"Invalid commodity name: {market_item['name']}. {educated_guesses_message(market_item['name'], known_commodities)}")
@@ -1861,7 +3260,7 @@ def prepare_station_request(obj, projected_states):
     if "modules" in obj:
         modules_filter = {}
         for module in obj["modules"]:
-            # Find matching module name while preserving original capitalization
+            # Find matching module name using exact matching only
             module_name_lower = module["name"].lower()
             matching_module = next((m for m in known_modules if m.lower() == module_name_lower), None)
             if not matching_module:
@@ -1871,9 +3270,8 @@ def prepare_station_request(obj, projected_states):
         filters["modules"] = obj["modules"]
     if "ships" in obj:
         for ship in obj["ships"]:
-            # Find matching ship name while preserving original capitalization
-            ship_name_lower = ship["name"].lower()
-            matching_ship = next((s for s in known_ships if s.lower() == ship_name_lower), None)
+            # Find matching ship name using fuzzy matching
+            matching_ship = find_best_match(ship["name"], known_ships)
             if not matching_ship:
                 raise Exception(
                     f"Invalid ship name: {ship['name']}. {educated_guesses_message(ship['name'], known_ships)}")
@@ -1881,9 +3279,8 @@ def prepare_station_request(obj, projected_states):
         filters["ships"] = {"value": obj["ships"]}
     if "services" in obj:
         for service in obj["services"]:
-            # Find matching service name while preserving original capitalization
-            service_name_lower = service["name"].lower()
-            matching_service = next((s for s in known_services if s.lower() == service_name_lower), None)
+            # Find matching service name using fuzzy matching
+            matching_service = find_best_match(service["name"], known_services)
             if not matching_service:
                 raise Exception(
                     f"Invalid service name: {service['name']}. {educated_guesses_message(service['name'], known_services)}")
@@ -1894,12 +3291,12 @@ def prepare_station_request(obj, projected_states):
             "value": obj["name"]
         }
 
-    sort_object = { "distance": { "direction": "asc" } }
+    sort_object = {"distance": {"direction": "asc"}}
     if filters.get("market") and len(filters["market"]) > 0:
         if filters.get("market")[0].get("demand"):
-            sort_object = {"market_sell_price":[{"name":filters["market"][0]["name"],"direction":"desc"}]}
+            sort_object = {"market_sell_price": [{"name": filters["market"][0]["name"], "direction": "desc"}]}
         elif filters["market"][0].get("demand"):
-            sort_object = {"market_buy_price":[{"name":filters["market"][0]["name"],"direction":"asc"}]}
+            sort_object = {"market_buy_price": [{"name": filters["market"][0]["name"], "direction": "asc"}]}
 
     # Build the request body
     request_body = {
@@ -1983,7 +3380,7 @@ def filter_station_response(request, response):
     }
 
 
-def station_finder(obj,projected_states):
+def station_finder(obj, projected_states):
     # Initialize the filters
     request_body = prepare_station_request(obj, projected_states)
     log('debug', 'station search input', request_body)
@@ -2000,8 +3397,8 @@ def station_finder(obj,projected_states):
         if obj.get("technology_broker") or obj.get("material_trader"):
             if len(filtered_data["results"]) > 0:
                 return galaxy_map_open({
-                    "system_name":filtered_data["results"][0]["system"],
-                    "start_navigation":True,
+                    "system_name": filtered_data["results"][0]["system"],
+                    "start_navigation": True,
                     "details": filtered_data["results"][0]
                 }, projected_states)
             else:
@@ -2013,7 +3410,7 @@ def station_finder(obj,projected_states):
         return 'An error has occurred. The station finder seems currently not available.'
 
 
-def prepare_system_request(obj, projected_states):
+def prepare_system_request(obj, projected_states):# Helper function for fuzzy matching
     known_allegiances = [
         "Alliance", "Empire", "Federation", "Guardian",
         "Independent", "Pilots Federation", "Player Pilots", "Thargoid"
@@ -2049,74 +3446,81 @@ def prepare_system_request(obj, projected_states):
 
     # Add optional filters if they exist
     if "allegiance" in obj and obj["allegiance"]:
+        validated_allegiances = []
         for allegiance in obj["allegiance"]:
-            # Find matching allegiance while preserving original capitalization
-            allegiance_lower = allegiance.lower()
-            matching_allegiance = next((a for a in known_allegiances if a.lower() == allegiance_lower), None)
+            # Find matching allegiance using fuzzy matching
+            matching_allegiance = find_best_match(allegiance, known_allegiances)
             if not matching_allegiance:
                 raise Exception(
                     f"Invalid allegiance: {allegiance}. {educated_guesses_message(allegiance, known_allegiances)}")
-        filters["allegiance"] = {"value": [a for a in obj["allegiance"] if next((k for k in known_allegiances if k.lower() == a.lower()), None)]}
+            validated_allegiances.append(matching_allegiance)
+        filters["allegiance"] = {"value": validated_allegiances}
 
     if "state" in obj and obj["state"]:
+        validated_states = []
         for state in obj["state"]:
-            # Find matching state while preserving original capitalization
-            state_lower = state.lower()
-            matching_state = next((s for s in known_states if s.lower() == state_lower), None)
+            # Find matching state using fuzzy matching
+            matching_state = find_best_match(state, known_states)
             if not matching_state:
                 raise Exception(
                     f"Invalid state: {state}. {educated_guesses_message(state, known_states)}")
-        filters["state"] = {"value": [s for s in obj["state"] if next((k for k in known_states if k.lower() == s.lower()), None)]}
+            validated_states.append(matching_state)
+        filters["state"] = {"value": validated_states}
 
     if "government" in obj and obj["government"]:
+        validated_governments = []
         for government in obj["government"]:
-            # Find matching government while preserving original capitalization
-            government_lower = government.lower()
-            matching_government = next((g for g in known_governments if g.lower() == government_lower), None)
+            # Find matching government using fuzzy matching
+            matching_government = find_best_match(government, known_governments)
             if not matching_government:
                 raise Exception(
                     f"Invalid government: {government}. {educated_guesses_message(government, known_governments)}")
-        filters["government"] = {"value": [g for g in obj["government"] if next((k for k in known_governments if k.lower() == g.lower()), None)]}
+            validated_governments.append(matching_government)
+        filters["government"] = {"value": validated_governments}
 
     if "power" in obj and obj["power"]:
+        validated_powers = []
         for power in obj["power"]:
-            # Find matching power while preserving original capitalization
-            power_lower = power.lower()
-            matching_power = next((p for p in known_powers if p.lower() == power_lower), None)
+            # Find matching power using fuzzy matching
+            matching_power = find_best_match(power, known_powers)
             if not matching_power:
                 raise Exception(
                     f"Invalid power: {power}. {educated_guesses_message(power, known_powers)}")
-        filters["controlling_power"] = {"value": [p for p in obj["power"] if next((k for k in known_powers if k.lower() == p.lower()), None)]}
+            validated_powers.append(matching_power)
+        filters["controlling_power"] = {"value": validated_powers}
 
     if "primary_economy" in obj and obj["primary_economy"]:
+        validated_economies = []
         for economy in obj["primary_economy"]:
-            # Find matching economy while preserving original capitalization
-            economy_lower = economy.lower()
-            matching_economy = next((e for e in known_economies if e.lower() == economy_lower), None)
+            # Find matching economy using fuzzy matching
+            matching_economy = find_best_match(economy, known_economies)
             if not matching_economy:
                 raise Exception(
                     f"Invalid primary economy: {economy}. {educated_guesses_message(economy, known_economies)}")
-        filters["primary_economy"] = {"value": [e for e in obj["primary_economy"] if next((k for k in known_economies if k.lower() == e.lower()), None)]}
+            validated_economies.append(matching_economy)
+        filters["primary_economy"] = {"value": validated_economies}
 
     if "security" in obj and obj["security"]:
+        validated_security = []
         for security_level in obj["security"]:
-            # Find matching security level while preserving original capitalization
-            security_lower = security_level.lower()
-            matching_security = next((s for s in known_security_levels if s.lower() == security_lower), None)
+            # Find matching security level using fuzzy matching
+            matching_security = find_best_match(security_level, known_security_levels)
             if not matching_security:
                 raise Exception(
                     f"Invalid security level: {security_level}. {educated_guesses_message(security_level, known_security_levels)}")
-        filters["security"] = {"value": [s for s in obj["security"] if next((k for k in known_security_levels if k.lower() == s.lower()), None)]}
+            validated_security.append(matching_security)
+        filters["security"] = {"value": validated_security}
 
     if "thargoid_war_state" in obj and obj["thargoid_war_state"]:
+        validated_thargoid_states = []
         for thargoid_war_state in obj["thargoid_war_state"]:
-            # Find matching thargoid war state while preserving original capitalization
-            state_lower = thargoid_war_state.lower()
-            matching_state = next((s for s in known_thargoid_war_states if s.lower() == state_lower), None)
+            # Find matching thargoid war state using fuzzy matching
+            matching_state = find_best_match(thargoid_war_state, known_thargoid_war_states)
             if not matching_state:
                 raise Exception(
                     f"Invalid thargoid war state: {thargoid_war_state}. {educated_guesses_message(thargoid_war_state, known_thargoid_war_states)}")
-        filters["thargoid_war_state"] = {"value": [s for s in obj["thargoid_war_state"] if next((k for k in known_thargoid_war_states if k.lower() == s.lower()), None)]}
+            validated_thargoid_states.append(matching_state)
+        filters["thargoid_war_state"] = {"value": validated_thargoid_states}
 
     if "population" in obj and obj["population"]:
         comparison = obj["population"].get("comparison", ">")
@@ -2207,7 +3611,7 @@ def filter_system_response(request, response):
 # System finder function that sends the request to the Spansh API
 def system_finder(obj, projected_states):
     # Build the request body
-    request_body = prepare_system_request(obj,projected_states)
+    request_body = prepare_system_request(obj, projected_states)
 
     url = "https://spansh.co.uk/api/systems/search"
 
@@ -2786,24 +4190,24 @@ def prepare_body_request(obj, projected_states):
 
     # Add optional filters if they exist
     if "subtype" in obj and obj["subtype"]:
+        validated_subtypes = []
         for subtype in obj["subtype"]:
-            # Find matching subtype while preserving original capitalization
-            subtype_lower = subtype.lower()
-            matching_subtype = next((s for s in known_subtypes if s.lower() == subtype_lower), None)
+            # Find matching subtype using fuzzy matching
+            matching_subtype = find_best_match(subtype, known_subtypes)
             if not matching_subtype:
                 raise Exception(
                     f"Invalid celestial body subtype: {subtype}. {educated_guesses_message(subtype, known_subtypes)}")
-        filters["subtype"] = {"value": [s for s in obj["subtype"] if next((k for k in known_subtypes if k.lower() == s.lower()), None)]}
+            validated_subtypes.append(matching_subtype)
+        filters["subtype"] = {"value": validated_subtypes}
 
     if "landmark_subtype" in obj and obj["landmark_subtype"]:
         for landmark_subtype in obj["landmark_subtype"]:
-            # Find matching landmark subtype while preserving original capitalization
-            landmark_lower = landmark_subtype.lower()
-            matching_landmark = next((l for l in known_landmarks if l.lower() == landmark_lower), None)
+            # Find matching landmark subtype using fuzzy matching
+            matching_landmark = find_best_match(landmark_subtype, known_landmarks)
             if not matching_landmark:
                 raise Exception(
                     f"Invalid Landmark Subtype: {landmark_subtype}. {educated_guesses_message(landmark_subtype, known_landmarks)}")
-        filters["landmarks"] = [{"subtype": next((k for k in known_landmarks if k.lower() == obj["landmark_subtype"].lower()), None)}]
+        filters["landmarks"] = [{"subtype": matching_landmark}]
 
     if "name" in obj and obj["name"]:
         filters["name"] = {
@@ -2870,10 +4274,10 @@ def filter_body_response(request, response):
     }
 
 
-# System finder function that sends the request to the Spansh API
-def body_finder(obj,projected_states):
+# Body finder function that sends the request to the Spansh API
+def body_finder(obj, projected_states):
     # Build the request body
-    request_body = prepare_body_request(obj,projected_states)
+    request_body = prepare_body_request(obj, projected_states)
 
     url = "https://spansh.co.uk/api/bodies/search"
 
@@ -2890,6 +4294,7 @@ def body_finder(obj,projected_states):
     except Exception as e:
         log('error', f"Error: {e}")
         return 'An error occurred. The system finder seems to be currently unavailable.'
+
 
 def target_subsystem_thread(current_subsystem: str, current_event_id: str, desired_subsystem: str):
     if not current_subsystem:
@@ -2916,6 +4321,7 @@ def target_subsystem_thread(current_subsystem: str, current_event_id: str, desir
         current_event_id = new_state.get('EventID')
     log('debug', 'desired subsystem targeted', current_subsystem)
 
+
 def target_subsystem(args, projected_states):
     current_target = projected_states.get('Target')
 
@@ -2931,10 +4337,11 @@ def target_subsystem(args, projected_states):
 
     return f"The submodule {args['subsystem']} is being targeted."
 
+
 def register_actions(actionManager: ActionManager, eventManager: EventManager, llmClient: openai.OpenAI,
                      llmModelName: str, visionClient: Optional[openai.OpenAI], visionModelName: Optional[str],
                      edKeys: EDKeys):
-    global event_manager, vision_client, llm_client, llm_model_name, vision_model_name, keys
+    global event_manager, vision_client, llm_client, llm_model_name, vision_model_name, keys, suit_engineers, ship_engineers, engineering_modifications
     keys = edKeys
     event_manager = eventManager
     llm_client = llmClient
@@ -2944,43 +4351,47 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
 
     setGameWindowActive()
 
+    suit_engineers = json.load(open(get_asset_path('suit_engineers.json')))
+    ship_engineers = json.load(open(get_asset_path('ship_engineers.json')))
+    engineering_modifications = json.load(open(get_asset_path('engineering_modifications.json')))
+
     # Register actions - General Ship Actions
     actionManager.registerAction('fireWeapons', "Fire weapons with simple controls: single shot, start continuous, or stop", {
         "type": "object",
         "properties": {
-          "weaponType": {
-            "type": "string",
-            "description": "Type of weapons to fire",
-            "enum": [
-              "primary",
-              "secondary",
-              "discovery_scanner"
-            ],
-            "default": "primary"
-          },
-          "action": {
-            "type": "string",
-            "description": "Action to perform with weapons",
-            "enum": [
-              "fire",
-              "start",
-              "stop"
-            ],
-            "default": "fire"
-          },
-          "duration": {
-            "type": "number",
-            "description": "Duration to hold fire button in seconds (for fire action only)",
-            "minimum": 0,
-            "maximum": 30
-          },
-          "repetitions": {
-            "type": "integer",
-            "description": "Number of additional repetitions (0 = single action, 1+ = repeat that many extra times)",
-            "minimum": 0,
-            "maximum": 10,
-            "default": 0
-          }
+            "weaponType": {
+                "type": "string",
+                "description": "Type of weapons to fire",
+                "enum": [
+                    "primary",
+                    "secondary",
+                    "discovery_scanner"
+                ],
+                "default": "primary"
+            },
+            "action": {
+                "type": "string",
+                "description": "Action to perform with weapons",
+                "enum": [
+                    "fire",
+                    "start",
+                    "stop"
+                ],
+                "default": "fire"
+            },
+            "duration": {
+                "type": "number",
+                "description": "Duration to hold fire button in seconds (for fire action only)",
+                "minimum": 0,
+                "maximum": 30
+            },
+            "repetitions": {
+                "type": "integer",
+                "description": "Number of additional repetitions (0 = single action, 1+ = repeat that many extra times)",
+                "minimum": 0,
+                "maximum": 10,
+                "default": 0
+            }
         },
         "required": ["weaponType", "action"]
     }, fire_weapons, 'ship')
@@ -3018,36 +4429,36 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     }, deploy_hardpoint_toggle, 'ship')
 
     actionManager.registerAction('managePowerDistribution',
-     "Manage power distribution between ship systems. Apply pips to one or more power systems or balance the power across two or if unspecified, across all 3",
-     {
-         "type": "object",
-         "properties": {
-             "power_category": {
-                 "type": "array",
-                 "description": "Array of the system(s) being asked to change. if not specified return default",
-                 "items": {
-                     "type": "string",
-                     "enum": ["Engines", "Weapons", "Systems"],
-                     "default":["Engines", "Weapons", "Systems"]
-                 }
-             },
-             "balance_power": {
-                 "type": "boolean",
-                 "description": "Whether the user asks to balance power"
-             },
-             "pips": {
-                 "type": "array",
-                 "description": "Number of pips to allocate (ignored for balance), one per power_category",
-                 "items": {
-                     "type": "integer",
-                     "minimum": 1,
-                     "maximum": 4,
-                     "default": 1
-                 }
-             }
-         },
-         "required": ["power_category"]
-     }, manage_power_distribution, 'ship')
+                                 "Manage power distribution between ship systems. Apply pips to one or more power systems or balance the power across two or if unspecified, across all 3",
+                                 {
+                                     "type": "object",
+                                     "properties": {
+                                         "power_category": {
+                                             "type": "array",
+                                             "description": "Array of the system(s) being asked to change. if not specified return default",
+                                             "items": {
+                                                 "type": "string",
+                                                 "enum": ["Engines", "Weapons", "Systems"],
+                                                 "default": ["Engines", "Weapons", "Systems"]
+                                             }
+                                         },
+                                         "balance_power": {
+                                             "type": "boolean",
+                                             "description": "Whether the user asks to balance power"
+                                         },
+                                         "pips": {
+                                             "type": "array",
+                                             "description": "Number of pips to allocate (ignored for balance), one per power_category",
+                                             "items": {
+                                                 "type": "integer",
+                                                 "minimum": 1,
+                                                 "maximum": 4,
+                                                 "default": 1
+                                             }
+                                         }
+                                     },
+                                     "required": ["power_category"]
+                                 }, manage_power_distribution, 'ship')
 
     actionManager.registerAction('galaxyMapOpen', "Open galaxy map. If asked, also focus on a system or start a navigation route", {
         "type": "object",
@@ -3090,7 +4501,6 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             }
         }
     }, cycle_target, 'ship')
-
 
     actionManager.registerAction(
         'cycle_fire_group',
@@ -3136,9 +4546,6 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             }
         }
     }, cycle_fire_group, 'ship')
-
-    
-
 
     actionManager.registerAction('shipSpotLightToggle', "Toggle ship spotlight", {
         "type": "object",
@@ -3201,7 +4608,9 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                         "HoldFire",
                         "HoldPosition",
                         "Follow",
-                        "RequestDock",
+                        "ReturnToShip",
+                        "LaunchFighter1",
+                        "LaunchFighter2",
                     ]
                 }
             }
@@ -3210,23 +4619,23 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
 
     # Register actions - Mainship Actions
     actionManager.registerAction('FsdJump',
-        "initiate FSD jump (jump to the next system or enter supercruise)", {
-        "type": "object",
-        "properties": {
-            "jump_type": {
-                "type": "string",
-                "description": "Jump to next system, enter supercruise or auto if unspecified",
-                "enum": ["next_system", "supercruise", "auto"]
-            }
-        }
-    }, fsd_jump, 'mainship')
+                                 "initiate FSD jump (jump to the next system or enter supercruise)", {
+                                     "type": "object",
+                                     "properties": {
+                                         "jump_type": {
+                                             "type": "string",
+                                             "description": "Jump to next system, enter supercruise or auto if unspecified",
+                                             "enum": ["next_system", "supercruise", "auto"]
+                                         }
+                                     }
+                                 }, fsd_jump, 'mainship')
 
     actionManager.registerAction('target_next_system_in_route',
-        "When we have a nav route set, this will automatically target the next system in the route",
-        {
-        "type": "object",
-        "properties": {}
-    }, next_system_in_route, 'mainship')
+                                 "When we have a nav route set, this will automatically target the next system in the route",
+                                 {
+                                     "type": "object",
+                                     "properties": {}
+                                 }, next_system_in_route, 'mainship')
 
     actionManager.registerAction('toggleCargoScoop', "Toggles cargo scoop", {
         "type": "object",
@@ -3344,39 +4753,37 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "properties": {}
     }, select_target_buggy, 'buggy')
 
-
     actionManager.registerAction('managePowerDistributionBuggy',
-     "Manage power distribution between buggy power systems. Apply pips to one or more power systems or balance the power across two or if unspecified, across all 3",
-     {
-         "type": "object",
-         "properties": {
-             "power_category": {
-                 "type": "array",
-                 "description": "Array of the system(s) being asked to change. if not specified return default",
-                 "items": {
-                     "type": "string",
-                     "enum": ["Engines", "Weapons", "Systems"],
-                     "default": ["Engines", "Weapons", "Systems"]
-                 }
-             },
-             "balance_power": {
-                 "type": "boolean",
-                 "description": "Whether the user asks to balance power"
-             },
-             "pips": {
-                 "type": "array",
-                 "description": "Number of pips to allocate (ignored for balance), one per power_category",
-                 "items": {
-                     "type": "integer",
-                     "minimum": 1,
-                     "maximum": 4,
-                     "default": 1
-                 }
-             }
-         },
-         "required": ["power_category"]
-     }, manage_power_distribution_buggy, 'buggy')
-
+                                 "Manage power distribution between buggy power systems. Apply pips to one or more power systems or balance the power across two or if unspecified, across all 3",
+                                 {
+                                     "type": "object",
+                                     "properties": {
+                                         "power_category": {
+                                             "type": "array",
+                                             "description": "Array of the system(s) being asked to change. if not specified return default",
+                                             "items": {
+                                                 "type": "string",
+                                                 "enum": ["Engines", "Weapons", "Systems"],
+                                                 "default": ["Engines", "Weapons", "Systems"]
+                                             }
+                                         },
+                                         "balance_power": {
+                                             "type": "boolean",
+                                             "description": "Whether the user asks to balance power"
+                                         },
+                                         "pips": {
+                                             "type": "array",
+                                             "description": "Number of pips to allocate (ignored for balance), one per power_category",
+                                             "items": {
+                                                 "type": "integer",
+                                                 "minimum": 1,
+                                                 "maximum": 4,
+                                                 "default": 1
+                                             }
+                                         }
+                                     },
+                                     "required": ["power_category"]
+                                 }, manage_power_distribution_buggy, 'buggy')
 
     actionManager.registerAction('toggleCargoScoopBuggy', "Toggle cargo scoop", {
         "type": "object",
@@ -3437,24 +4844,24 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('equipGearHumanoid', "Equip or hide a piece of gear", {
         "type": "object",
         "properties": {
-        "equipment": {
-            "type": "string",
-            "description": "Gear to equip",
-            "enum": [
-                "HumanoidSelectPrimaryWeaponButton",
-                "HumanoidSelectSecondaryWeaponButton",
-                "HumanoidSelectUtilityWeaponButton",
-                "HumanoidSwitchToRechargeTool",
-                "HumanoidSwitchToCompAnalyser",
-                "HumanoidSwitchToSuitTool",
-                "HumanoidHideWeaponButton",
-                "HumanoidSelectFragGrenade",
-                "HumanoidSelectEMPGrenade",
-                "HumanoidSelectShieldGrenade"
-            ]
-        }
-    },
-    "required": ["equipment"]
+            "equipment": {
+                "type": "string",
+                "description": "Gear to equip",
+                "enum": [
+                    "HumanoidSelectPrimaryWeaponButton",
+                    "HumanoidSelectSecondaryWeaponButton",
+                    "HumanoidSelectUtilityWeaponButton",
+                    "HumanoidSwitchToRechargeTool",
+                    "HumanoidSwitchToCompAnalyser",
+                    "HumanoidSwitchToSuitTool",
+                    "HumanoidHideWeaponButton",
+                    "HumanoidSelectFragGrenade",
+                    "HumanoidSelectEMPGrenade",
+                    "HumanoidSelectShieldGrenade"
+                ]
+            }
+        },
+        "required": ["equipment"]
     }, equip_humanoid, 'humanoid')
 
     actionManager.registerAction('toggleFlashlightHumanoid', "Toggle flashlight", {
@@ -3865,8 +5272,91 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "example": "RatherRude.TTV",
             },
         },
-        "required": ["message","channel"]
+        "required": ["message", "channel"]
     }, send_message, 'global')
+
+    actionManager.registerAction(
+        'engineer_finder', "Get information about engineers' location, standing and modifications.", {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "Filter engineers by name"
+                },
+                "system": {
+                    "type": "string",
+                    "description": "Filter engineers by system/location"
+                },
+                "modifications": {
+                    "type": "string",
+                    "description": "Filter engineers by what they modify"
+                },
+                "progress": {
+                    "type": "string",
+                    "enum": ["Unknown", "Known", "Invited", "Unlocked"],
+                    "description": "Filter engineers by their current progress status"
+                }
+            }
+        },
+        engineer_finder,
+        'web'
+    )
+
+    # Register AI action for blueprint finder
+    actionManager.registerAction(
+        'blueprint_finder', "Find engineer blueprints based on search criteria. Returns material costs with grade calculations.", {
+            "type": "object",
+            "properties": {
+                "modifications": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Array of modification names to search for - supports fuzzy search."
+                },
+                "engineer": {
+                    "type": "string",
+                    "description": "Engineer name to search for"
+                },
+                "module": {
+                    "type": "string",
+                    "description": "Module/hardware name to search for"
+                },
+                "grade": {
+                    "type": "integer",
+                    "description": "Grade to search for"
+                }
+            }
+        },
+        blueprint_finder,
+        'web'
+    )
+
+    actionManager.registerAction(
+        'material_finder',
+        "Find and search a list of materials for both ship and suit engineering from my inventory and where to source them from.",
+        {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Array of material names to search for - supports fuzzy search."
+                },
+                "grade": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5,
+                    "description": "Filter ship materials by grade (1-5). Suit materials don't have grades."
+                },
+                "type": {
+                    "type": "string",
+                    "enum": ["raw", "manufactured", "encoded", "items", "components", "data", "consumables", "ship", "suit"],
+                    "description": "Filter by material type. Ship types: raw, manufactured, encoded. Suit types: items, components, data, consumables. Category filters: ship, suit."
+                }
+            }
+        },
+        material_finder,
+        'web'
+    )
 
     if vision_client:
         actionManager.registerAction('getVisuals', "Describes what's currently visible to the Commander.", {
@@ -3914,6 +5404,7 @@ def format_commodity_name(name: str) -> str:
         formatted_parts.append(part.capitalize())
 
     return ' '.join(formatted_parts)
+
 
 def normalize_string(s: str) -> str:
     """
