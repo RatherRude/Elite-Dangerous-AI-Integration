@@ -32,7 +32,7 @@
   transform: translateX(0);
   transition: transform 0.26s ease-out;
   &.idle {
-    /*transform: translateX(150%)*/
+    transform: translateX(150%)
   }
 }
 
