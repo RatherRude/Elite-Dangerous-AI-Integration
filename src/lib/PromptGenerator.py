@@ -110,11 +110,11 @@ class PromptGenerator:
         """Generate a detailed description of the landing pad location."""
         pad = self.pad_map.get(str(pad_number))
         if not pad:
-            return f"Pad {pad_number} (location unknown)"
+            return f"location unknown (Pad {pad_number})"
 
         clock = pad['clock']
         depth = pad['depth']
-        return f"Pad {pad_number} ({clock} o'clock, {depth})"
+        return f"{clock} o'clock, {depth} (Pad {pad_number}, clock orientation: mail slot entry with green on right)"
 
     def get_event_template(self, event: Union[GameEvent, ProjectedEvent, ExternalEvent]):
         content: Any = event.content
@@ -286,7 +286,7 @@ class PromptGenerator:
             # Only provide detailed pad info for standard station types with known layouts
             if station_type in ['Coriolis', 'Orbis', 'Ocellus']:
                 pad_info = self.announce_pad(docking_granted_event.get('LandingPad'))
-                return f"Docking request granted at {docking_granted_event.get('StationName')} on {pad_info} (clock orientation: mail slot entry with green on right)"
+                return f"Docking request granted at {docking_granted_event.get('StationName')}, pad located at {pad_info}"
             else:
                 return f"Docking request granted at {docking_granted_event.get('StationName')} on landing pad {docking_granted_event.get('LandingPad')}"
             
