@@ -2559,6 +2559,9 @@ class PromptGenerator:
         active_mode, vehicle_status = self.generate_vehicle_status(projected_states.get('CurrentStatus', {}), projected_states.get('InCombat', {}))
         status_entries.append((active_mode+" status", vehicle_status))
 
+        wingmembers = projected_states.get('Wing', {}).get('Members', [])
+        if len(wingmembers) > 0:
+            status_entries.append(("Current wing members: ", wingmembers))
 
         guifocus = projected_states.get('CurrentStatus', {}).get('GuiFocus', '')
         if guifocus != "NoFocus":

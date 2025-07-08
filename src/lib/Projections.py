@@ -1384,6 +1384,38 @@ class InCombat(Projection[InCombatState]):
 
         return projected_events
 
+
+# Define types for Wing Projection
+WingState = TypedDict('WingState', {
+    "Members": list[str]
+})
+
+@final
+class Wing(Projection[WingState]):
+    @override
+    def get_default_state(self) -> WingState:
+        return {
+            "Members": []
+        }
+
+    @override
+    def process(self, event: Event) -> None:
+        if isinstance(event, GameEvent) and event.content.get('event') == 'WingJoin':
+            # Initialize with existing members if any
+            others = event.content.get('Others', [])
+            if others:
+                self.state['Members'] = [member.get('Name', 'Unknown') for member in others]  # type: ignore
+            else:
+                self.state['Members'] = []
+        
+        if isinstance(event, GameEvent) and event.content.get('event') == 'WingAdd':
+            name = event.content.get('Name', 'Unknown')
+            if name and name not in self.state['Members']:
+                self.state['Members'].append(name)
+        
+        if isinstance(event, GameEvent) and event.content.get('event') in ['WingLeave', 'LoadGame']:
+            self.state['Members'] = []
+
 # Define types for Idle Projection
 IdleState = TypedDict('IdleState', {
     "LastInteraction": str,  # ISO timestamp of last interaction
@@ -1446,6 +1478,7 @@ def registerProjections(event_manager: EventManager, system_db: SystemDatabase, 
     event_manager.register_projection(ColonisationConstruction())
     event_manager.register_projection(DockingEvents())
     event_manager.register_projection(InCombat())
+    event_manager.register_projection(Wing())
     event_manager.register_projection(Idle(idle_timeout))
 
     # ToDo: SLF, SRV,
