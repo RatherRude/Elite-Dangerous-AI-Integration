@@ -78,6 +78,7 @@ export interface Config {
     tts_model_name: string;
     tts_api_key: string;
     tts_endpoint: string;
+    tts_damage_effects_var: boolean; // Enable damage effects post-processing for TTS
     tools_var: boolean;
     vision_var: boolean;
     ptt_var: boolean;

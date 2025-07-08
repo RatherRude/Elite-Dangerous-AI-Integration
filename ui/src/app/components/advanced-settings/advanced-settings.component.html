@@ -340,6 +340,12 @@
                         (ngModelChange)="onConfigChange({tts_api_key: $event})">
             </mat-form-field>
         }
+        @if (config.tts_provider !== "none") {
+            <mat-slide-toggle [(ngModel)]="config.tts_damage_effects_var"
+                                (ngModelChange)="onConfigChange({tts_damage_effects_var: $event})">
+                Enable Damage Effects Post-Processing
+            </mat-slide-toggle>
+        }
         @if (config.tts_provider === "none") {
             <p>TTS is disabled</p>
         }
