@@ -4,9 +4,9 @@ from typing import Any, Callable
 import numpy as np
 from scipy.signal import resample
 
-from lib.Event import Event
-from lib.Logger import log
-from lib.RollingAudioBuffer import RollingAudioBuffer
+from ..Event import Event
+from ..Logger import log
+from ..RollingAudioBuffer import RollingAudioBuffer
 
 class DamageEffectsPostProcessor:
     """
