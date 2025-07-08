@@ -653,16 +653,17 @@ class ShipInfo(Projection[ShipInfoState]):
                 self.state['ShipIdent'] = event.content.get('UserShipId', 'Unknown')
 
         # Fighter events
-        if isinstance(event, GameEvent) and event.content.get('event') == 'CrewLaunchFighter':
-            # Commander launches fighter for crew member
-            crew_name = event.content.get('Crew', 'Unknown Crew')
-            
-            # Find a ready fighter without ID to assign to crew
-            for fighter in self.state['Fighters']:
-                if fighter['Status'] == 'Ready' and 'ID' not in fighter:
-                    fighter['Status'] = 'Launched'
-                    fighter['Pilot'] = crew_name
-                    break
+        # No events for crew fighter destroyed or docked...
+        # if isinstance(event, GameEvent) and event.content.get('event') == 'CrewLaunchFighter':
+        #     # Commander launches fighter for crew member
+        #     crew_name = event.content.get('Crew', 'Unknown Crew')
+        #
+        #     # Find a ready fighter without ID to assign to crew
+        #     for fighter in self.state['Fighters']:
+        #         if fighter['Status'] == 'Ready' and 'ID' not in fighter:
+        #             fighter['Status'] = 'Launched'
+        #             fighter['Pilot'] = crew_name
+        #             break
 
         if isinstance(event, GameEvent) and event.content.get('event') == 'LaunchFighter':
             fighter_id = event.content.get('ID')
@@ -670,7 +671,7 @@ class ShipInfo(Projection[ShipInfoState]):
             
             if fighter_id is not None:
                 # Determine pilot based on PlayerControlled flag
-                pilot = "NPC Crew" if player_controlled else "Commander"
+                pilot = "Commander" if player_controlled else "NPC Crew"
                 
                 # Find existing fighter with this ID or a ready fighter without ID
                 fighter_found = False
