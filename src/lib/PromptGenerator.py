@@ -2567,11 +2567,14 @@ class PromptGenerator:
         # Get ship and cargo info
         ship_info: ShipInfoState = projected_states.get('ShipInfo', {})  # pyright: ignore[reportAssignmentType]
         cargo_info: CargoState = projected_states.get('Cargo', {})  # pyright: ignore[reportAssignmentType]
+        fighters = ship_info.get('Fighters', [])
         
         # Create a copy of ship_info so we don't modify the original
         ship_display = dict(ship_info)
         ship_display.pop('IsMiningShip', None)
         ship_display.pop('hasLimpets', None)
+        if len(fighters) == 0:
+            ship_display.pop('Fighters', None)
 
         # Add cargo inventory in a more efficient format if available
 
