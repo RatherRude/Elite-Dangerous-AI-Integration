@@ -533,7 +533,8 @@ ship_sizes: dict[str, Literal['S', 'M', 'L', 'Unknown']] = {
 FighterState = TypedDict('FighterState', {
     "ID": NotRequired[int],
     "Status": Literal['Ready', 'Launched', 'BeingRebuilt', 'Idle'],
-    "Pilot": NotRequired[str]
+    "Pilot": NotRequired[str],
+    "RebuiltAt": NotRequired[str]
 })
 
 ShipInfoState = TypedDict('ShipInfoState', {
@@ -706,10 +707,16 @@ class ShipInfo(Projection[ShipInfoState]):
         if isinstance(event, GameEvent) and event.content.get('event') == 'FighterDestroyed':
             fighter_id = event.content.get('ID')
             
+            # Calculate rebuild completion time (80 seconds from now)
+            current_time = datetime.fromisoformat(event.timestamp.replace('Z', '+00:00'))
+            rebuild_time = current_time + timedelta(seconds=90)
+            rebuild_timestamp = rebuild_time.isoformat().replace('+00:00', 'Z')
+            
             # Find fighter by ID and set to being rebuilt
             for fighter in self.state['Fighters']:
                 if fighter.get('ID') == fighter_id:
                     fighter['Status'] = 'BeingRebuilt'
+                    fighter['RebuiltAt'] = rebuild_timestamp
                     fighter.pop('Pilot', None)
                     break
 
@@ -722,6 +729,7 @@ class ShipInfo(Projection[ShipInfoState]):
                     fighter['Status'] = 'Ready'
                     fighter.pop('ID', None)
                     fighter.pop('Pilot', None)
+                    fighter.pop('RebuiltAt', None)
                     break
 
         if isinstance(event, GameEvent) and event.content.get('event') == 'VehicleSwitch':
