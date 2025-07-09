@@ -341,6 +341,7 @@ if __name__ == "__main__":
         log('debug', "Loading plugins...")
         plugin_manager = PluginManager()
         plugin_manager.load_plugins()
+        plugin_manager.check_for_plugin_updates()
         log('debug', "Registering plugin settings for the UI...")
         plugin_manager.register_settings()
         # Wait for start signal on stdin

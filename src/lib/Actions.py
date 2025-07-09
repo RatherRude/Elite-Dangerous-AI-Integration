@@ -5370,6 +5370,34 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             "required": ["query"]
         }, get_visuals, 'global')
 
+    def set_damage_level_for_testing(obj, projected_states) -> str:
+        """
+        Set the simulated damage level used for voice effects.
+        This is only for testing purposes and should not be used in production.
+        """
+        if 'level' not in obj or not isinstance(obj['level'], int):
+            return "ERROR: Invalid damage level. Please provide an integer between 0 and 100."
+
+        level = obj['level']
+        if level < 0 or level > 100:
+            return "ERROR: Damage level must be between 0 and 100."
+
+        # Set the damage level in the global state
+        projected_states['global']['damage_level'] = level
+        return f"Damage level set to {level} for testing purposes."
+
+    actionManager.registerAction('setDamageLevelForTesting', "Set the simulated damage level used for voice effects", {
+        "type": "object",
+        "properties": {
+            "level": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "The damage level to set for testing purposes. 0 = no damage, 100 = maximum damage."
+            }
+        },
+        "required": ["level"]
+    }, set_damage_level_for_testing, 'global')
 
 def format_commodity_name(name: str) -> str:
     """

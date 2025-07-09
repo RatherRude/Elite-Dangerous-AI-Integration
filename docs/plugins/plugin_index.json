@@ -1,0 +1,10 @@
+[
+    {
+        "name": "COVAS:NEXT Media Player Plugin",
+        "latest_manifest_url": "https://raw.githubusercontent.com/MaverickMartyn/COVAS-NEXT-Media-Player-Plugin/main/manifest.json"
+    },
+    {
+        "name": "COVAS:NEXT Sticky Notes Plugin",
+        "latest_manifest_url": "https://raw.githubusercontent.com/MaverickMartyn/COVAS-NEXT-Sticky-Notes-Plugin/main/manifest.json"
+    }
+]
