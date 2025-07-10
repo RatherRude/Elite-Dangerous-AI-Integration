@@ -154,6 +154,11 @@
             height: 32px;
             z-index: 10;
             border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 !important;
+            min-width: 32px !important;
             
             &:hover {
               background: rgba(255, 255, 255, 1);
@@ -161,10 +166,11 @@
             }
             
             mat-icon {
-              font-size: 18px !important;
-              width: 18px !important;
-              height: 18px !important;
-              line-height: 18px;
+              font-size: 16px !important;
+              width: 16px !important;
+              height: 16px !important;
+              line-height: 16px !important;
+              margin: 0 !important;
             }
           }
         }
