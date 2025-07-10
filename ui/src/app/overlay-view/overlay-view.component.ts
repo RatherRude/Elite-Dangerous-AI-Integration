@@ -6,6 +6,8 @@ import { CommonModule } from "@angular/common";
 import {PngTuberService} from "../services/pngtuber.service";
 import {ChatMessage, ChatService} from "../services/chat.service";
 import {AvatarService} from "../services/avatar.service";
+import {CharacterService} from "../services/character.service";
+import {ConfigService} from "../services/config.service";
 
 @Component({
   selector: "app-overlay-view",
@@ -22,13 +24,19 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
   chat: ChatMessage[] = []
   
   private currentAvatarUrl: string | null = null;
-  private avatarId: string | null = null;
   private subscriptions: Subscription[] = [];
+
+  // Avatar positioning and flip settings
+  avatarPosition: 'left' | 'right' = 'right';
+  avatarFlip: boolean = false;
+  avatarShow: boolean = true;
 
   constructor(
     private pngTuberService: PngTuberService,
     private chatService: ChatService,
-    private avatarService: AvatarService
+    private avatarService: AvatarService,
+    private characterService: CharacterService,
+    private configService: ConfigService
   ) {
     // Subscribe to run mode changes
     this.subscriptions.push(
@@ -51,12 +59,37 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
       })
     );
     
-    // Subscribe to avatar ID changes
+    // Subscribe to avatar URL changes from character service
     this.subscriptions.push(
-      pngTuberService.avatarId$.subscribe(avatarId => {
-        this.avatarId = avatarId;
-        // Load avatar immediately when it changes, regardless of run mode
-        this.loadAvatar();
+      characterService.avatarUrl$.subscribe(avatarUrl => {
+        this.currentAvatarUrl = avatarUrl;
+        this.applyAvatarBackground();
+      })
+    );
+
+    // Subscribe to character changes to get avatar settings
+    this.subscriptions.push(
+      characterService.character$.subscribe(character => {
+        if (character) {
+          this.avatarPosition = character.avatar_position || 'right';
+          this.avatarFlip = character.avatar_flip || false;
+          this.updateAvatarShowStatus(character);
+        } else {
+          // Reset to defaults if no character
+          this.avatarPosition = 'right';
+          this.avatarFlip = false;
+          this.avatarShow = true;
+        }
+      })
+    );
+
+    // Subscribe to config changes to update avatar visibility based on EDCP settings
+    this.subscriptions.push(
+      configService.config$.subscribe(config => {
+        const character = this.characterService.getCurrentCharacter();
+        if (character && config) {
+          this.updateAvatarShowStatus(character, config);
+        }
       })
     );
 
@@ -66,9 +99,9 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
   }
   
   ngAfterViewInit() {
-    // Load avatar on initial view render if we have one
-    if (this.avatarId) {
-      this.loadAvatar();
+    // Apply avatar background if we have one
+    if (this.currentAvatarUrl) {
+      this.applyAvatarBackground();
     }
   }
   
@@ -82,45 +115,33 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
     }
   }
   
-  private async loadAvatar() {
-    // Clean up previous avatar URL
-    if (this.currentAvatarUrl) {
-      URL.revokeObjectURL(this.currentAvatarUrl);
-      this.currentAvatarUrl = null;
-    }
+  private updateAvatarShowStatus(character: any, config?: any): void {
+    const currentConfig = config || this.configService.getCurrentConfig();
     
-    if (!this.avatarId) {
-      // Revert to default fallback image when no avatar is set
-      this.applyDefaultBackground();
-      return;
-    }
+    // Hide avatar if EDCP is enabled and dominant
+    const isEDCPDominant = currentConfig?.edcopilot === true && currentConfig?.edcopilot_dominant === true;
     
-    try {
-      this.currentAvatarUrl = await this.avatarService.getAvatar(this.avatarId);
-      this.applyAvatarBackground();
-    } catch (error) {
-      console.error('Error loading avatar for overlay:', error);
-      // Fallback to default on error
-      this.applyDefaultBackground();
+    if (isEDCPDominant) {
+      this.avatarShow = false;
+    } else {
+      // Default to true if avatar_show is undefined, only false if explicitly set to false
+      this.avatarShow = character?.avatar_show !== false;
     }
   }
-  
+
   private applyAvatarBackground() {
-    // Wait for next tick to ensure view is rendered
+    // Wait for next tick to ensure view is rendered, with longer timeout for *ngIf changes
     setTimeout(() => {
-      if (this.pngtuberElement && this.currentAvatarUrl) {
-        this.pngtuberElement.nativeElement.style.backgroundImage = `url('${this.currentAvatarUrl}')`;
+      // Only apply if avatar should be shown and element exists
+      if (this.avatarShow && this.pngtuberElement?.nativeElement) {
+        if (this.currentAvatarUrl) {
+          this.pngtuberElement.nativeElement.style.backgroundImage = `url('${this.currentAvatarUrl}')`;
+        } else {
+          // Revert to CSS default background image when no avatar URL
+          this.pngtuberElement.nativeElement.style.backgroundImage = '';
+        }
       }
-    }, 0);
-  }
-  
-  private applyDefaultBackground() {
-    // Revert to CSS default background image
-    setTimeout(() => {
-      if (this.pngtuberElement) {
-        this.pngtuberElement.nativeElement.style.backgroundImage = '';
-      }
-    }, 0);
+    }, 10); // Slightly longer timeout to handle *ngIf rendering
   }
 
   public getLogColor(role: string): string {

@@ -117,9 +117,10 @@ export class MainViewComponent implements OnInit, OnDestroy {
 
     async start(): Promise<void> {
         try {
-            if(this.config && this.config.pngtuber) {
+            if(this.config && this.config.characters[this.config.active_character_index] && this.config.characters[this.config.active_character_index]['avatar_show']) {
                 this.createOverlay();
             }
+
             this.isLoading = true;
             this.loggingService.clearLogs(); // Clear logs when starting
             this.chatService.clearChat(); // Clear chat when starting

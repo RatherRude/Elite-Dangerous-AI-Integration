@@ -2,6 +2,7 @@ import { Injectable } from "@angular/core";
 import { BehaviorSubject, filter, map, Observable } from "rxjs";
 import { BaseCommand, BaseMessage, TauriService } from "./tauri.service";
 import { Config, ConfigService } from "./config.service.js";
+import { AvatarService } from "./avatar.service";
 
 export interface ConfigWithCharacters extends Config {
     characters: Character[];
@@ -29,6 +30,9 @@ export interface Character {
     tts_speed: string;
     tts_prompt: string;
     avatar?: string; // IndexedDB key for the avatar image
+    avatar_show?: boolean; // Show Avatar: boolean (disabled and false if edcopilot_dominant equals true)
+    avatar_position?: 'left' | 'right'; // Position: Left or Right as dropdown (hidden if not showing avatar)
+    avatar_flip?: boolean; // Flip: boolean (hidden if not showing avatar)
 
     
 
@@ -73,24 +77,33 @@ export class CharacterService {
 
     public voiceInstructionSupportedModels = ["gpt-4o-mini-tts"]
 
+    // Avatar-related properties
+    private currentAvatarUrl: string | null = null;
+    private avatarUrlSubject = new BehaviorSubject<string | null>(null);
+    public avatarUrl$ = this.avatarUrlSubject.asObservable();
+
     constructor(
         private tauriService: TauriService,
         private configService: ConfigService,
+        private avatarService: AvatarService,
     ) {
         this.configService.config$.pipe().subscribe(
             (config: Config | null) => {
                 if (!config) return;
                 this.activeCharacterIndex = config.active_character_index;
 
-                this.characterSubject.next(
-                    (config as ConfigWithCharacters)
-                        .characters[config.active_character_index],
-                );
+                const newCharacter = (config as ConfigWithCharacters)
+                    .characters[config.active_character_index];
+                
+                this.characterSubject.next(newCharacter);
 
                 // Update the character list
                 this.characterListSubject.next(
                     (config as ConfigWithCharacters).characters,
                 );
+
+                // Load avatar when character changes
+                this.loadCharacterAvatar();
             },
         );
     }
@@ -215,5 +228,33 @@ export class CharacterService {
         };
 
         await this.tauriService.send_command(message);
+    }
+
+    private async loadCharacterAvatar(): Promise<void> {
+        const character = this.characterSubject.getValue();
+        if (!character) {
+            this.currentAvatarUrl = null;
+            this.avatarUrlSubject.next(null);
+            return;
+        }
+
+        if (character.avatar) {
+            try {
+                const url = await this.avatarService.getAvatar(character.avatar);
+                this.currentAvatarUrl = url;
+                this.avatarUrlSubject.next(url);
+            } catch (error) {
+                console.error('Error loading character avatar:', error);
+                this.currentAvatarUrl = null;
+                this.avatarUrlSubject.next(null);
+            }
+        } else {
+            this.currentAvatarUrl = null;
+            this.avatarUrlSubject.next(null);
+        }
+    }
+
+    public getAvatarUrl(): string {
+        return this.currentAvatarUrl || 'assets/cn_avatar1.png';
     }
 }

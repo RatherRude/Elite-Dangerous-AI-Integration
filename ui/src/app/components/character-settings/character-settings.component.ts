@@ -23,7 +23,6 @@ import { MatDialog } from "@angular/material/dialog";
 import { EdgeTtsVoicesDialogComponent } from "../edge-tts-voices-dialog/edge-tts-voices-dialog.component.js";
 import { ConfirmationDialogComponent } from "../confirmation-dialog/confirmation-dialog.component.js";
 import { AvatarCatalogDialogComponent, AvatarCatalogResult } from "../avatar-catalog-dialog/avatar-catalog-dialog.component.js";
-import { AvatarService } from "../../services/avatar.service.js";
 import {
     MatAccordion,
     MatExpansionPanel,
@@ -104,7 +103,6 @@ export class CharacterSettingsComponent {
     isApplyingChange: boolean = false;
     public GameEventTooltips = GameEventTooltips;
     voiceInstructionSupportedModels: string[] = this.characterService.voiceInstructionSupportedModels;
-    currentAvatarUrl: string | null = null;
 
     gameEventCategories = GameEventCategories;
 
@@ -550,7 +548,6 @@ export class CharacterSettingsComponent {
         private snackBar: MatSnackBar,
         private confirmationDialog: ConfirmationDialogService,
         private dialog: MatDialog,
-        private avatarService: AvatarService,
     ) {
         this.configSubscription = this.configService.config$.subscribe(
             (config) => {
@@ -562,7 +559,6 @@ export class CharacterSettingsComponent {
         this.characterSubscription = this.characterService.character$.subscribe(
             (character) => {
                 this.activeCharacter = character;
-                this.loadCharacterAvatar();
             }
         )
     }
@@ -1362,22 +1358,12 @@ export class CharacterSettingsComponent {
 
     // Avatar-related methods
     async loadCharacterAvatar() {
-        if (this.currentAvatarUrl) {
-            URL.revokeObjectURL(this.currentAvatarUrl);
-            this.currentAvatarUrl = null;
-        }
-
-        if (this.activeCharacter?.avatar) {
-            try {
-                this.currentAvatarUrl = await this.avatarService.getAvatar(this.activeCharacter.avatar);
-            } catch (error) {
-                console.error('Error loading character avatar:', error);
-            }
-        }
+        // This method is now handled by the character service
+        // We can remove this implementation as the service handles it automatically
     }
 
     getAvatarUrl(): string {
-        return this.currentAvatarUrl || 'assets/cn_avatar1.png';
+        return this.characterService.getAvatarUrl();
     }
 
     openAvatarCatalog() {
@@ -1390,7 +1376,7 @@ export class CharacterSettingsComponent {
         dialogRef.afterClosed().subscribe((result: AvatarCatalogResult) => {
             if (result !== undefined && this.activeCharacter) {
                 this.setCharacterProperty('avatar', result.avatarId);
-                this.loadCharacterAvatar();
+                // The character service will automatically reload the avatar
             }
         });
     }

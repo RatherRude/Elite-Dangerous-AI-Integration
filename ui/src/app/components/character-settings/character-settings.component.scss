@@ -25,7 +25,7 @@
   padding: 20px;
 }
 
-mat-form-field {
+:not(.avatar-option) mat-form-field {
   width: 100%;
 }
 
@@ -308,10 +308,20 @@ ul {
 .avatar-edit-section {
   margin-bottom: 20px;
   
+  .avatar-container {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
   .avatar-display-container {
     display: flex;
     justify-content: center;
-    margin-bottom: 16px;
+    flex-shrink: 0;
     
     .avatar-full-display {
       position: relative;
@@ -350,6 +360,30 @@ ul {
           height: 18px;
         }
       }
+    }
+  }
+}
+
+// Avatar options styling
+.avatar-options-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+  min-height: 200px;
+  justify-content: center;
+  
+  .avatar-option {
+    display: flex;
+    align-items: center;
+    
+    mat-form-field {
+      flex: 1;
+      max-width: 200px;
+    }
+    
+    mat-slide-toggle {
+      margin: 0;
     }
   }
 }

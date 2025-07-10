@@ -10,16 +10,26 @@
 
 .overlay-container {
   display: grid;
-  grid-template:
-    ". ." 15%
-    ". character" auto
-    / 1fr 450px;
   box-sizing: border-box;
   aspect-ratio: 16/9;
   height: 100vh;
   margin: 0 auto;
   overflow: hidden;
   perspective: 1920px;
+}
+/* Left positioning variant */
+.overlay-container.position-left {
+  grid-template:
+    ". ." 15%
+    "character ." auto
+    / 450px 1fr;
+}
+/* Right positioning (default) */
+.overlay-container.position-right {
+  grid-template:
+    ". ." 15%
+    ". character" auto
+    / 1fr 450px;
 }
 
 .overlay-character {
@@ -36,6 +46,11 @@
   }
 }
 
+/* Different idle positioning for left side */
+.overlay-container.position-left .overlay-character.idle {
+  transform: translateX(-150%);
+}
+
 .overlay-pngtuber {
   display: block;
   width: 250px;
@@ -47,7 +62,9 @@
   background-size: 200%;
   background-position: 0% 0%;
   background-repeat: no-repeat;
-  transform: scaleX(-1);
+  /* Remove default flip - now conditional */
+  transform: none;
+  
   &.listening {
     background-position: 0% 0%;
   }
@@ -62,6 +79,11 @@
   }
   &.idle {
     background-position: 0% 0%;
+  }
+  
+  /* Conditional flip when flip class is applied */
+  &.flip {
+    transform: scaleX(-1);
   }
 }
 

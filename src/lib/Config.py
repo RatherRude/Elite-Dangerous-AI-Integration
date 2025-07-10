@@ -340,6 +340,9 @@ class Character(TypedDict, total=False):
     tts_speed: str
     tts_prompt: str
     avatar: str  # IndexedDB key for the avatar image
+    avatar_show: bool  # Show Avatar: boolean (disabled and false if edcopilot_dominant equals true)
+    avatar_position: str  # Position: Left or Right as dropdown (hidden if not showing avatar)
+    avatar_flip: bool  # Flip: boolean (hidden if not showing avatar)
     game_events: dict[str, bool]
     event_reaction_enabled_var: bool
     react_to_text_local_var: bool
@@ -615,6 +618,9 @@ def getDefaultCharacter(config: Config) -> Character:
         "tts_speed": '1.2',
         "tts_prompt": '',
         "avatar": '',  # No avatar by default
+        "avatar_show": True,
+        "avatar_position": "right",
+        "avatar_flip": False,
         "game_events": game_events,
         "event_reaction_enabled_var": True,
         "react_to_text_local_var": True,
