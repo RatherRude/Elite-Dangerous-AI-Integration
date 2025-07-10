@@ -309,13 +309,14 @@ ul {
   margin-bottom: 20px;
   
   .avatar-container {
-    display: flex;
+    display: inline-flex;
     gap: 24px;
     align-items: flex-start;
     padding: 16px;
     background: rgba(255, 255, 255, 0.05);
     border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    width: fit-content;
   }
   
   .avatar-display-container {
@@ -369,17 +370,16 @@ ul {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  flex: 1;
   min-height: 200px;
   justify-content: center;
+  min-width: 220px;
   
   .avatar-option {
     display: flex;
     align-items: center;
     
     mat-form-field {
-      flex: 1;
-      max-width: 200px;
+      width: 200px;
     }
     
     mat-slide-toggle {
