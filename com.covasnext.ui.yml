@@ -1,0 +1,87 @@
+app-id: com.covasnext.ui
+runtime: org.gnome.Platform
+runtime-version: '48'
+sdk: org.gnome.Sdk
+command: covas-next-ui-wrapper
+finish-args:
+  # X11 + XShm access (forced, no Wayland)
+  - --socket=x11
+  - --share=ipc
+  # Force X11, no Wayland support
+  - --env=GDK_BACKEND=x11
+  - --env=QT_QPA_PLATFORM=xcb
+  - --env=WEBKIT_DISABLE_COMPOSITING_MODE=1
+  # Network access
+  - --share=network
+  # Audio access
+  - --socket=pulseaudio
+  # File access
+  - --filesystem=home:rw
+  - --filesystem=/tmp:rw
+  # Devices access
+  - --device=dri # OpenGL
+  #- --device=input # Not supported in flatpak-builder 1.4 (default on ubuntu 24.04) 
+  - --device=all # Fallback for input devices
+  # D-Bus access for notifications and system integration
+  - --socket=session-bus
+  - --socket=system-bus
+  # Environment variables for better compatibility
+  - --env=RUST_BACKTRACE=1
+  - --env=WEBKIT_DISABLE_DMABUF_RENDERER=1
+  - --env=SSL_CERT_DIR=/etc/ssl/certs
+
+modules:
+  - name: covas-next-ui
+    buildsystem: simple
+    sources:
+      - type: archive
+        path: covas-next-ui-linux.tar.gz
+        strip-components: 0
+      - type: file
+        path: ui/src-tauri/icons/EDAI_logo_transparent_512.png
+        dest-filename: EDAI_logo_transparent_512.png
+    build-commands:
+      # Create directories
+      - mkdir -p /app/bin
+      - mkdir -p /app/lib/covas-next-ui
+      - mkdir -p /app/share/applications
+      - mkdir -p /app/share/icons/hicolor/128x128/apps
+      - mkdir -p /app/share/icons/hicolor/256x256/apps
+      - mkdir -p /app/share/icons/hicolor/scalable/apps
+      
+      # Install the application
+      - cp -r bin/* /app/bin/
+      - cp -r lib/* /app/lib/
+      
+      # Make sure executables are executable
+      - chmod +x /app/bin/covas-next-ui
+      - find /app/lib -type f -executable -exec chmod +x {} \;
+      
+      # Create wrapper script to ensure X11 environment
+      - |
+        cat > /app/bin/covas-next-ui-wrapper << EOF
+        #!/bin/bash
+        export GDK_BACKEND=x11
+        export QT_QPA_PLATFORM=xcb
+        export WEBKIT_DISABLE_COMPOSITING_MODE=1
+        export WEBKIT_DISABLE_DMABUF_RENDERER=1
+        exec /app/bin/covas-next-ui "\$@"
+        EOF
+      - chmod +x /app/bin/covas-next-ui-wrapper
+      
+      # Install icon
+      - install -Dm644 EDAI_logo_transparent_512.png /app/share/icons/hicolor/128x128/apps/com.covasnext.ui.png
+      - install -Dm644 EDAI_logo_transparent_512.png /app/share/icons/hicolor/256x256/apps/com.covasnext.ui.png
+      
+      # Create desktop file
+      - |
+        cat > /app/share/applications/com.covasnext.ui.desktop << EOF
+        [Desktop Entry]
+        Type=Application
+        Name=COVAS:NEXT
+        Comment=Elite Dangerous AI Integration
+        Exec=covas-next-ui-wrapper
+        Icon=com.covasnext.ui
+        Categories=Game;Utility;
+        StartupNotify=true
+        EOF

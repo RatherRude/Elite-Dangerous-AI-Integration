@@ -85,10 +85,24 @@ def test_openai_tts_playback(mock_pyaudio, mock_openai):
         sleep(0.1)
         
     assert mock_pyaudio['stream'].write.call_count == ceil(2*24_000/1024)
-    
+
+
+def test_openai_tts_playback_with_voice_instructions(mock_pyaudio, mock_openai):
+    """Test OpenAI TTS playback"""
+    tts = TTS(mock_openai, provider="openai", model="gpt-4o-mini-tts", voice="nova", voice_instructions="Speak normally...")
+    tts.say("Hello world")
+
+    while not mock_openai.audio.speech.with_streaming_response.create.called:
+        sleep(0.1)
+
+    while not mock_pyaudio['stream'].write.call_count == ceil(2 * 24_000 / 1024):
+        sleep(0.1)
+
+    assert mock_pyaudio['stream'].write.call_count == ceil(2 * 24_000 / 1024)
+
 def test_edge_tts_playback(mock_pyaudio, mock_miniaudio, mock_openai):
     """Test Edge-TTS playback"""
-    tts =  TTS(None, provider="edge-tts", model="edge-tts", voice="en-GB-SoniaNeural", speed=1)
+    tts =  TTS(None, provider="edge-tts", model="edge-tts", voice="en-US-AvaMultilingualNeural", speed=1)
     tts.say("Hello world")
     
     while not mock_pyaudio['stream'].write.call_count >= 2:

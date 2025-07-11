@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "identifier": "com.covas-next.ui",
   "build": {
-    "beforeDevCommand": "npm run start",
+    "beforeDevCommand": "npx mkdirp ../dist/Chat && npm run start",
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist/covas-next-ui/browser"
@@ -20,6 +20,7 @@
     ],
     "security": {
       "csp": null,
+      "devCsp": null,
       "capabilities": [
         "default",
         "overlay",

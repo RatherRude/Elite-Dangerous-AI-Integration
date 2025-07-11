@@ -159,7 +159,7 @@ class Status(TypedDict):
     flags: BaseFlags
     flags2: Optional[OdysseyFlags]
     Pips: Optional[Pips]
-    Firegroup: Optional[int]
+    FireGroup: Optional[int]
     GuiFocus: Optional[Literal[
         'NoFocus',
         'InternalPanel',
@@ -223,7 +223,7 @@ def parse_status_json(value: dict[str, Any]) -> Status:
         flags=parse_status_flags(value.get('Flags', 0)),
         flags2=parse_odyssey_flags(value.get('Flags2', 0)) if 'Flags2' in value else None,
         Pips=parse_pips_flags(value.get('Pips', [0,0,0])) if 'Pips' in value else None,
-        Firegroup=value.get('Firegroup') if 'Firegroup' in value else None,
+        FireGroup=value.get('FireGroup') if 'FireGroup' in value else None,
         GuiFocus=GuiPanels[value.get('GuiFocus', 0)] if 'GuiFocus' in value else None,
         Fuel=Fuel(**value.get('Fuel', {})) if 'Fuel' in value else None,
         Cargo=value.get('Cargo', None),
@@ -297,6 +297,15 @@ class StatusParser:
         """Creates events specific field that has changed."""
         events = []
 
+        gui_event = ""
+        if old_status["GuiFocus"] != new_status["GuiFocus"]:
+            if old_status["GuiFocus"] in ["GalaxyMap", "SystemMap"]:
+                gui_event = old_status["GuiFocus"]+"Closed"
+            if new_status["GuiFocus"] in ["GalaxyMap", "SystemMap"]:
+                gui_event += new_status["GuiFocus"]+"Opened"
+            if gui_event != "":
+                events.append({"event": gui_event})
+
         # Only in mainship
         if new_status["flags"]["InMainShip"]:
             if old_status["flags"]["LandingGearDown"] and not new_status["flags"]["LandingGearDown"]:
@@ -339,10 +348,10 @@ class StatusParser:
             if not old_status["flags"]["FsdMassLocked"] and new_status["flags"]["FsdMassLocked"]:
                 events.append({"event": "FsdMassLocked"})
 
-            if old_status["flags2"] and not new_status["flags2"]:
-                if old_status["flags2"]["GlideMode"] and not new_status["flags2"]["GlideMode"]:
+            if old_status["flags2"] and new_status["flags2"]:
+                if old_status.get("flags2", {}).get("GlideMode") and not new_status.get("flags2", {}).get("GlideMode"):
                     events.append({"event": "GlideModeExited"})
-                if not old_status["flags2"]["GlideMode"] and new_status["flags2"]["GlideMode"]:
+                if not old_status.get("flags2", {}).get("GlideMode") and new_status.get("flags2", {}).get("GlideMode"):
                     events.append({"event": "GlideModeEntered"})
 
             if old_status["flags"]["LowFuel"] and not new_status["flags"]["LowFuel"]:
@@ -352,6 +361,9 @@ class StatusParser:
 
             if not old_status["flags"]["FsdCharging"] and new_status["flags"]["FsdCharging"]:
                 events.append({"event": "FsdCharging"})
+
+            if not old_status["flags"]["BeingInterdicted"] and new_status["flags"]["BeingInterdicted"]:
+                events.append({"event": "BeingInterdicted"})
 
         # Only SRV
         if new_status["flags"]["InSRV"]:
@@ -400,6 +412,11 @@ class StatusParser:
             events.append({"event": "NightVisionOff"})
         if not old_status["flags"]["NightVision"] and new_status["flags"]["NightVision"]:
             events.append({"event": "NightVisionOn"})
+
+        if old_status["flags"]["HudInAnalysisMode"] and not new_status["flags"]["HudInAnalysisMode"]:
+            events.append({"event": "HudSwitchedToCombatMode"})
+        if not old_status["flags"]["HudInAnalysisMode"] and new_status["flags"]["HudInAnalysisMode"]:
+            events.append({"event": "HudSwitchedToAnalysisMode"})
 
         if (
             old_status["LegalState"] and new_status["LegalState"]

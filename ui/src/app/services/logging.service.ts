@@ -1,6 +1,7 @@
 import { Injectable } from "@angular/core";
 import { BehaviorSubject, filter, map, Observable } from "rxjs";
 import { BaseMessage, TauriService } from "./tauri.service";
+import { EventMessage } from "./event.service.js";
 
 export interface LogMessage extends BaseMessage {
     type: "log";
@@ -9,10 +10,7 @@ export interface LogMessage extends BaseMessage {
         | "info"
         | "warn"
         | "error"
-        | "covas"
-        | "event"
-        | "cmdr"
-        | "action";
+        | "event";
     message: string;
 }
 
@@ -26,12 +24,31 @@ export class LoggingService {
     constructor(private tauriService: TauriService) {
         // Subscribe to log messages from the TauriService
         this.tauriService.output$.pipe(
-            filter((message): message is LogMessage => message.type === "log"),
-            // Filter out debug messages
-            filter((message) => message.prefix !== "debug"),
+            filter((message): message is LogMessage | EventMessage =>
+                message.type === "log" || message.type === "event"
+            ),
+            // Map to lowercase prefix for consistency
+            map((message) => ("prefix" in message
+                ? {
+                    ...message,
+                    prefix: message.prefix
+                        .toLowerCase() as LogMessage["prefix"],
+                }
+                : message)
+            ),
         ).subscribe((logMessage) => {
             const currentLogs = this.logsSubject.getValue();
-            this.logsSubject.next([...currentLogs, logMessage]);
+            if (logMessage.type === "log") {
+                this.logsSubject.next([...currentLogs.slice(-100), logMessage]);
+            }
+            if (logMessage.type === "event") {
+                this.logsSubject.next([...currentLogs.slice(-100), {
+                    type: "log",
+                    prefix: "event",
+                    timestamp: logMessage.timestamp,
+                    message: JSON.stringify(logMessage.event),
+                } as LogMessage]);
+            }
         });
     }
 

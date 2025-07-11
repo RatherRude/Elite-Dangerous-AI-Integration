@@ -2,13 +2,12 @@ import hashlib
 import inspect
 from abc import ABC, abstractmethod
 from datetime import timezone, datetime
-import time
 from typing import Any, Generic, Literal, Callable, TypeVar, final
 
 from .Database import EventStore, KeyValueStore
 from .EDJournal import *
 from .Event import Event, GameEvent, ConversationEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent
-from .Logger import log
+from .Logger import log, show_chat_message
 
 import threading
 from collections import defaultdict
@@ -31,47 +30,43 @@ class Projection(ABC, Generic[ProjectedState]):
 
 @final
 class EventManager:
-    def __init__(self, on_reply_request: Callable[[list[Event], list[Event], dict[str, dict[str, Any]]], Any], game_events: list[str],
-                 continue_conversation: bool = False, react_to_text_local: bool = True, react_to_text_starsystem: bool = True, react_to_text_npc: bool = False,
-                 react_to_text_squadron: bool = True, react_to_material:str = '', react_to_danger_mining:bool = False,
-                 react_to_danger_onfoot:bool = False, react_to_danger_supercruise:bool = False):
+    @staticmethod
+    def clear_history():
+        event_store = EventStore('events', [])
+        event_store.delete_all()
+        projection_store = KeyValueStore('projections')
+        projection_store.delete_all()
+    
+    def __init__(
+            self, 
+            game_events: list[str],
+            plugin_event_classes: list[type[Event]],
+        ):
         self.incoming: Queue[Event] = Queue()
         self.pending: list[Event] = []
         self.processed: list[Event] = []
-        self.is_replying = False
-        self.is_listening = False
-        self.on_reply_request = on_reply_request
         self.game_events = game_events
-        self.react_to_text_local = react_to_text_local
-        self.react_to_text_starsystem = react_to_text_starsystem
-        self.react_to_text_npc = react_to_text_npc
-        self.react_to_text_squadron = react_to_text_squadron
-        self.react_to_material = react_to_material
-        self.react_to_danger_mining = react_to_danger_mining
-        self.react_to_danger_onfoot = react_to_danger_onfoot
-        self.react_to_danger_supercruise = react_to_danger_supercruise
         self._conditions_registry = defaultdict(list)
         self._registry_lock = threading.Lock()
 
         self.event_classes: list[type[Event]] = [ConversationEvent, ToolEvent, GameEvent, StatusEvent, ExternalEvent]
+        self.event_classes += plugin_event_classes # Adds the plugin provided event classes
         self.projections: list[Projection] = []
+        self.sideeffects: list[Callable[[Event, dict[str, Any]], None]] = []
         
         self.event_store = EventStore('events', self.event_classes)
         self.projection_store = KeyValueStore('projections')
-
-        if continue_conversation:
-            self.load_history()
-            log('info', 'Continuing conversation with', len(self.processed), 'events.')
+        
+        self.load_history()
+        if self.processed:
+            show_chat_message('info', 'Continuing conversation with', len(self.processed), 'events.')
         else:
-            self.clear_history()
-            log('info', 'Starting a new conversation.')
+            show_chat_message('info', 'Starting new conversation.')
             
         
     def add_game_event(self, content: dict[str, Any]):
         event = GameEvent(content=content, historic=False)
         self.incoming.put(event)
-        log('Event', event.content['event'])
-        log('debug', 'Event', event)
 
     def add_historic_game_event(self, content: dict[str, Any]):
         max_event_id = max([event.content.get('id') for event in self.processed if isinstance(event, GameEvent)], default='') # TODO: this is not efficient
@@ -79,84 +74,101 @@ class EventManager:
             return
         event = GameEvent(content=content, historic=True)
         self.incoming.put(event)
-        # log('Event', event)
         
     def add_external_event(self, application: str, content: dict[str, Any]):
         event = ExternalEvent(content={**content, 'event': application})
         self.incoming.put(event)
-        log('Event', event.content['event'])
-        log('debug', 'Event', event)
 
     def add_status_event(self, status: dict[str, Any]):
         event = StatusEvent(status=status)
         self.incoming.put(event)
-        if status.get("event") != 'Status':
-            log('Event', event.status['event'])
-            log('debug', 'Event', event)
 
     def add_conversation_event(self, role: Literal['user', 'assistant'], content: str):
         event = ConversationEvent(kind=role, content=content)
         self.incoming.put(event)
-        if role == 'user':
-            log('CMDR', content)
-        elif role == 'assistant':
-            log('COVAS', content)
+
+    def add_user_speaking(self):
+        event = ConversationEvent(kind='user_speaking', content='')
+        self.incoming.put(event)
+        # log('debug', event)
 
     def add_assistant_complete_event(self):
         event = ConversationEvent(kind='assistant_completed', content='')
         self.incoming.put(event)
-        self.is_replying = False
+        # log('debug', event)
+
+    def add_assistant_acting(self):
+        event = ConversationEvent(kind='assistant_acting', content='')
+        self.incoming.put(event)
         # log('debug', event)
 
     def add_projected_event(self, event: ProjectedEvent, source: Event):
         event.processed_at = source.processed_at
         if not isinstance(source, GameEvent) or not source.historic:
             self.pending.append(event)
-            log('Event', 'projected', event.content['event'])
-            log('debug', 'Event', event)
 
     def add_tool_call(self, request: list[dict[str, Any]], results: list[dict[str, Any]], text: list[str] | None = None):
         event = ToolEvent(request=request, results=results, text=text)
         self.incoming.put(event)
-        log('Action', [result['name'] + ': ' + result['content'] for result in results])
 
     def process(self):
+        projected_states: dict[str, Any] | None = None
         while not self.incoming.empty():
             event = self.incoming.get()
             timestamp = datetime.now(timezone.utc).timestamp()
             event.processed_at = timestamp
             self.event_store.insert_event(event, timestamp, commit=False)
-            self.update_projections(event, save_later=True)
+            projected_events = self.update_projections(event, save_later=True)
+            
+            self.pending.append(event)
             
             if isinstance(event, GameEvent) and event.historic:
                 #self.processed.append(event)
-                pass
-            else:
-                self.pending.append(event)
+                continue
+                
+            projected_states = {}
+            for projection in self.projections:
+                projected_states[projection.__class__.__name__] = projection.state.copy()
+            
+            self.trigger_sideeffects(event, projected_states)
+            for projected_event in projected_events:
+                self.trigger_sideeffects(projected_event, projected_states)
+
         self.event_store.commit()
         self.save_projections()
-
-        projected_states: dict[str, Any] = {}
+        self.processed += self.pending
+        self.pending = []
+        
+        return projected_states
+    
+    def trigger_sideeffects(self, event: Event, projected_states: dict[str, Any]):
+        for sideeffect in self.sideeffects:
+            try:
+                sideeffect(event, projected_states)
+            except Exception as e:
+                log('error', 'Error triggering sideeffect', sideeffect, e, traceback.format_exc())
+    
+    def register_sideeffect(self, sideeffect: Callable[[Event, dict[str, Any]], None]):
+        self.sideeffects.append(sideeffect)
+        
+    def get_current_state(self) -> tuple[list[Event], dict[str, Any]]:
+        """
+        Returns the current state of the event manager.
+        :return: A tuple containing the list of processed events and a dictionary of projection states.
+        """
+        projected_states = {}
         for projection in self.projections:
             projected_states[projection.__class__.__name__] = projection.state.copy()
+        return self.processed, projected_states
 
-        if not self.is_replying and not self.is_listening and self.should_reply(projected_states):
-            self.is_replying = True
-            new_events = self.pending
-            self.processed += self.pending
-            self.pending = []
-            log('debug', 'eventmanager requesting reply')
-
-            self.on_reply_request(self.processed, new_events, projected_states)
-            return True
-
-        return False
-
-    def update_projections(self, event: Event, save_later: bool = False):
+    def update_projections(self, event: Event, save_later: bool = False) -> list[ProjectedEvent]:
+        projected_events: list[ProjectedEvent] = []
         for projection in self.projections:
-            self.update_projection(projection, event, save_later=save_later)
+            evts = self.update_projection(projection, event, save_later=save_later)
+            projected_events.extend(evts)
+        return projected_events
     
-    def update_projection(self, projection: Projection, event: Event, save_later: bool = False):
+    def update_projection(self, projection: Projection, event: Event, save_later: bool = False) -> list[ProjectedEvent]:
         projection_name = projection.__class__.__name__
         try:
             projected_events = projection.process(event)
@@ -167,35 +179,41 @@ class EventManager:
                     self.event_store.insert_event(event, datetime.now(timezone.utc).timestamp())
         except Exception as e:
             log('error', 'Error processing event', event, 'with projection', projection, e, traceback.format_exc())
-            return
+            return []
         if event.processed_at < projection.last_processed:
             log('warn', 'Projection', projection_name, 'is running backwards in time!', 'Event:', event.processed_at, 'Projection:', projection.last_processed)
         projection.last_processed = event.processed_at
         if not save_later:
             self.projection_store.set(projection_name, {"state": projection.state, "last_processed": projection.last_processed})
-    
+        return projected_events if projected_events else []
+
     def save_projections(self):
         for projection in self.projections:
             self.projection_store.set(projection.__class__.__name__, {"state": projection.state, "last_processed": projection.last_processed})
     
-    def register_projection(self, projection: Projection):
+    def register_projection(self, projection: Projection, raise_error: bool = True):
         projection_class_name = projection.__class__.__name__
         projection_source = inspect.getsource(projection.__class__)
         projection_version = hashlib.sha256(projection_source.encode()).hexdigest()
         log('debug', 'Register projection', projection_class_name, 'version', projection_version)
         
-        state = self.projection_store.init(projection_class_name, projection_version, {"state": projection.get_default_state(), "last_processed": 0.0})
-        projection.state = state["state"]
-        projection.last_processed = state["last_processed"]
-        
-        for event in self.processed + self.pending:
-            if event.processed_at <= projection.last_processed:
-                continue
-            #log('debug', 'updating', projection_class_name, 'with', event, 'after starting from', projection.last_processed)
-            self.update_projection(projection, event, save_later=True)
-        
-        self.projections.append(projection)
-        self.save_projections()
+        try:
+            state = self.projection_store.init(projection_class_name, projection_version, {"state": projection.get_default_state(), "last_processed": 0.0})
+            projection.state = state["state"]
+            projection.last_processed = state["last_processed"]
+
+            for event in self.processed + self.pending:
+                if event.processed_at <= projection.last_processed:
+                    continue
+                #log('debug', 'updating', projection_class_name, 'with', event, 'after starting from', projection.last_processed)
+                self.update_projection(projection, event, save_later=True)
+            
+            self.projections.append(projection)
+            self.save_projections()
+        except Exception as e:
+            if raise_error:
+                raise
+            log('error', 'Error registering projection', projection, e, traceback.format_exc())
 
     def wait_for_condition(self, projection_name: str, condition_fn, timeout=None):
         """
@@ -262,71 +280,8 @@ class EventManager:
             # Only keep conditions that are still not satisfied
             self._conditions_registry[projection_name] = still_waiting
 
-    def should_reply(self, states:dict[str, Any]):
-        if len(self.pending) == 0:
-            return False
-
-        for event in self.pending:
-            # check if pending contains conversational events
-            if isinstance(event, ConversationEvent) and event.kind == "user":
-                return True
-
-            if isinstance(event, ToolEvent):
-                return True
-
-            if isinstance(event, GameEvent) and event.content.get("event") in self.game_events:
-                if event.content.get("event") == "ReceiveText":
-                    if event.content.get("Channel") not in ['wing', 'voicechat', 'friend', 'player'] and (
-                        (not self.react_to_text_local and event.content.get("Channel") == 'local') or
-                        (not self.react_to_text_starsystem and event.content.get("Channel") == 'starsystem') or
-                        (not self.react_to_text_npc and event.content.get("Channel") == 'npc') or
-                        (not self.react_to_text_squadron and event.content.get("Channel") == 'squadron')):
-                        continue
-
-                if event.content.get("event") == "ProspectedAsteroid":
-                    chunks = [chunk.strip() for chunk in self.react_to_material.split(",")]
-                    contains_material = False
-                    for chunk in chunks:
-                        for material in event.content.get("Materials"):
-                            if chunk.lower() in material["Name"].lower():
-                                contains_material = True
-                        if event.content.get("MotherlodeMaterial", False):
-                            if chunk.lower() in event.content['MotherlodeMaterial'].lower():
-                                contains_material = True
-
-                    if not contains_material:
-                        continue
-
-                if event.content.get("event") == "ScanOrganic":
-                    continue
-
-                return True
-
-            if isinstance(event, StatusEvent) and event.status.get("event") in self.game_events:
-                if event.status.get("event") in ["InDanger", "OutOfDanger"]:
-                    if not self.react_to_danger_mining:
-                        if states.get('ShipInfo', {}).get('IsMiningShip', False) and states.get('Location', {}).get('PlanetaryRing', False):
-                            continue
-                    if not self.react_to_danger_onfoot:
-                        if states.get('CurrentStatus', {}).get('flags2').get('OnFoot'):
-                            continue
-                    if not self.react_to_danger_supercruise:
-                        if states.get('CurrentStatus', {}).get('flags').get('Supercruise') and len(states.get('NavInfo', {"NavRoute": []}).get('NavRoute', [])):
-                            continue
-                return True
-
-            if isinstance(event, ExternalEvent):
-                if event.content.get("event") == "ExternalTwitchMessage":
-                    continue
-                return True
-
-            if isinstance(event, ProjectedEvent):
-                if event.content.get("event").startswith('ScanOrganic'):
-                    if not 'ScanOrganic' in self.game_events:
-                        continue
-                return True
-
-        return False
+    def get_projection(self, projection_type: type) -> Projection[object] | None:
+        return next((proj for proj in self.projections if isinstance(proj, projection_type)), None)
 
     def save_incoming_history(self, incoming: list[Event]):
         for event in incoming:
@@ -337,19 +292,3 @@ class EventManager:
         for event in reversed(events):
             self.processed.append(event)
     
-    def _instantiate_event(self, type_name: str, data: dict[str, Any]) -> (Event | None):
-        for event_class in self.event_classes:
-            if event_class.__name__ == type_name:
-                return event_class(**data)
-        return None
-
-    def _json_serializer(self, o):
-        if isinstance(o, datetime):
-            return o.isoformat()
-        raise TypeError(f'Object of type {type(o).__name__} is not JSON serializable')
-    
-    def clear_history(self):
-        # TODO do we want to clear all events or just conversation?
-        self.event_store.delete_all()
-        # TODO do we want to clear projections as well?
-        self.projection_store.delete_all()

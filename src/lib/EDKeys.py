@@ -38,6 +38,9 @@ class EDKeys:
             'PrimaryFire',
             'SecondaryFire',
             'HyperSuperCombination',
+            'Supercruise',
+            'Hyperspace',
+            'TargetNextRouteSystem',
             'SetSpeedZero',
             'SetSpeed25',
             'SetSpeed50',
@@ -52,12 +55,16 @@ class EDKeys:
             'IncreaseEnginesPower',
             'IncreaseWeaponsPower',
             'IncreaseSystemsPower',
+            'ResetPowerDistribution',
             'GalaxyMapOpen',
             'CamYawLeft',
             'SystemMapOpen',
             'CycleNextTarget',
+            'CyclePreviousTarget',
             'CycleNextSubsystem',
             'CycleFireGroupNext',
+            'CycleFireGroupPrevious',
+            'PlayerHUDModeToggle',
             'ShipSpotLightToggle',
             'EjectAllCargo',
             'LandingGearToggle',
@@ -69,13 +76,19 @@ class EDKeys:
             'ToggleCargoScoop',
             'ChargeECM',
             'CycleNextPanel',
+            'CyclePreviousPanel',
             'FocusLeftPanel',
+            'FocusRadarPanel',
             'UI_Up',
             'UI_Down',
             'UI_Left',
             'UI_Right',
             'UI_Select',
             'UI_Back',
+            'CamTranslateForward',
+            'CamTranslateRight',
+            'CamZoomOut',
+            'CamZoomIn',
             'UIFocus',
             'QuickCommsPanel',
             'QuickCommsPanel_Buggy',
@@ -133,6 +146,7 @@ class EDKeys:
         self.watch_thread.start()
         
         self.keys = self.get_bindings()
+        log('debug', 'Keybindings file found, loaded bindings from', self.latest_bindings_file)
         
         self.missing_keys = []
         # dump config to log
@@ -224,6 +238,7 @@ class EDKeys:
         return collisions
 
     def send(self, key_name, hold=None, repeat=1, repeat_delay=None, state=None):
+        log('debug', 'Trying to send key', key_name)
         binding = self.keys.get(key_name)
         if binding is None:
             raise Exception(
@@ -278,10 +293,10 @@ class EDKeys:
         while True:
             latest_bindings, mtime = self.get_latest_keybinds()
             if latest_bindings != self.latest_bindings_file or mtime != self.latest_bindings_mtime:
-                log('debug', 'Keybindings file changed, reloading bindings')
                 self.latest_bindings_file = latest_bindings
                 self.latest_bindings_mtime = mtime
                 self.keys = self.get_bindings()
+                log('debug', 'Keybindings file changed, reloaded bindings from', self.latest_bindings_file)
                 # Update missing keys list
                 self.missing_keys = []
                 for key in self.keys_to_obtain:

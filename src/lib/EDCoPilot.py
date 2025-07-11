@@ -2,9 +2,8 @@ import queue
 import threading
 import time
 import traceback
-from typing import final, Optional
-from .Logger import log
-from .ActionManager import ActionManager
+from typing import Optional
+from typing import final
 
 from EDMesg.CovasNext import (
     ExternalChatNotification,
@@ -17,6 +16,10 @@ from EDMesg.CovasNext import (
 )
 from EDMesg.EDCoPilot import create_edcopilot_client, OpenPanelAction
 from EDMesg.base import EDMesgWelcomeAction
+
+from .ActionManager import ActionManager
+from .Logger import log, show_chat_message
+
 
 @final
 class EDCoPilot:
@@ -38,13 +41,13 @@ class EDCoPilot:
         except Exception:
             self.is_enabled = False
             self.is_edcopilot_dominant = False
-            log("error", "Could not connect to EDMesg, third party applications may not work.")
+            show_chat_message("error", "Could not connect to EDMesg, third party applications may not work.")
 
         if self.is_enabled:
             thread = threading.Thread(target=self.listen_actions)
             thread.daemon = True
             thread.start()
-            
+
         # Register EDCoPilot-specific actions if action_manager is provided
         if self.action_manager:
             self.register_actions()
@@ -75,18 +78,6 @@ class EDCoPilot:
 
         self.proc_id = self.get_process_id()
         return self.proc_id is not None
-
-    def get_install_path(self) -> (str | None):
-        """Check the windows registry for COMPUTER / HKEY_CURRENT_USER / SOFTWARE / EDCoPilot"""
-        try:
-            import winreg
-
-            key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, "SOFTWARE\\EDCoPilot")
-            value, _ = winreg.QueryValueEx(key, "EDCoPilotLib")
-            winreg.CloseKey(key)
-            return value
-        except Exception:
-            return None
 
     def get_process_id(self) -> (int | None):
         """Check if EDCoPilot is running"""
@@ -123,24 +114,35 @@ class EDCoPilot:
                 )
             )
 
+def get_install_path() -> (str | None):
+    """Check the windows registry for COMPUTER / HKEY_CURRENT_USER / SOFTWARE / EDCoPilot"""
+    try:
+        import winreg
+
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, "SOFTWARE\\EDCoPilot")
+        value, _ = winreg.QueryValueEx(key, "EDCoPilotLib")
+        winreg.CloseKey(key)
+        return value
+    except Exception:
+        return None
 
     def edcopilot_open_panel(self, args: dict, projected_states: dict) -> str:
         """Open a specific panel in EDCoPilot"""
         panel_name = args.get("panelName", "")
         if not panel_name or not self.provider:
             return "Failed to open panel: No panel specified or EDCoPilot provider not available"
-            
+
         try:
             # Log the request for debugging
             log('info', f'Opening EDCoPilot panel: {panel_name}')
-            
+
             # For now, we'll use CovasReplied to send a message to show the panel
             # This is a temporary solution until we have a proper OpenPanelCommand
             # Implementation might vary based on the actual EDCoPilot API
-            
+
             # ToDo: Send OpenPanelAction
             self.client.publish(OpenPanelAction(panelName=panel_name))
-         
+
 
             return f"Successfully requested to open {panel_name} panel in EDCoPilot"
         except Exception as e:
@@ -151,7 +153,7 @@ class EDCoPilot:
         """Register EDCoPilot-specific actions with the action_manager"""
         if not self.action_manager:
             return
-       
+
         # Register the open panel action
         self.action_manager.registerAction(
             "edcopilot_open_panel",

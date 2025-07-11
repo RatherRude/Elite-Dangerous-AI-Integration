@@ -3,14 +3,24 @@ import { Injectable, NgZone } from "@angular/core";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
 import { BehaviorSubject, Observable, ReplaySubject } from "rxjs";
+import { MatDialog } from "@angular/material/dialog";
+import { UpdateDialogComponent } from "../components/update-dialog/update-dialog.component";
+import { environment } from "../../environments/environment";
 
-export interface BaseMessage {
+export interface BaseCommand {
     type: string;
     timestamp: string;
     [key: string]: any;
 }
 
-export interface SubmitInputMessage extends BaseMessage {
+export interface BaseMessage {
+    type: string;
+    timestamp: string;
+    index: number;
+    [key: string]: any;
+}
+
+export interface SubmitInputMessage extends BaseCommand {
     type: "submit_input";
     input: string;
 }
@@ -24,6 +34,16 @@ export interface UnknownMessage extends BaseMessage {
     providedIn: "root",
 })
 export class TauriService {
+    public readonly installId = window.localStorage.getItem(
+        "install_id",
+    ) ||
+        `${Date.now().toString()}-${
+            Math.random().toString(36).substring(2, 15)
+        }`;
+    public readonly sessionId = `${Date.now().toString()}-${
+        Math.random().toString(36).substring(2, 15)
+    }`;
+    public readonly commitHash = environment.COMMIT_HASH;
     private runModeSubject = new BehaviorSubject<
         "starting" | "configuring" | "running"
     >(
@@ -32,7 +52,7 @@ export class TauriService {
     public runMode$ = this.runModeSubject.asObservable();
 
     // ReplaySubject to expose the lines as an Observable
-    private messagesSubject = new ReplaySubject<BaseMessage>();
+    private messagesSubject = new ReplaySubject<BaseMessage>(100);
 
     // Public observable for UI to subscribe
     public output$: Observable<BaseMessage> = this.messagesSubject
@@ -42,8 +62,11 @@ export class TauriService {
     private stopListener?: UnlistenFn;
     private stopStderrListener?: UnlistenFn;
 
-    constructor(private ngZone: NgZone) {
+    private currentIndex = 0;
+
+    constructor(private ngZone: NgZone, private dialog: MatDialog) {
         this.startReadingOutput();
+        window.localStorage.setItem("install_id", this.installId);
     }
 
     public async createOverlay(): Promise<void> {
@@ -81,7 +104,10 @@ export class TauriService {
                 if (message.type === "config") {
                     this.runModeSubject.next("configuring");
                 }
-                this.messagesSubject.next(message);
+                this.messagesSubject.next({
+                    ...message,
+                    index: this.currentIndex++,
+                });
             } catch (error) {
                 console.warn("Error parsing message:", error);
             }
@@ -95,6 +121,7 @@ export class TauriService {
                 timestamp: new Date().toISOString(),
                 message: event.payload,
                 prefix: "error",
+                index: this.currentIndex++,
             });
         });
     }
@@ -135,12 +162,13 @@ export class TauriService {
         await this.runExe();
     }
     public async send_start_signal(): Promise<void> {
-        await this.send_message({
+        await this.send_command({
             type: "start",
             timestamp: new Date().toISOString(),
+            index: this.currentIndex++,
         });
     }
-    public async send_message(message: BaseMessage): Promise<void> {
+    public async send_command(message: BaseCommand): Promise<void> {
         await invoke("send_json_line", {
             jsonLine: JSON.stringify(message) + "\n",
         });
@@ -152,6 +180,7 @@ export class TauriService {
             // Get the current commit hash from the Tauri app
             const currentCommit: string = await invoke("get_commit_hash");
             console.log("Current commit hash:", currentCommit);
+            console.log("Frontend commit hash:", this.commitHash);
 
             // Skip update check for development builds
             if (currentCommit === "development") {
@@ -187,7 +216,10 @@ export class TauriService {
                     const releaseCommit = tagData.object.sha;
                     console.log("Release commit hash:", releaseCommit);
 
-                    if (releaseCommit !== currentCommit) {
+                    if (
+                        releaseCommit !== currentCommit &&
+                        releaseCommit !== this.commitHash
+                    ) {
                         console.log("Update available, showing prompt");
                         this.askForUpdate(releaseName, releaseUrl);
                     } else {
@@ -205,26 +237,24 @@ export class TauriService {
         releaseUrl: string =
             "https://github.com/RatherRude/Elite-Dangerous-AI-Integration/releases/",
     ): void {
-        // Use the browser's confirm dialog for now
-        // We'll replace this with a custom dialog component later
-        const message = `
-Update Available: ${releaseName}
+        this.ngZone.run(() => {
+            const dialogRef = this.dialog.open(UpdateDialogComponent, {
+                width: "400px",
+                data: { releaseName, releaseUrl },
+            });
 
-A new version of COVAS:NEXT is available. Would you like to download it now?
-
-Click OK to open the download page in your browser.
-`;
-        const result = confirm(message);
-
-        if (result) {
-            // Open the release URL in a new browser window/tab
-            const a = document.createElement("a");
-            a.setAttribute("href", releaseUrl);
-            a.setAttribute("target", "_blank");
-            a.setAttribute("rel", "noopener noreferrer");
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
+            dialogRef.afterClosed().subscribe((result) => {
+                if (result) {
+                    // Open the release URL in a new browser window/tab
+                    const a = document.createElement("a");
+                    a.setAttribute("href", releaseUrl);
+                    a.setAttribute("target", "_blank");
+                    a.setAttribute("rel", "noopener noreferrer");
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                }
+            });
+        });
     }
 }

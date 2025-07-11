@@ -1,0 +1,48 @@
+<h2 mat-dialog-title>Select Voice</h2>
+
+<div mat-dialog-content>
+  <mat-form-field appearance="outline" style="width: 100%; margin-bottom: 16px;">
+    <mat-label>Search Voices</mat-label>
+    <input matInput [(ngModel)]="searchQuery" placeholder="Search by name, locale, or voice ID">
+  </mat-form-field>
+
+  <div *ngIf="getFilteredLocales().length === 0" class="no-results">
+    <p>No voices found matching "{{ searchQuery }}"</p>
+  </div>
+
+  <div *ngIf="getFilteredLocales().length > 0" class="voice-selector-container">
+    <!-- Language selection list on the left -->
+    <div class="language-list">
+      <mat-selection-list [multiple]="false" class="language-selection-list">
+        <mat-list-option *ngFor="let locale of getFilteredLocales()" 
+                         [value]="locale"
+                         [selected]="locale === selectedLocale"
+                         (click)="onSelectLocale(locale)">
+          {{ locale }}
+        </mat-list-option>
+      </mat-selection-list>
+    </div>
+
+    <!-- Voice selection list on the right -->
+    <div class="voice-list">
+      <div *ngIf="!selectedLocale" class="select-language-prompt">
+        <p>Please select a language</p>
+      </div>
+      <mat-selection-list [multiple]="false" *ngIf="selectedLocale">
+        <mat-list-option *ngFor="let voice of filterVoices()[selectedLocale]" 
+                       [value]="voice.value"
+                       [selected]="voice.value === selectedVoice"
+                       (click)="onSelect(voice.value)">
+          <div class="voice-item">
+            <span class="voice-name">{{ voice.label }}</span>
+            <span class="voice-id">{{ voice.value }}</span>
+          </div>
+        </mat-list-option>
+      </mat-selection-list>
+    </div>
+  </div>
+</div>
+
+<div mat-dialog-actions align="end">
+  <button mat-button (click)="onCancel()">Cancel</button>
+</div> 

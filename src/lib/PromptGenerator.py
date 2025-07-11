@@ -1,7 +1,9 @@
 from datetime import timedelta, datetime
 from functools import lru_cache
-from typing import Any, cast, Dict
+from typing import Any, Callable, cast, Dict, Union, List, Optional
+import random
 
+from openai.types.chat import ChatCompletionMessageParam
 import yaml
 import requests
 import humanize
@@ -22,10 +24,11 @@ from lib.EventModels import (
     ShipyardSellEvent, ShipyardSwapEvent, ShipyardTransferEvent, SRVDestroyedEvent, StartJumpEvent,
     SupercruiseDestinationDropEvent, SupercruiseEntryEvent, SupercruiseExitEvent, SuitLoadoutEvent,
     SwitchSuitLoadoutEvent, TouchdownEvent, UnderAttackEvent, UndockedEvent, UseConsumableEvent, WingAddEvent,
-    WingJoinEvent, WingLeaveEvent
+    WingJoinEvent, WingLeaveEvent, ColonisationConstructionDepotEvent
 )
 
 from .Projections import LocationState, MissionsState, ShipInfoState, NavInfo, TargetState, CurrentStatus, CargoState
+from .SystemDatabase import SystemDatabase
 
 from .EDJournal import *
 from .Event import (
@@ -39,345 +42,6 @@ from .Event import (
 )
 from .Logger import log
 
-# Game events categorized according to Config.py structure
-systemEvents = {
-    # "Cargo": "Commander {commanderName} has updated their cargo inventory.",
-    # "ClearSavedGame": "Commander {commanderName} has reset their game.",
-    "LoadGame": "Commander {commanderName} has loaded the game.",
-    "NewCommander": "Commander {commanderName} has started a new game.",
-    # "Materials": "Commander {commanderName} has updated their materials inventory.",
-    "Missions": "Commander {commanderName} has updated their missions.",
-    # "Progress": "Commander {commanderName} has made progress in various activities.",
-    # "Rank": "Commander {commanderName} has updated their ranks.",
-    # "Reputation": "Commander {commanderName} has updated their reputation.",
-    "Statistics": "Commander {commanderName} has updated their statistics.",
-    "Shutdown": "Commander {commanderName} has initiated a shutdown.",
-    # "SquadronStartup": "Commander {commanderName} is a member of a squadron.",
-    # "EngineerProgress": "Commander {commanderName} has made progress with an engineer.",
-}
-
-combatEvents = {
-    "Bounty": "Commander {commanderName} has eliminated a hostile.",
-    "Died": "Commander {commanderName} has lost consciousness.",
-    "Resurrect": "Commander {commanderName} has resurrected.",
-    "WeaponSelected": "Commander {commanderName} has selected a weapon.",
-    "OutofDanger": "Commander {commanderName} is no longer in danger.",
-    "InDanger": "Commander {commanderName} is in danger.",
-    "LegalStateChanged": "Commander {commanderName}'s legal state has changed.",
-    "CommitCrime": "Commander {commanderName} has committed a crime.",
-    "CapShipBond": "Commander {commanderName} has been rewarded for taking part in a capital ship combat.",
-    "Interdiction": "Commander {commanderName} has attempted an interdiction.",
-    "Interdicted": "Commander {commanderName} is being interdicted.",
-    "EscapeInterdiction": "Commander {commanderName} has escaped the interdiction.",
-    "FactionKillBond": "Commander {commanderName} has eliminated a hostile.",
-    "FighterDestroyed": "A ship-launched fighter was destroyed.",
-    "HeatDamage": "Commander {commanderName} is taking heat damage.",
-    "HeatWarning": "Commander {commanderName}'s ship's heat has exceeded 100%.",
-    "HullDamage": "Commander {commanderName} is taking hull damage.",
-    "PVPKill": "Commander {commanderName} has eliminated another commander.",
-    "ShieldState": "Commander {commanderName}'s shield state has changed.",
-    "ShipTargetted": "Commander {commanderName} is targeting a ship.",
-    "UnderAttack": "Commander {commanderName} is under attack.",
-    "CockpitBreached": "Commander {commanderName} has experienced a cockpit breach.",
-    "CrimeVictim": "Commander {commanderName} has been victimized.",
-    "SystemsShutdown": "Commander {commanderName}'s systems have been shut down forcefully.",
-    "SelfDestruct": "Commander {commanderName} has initiated self destruct.",
-}
-
-tradingEvents = {
-    "Trade": "Commander {commanderName} has performed a trade.",
-    "BuyTradeData": "Commander {commanderName} has bought trade data.",
-    "CollectCargo": "Commander {commanderName} has collected cargo.",
-    "EjectCargo": "Commander {commanderName} has ejected cargo.",
-    "MarketBuy": "Commander {commanderName} has bought market goods.",
-    "MarketSell": "Commander {commanderName} has sold market goods.",
-    "CargoTransfer": "Commander {commanderName} has transferred cargo.",
-    "Market": "Commander {commanderName} has interacted with a market.",
-}
-
-miningEvents = {
-    "AsteroidCracked": "Commander {commanderName} has cracked an asteroid.",
-    "MiningRefined": "Commander {commanderName} has refined a resource.",
-    "ProspectedAsteroid": "Commander {commanderName} has prospected an asteroid. Only inform about the most interesting material.",
-    "LaunchDrone": "Commander {commanderName} has launched a drone.",
-}
-
-shipUpdateEvents = {
-    "FSDJump": "Commander {commanderName} has initiated a hyperjump to another system.",
-    "FSDTarget": "Commander {commanderName} has selected a star system to jump to.",
-    "StartJump": "Commander {commanderName} starts the hyperjump.",
-    "FsdCharging": "Commander {commanderName}'s FSD is charging.",
-    "SupercruiseEntry": "Commander {commanderName} has entered supercruise from normal space.",
-    "SupercruiseExit": "Commander {commanderName} has exited supercruise and returned to normal space.",
-    "ApproachSettlement": "Commander {commanderName} is approaching settlement.",
-    "Docked": "Commander {commanderName} has docked with a station.",
-    "Undocked": "Commander {commanderName} has undocked from a station.",
-    "DockingCanceled": "Commander {commanderName} has canceled the docking request.",
-    "DockingDenied": "Commander {commanderName}'s request to dock with a station has been denied.",
-    "DockingGranted": "Commander {commanderName}'s request to dock with a station has been granted.",
-    "DockingRequested": "Commander {commanderName} has sent a request to dock with a station.",
-    "DockingTimeout": "Commander {commanderName}'s request to dock with a station has timed out.",
-    "NavRoute": "Commander {commanderName} has planned a new nav route.",
-    "NavRouteClear": "Commander {commanderName} has cleared the nav route.",
-    "CrewLaunchFighter": "Commander {commanderName} has launched a fighter.",
-    "VehicleSwitch": "Commander {commanderName} has switched vehicle.",
-    "LaunchFighter": "Commander {commanderName} has launched a fighter.",
-    "DockFighter": "Commander {commanderName} has docked a fighter.",
-    "FighterRebuilt": "Commander {commanderName} has rebuilt a fighter.",
-    "FuelScoop": "Commander {commanderName} has scooped fuel.",
-    "RebootRepair": "Commander {commanderName} has initiated a reboot/repair.",
-    "RepairDrone": "Commander {commanderName} has repaired using a drone.",
-    "AfmuRepairs": "Commander {commanderName} has conducted repairs.",
-    "ModuleInfo": "Commander {commanderName} has received module info.",
-    "Synthesis": "Commander {commanderName} has performed synthesis.",
-    "JetConeBoost": "Commander {commanderName} has executed a jet cone boost.",
-    "JetConeDamage": "Commander {commanderName} has received damage from a jet cone.",
-    "LandingGearUp": "Commander {commanderName} has raised the landing gear.",
-    "LandingGearDown": "Commander {commanderName} has lowered the landing gear.",
-    "FlightAssistOn": "Commander {commanderName} has turned flight assist on.",
-    "FlightAssistOff": "Commander {commanderName} has turned flight assist off.",
-    "HardpointsRetracted": "Commander {commanderName} has retracted hardpoints.",
-    "HardpointsDeployed": "Commander {commanderName} has deployed hardpoints.",
-    "LightsOff": "Commander {commanderName} has turned off the lights.",
-    "LightsOn": "Commander {commanderName} has turned on the lights.",
-    "CargoScoopRetracted": "Commander {commanderName} has retracted the cargo scoop.",
-    "CargoScoopDeployed": "Commander {commanderName} has deployed the cargo scoop.",
-    "SilentRunningOff": "Commander {commanderName} has turned off silent running.",
-    "SilentRunningOn": "Commander {commanderName} has turned on silent running.",
-    "FuelScoopStarted": "Commander {commanderName} has started scooping fuel.",
-    "FuelScoopEnded": "Commander {commanderName} has stopped scooping fuel.",
-    "FsdMassLockEscaped": "Commander {commanderName} has escaped mass lock.",
-    "FsdMassLocked": "Commander {commanderName} is mass locked.",
-    "LowFuelWarningCleared": "Commander {commanderName}'s low fuel warning has cleared.",
-    "LowFuelWarning": "Commander {commanderName} is running low on fuel.",
-    "NightVisionOff": "Commander {commanderName} has turned off night vision.",
-    "NightVisionOn": "Commander {commanderName} has turned on night vision.",
-    "SupercruiseDestinationDrop": "Commander {commanderName} has dropped out at a supercruise destination.",
-}
-
-srvUpdateEvents = {
-    "LaunchSRV": "Commander {commanderName} has launched an SRV.",
-    "DockSRV": "Commander {commanderName} has docked an SRV.",
-    "SRVDestroyed": "Commander {commanderName}'s SRV was destroyed.",
-    "SrvHandbrakeOff": "Commander {commanderName} has released the SRV handbrake.",
-    "SrvHandbrakeOn": "Commander {commanderName} has applied the SRV handbrake.",
-    "SrvTurretViewConnected": "Commander {commanderName} has connected to the SRV turret view.",
-    "SrvTurretViewDisconnected": "Commander {commanderName} has disconnected from the SRV turret view.",
-    "SrvDriveAssistOff": "Commander {commanderName} has turned off SRV drive assist.",
-    "SrvDriveAssistOn": "Commander {commanderName} has turned on SRV drive assist.",
-}
-
-onFootUpdateEvents = {
-    "Disembark": "Commander {commanderName} has disembarked.",
-    "Embark": "Commander {commanderName} has embarked.",
-    "BookDropship": "Commander {commanderName} has booked a dropship.",
-    "BookTaxi": "Commander {commanderName} has booked a taxi.",
-    "CancelDropship": "Commander {commanderName} has cancelled a dropship booking.",
-    "CancelTaxi": "Commander {commanderName} has cancelled a taxi booking.",
-    "CollectItems": "Commander {commanderName} has collected items.",
-    "DropItems": "Commander {commanderName} has dropped items.",
-    "BackpackChange": "Commander {commanderName} has changed items in their backpack.",
-    "BuyMicroResources": "Commander {commanderName} has bought micro resources.",
-    "SellMicroResources": "Commander {commanderName} has sold micro resources.",
-    "TransferMicroResources": "Commander {commanderName} has transferred micro resources.",
-    "TradeMicroResources": "Commander {commanderName} has traded micro resources.",
-    "BuySuit": "Commander {commanderName} has bought a suit.",
-    "BuyWeapon": "Commander {commanderName} has bought a weapon.",
-    "SellWeapon": "Commander {commanderName} has sold a weapon.",
-    "UpgradeSuit": "Commander {commanderName} has upgraded a suit.",
-    "UpgradeWeapon": "Commander {commanderName} has upgraded a weapon.",
-    "CreateSuitLoadout": "Commander {commanderName} has created a suit loadout.",
-    "DeleteSuitLoadout": "Commander {commanderName} has deleted a suit loadout.",
-    "RenameSuitLoadout": "Commander {commanderName} has renamed a suit loadout.",
-    "SwitchSuitLoadout": "Commander {commanderName} has switched to suit loadout.",
-    "UseConsumable": "Commander {commanderName} has used a consumable.",
-    "FCMaterials": "Commander {commanderName} has managed fleet carrier materials.",
-    "LoadoutEquipModule": "Commander {commanderName} has equipped a module in suit loadout.",
-    "LoadoutRemoveModule": "Commander {commanderName} has removed a module from suit loadout.",
-    "ScanOrganic": "Commander {commanderName} has scanned organic life.",
-    "SellOrganicData": "Commander {commanderName} has sold organic data.",
-    "LowOxygenWarningCleared": "Commander {commanderName}'s low oxygen warning has cleared.",
-    "LowOxygenWarning": "Commander {commanderName} is running low on oxygen.",
-    "LowHealthWarningCleared": "Commander {commanderName}'s low health warning has cleared.", 
-    "LowHealthWarning": "Commander {commanderName}'s health is critically low.",
-    "BreathableAtmosphereExited": "Commander {commanderName} has exited breathable atmosphere.",
-    "BreathableAtmosphereEntered": "Commander {commanderName} has entered breathable atmosphere.",
-    "GlideModeExited": "Commander {commanderName} has exited glide mode.",
-    "GlideModeEntered": "Commander {commanderName} has entered glide mode.",
-    "DropShipDeploy": "Commander {commanderName} has deployed their dropship.",
-}
-
-stationEvents = {
-    "MissionAbandoned": "Commander {commanderName} has abandoned a mission.",
-    "MissionAccepted": "Commander {commanderName} has accepted a mission.",
-    "MissionCompleted": "Commander {commanderName} has completed a mission.",
-    "MissionFailed": "Commander {commanderName} has failed a mission.",
-    "MissionRedirected": "Commander {commanderName}'s mission is now completed. Rewards are now available.",
-    "StationServices": "Commander {commanderName} has accessed station services.",
-    "ShipyardBuy": "Commander {commanderName} has bought a ship.",
-    "ShipyardNew": "Commander {commanderName} has acquired a new ship.",
-    "ShipyardSell": "Commander {commanderName} has sold a ship.",
-    "ShipyardTransfer": "Commander {commanderName} has transferred a ship.",
-    "ShipyardSwap": "Commander {commanderName} has swapped ships.",
-    "StoredShips": "Commander {commanderName} has stored ships.",
-    "ModuleBuy": "Commander {commanderName} has bought a module.",
-    "ModuleRetrieve": "Commander {commanderName} has retrieved a module.",
-    "ModuleSell": "Commander {commanderName} has sold a module.",
-    "ModuleSellRemote": "Commander {commanderName} has sold a remote module.",
-    "ModuleStore": "Commander {commanderName} has stored a module.",
-    "ModuleSwap": "Commander {commanderName} has swapped modules.",
-    "Outfitting": "Commander {commanderName} has visited an outfitting station.",
-    "BuyAmmo": "Commander {commanderName} has bought ammunition.",
-    "BuyDrones": "Commander {commanderName} has bought drones.",
-    "RefuelAll": "Commander {commanderName} has refueled all.",
-    "RefuelPartial": "Commander {commanderName} has partially refueled.",
-    "Repair": "Commander {commanderName} has repaired.",
-    "RepairAll": "Commander {commanderName} has repaired all.",
-    "RestockVehicle": "Commander {commanderName} has restocked vehicle.",
-    "FetchRemoteModule": "Commander {commanderName} has fetched a remote module.",
-    "MassModuleStore": "Commander {commanderName} has mass stored modules.",
-    "ClearImpound": "Commander {commanderName} has cleared an impound.",
-    "CargoDepot": "Commander {commanderName} has completed a cargo depot operation.",
-    "CommunityGoal": "Commander {commanderName} has engaged in a community goal.",
-    "CommunityGoalDiscard": "Commander {commanderName} has discarded a community goal.",
-    "CommunityGoalJoin": "Commander {commanderName} has joined a community goal.",
-    "CommunityGoalReward": "Commander {commanderName} has received a reward for a community goal.",
-    "EngineerContribution": "Commander {commanderName} has made a contribution to an engineer.",
-    "EngineerCraft": "Commander {commanderName} has crafted a blueprint at an engineer.",
-    "EngineerLegacyConvert": "Commander {commanderName} has converted a legacy blueprint at an engineer.",
-    "MaterialTrade": "Commander {commanderName} has conducted a material trade.",
-    "TechnologyBroker": "Commander {commanderName} has accessed a technology broker.",
-    "PayBounties": "Commander {commanderName} has paid bounties.",
-    "PayFines": "Commander {commanderName} has paid fines.",
-    "PayLegacyFines": "Commander {commanderName} has paid legacy fines.",
-    "RedeemVoucher": "Commander {commanderName} has redeemed a voucher.",
-    "ScientificResearch": "Commander {commanderName} has conducted scientific research.",
-    "Shipyard": "Commander {commanderName} has visited a shipyard.",
-    "StoredModules": "Commander {commanderName} has stored modules.",
-    "CarrierJump": "Commander {commanderName} has performed a carrier jump.",
-    "CarrierBuy": "Commander {commanderName} has purchased a carrier.",
-    "CarrierStats": "Commander {commanderName} has updated carrier stats.",
-    "CarrierJumpRequest": "Commander {commanderName} has requested a carrier jump.",
-    "CarrierDecommission": "Commander {commanderName} has decommissioned a carrier.",
-    "CarrierCancelDecommission": "Commander {commanderName} has canceled the decommission of a carrier.",
-    "CarrierBankTransfer": "Commander {commanderName} has performed a bank transfer for carrier.",
-    "CarrierDepositFuel": "Commander {commanderName} has deposited fuel to carrier.",
-    "CarrierCrewServices": "Commander {commanderName} has performed crew services on carrier.",
-    "CarrierFinance": "Commander {commanderName} has reviewed finance details for carrier.",
-    "CarrierShipPack": "Commander {commanderName} has managed ship pack for carrier.",
-    "CarrierModulePack": "Commander {commanderName} has managed module pack for carrier.",
-    "CarrierTradeOrder": "Commander {commanderName} has placed a trade order on carrier.",
-    "CarrierDockingPermission": "Commander {commanderName} has updated docking permissions for carrier.",
-    "CarrierNameChanged": "Commander {commanderName} has changed the name of carrier.",
-    "CarrierJumpCancelled": "Commander {commanderName} has canceled a jump request for carrier.",
-}
-
-socialEvents = {
-    "CrewAssign": "Commander {commanderName} has assigned a crew member.",
-    "CrewFire": "Commander {commanderName} has fired a crew member.",
-    "CrewHire": "Commander {commanderName} has hired a crew member.",
-    "ChangeCrewRole": "Commander {commanderName} has changed crew role.",
-    "CrewMemberJoins": "Commander {commanderName} has a new crew member.",
-    "CrewMemberQuits": "Commander {commanderName} has lost a crew member.",
-    "CrewMemberRoleChange": "Commander {commanderName} has changed a crew member's role.",
-    "EndCrewSession": "Commander {commanderName} has ended a crew session.",
-    "JoinACrew": "Commander {commanderName} has joined a crew.",
-    "KickCrewMember": "Commander {commanderName} has kicked a crew member.",
-    "QuitACrew": "Commander {commanderName} has quit a crew.",
-    "NpcCrewPaidWage": "Commander {commanderName} has paid an NPC crew member.",
-    "NpcCrewRank": "Commander {commanderName} has received NPC crew rank update.",
-    "Promotion": "Commander {commanderName} has received a promotion.",
-    "Friends": "The status of a friend of Commander {commanderName} has changed.",
-    "WingAdd": "Commander {commanderName} has added to a wing.",
-    "WingInvite": "Commander {commanderName} has received a wing invite.",
-    "WingJoin": "Commander {commanderName} has joined a wing.",
-    "WingLeave": "Commander {commanderName} has left a wing.",
-    "SendText": "Commander {commanderName} has sent a text message.",
-    "ReceiveText": "Commander {commanderName} has received a text message.",
-    "AppliedToSquadron": "Commander {commanderName} applied to a squadron.",
-    "DisbandedSquadron": "Commander {commanderName} disbanded a squadron.",
-    "InvitedToSquadron": "Commander {commanderName} was invited to a squadron.",
-    "JoinedSquadron": "Commander {commanderName} joined a squadron.",
-    "KickedFromSquadron": "Commander {commanderName} was kicked from a squadron.",
-    "LeftSquadron": "Commander {commanderName} left a squadron.",
-    "SharedBookmarkToSquadron": "Commander {commanderName} shared a bookmark with a squadron.",
-    "SquadronCreated": "A squadron was created by commander {commanderName}.",
-    "SquadronDemotion": "Commander {commanderName} was demoted in a squadron.",
-    "SquadronPromotion": "Commander {commanderName} was promoted in a squadron.",
-    "WonATrophyForSquadron": "Commander {commanderName} won a trophy for a squadron.",
-    "PowerplayCollect": "Commander {commanderName} collected powerplay commodities.",
-    "PowerplayDefect": "Commander {commanderName} defected from one power to another.",
-    "PowerplayDeliver": "Commander {commanderName} delivered powerplay commodities.",
-    "PowerplayFastTrack": "Commander {commanderName} fast-tracked powerplay allocation.",
-    "PowerplayJoin": "Commander {commanderName} joined a power.",
-    "PowerplayLeave": "Commander {commanderName} left a power.",
-    "PowerplaySalary": "Commander {commanderName} received salary payment from a power.",
-    "PowerplayVote": "Commander {commanderName} voted for system expansion.",
-    "PowerplayVoucher": "Commander {commanderName} received payment for powerplay combat.",
-}
-
-explorationEvents = {
-    "CodexEntry": "Commander {commanderName} has logged a Codex entry.",
-    "DiscoveryScan": "Commander {commanderName} has performed a discovery scan.",
-    "Scan": "Commander {commanderName} has conducted a scan.",
-    "FSSAllBodiesFound": "Commander {commanderName} has identified all bodies in the system.",
-    "FSSBodySignals": "Commander {commanderName} has completed a full spectrum scan of the systems, detecting signals.",
-    "FSSDiscoveryScan": "Commander {commanderName} has performed a full system scan.",
-    "FSSSignalDiscovered": "Commander {commanderName} has discovered a signal using the FSS scanner.",
-    "MaterialCollected": "Commander {commanderName} has collected materials.",
-    "MaterialDiscarded": "Commander {commanderName} has discarded materials.",
-    "MaterialDiscovered": "Commander {commanderName} has discovered a new material.",
-    "MultiSellExplorationData": "Commander {commanderName} has sold exploration data.",
-    "NavBeaconScan": "Commander {commanderName} has scanned a navigation beacon.",
-    "BuyExplorationData": "Commander {commanderName} has bought exploration data.",
-    "SAAScanComplete": "Commander {commanderName} has completed a surface area analysis scan.",
-    "SAASignalsFound": "Commander {commanderName} has found signals using the SAA scanner.",
-    "ScanBaryCentre": "Commander {commanderName} has scanned a BaryCentre.",
-    "SellExplorationData": "Commander {commanderName} has sold exploration data in Cartographics.",
-    "Screenshot": "Commander {commanderName} has taken a screenshot.",
-    "ApproachBody": "Commander {commanderName} is entering an orbit.",
-    "LeaveBody": "Commander {commanderName} is exiting an orbit.",
-    "Liftoff": "Commander {commanderName}'s ship has lifted off.",
-    "Touchdown": "Commander {commanderName}'s ship has touched down on a planet surface.",
-    "DatalinkScan": "Commander {commanderName} has scanned a datalink.",
-    "DatalinkVoucher": "Commander {commanderName} has received a datalink voucher.",
-    "DataScanned": "Commander {commanderName} has scanned data.",
-    "Scanned": "Commander {commanderName} has been scanned.",
-    "USSDrop": "Commander {commanderName} has encountered a USS drop.",
-}
-
-projectedEvents = {
-    'ScanOrganicTooClose': "Commander {commanderName} is now too close to take another sample. Distance must be increased.",
-    'ScanOrganicFarEnough': "Commander {commanderName} is now far enough away to take another sample.",
-    'ScanOrganicFirst': "Commander {commanderName} took the first of three biological samples. New sample distance acquired.",
-    'ScanOrganicSecond': "Commander {commanderName} took the second of three biological samples.",
-    'ScanOrganicThird': "Commander {commanderName} took the third and final biological samples.",
-}
-
-allGameEvents = {
-    **systemEvents,
-    **combatEvents,
-    **tradingEvents,
-    **miningEvents,
-    **shipUpdateEvents,
-    **srvUpdateEvents,
-    **onFootUpdateEvents,
-    **stationEvents,
-    **socialEvents,
-    **explorationEvents,
-    **projectedEvents,
-}
-
-externalEvents = {
-    "SpanshTradePlanner": "The Spansh API has suggested a Trade Planner route for Commander {commanderName}.",
-    "SpanshTradePlannerFailed": "The Spansh API has failed to retrieve a Trade Planner route for Commander {commanderName}.",
-    "ExternalTwitchNotification": "[Twitch Alert]",
-    "ExternalTwitchMessage": "[Twitch Message]",
-    "ExternalDiscordNotification": "Commander {commanderName} has received a Discord notification.",
-    # "SpanshNeutronPlotter": "The Spansh API has suggested a Neutron Plotter router for Commander {commanderName}.",
-    # "SpanshRoadToRiches": "The Spansh API has suggested a Road-to-Riches route for Commander {commanderName}.",
-}
-
 # Add these new type definitions along with the other existing types
 DockingCancelledEvent = dict
 DockingTimeoutEvent = dict
@@ -385,12 +49,74 @@ LocationEvent = dict
 NavRouteEvent = dict
 
 class PromptGenerator:
-    def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str]):
+    def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str], system_db: SystemDatabase):
+        self.registered_prompt_event_handlers: list[Callable[[Event], list[ChatCompletionMessageParam]]] = []
+        self.registered_status_generators: list[Callable[[dict[str, dict]], list[tuple[str, Any]]]] = []
         self.commander_name = commander_name
         self.character_prompt = character_prompt
         self.important_game_events = important_game_events
+        self.system_db = system_db
+        
+        # Pad map for station docking positions
+        self.pad_map = {
+            "1":  {"clock": 6, "depth": "very front"},
+            "2":  {"clock": 6, "depth": "front"},
+            "3":  {"clock": 6, "depth": "back"},
+            "4":  {"clock": 6, "depth": "very back"},
+            "5":  {"clock": 7, "depth": "very front"},
+            "6":  {"clock": 7, "depth": "front"},
+            "7":  {"clock": 7, "depth": "back"},
+            "8":  {"clock": 7, "depth": "very back"},
+            "9":  {"clock": 8, "depth": "front"},
+            "10": {"clock": 8, "depth": "back"},
+            "11": {"clock": 9, "depth": "very front"},
+            "12": {"clock": 9, "depth": "front"},
+            "13": {"clock": 9, "depth": "center"},
+            "14": {"clock": 9, "depth": "back"},
+            "15": {"clock": 9, "depth": "very back"},
+            "16": {"clock": 10, "depth": "very front"},
+            "17": {"clock": 10, "depth": "front"},
+            "18": {"clock": 10, "depth": "back"},
+            "19": {"clock": 10, "depth": "very back"},
+            "20": {"clock": 11, "depth": "very front"},
+            "21": {"clock": 11, "depth": "front"},
+            "22": {"clock": 11, "depth": "back"},
+            "23": {"clock": 11, "depth": "very back"},
+            "24": {"clock": 12, "depth": "front"},
+            "25": {"clock": 12, "depth": "back"},
+            "26": {"clock": 1, "depth": "very front"},
+            "27": {"clock": 1, "depth": "front"},
+            "28": {"clock": 1, "depth": "center"},
+            "29": {"clock": 1, "depth": "back"},
+            "30": {"clock": 1, "depth": "very back"},
+            "31": {"clock": 2, "depth": "very front"},
+            "32": {"clock": 2, "depth": "front"},
+            "33": {"clock": 2, "depth": "back"},
+            "34": {"clock": 2, "depth": "very back"},
+            "35": {"clock": 3, "depth": "very front"},
+            "36": {"clock": 3, "depth": "front"},
+            "37": {"clock": 3, "depth": "center"},
+            "38": {"clock": 3, "depth": "back"},
+            "39": {"clock": 4, "depth": "front"},
+            "40": {"clock": 4, "depth": "back"},
+            "41": {"clock": 5, "depth": "very front"},
+            "42": {"clock": 5, "depth": "front"},
+            "43": {"clock": 5, "depth": "center"},
+            "44": {"clock": 5, "depth": "back"},
+            "45": {"clock": 5, "depth": "very back"}
+        }
 
-    def get_event_template(self, event: GameEvent):
+    def announce_pad(self, pad_number):
+        """Generate a detailed description of the landing pad location."""
+        pad = self.pad_map.get(str(pad_number))
+        if not pad:
+            return f"location unknown (Pad {pad_number})"
+
+        clock = pad['clock']
+        depth = pad['depth']
+        return f"{clock} o'clock, {depth} (Pad {pad_number}, clock orientation: mail slot entry with green on right)"
+
+    def get_event_template(self, event: Union[GameEvent, ProjectedEvent, ExternalEvent]):
         content: Any = event.content
         event_name = content.get('event')
         
@@ -496,6 +222,10 @@ class PromptGenerator:
             return f"{self.commander_name} is dropping from supercruise at {destination}{threat}"
         
         # Station events
+
+        if event_name == "ColonisationConstructionDepot":
+            return None
+
         if event_name == 'Docked':
             docked_event = cast(DockedEvent, content)
             
@@ -551,7 +281,14 @@ class PromptGenerator:
             
         if event_name == 'DockingGranted':
             docking_granted_event = cast(DockingGrantedEvent, content)
-            return f"Docking request granted at {docking_granted_event.get('StationName')} on landing pad {docking_granted_event.get('LandingPad')}"
+            station_type = docking_granted_event.get('StationType')
+            
+            # Only provide detailed pad info for standard station types with known layouts
+            if station_type in ['Coriolis', 'Orbis', 'Ocellus']:
+                pad_info = self.announce_pad(docking_granted_event.get('LandingPad'))
+                return f"Docking request granted at {docking_granted_event.get('StationName')}, pad located at {pad_info}"
+            else:
+                return f"Docking request granted at {docking_granted_event.get('StationName')} on landing pad {docking_granted_event.get('LandingPad')}"
             
         if event_name == 'DockingRequested':
             docking_requested_event = cast(DockingRequestedEvent, content)
@@ -621,59 +358,14 @@ class PromptGenerator:
                 return f"{self.commander_name} has lifted off from {liftoff_event.get('Body')}{coordinates}{station_info}."
             else:
                 return f"{self.commander_name}'s ship has auto-lifted off from {liftoff_event.get('Body')}{station_info}."
-                
-        # if event_name == 'Location':
-        #     location_event = cast(LocationEvent, content)
-        #     location_details = []
-        #
-        #     if location_event.get('Docked'):
-        #         station_type = f"{location_event.get('StationType')} " if location_event.get('StationType') else ""
-        #         location_details.append(f"docked at {station_type}{location_event.get('StationName')}")
-        #     elif location_event.get('BodyName'):
-        #         if location_event.get('Latitude') is not None and location_event.get('Longitude') is not None:
-        #             location_details.append(f"on {location_event.get('BodyName')} at coordinates {location_event.get('Latitude'):.4f}, {location_event.get('Longitude'):.4f}")
-        #         else:
-        #             location_details.append(f"near {location_event.get('BodyName')}")
-        #             if location_event.get('DistFromStarLS'):
-        #                 location_details.append(f"{location_event.get('DistFromStarLS'):.2f} ls from main star")
-        #
-        #     system_details = []
-        #     if location_event.get('SystemAllegiance'):
-        #         system_details.append(f"allegiance: {location_event.get('SystemAllegiance')}")
-        #     if location_event.get('SystemEconomy'):
-        #         economy = location_event.get('SystemEconomy_Localised', location_event.get('SystemEconomy'))
-        #         system_details.append(f"economy: {economy}")
-        #     if location_event.get('SystemGovernment'):
-        #         government = location_event.get('SystemGovernment_Localised', location_event.get('SystemGovernment'))
-        #         system_details.append(f"government: {government}")
-        #     if location_event.get('SystemSecurity'):
-        #         security = location_event.get('SystemSecurity_Localised', location_event.get('SystemSecurity'))
-        #         system_details.append(f"security: {security}")
-        #
-        #     population = f", population: {location_event.get('Population'):,}" if location_event.get('Population') else ""
-        #
-        #     status_info = []
-        #     if location_event.get('Wanted'):
-        #         status_info.append("WANTED in this system")
-        #     if location_event.get('Taxi'):
-        #         status_info.append("in a taxi")
-        #     elif location_event.get('Multicrew'):
-        #         status_info.append("in multicrew session")
-        #     elif location_event.get('InSRV'):
-        #         status_info.append("in SRV")
-        #     elif location_event.get('OnFoot'):
-        #         status_info.append("on foot")
-        #
-        #     location_str = f" {', '.join(location_details)}" if location_details else ""
-        #     system_details_str = f" ({', '.join(system_details)})" if system_details else ""
-        #     status_str = f" ({', '.join(status_info)})" if status_info else ""
-        #
-        #     return f"{self.commander_name} is in the {location_event.get('StarSystem')} system{location_str}{system_details_str}{population}{status_str}."
+
+        if event_name == 'Location':
+            return None
 
         if event_name == 'NavRoute':
             nav_route_event = cast(NavRouteEvent, content)
             if nav_route_event.get('Route'):
-                route_count = len(nav_route_event.get('Route', []))
+                route_count = len(nav_route_event.get('Route', [])) - 1  # jump count is 1 less than systems in route
                 if route_count > 0:
                     start = nav_route_event.get('Route', [])[0].get('StarSystem', 'Unknown')
                     end = nav_route_event.get('Route', [])[-1].get('StarSystem', 'Unknown') 
@@ -843,6 +535,8 @@ class PromptGenerator:
             return f"{self.commander_name} has been promoted. New ranks: {', '.join(ranks)}"
         
         # Powerplay events
+        if event_name == 'Powerplay':
+            return None
         if event_name == 'PowerplayJoin':
             powerplay_join_event = cast(PowerplayJoinEvent, content)
             return f"{self.commander_name} has pledged allegiance to {powerplay_join_event.get('Power')}."
@@ -1277,20 +971,21 @@ class PromptGenerator:
             body_count = nav_beacon_scan_event.get('NumBodies', 0)
             
             return f"{self.commander_name} has scanned a navigation beacon, revealing data for {body_count} bodies in the system."
-            
+
         if event_name == 'Screenshot':
             screenshot_event = cast(ScreenshotEvent, content)
-            system = screenshot_event.get('System', 'current system')
-            body = screenshot_event.get('Body', '')
+
+            system = screenshot_event.get('System') or 'current system'
+            body = screenshot_event.get('Body') or ''
             body_text = f" near {body}" if body else ""
-            
+
             location_text = ""
-            if screenshot_event.get('Latitude') is not None and screenshot_event.get('Longitude') is not None:
-                lat = screenshot_event.get('Latitude')
-                lon = screenshot_event.get('Longitude')
-                alt = screenshot_event.get('Altitude')
-                location_text = f" at coordinates {lat:.4f}, {lon:.4f}, altitude: {alt:.1f}m"
-            
+            if screenshot_event.get('Latitude') is not None and screenshot_event.get('Longitude') is not None and screenshot_event.get('Altitude') is not None:
+                lat = screenshot_event.get('Latitude', 0)
+                lon = screenshot_event.get('Longitude', 0)
+                alt = screenshot_event.get('Altitude', 0)
+                location_text = f" at coordinates {lat}, {lon}, altitude: {alt}m"
+
             return f"{self.commander_name} took a screenshot in {system}{body_text}{location_text}."
 
         # Station Services events
@@ -1519,6 +1214,9 @@ class PromptGenerator:
             else:
                 return f"{self.commander_name} has renamed their {ship_type} to '{ship_name}'."
 
+        if event_name == 'Loadout':
+            return None
+
         # If we don't have a specific handler for this event
         # Trade events
         if event_name == 'AsteroidCracked':
@@ -1738,7 +1436,7 @@ class PromptGenerator:
             else:
                 location = ""
                 
-            return f"{self.commander_name} has embarked into their {vehicle} {location}."
+            return f"{self.commander_name} has boarded their {vehicle} {location}."
             
         if event_name == 'FCMaterials':
             fc_event = cast(Dict[str, Any], content)
@@ -1786,7 +1484,7 @@ class PromptGenerator:
             else:
                 action = "scanned"
                 
-            return f"{self.commander_name} has {action} a {life_form} on planet {scan_event.get('Body', 'unknown body')}."
+            return f"{self.commander_name} has {action} a {life_form} on planet {scan_event.get('Body', 'unknown body')}. {' The scan data can now be sold at the next station featuing a Vista Genomics.' if scan_type == 'Analyse' else ''}"
             
         if event_name == 'SellMicroResources':
             sell_event = cast(Dict[str, Any], content)
@@ -1837,8 +1535,7 @@ class PromptGenerator:
             return f"{self.commander_name} has sold their {weapon_name} for {price:,} credits."
             
         if event_name == 'ShipLocker':
-            # This is primarily for the ShipLocker.json file, but we'll report it in the journal too
-            return f"{self.commander_name}'s ship locker inventory has been updated."
+            return None
             
         if event_name == 'SuitLoadout':
             loadout_event = cast(Dict[str, Any], content)
@@ -2046,10 +1743,7 @@ class PromptGenerator:
 
         if event_name == 'LaunchFighter':
             fighter_event = cast(Dict[str, Any], content)
-            player_controlled = "player-controlled" if fighter_event.get('PlayerControlled') else "AI-controlled"
-            loadout = fighter_event.get('Loadout', '')
-            loadout_info = f" ({loadout})" if loadout else ""
-            return f"{self.commander_name} has launched a {player_controlled} fighter{loadout_info}."
+            return f"{self.commander_name if fighter_event.get('PlayerControlled') else "An NPC crew"} has launched in a fighter."
 
         if event_name == 'LaunchSRV':
             srv_event = cast(Dict[str, Any], content)
@@ -2060,15 +1754,15 @@ class PromptGenerator:
         if event_name == 'ModuleInfo':
             return f"{self.commander_name} has viewed their module information."
 
-        # if event_name == 'Music':
-        #     music_event = cast(Dict[str, Any], content)
-        #     track = music_event.get('MusicTrack', 'unknown track')
-        #     return f"Music has changed to: {track}."
+        if event_name == 'Music':
+            return None
 
         if event_name == 'NpcCrewPaidWage':
             wage_event = cast(Dict[str, Any], content)
             name = wage_event.get('NpcCrewName', 'An NPC crew member')
             amount = wage_event.get('Amount', 0)
+            if amount == 0:
+                return None
             return f"{self.commander_name} has paid {name} a wage of {amount:,} credits."
 
         if event_name == 'NpcCrewRank':
@@ -2206,7 +1900,9 @@ class PromptGenerator:
         if event_name == 'WingLeave':
             wing_leave_event = cast(WingLeaveEvent, content)
             return f"{self.commander_name} has left their wing."
-            
+
+        if event_name == 'Cargo':
+            return None
         if event_name == 'CargoTransfer':
             cargo_transfer_event = cast(Dict[str, Any], content)
             transfers = cargo_transfer_event.get('Transfers', [])
@@ -2341,19 +2037,15 @@ class PromptGenerator:
             return f"{self.commander_name} has {operation} {count} units of {commodity} for mission {mission_id} (Total: {total})."
 
         if event_name == 'CommunityGoal':
-            cg_event = cast(Dict[str, Any], content)
-            if cg_event.get('CurrentGoals'):
-                goals = []
-                for goal in cg_event.get('CurrentGoals', []):
-                    goals.append(f"{goal.get('Title')} at {goal.get('System')}")
-                return f"Community Goals available: {', '.join(goals)}."
-            return f"No active Community Goals found."
+            return None
 
         if event_name == 'CrimeVictim':
-            crime_victim_event = cast(Dict[str, Any], content)
-            offender = crime_victim_event.get('Offender', 'Unknown perpetrator')
-            crime_type = crime_victim_event.get('CrimeType', 'unknown crime')
-            return f"{self.commander_name} has been the victim of {crime_type} by {offender}."
+            # @ToDo: Filter only if offender isn't commander
+            # crime_victim_event = cast(Dict[str, Any], content)
+            # offender = crime_victim_event.get('Offender', 'Unknown perpetrator')
+            # crime_type = crime_victim_event.get('CrimeType', 'unknown crime')
+            # return f"{self.commander_name} has been the victim of {crime_type} by {offender}."
+            return None
 
         if event_name == 'Died':
             died_event = cast(DiedEvent, content)
@@ -2366,18 +2058,10 @@ class PromptGenerator:
             return f"{self.commander_name} has cancelled the docking request at {docking_cancelled_event.get('StationName')}."
 
         if event_name == 'EngineerContribution':
-            engineer_contribution_event = cast(Dict[str, Any], content)
-            engineer = engineer_contribution_event.get('Engineer', 'an engineer')
-            type = engineer_contribution_event.get('Type', 'unknown')
-            commodity = engineer_contribution_event.get('Commodity', engineer_contribution_event.get('Material', 'unknown'))
-            quantity = engineer_contribution_event.get('Quantity', 0)
-            total = engineer_contribution_event.get('TotalQuantity', 0)
-            return f"{self.commander_name} has contributed {quantity} {commodity} ({type}) to {engineer}. Total: {total}."
+            return None
 
         if event_name == 'EngineerLegacyConvert':
-            legacy_convert_event = cast(Dict[str, Any], content)
-            engineer = legacy_convert_event.get('Engineer', 'an engineer')
-            return f"{self.commander_name} has converted legacy modifications with {engineer}."
+            return None
 
         if event_name == 'FetchRemoteModule':
             fetch_module_event = cast(Dict[str, Any], content)
@@ -2462,27 +2146,188 @@ class PromptGenerator:
             return f"{self.commander_name}'s {srv_type} has been destroyed."
 
         if event_name == 'Statistics':
-            return f"{self.commander_name}'s game statistics have been updated."
+            # AI thinks wealth is credits when it's total assets so renaming it
+            if "Bank_Account" in content and "Current_Wealth" in content["Bank_Account"]:
+                content["Bank_Account"]["Total_Asset_Value"] = content["Bank_Account"].pop("Current_Wealth")
 
-        if event_name == 'Trade':
-            trade_event = cast(Dict[str, Any], content)
-            commodity = trade_event.get('Type_Localised', trade_event.get('Type', 'goods'))
-            count = trade_event.get('Count', 0)
-            price_per_unit = trade_event.get('Price', 0)
-            total_profit = trade_event.get('TotalProfit', 0)
-            if trade_event.get('SellPrice'):
-                return f"{self.commander_name} has sold {count} units of {commodity} at {price_per_unit:,} credits each (Total profit: {total_profit:,} credits)."
-            else:
-                return f"{self.commander_name} has purchased {count} units of {commodity} at {price_per_unit:,} credits each."
+            return f"{self.commander_name}'s game statistics have been reported:\n{yaml.dump(content)}"
 
         if event_name == 'WeaponSelected':
             weapon_event = cast(Dict[str, Any], content)
             weapon = weapon_event.get('Weapon_Localised', weapon_event.get('Weapon', 'unknown weapon'))
             return f"{self.commander_name} has selected {weapon}."
 
-        return f"Event: {event_name} occurred."
+        if event_name == 'ColonisationSystemClaim':
+            claim_event = cast(Dict[str, Any], content)
+            system = claim_event.get('StarSystem', '')
+            return f"{self.commander_name} has claimed a system {system}."
 
-    def full_event_message(self, event: GameEvent, timeoffset: str, is_important: bool):
+        if event_name == 'ColonisationSystemClaimRelease':
+            claim_event = cast(Dict[str, Any], content)
+            system = claim_event.get('StarSystem', '')
+            return f"{self.commander_name}'s claim on system {system} has been canceled."
+
+        # Synthetic Events
+        if event_name == 'ScanOrganicTooClose':
+            return f"{self.commander_name} is now too close to take another sample. Distance must be increased."
+        if event_name == 'ScanOrganicFarEnough':
+            return f"{self.commander_name} is now far enough away to take another sample."
+        if event_name == 'ScanOrganicFirst':
+            scan_event = cast(Dict[str, Any], content)
+            new_distance = scan_event.get('NewSampleDistance', 'unknown')
+            return f"{self.commander_name} took the first of three biological samples. New sample distance acquired: {new_distance}"
+        if event_name == 'ScanOrganicSecond':
+            return f"{self.commander_name} took the second of three biological samples."
+        if event_name == 'ScanOrganicThird':
+            return f"{self.commander_name} took the third and final biological sample."
+        if event_name == 'NoScoopableStars':
+            return f"{self.commander_name}'s fuel is insufficient to reach the destination and there are not enough scoopable stars on the route. Alternative route required."
+        if event_name == 'RememberLimpets':
+            return f"{self.commander_name} has cargo capacity available to buy limpets. Remember to buy more."
+        if event_name == 'CombatEntered':
+            return f"{self.commander_name} is now in combat."
+        if event_name == 'CombatExited':
+            return f"{self.commander_name} is no longer in combat."
+        # if event_name == 'ExternalDiscordNotification':
+        #     twitch_event = cast(Dict[str, Any], content)
+        #     return f"Twitch Alert! {twitch_event.get('text','')}",
+        # "SpanshTradePlanner": "The Spansh API has suggested a Trade Planner route for Commander {commanderName}.",
+        # "SpanshNeutronPlotter": "The Spansh API has suggested a Neutron Plotter router for Commander {commanderName}.",
+        # "SpanshRoadToRiches": "The Spansh API has suggested a Road-to-Riches route for Commander {commanderName}.",
+        if event_name == 'ExternalTwitchMessage':
+            twitch_event = cast(Dict[str, Any], content)
+            return f"Message received from {twitch_event.get('username','')} on Twitch Chat: {twitch_event.get('text','')}"
+        if event_name == 'ExternalTwitchNotification':
+            twitch_event = cast(Dict[str, Any], content)
+            return f"{self.commander_name} has received a Discord notification."
+        if event_name == 'Idle':
+            return f"{self.commander_name} hasn't responded for a while. Get their attention by making a joke fitting to the current situation or self-reflecting on the recent past.",
+
+        if event_name == "DockingComputerDocking":
+            return f"{self.commander_name}'s ship has initiated automated docking computer"
+
+        if event_name == "DockingComputerUndocking":
+            # we know it's a station as we only trigger undocking event if we are inside a station
+            return f"{self.commander_name}'s ship has initiated automated docking computer, we are leaving the station"
+
+        if event_name == "DockingComputerDeactivated":
+            return f"{self.commander_name}'s ship has deactivated the docking computer"
+
+        if event_name == "Market":
+            return None
+
+        log('debug', f'fallback for event', event_name, content)
+
+        return f"Event: {event_name}\n{yaml.dump(content)}"
+
+    def get_status_event_template(self, event: StatusEvent):
+        status: Any = event.status
+        event_name = status.get('event')
+
+        # System events
+        if event_name == 'Status':
+            return None
+        if event_name == 'LegalStateChanged':
+            return f"Legal state is now {status['LegalState']}"
+        if event_name == 'WeaponSelected':
+            return f"Selected weapon {status['SelectedWeapon']}"
+
+        if event_name == "SystemMapOpened":
+            return "System map opened"
+        if event_name == "SystemMapClosed":
+            return "System map closed"
+        if event_name == "GalaxyMapOpened":
+            return "Galaxy map opened"
+        if event_name == "GalaxyMapClosed":
+            return "Galaxy map closed"
+        if event_name == "SystemMapClosedGalaxyMapOpened":
+            return "System map closed, Galaxy map opened"
+        if event_name == "GalaxyMapClosedSystemMapOpened":
+            return "Galaxy map closed, System map opened"
+        if event_name == "HudSwitchedToCombatMode":
+            return "Ship HUD is in combat mode"
+        if event_name == "HudSwitchedToAnalysisMode":
+            return "Ship HUD is in Analysis mode"
+        if event_name == 'LandingGearUp':
+            return 'Landing gear has been retracted'
+        if event_name == 'LandingGearDown':
+            return 'Landing gear has been deployed'
+        if event_name == 'FlightAssistOn':
+            return 'Flight stabilizer engaged, drift ending'
+        if event_name == 'FlightAssistOff':
+            return 'Flight stabilizer disengaged, drift starting'
+        if event_name == 'HardpointsRetracted':
+            return 'Hardpoints retracted'
+        if event_name == 'HardpointsDeployed':
+            return 'Hardpoints (Weapons/Scanners) deployed and ready'
+        if event_name == 'SilentRunningOff':
+            return 'Silent running mode deactivated, thermal signature normalized'
+        if event_name == 'SilentRunningOn':
+            return 'Silent running mode activated, suppressing thermal signature'
+        if event_name == 'FuelScoopEnded':
+            return 'Fuel collection complete, fuel scoop disengaged'
+        if event_name == 'FuelScoopStarted':
+            return 'Fuel scoop engaged, collecting stellar material'
+        if event_name == 'LightsOff':
+            return 'External lighting systems powered down'
+        if event_name == 'LightsOn':
+            return 'External lighting systems activated'
+        if event_name == 'CargoScoopRetracted':
+            return 'Cargo scoop retracted, collection systems offline'
+        if event_name == 'CargoScoopDeployed':
+            return 'Cargo scoop deployed, ready to collect materials'
+        if event_name == 'FsdMassLockEscaped':
+            return 'Frame Shift Drive mass lock released, hyperspace available'
+        if event_name == 'FsdMassLocked':
+            return 'Frame Shift Drive mass locked by nearby objects, hyperspace restricted'
+        if event_name == 'GlideModeExited':
+            return 'Glide mode disengaged, returned to normal flight'
+        if event_name == 'GlideModeEntered':
+            return 'Entered atmospheric glide mode, maintaining controlled descent'
+        if event_name == 'LowFuelWarningCleared':
+            return 'Fuel levels restored to acceptable levels'
+        if event_name == 'LowFuelWarning':
+            return 'Warning: Fuel reserves critically low, refueling recommended'
+        if event_name == 'FsdCharging':
+            return 'Frame Shift Drive charging, preparing for jump'
+        if event_name == "BeingInterdicted":
+            return "Supercruise is being interdicted."
+        if event_name == 'SrvHandbrakeOff':
+            return 'SRV handbrake released, free to move'
+        if event_name == 'SrvHandbrakeOn':
+            return 'SRV handbrake engaged, vehicle secured'
+        if event_name == 'SrvTurretViewDisconnected':
+            return 'SRV turret view disconnected, returning to normal operation'
+        if event_name == 'SrvTurretViewConnected':
+            return 'SRV turret view connected, weapon systems accessible'
+        if event_name == 'SrvDriveAssistOff':
+            return 'SRV drive assist disabled, manual control active'
+        if event_name == 'SrvDriveAssistOn':
+            return 'SRV drive assist enabled, terrain compensation active'
+        if event_name == 'LowOxygenWarningCleared':
+            return 'Oxygen levels returned to normal parameters'
+        if event_name == 'LowOxygenWarning':
+            return 'Warning: Life support oxygen reserves critically low'
+        if event_name == 'LowHealthWarningCleared':
+            return 'Hull integrity stabilized, critical damage repaired'
+        if event_name == 'LowHealthWarning':
+            return 'Warning: Hull integrity critical, immediate repairs recommended'
+        if event_name == 'BreathableAtmosphereExited':
+            return 'Exited breathable atmosphere, life support systems active'
+        if event_name == 'BreathableAtmosphereEntered':
+            return 'Entered breathable atmosphere, external oxygen available'
+        if event_name == 'OutofDanger':
+            return 'No potential danger detected by scanners anymore. All clear.'
+        if event_name == 'InDanger':
+            return 'Potentially dangerous situation detected by scanners.'
+        if event_name == 'NightVisionOff':
+            return 'Night vision system deactivated'
+        if event_name == 'NightVisionOn':
+            return 'Night vision system activated'
+
+        return None
+
+    def event_message(self, event: Union[GameEvent, ProjectedEvent, ExternalEvent], timeoffset: str, is_important: bool):
         message = self.get_event_template(event)
         if message:
             return {
@@ -2490,36 +2335,21 @@ class PromptGenerator:
                 "content": f"[{'IMPORTANT ' if is_important else ''}Game Event, {timeoffset}] {message}",
             }
 
-        return {
-            "role": "user",
-            "content": f"[{'IMPORTANT ' if is_important else ''}Game Event, {timeoffset}] {allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)}\n{yaml.dump(event.content)}",
-        }
+        # Deliberately ignored events
+        # log('info', f'ignored event', event)
+        return None
 
-    def simple_event_message(self, event: GameEvent, timeoffset: str):
-        return {
-            "role": "user",
-            "content": f"[Game Event, {timeoffset}] {allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)}",
-        }
-
-    def full_projectedevent_message(self, event: ProjectedEvent, timeoffset: str, is_important: bool):
-        return {
-            "role": "user",
-            "content": f"[{'IMPORTANT ' if is_important else ''}Game Event, {timeoffset}] {allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)}\n{yaml.dump(event.content)}",
-        }
-
-    def simple_projectedevent_message(self, event: ProjectedEvent, timeoffset: str):
-        return {
-            "role": "user",
-            "content": f"[Game Event, {timeoffset}] {allGameEvents[event.content.get('event')].format(commanderName=self.commander_name)}",
-        }
-
-    def status_messages(self, event: StatusEvent):
-        if event.status.get('event'):
-            return [{
+    def status_messages(self, event: StatusEvent, timeoffset: str, is_important: bool):
+        message = self.get_status_event_template(event)
+        if message:
+            return {
                 "role": "user",
-                "content": f"(Status changed: {event.status.get('event')} Details: {json.dumps(event.status)})",
-            }]
-        return []
+                "content": f"[{'IMPORTANT ' if is_important else ''}Game Event, {timeoffset}] {message}",
+            }
+
+        # Deliberately ignored events
+        # log('info', f'ignored event', event)
+        return None
 
     def conversation_message(self, event: ConversationEvent):
         return {"role": event.kind, "content": event.content}
@@ -2533,91 +2363,168 @@ class PromptGenerator:
         )
         return responses
 
-    def external_event_message(self, event: ExternalEvent):
-        return {
-            "role": "user",
-            "content": f"({externalEvents[event.content.get('event')]})",
-        }
-
     def tool_response_message(self, event: ToolEvent):
         return
 
-    # fetch system info from EDSM
-    @lru_cache(maxsize=1, typed=False)
-    def get_system_info(self, system_name: str) -> dict:
-        url = "https://www.edsm.net/api-v1/system"
-        params = {
-            "systemName": system_name,
-            "showInformation": 1,
-            "showPrimaryStar": 1,
-        }
-
-        try:
-            response = requests.get(url, params=params)
-            response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
-
-            return response.json()
-
-        except Exception as e:
-            log('error', e, traceback.format_exc())
-            return "Currently no information on system available"
-
-    # fetch station info from EDSM
-    @lru_cache(maxsize=1, typed=False)
-    def get_station_info(self, system_name: str, fleet_carrier=False) -> list:
-        url = "https://www.edsm.net/api-system-v1/stations"
-        params = {
-            "systemName": system_name,
-        }
-
-        try:
-            response = requests.get(url, params=params)
-            response.raise_for_status()  # Raises an HTTPError for bad responses (4xx and 5xx)
-
-            data = response.json()
-
-            return [
-                {
-                    "name": station.get("name", "Unknown"),
-                    "type": station.get("type", "Unknown"),
-                    "orbit": station.get("distanceToArrival", "Unknown"),
-                    "allegiance": station.get("allegiance", "None"),
-                    "government": station.get("government", "None"),
-                    "economy": station.get("economy", "None"),
-                    "secondEconomy": station.get("secondEconomy", "None"),
-                    "controllingFaction": station.get("controllingFaction", {}).get(
-                        "name", "Unknown"
-                    ),
-                    "services": [
-                        service
-                        for service, has_service in {
-                            "market": station.get("haveMarket", False),
-                            "shipyard": station.get("haveShipyard", False),
-                            "outfitting": station.get("haveOutfitting", False),
-                        }.items()
-                        if has_service
-                    ],
-                    **(
-                        {"body": station["body"]["name"]}
-                        if "body" in station and "name" in station["body"]
-                        else {}
-                    ),
-                }
-                for station in data["stations"]
-                if station["type"] != "Fleet Carrier"
+    # Helper method to format station data into the desired structure
+    def format_stations_data(self, stations_data) -> dict | str | list:
+        """Format station data into the desired hierarchy regardless of source"""
+        # If it's already a string or None, return as is
+        if not stations_data or isinstance(stations_data, str):
+            return stations_data or "No station data available"
+            
+        # Step 1: Process raw station data into a standard format
+        station_data = []
+        
+        # Handle different possible input formats
+        if isinstance(stations_data, list) and "stations" not in stations_data:
+            # Direct list of stations from projections
+            for station in stations_data:
+                # Create a standardized station entry
+                station_entry = self._create_standard_station_entry(station)
+                station_data.append(station_entry)
+                
+        elif isinstance(stations_data, dict) and "stations" in stations_data:
+            # Raw API response format from EDSM
+            for station in stations_data["stations"]:
+                if station.get("type") == "Fleet Carrier":
+                    continue
+                    
+                # Create a standardized station entry
+                station_entry = self._create_standard_station_entry(station, raw_format=True)
+                station_data.append(station_entry)
+        else:
+            # Already processed data or unknown format
+            if isinstance(stations_data, (dict, list)):
+                return stations_data
+            return "Unknown station data format"
+            
+        # If we have no stations after filtering
+        if not station_data:
+            return "No stations found in this system"
+            
+        # Step 2: Group by body and type
+        result = {}
+        
+        # First collect orbit distances by body
+        body_orbits = {}
+        for station in station_data:
+            body = station["body"]
+            if body not in body_orbits and isinstance(station["orbit"], (int, float)):
+                body_orbits[body] = station["orbit"]
+        
+        # Then group stations by body and type
+        for station in station_data:
+            body = station["body"]
+            station_type = station["type"]
+            
+            # Format body label with orbit distance
+            orbit_text = ""
+            if body in body_orbits:
+                orbit_text = f" ({body_orbits[body]}ls)"
+            body_label = f"{body}{orbit_text}"
+            
+            # Initialize body section if needed
+            if body_label not in result:
+                result[body_label] = {}
+            
+            # Initialize station type section if needed
+            if station_type not in result[body_label]:
+                result[body_label][station_type] = []
+            
+            # Create clean station entry without redundant fields
+            # station is {'body': 'In Orbit around Primary Star', 'orbit': 18.414, 'economy': 'Refinery/Extraction', 'services': ['market', 'shipyard', 'outfitting'], 'name': 'Dobrovolski Plant', 'type': 'Coriolis Starport', 'government': 'Empire Corporate', 'controllingFaction': 'East India Company'}
+            clean_station = {
+                "name": station["name"],
+                "economy": station["economy"],
+                "services": station["services"],
+                "government": station["government"],
+                "controllingFaction": station["controllingFaction"],
+            }
+            
+            # Add to result structure
+            result[body_label][station_type].append(clean_station)
+        
+        return result
+        
+    def _create_standard_station_entry(self, station, raw_format=False):
+        """Create a standardized station entry from either projection or raw API data"""
+        # Create a normalized station dict to work with
+        normalized = {}
+        
+        # Handle body field
+        if raw_format and "body" in station and "name" in station["body"]:
+            normalized["body"] = station["body"]["name"]
+        else:
+            normalized["body"] = station.get("body", "In Orbit around Primary Star")
+            
+        # Handle orbit distance field
+        if raw_format:
+            orbit = station.get("distanceToArrival", "Unknown")
+        else:
+            orbit = station.get("orbit", "Unknown")
+            
+        if isinstance(orbit, (int, float)):
+            normalized["orbit"] = round(float(orbit), 3)
+        else:
+            normalized["orbit"] = orbit
+            
+        # Handle economy fields - unified approach
+        normalized["economy"] = station.get("economy", "None")
+        # The secondEconomy field might have different structure based on source
+        second_economy = station.get("secondEconomy")
+        
+        # Combine economy fields if both exist and aren't "None"
+        if normalized["economy"] != "None" and second_economy and second_economy != "None":
+            normalized["economy"] = f"{normalized['economy']}/{second_economy}"
+            
+        # Add reserve information if it exists
+        reserve = station.get("reserve")
+        if reserve and reserve != "None":
+            normalized["economy"] = f"{normalized['economy']} ({reserve})"
+            
+        # Handle services field
+        if raw_format:
+            normalized["services"] = [
+                service
+                for service, has_service in {
+                    "market": station.get("haveMarket", False),
+                    "shipyard": station.get("haveShipyard", False),
+                    "outfitting": station.get("haveOutfitting", False),
+                }.items()
+                if has_service
             ]
+        else:
+            normalized["services"] = station.get("services", [])
+            
+        # Add all other basic fields
+        normalized["name"] = station.get("name", "Unknown")
+        normalized["type"] = station.get("type", "Unknown")
+        normalized["government"] = f"{station.get("allegiance", "")} {station.get("government", "None")}"
+        
+        # Handle controllingFaction which might have different structure
+        if raw_format and isinstance(station.get("controllingFaction"), dict):
+            normalized["controllingFaction"] = station["controllingFaction"].get("name", "Unknown")
+        else:
+            normalized["controllingFaction"] = station.get("controllingFaction", "Unknown")
+            
+        return normalized
 
-        except Exception as e:
-            log("error", f"Error: {e}")
-            return "Currently no information on system available"
-
-    def generate_vehicle_status(self, current_status:dict):
+    def generate_vehicle_status(self, current_status:dict, in_combat:dict):
         flags = [key for key, value in current_status["flags"].items() if value]
         if current_status.get("flags2"):
             flags += [key for key, value in current_status["flags2"].items() if value]
 
+        if in_combat.get("InCombat", False):
+            flags.append("InCombat")
+
+        firegroup = "Unknown"
+        if current_status.get("FireGroup") is not None:
+            firegroup = chr(65 + current_status.get("FireGroup"))
+
         status_info = {
             "status": flags,
+            "current fire_group": firegroup,
             "balance": current_status.get("Balance", None),
             "pips": current_status.get("Pips", None),
             "cargo": current_status.get("Cargo", None),
@@ -2649,8 +2556,13 @@ class PromptGenerator:
     def generate_status_message(self, projected_states: dict[str, dict]):
         status_entries: list[tuple[str, Any]] = []
 
-        active_mode, vehicle_status = self.generate_vehicle_status(projected_states.get('CurrentStatus', {}))
+        active_mode, vehicle_status = self.generate_vehicle_status(projected_states.get('CurrentStatus', {}), projected_states.get('InCombat', {}))
         status_entries.append((active_mode+" status", vehicle_status))
+
+
+        guifocus = projected_states.get('CurrentStatus', {}).get('GuiFocus', '')
+        if guifocus != "NoFocus":
+            status_entries.append(("Current active window: ", guifocus))
 
         # Get ship and cargo info
         ship_info: ShipInfoState = projected_states.get('ShipInfo', {})  # pyright: ignore[reportAssignmentType]
@@ -2658,7 +2570,9 @@ class PromptGenerator:
         
         # Create a copy of ship_info so we don't modify the original
         ship_display = dict(ship_info)
-        
+        ship_display.pop('IsMiningShip', None)
+        ship_display.pop('hasLimpets', None)
+
         # Add cargo inventory in a more efficient format if available
 
         if cargo_info and cargo_info.get('Inventory'):
@@ -2743,70 +2657,75 @@ class PromptGenerator:
                             # Use friendlier category names
                             friendly_name = category_display_names.get(category, category)
                             backpack_summary[friendly_name] = items_list
-            
-            # Add the comprehensive suit information to status entries
-            if suit_display or backpack_summary:
-                # Create the final display with suit info first, backpack last
-                final_suit_display = {}
-                
-                # Add suit details if available
-                if suit_display:
-                    for key, value in suit_display.items():
-                        final_suit_display[key] = value
-                
-                # Add backpack contents at the end
-                if backpack_summary:
-                    final_suit_display["Backpack"] = backpack_summary
-                
-                status_entries.append(("Suit Information", final_suit_display))
-            # If we have no suit display but do have backpack info, fall back to old format
-            elif backpack_summary:
-                status_entries.append(("Suit Backpack Contents", backpack_summary))
+
+                # Add the comprehensive suit information to status entries
+                if suit_display or backpack_summary:
+                    # Create the final display with suit info first, backpack last
+                    final_suit_display = {}
+
+                    # Add suit details if available
+                    if suit_display:
+                        for key, value in suit_display.items():
+                            final_suit_display[key] = value
+
+                    # Add backpack contents at the end
+                    if backpack_summary:
+                        final_suit_display["Backpack"] = backpack_summary
+
+                    status_entries.append(("Suit Information", final_suit_display))
+                # If we have no suit display but do have backpack info, fall back to old format
+                elif backpack_summary:
+                    status_entries.append(("Suit Backpack Contents", backpack_summary))
 
         if active_mode == 'Main ship':
             # Get the ship loadout information
             loadout_info = projected_states.get('Loadout', {})
-            
+
             if loadout_info:
                 # Create comprehensive ship loadout display focusing only on modules
                 loadout_display = {}
-                
+
                 # Process modules - group by slot type for better organization
                 if loadout_info.get('Modules'):
                     modules_by_category = {}
-                    
+
                     for module in loadout_info.get('Modules', []):
                         slot = module.get('Slot', 'Unknown')
                         item = module.get('Item', 'Unknown')
-                        
+
                         # Extract category from slot name
-                        if slot.startswith('MediumHardpoint') or slot.startswith('SmallHardpoint') or slot.startswith('LargeHardpoint') or slot.startswith('HugeHardpoint') or slot.startswith('TinyHardpoint'):
+                        if slot.startswith('MediumHardpoint') or slot.startswith(
+                                'SmallHardpoint') or slot.startswith('LargeHardpoint') or slot.startswith(
+                                'HugeHardpoint') or slot.startswith('TinyHardpoint'):
                             category = "Weapons"
-                        elif slot in ['Armour', 'PowerPlant', 'MainEngines', 'FrameShiftDrive', 'LifeSupport', 'PowerDistributor', 'Radar', 'FuelTank']:
+                        elif slot in ['Armour', 'PowerPlant', 'MainEngines', 'FrameShiftDrive', 'LifeSupport',
+                                      'PowerDistributor', 'Radar', 'FuelTank']:
                             category = "Core Internals"
                         elif slot.startswith('Slot'):
                             category = "Optional Internals"
                         elif slot in ['ShipCockpit', 'CargoHatch', 'PlanetaryApproachSuite']:
                             category = "Essential Components"
-                        elif slot in ['Bobble', 'ShipKitSpoiler', 'ShipKitBumper', 'ShipKitWings', 'WeaponColour', 'EngineColour', 'VesselVoice', 'Decal1', 'Decal2', 'Decal3', 'NamePlate', 'PaintJob']:
+                        elif slot in ['Bobble', 'ShipKitSpoiler', 'ShipKitBumper', 'ShipKitWings', 'WeaponColour',
+                                      'EngineColour', 'VesselVoice', 'Decal1', 'Decal2', 'Decal3', 'NamePlate',
+                                      'PaintJob']:
                             category = "Cosmetics"
                         else:
                             category = "Other"
-                        
+
                         # Create category if it doesn't exist
                         if category not in modules_by_category:
                             modules_by_category[category] = []
-                        
+
                         # Format module information
                         module_info = {
-                            "Slot": slot,
+                            # "Slot": slot,
                             "Item": item
                         }
-                        
+
                         # Add simplified ammo information if available
                         if module.get('AmmoInHopper') is not None:
                             module_info["Max Ammo"] = module.get('AmmoInHopper')
-                        
+
                         # Add simplified engineering information if available
                         if module.get('Engineering'):
                             eng_info = module.get('Engineering', {})
@@ -2814,76 +2733,309 @@ class PromptGenerator:
                                 "Blueprint": eng_info.get('BlueprintName', 'Unknown'),
                                 "Level": eng_info.get('Level', 0),
                             }
-                            
+
                             # Add experimental effect if present
                             if eng_info.get('ExperimentalEffect_Localised'):
                                 engineering["Experimental"] = eng_info.get('ExperimentalEffect_Localised')
-                            
+
                             module_info["Engineering"] = engineering
-                        
+
                         modules_by_category[category].append(module_info)
-                    
+
                     # Add modules to the loadout display
                     loadout_display = modules_by_category
-                
+
                 # Add the loadout information to status entries
-                ship_display['Loadout']=loadout_display
+                ship_display['Loadout'] = loadout_display
 
         status_entries.append(("Main Ship", ship_display))
-
+        
+        # Get location info
         location_info: LocationState = projected_states.get('Location', {})  # pyright: ignore[reportAssignmentType]
-        nav_info: NavInfo = projected_states.get('NavInfo', {})  # pyright: ignore[reportAssignmentType]
+        
+        # Process location info
+        if location_info:
+            system_name = location_info.get('StarSystem')
+            system_info = None
+            stations_info = None
+            
+            # Direct lookup from system database instead of SystemInfo projection
+            if system_name:
+                # Get system info from system database
+                raw_system_info = self.system_db.get_system_info(system_name, async_fetch=True)
+                if raw_system_info and not isinstance(raw_system_info, str):
+                    system_info = self.format_system_info(raw_system_info)
 
-        if "StarSystem" in location_info and location_info["StarSystem"] != "Unknown":
-            status_entries.append(("Local system", self.get_system_info(location_info['StarSystem'])))
+                # Get stations from system database
+                stations_data = self.system_db.get_stations(system_name)
+                if stations_data:
+                    stations_info = self.format_stations_data(stations_data)
 
-            status_entries.append(("Stations in local system", self.get_station_info(location_info['StarSystem'])))
+            if location_info.get('Station'):
+                if not location_info.get('Docked'):
+                    location_info["Station"] = f"Outside {location_info['Station']}"
 
-        status_entries.append(("Location", location_info))
+            altitude = projected_states.get('CurrentStatus', {}).get('Altitude') or None
+            if altitude:
+                location_info["Altitude"] = f"{altitude} km"
 
-        status_entries.append(("Navigation route", nav_info))
+            location_info.pop('StarPos', None)
 
-        missions_info: MissionsState = projected_states.get('Missions', {})  # pyright: ignore[reportAssignmentType]
-        if missions_info and 'Active' in missions_info:
-            status_entries.append(("Active missions", missions_info))
+            status_entries.append(("Location", location_info))
+            status_entries.append(("Local system", system_info))
+            status_entries.append(("Stations in local system", stations_info))
 
+        # Community Goal
+        community_goal = projected_states.get('CommunityGoal', {})
+        if community_goal and 'CurrentGoals' in community_goal:
+            current_goals = community_goal.get('CurrentGoals', [])
+            if current_goals:
+                goals_info = {}
+                for goal in current_goals:
+                    goal_title = goal.get('Title', 'Unknown Goal')
+                    
+                    # Extract tier numbers for simplified display
+                    tier_reached = goal.get('TierReached', 'Tier 0')
+                    top_tier = goal.get('TopTier', {}).get('Name', 'Tier 0')
+                    
+                    # Extract just the numbers from tier strings
+                    tier_reached_num = tier_reached.replace('Tier ', '')
+                    top_tier_num = top_tier.replace('Tier ', '')
+                    
+                    goal_info = {
+                        'Location': f"{goal.get('MarketName', 'Unknown')} ({goal.get('SystemName', 'Unknown')})",
+                        'Tier': f"{tier_reached_num}/{top_tier_num}",
+                        'Player_Contribution': f"{goal.get('PlayerContribution', 0):,}",
+                        'Contributors': f"{goal.get('NumContributors', 0):,}",
+                        'Player_Percentile': f"{goal.get('PlayerPercentileBand', 0)}%",
+                        'Reward': f"{goal.get('Bonus', 0):,} CR",
+                        'Expires': goal.get('Expiry', 'Unknown')
+                    }
+                    
+                    goals_info[goal_title] = goal_info
+                
+                status_entries.append(("Community Goals", goals_info))
+
+        # Nav Route 
+        if "NavInfo" in projected_states and projected_states["NavInfo"].get("NavRoute"):
+            nav_route = projected_states["NavInfo"]["NavRoute"]
+            
+            # Enhance NavRoute with data from system database instead of SystemInfo projection
+            enhanced_nav_route = []
+            # Limit to first 20 systems
+            systems_to_process = nav_route[:20]
+            total_systems = len(nav_route)
+            
+            for system in systems_to_process:
+                system_data = {**system}  # Create a copy of the original system data
+                
+                # Try to get additional info from system database
+                system_name = system.get("StarSystem")
+                if system_name:
+                    raw_system_info = self.system_db.get_system_info(system_name, async_fetch=True)
+                    if raw_system_info and not isinstance(raw_system_info, str):
+                        # Use the formatter which now returns display-ready data
+                        formatted_info = self.format_system_info(raw_system_info)
+                        
+                        # If we got valid formatted info, merge it with system_data
+                        if isinstance(formatted_info, dict):
+                            # Only add the keys we want for nav route display
+                            for key in ["Government", "Population", "Unexplored", "Economy"]:
+                                if key in formatted_info:
+                                    system_data[key] = formatted_info[key]
+                
+                enhanced_nav_route.append(system_data)
+            
+            # We need to convert to a dict to add 'Jumps'
+            enhanced_nav_route_dict = {"Systems": enhanced_nav_route, "Jumps": total_systems - 1}
+            
+            # Set appropriate title based on whether we're showing all systems or just the first 20
+            nav_route_title = "Nav Route"
+            if total_systems > 20:
+                nav_route_title = "First 20 Systems of Nav Route"
+            
+            status_entries.append((nav_route_title, enhanced_nav_route_dict))
+
+        # Target
         target_info: TargetState = projected_states.get('Target', {})  # pyright: ignore[reportAssignmentType]
         target_info.pop('EventID', None)
         if target_info.get('Ship', False):
             status_entries.append(("Weapons' target", target_info))
 
+        # Market and station information
         current_station = projected_states.get('Location', {}).get('Station')
         market = projected_states.get('Market', {})
         outfitting = projected_states.get('Outfitting', {})
         storedShips = projected_states.get('StoredShips', {})
         if current_station and current_station == market.get('StationName'):
-            status_entries.append(("Local market information", {
+            buy_items = {
                 item.get('Name_Localised'): {
                     'Category': item.get('Category_Localised'),
                     'BuyPrice': item.get('BuyPrice'),
                     'MeanPrice': item.get('MeanPrice'),
                     'Stock': item.get('Stock'),
-                } if item.get('Stock') > item.get('Demand') else {
+                }
+                for item in market.get('Items', [])
+                if item.get('Stock', 0) > item.get('Demand', 0)
+            }
+
+            sell_items = {
+                item.get('Name_Localised'): {
                     'Category': item.get('Category_Localised'),
                     'SellPrice': item.get('SellPrice'),
                     'MeanPrice': item.get('MeanPrice'),
                     'Demand': item.get('Demand'),
                 }
-                for item in market.get('Items',[]) if item.get('Stock') or item.get('Demand')
-            }))
+                for item in market.get('Items', [])
+                if item.get('Demand', 0) > item.get('Stock', 0)
+            }
+
+            if buy_items or sell_items:
+                status_entries.append((
+                    "Local market information",
+                    {
+                        "List of goods I can buy from the market": buy_items,
+                        "List of Goods I can sell to the market": sell_items
+                    }
+                ))
+
         if current_station and current_station == outfitting.get('StationName'):
-            status_entries.append(("Local outfitting information", [
-                {"Name": item.get('Name'), "BuyPrice": item.get('BuyPrice')}
-                for item in outfitting.get('Items', [])
-            ]))
+            # Create a nested structure from outfitting items with optimized leaf nodes
+            nested_outfitting = {}
+
+            # First pass: collect all items by their categories
+            item_categories = {}
+
+            for item in outfitting.get('Items', []):
+                item_name = item.get('Name', '')
+                if not item_name or '_' not in item_name:
+                    continue
+
+                parts = item_name.split('_')
+                # Group items by their parent paths
+                parent_path = '_'.join(parts[:-1])
+                leaf = parts[-1]
+
+                if parent_path not in item_categories:
+                    item_categories[parent_path] = []
+                item_categories[parent_path].append(leaf)
+
+            # Second pass: build the optimized structure
+            for path, leaves in item_categories.items():
+                parts = path.split('_')
+                current = nested_outfitting
+
+                # Build the nested path
+                for i in range(len(parts)):
+                    part = parts[i]
+                    if i < len(parts) - 1:
+                        # Not the last part, ensure we have a dictionary
+                        if part not in current:
+                            current[part] = {}
+                        if not isinstance(current[part], dict):
+                            current[part] = {}
+                        current = current[part]
+                    else:
+                        # Last part - add the optimized leaf
+                        # Process the leaf nodes according to patterns
+                        if any(leaf.startswith('class') for leaf in leaves):
+                            # Extract class numbers and create a compact string
+                            class_numbers = []
+                            for leaf in leaves:
+                                if leaf.startswith('class'):
+                                    try:
+                                        num = leaf.replace('class', '')
+                                        class_numbers.append(num)
+                                    except:
+                                        class_numbers.append(leaf)
+                            # Instead of using f-string, create a dictionary entry
+                            current[part] = {"class": f"{','.join(sorted(class_numbers))}"}
+                        elif any(leaf.startswith('size') for leaf in leaves):
+                            # Extract size numbers
+                            size_numbers = []
+                            for leaf in leaves:
+                                if leaf.startswith('size'):
+                                    try:
+                                        num = leaf.replace('size', '')
+                                        size_numbers.append(num)
+                                    except:
+                                        size_numbers.append(leaf)
+                            # Instead of using f-string, create a dictionary entry
+                            current[part] = {"size": f"{','.join(sorted(size_numbers))}"}
+                        else:
+                            # Regular processing for other types - use a string directly
+                            current[part] = f"{','.join(sorted(leaves))}"
+
+            # Final pass: flatten the special dictionary entries to avoid quotes
+            def flatten_special_entries(data):
+                if not isinstance(data, dict):
+                    return data
+
+                result = {}
+                for key, value in data.items():
+                    if isinstance(value, dict) and len(value) == 1:
+                        # Check if this is our special format with class or size
+                        special_key = next(iter(value.keys()), None)
+                        if special_key in ('class', 'size'):
+                            # Flatten it to a direct string to avoid quotes
+                            result[key] = f"{special_key} {value[special_key]}"
+                        else:
+                            # Regular nested dictionary
+                            result[key] = flatten_special_entries(value)
+                    else:
+                        # Regular processing
+                        result[key] = flatten_special_entries(value) if isinstance(value, dict) else value
+                return result
+
+            # Apply the flattening
+            nested_outfitting = flatten_special_entries(nested_outfitting)
+
+            status_entries.append(("Local outfitting information", nested_outfitting))
         if current_station and current_station == storedShips.get('StationName'):
             status_entries.append(("Local, stored ships", storedShips.get('ShipsHere', [])))
+            
+        # Missions
+        missions_info: MissionsState = projected_states.get('Missions', {})  # pyright: ignore[reportAssignmentType]
+        if missions_info and 'Active' in missions_info:
+            status_entries.append(("Active missions", missions_info))
+
+        # Add colonisation construction status if available
+        colonisation_info = projected_states.get('ColonisationConstruction', {})
+        if colonisation_info and colonisation_info.get('StarSystem', 'Unknown') != 'Unknown':
+            progress = colonisation_info.get('ConstructionProgress', 0.0)
+            complete = colonisation_info.get('ConstructionComplete', False)
+            failed = colonisation_info.get('ConstructionFailed', False)
+            resources = colonisation_info.get('ResourcesRequired', [])
+            starsystem = colonisation_info.get('StarSystem', 'Unknown')
+
+            construction_status = {
+                "Location": f"{starsystem}",
+                "Progress": f"{progress:.1%}",
+                "Status": "Complete" if complete else "Failed" if failed else "In Progress"
+            }
+
+            if resources:
+                missing_resources = {}
+                for resource in resources:
+                    required = resource.get('RequiredAmount', 0)
+                    provided = resource.get('ProvidedAmount', 0)
+                    delta = required - provided
+
+                    # Only include resources that still need more items
+                    if delta > 0:
+                        name = resource.get('Name_Localised', resource.get('Name', ''))
+                        missing_resources[name] = delta
+
+                # Only add missing resources if there are any
+                if missing_resources:
+                    construction_status["Missing Resources"] = missing_resources
+
+            status_entries.append(("Colonisation Construction", construction_status))
 
         # Add friends status (always include this entry)
         friends_info = projected_states.get('Friends', {})
         online_friends = friends_info.get('Online', [])
-        
-        
+
         # Always add the entry, with appropriate message based on online status
         if online_friends:
             status_entries.append(("Friends Status", {
@@ -2893,8 +3045,71 @@ class PromptGenerator:
         else:
             status_entries.append(("Friends Status", "No friends currently online"))
 
+        # Engineer status
+        engineer_systems = {
+            "Tod 'The Blaster' McQuinn": "Wolf 397",
+            "Felicity Farseer": "Deciat",
+            "Elvira Martuuk": "Khun",
+            "Liz Ryder": "Eurybia",
+            "The Dweller": "Wyrd",
+            "Lei Cheung": "Laksak",
+            "Selene Jean": "Kuk",
+            "Hera Tani": "Kuwemaki",
+            "Broo Tarquin": "Muang",
+            "Marco Qwent": "Sirius",
+            "Zacariah Nemo": "Yoru",
+            "Didi Vatermann": "Leesti",
+            "Colonel Bris Dekker": "Sol",
+            "Juri Ishmaak": "Giryak",
+            "Professor Palin": "Arque",
+            "Bill Turner": "Alioth",
+            "Lori Jameson": "Shinrarta Dezhra",
+            "Ram Tah": "Meene",
+            "Tiana Fortune": "Achenar",
+            "The Sarge": "Beta-3 Tucani",
+            "Etienne Dorn": "Los",
+            "Marsha Hicks": "Tir",
+            "Mel Brandon": "Luchtaine",
+            "Petra Olmanova": "Asura",
+            "Chloe Sedesi": "Shenve",
+            "Domino Green": "Orishis",
+            "Hero Ferrari": "Siris",
+            "Jude Navarro": "Aurai",
+            "Kit Fowler": "Capoya",
+            "Oden Geiger": "Candiaei",
+            "Terra Velasquez": "Shou Xing",
+            "Uma Laszlo": "Xuane",
+            "Wellington Beck": "Jolapa",
+            "Yarden Bond": "Bayan",
+            "Baltanos": "Deriso",
+            "Eleanor Bresa": "Desy",
+            "Rosa Dayette": "Kojeara",
+            "Yi Shen": "Einheriar"
+        }
+        engineer_info = projected_states.get('EngineerProgress', {})
+
+        # Process engineers that are either Unlocked or Invited
+        if engineer_info and 'Engineers' in engineer_info:
+            available_engineers = {}
+            for engineer in engineer_info.get('Engineers', []):
+                progress = engineer.get('Progress')
+                if progress in ['Unlocked', 'Invited']:
+                    engineer_name = engineer.get('Engineer')
+                    if engineer_name in engineer_systems:
+                        available_engineers[engineer_name] = engineer_systems[engineer_name]
+
+            if available_engineers:
+                status_entries.append(("Available Engineers", available_engineers))
+        
+        # Process plugin status messages
+        for status_generator in self.registered_status_generators:
+            try:
+                status_entries += status_generator(projected_states)
+            except Exception as e:
+                log('error', f"Error executing status generator: {e}", traceback.format_exc())
+
         # Format and return the final status message
-        return "\n\n".join(['# '+entry[0]+'\n' + yaml.dump(entry[1]) for entry in status_entries])
+        return "\n\n".join(['# '+entry[0]+'\n' + yaml.dump(entry[1], sort_keys=False) for entry in status_entries])
 
     def generate_prompt(self, events: list[Event], projected_states: dict[str, dict], pending_events: list[Event]):
         # Fine the most recent event
@@ -2918,34 +3133,22 @@ class PromptGenerator:
 
             time_offset = humanize.naturaltime(reference_time - event_time)
 
-            if isinstance(event, GameEvent):
-                if event.content.get('event') in allGameEvents:
-                    if len(conversational_pieces) < 20 or is_pending:
-                        is_important = is_pending and event.content.get('event') in self.important_game_events
-                        conversational_pieces.append(self.full_event_message(event, time_offset, is_important))
-                    else:
-                        pass
-                else: 
-                    log('debug', "PromptGenerator ignoring event", event.content.get('event'))
+            if isinstance(event, GameEvent) or isinstance(event, ProjectedEvent) or isinstance(event, ExternalEvent):
+                if len(conversational_pieces) < 20:
+                    is_important = is_pending and event.content.get('event') in self.important_game_events
+                    message = self.event_message(event, time_offset, is_important)
+                    if message:
+                        conversational_pieces.append(message)
 
-            if isinstance(event, ProjectedEvent):
-                if event.content.get('event') in allGameEvents:
-                    if len(conversational_pieces) < 5 or is_pending:
-                        is_important = is_pending and event.content.get('event') in self.important_game_events
-                        conversational_pieces.append(self.full_projectedevent_message(event, time_offset, is_important))
-                    elif len(conversational_pieces) < 20:
-                        conversational_pieces.append(self.simple_projectedevent_message(event, time_offset))
-                    else:
-                        pass
-                else:
-                    log('debug', "PromptGenerator ignoring event", event.content.get('event'))
-            
             if isinstance(event, StatusEvent):
                 if (
                     len(conversational_pieces) < 20
                     and event.status.get("event") != "Status"
                 ):
-                    conversational_pieces += self.status_messages(event)
+                    is_important = is_pending and event.status.get('event') in self.important_game_events
+                    message = self.status_messages(event, time_offset, is_important)
+                    if message:
+                        conversational_pieces.append(message)
 
             if isinstance(event, ConversationEvent) and event.kind in ['user', 'assistant']:
                 conversational_pieces.append(self.conversation_message(event))
@@ -2953,9 +3156,11 @@ class PromptGenerator:
             if isinstance(event, ToolEvent):
                 conversational_pieces += self.tool_messages(event)
 
-            if isinstance(event, ExternalEvent):
-                if event.content.get('event') in externalEvents:
-                    conversational_pieces.append(self.external_event_message(event))
+            for handler in self.registered_prompt_event_handlers:
+                try:
+                    conversational_pieces += handler(event)
+                except Exception as e:
+                    log('error', f"Error executing prompt event handler for {event}: {e}", traceback.format_exc())
 
         conversational_pieces.append(
             {
@@ -2968,11 +3173,14 @@ class PromptGenerator:
             conversational_pieces.append(
                 {
                     "role": "system",
-                    "content": "This universe is your reality. "
-                    + "You do not ask questions. You do not initiate conversations. You respond only when addressed. "
-                    + "Your purpose is to provide information, status updates, and execute commands as required. Only respond in a single sentence. "
-                    + "I will provide game events in parentheses; do not create new ones. Stay consistent with the lived experience. "
-                    + "Do not hallucinate any information that is not given to you. Do not use markdown in your responses. "
+                    "content": "The universe of Elite:Dangerous is your reality. Never mention it or refer to it as a game. "
+                    + "Your purpose is to provide information, status updates, and execute tools as required. Only use tools you are given from me. "
+                    + "You do not ask questions or initiate conversations. You respond only when addressed and in a single sentence. "
+                    + "Don't repeat the same words and sentences, mix it up. "
+                    + "I will provide game events in parentheses; do not create new ones. Only react to game events marked with 'IMPORTANT:'.  "
+                    + "Stay consistent with the lived experience and character. Do not hallucinate any information that is not given to you. "
+                    + "Do not use markdown in your responses, and no commas in numbers. "
+                    # The character_prompt now contains all the generated settings
                     + self.character_prompt.format(commander_name=self.commander_name),
                 }
             )
@@ -2986,3 +3194,83 @@ class PromptGenerator:
         log('debug', 'conversation', json.dumps(conversational_pieces))
 
         return conversational_pieces
+    
+    def register_prompt_event_handler(self, prompt_event_handler: Callable[[Event], list[ChatCompletionMessageParam]]):
+        self.registered_prompt_event_handlers.append(prompt_event_handler)
+    
+    def register_status_generator(self, status_generator: Callable[[dict[str, dict]], list[tuple [str, Any]]]):
+        self.registered_status_generators.append(status_generator)
+
+    def format_system_info(self, system_info: dict) -> dict:
+        """
+        Format system info into a structured template suitable for direct display
+        Returns a dictionary that can be directly used in the UI or passed to display functions
+        """
+        if not system_info or isinstance(system_info, str):
+            return system_info
+            
+        # Create a new dictionary for the formatted information - top level will be directly usable
+        formatted = {}
+        
+        # Add the system name
+        formatted["Name"] = system_info.get("name", "Unknown")
+
+        # Mark as unexplored if applicable
+        if "primaryStar" in system_info and not system_info["primaryStar"]:
+            formatted["Unexplored"] = "true"
+            return formatted
+        
+        # Process information section
+        if "information" in system_info and system_info["information"]:
+            info_data = system_info["information"]
+            
+            # Format government/security/allegiance for display
+            government_parts = []
+            if info_data.get("security") and info_data.get("security") != "None":
+                government_parts.append(f"{info_data['security']} Security")
+            if info_data.get("allegiance"):
+                government_parts.append(info_data["allegiance"])
+            if info_data.get("government"):
+                government_parts.append(info_data["government"])
+
+            if government_parts:
+                formatted["Government"] = " ".join(government_parts)
+
+            # Format economy information
+            economy_parts = []
+            if info_data.get("economy"):
+                economy_parts.append(info_data["economy"])
+            if info_data.get("secondEconomy"):
+                economy_parts.append(info_data["secondEconomy"])
+
+            if economy_parts:
+                formatted["Economy"] = "/".join(economy_parts)
+                if info_data.get("reserve"):
+                    formatted["Economy"] += f" ({info_data['reserve']})"
+
+            # Add faction information
+            if info_data.get("faction"):
+                faction_text = info_data["faction"]
+                if info_data.get("factionState"):
+                    faction_text += f" ({info_data['factionState']})"
+                formatted["Faction"] = faction_text
+
+            # Add population only if > 0
+            population = info_data.get("population", 0)
+            if population is not None and population > 0:
+                formatted["Population"] = population
+        
+        # Process primary star
+        if "primaryStar" in system_info and system_info["primaryStar"]:
+            star_data = system_info["primaryStar"]
+            formatted["Star"] = star_data.get("name", "Unknown")
+            formatted["Star Type"] = star_data.get("type", "Unknown")
+            formatted["Scoopable"] = star_data.get("isScoopable")
+
+        # Include coordinates if available
+        if "coords" in system_info:
+            coords = system_info.get("coords", {})
+            if coords and isinstance(coords, dict):
+                formatted["Coordinates"] = f"X: {coords.get('x')}, Y: {coords.get('y')}, Z: {coords.get('z')}"
+
+        return formatted

@@ -1,13 +1,15 @@
 import math
-
-from .Logger import log
-from typing import Any, Literal, TypedDict, final
+from typing import Any, Literal, TypedDict, final, List, cast
+from datetime import datetime, timezone, timedelta
 
 from typing_extensions import NotRequired, override
 
-from .Event import Event, StatusEvent, GameEvent, ProjectedEvent
+from .Event import Event, StatusEvent, GameEvent, ProjectedEvent, ExternalEvent, ConversationEvent, ToolEvent
 from .EventManager import EventManager, Projection
+from .Logger import log
 from .StatusParser import parse_status_flags, parse_status_json, Status
+from .SystemDatabase import SystemDatabase
+
 
 def latest_event_projection_factory(projectionName: str, gameEvent: str):
     class LatestEvent(Projection[dict[str, Any]]):
@@ -46,20 +48,6 @@ class CurrentStatus(Projection[Status]):
         if isinstance(event, StatusEvent) and event.status.get("event") == "Status":
             self.state = event.status
 
-
-LocationState = TypedDict('LocationState', {
-    "StarSystem": str,
-    "Star": NotRequired[str],
-    "Planet": NotRequired[str],
-    "PlanetaryRing": NotRequired[str],
-    "StellarRing": NotRequired[str],
-    "Station": NotRequired[str],
-    "AsteroidCluster": NotRequired[str],
-    "Docked": NotRequired[Literal[True]],
-    "Landed": NotRequired[Literal[True]], # only set when true
-    "NearestDestination": NotRequired[str], # only when landed on a planet
-})
-
 CargoState = TypedDict('CargoState', {
     "Inventory": list[dict],
     "TotalItems": int,
@@ -82,17 +70,16 @@ class Cargo(Projection[CargoState]):
         if isinstance(event, GameEvent) and event.content.get('event') == 'Cargo':
             if 'Inventory' in event.content:
                 self.state['Inventory'] = []
-                total_items = 0
-                
+
                 for item in event.content.get('Inventory', []):
                     self.state['Inventory'].append({
                         "Name": item.get('Name_Localised', item.get('Name', 'Unknown')),
                         "Count": item.get('Count', 0),
                         "Stolen": item.get('Stolen', 0) > 0
                     })
-                    total_items += item.get('Count', 0)
-                
-                self.state['TotalItems'] = total_items
+
+            if 'Count' in event.content:
+                self.state['TotalItems'] = event.content.get('Count', 0)
 
         # Get cargo capacity from Loadout event
         if isinstance(event, GameEvent) and event.content.get('event') == 'Loadout':
@@ -102,6 +89,20 @@ class Cargo(Projection[CargoState]):
         if isinstance(event, StatusEvent) and event.status.get('event') == 'Status':
             if 'Cargo' in event.status:
                 self.state['TotalItems'] = event.status.get('Cargo', 0)
+
+LocationState = TypedDict('LocationState', {
+    "StarSystem": str,
+    "Star": NotRequired[str],
+    "StarPos": list[float],
+    "Planet": NotRequired[str],
+    "PlanetaryRing": NotRequired[str],
+    "StellarRing": NotRequired[str],
+    "Station": NotRequired[str],
+    "AsteroidCluster": NotRequired[str],
+    "Docked": NotRequired[Literal[True]],
+    "Landed": NotRequired[Literal[True]], # only set when true
+    "NearestDestination": NotRequired[str], # only when landed on a planet
+})
 
 @final
 class Location(Projection[LocationState]):
@@ -119,21 +120,24 @@ class Location(Projection[LocationState]):
             body = event.content.get('Body', 'Unknown')
             station = event.content.get('StationName')
             docked = event.content.get('Docked', False)
-            
+            star_pos = event.content.get('StarPos', [0,0,0])
+
             self.state = {
                 "StarSystem": star_system,
+                "StarPos": star_pos,
             }
             if station:
                 self.state["Station"] = station
                 self.state["Docked"] = docked
             if body_type and body_type != 'Null':
                 self.state[body_type] = body
-                
+
         if isinstance(event, GameEvent) and event.content.get('event') == 'SupercruiseEntry':
             star_system = event.content.get('StarSystem', 'Unknown')
             
             self.state = {
                 "StarSystem": star_system,
+                "StarPos": self.state.get('StarPos', [0,0,0]),
             }
                 
         if isinstance(event, GameEvent) and event.content.get('event') == 'SupercruiseExit':
@@ -143,21 +147,24 @@ class Location(Projection[LocationState]):
             
             self.state = {
                 "StarSystem": star_system,
+                "StarPos": self.state.get('StarPos', [0,0,0]),
             }
             if body_type and body_type != 'Null':
                 self.state[body_type] = body
         
         if isinstance(event, GameEvent) and event.content.get('event') == 'FSDJump':
             star_system = event.content.get('StarSystem', 'Unknown')
+            star_pos = event.content.get('StarPos', [0,0,0])
             body_type = event.content.get('BodyType', 'Null')
             body = event.content.get('Body', 'Unknown')
             self.state = {
                 "StarSystem": star_system,
+                "StarPos": star_pos,
             }
             
             if body_type and body_type != 'Null':
                 self.state[body_type] = body
-                
+
         if isinstance(event, GameEvent) and event.content.get('event') == 'Docked':
             self.state['Docked'] = True
             self.state['Station'] = event.content.get('StationName', 'Unknown')
@@ -183,6 +190,7 @@ class Location(Projection[LocationState]):
         if isinstance(event, GameEvent) and event.content.get('event') == 'LeaveBody':
             self.state = {
                 "StarSystem": self.state.get('StarSystem', 'Unknown'),
+                "StarPos": self.state.get('StarPos', [0,0,0]),
             }
 
 MissionState = TypedDict('MissionState', {
@@ -338,23 +346,138 @@ class Missions(Projection[MissionsState]):
                 if not self.state["Unknown"]:
                     self.state.pop("Unknown", None)
 
-
-ShipInfoState = TypedDict('ShipInfoState', {
-    "Name": str,
-    "Type": str,
-    "ShipIdent": str,
-    "UnladenMass": float,
-    "Cargo": float,
-    "CargoCapacity": float,
-    "FuelMain": float,
-    "FuelMainCapacity": float,
-    "FuelReservoir": float,
-    "FuelReservoirCapacity": float,
-    "MaximumJumpRange": float,
-    #"CurrentJumpRange": float,
-    "LandingPadSize": Literal['S', 'M', 'L', 'Unknown'],
-    "IsMiningShip": bool,
+# Define types for EngineerProgress Projection
+EngineerState = TypedDict('EngineerState', {
+    "Engineer": str,
+    "EngineerID": int,
+    "Progress": NotRequired[str],  # Invited/Acquainted/Unlocked/Barred
+    "Rank": NotRequired[int],
+    "RankProgress": NotRequired[int],
 })
+
+EngineerProgressState = TypedDict('EngineerProgressState', {
+    "event": str,
+    "timestamp": str,
+    "Engineers": list[EngineerState],
+})
+
+@final
+class EngineerProgress(Projection[EngineerProgressState]):
+    @override
+    def get_default_state(self) -> EngineerProgressState:
+        return {
+            "event": "EngineerProgress",
+            "timestamp": "1970-01-01T00:00:00Z",
+            "Engineers": [],
+        }
+    
+    @override
+    def process(self, event: Event) -> None:
+        if isinstance(event, GameEvent) and event.content.get('event') == 'EngineerProgress':
+            # Handle startup form - save entire event
+            if 'Engineers' in event.content:
+                self.state = event.content
+            
+            # Handle update form - single engineer update
+            elif 'Engineer' in event.content and 'EngineerID' in event.content:
+                engineer_id = event.content.get('EngineerID', 0)
+                
+                # Ensure Engineers list exists
+                if 'Engineers' not in self.state:
+                    self.state["Engineers"] = []
+                
+                # Find existing engineer or create new one
+                existing_engineer = None
+                for i, engineer in enumerate(self.state["Engineers"]):
+                    if engineer["EngineerID"] == engineer_id:
+                        existing_engineer = self.state["Engineers"][i]
+                        break
+                
+                if existing_engineer:
+                    # Update existing engineer
+                    if 'Engineer' in event.content:
+                        existing_engineer["Engineer"] = event.content.get('Engineer', 'Unknown')
+                    if 'Progress' in event.content:
+                        existing_engineer["Progress"] = event.content.get('Progress', 'Unknown')
+                    if 'Rank' in event.content:
+                        existing_engineer["Rank"] = event.content.get('Rank', 0)
+                    if 'RankProgress' in event.content:
+                        existing_engineer["RankProgress"] = event.content.get('RankProgress', 0)
+                else:
+                    # Create new engineer entry
+                    new_engineer: EngineerState = {
+                        "Engineer": event.content.get('Engineer', 'Unknown'),
+                        "EngineerID": engineer_id,
+                    }
+                    if 'Progress' in event.content:
+                        new_engineer["Progress"] = event.content.get('Progress', 'Unknown')
+                    if 'Rank' in event.content:
+                        new_engineer["Rank"] = event.content.get('Rank', 0)
+                    if 'RankProgress' in event.content:
+                        new_engineer["RankProgress"] = event.content.get('RankProgress', 0)
+                    
+                    self.state["Engineers"].append(new_engineer)
+
+# Define types for CommunityGoal Projection
+CommunityGoalTopTier = TypedDict('CommunityGoalTopTier', {
+    "Name": str,
+    "Bonus": str,
+})
+
+CommunityGoalItem = TypedDict('CommunityGoalItem', {
+    "CGID": int,
+    "Title": str,
+    "SystemName": str,
+    "MarketName": str,
+    "Expiry": str,
+    "IsComplete": bool,
+    "CurrentTotal": int,
+    "PlayerContribution": int,
+    "NumContributors": int,
+    "TopTier": CommunityGoalTopTier,
+    "TopRankSize": NotRequired[int],
+    "PlayerInTopRank": NotRequired[bool],
+    "TierReached": str,
+    "PlayerPercentileBand": int,
+    "Bonus": int,
+})
+
+CommunityGoalState = TypedDict('CommunityGoalState', {
+    "event": NotRequired[str],
+    "timestamp": NotRequired[str],
+    "CurrentGoals": NotRequired[list[CommunityGoalItem]],
+})
+
+@final
+class CommunityGoal(Projection[CommunityGoalState]):
+    @override
+    def get_default_state(self) -> CommunityGoalState:
+        return {}
+
+    @override
+    def process(self, event: Event) -> None:
+        if isinstance(event, GameEvent) and event.content.get('event') == 'CommunityGoal':
+            # Save entire event content when receiving CommunityGoal event
+            self.state = cast(CommunityGoalState, event.content)
+        
+        elif isinstance(event, GameEvent) and event.content.get('event') == 'LoadGame':
+            # Check for expired goals and remove them
+            from datetime import datetime
+            current_time = event.timestamp
+            current_dt = datetime.fromisoformat(current_time.replace('Z', '+00:00'))
+            
+            # Filter out expired goals
+            active_goals = []
+            for goal in self.state.get("CurrentGoals", []):
+                expiry_time = goal.get("Expiry", "1970-01-01T00:00:00Z")
+                expiry_dt = datetime.fromisoformat(expiry_time.replace('Z', '+00:00'))
+                
+                # Keep goal if it hasn't expired yet
+                if current_dt < expiry_dt:
+                    active_goals.append(goal)
+            
+            # Update state with only non-expired goals
+            self.state["CurrentGoals"] = active_goals
 
 ship_sizes: dict[str, Literal['S', 'M', 'L', 'Unknown']] = {
     'adder':                         'S',
@@ -387,6 +510,7 @@ ship_sizes: dict[str, Literal['S', 'M', 'L', 'Unknown']] = {
     'krait_light':                   'M',
     'mamba':                         'M',
     'mandalay':                      'M',
+    'corsair':                       'M',
     'orca':                          'L',
     'python':                        'M',
     'python_nx':                     'M',
@@ -406,6 +530,24 @@ ship_sizes: dict[str, Literal['S', 'M', 'L', 'Unknown']] = {
     'vulture':                       'S',
 }
 
+ShipInfoState = TypedDict('ShipInfoState', {
+    "Name": str,
+    "Type": str,
+    "ShipIdent": str,
+    "UnladenMass": float,
+    "Cargo": float,
+    "CargoCapacity": float,
+    "FuelMain": float,
+    "FuelMainCapacity": float,
+    "FuelReservoir": float,
+    "FuelReservoirCapacity": float,
+    "MaximumJumpRange": float,
+    #"CurrentJumpRange": float,
+    "LandingPadSize": Literal['S', 'M', 'L', 'Unknown'],
+    "IsMiningShip": bool,
+    "hasLimpets": bool,
+})
+
 @final
 class ShipInfo(Projection[ShipInfoState]):
     @override
@@ -424,15 +566,17 @@ class ShipInfo(Projection[ShipInfoState]):
             "MaximumJumpRange": 0,
             #"CurrentJumpRange": 0,
             "IsMiningShip": False,
+            "hasLimpets": False,
             "LandingPadSize": 'Unknown',
         }
     
     @override
-    def process(self, event: Event) -> None:
+    def process(self, event: Event) -> list[ProjectedEvent]:
+        projected_events: list[ProjectedEvent] = []
         if isinstance(event, StatusEvent) and event.status.get('event') == 'Status':
             status: Status = event.status  # pyright: ignore[reportAssignmentType]
-            if 'Cargo' in status and status['Cargo']:
-                self.state['Cargo'] = status['Cargo']
+            if 'Cargo' in event.status:
+                self.state['Cargo'] = event.status.get('Cargo', 0)
                 
             if 'Fuel' in status and status['Fuel']:
                 self.state['FuelMain'] = status['Fuel'].get('FuelMain', 0)
@@ -461,9 +605,30 @@ class ShipInfo(Projection[ShipInfoState]):
                     self.state['IsMiningShip'] = True
                 else:
                     self.state['IsMiningShip'] = False
-        
+
+                has_limpets = any(module["Item"].startswith("int_dronecontrol") for module in event.content["Modules"])
+                if has_limpets:
+                    self.state['hasLimpets'] = True
+                else:
+                    self.state['hasLimpets'] = False
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Cargo':
+            self.state['Cargo'] = event.content.get('Count', 0)
+
+        if isinstance(event, GameEvent) and event.content.get('event') in ['RefuelAll','RepairAll','BuyAmmo']:
+            if self.state['hasLimpets'] and self.state['Cargo'] < self.state['CargoCapacity']:
+                projected_events.append(ProjectedEvent({"event": "RememberLimpets"}))
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'SetUserShipName':
+            if 'UserShipName' in event.content:
+                self.state['Name'] = event.content.get('UserShipName', 'Unknown')
+            if 'UserShipId' in event.content:
+                self.state['ShipIdent'] = event.content.get('UserShipId', 'Unknown')
+
         if self.state['Type'] != 'Unknown':
             self.state['LandingPadSize'] = ship_sizes.get(self.state['Type'], 'Unknown')
+
+        return projected_events
 
 TargetState = TypedDict('TargetState', {
     "EventID": NotRequired[str],
@@ -524,45 +689,98 @@ NavInfoState = TypedDict('NavInfoState', {
 
 @final
 class NavInfo(Projection[NavInfoState]):
+    def __init__(self, system_db: SystemDatabase):
+        super().__init__()
+        self.system_db = system_db
+    
     @override
     def get_default_state(self) -> NavInfoState:
         return {
             "NextJumpTarget": 'Unknown',
             "NavRoute": [],
         }
-    
-    @override
-    def process(self, event: Event) -> None:
 
+    @override
+    def process(self, event: Event) -> list[ProjectedEvent]:
+        projected_events: list[ProjectedEvent] = []
+
+        # Process NavRoute event
         if isinstance(event, GameEvent) and event.content.get('event') == 'NavRoute':
             if event.content.get('Route', []):
                 self.state['NavRoute'] = []
-                for entry in event.content.get('Route', [])[1:]:
-                    self.state['NavRoute'].append({"StarSystem": entry["StarSystem"], "Scoopable": entry["StarClass"] in ['K','G','B','F','O','A','M']})
+                systems_to_lookup = []
+                
+                # Process all systems in a single loop
+                is_first_system = True
+                for entry in event.content.get('Route', []):
+                    star_system = entry.get("StarSystem", "Unknown")
+                    star_class = entry.get("StarClass", "")
+                    is_scoopable = star_class in ['K','G','B','F','O','A','M']
+                    
+                    # Add all systems to the lookup list
+                    systems_to_lookup.append(star_system)
+                    
+                    # Add to projection state (skip the first one)
+                    if not is_first_system:
+                        self.state['NavRoute'].append({
+                            "StarSystem": star_system, 
+                            "Scoopable": is_scoopable
+                        })
+                    else:
+                        # No longer the first system after the first iteration
+                        is_first_system = False
+                
+                # Fetch system data for systems in the route asynchronously
+                if systems_to_lookup:
+                    self.system_db.fetch_multiple_systems_nonblocking(systems_to_lookup)
 
+        # Process NavRouteClear
         if isinstance(event, GameEvent) and event.content.get('event') == 'NavRouteClear':
             self.state['NavRoute'] = []
+            
+        # Process FSDJump - remove visited systems from route
         if isinstance(event, GameEvent) and event.content.get('event') == 'FSDJump':
             for index, entry in enumerate(self.state['NavRoute']):
                 if entry['StarSystem'] == event.content.get('StarSystem'):
                     self.state['NavRoute'] = self.state['NavRoute'][index+1:]
+                    break
 
+            if len(self.state['NavRoute']) == 0 and 'NextJumpTarget' in self.state:
+                self.state.pop('NextJumpTarget')
+
+            # Calculate remaining jumps based on fuel
+            fuel_level = event.content.get('FuelLevel', 0)
+            fuel_used = event.content.get('FuelUsed', 0)
+            remaining_jumps = int(fuel_level / fuel_used)
+
+            # Check if we have enough scoopable stars between current and destination system)
+            if not len(self.state['NavRoute']) == 0 and remaining_jumps < len(self.state['NavRoute']) - 1:
+                # Count scoopable stars in the remaining jumps
+                scoopable_stars = sum(
+                    1 for entry in self.state['NavRoute'][:remaining_jumps]
+                    if entry.get('Scoopable', False)
+                )
+
+                # Only warn if we can't reach any scoopable stars
+                if scoopable_stars == 0:
+                    projected_events.append(ProjectedEvent({"event": "NoScoopableStars"}))
+
+        # Process FSDTarget
         if isinstance(event, GameEvent) and event.content.get('event') == 'FSDTarget':
             if 'Name' in event.content:
-                self.state['NextJumpTarget'] = event.content.get('Name', 'Unknown')
+                system_name = event.content.get('Name', 'Unknown')
+                self.state['NextJumpTarget'] = system_name
+                # Fetch system data for the target system asynchronously
+                self.system_db.fetch_system_data_nonblocking(system_name)
+                
+        # Process Location to fetch system data
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Location':
+            star_system = event.content.get('StarSystem', 'Unknown')
+            if star_system != 'Unknown':
+                # Fetch system data for the current system asynchronously
+                self.system_db.fetch_system_data_nonblocking(star_system)
 
-
-class ExobiologyScanStateScan(TypedDict):
-    lat: float
-    long: float
-
-ExobiologyScanState = TypedDict('ExobiologyScanState', {
-    "within_scan_radius": NotRequired[bool],
-    "scan_radius": NotRequired[int],
-    "scans": list[ExobiologyScanStateScan],
-    "lat": NotRequired[float],
-    "long": NotRequired[float]
-})
+        return projected_events
 
 # Define types for Backpack Projection
 BackpackItem = TypedDict('BackpackItem', {
@@ -657,6 +875,19 @@ class Backpack(Projection[BackpackState]):
                 
                 break
 
+class ExobiologyScanStateScan(TypedDict):
+    lat: float
+    long: float
+
+ExobiologyScanState = TypedDict('ExobiologyScanState', {
+    "within_scan_radius": NotRequired[bool],
+    # "distance": NotRequired[float],
+    "scan_radius": NotRequired[int],
+    "scans": list[ExobiologyScanStateScan],
+    "lat": NotRequired[float],
+    "long": NotRequired[float],
+    "life_form": NotRequired[str]
+})
 @final
 class ExobiologyScan(Projection[ExobiologyScanState]):
     colony_size = {
@@ -709,17 +940,17 @@ class ExobiologyScan(Projection[ExobiologyScanState]):
         projected_events: list[ProjectedEvent] = []
 
         if isinstance(event, StatusEvent) and event.status.get("event") == "Status":
-            self.state["lat"] = event.status.get("Latitude")
-            self.state["long"] = event.status.get("Longitude")
+            self.state["lat"] = event.status.get("Latitude", 0)
+            self.state["long"] = event.status.get("Longitude", 0)
 
             if self.state["scans"] and self.state.get('scan_radius', False):
                 in_scan_radius = False
-                if (event.status.get('Latitude', False) and
-                    event.status.get('Longitude', False) and
+                if (self.state["lat"] != 0 and self.state["long"] != 0 and
                     event.status.get('PlanetRadius', False)):
                     distance_obj = {'lat': self.state["lat"], 'long': self.state["long"]}
                     for scan in self.state["scans"]:
                         distance = self.haversine_distance(scan, distance_obj, event.status['PlanetRadius'])
+                        # self.state["distance"] = distance
                         # log('info', 'distance', distance)
                         if distance < self.state['scan_radius']:
                             in_scan_radius = True
@@ -745,12 +976,20 @@ class ExobiologyScan(Projection[ExobiologyScanState]):
                 self.state['scans'].clear()
                 self.state['scans'].append({'lat': self.state.get('lat', 0), 'long': self.state.get('long', 0)})
                 self.state['scan_radius'] = self.colony_size[content['Genus'][11:-1]]
+                species = event.content.get('Species_Localised', event.content.get('Species', 'unknown species'))
+                variant = event.content.get('Variant_Localised', event.content.get('Variant', ''))
+                if variant and variant != species:
+                    life_form = f"{variant} ({species})"
+                else:
+                    life_form = f"{species}"
+                self.state['life_form'] = life_form
                 self.state['within_scan_radius'] = True
                 projected_events.append(ProjectedEvent({**content, "event": "ScanOrganicFirst", "NewSampleDistance":self.state['scan_radius']}))
 
             elif content["ScanType"] == "Sample":
                 if len(self.state['scans']) == 1:
                     self.state['scans'].append({'lat': self.state.get('lat', 0), 'long': self.state.get('long', 0)})
+                    self.state['within_scan_radius'] = True
                     projected_events.append(ProjectedEvent({**content, "event": "ScanOrganicSecond"}))
                 elif len(self.state['scans']) == 2:
                     projected_events.append(ProjectedEvent({**content, "event": "ScanOrganicThird"}))
@@ -835,6 +1074,7 @@ OnlineFriendsState = TypedDict('OnlineFriendsState', {
     "Online": list[str]  # List of online friend names
 })
 
+
 @final
 class Friends(Projection[OnlineFriendsState]):
     @override
@@ -842,46 +1082,245 @@ class Friends(Projection[OnlineFriendsState]):
         return {
             "Online": []
         }
-    
+
     @override
     def process(self, event: Event) -> None:
         # Clear the list on Fileheader event (new game session)
         if isinstance(event, GameEvent) and event.content.get('event') == 'Fileheader':
             self.state["Online"] = []
-        
+
         # Process Friends events
         if isinstance(event, GameEvent) and event.content.get('event') == 'Friends':
             friend_name = event.content.get('Name', '')
             friend_status = event.content.get('Status', '')
-            
+
             # Skip if missing crucial information
             if not friend_name or not friend_status:
                 return
-            
+
             # If the friend is coming online, add them to the list
             if friend_status == "Online":
                 if friend_name not in self.state["Online"]:
                     self.state["Online"].append(friend_name)
-            
+
             # If the friend was previously online but now has a different status, remove them
             elif friend_name in self.state["Online"]:
                 self.state["Online"].remove(friend_name)
 
 
-def registerProjections(event_manager: EventManager):
+ColonisationResourceItem = TypedDict('ColonisationResourceItem', {
+    "Name": str,
+    "Name_Localised": str,
+    "RequiredAmount": int,
+    "ProvidedAmount": int,
+    "Payment": int
+})
+
+ColonisationConstructionState = TypedDict('ColonisationConstructionState', {
+    "ConstructionProgress": float,
+    "ConstructionComplete": bool,
+    "ConstructionFailed": bool,
+    "ResourcesRequired": list[ColonisationResourceItem],
+    "MarketID": int,
+    "StarSystem": str,
+    "StarSystemRecall": str
+})
+
+
+@final
+class ColonisationConstruction(Projection[ColonisationConstructionState]):
+    @override
+    def get_default_state(self) -> ColonisationConstructionState:
+        return {
+            "ConstructionProgress": 0.0,
+            "ConstructionComplete": False,
+            "ConstructionFailed": False,
+            "ResourcesRequired": [],
+            "MarketID": 0,
+            "StarSystem": "Unknown",
+            "StarSystemRecall": "Unknown"
+        }
+
+    @override
+    def process(self, event: Event) -> None:
+        # Process ColonisationConstructionDepot events
+        if isinstance(event, GameEvent) and event.content.get('event') == 'ColonisationConstructionDepot':
+            # Update construction status
+            self.state["ConstructionProgress"] = event.content.get('ConstructionProgress', 0.0)
+            self.state["ConstructionComplete"] = event.content.get('ConstructionComplete', False)
+            self.state["ConstructionFailed"] = event.content.get('ConstructionFailed', False)
+            self.state["MarketID"] = event.content.get('MarketID', 0)
+
+            # Update resources required
+            resources = event.content.get('ResourcesRequired', [])
+            if resources:
+                self.state["ResourcesRequired"] = resources
+            self.state["StarSystem"] = self.state["StarSystemRecall"]
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Location':
+            self.state["StarSystemRecall"] = event.content.get('StarSystem', 'Unknown')
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'SupercruiseEntry':
+            self.state["StarSystemRecall"] = event.content.get('StarSystem', 'Unknown')
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'SupercruiseExit':
+            self.state["StarSystemRecall"] = event.content.get('StarSystem', 'Unknown')
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'FSDJump':
+            self.state["StarSystemRecall"] = event.content.get('StarSystem', 'Unknown')
+
+
+DockingEventsState = TypedDict('DockingEventsState', {
+    "StationType": str,
+    "LastEventType": str,
+    "DockingComputerState": str,
+    "Timestamp": str
+})
+
+@final
+class DockingEvents(Projection[DockingEventsState]):
+    @override
+    def get_default_state(self) -> DockingEventsState:
+        return {
+            "StationType": 'Unknown',
+            "LastEventType": 'Unknown',
+            "DockingComputerState": 'deactivated',
+            "Timestamp": "1970-01-01T00:00:00Z"
+        }
+
+    @override
+    def process(self, event: Event) -> list[ProjectedEvent] | None:
+        projected_events: list[ProjectedEvent] = []
+        
+        if isinstance(event, GameEvent) and event.content.get('event') in ['Docked', 'Undocked', 'DockingGranted', 'DockingRequested', 'DockingCanceled', 'DockingDenied', 'DockingTimeout']:
+            self.state['DockingComputerState'] = "deactivated"
+            self.state['StationType'] = event.content.get("StationType", "Unknown")
+            self.state['LastEventType'] = event.content.get("event", "Unknown")
+            if 'timestamp' in event.content:
+                self.state['Timestamp'] = event.content['timestamp']
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Music':
+            if event.content.get('MusicTrack', "Unknown") == "DockingComputer":
+                self.state['DockingComputerState'] = 'activated'
+                if self.state['LastEventType'] == "DockingGranted":
+                    self.state['DockingComputerState'] = "auto-docking"
+                    projected_events.append(ProjectedEvent({"event": "DockingComputerDocking"}))
+
+                elif self.state['LastEventType'] == "Undocked" and self.state['StationType'] in ['Coriolis', 'Orbis', 'Ocellus']:
+                    self.state['DockingComputerState'] = "auto-docking"
+                    projected_events.append(ProjectedEvent({"event": "DockingComputerUndocking"}))
+
+            elif self.state['DockingComputerState'] == "auto-docking":
+                self.state['DockingComputerState'] = "deactivated"
+                projected_events.append(ProjectedEvent({"event": "DockingComputerDeactivated"}))
+
+        return projected_events
+
+# Define types for InCombat Projection
+InCombatState = TypedDict('InCombatState', {
+    "InCombat": bool  # Current combat status
+})
+
+
+@final
+class InCombat(Projection[InCombatState]):
+    @override
+    def get_default_state(self) -> InCombatState:
+        return {
+            "InCombat": False
+        }
+
+    @override
+    def process(self, event: Event) -> list[ProjectedEvent] | None:
+        projected_events: list[ProjectedEvent] = []
+
+        # Process Music events
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Music':
+            music_track = event.content.get('MusicTrack', '')
+
+            # Skip if missing music track information
+            if not music_track:
+                return None
+
+            # Determine if this is a combat music track (starts with "combat")
+            is_combat_music = music_track.lower().startswith('combat')
+
+            # Check for transition from combat to non-combat
+            if self.state["InCombat"] and not is_combat_music:
+                # Generate a projected event for leaving combat
+                projected_events.append(ProjectedEvent({"event": "CombatExited"}))
+                self.state["InCombat"] = False
+            # Check for transition from non-combat to combat
+            elif not self.state["InCombat"] and is_combat_music:
+                # Generate a projected event for entering combat
+                projected_events.append(ProjectedEvent({"event": "CombatEntered"}))
+                self.state["InCombat"] = True
+
+        return projected_events
+
+# Define types for Idle Projection
+IdleState = TypedDict('IdleState', {
+    "LastInteraction": str,  # ISO timestamp of last interaction
+    "IsIdle": bool  # Whether the user is currently idle
+})
+
+@final
+class Idle(Projection[IdleState]):
+    def __init__(self, idle_timeout: int):
+        super().__init__()
+        self.idle_timeout = idle_timeout
+
+    @override
+    def get_default_state(self) -> IdleState:
+        return {
+            "LastInteraction": "1970-01-01T00:00:00Z",  # Default to Unix epoch
+            "IsIdle": True
+        }
+
+    @override
+    def process(self, event: Event) -> list[ProjectedEvent]:
+        projected_events: list[ProjectedEvent] = []
+
+        # Update last interaction time for any event
+        if isinstance(event, ConversationEvent) and event.kind == 'user':
+            self.state["LastInteraction"] = event.timestamp
+            self.state["IsIdle"] = False
+
+        # Check for idle status on Status events
+        if (isinstance(event, StatusEvent) or isinstance(event, GameEvent)) and self.state["IsIdle"] == False:
+            current_time = event.timestamp
+            current_dt = datetime.fromisoformat(current_time.replace('Z', '+00:00'))
+            last_interaction = self.state["LastInteraction"]
+            last_dt = datetime.fromisoformat(last_interaction.replace('Z', '+00:00'))
+            time_delta = (current_dt - last_dt).total_seconds()
+
+            # If more than idle_timeout seconds have passed since last interaction
+            if time_delta > self.idle_timeout:
+                self.state["IsIdle"] = True
+                projected_events.append(ProjectedEvent({"event": "Idle"}))
+
+        return projected_events
+
+def registerProjections(event_manager: EventManager, system_db: SystemDatabase, idle_timeout: int):
 
     event_manager.register_projection(EventCounter())
     event_manager.register_projection(CurrentStatus())
     event_manager.register_projection(Location())
     event_manager.register_projection(Missions())
+    event_manager.register_projection(EngineerProgress())
+    event_manager.register_projection(CommunityGoal())
     event_manager.register_projection(ShipInfo())
     event_manager.register_projection(Target())
-    event_manager.register_projection(NavInfo())
+    event_manager.register_projection(NavInfo(system_db))
     event_manager.register_projection(ExobiologyScan())
     event_manager.register_projection(Cargo())
     event_manager.register_projection(Backpack())
     event_manager.register_projection(SuitLoadout())
     event_manager.register_projection(Friends())
+    event_manager.register_projection(ColonisationConstruction())
+    event_manager.register_projection(DockingEvents())
+    event_manager.register_projection(InCombat())
+    event_manager.register_projection(Idle(idle_timeout))
 
     # ToDo: SLF, SRV,
     for proj in [
@@ -891,7 +1330,6 @@ def registerProjections(event_manager: EventManager):
         'Rank',
         'Progress',
         'Reputation',
-        'EngineerProgress',
         'SquadronStartup',
         'Statistics',
         'Powerplay',

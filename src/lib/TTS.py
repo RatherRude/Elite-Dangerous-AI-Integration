@@ -12,7 +12,7 @@ import pyaudio
 import strip_markdown
 from num2words import num2words
 
-from .Logger import log
+from .Logger import log, show_chat_message
 
 
 @final
@@ -39,11 +39,13 @@ class Mp3Stream(miniaudio.StreamableSource):
 
 @final
 class TTS:
-    def __init__(self, openai_client: Optional[openai.OpenAI] = None, provider: Literal["none", "edge-tts", "openai", "local-ai"]='openai', voice="nova", model='tts-1', speed: Union[str,float]=1, output_device: Optional[str] = None):
+    def __init__(self, openai_client: Optional[openai.OpenAI] = None, provider: Literal['openai', 'edge-tts', 'custom', 'none', 'local-ai-server'] | str ='openai', voice="nova", voice_instructions="", model='tts-1',  speed: Union[str,float]=1, output_device: Optional[str] = None):
         self.openai_client = openai_client
         self.provider = provider
         self.model = model
         self.voice = voice
+        self.voice_instructions = voice_instructions
+
         self.speed = speed
         
         self.p = pyaudio.PyAudio()
@@ -74,6 +76,7 @@ class TTS:
                 self._playback_loop()
             except Exception as e:
                 log('error', 'An error occurred during speech synthesis', e, traceback.format_exc())
+                show_chat_message('error', 'An error occurred during speech synthesis:', e)
                 sleep(backoff)
                 log('info', 'Attempting to restart audio playback after failure')
                 backoff *= 2
@@ -162,16 +165,29 @@ class TTS:
             for i in pcm_stream:
                 yield i.tobytes()
         elif self.openai_client:
-            with self.openai_client.audio.speech.with_streaming_response.create(
-                    model=self.model,
-                    voice=self.voice, # pyright: ignore[reportArgumentType]
-                    input=text,
-                    response_format="pcm",
-                    # raw samples in 24kHz (16-bit signed, low-endian), without the header.
-                    speed=float(self.speed)
-            ) as response:
-                for chunk in response.iter_bytes(1024):
-                    yield chunk
+            try:
+                with self.openai_client.audio.speech.with_streaming_response.create(
+                        model=self.model,
+                        voice=self.voice,
+                        input=text,
+                        response_format="pcm",
+                        # raw samples in 24kHz (16-bit signed, low-endian), without the header.
+                        instructions = self.voice_instructions,
+                        speed=float(self.speed)
+                ) as response:
+                    for chunk in response.iter_bytes(1024):
+                        yield chunk
+            except openai.APIStatusError as e:
+                log("debug", "TTS error request:", e.request.method, e.request.url, e.request.headers, e.request.read().decode('utf-8', errors='replace'))
+                log("debug", "TTS error response:", e.response.status_code, e.response.headers, e.response.read().decode('utf-8', errors='replace'))
+                
+                try:
+                    error: dict = e.body[0] if hasattr(e, 'body') and e.body and isinstance(e.body, list) else e.body # pyright: ignore[reportAssignmentType]
+                    message = error.get('error', {}).get('message', e.body if e.body else 'Unknown error')
+                except:
+                    message = e.message
+                
+                show_chat_message('error', f'TTS {e.response.reason_phrase}:', message)
         else:
             raise ValueError('No TTS client provided')
 
@@ -197,6 +213,10 @@ class TTS:
     def get_is_playing(self):
         return self._is_playing or not self.read_queue.empty()
 
+    def wait_for_completion(self):
+        while self.get_is_playing():
+            sleep(0.2)
+
     def quit(self):
         pass
 
@@ -204,7 +224,7 @@ class TTS:
 if __name__ == "__main__":
     openai_audio = openai.OpenAI(base_url="http://localhost:8080/v1", api_key='x')
 
-    tts = TTS(openai_audio, provider="openai", model="tts-1", voice="nova", speed=1, output_device="Speakers")
+    tts = TTS(openai_audio, provider="openai", model="tts-1", voice="nova", voice_instructions="", speed=1, output_device="Speakers")
 
 
     text = """The missile knows where it is at all times. It knows this because it knows where it isn't. By subtracting where it is from where it isn't, or where it isn't from where it is (whichever is greater), it obtains a difference, or deviation. The guidance subsystem uses deviations to generate corrective commands to drive the missile from a position where it is to a position where it isn't, and arriving at a position where it wasn't, it now is. Consequently, the position where it is, is now the position that it wasn't, and it follows that the position that it was, is now the position that it isn't.

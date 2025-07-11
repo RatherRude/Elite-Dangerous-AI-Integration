@@ -1,17 +1,18 @@
 import { Injectable } from "@angular/core";
 import { BehaviorSubject, filter, Observable } from "rxjs";
-import { type BaseMessage, TauriService } from "./tauri.service";
+import { BaseCommand, type BaseMessage, TauriService } from "./tauri.service";
+import { PluginSettings, PluginSettingsMessage } from "./plugin-settings";
 
 export interface ConfigMessage extends BaseMessage {
     type: "config";
     config: Config;
 }
-export interface ChangeConfigMessage extends BaseMessage {
+export interface ChangeConfigMessage extends BaseCommand {
     type: "change_config";
     config: Partial<Config>;
 }
 
-export interface ChangeEventConfigMessage extends BaseMessage {
+export interface ChangeEventConfigMessage extends BaseCommand {
     type: "change_event_config";
     section: string;
     event: string;
@@ -43,16 +44,31 @@ export interface SystemInfoMessage extends BaseMessage {
 export interface Config {
     api_key: string;
     commander_name: string;
-    character: string;
-    llm_provider: "openai" | "openrouter" | "google-ai-studio" | "custom" | "local-ai-server";
+    // Stored characters
+    characters: unknown[];
+    active_character_index: number;
+    // Other config settings
+    llm_provider:
+        | "openai"
+        | "openrouter"
+        | "google-ai-studio"
+        | "custom"
+        | "local-ai-server";
     llm_model_name: string;
     llm_api_key: string;
     llm_endpoint: string;
+    llm_temperature: number;
     vision_provider: "openai" | "google-ai-studio" | "custom" | "none";
     vision_model_name: string;
     vision_endpoint: string;
     vision_api_key: string;
-    stt_provider: "openai" | "custom" | "custom-multi-modal" | "google-ai-studio" | "none" | "local-ai-server";
+    stt_provider:
+        | "openai"
+        | "custom"
+        | "custom-multi-modal"
+        | "google-ai-studio"
+        | "none"
+        | "local-ai-server";
     stt_model_name: string;
     stt_api_key: string;
     stt_endpoint: string;
@@ -66,29 +82,22 @@ export interface Config {
     vision_var: boolean;
     ptt_var: boolean;
     mute_during_response_var: boolean;
-    continue_conversation_var: boolean;
-    event_reaction_enabled_var: boolean;
     game_actions_var: boolean;
     web_search_actions_var: boolean;
     use_action_cache_var: boolean;
-    react_to_text_local_var: boolean;
-    react_to_text_starsystem_var: boolean;
-    react_to_text_npc_var: boolean;
-    react_to_text_squadron_var: boolean;
-    react_to_material: string;
-    react_to_danger_mining_var: boolean;
-    react_to_danger_onfoot_var: boolean;
-    react_to_danger_supercruise_var: boolean;
     edcopilot: boolean;
     edcopilot_dominant: boolean;
-    tts_voice: string;
-    tts_speed: string;
     ptt_key: string;
     input_device_name: string;
     output_device_name: string;
-    game_events: { [key: string]: boolean };
+    cn_autostart: boolean;
     ed_journal_path: string;
     ed_appdata_path: string;
+    reset_game_events?: boolean; // Flag to request resetting game events to defaults
+    qol_autobrake: boolean; // Quality of life: Auto brake when approaching stations
+    qol_autoscan: boolean; // Quality of life: Auto scan when entering new systems
+
+    plugin_settings: { [key: string]: any };
 }
 
 @Injectable({
@@ -106,6 +115,12 @@ export class ConfigService {
     >(null);
     public validation$ = this.validationSubject.asObservable();
 
+    private plugin_settings_message_subject = new BehaviorSubject<
+        PluginSettingsMessage | null
+    >(null);
+    public plugin_settings_message$ = this.plugin_settings_message_subject
+        .asObservable();
+
     constructor(private tauriService: TauriService) {
         // Subscribe to config messages from the TauriService
         this.tauriService.output$.pipe(
@@ -115,10 +130,12 @@ export class ConfigService {
                 | ConfigMessage
                 | SystemInfoMessage
                 | ModelValidationMessage
+                | PluginSettingsMessage
                 | StartMessage =>
                 message.type === "config" ||
                 message.type === "system" ||
                 message.type === "model_validation" ||
+                message.type === "plugin_settings_configs" ||
                 message.type === "start"
             ),
         ).subscribe((message) => {
@@ -128,6 +145,8 @@ export class ConfigService {
                 this.systemSubject.next(message.system);
             } else if (message.type === "model_validation") {
                 this.validationSubject.next(message);
+            } else if (message.type === "plugin_settings_configs") {
+                this.plugin_settings_message_subject.next(message);
             } else if (message.type === "start") {
                 this.validationSubject.next(null);
             }
@@ -147,7 +166,7 @@ export class ConfigService {
         };
 
         // Send update to backend
-        await this.tauriService.send_message(message);
+        await this.tauriService.send_command(message);
     }
 
     public async changeEventConfig(
@@ -168,7 +187,32 @@ export class ConfigService {
             value: enabled,
         };
 
-        await this.tauriService.send_message(message);
+        await this.tauriService.send_command(message);
+    }
+
+    public async setPluginSetting(key: string, value: any): Promise<void> {
+        const currentConfig = this.getCurrentConfig();
+        if (!currentConfig) {
+            throw new Error("Cannot update config before it is initialized");
+        }
+
+        const updatedPluginSettings = {
+            ...currentConfig.plugin_settings,
+            [key]: value,
+        };
+
+        const message: ChangeConfigMessage = {
+            type: "change_config",
+            timestamp: new Date().toISOString(),
+            config: { plugin_settings: updatedPluginSettings },
+        };
+
+        await this.tauriService.send_command(message);
+    }
+
+    public getPluginSetting(key: string): any | null {
+        const currentConfig = this.getCurrentConfig();
+        return currentConfig?.plugin_settings?.[key] ?? null;
     }
 
     public getCurrentConfig(): Config | null {
@@ -179,7 +223,21 @@ export class ConfigService {
         const message = {
             type: "assign_ptt",
             timestamp: new Date().toISOString(),
+            index: 0,
         };
-        await this.tauriService.send_message(message);
+        await this.tauriService.send_command(message);
+    }
+
+    public async clearHistory(): Promise<void> {
+        const message: BaseCommand = {
+            type: "clear_history",
+            timestamp: new Date().toISOString(),
+        };
+
+        try {
+            await this.tauriService.send_command(message);
+        } catch (error) {
+            console.error("Error sending clear history request:", error);
+        }
     }
 }

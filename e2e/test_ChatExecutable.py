@@ -1,5 +1,6 @@
 import json
 import platform
+import shutil
 import tempfile
 
 default_config = {
@@ -40,7 +41,7 @@ default_config = {
     'tts_model_name': "edge-tts",
     'tts_endpoint': "",
     'tts_api_key': "",
-    'tts_voice': "en-GB-SoniaNeural",
+    'tts_voice': "en-US-AvaMultilingualNeural",
     'tts_speed': "1.2",
     'react_to_text_local_var': True,
     'react_to_text_npc_var': False,
@@ -239,7 +240,7 @@ default_config = {
             "LoadoutEquipModule": False,
             "LoadoutRemoveModule": False,
             "RenameSuitLoadout": True,
-            "ScanOrganic": False,
+            "ScanOrganic": True,
             "SellMicroResources": False,
             "SellOrganicData": True,
             "SellWeapon": False,
@@ -396,7 +397,7 @@ def test_chat_executable():
         if not line:
             raise Exception("Chat.exe exited unexpectedly")
         print(line)
-        if '"prefix": "info", "message": "System Ready.\\n"' in line:
+        if '"message": "System Ready."' in line:
             break
     
     # assert that Chat.exe is running
