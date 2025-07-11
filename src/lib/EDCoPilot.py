@@ -21,10 +21,22 @@ from .ActionManager import ActionManager
 from .Logger import log, show_chat_message
 
 
+def get_install_path() -> (str | None):
+    """Check the windows registry for COMPUTER / HKEY_CURRENT_USER / SOFTWARE / EDCoPilot"""
+    try:
+        import winreg
+
+        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, "SOFTWARE\\EDCoPilot")
+        value, _ = winreg.QueryValueEx(key, "EDCoPilotLib")
+        winreg.CloseKey(key)
+        return value
+    except Exception:
+        return None
+
 @final
 class EDCoPilot:
     def __init__(self, is_enabled: bool, is_edcopilot_dominant: bool=False, enabled_game_events: list[str]=[], action_manager: Optional[ActionManager]=None):
-        self.install_path = self.get_install_path()
+        self.install_path = get_install_path()
         self.proc_id = self.get_process_id()
         self.is_enabled = is_enabled and self.is_installed()
         self.client = None
@@ -113,18 +125,6 @@ class EDCoPilot:
                     muted=self.is_edcopilot_dominant, text=message, reasons=reasons
                 )
             )
-
-def get_install_path() -> (str | None):
-    """Check the windows registry for COMPUTER / HKEY_CURRENT_USER / SOFTWARE / EDCoPilot"""
-    try:
-        import winreg
-
-        key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, "SOFTWARE\\EDCoPilot")
-        value, _ = winreg.QueryValueEx(key, "EDCoPilotLib")
-        winreg.CloseKey(key)
-        return value
-    except Exception:
-        return None
 
     def edcopilot_open_panel(self, args: dict, projected_states: dict) -> str:
         """Open a specific panel in EDCoPilot"""
