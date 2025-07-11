@@ -30,6 +30,7 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
   avatarPosition: 'left' | 'right' = 'right';
   avatarFlip: boolean = false;
   avatarShow: boolean = true;
+  private isInitialized: boolean = false;
 
   constructor(
     private pngTuberService: PngTuberService,
@@ -74,8 +75,9 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
           this.avatarPosition = character.avatar_position || 'right';
           this.avatarFlip = character.avatar_flip || false;
           this.updateAvatarShowStatus(character);
-        } else {
-          // Reset to defaults if no character
+          this.isInitialized = true;
+        } else if (!this.isInitialized) {
+          // Reset to defaults if no character and not yet initialized
           this.avatarPosition = 'right';
           this.avatarFlip = false;
           this.avatarShow = true;
