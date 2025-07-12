@@ -37,6 +37,15 @@ class EventCounter(Projection):
     def process(self, event: Event) -> None:
         self.state["count"] += 1
 
+class FakeDamageLevel(Projection[int]):
+    @override
+    def get_default_state(self) -> int:
+        return 0
+
+    @override
+    def process(self, event: Event) -> None:
+        if isinstance(event, SetFakeDamageEvent) and event.status.get("event") == "Status":
+            self.state = event.status
 
 class CurrentStatus(Projection[Status]):
     @override

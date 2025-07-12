@@ -14,6 +14,14 @@ from .Event import Event
 from .PromptGenerator import PromptGenerator
 from .Assistant import Assistant
 
+class PluginSource(object):
+    type: str = ""
+    repo: str = ""
+    asset_name: str = ""
+
+    def __init__(self, j: str) -> None:
+        self.__dict__.update(cast(dict[str, str], json.loads(j)))
+
 class PluginManifest(object):
     guid: str = ""
     name: str = ""
@@ -22,6 +30,7 @@ class PluginManifest(object):
     repository: str = ""
     description: str = ""
     entrypoint: str = ""
+    source: PluginSource | None = None
 
     def __init__(self, j: str) -> None:
         self.__dict__.update(cast(dict[str, str], json.loads(j)))

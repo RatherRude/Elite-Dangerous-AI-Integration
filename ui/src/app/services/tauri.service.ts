@@ -2,6 +2,7 @@
 import { Injectable, NgZone } from "@angular/core";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, UnlistenFn } from "@tauri-apps/api/event";
+import { relaunch } from '@tauri-apps/plugin-process';
 import { BehaviorSubject, Observable, ReplaySubject } from "rxjs";
 import { MatDialog } from "@angular/material/dialog";
 import { UpdateDialogComponent } from "../components/update-dialog/update-dialog.component";
@@ -167,6 +168,9 @@ export class TauriService {
             timestamp: new Date().toISOString(),
             index: this.currentIndex++,
         });
+    }
+    public async restart_app(): Promise<void> {
+        await relaunch();
     }
     public async send_command(message: BaseCommand): Promise<void> {
         await invoke("send_json_line", {
