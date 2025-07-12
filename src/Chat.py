@@ -317,12 +317,15 @@ class Chat:
 
 def read_stdin(chat: Chat):
     log("debug", "Reading stdin...")
+    print(json.dumps({"type": "running_config", "config": config}) + '\n', flush=True)
     while True:
         line = sys.stdin.readline().strip()
         if line:
             data = json.loads(line)
             if data.get("type") == "submit_input":
                 chat.submit_input(data["input"])
+            if data.get("type") == "init_overlay":
+                print(json.dumps({"type": "running_config", "config": config})+'\n', flush=True)
 
 def check_zombie_status():
     """Checks if the current process is a zombie and exits if it is."""
@@ -379,6 +382,8 @@ if __name__ == "__main__":
                 if data.get("type") == "clear_history":
                     EventManager.clear_history()
                     #ActionManager.clear_action_cache()
+                if data.get("type") == "init_overlay":
+                    update_config(config, {}) # Ensure that the overlay gets a new config on start
                 
             except json.JSONDecodeError:
                 continue

@@ -118,7 +118,7 @@ export class MainViewComponent implements OnInit, OnDestroy {
     async start(): Promise<void> {
         try {
             if(this.config && this.config.characters[this.config.active_character_index] && this.config.characters[this.config.active_character_index]['avatar_show']) {
-                this.createOverlay();
+                await this.createOverlay();
             }
 
             this.isLoading = true;

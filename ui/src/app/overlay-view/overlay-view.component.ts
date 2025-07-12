@@ -33,6 +33,7 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
   private isInitialized: boolean = false;
 
   constructor(
+    private tauriService: TauriService,
     private pngTuberService: PngTuberService,
     private chatService: ChatService,
     private avatarService: AvatarService,
@@ -105,6 +106,11 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
     if (this.currentAvatarUrl) {
       this.applyAvatarBackground();
     }
+    this.tauriService.send_command({
+      type: "init_overlay",
+      timestamp: new Date().toISOString(),
+      index:0,
+    })
   }
   
   ngOnDestroy() {
