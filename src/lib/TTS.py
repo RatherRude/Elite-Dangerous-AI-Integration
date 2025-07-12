@@ -3,7 +3,7 @@ import re
 import threading
 import traceback
 from time import sleep, time
-from typing import Generator, Literal, Optional, Union, final
+from typing import Any, Callable, Generator, Literal, Optional, Union, final
 
 import edge_tts
 import miniaudio
@@ -11,7 +11,10 @@ import openai
 import pyaudio
 import strip_markdown
 from num2words import num2words
+import numpy as np
 
+from .Event import Event
+from .TTSPostProcessor import TTSPostProcessor
 from .Logger import log, show_chat_message
 
 
@@ -39,7 +42,7 @@ class Mp3Stream(miniaudio.StreamableSource):
 
 @final
 class TTS:
-    def __init__(self, openai_client: Optional[openai.OpenAI] = None, provider: Literal['openai', 'edge-tts', 'custom', 'none', 'local-ai-server'] | str ='openai', voice="nova", voice_instructions="", model='tts-1',  speed: Union[str,float]=1, output_device: Optional[str] = None):
+    def __init__(self, openai_client: Optional[openai.OpenAI] = None, provider: Literal['openai', 'edge-tts', 'custom', 'none', 'local-ai-server'] | str ='openai', voice="nova", voice_instructions="", model='tts-1',  speed: Union[str,float]=1, output_device: Optional[str] = None, get_current_state: Callable[[], tuple[list[Event], dict[str, Any]]] = lambda: ([], {}), damage_effects_enabled: bool = False):
         self.openai_client = openai_client
         self.provider = provider
         self.model = model
@@ -57,6 +60,7 @@ class TTS:
         self.output_format = pyaudio.paInt16
         self.frames_per_buffer = 1024
         self.sample_size = self.p.get_sample_size(self.output_format)
+        self._post_processor = TTSPostProcessor(get_current_state, damage_effects_enabled, False, sample_rate=24000)
 
         thread = threading.Thread(target=self._playback_thread)
         thread.daemon = True
@@ -114,6 +118,9 @@ class TTS:
                                 log('debug', f'Response time TTS', end_time - start_time)
                             if self.is_aborted:
                                 break
+                            
+                            log('debug', f'Response time TTS', end_time - start_time)
+                            chunk = self._post_processor.process(chunk)
                             try:
                                 if not first_chunk:
                                     available = stream.get_write_available()

@@ -93,15 +93,6 @@ class Chat:
                 api_key=self.config["api_key"] if self.config["stt_api_key"] == '' else self.config["stt_api_key"],
             )
 
-        self.ttsClient: OpenAI | None = None
-        if self.config["tts_provider"] in ['openai', 'custom', 'local-ai-server']:
-            self.ttsClient = OpenAI(
-                base_url=self.config["tts_endpoint"],
-                api_key=self.config["api_key"] if self.config["tts_api_key"] == '' else self.config["tts_api_key"],
-            )
-            
-        tts_provider = 'none' if self.config["edcopilot"] and self.config["edcopilot_dominant"] else self.config["tts_provider"]
-        self.tts = TTS(openai_client=self.ttsClient, provider=tts_provider, model=self.config["tts_model_name"], voice=self.character["tts_voice"], voice_instructions=self.character["tts_prompt"], speed=self.character["tts_speed"], output_device=self.config["output_device_name"])
         self.stt = STT(openai_client=self.sttClient, provider=self.config["stt_provider"], input_device_name=self.config["input_device_name"], model=self.config["stt_model_name"], custom_prompt=self.config["stt_custom_prompt"], required_word=self.config["stt_required_word"])
 
         log("debug", "Initializing SystemDatabase...")
@@ -121,6 +112,16 @@ class Chat:
             game_events=self.enabled_game_events,
             plugin_event_classes=plugin_event_classes,
         )
+        
+        self.ttsClient: OpenAI | None = None
+        if self.config["tts_provider"] in ['openai', 'custom', 'local-ai-server']:
+            self.ttsClient = OpenAI(
+                base_url=self.config["tts_endpoint"],
+                api_key=self.config["api_key"] if self.config["tts_api_key"] == '' else self.config["tts_api_key"],
+            )
+            
+        tts_provider = 'none' if self.config["edcopilot"] and self.config["edcopilot_dominant"] else self.config["tts_provider"]
+        self.tts = TTS(openai_client=self.ttsClient, provider=tts_provider, model=self.config["tts_model_name"], voice=self.character["tts_voice"], voice_instructions=self.character["tts_prompt"], speed=self.character["tts_speed"], output_device=self.config["output_device_name"], get_current_state=lambda: self.event_manager.get_current_state(), damage_effects_enabled=self.config["tts_damage_effects_var"])
 
         log("debug", message="Initializing assistant...")
         self.assistant = Assistant(

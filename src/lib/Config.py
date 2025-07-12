@@ -377,6 +377,7 @@ class Config(TypedDict):
     tts_model_name: str
     tts_api_key: str
     tts_endpoint: str
+    tts_damage_effects_var: bool # Enable damage effects post-processing for TTS
     tools_var: bool
     vision_var: bool
     ptt_var: bool
@@ -657,6 +658,7 @@ def load_config() -> Config:
         'stt_provider': "openai",
         'stt_model_name': "gpt-4o-mini-transcribe",
         'stt_endpoint': "https://api.openai.com/v1",
+        'tts_damage_effects_var': True,  # Enable damage effects post-processing for TTS
         'stt_api_key': "",
         'stt_custom_prompt': '',
         'stt_required_word': '',
