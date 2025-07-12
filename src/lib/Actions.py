@@ -629,10 +629,16 @@ def fighter_request_dock(args, projected_states):
 # NPC Crew Order Actions
 def npc_order(args, projected_states):
     checkStatus(projected_states, {'Docked': True, 'Landed': True, 'Supercruise': True})
+    fighters = projected_states.get('ShipInfo').get('Fighters', [])
+    if len(fighters) == 0:
+        raise Exception("No figher bay installed in this ship.")
+
     setGameWindowActive()
     if 'orders' in args:
         for order in args['orders']:
             if order in ['LaunchFighter1', 'LaunchFighter2']:
+                if len(fighters) == 1 and order == 'LaunchFighter1':
+                    raise Exception("No second figher bay installed in this ship.")
                 keys.send('FocusRadarPanel')
                 keys.send('UI_Left', repeat=2)
                 keys.send('UI_Up', repeat=3)
@@ -647,6 +653,8 @@ def npc_order(args, projected_states):
                 keys.send('UI_Down')
                 keys.send('UI_Select')
                 keys.send('UIFocus')
+                event_manager.wait_for_condition('ShipInfo',
+                                                 lambda s: any(fighter.get('Status') == 'Launched' and fighter.get('Pilot') == 'NPC Crew' for fighter in s.get('Fighters', [])), 1)
             else:
                 if order == 'ReturnToShip':
                     order = 'RequestDock'
