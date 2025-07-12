@@ -197,7 +197,7 @@ def change_hud_mode(args, projected_states):
 
 def cycle_fire_group(args, projected_states):
     setGameWindowActive()
-    firegroup_ask = args.get('fire_group')
+    firegroup_ask = args.get('fire_group', None)
 
     initial_firegroup = projected_states.get("CurrentStatus").get('FireGroup')
 
@@ -4411,7 +4411,13 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             }
         },
         "required": ["speed"]
-    }, set_speed, 'ship')
+    }, set_speed, 'ship', cache_prefill={
+        "halt": {"speed": "Zero"},
+        "stop": {"speed": "Zero"},
+        "half speed": {"speed": "50"},
+        "full speed": {"speed": "100"},
+        "reverse": {"speed": "Minus100"},
+    })
 
     actionManager.registerAction('deployHeatSink', "Deploy heat sink", {
         "type": "object",
@@ -4472,7 +4478,9 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('galaxyMapClose', "Close galaxy map", {
         "type": "object",
         "properties": {},
-    }, galaxy_map_close, 'ship')
+    }, galaxy_map_close, 'ship', cache_prefill={
+        "close galaxy map": {},
+    })
 
     actionManager.registerAction('systemMapOpenOrClose', "Open or close system map", {
         "type": "object",
@@ -4495,7 +4503,10 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "default": "next"
             }
         }
-    }, cycle_target, 'ship')
+    }, cycle_target, 'ship', cache_prefill={
+        "next target": {"direction":"next"},
+        "previous target": {"direction":"previous"},
+    })
 
     actionManager.registerAction(
         'cycle_fire_group',
@@ -4506,17 +4517,21 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "direction": {
                     "type": "string",
                     "description": "If next or previous is give: Cycle direction: 'next' or 'previous'.",
-                    "enum": ["next", "previous"]
+                    "enum": ["next", "previous"],
+                    "default": "next"
                 },
                 "fire_group": {
                     "type": "integer",
-                    "description": "Specific firegroup index to select. Letters A=0, B=1, C=2, etc.",
-                    "default": None
+                    "description": "Specific firegroup index to select. Letters A=0, B=1, C=2, etc."
                 }
             },
         },
         cycle_fire_group,
-        'mainship'
+        'ship',
+        cache_prefill={
+            "next fire group": {"direction":"next"},
+            "previous fire group": {"direction":"previous"},
+        }
     )
 
     actionManager.registerAction('Change_ship_HUD_mode', "Switch to combat or analysis mode", {
@@ -4531,21 +4546,12 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "required": ["hud mode"],
     }, change_hud_mode, 'mainship')
 
-    actionManager.registerAction('cycleFireGroup', "Cycle to next fire group", {
-        "type": "object",
-        "properties": {
-            "direction": {
-                "type": "string",
-                "description": "Direction to cycle (next or previous)",
-                "enum": ["next", "previous"],
-            }
-        }
-    }, cycle_fire_group, 'ship')
-
     actionManager.registerAction('shipSpotLightToggle', "Toggle ship spotlight", {
         "type": "object",
         "properties": {}
-    }, ship_spot_light_toggle, 'ship')
+    }, ship_spot_light_toggle, 'ship', cache_prefill={
+        "lights": {}
+    })
 
     actionManager.registerAction('fireChaffLauncher', "Fire chaff launcher", {
         "type": "object",
@@ -4555,7 +4561,9 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('nightVisionToggle', "Toggle night vision", {
         "type": "object",
         "properties": {}
-    }, night_vision_toggle, 'ship')
+    }, night_vision_toggle, 'ship', cache_prefill={
+        "nightvision": {}
+    })
 
     actionManager.registerAction('selectHighestThreat', "Target lock highest threat", {
         "type": "object",
@@ -4580,7 +4588,19 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             },
         },
         "required": ["subsystem"],
-    }, target_subsystem, 'ship')
+    }, target_subsystem, 'ship', cache_prefill={
+        "target drive": {"subsystem":"Drive"},
+        "target drives": {"subsystem":"Drive"},
+        "target power distributor": {"subsystem":"Power Distributor"},
+        "target distributor": {"subsystem":"Power Distributor"},
+        "target shields": {"subsystem":"Shield Generator"},
+        "target shield generator": {"subsystem":"Shield Generator"},
+        "target life support": {"subsystem":"Life Support"},
+        "target frame shift drive": {"subsystem":"FSD"},
+        "target fsd": {"subsystem":"FSD"},
+        "target power": {"subsystem":"Power Plant"},
+        "target power plant": {"subsystem":"Power Plant"},
+    })
 
     actionManager.registerAction('chargeECM', "Charge ECM", {
         "type": "object",
