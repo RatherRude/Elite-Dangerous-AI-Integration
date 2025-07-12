@@ -243,7 +243,7 @@ class EDKeys:
         if binding is None:
             raise Exception(
                 f"Unable to retrieve keybinding for {key_name}. Advise user to check game settings for keyboard bindings.")
-        if not binding['key']:
+        if not 'key' in binding:
             raise Exception(f"Unsupported key {key_name}.")
 
         for i in range(repeat):
