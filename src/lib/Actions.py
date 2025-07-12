@@ -4387,7 +4387,9 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             }
         },
         "required": ["weaponType", "action"]
-    }, fire_weapons, 'ship')
+    }, fire_weapons, 'ship', cache_prefill={
+        "fire primary weapon": {"weaponType": "primary", "action":"fire"},
+    })
 
     actionManager.registerAction('setSpeed', "Change flight thrust", {
         "type": "object",
