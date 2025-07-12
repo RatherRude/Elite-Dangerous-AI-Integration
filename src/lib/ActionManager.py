@@ -1,8 +1,10 @@
 from hashlib import md5
+from hmac import new
 import json
+from openai.resources import Chat
 from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall
 import random
-from typing import Any, Callable
+from typing import Any, Callable, Literal
 
 from openai.types.chat import ChatCompletionMessageToolCall
 
@@ -88,7 +90,18 @@ class ActionManager:
         }
 
     # register function
-    def registerAction(self, name, description, parameters, method: Callable[[dict, dict], str], action_type="ship", input_template: Callable[[dict, dict], str]|None=None):
+    def registerAction(
+        self, name, description, parameters, 
+        method: Callable[[dict, dict], str], 
+        action_type="ship", 
+        input_template: Callable[[dict, dict], str] | None = None, 
+        cache_prefill: dict[str, dict] | None = None
+    ):
+        """
+            register action with name, description, parameters and method
+            input_template is a function that takes the function arguments and projected states and returns a string
+            cache_prefill is a dictionary of user input and arguments to prefill the cache with
+        """
         self.actions[name] = {
             "method": method,
             "type": action_type,
@@ -102,121 +115,161 @@ class ActionManager:
                 },
             }
         }
-        
-    
-    def clean_user_input(self, user_input: list[str]) -> str:
+        if cache_prefill is not None:
+            for user_input, arguments in cache_prefill.items():
+                log('debug', 'Cache: prefilling', name, user_input, arguments)
+                self.prefill_action_in_cache(user_input, ChatCompletionMessageToolCall(
+                    type="function",
+                    id=str(random.randint(100000, 999999)),
+                    function={  # pyright: ignore[reportArgumentType]
+                        "name": name,
+                        "description": description,
+                        "arguments": json.dumps(arguments)
+                    }
+                ), self.actions[name].get("tool"))
+
+    def clean_user_input(self, user_input: str) -> str:
         """
             clean user input, remove whitespaces, convert to lowercase, remove all symbols
         """
-        user_input = [input.lower().strip() for input in user_input]
-        user_input = [''.join(e for e in input if e.isalnum()) for input in user_input]
+        user_input = user_input.lower().strip()
+        user_input = ''.join(e for e in user_input if e.isalnum())
         return user_input
 
-    def hash_action_input(self, user_input: list[str], tool_list: list) -> str:
+    def hash_action_input(self, user_input: str, tool: dict) -> str:
         """
             hash user input
         """
         user_input = self.clean_user_input(user_input)
-        return md5(json.dumps([user_input, tool_list]).encode()).hexdigest()
+        return md5(json.dumps([user_input, tool]).encode()).hexdigest()
 
-    def predict_action(self, user_input: list[str], tool_list) -> list[ChatCompletionMessageToolCall] | None:
+    def predict_action(self, user_input: str, tool_list) -> list[ChatCompletionMessageToolCall] | None:
         """
-            predict action based on user input
-            check if user input is in database
-            if not, return None
-            if yes and is draft, return None
-            if yes and is confirmed, return actual
+            predict action based on user input and available tools
         """
-        #log('info', 'Predicting action for:', user_input)
-        input_hash = self.hash_action_input(user_input, tool_list)
-        predicted_actions = self.action_cache.get(input_hash)
-        if predicted_actions and predicted_actions.get("status") == "confirmed":
-            actions = predicted_actions.get("actions")
-            id = "call_"+random.randbytes(8).hex()
-            log('debug', 'Predicted action:', user_input, actions)
-            return [ChatCompletionMessageToolCall(id=id, function=action, type="function") for action in actions]
+        # get the hash for user input with each tool
+        input_hashes = [self.hash_action_input(user_input, tool) for tool in tool_list]
+        # check if any of the input hashes match the predicted actions
+        for input_hash in input_hashes:
+            prediction = self.action_cache.get(input_hash)
+            if prediction is not None and prediction.get("status") == "confirmed":
+                # if prediction is confirmed, return the tool call
+                new_id = str(random.randint(100000, 999999))
+                tool_call = ChatCompletionMessageToolCall(
+                    type="function",
+                    id=new_id,
+                    function=prediction.get("function")
+                )
+                log("debug", f"Cache: Action prediction found in cache with hash {input_hash}, returning tool call {new_id}")
+                return [tool_call]
+                
         return None
-    
-    def has_prediction_draft(self, user_input: list[str], tool_list: list) -> bool:
-        """
-            get draft prediction
-        """
-        input_hash = self.hash_action_input(user_input, tool_list)
-        predicted_actions = self.action_cache.get(input_hash)
-        return True if predicted_actions and predicted_actions.get("status") == "draft" else False
-    
-    def save_prediction_draft(self, user_input: list[str], contextual_actions: list[ChatCompletionMessageToolCall], tool_list):
-        """
-            save draft prediction
-        """
-        input_hash = self.hash_action_input(user_input, tool_list)
-        contextual_actions: list[ChatCompletionMessageToolCall] = [action.function.model_dump() for action in contextual_actions]
 
-        existing = self.action_cache.get(input_hash)
-        if existing and existing.get("status") == "confirmed":
-            log("debug", "Prediction already confirmed:", user_input, existing)
-            return False
-        if existing and existing.get("status") == "invalid":
-            log("debug", "Prediction already invalid:", user_input, existing)
-            return False
+    def suggest_action_for_cache(self, user_input: str, action: ChatCompletionMessageToolCall, tool_list):
+        """
+            suggest action for cache
+        """
+        tool = None
+        for t in tool_list:
+            if t.get("function").get("name") == action.function.name:
+                tool = t
+                break
         
-        log("debug", "Saving prediction draft:", user_input, contextual_actions)
-        self.action_cache.init(input_hash, "0", {
-            "status": "draft",
-            "actions": contextual_actions,
-            "user_input": user_input,
+        if tool is None:
+            log("debug", "Cache: No tool found for action suggestion")
+            return
+        
+        # check if action is already in cache
+        input_hash = self.hash_action_input(user_input, tool)
+        if self.action_cache.get(input_hash) is not None:
+            log("debug", "Cache: Action already in cache")
+            return
+        
+        # add action to cache
+        self.action_cache.set(input_hash, {
+            "status": "pending",
+            "input": user_input,
+            "function": {
+                "name": action.function.name,
+                "arguments": action.function.arguments
+            }
         })
-        return True
+        log("info", f"Cache: Action {action.function.name} suggested for cache with hash {input_hash}")
+    
+    def confirm_action_in_cache(self, user_input: str, action: ChatCompletionMessageToolCall, tool_list):
+        """
+            confirm action in cache
+        """
+        tool = None
+        for t in tool_list:
+            if t.get("function").get("name") == action.function.name:
+                tool = t
+                break
+        
+        if tool is None:
+            log("debug", "Cache: No tool found for action confirmation")
+            return
+        
+        # check if action is already in cache
+        input_hash = self.hash_action_input(user_input, tool)
+        suggested_action = self.action_cache.get(input_hash)
+        if suggested_action is None:
+            log("debug", "Cache: Action not in cache, cannot confirm")
+            return
 
-    def save_prediction_verification(self, user_input: list[str], contextual_actions: list[ChatCompletionMessageToolCall], isolated_actions: list[ChatCompletionMessageToolCall], tool_list):
+        if suggested_action.get("function") != action.function.model_dump():
+            log("debug", "Cache: Suggested action function does not match")
+            self.action_cache.delete(input_hash)
+            log("debug", "Cache: Deleted action from cache due to mismatch")
+            return
+
+        # update action in cache
+        self.action_cache.set(input_hash, {
+            "status": "confirmed",
+            "input": user_input,
+            "function": {
+                "name": action.function.name,
+                "arguments": action.function.arguments
+            }
+        })
+        log("info", f"Cache: Action {action.function.name} confirmed in cache with hash {input_hash}")
+
+    def prefill_action_in_cache(self, user_input: str, action: ChatCompletionMessageToolCall, tool):
         """
-            validate prediction
-            if first seen, add as draft
-            if already seen and same as actual, confirm
-            otherwise remove
+            prefill action cache with user input and action
         """
-        input_hash = self.hash_action_input(user_input, tool_list)
-        contextual_actions: list[ChatCompletionMessageToolCall] = [action.function.model_dump() for action in contextual_actions] if contextual_actions else []
-        isolated_actions = [action.function.model_dump() for action in isolated_actions] if isolated_actions else []
+        input_hash = self.hash_action_input(user_input, tool)
+        if self.action_cache.get(input_hash) is not None:
+            log("debug", "Cache: Action already in cache, skipping prefill")
+            return
         
-        if contextual_actions != isolated_actions:
-            #log('debug', 'Invalidating prediction for:', user_input, contextual_actions, isolated_actions)
-            self.action_cache.set(input_hash, {
-                "status": "invalid",
-                "actions": contextual_actions,
-                "user_input": user_input,
-            })
+        # add action to cache
+        self.action_cache.set(input_hash, {
+            "status": "confirmed",
+            "input": user_input,
+            "function": {
+                "name": action.function.name,
+                "arguments": action.function.arguments
+            }
+        })
+        log("info", f"Cache: Action {action.function.name} prefilled in cache with hash {input_hash}")
+
+    def has_action_in_cache(self, user_input: str, action: ChatCompletionMessageToolCall, tool_list) -> Literal["suggested", "confirmed", False]:
+        """
+            check if there is a suggested action in cache
+        """
+        tool = None
+        for t in tool_list:
+            if t.get("function").get("name") == action.function.name:
+                tool = t
+                break
+
+        if tool is None:
+            log("debug", "Cache: No tool found for action suggestion")
             return False
-        
-        #log('info', 'Validating prediction for:', user_input, actual_actions)
-        cached = self.action_cache.get(input_hash)
-        if not cached:
-            #log('debug', 'Adding prediction as draft:', user_input, contextual_actions)
-            self.action_cache.init(input_hash, "0", {
-                "status": "draft",
-                "actions": contextual_actions,
-                "user_input": user_input,
-            })
-            return False
-        
-        if cached.get("actions") != contextual_actions:
-            #log('debug', 'Invalidating prediction for:', user_input, cached.get("actions"), contextual_actions)
-            self.action_cache.set(input_hash, {
-                "status": "invalid",
-                "actions": contextual_actions,
-                "user_input": user_input,
-            })
-            return False
-        
-        #log('info', 'Prediction already seen:', user_input, cached.get("actions"))
-        if cached.get("status") == "confirmed":
-            #log('debug', 'Prediction already confirmed:', user_input, cached)
-            return False
-        
-        if cached.get("status") == "draft":
-            log('debug', 'Prediction confirmed:', user_input, cached)
-            cached["status"] = "confirmed"
-            self.action_cache.set(input_hash, cached)
-            return True
-        
+
+        input_hash = self.hash_action_input(user_input, tool)
+        if self.action_cache.get(input_hash) is not None:
+            return self.action_cache.get(input_hash).get("status")
+        log("debug", "Cache: No suggested action found in cache")
         return False
