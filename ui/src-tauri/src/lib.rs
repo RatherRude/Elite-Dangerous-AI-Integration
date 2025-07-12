@@ -267,18 +267,18 @@ async fn create_floating_overlay(app_handle: tauri::AppHandle) -> Result<(), Str
 
     window_builder = window_builder
         .title("COVAS:NEXT Overlay")
-        .inner_size(480.0, 480.0)
+//         .inner_size(480.0, 480.0)
         .decorations(false)
         .transparent(true)
         .always_on_top(true)
         .skip_taskbar(false)
         .maximized(true)
-        //.fullscreen(true)
+//         .fullscreen(true)
         .visible(true);
 
     let window = window_builder
-        .parent(&main_window)
-        .map_err(|e| format!("Failed to assign parent window: {}", e))?
+//         .parent(&main_window)
+//         .map_err(|e| format!("Failed to assign parent window: {}", e))?
         .build()
         .map_err(|e| format!("Failed to create floating overlay window: {}", e))?;
 
