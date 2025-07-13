@@ -267,18 +267,18 @@ async fn create_floating_overlay(app_handle: tauri::AppHandle) -> Result<(), Str
 
     window_builder = window_builder
         .title("COVAS:NEXT Overlay")
-//         .inner_size(480.0, 480.0)
+        //         .inner_size(480.0, 480.0)
         .decorations(false)
         .transparent(true)
         .always_on_top(true)
         .skip_taskbar(false)
         .maximized(true)
-//         .fullscreen(true)
+        //         .fullscreen(true)
         .visible(true);
 
     let window = window_builder
-//         .parent(&main_window)
-//         .map_err(|e| format!("Failed to assign parent window: {}", e))?
+        //         .parent(&main_window)
+        //         .map_err(|e| format!("Failed to assign parent window: {}", e))?
         .build()
         .map_err(|e| format!("Failed to create floating overlay window: {}", e))?;
 
@@ -319,9 +319,19 @@ pub async fn run() {
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { .. } = event {
                 let handle = window.app_handle().clone();
+                let window_label = window.label().to_string();
+
                 tokio::spawn(async move {
                     let state: State<'_, AppState> = handle.state();
                     let _ = stop_process(state).await;
+
+                    // If the main window is being closed, also close the overlay window
+                    if window_label == "main" {
+                        if let Some(overlay_window) = handle.get_webview_window("overlay") {
+                            let _ = overlay_window.close();
+                            info!("Closed overlay window due to main window close");
+                        }
+                    }
                 });
             }
         })
