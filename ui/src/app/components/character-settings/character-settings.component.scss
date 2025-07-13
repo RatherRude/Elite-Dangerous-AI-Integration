@@ -372,14 +372,13 @@ ul {
   gap: 16px;
   min-height: 200px;
   justify-content: center;
-  min-width: 220px;
-  
+
   .avatar-option {
     display: flex;
     align-items: center;
     
     mat-form-field {
-      width: 200px;
+      width: 119px;
     }
     
     mat-slide-toggle {

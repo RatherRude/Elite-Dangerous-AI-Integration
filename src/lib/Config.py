@@ -587,10 +587,22 @@ def merge_config_data(defaults: dict, user: dict):
             # Handle dict type specially
             if isinstance(defaults.get(key), dict) and isinstance(user.get(key), dict):
                 merge[key] = merge_config_data(cast(dict, defaults.get(key)), cast(dict, user.get(key)))
-            # Skip list type (not supported in merge)
-            elif isinstance(defaults.get(key), list):
-                # Just copy the user list directly
-                merge[key] = user.get(key)
+            elif isinstance(defaults.get(key), list) and isinstance(user.get(key), list):
+                if not defaults.get(key):
+                    # We have no default for this list, so we cannot merge, just copy the user config over
+                    merge[key] = user.get(key)
+                    continue
+
+                default_elem = defaults.get(key)[0]
+                merge[key] = []
+                for i,user_elem in enumerate(user.get(key)):
+                    if isinstance(default_elem, dict) and isinstance(user_elem, dict):
+                        merge[key].append(merge_config_data(default_elem, user_elem))
+                    else:
+                        # the elements in the list are not dictionaries, so we cannot merge, just copy the user config over
+                        # TODO we can be smarter here and still type check the elements
+                        merge[key].append(user_elem)
+
             else:
                 merge[key] = user.get(key)
 
