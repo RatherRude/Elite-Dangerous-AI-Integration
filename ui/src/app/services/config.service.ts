@@ -72,6 +72,7 @@ export interface Config {
     stt_model_name: string;
     stt_api_key: string;
     stt_endpoint: string;
+    stt_language: string;
     stt_custom_prompt: string;
     stt_required_word: string;
     tts_provider: "openai" | "edge-tts" | "custom" | "none" | "local-ai-server";
