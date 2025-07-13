@@ -387,3 +387,19 @@ ul {
     }
   }
 }
+
+.character-edit-header {
+  display: flex;
+  gap: 1rem;
+
+  .character-edit-header-left-column {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+.character-voice-container {
+  display: flex;
+  gap: 8px;
+}

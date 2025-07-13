@@ -129,172 +129,176 @@
 
             <!-- Character settings - only visible when editing -->
             <div id="character-creation" *ngIf="editMode">
-                <!-- Avatar Section -->
-                <div class="avatar-edit-section">
-                    <div class="avatar-container">
-                        <!-- Avatar Image (Left Side) -->
-                        <div class="avatar-display-container">
-                            <div class="avatar-full-display">
-                                <img [src]="getAvatarUrl()" 
-                                     [alt]="activeCharacter.name + ' avatar'"
-                                     class="avatar-full-image">
-                                <button mat-icon-button 
-                                        class="avatar-edit-button"
-                                        (click)="openAvatarCatalog()"
-                                        matTooltip="Change avatar">
-                                    <mat-icon>edit</mat-icon>
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <!-- Avatar Options (Right Side) -->
-                        <div class="avatar-options-container">
-                            <!-- Show Avatar -->
-                            <div class="avatar-option">
-                                <mat-slide-toggle 
-                                    [ngModel]="getCharacterProperty('avatar_show', true)"
-                                    [disabled]="config?.edcopilot === true && config?.edcopilot_dominant === true"
-                                    (ngModelChange)="setCharacterProperty('avatar_show', $event)"
-                                    [matTooltip]="config?.edcopilot === true && config?.edcopilot_dominant === true ? 'Avatars are disabled while using EDCP-dominant mode' : 'Toggle avatar visibility'">
-                                    Show Avatar
-                                </mat-slide-toggle>
-                            </div>
-                            
-                            <!-- Position (hidden if not showing avatar) -->
-                            <div class="avatar-option" *ngIf="getCharacterProperty('avatar_show', true)">
-                                <mat-form-field appearance="outline">
-                                    <mat-label>Position</mat-label>
-                                    <mat-select 
-                                        [ngModel]="getCharacterProperty('avatar_position', 'right')"
-                                        (ngModelChange)="setCharacterProperty('avatar_position', $event)">
-                                        <mat-option value="left">Left</mat-option>
-                                        <mat-option value="right">Right</mat-option>
-                                    </mat-select>
-                                </mat-form-field>
-                            </div>
-                            
-                            <!-- Flip (hidden if not showing avatar) -->
-                            <div class="avatar-option" *ngIf="getCharacterProperty('avatar_show', true)">
-                                <mat-slide-toggle 
-                                    [ngModel]="getCharacterProperty('avatar_flip', false)"
-                                    (ngModelChange)="setCharacterProperty('avatar_flip', $event)"
-                                    matTooltip="Flip avatar horizontally">
-                                    Flip
-                                </mat-slide-toggle>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+
 
                 <!-- Character Name -->
                 <div class="character-settings">
-                    <div class="trait-container">
-                        <div class="trait-input">
-                            <mat-form-field appearance="outline">
-                                <mat-label>Character Name</mat-label>
-                                <input matInput
-                                    [ngModel]="activeCharacter.name"
-                                    [ngModelOptions]="{updateOn: 'blur'}"
-                                    (ngModelChange)="setCharacterPropertyAndUpdatePrompt('name', $event)">
-                            </mat-form-field>
-                        </div>
-                        <div class="trait-input">
-                            <!-- Character Language -->
-                            <mat-form-field appearance="outline">
-                                <mat-label>Character Language</mat-label>
-                                <input matInput
-                                    [ngModel]="activeCharacter.personality_language"
-                                    [ngModelOptions]="{updateOn: 'blur'}"
-                                    (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_language', $event)">
-                            </mat-form-field>
-                        </div>
-                        <div class="trait-select">
-                            <!-- Voice selection -->
-                            <mat-form-field>
-                                <mat-label>Voice</mat-label>
-                                @if (config.tts_provider === 'openai') {
-                                    <mat-select [ngModel]="activeCharacter.tts_voice"
-                                            (ngModelChange)="setCharacterProperty('tts_voice', $event)">
-                                        <mat-option value="alloy">Alloy - Neutral, versatile voice</mat-option>
-                                        <mat-option value="ash">Ash - New voice</mat-option>
-                                        <mat-option value="ballad">Ballad - New voice</mat-option>
-                                        <mat-option value="coral">Coral - New voice</mat-option>
-                                        <mat-option value="echo">Echo - Deeper, experienced voice</mat-option>
-                                        <mat-option value="fable">Fable - Warm, soft-spoken voice</mat-option>
-                                        <mat-option value="nova">Nova - Bright, friendly voice</mat-option>
-                                        <mat-option value="onyx">Onyx - Deep, authoritative voice</mat-option>
-                                        <mat-option value="sage">Sage - New voice</mat-option>
-                                        <mat-option value="shimmer">Shimmer - Clear, warm voice</mat-option>
-                                    </mat-select>
-                                } @else if (config.tts_provider === 'edge-tts') {
-                                    <mat-select [ngModel]="activeCharacter.tts_voice"
-                                            (selectionChange)="onVoiceSelectionChange($event.value)">
-                                        @if (isCustomVoice(activeCharacter.tts_voice)) {
-                                            <mat-option [value]="activeCharacter.tts_voice" style="font-style: italic">
-                                                {{ getVoiceDisplayName(activeCharacter.tts_voice) }}
-                                            </mat-option>
-                                            <mat-divider class="custom-voice-divider"></mat-divider>
-                                        }
-                                        <mat-optgroup label="English - United States">
-                                            <mat-option value="en-US-AvaMultilingualNeural">Ava Multilingual (Female)</mat-option>
-                                            <mat-option value="en-US-AndrewMultilingualNeural">Andrew Multilingual (Male)</mat-option>
-                                            <mat-option value="en-US-AriaNeural">Aria (Female) - Positive, Confident</mat-option>
-                                            <mat-option value="en-US-AnaNeural">Ana (Female) - Cute</mat-option>
-                                            <mat-option value="en-US-ChristopherNeural">Christopher (Male) - Reliable, Authority</mat-option>
-                                            <mat-option value="en-US-EricNeural">Eric (Male) - Rational</mat-option>
-                                            <mat-option value="en-US-GuyNeural">Guy (Male) - Passion</mat-option>
-                                            <mat-option value="en-US-JennyNeural">Jenny (Female) - Friendly, Considerate</mat-option>
-                                            <mat-option value="en-US-MichelleNeural">Michelle (Female) - Friendly, Pleasant</mat-option>
-                                            <mat-option value="en-US-RogerNeural">Roger (Male) - Lively</mat-option>
-                                            <mat-option value="en-US-SteffanNeural">Steffan (Male) - Rational</mat-option>
-                                        </mat-optgroup>
-                                        <mat-optgroup label="English - United Kingdom">
-                                            <mat-option value="en-GB-LibbyNeural">Libby (Female)</mat-option>
-                                            <mat-option value="en-GB-MaisieNeural">Maisie (Female)</mat-option>
-                                            <mat-option value="en-GB-RyanNeural">Ryan (Male)</mat-option>
-                                            <mat-option value="en-GB-SoniaNeural">Sonia (Female)</mat-option>
-                                            <mat-option value="en-GB-ThomasNeural">Thomas (Male)</mat-option>
-                                        </mat-optgroup>
-                                        <mat-optgroup label="English - Australia">
-                                            <mat-option value="en-AU-NatashaNeural">Natasha (Female)</mat-option>
-                                            <mat-option value="en-AU-WilliamNeural">William (Male)</mat-option>
-                                        </mat-optgroup>
-                                        <mat-option value="show-all-voices">Show All Voices...</mat-option>
-                                    </mat-select>
-                                } @else {
-                                    <input matInput [ngModel]="activeCharacter.tts_voice"
-                                        (ngModelChange)="setCharacterProperty('tts_voice', $event)">
-                                }
-                            </mat-form-field>
-                        </div>
-                        <div class="trait-select">
-                            <!-- Voice speed -->
-                            @if (!voiceInstructionSupportedModels.includes(config.tts_model_name)) {
-                                <div class="trait-select lowWidth">
-                                    <mat-form-field>
-                                        <mat-label>Speed</mat-label>
-                                        <input matInput [ngModel]="activeCharacter.tts_speed"
-                                                (ngModelChange)="setCharacterProperty('tts_speed', $event)">
-                                    </mat-form-field>
-                                </div>
-                            }
-
-                            <!-- TTS Prompt -->
-                            @if (voiceInstructionSupportedModels.includes(config.tts_model_name)) {
+                    <div class="character-edit-header">
+                        <div class="character-edit-header-left-column">
+                            <div class="trait-input">
+                                <mat-form-field appearance="outline">
+                                    <mat-label>Character Name</mat-label>
+                                    <input matInput
+                                        [ngModel]="activeCharacter.name"
+                                        [ngModelOptions]="{updateOn: 'blur'}"
+                                        (ngModelChange)="setCharacterPropertyAndUpdatePrompt('name', $event)">
+                                </mat-form-field>
+                            </div>
+                            <div class="trait-input">
+                                <!-- Character Language -->
+                                <mat-form-field appearance="outline">
+                                    <mat-label>Character Language</mat-label>
+                                    <input matInput
+                                        [ngModel]="activeCharacter.personality_language"
+                                        [ngModelOptions]="{updateOn: 'blur'}"
+                                        (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_language', $event)">
+                                </mat-form-field>
+                            </div>
+                            <div class="character-voice-container">
                                 <div class="trait-select">
-                                    <mat-hint><b>Voice instructions</b><br>Enter a detailed description of how you want your voice to sound.<br>You can include things such as: accent, emotional range, tone, impressions and speed.<br>
-                                        Warning: This will increase the cost of each query!</mat-hint>
+                                    <!-- Voice selection -->
                                     <mat-form-field>
-                                        <mat-label>Voice Tone Instructions</mat-label>
-                                        <textarea matInput [ngModel]="activeCharacter.tts_prompt"
-                                                (ngModelChange)="setCharacterProperty('tts_prompt', $event)"></textarea>
-
+                                        <mat-label>Voice</mat-label>
+                                        @if (config.tts_provider === 'openai') {
+                                            <mat-select [ngModel]="activeCharacter.tts_voice"
+                                                    (ngModelChange)="setCharacterProperty('tts_voice', $event)">
+                                                <mat-option value="alloy">Alloy - Neutral, versatile voice</mat-option>
+                                                <mat-option value="ash">Ash - New voice</mat-option>
+                                                <mat-option value="ballad">Ballad - New voice</mat-option>
+                                                <mat-option value="coral">Coral - New voice</mat-option>
+                                                <mat-option value="echo">Echo - Deeper, experienced voice</mat-option>
+                                                <mat-option value="fable">Fable - Warm, soft-spoken voice</mat-option>
+                                                <mat-option value="nova">Nova - Bright, friendly voice</mat-option>
+                                                <mat-option value="onyx">Onyx - Deep, authoritative voice</mat-option>
+                                                <mat-option value="sage">Sage - New voice</mat-option>
+                                                <mat-option value="shimmer">Shimmer - Clear, warm voice</mat-option>
+                                            </mat-select>
+                                        } @else if (config.tts_provider === 'edge-tts') {
+                                            <mat-select [ngModel]="activeCharacter.tts_voice"
+                                                    (selectionChange)="onVoiceSelectionChange($event.value)">
+                                                @if (isCustomVoice(activeCharacter.tts_voice)) {
+                                                    <mat-option [value]="activeCharacter.tts_voice" style="font-style: italic">
+                                                        {{ getVoiceDisplayName(activeCharacter.tts_voice) }}
+                                                    </mat-option>
+                                                    <mat-divider class="custom-voice-divider"></mat-divider>
+                                                }
+                                                <mat-optgroup label="English - United States">
+                                                    <mat-option value="en-US-AvaMultilingualNeural">Ava Multilingual (Female)</mat-option>
+                                                    <mat-option value="en-US-AndrewMultilingualNeural">Andrew Multilingual (Male)</mat-option>
+                                                    <mat-option value="en-US-AriaNeural">Aria (Female) - Positive, Confident</mat-option>
+                                                    <mat-option value="en-US-AnaNeural">Ana (Female) - Cute</mat-option>
+                                                    <mat-option value="en-US-ChristopherNeural">Christopher (Male) - Reliable, Authority</mat-option>
+                                                    <mat-option value="en-US-EricNeural">Eric (Male) - Rational</mat-option>
+                                                    <mat-option value="en-US-GuyNeural">Guy (Male) - Passion</mat-option>
+                                                    <mat-option value="en-US-JennyNeural">Jenny (Female) - Friendly, Considerate</mat-option>
+                                                    <mat-option value="en-US-MichelleNeural">Michelle (Female) - Friendly, Pleasant</mat-option>
+                                                    <mat-option value="en-US-RogerNeural">Roger (Male) - Lively</mat-option>
+                                                    <mat-option value="en-US-SteffanNeural">Steffan (Male) - Rational</mat-option>
+                                                </mat-optgroup>
+                                                <mat-optgroup label="English - United Kingdom">
+                                                    <mat-option value="en-GB-LibbyNeural">Libby (Female)</mat-option>
+                                                    <mat-option value="en-GB-MaisieNeural">Maisie (Female)</mat-option>
+                                                    <mat-option value="en-GB-RyanNeural">Ryan (Male)</mat-option>
+                                                    <mat-option value="en-GB-SoniaNeural">Sonia (Female)</mat-option>
+                                                    <mat-option value="en-GB-ThomasNeural">Thomas (Male)</mat-option>
+                                                </mat-optgroup>
+                                                <mat-optgroup label="English - Australia">
+                                                    <mat-option value="en-AU-NatashaNeural">Natasha (Female)</mat-option>
+                                                    <mat-option value="en-AU-WilliamNeural">William (Male)</mat-option>
+                                                </mat-optgroup>
+                                                <mat-option value="show-all-voices">Show All Voices...</mat-option>
+                                            </mat-select>
+                                        } @else {
+                                            <input matInput [ngModel]="activeCharacter.tts_voice"
+                                                (ngModelChange)="setCharacterProperty('tts_voice', $event)">
+                                        }
                                     </mat-form-field>
                                 </div>
-                            }
+                                <!-- Voice speed -->
+                                @if (!voiceInstructionSupportedModels.includes(config.tts_model_name)) {
+                                    <div class="trait-select">
+                                        <mat-form-field>
+                                            <mat-label>Speed</mat-label>
+                                            <input matInput [ngModel]="activeCharacter.tts_speed"
+                                                    (ngModelChange)="setCharacterProperty('tts_speed', $event)">
+                                        </mat-form-field>
+                                    </div>
+                                }
+                            </div>
                         </div>
-                    </div>
+
+                        <!-- Avatar Section -->
+                        <div class="avatar-edit-section">
+                            <div class="avatar-container">
+                                <!-- Avatar Image (Left Side) -->
+                                <div class="avatar-display-container">
+                                    <div class="avatar-full-display">
+                                        <img [src]="getAvatarUrl()"
+                                             [alt]="activeCharacter.name + ' avatar'"
+                                             class="avatar-full-image">
+                                        <button mat-icon-button
+                                                class="avatar-edit-button"
+                                                (click)="openAvatarCatalog()"
+                                                matTooltip="Change avatar">
+                                            <mat-icon>edit</mat-icon>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Avatar Options (Right Side) -->
+                                <div class="avatar-options-container">
+                                    <!-- Show Avatar -->
+                                    <div class="avatar-option">
+                                        <mat-slide-toggle
+                                            [ngModel]="getCharacterProperty('avatar_show', true)"
+                                            [disabled]="config?.edcopilot === true && config?.edcopilot_dominant === true"
+                                            (ngModelChange)="setCharacterProperty('avatar_show', $event)"
+                                            [matTooltip]="config?.edcopilot === true && config?.edcopilot_dominant === true ? 'Avatars are disabled while using EDCP-dominant mode' : 'Toggle avatar visibility'">
+                                            Show Avatar
+                                        </mat-slide-toggle>
+                                    </div>
+
+                                    <!-- Position (hidden if not showing avatar) -->
+                                    <div class="avatar-option" *ngIf="getCharacterProperty('avatar_show', true)">
+                                        <mat-form-field appearance="outline">
+                                            <mat-label>Position</mat-label>
+                                            <mat-select
+                                                [ngModel]="getCharacterProperty('avatar_position', 'right')"
+                                                (ngModelChange)="setCharacterProperty('avatar_position', $event)">
+                                                <mat-option value="left">Left</mat-option>
+                                                <mat-option value="right">Right</mat-option>
+                                            </mat-select>
+                                        </mat-form-field>
+                                    </div>
+
+                                    <!-- Flip (hidden if not showing avatar) -->
+                                    <div class="avatar-option" *ngIf="getCharacterProperty('avatar_show', true)">
+                                        <mat-slide-toggle
+                                            [ngModel]="getCharacterProperty('avatar_flip', false)"
+                                            (ngModelChange)="setCharacterProperty('avatar_flip', $event)"
+                                            matTooltip="Flip avatar horizontally">
+                                            Flip
+                                        </mat-slide-toggle>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        </div>
                 </div>
+
+                <!-- TTS Prompt -->
+                @if (voiceInstructionSupportedModels.includes(config.tts_model_name)) {
+                    <div class="trait-select">
+                        <mat-hint><b>Voice instructions</b><br>Enter a detailed description of how you want your voice to sound.<br>You can include things such as: accent, emotional range, tone, impressions and speed.<br>
+                            Warning: This will increase the cost of each query!</mat-hint>
+                        <mat-form-field>
+                            <mat-label>Voice Tone Instructions</mat-label>
+                            <textarea matInput [ngModel]="activeCharacter.tts_prompt"
+                                    (ngModelChange)="setCharacterProperty('tts_prompt', $event)"></textarea>
+
+                        </mat-form-field>
+                    </div>
+                }
 
                 <!-- Personality Preset -->
                 <div class="trait-container">
