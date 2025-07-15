@@ -371,6 +371,7 @@ class Config(TypedDict):
     stt_model_name: str
     stt_api_key: str
     stt_endpoint: str
+    stt_language: str
     stt_custom_prompt: str
     stt_required_word: str
     tts_provider: Literal['openai', 'edge-tts', 'custom', 'none', 'local-ai-server']
@@ -658,6 +659,7 @@ def load_config() -> Config:
         'stt_model_name': "gpt-4o-mini-transcribe",
         'stt_endpoint': "https://api.openai.com/v1",
         'stt_api_key': "",
+        'stt_language': "",
         'stt_custom_prompt': '',
         'stt_required_word': '',
         'tts_provider': "edge-tts",
