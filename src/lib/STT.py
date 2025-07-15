@@ -297,7 +297,7 @@ class STT:
             transcription = self.openai_client.audio.transcriptions.create(
                 model=self.model,
                 file=audio_ogg,
-                language=self.language,
+                language=self.language if self.language else None,  # pyright: ignore[reportArgumentType]
                 prompt=self.prompt
             )
         except openai.APIStatusError as e:
