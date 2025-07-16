@@ -23,8 +23,8 @@ finish-args:
   - --socket=system-bus
   # Environment variables for better compatibility
   - --env=RUST_BACKTRACE=1
-  - --env=WEBKIT_DISABLE_DMABUF_RENDERER=1
   - --env=SSL_CERT_DIR=/etc/ssl/certs
+  #- --env=WEBKIT_DISABLE_DMABUF_RENDERER=1 # This is a fix for Nvidia+Wayland rendering, but it breaks the transparent overlay window – we are forcing X11 in flatpak so we might get away without it
 
 modules:
   - name: covas-next-ui
