@@ -316,35 +316,37 @@ Afrikaans, Arabic, Armenian, Azerbaijani, Belarusian, Bosnian, Bulgarian, Catala
 See [OpenAI's documentation](https://platform.openai.com/docs/guides/text-to-speech) for more information.
 
 ## Kokoro
-Kokoro is available when using AIServer. Due to technical limitations only en-US and en-GB are available for now, additional languages are on the roadmap.
+Kokoro is available when using AIServer.
 
-You can find a detailed list of all Kokoro voices [here](https://huggingface.co/hexgrad/Kokoro-82M/blob/main/VOICES.md), here is a summary:
+This voice list is incomplete, check [here](https://huggingface.co/hexgrad/Kokoro-82M/blob/main/VOICES.md) to see all Kokoro voices:
 
-| Name | Locale | Traits | Target Quality | Training Duration | Overall Grade |
-| ---- | ------ | ------ | -------------- | ----------------- | ------------- |
-| af_alloy | 🇺🇸 | 🚺 | B | MM minutes | C |
-| af_aoede | 🇺🇸 | 🚺 | B | H hours | C+ |
-| af_bella | 🇺🇸 | 🚺🔥 | **A** | **HH hours** | **A-** |
-| af_jessica | 🇺🇸 | 🚺 | C | MM minutes | D |
-| af_kore | 🇺🇸 | 🚺 | B | H hours | C+ |
-| af_nicole | 🇺🇸 | 🚺🎧 | B | **HH hours** | B- |
-| af_nova | 🇺🇸 | 🚺 | B | MM minutes | C |
-| af_river | 🇺🇸 | 🚺 | C | MM minutes | D |
-| af_sarah | 🇺🇸 | 🚺 | B | H hours | C+ |
-| af_sky | 🇺🇸 | 🚺 | B | M minutes | C- |
-| am_adam | 🇺🇸 | 🚹 | D | H hours | F+ |
-| am_echo | 🇺🇸 | 🚹 | C | MM minutes | D |
-| am_eric | 🇺🇸 | 🚹 | C | MM minutes | D |
-| am_fenrir | 🇺🇸 | 🚹 | B | H hours | C+ |
-| am_liam | 🇺🇸 | 🚹 | C | MM minutes | D |
-| am_michael | 🇺🇸 | 🚹 | B | H hours | C+ |
-| am_onyx | 🇺🇸 | 🚹 | C | MM minutes | D |
-| am_puck | 🇺🇸 | 🚹 | B | H hours | C+ |
-| bf_alice | 🇬🇧 | 🚺 | C | MM minutes | D |
-| bf_emma | 🇬🇧 | 🚺 | B | **HH hours** | B- |
-| bf_isabella | 🇬🇧 | 🚺 | B | MM minutes | C |
-| bf_lily | 🇬🇧 | 🚺 | C | MM minutes | D |
-| bm_daniel | 🇬🇧 | 🚹 | C | MM minutes | D |
-| bm_fable | 🇬🇧 | 🚹 | B | MM minutes | C |
-| bm_george | 🇬🇧 | 🚹 | B | MM minutes | C |
-| bm_lewis | 🇬🇧 | 🚹 | C | H hours | D+ |
+| Name | Locale | Traits | Training Duration | Overall Grade |
+| ---- | ------ | ------ | ----------------- | ------------- |
+| af_heart | 🇺🇸 | 🚺❤️ | | |
+| af_alloy | 🇺🇸 | 🚺 | MM minutes | C |
+| af_aoede | 🇺🇸 | 🚺 | H hours | C+ |
+| af_bella | 🇺🇸 | 🚺🔥 | **HH hours** | **A-** |
+| af_jessica | 🇺🇸 | 🚺 | MM minutes | D |
+| af_kore | 🇺🇸 | 🚺 | H hours | C+ |
+| af_nicole | 🇺🇸 | 🚺🎧 | **HH hours** | B- |
+| af_nova | 🇺🇸 | 🚺 | MM minutes | C |
+| af_river | 🇺🇸 | 🚺 | MM minutes | D |
+| af_sarah | 🇺🇸 | 🚺 | H hours | C+ |
+| af_sky | 🇺🇸 | 🚺 | M minutes 🤏 | C- |
+| am_adam | 🇺🇸 | 🚹 | H hours | F+ |
+| am_echo | 🇺🇸 | 🚹 | MM minutes | D |
+| am_eric | 🇺🇸 | 🚹 | MM minutes | D |
+| am_fenrir | 🇺🇸 | 🚹 | H hours | C+ |
+| am_liam | 🇺🇸 | 🚹 | MM minutes | D |
+| am_michael | 🇺🇸 | 🚹 | H hours | C+ |
+| am_onyx | 🇺🇸 | 🚹 | MM minutes | D |
+| am_puck | 🇺🇸 | 🚹 | H hours | C+ |
+| am_santa | 🇺🇸 | 🚹 | M minutes 🤏 | D- |
+| bf_alice | 🇬🇧 | 🚺 | MM minutes | D |
+| bf_emma | 🇬🇧 | 🚺 | **HH hours** | B- |
+| bf_isabella | 🇬🇧 | 🚺 | MM minutes | C |
+| bf_lily | 🇬🇧 | 🚺 | MM minutes | D |
+| bm_daniel | 🇬🇧 | 🚹 | MM minutes | D |
+| bm_fable | 🇬🇧 | 🚹 | MM minutes | C |
+| bm_george | 🇬🇧 | 🚹 | MM minutes | C |
+| bm_lewis | 🇬🇧 | 🚹 | H hours | D+ |
