@@ -4389,6 +4389,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "required": ["weaponType", "action"]
     }, fire_weapons, 'ship', cache_prefill={
         "fire primary weapon": {"weaponType": "primary", "action":"fire"},
+        "fire": {"weaponType": "primary", "action":"fire"},
     })
 
     actionManager.registerAction('setSpeed', "Change flight thrust", {
@@ -4412,8 +4413,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         },
         "required": ["speed"]
     }, set_speed, 'ship', cache_prefill={
-        "halt": {"speed": "Zero"},
-        "stop": {"speed": "Zero"},
+        "full stop": {"speed": "Zero"},
         "half speed": {"speed": "50"},
         "full speed": {"speed": "100"},
         "reverse": {"speed": "Minus100"},
@@ -4531,6 +4531,8 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         cache_prefill={
             "next fire group": {"direction":"next"},
             "previous fire group": {"direction":"previous"},
+            "select next fire group": {"direction":"next"},
+            "select previous fire group": {"direction":"previous"},
         }
     )
 
@@ -4550,7 +4552,13 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "type": "object",
         "properties": {}
     }, ship_spot_light_toggle, 'ship', cache_prefill={
-        "lights": {}
+        "ship light": {},
+        "lights": {},
+        "lights on": {},
+        "turn on lights": {},
+        "lights off": {},
+        "toggle lights": {},
+        "toggle the lights": {}
     })
 
     actionManager.registerAction('fireChaffLauncher', "Fire chaff launcher", {
@@ -4562,7 +4570,9 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "type": "object",
         "properties": {}
     }, night_vision_toggle, 'ship', cache_prefill={
-        "nightvision": {}
+        "nightvision": {},
+        "toggle nightvision": {},
+        "toggle the nightvision": {}
     })
 
     actionManager.registerAction('selectHighestThreat', "Target lock highest threat", {
@@ -4600,6 +4610,17 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "target fsd": {"subsystem":"FSD"},
         "target power": {"subsystem":"Power Plant"},
         "target power plant": {"subsystem":"Power Plant"},
+        "target the drive": {"subsystem":"Drive"},
+        "target the drives": {"subsystem":"Drive"},
+        "target the power distributor": {"subsystem":"Power Distributor"},
+        "target the distributor": {"subsystem":"Power Distributor"},
+        "target the shields": {"subsystem":"Shield Generator"},
+        "target the shield generator": {"subsystem":"Shield Generator"},
+        "target the life support": {"subsystem":"Life Support"},
+        "target the frame shift drive": {"subsystem":"FSD"},
+        "target the fsd": {"subsystem":"FSD"},
+        "target the power": {"subsystem":"Power Plant"},
+        "target the power plant": {"subsystem":"Power Plant"},
     })
 
     actionManager.registerAction('chargeECM', "Charge ECM", {
