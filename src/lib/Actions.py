@@ -197,7 +197,7 @@ def change_hud_mode(args, projected_states):
 
 def cycle_fire_group(args, projected_states):
     setGameWindowActive()
-    firegroup_ask = args.get('fire_group')
+    firegroup_ask = args.get('fire_group', None)
 
     initial_firegroup = projected_states.get("CurrentStatus").get('FireGroup')
 
@@ -4387,7 +4387,20 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             }
         },
         "required": ["weaponType", "action"]
-    }, fire_weapons, 'ship')
+    }, fire_weapons, 'ship', cache_prefill={
+        "fire primary weapon": {"weaponType": "primary", "action":"fire"},
+        "fire": {"weaponType": "primary", "action":"fire"},
+        "fire secondary": {"weaponType": "secondary", "action":"fire"},
+        "fire missiles": {"weaponType": "secondary", "action":"fire"},
+        "start firing": {"weaponType": "primary", "action":"start"},
+        "open fire": {"weaponType": "primary", "action":"start"},
+        "stop firing": {"weaponType": "primary", "action":"stop"},
+        "cease fire": {"weaponType": "primary", "action":"stop"},
+        "weapons fire": {"weaponType": "primary", "action":"fire"},
+        "engage weapons": {"weaponType": "primary", "action":"fire"},
+        "discovery scanner": {"weaponType": "discovery_scanner", "action":"fire"},
+        "honk": {"weaponType": "discovery_scanner", "action":"fire"},
+    })
 
     actionManager.registerAction('setSpeed', "Change flight thrust", {
         "type": "object",
@@ -4409,17 +4422,39 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             }
         },
         "required": ["speed"]
-    }, set_speed, 'ship')
+    }, set_speed, 'ship', cache_prefill={
+        "full stop": {"speed": "Zero"},
+        "half speed": {"speed": "50"},
+        "full speed": {"speed": "100"},
+        "reverse": {"speed": "Minus100"},
+    })
 
     actionManager.registerAction('deployHeatSink', "Deploy heat sink", {
         "type": "object",
         "properties": {}
-    }, deploy_heat_sink, 'ship')
+    }, deploy_heat_sink, 'ship', cache_prefill={
+        "heat sink": {},
+        "deploy heat sink": {},
+        "use heat sink": {},
+        "activate heat sink": {},
+        "heatsink": {},
+        "deploy heatsink": {},
+        "cooling": {},
+    })
 
     actionManager.registerAction('deployHardpointToggle', "Deploy or retract hardpoints. Do not call this action when asked to switch hud mode", {
         "type": "object",
         "properties": {}
-    }, deploy_hardpoint_toggle, 'ship')
+    }, deploy_hardpoint_toggle, 'ship', cache_prefill={
+        "hardpoints": {},
+        "deploy hardpoints": {},
+        "retract hardpoints": {},
+        "toggle hardpoints": {},
+        "hardpoints up": {},
+        "hardpoints down": {},
+        "weapons out": {},
+        "weapons away": {},
+    })
 
     actionManager.registerAction('managePowerDistribution',
                                  "Manage power distribution between ship systems. Apply pips to one or more power systems or balance the power across two or if unspecified, across all 3",
@@ -4451,7 +4486,19 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                                          }
                                      },
                                      "required": ["power_category"]
-                                 }, manage_power_distribution, 'ship')
+                                 }, manage_power_distribution, 'ship', cache_prefill={
+        "balance power": {"power_category": ["Engines", "Weapons", "Systems"], "balance_power": True},
+        "reset power": {"power_category": ["Engines", "Weapons", "Systems"], "balance_power": True},
+        "four pips to engines": {"power_category": ["Engines"], "pips": [4]},
+        "four pips to weapons": {"power_category": ["Weapons"], "pips": [4]},
+        "four pips to systems": {"power_category": ["Systems"], "pips": [4]},
+        "max engines": {"power_category": ["Engines"], "pips": [4]},
+        "max weapons": {"power_category": ["Weapons"], "pips": [4]},
+        "max systems": {"power_category": ["Systems"], "pips": [4]},
+        "pips to engines": {"power_category": ["Engines"], "pips": [2]},
+        "pips to weapons": {"power_category": ["Weapons"], "pips": [2]},
+        "pips to systems": {"power_category": ["Systems"], "pips": [2]},
+    })
 
     actionManager.registerAction('galaxyMapOpen', "Open galaxy map. If asked, also focus on a system or start a navigation route", {
         "type": "object",
@@ -4465,12 +4512,22 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "description": "Start navigation route to the system",
             }
         },
-    }, galaxy_map_open, 'ship')
+    }, galaxy_map_open, 'ship', cache_prefill={
+        "galaxy map": {},
+        "open galaxy map": {},
+        "galmap": {},
+        "navigation": {},
+        "star map": {},
+        "show galaxy map": {},
+        "nav map": {},
+    })
 
     actionManager.registerAction('galaxyMapClose', "Close galaxy map", {
         "type": "object",
         "properties": {},
-    }, galaxy_map_close, 'ship')
+    }, galaxy_map_close, 'ship', cache_prefill={
+        "close galaxy map": {},
+    })
 
     actionManager.registerAction('systemMapOpenOrClose', "Open or close system map", {
         "type": "object",
@@ -4481,7 +4538,15 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "description": "Desired state for the system map: open or close.",
             },
         },
-    }, system_map_open_or_close, 'ship')
+    }, system_map_open_or_close, 'ship', cache_prefill={
+        "system map": {"desired_state": "open"},
+        "open system map": {"desired_state": "open"},
+        "close system map": {"desired_state": "close"},
+        "orrery": {"desired_state": "open"},
+        "local map": {"desired_state": "open"},
+        "sysmap": {"desired_state": "open"},
+        "show system map": {"desired_state": "open"},
+    })
 
     actionManager.registerAction('cycleTarget', "Cycle to next target", {
         "type": "object",
@@ -4493,7 +4558,10 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "default": "next"
             }
         }
-    }, cycle_target, 'ship')
+    }, cycle_target, 'ship', cache_prefill={
+        "next target": {"direction":"next"},
+        "previous target": {"direction":"previous"},
+    })
 
     actionManager.registerAction(
         'cycle_fire_group',
@@ -4504,17 +4572,23 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "direction": {
                     "type": "string",
                     "description": "If next or previous is give: Cycle direction: 'next' or 'previous'.",
-                    "enum": ["next", "previous"]
+                    "enum": ["next", "previous"],
+                    "default": "next"
                 },
                 "fire_group": {
                     "type": "integer",
-                    "description": "Specific firegroup index to select. Letters A=0, B=1, C=2, etc.",
-                    "default": None
+                    "description": "Specific firegroup index to select. Letters A=0, B=1, C=2, etc."
                 }
             },
         },
         cycle_fire_group,
-        'mainship'
+        'ship',
+        cache_prefill={
+            "next fire group": {"direction":"next"},
+            "previous fire group": {"direction":"previous"},
+            "select next fire group": {"direction":"next"},
+            "select previous fire group": {"direction":"previous"},
+        }
     )
 
     actionManager.registerAction('Change_ship_HUD_mode', "Switch to combat or analysis mode", {
@@ -4527,38 +4601,64 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             }
         },
         "required": ["hud mode"],
-    }, change_hud_mode, 'mainship')
-
-    actionManager.registerAction('cycleFireGroup', "Cycle to next fire group", {
-        "type": "object",
-        "properties": {
-            "direction": {
-                "type": "string",
-                "description": "Direction to cycle (next or previous)",
-                "enum": ["next", "previous"],
-            }
-        }
-    }, cycle_fire_group, 'ship')
+    }, change_hud_mode, 'mainship', cache_prefill={
+        "combat mode": {"hud mode": "combat"},
+        "analysis mode": {"hud mode": "analysis"},
+        "switch to combat": {"hud mode": "combat"},
+        "switch to analysis": {"hud mode": "analysis"},
+        "toggle hud mode": {"hud mode": "toggle"},
+        "hud mode": {"hud mode": "toggle"},
+        "change hud": {"hud mode": "toggle"},
+    })
 
     actionManager.registerAction('shipSpotLightToggle', "Toggle ship spotlight", {
         "type": "object",
         "properties": {}
-    }, ship_spot_light_toggle, 'ship')
+    }, ship_spot_light_toggle, 'ship', cache_prefill={
+        "ship light": {},
+        "lights": {},
+        "lights on": {},
+        "turn on lights": {},
+        "lights off": {},
+        "toggle lights": {},
+        "toggle the lights": {}
+    })
 
     actionManager.registerAction('fireChaffLauncher', "Fire chaff launcher", {
         "type": "object",
         "properties": {}
-    }, fire_chaff_launcher, 'ship')
+    }, fire_chaff_launcher, 'ship', cache_prefill={
+        "chaff": {},
+        "fire chaff": {},
+        "launch chaff": {},
+        "deploy chaff": {},
+        "countermeasures": {},
+        "evade": {},
+    })
 
     actionManager.registerAction('nightVisionToggle', "Toggle night vision", {
         "type": "object",
         "properties": {}
-    }, night_vision_toggle, 'ship')
+    }, night_vision_toggle, 'ship', cache_prefill={
+        "nightvision": {},
+        "night vision": {},
+        "toggle nightvision": {},
+        "thermal vision": {},
+        "enhanced vision": {},
+        "infrared": {},
+    })
 
     actionManager.registerAction('selectHighestThreat', "Target lock highest threat", {
         "type": "object",
         "properties": {}
-    }, select_highest_threat, 'ship')
+    }, select_highest_threat, 'ship', cache_prefill={
+        "highest threat": {},
+        "target highest threat": {},
+        "most dangerous": {},
+        "biggest threat": {},
+        "priority target": {},
+        "target enemy": {},
+    })
 
     actionManager.registerAction('targetSubmodule', "Target a subsystem on locked ship", {
         "type": "object",
@@ -4578,12 +4678,42 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             },
         },
         "required": ["subsystem"],
-    }, target_subsystem, 'ship')
+    }, target_subsystem, 'ship', cache_prefill={
+        "target drive": {"subsystem":"Drive"},
+        "target drives": {"subsystem":"Drive"},
+        "target power distributor": {"subsystem":"Power Distributor"},
+        "target distributor": {"subsystem":"Power Distributor"},
+        "target shields": {"subsystem":"Shield Generator"},
+        "target shield generator": {"subsystem":"Shield Generator"},
+        "target life support": {"subsystem":"Life Support"},
+        "target frame shift drive": {"subsystem":"FSD"},
+        "target fsd": {"subsystem":"FSD"},
+        "target power": {"subsystem":"Power Plant"},
+        "target power plant": {"subsystem":"Power Plant"},
+        "target the drive": {"subsystem":"Drive"},
+        "target the drives": {"subsystem":"Drive"},
+        "target the power distributor": {"subsystem":"Power Distributor"},
+        "target the distributor": {"subsystem":"Power Distributor"},
+        "target the shields": {"subsystem":"Shield Generator"},
+        "target the shield generator": {"subsystem":"Shield Generator"},
+        "target the life support": {"subsystem":"Life Support"},
+        "target the frame shift drive": {"subsystem":"FSD"},
+        "target the fsd": {"subsystem":"FSD"},
+        "target the power": {"subsystem":"Power Plant"},
+        "target the power plant": {"subsystem":"Power Plant"},
+    })
 
     actionManager.registerAction('chargeECM', "Charge ECM", {
         "type": "object",
         "properties": {}
-    }, charge_ecm, 'ship')
+    }, charge_ecm, 'ship', cache_prefill={
+        "ecm": {},
+        "charge ecm": {},
+        "electronic countermeasures": {},
+        "activate ecm": {},
+        "ecm blast": {},
+        "disrupt": {},
+    })
 
     # Register actions - NPC Crew Order Actions
     actionManager.registerAction('npcOrder', "Order NPC crew ship", {
@@ -4608,7 +4738,19 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 }
             }
         }
-    }, npc_order, 'ship')
+    }, npc_order, 'ship', cache_prefill={
+        "launch fighter": {"orders": ["LaunchFighter1"]},
+        "deploy fighter": {"orders": ["LaunchFighter1"]},
+        "recall fighter": {"orders": ["ReturnToShip"]},
+        "attack my target": {"orders": ["FocusTarget"]},
+        "engage target": {"orders": ["FocusTarget"]},
+        "defend me": {"orders": ["DefensiveBehaviour"]},
+        "be aggressive": {"orders": ["AggressiveBehaviour"]},
+        "hold fire": {"orders": ["HoldFire"]},
+        "cease fire": {"orders": ["HoldFire"]},
+        "hold position": {"orders": ["HoldPosition"]},
+        "follow me": {"orders": ["Follow"]},
+    })
 
     # Register actions - Mainship Actions
     actionManager.registerAction('FsdJump',
@@ -4621,44 +4763,107 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                                              "enum": ["next_system", "supercruise", "auto"]
                                          }
                                      }
-                                 }, fsd_jump, 'mainship')
+                                 }, fsd_jump, 'mainship', cache_prefill={
+        "jump": {"jump_type": "auto"},
+        "engage fsd": {"jump_type": "auto"},
+        "frame shift drive": {"jump_type": "auto"},
+        "jump to next system": {"jump_type": "next_system"},
+        "hyperspace jump": {"jump_type": "next_system"},
+        "supercruise": {"jump_type": "supercruise"},
+        "enter supercruise": {"jump_type": "supercruise"},
+        "punch it": {"jump_type": "auto"},
+        "let's go": {"jump_type": "auto"},
+    })
 
     actionManager.registerAction('target_next_system_in_route',
                                  "When we have a nav route set, this will automatically target the next system in the route",
                                  {
                                      "type": "object",
                                      "properties": {}
-                                 }, next_system_in_route, 'mainship')
+                                 }, next_system_in_route, 'mainship', cache_prefill={
+        "next system": {},
+        "target next system": {},
+        "next destination": {},
+        "next waypoint": {},
+        "continue route": {},
+        "next in route": {},
+    })
 
     actionManager.registerAction('toggleCargoScoop', "Toggles cargo scoop", {
         "type": "object",
         "properties": {}
-    }, toggle_cargo_scoop, 'mainship')
+    }, toggle_cargo_scoop, 'mainship', cache_prefill={
+        "cargo scoop": {},
+        "scoop": {},
+        "deploy scoop": {},
+        "retract scoop": {},
+        "toggle scoop": {},
+        "open cargo scoop": {},
+        "close cargo scoop": {},
+    })
 
     actionManager.registerAction('ejectAllCargo', "Eject all cargo", {
         "type": "object",
         "properties": {}
-    }, eject_all_cargo, 'mainship')
+    }, eject_all_cargo, 'mainship', cache_prefill={
+        "eject cargo": {},
+        "dump cargo": {},
+        "jettison cargo": {},
+        "drop cargo": {},
+        "emergency cargo drop": {},
+        "purge cargo": {},
+    })
 
     actionManager.registerAction('landingGearToggle', "Toggle landing gear", {
         "type": "object",
         "properties": {}
-    }, landing_gear_toggle, 'mainship')
+    }, landing_gear_toggle, 'mainship', cache_prefill={
+        "landing gear": {},
+        "gear": {},
+        "deploy gear": {},
+        "retract gear": {},
+        "landing gear up": {},
+        "landing gear down": {},
+        "gear up": {},
+        "gear down": {},
+    })
 
     actionManager.registerAction('useShieldCell', "Use shield cell", {
         "type": "object",
         "properties": {}
-    }, use_shield_cell, 'mainship')
+    }, use_shield_cell, 'mainship', cache_prefill={
+        "shield cell": {},
+        "use shield cell": {},
+        "scb": {},
+        "activate scb": {},
+        "shield boost": {},
+        "repair shields": {},
+        "restore shields": {},
+    })
 
     actionManager.registerAction('requestDocking', "Request docking.", {
         "type": "object",
         "properties": {}
-    }, request_docking, 'mainship')
+    }, request_docking, 'mainship', cache_prefill={
+        "request docking": {},
+        "dock": {},
+        "docking request": {},
+        "permission to dock": {},
+        "requesting docking": {},
+        "docking permission": {},
+    })
 
     actionManager.registerAction('undockShip', "", {
         "type": "object",
         "properties": {}
-    }, undock, 'mainship')
+    }, undock, 'mainship', cache_prefill={
+        "undock": {},
+        "launch": {},
+        "depart": {},
+        "leave station": {},
+        "takeoff": {},
+        "disengage": {},
+    })
 
     # Register actions - Ship Launched Fighter Actions
     actionManager.registerAction('fighterRequestDock', "Request docking for Ship Launched Fighter", {
@@ -4670,7 +4875,14 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('toggleDriveAssist', "Toggle drive assist", {
         "type": "object",
         "properties": {}
-    }, toggle_drive_assist, 'buggy')
+    }, toggle_drive_assist, 'buggy', cache_prefill={
+        "drive assist": {},
+        "toggle drive assist": {},
+        "assistance": {},
+        "auto drive": {},
+        "driving assistance": {},
+        "stability": {},
+    })
 
     actionManager.registerAction('fireWeaponsBuggy', "Fire buggy weapons with simple controls: single shot, start continuous, or stop", {
         "type": "object",
@@ -4712,12 +4924,26 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             "weaponType",
             "action"
         ]
-    }, fire_weapons_buggy, 'buggy')
+    }, fire_weapons_buggy, 'buggy', cache_prefill={
+        "fire srv weapons": {"weaponType": "primary", "action": "fire"},
+        "shoot": {"weaponType": "primary", "action": "fire"},
+        "fire plasma": {"weaponType": "primary", "action": "fire"},
+        "fire missiles": {"weaponType": "secondary", "action": "fire"},
+        "srv weapons": {"weaponType": "primary", "action": "fire"},
+        "engage weapons": {"weaponType": "primary", "action": "fire"},
+    })
 
     actionManager.registerAction('autoBreak', "Toggle auto-brake", {
         "type": "object",
         "properties": {}
-    }, auto_break_buggy, 'buggy')
+    }, auto_break_buggy, 'buggy', cache_prefill={
+        "auto brake": {},
+        "toggle brake": {},
+        "automatic braking": {},
+        "brake assist": {},
+        "handbrake": {},
+        "parking brake": {},
+    })
 
     actionManager.registerAction('headlights', "Control SRV headlights - toggle or set to specific mode (off/low/high)", {
         "type": "object",
@@ -4729,22 +4955,52 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "default": "toggle"
             }
         }
-    }, headlights_buggy, 'buggy')
+    }, headlights_buggy, 'buggy', cache_prefill={
+        "lights": {"desired_state": "toggle"},
+        "headlights": {"desired_state": "toggle"},
+        "toggle lights": {"desired_state": "toggle"},
+        "lights on": {"desired_state": "high"},
+        "lights off": {"desired_state": "off"},
+        "bright lights": {"desired_state": "high"},
+        "dim lights": {"desired_state": "low"},
+        "full beam": {"desired_state": "high"},
+    })
 
     actionManager.registerAction('nightVisionToggleBuggy', "Toggle night vision", {
         "type": "object",
         "properties": {}
-    }, night_vision_toggle, 'buggy')
+    }, night_vision_toggle, 'buggy', cache_prefill={
+        "nightvision": {},
+        "night vision": {},
+        "toggle nightvision": {},
+        "thermal vision": {},
+        "enhanced vision": {},
+        "infrared": {},
+    })
 
     actionManager.registerAction('toggleTurret', "Toggle turret mode", {
         "type": "object",
         "properties": {}
-    }, toggle_buggy_turret, 'buggy')
+    }, toggle_buggy_turret, 'buggy', cache_prefill={
+        "turret": {},
+        "toggle turret": {},
+        "turret mode": {},
+        "gun turret": {},
+        "deploy turret": {},
+        "retract turret": {},
+    })
 
     actionManager.registerAction('selectTargetBuggy', "Select target", {
         "type": "object",
         "properties": {}
-    }, select_target_buggy, 'buggy')
+    }, select_target_buggy, 'buggy', cache_prefill={
+        "target": {},
+        "select target": {},
+        "lock target": {},
+        "acquire target": {},
+        "scan": {},
+        "focus": {},
+    })
 
     actionManager.registerAction('managePowerDistributionBuggy',
                                  "Manage power distribution between buggy power systems. Apply pips to one or more power systems or balance the power across two or if unspecified, across all 3",
@@ -4776,22 +5032,55 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                                          }
                                      },
                                      "required": ["power_category"]
-                                 }, manage_power_distribution_buggy, 'buggy')
+                                 }, manage_power_distribution_buggy, 'buggy', cache_prefill={
+        "balance power": {"power_category": ["Engines", "Weapons", "Systems"], "balance_power": True},
+        "reset power": {"power_category": ["Engines", "Weapons", "Systems"], "balance_power": True},
+        "four pips to engines": {"power_category": ["Engines"], "pips": [4]},
+        "four pips to weapons": {"power_category": ["Weapons"], "pips": [4]},
+        "four pips to systems": {"power_category": ["Systems"], "pips": [4]},
+        "max engines": {"power_category": ["Engines"], "pips": [4]},
+        "max weapons": {"power_category": ["Weapons"], "pips": [4]},
+        "max systems": {"power_category": ["Systems"], "pips": [4]},
+        "pips to engines": {"power_category": ["Engines"], "pips": [2]},
+        "pips to weapons": {"power_category": ["Weapons"], "pips": [2]},
+        "pips to systems": {"power_category": ["Systems"], "pips": [2]},
+    })
 
     actionManager.registerAction('toggleCargoScoopBuggy', "Toggle cargo scoop", {
         "type": "object",
         "properties": {}
-    }, toggle_cargo_scoop_buggy, 'buggy')
+    }, toggle_cargo_scoop_buggy, 'buggy', cache_prefill={
+        "cargo scoop": {},
+        "scoop": {},
+        "deploy scoop": {},
+        "retract scoop": {},
+        "toggle scoop": {},
+        "collect materials": {},
+    })
 
     actionManager.registerAction('ejectAllCargoBuggy', "Eject all cargo", {
         "type": "object",
         "properties": {}
-    }, eject_all_cargo_buggy, 'buggy')
+    }, eject_all_cargo_buggy, 'buggy', cache_prefill={
+        "eject cargo": {},
+        "dump cargo": {},
+        "jettison cargo": {},
+        "drop cargo": {},
+        "purge cargo": {},
+        "drop materials": {},
+    })
 
     actionManager.registerAction('recallDismissShipBuggy', "Recall or dismiss ship", {
         "type": "object",
         "properties": {}
-    }, recall_dismiss_ship_buggy, 'buggy')
+    }, recall_dismiss_ship_buggy, 'buggy', cache_prefill={
+        "recall ship": {},
+        "dismiss ship": {},
+        "call ship": {},
+        "send ship away": {},
+        "summon ship": {},
+        "ship pickup": {},
+    })
 
     actionManager.registerAction('galaxyMapOpenOrCloseBuggy', "Open galaxy map. If asked, also focus on a system or start a navigation route", {
         "type": "object",
@@ -4810,7 +5099,15 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "description": "Start navigation route to the system",
             }
         },
-    }, galaxy_map_open_buggy, 'buggy')
+    }, galaxy_map_open_buggy, 'buggy', cache_prefill={
+        "galaxy map": {"desired_state": "open"},
+        "open galaxy map": {"desired_state": "open"},
+        "close galaxy map": {"desired_state": "close"},
+        "galmap": {"desired_state": "open"},
+        "navigation": {"desired_state": "open"},
+        "star map": {"desired_state": "open"},
+        "nav map": {"desired_state": "open"},
+    })
 
     actionManager.registerAction('systemMapOpenOrCloseBuggy', "Open/close system map.", {
         "type": "object",
@@ -4821,18 +5118,40 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "description": "Desired state for the system map: open or close.",
             },
         },
-    }, system_map_open_buggy, 'buggy')
+    }, system_map_open_buggy, 'buggy', cache_prefill={
+        "system map": {"desired_state": "open"},
+        "open system map": {"desired_state": "open"},
+        "close system map": {"desired_state": "close"},
+        "orrery": {"desired_state": "open"},
+        "local map": {"desired_state": "open"},
+        "sysmap": {"desired_state": "open"},
+        "show system map": {"desired_state": "open"},
+    })
 
     # Register actions - On-Foot Actions
     actionManager.registerAction('primaryInteractHumanoid', "Primary interact action", {
         "type": "object",
         "properties": {}
-    }, primary_interact_humanoid, 'humanoid')
+    }, primary_interact_humanoid, 'humanoid', cache_prefill={
+        "interact": {},
+        "primary interact": {},
+        "use": {},
+        "activate": {},
+        "press": {},
+        "engage": {},
+    })
 
     actionManager.registerAction('secondaryInteractHumanoid', "Secondary interact action", {
         "type": "object",
         "properties": {}
-    }, secondary_interact_humanoid, 'humanoid')
+    }, secondary_interact_humanoid, 'humanoid', cache_prefill={
+        "secondary interact": {},
+        "alternate use": {},
+        "secondary action": {},
+        "hold interact": {},
+        "long press": {},
+        "alternative": {},
+    })
 
     actionManager.registerAction('equipGearHumanoid', "Equip or hide a piece of gear", {
         "type": "object",
@@ -4855,52 +5174,133 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             }
         },
         "required": ["equipment"]
-    }, equip_humanoid, 'humanoid')
+    }, equip_humanoid, 'humanoid', cache_prefill={
+        "primary weapon": {"equipment": "HumanoidSelectPrimaryWeaponButton"},
+        "secondary weapon": {"equipment": "HumanoidSelectSecondaryWeaponButton"},
+        "utility weapon": {"equipment": "HumanoidSelectUtilityWeaponButton"},
+        "recharge tool": {"equipment": "HumanoidSwitchToRechargeTool"},
+        "comp analyser": {"equipment": "HumanoidSwitchToCompAnalyser"},
+        "composition scanner": {"equipment": "HumanoidSwitchToCompAnalyser"},
+        "suit tool": {"equipment": "HumanoidSwitchToSuitTool"},
+        "hide weapon": {"equipment": "HumanoidHideWeaponButton"},
+        "holster": {"equipment": "HumanoidHideWeaponButton"},
+        "frag grenade": {"equipment": "HumanoidSelectFragGrenade"},
+        "emp grenade": {"equipment": "HumanoidSelectEMPGrenade"},
+        "shield grenade": {"equipment": "HumanoidSelectShieldGrenade"},
+        "scanner": {"equipment": "HumanoidSwitchToCompAnalyser"},
+        "energylink": {"equipment": "HumanoidSwitchToRechargeTool"},
+        "profile analyser": {"equipment": "HumanoidSwitchToSuitTool"},
+    })
 
     actionManager.registerAction('toggleFlashlightHumanoid', "Toggle flashlight", {
         "type": "object",
         "properties": {}
-    }, toggle_flashlight_humanoid, 'humanoid')
+    }, toggle_flashlight_humanoid, 'humanoid', cache_prefill={
+        "flashlight": {},
+        "torch": {},
+        "lights": {},
+        "toggle lights": {},
+        "illumination": {},
+        "helmet light": {},
+    })
 
     actionManager.registerAction('toggleNightVisionHumanoid', "Toggle night vision", {
         "type": "object",
         "properties": {}
-    }, toggle_night_vision_humanoid, 'humanoid')
+    }, toggle_night_vision_humanoid, 'humanoid', cache_prefill={
+        "nightvision": {},
+        "night vision": {},
+        "toggle nightvision": {},
+        "thermal vision": {},
+        "enhanced vision": {},
+        "infrared": {},
+    })
 
     actionManager.registerAction('toggleShieldsHumanoid', "Toggle shields", {
         "type": "object",
         "properties": {}
-    }, toggle_shields_humanoid, 'humanoid')
+    }, toggle_shields_humanoid, 'humanoid', cache_prefill={
+        "suit shields": {},
+        "personal shields": {},
+        "toggle suit shields": {},
+        "energy shield": {},
+        "shield generator": {},
+        "protective field": {},
+    })
 
     actionManager.registerAction('clearAuthorityLevelHumanoid', "Clear authority level", {
         "type": "object",
         "properties": {}
-    }, clear_authority_level_humanoid, 'humanoid')
+    }, clear_authority_level_humanoid, 'humanoid', cache_prefill={
+        "clear authority": {},
+        "reset authority": {},
+        "clear wanted level": {},
+        "clear notoriety": {},
+        "authority reset": {},
+        "clean record": {},
+    })
 
     actionManager.registerAction('healthPackHumanoid', "Use health pack", {
         "type": "object",
         "properties": {}
-    }, health_pack_humanoid, 'humanoid')
+    }, health_pack_humanoid, 'humanoid', cache_prefill={
+        "health pack": {},
+        "medkit": {},
+        "heal": {},
+        "use medkit": {},
+        "medical": {},
+        "first aid": {},
+    })
 
     actionManager.registerAction('batteryHumanoid', "Use battery", {
         "type": "object",
         "properties": {}
-    }, battery_humanoid, 'humanoid')
+    }, battery_humanoid, 'humanoid', cache_prefill={
+        "battery": {},
+        "energy cell": {},
+        "recharge": {},
+        "power up": {},
+        "restore power": {},
+        "charge suit": {},
+    })
 
     actionManager.registerAction('galaxyMapOpenOrCloseHumanoid', "Open or Close Galaxy Map", {
         "type": "object",
         "properties": {}
-    }, galaxy_map_open_humanoid, 'humanoid')
+    }, galaxy_map_open_humanoid, 'humanoid', cache_prefill={
+        "galaxy map": {},
+        "open galaxy map": {},
+        "galmap": {},
+        "navigation": {},
+        "star map": {},
+        "nav map": {},
+        "show galaxy map": {},
+    })
 
     actionManager.registerAction('systemMapOpenOrCloseHumanoid', "Open or Close System Map", {
         "type": "object",
         "properties": {}
-    }, system_map_open_humanoid, 'humanoid')
+    }, system_map_open_humanoid, 'humanoid', cache_prefill={
+        "system map": {},
+        "open system map": {},
+        "close system map": {},
+        "orrery": {},
+        "local map": {},
+        "sysmap": {},
+        "show system map": {},
+    })
 
     actionManager.registerAction('recallDismissShipHumanoid', "Recall or dismiss ship", {
         "type": "object",
         "properties": {}
-    }, recall_dismiss_ship_humanoid, 'humanoid')
+    }, recall_dismiss_ship_humanoid, 'humanoid', cache_prefill={
+        "recall ship": {},
+        "dismiss ship": {},
+        "call ship": {},
+        "send ship away": {},
+        "summon ship": {},
+        "ship pickup": {},
+    })
 
     # Register actions - Web Tools
     actionManager.registerAction(
