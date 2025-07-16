@@ -29,7 +29,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - `repetitions`: Integer (optional, 0-10)
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - fire primary weapon
     - fire
@@ -50,7 +50,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - `speed`: String (options: "Minus100", "Minus75", "Minus50", "Minus25", "Zero", "25", "50", "75", "100")
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - full stop
     - half speed
@@ -61,7 +61,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 3. **Deploy heat sink**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - heat sink
     - deploy heat sink
@@ -75,7 +75,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 4. **Toggle hardpoints**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - hardpoints
     - deploy hardpoints
@@ -94,7 +94,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - `pips`: Array of integers (1-4, number of pips per category)
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - balance power
     - reset power
@@ -115,7 +115,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - `start_navigation`: Boolean (optional)
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - galaxy map
     - open galaxy map
@@ -129,7 +129,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 7. **Close galaxy map**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - close galaxy map
     </details>
@@ -139,7 +139,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - `desired_state`: String (options: "open", "close")
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - system map
     - open system map
@@ -155,7 +155,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - `direction`: String (options: "next", "previous")
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - next target
     - previous target
@@ -166,7 +166,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - `direction`: String (options: "next", "previous")
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - next fire group
     - previous fire group
@@ -179,7 +179,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - `hud mode`: String (options: "combat", "analysis", "toggle")
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - combat mode
     - analysis mode
@@ -193,7 +193,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 12. **Toggle ship spotlight**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - ship light
     - lights
@@ -207,7 +207,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 13. **Fire chaff launcher**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - chaff
     - fire chaff
@@ -220,7 +220,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 14. **Toggle night vision**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - nightvision
     - night vision
@@ -233,7 +233,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 15. **Target highest threat**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - highest threat
     - target highest threat
@@ -248,7 +248,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - `subsystem`: String (options: "Drive", "Shield Generator", "Power Distributor", "Life Support", "FSD", "Point Defence Turret", "Power Plant")
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - target drive
     - target drives
@@ -277,7 +277,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 17. **Charge ECM**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - ecm
     - charge ecm
@@ -292,7 +292,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - `orders`: Array of strings (options: "DefensiveBehaviour", "AggressiveBehaviour", "FocusTarget", "HoldFire", "HoldPosition", "Follow", "ReturnToShip", "LaunchFighter1", "LaunchFighter2")
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - launch fighter
     - deploy fighter
@@ -314,7 +314,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - `jump_type`: String (options: "next_system", "supercruise", "auto")
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - jump
     - engage fsd
@@ -330,7 +330,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 2. **Target next system in route**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - next system
     - target next system
@@ -343,7 +343,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 3. **Toggle cargo scoop**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - cargo scoop
     - scoop
@@ -357,7 +357,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 4. **Eject all cargo**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - eject cargo
     - dump cargo
@@ -370,7 +370,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 5. **Toggle landing gear**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - landing gear
     - gear
@@ -385,7 +385,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 6. **Use shield cell**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - shield cell
     - use shield cell
@@ -399,7 +399,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 7. **Request docking**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - request docking
     - dock
@@ -412,7 +412,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 8. **Undock ship**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - undock
     - launch
@@ -426,14 +426,23 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 
 1. **Request docking with main ship**
 
-    (No pre-cached voice commands currently defined)
+    <details>
+    <summary>Examples</summary>
+    
+    - request docking
+    - dock
+    - docking request
+    - permission to dock
+    - requesting docking
+    - docking permission
+    </details>
 
 ### Surface Reconnaissance Vehicle (SRV) Actions
 
 1. **Toggle Drive Assist**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - drive assist
     - toggle drive assist
@@ -451,7 +460,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - `repetitions`: Integer (optional, 0-10)
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - fire srv weapons
     - shoot
@@ -464,7 +473,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 3. **Toggle Auto-Brake**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - auto brake
     - toggle brake
@@ -479,7 +488,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - `desired_state`: String (options: "off", "low", "high", "toggle")
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - lights
     - headlights
@@ -494,7 +503,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 5. **Toggle Night Vision**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - nightvision
     - night vision
@@ -507,7 +516,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 6. **Toggle Turret Mode**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - turret
     - toggle turret
@@ -520,7 +529,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 7. **Select Target**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - target
     - select target
@@ -537,7 +546,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - `pips`: Array of integers (1-4, number of pips per category)
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - balance power
     - reset power
@@ -555,7 +564,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 9. **Toggle Cargo Scoop**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - cargo scoop
     - scoop
@@ -568,7 +577,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 10. **Eject All Cargo**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - eject cargo
     - dump cargo
@@ -581,7 +590,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 11. **Recall/Dismiss Ship**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - recall ship
     - dismiss ship
@@ -598,7 +607,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - `start_navigation`: Boolean (optional)
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - galaxy map
     - open galaxy map
@@ -614,7 +623,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - `desired_state`: String (options: "open", "close")
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - system map
     - open system map
@@ -630,7 +639,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 1. **Primary Interaction**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - interact
     - primary interact
@@ -643,7 +652,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 2. **Secondary Interaction**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - secondary interact
     - alternate use
@@ -658,7 +667,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - `equipment`: String (options: "HumanoidSelectPrimaryWeaponButton", "HumanoidSelectSecondaryWeaponButton", "HumanoidSelectUtilityWeaponButton", "HumanoidSwitchToRechargeTool", "HumanoidSwitchToCompAnalyser", "HumanoidSwitchToSuitTool", "HumanoidHideWeaponButton", "HumanoidSelectFragGrenade", "HumanoidSelectEMPGrenade", "HumanoidSelectShieldGrenade")
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - primary weapon
     - secondary weapon
@@ -680,7 +689,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 4. **Toggle Flashlight**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - flashlight
     - torch
@@ -693,7 +702,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 5. **Toggle Night Vision**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - nightvision
     - night vision
@@ -706,7 +715,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 6. **Toggle Shields**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - suit shields
     - personal shields
@@ -719,7 +728,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 7. **Clear Authority Level**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - clear authority
     - reset authority
@@ -732,7 +741,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 8. **Use Health Pack**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - health pack
     - medkit
@@ -745,7 +754,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 9. **Use Battery Pack**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - battery
     - energy cell
@@ -758,7 +767,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 10. **Open/Close Galaxy Map**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - galaxy map
     - open galaxy map
@@ -772,7 +781,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 11. **Open/Close System Map**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - system map
     - open system map
@@ -786,7 +795,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 12. **Recall/Dismiss Ship**
 
     <details>
-    <summary>Pre-cached voice commands</summary>
+    <summary>Examples</summary>
     
     - recall ship
     - dismiss ship

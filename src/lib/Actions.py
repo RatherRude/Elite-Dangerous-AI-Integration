@@ -4869,7 +4869,14 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('fighterRequestDock', "Request docking for Ship Launched Fighter", {
         "type": "object",
         "properties": {}
-    }, fighter_request_dock, 'fighter')
+    }, fighter_request_dock, 'fighter', cache_prefill={
+        "request docking": {},
+        "dock": {},
+        "docking request": {},
+        "permission to dock": {},
+        "requesting docking": {},
+        "docking permission": {},
+    })
 
     # Register actions - SRV Actions (Horizons)
     actionManager.registerAction('toggleDriveAssist', "Toggle drive assist", {
