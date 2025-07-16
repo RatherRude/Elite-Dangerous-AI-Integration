@@ -21,127 +21,789 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 
 ### Main Ship Actions
 
-1. Start firing primary weapons
-2. Stop firing primary weapons
-3. Start firing secondary weapons
-4. Stop firing secondary weapons
-5. Initiate FSD jump
+1. **Fire weapons** (primary, secondary, discovery scanner)
 
-    - `jump_type`: String (options: "next_system", "supercruise", "auto")
+    - `weaponType`: String (options: "primary", "secondary", "discovery_scanner")
+    - `action`: String (options: "fire", "start", "stop")
+    - `duration`: Number (optional, seconds)
+    - `repetitions`: Integer (optional, 0-10)
 
-6. Set flight thrust speed
+    <details>
+    <summary>Examples</summary>
+    
+    - fire primary weapon
+    - fire
+    - fire secondary
+    - fire missiles
+    - start firing
+    - open fire
+    - stop firing
+    - cease fire
+    - weapons fire
+    - engage weapons
+    - discovery scanner
+    - honk
+    </details>
+
+2. **Set flight thrust speed**
 
     - `speed`: String (options: "Minus100", "Minus75", "Minus50", "Minus25", "Zero", "25", "50", "75", "100")
 
-7. Deploy heat sink
-8. Toggle hardpoints
-9. Manage power distribution
+    <details>
+    <summary>Examples</summary>
+    
+    - full stop
+    - half speed
+    - full speed
+    - reverse
+    </details>
+
+3. **Deploy heat sink**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - heat sink
+    - deploy heat sink
+    - use heat sink
+    - activate heat sink
+    - heatsink
+    - deploy heatsink
+    - cooling
+    </details>
+
+4. **Toggle hardpoints**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - hardpoints
+    - deploy hardpoints
+    - retract hardpoints
+    - toggle hardpoints
+    - hardpoints up
+    - hardpoints down
+    - weapons out
+    - weapons away
+    </details>
+
+5. **Manage power distribution**
 
     - `power_category`: Array of strings (options: "Engines", "Weapons", "Systems")
     - `balance_power`: Boolean (whether to balance power)
     - `pips`: Array of integers (1-4, number of pips per category)
 
-10. Open galaxy map and display a system
+    <details>
+    <summary>Examples</summary>
+    
+    - balance power
+    - reset power
+    - four pips to engines
+    - four pips to weapons
+    - four pips to systems
+    - max engines
+    - max weapons
+    - max systems
+    - pips to engines
+    - pips to weapons
+    - pips to systems
+    </details>
+
+6. **Open galaxy map**
 
     - `system_name`: String (optional)
     - `start_navigation`: Boolean (optional)
 
-11. Close galaxy map
-12. Toggle system map
+    <details>
+    <summary>Examples</summary>
+    
+    - galaxy map
+    - open galaxy map
+    - galmap
+    - navigation
+    - star map
+    - show galaxy map
+    - nav map
+    </details>
+
+7. **Close galaxy map**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - close galaxy map
+    </details>
+
+8. **Toggle system map**
 
     - `desired_state`: String (options: "open", "close")
 
-13. Target next system in route (when nav route is set)
-14. Cycle target
+    <details>
+    <summary>Examples</summary>
+    
+    - system map
+    - open system map
+    - close system map
+    - orrery
+    - local map
+    - sysmap
+    - show system map
+    </details>
+
+9. **Cycle target**
 
     - `direction`: String (options: "next", "previous")
 
-15. Cycle fire group
+    <details>
+    <summary>Examples</summary>
+    
+    - next target
+    - previous target
+    </details>
+
+10. **Cycle fire group**
 
     - `direction`: String (options: "next", "previous")
 
-16. Toggle ship spotlight
-17. Fire chaff launcher
-18. Toggle night vision
-19. Target highest threat
-20. Target subsystem on locked ship
+    <details>
+    <summary>Examples</summary>
+    
+    - next fire group
+    - previous fire group
+    - select next fire group
+    - select previous fire group
+    </details>
+
+11. **Switch HUD mode**
+
+    - `hud mode`: String (options: "combat", "analysis", "toggle")
+
+    <details>
+    <summary>Examples</summary>
+    
+    - combat mode
+    - analysis mode
+    - switch to combat
+    - switch to analysis
+    - toggle hud mode
+    - hud mode
+    - change hud
+    </details>
+
+12. **Toggle ship spotlight**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - ship light
+    - lights
+    - lights on
+    - turn on lights
+    - lights off
+    - toggle lights
+    - toggle the lights
+    </details>
+
+13. **Fire chaff launcher**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - chaff
+    - fire chaff
+    - launch chaff
+    - deploy chaff
+    - countermeasures
+    - evade
+    </details>
+
+14. **Toggle night vision**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - nightvision
+    - night vision
+    - toggle nightvision
+    - thermal vision
+    - enhanced vision
+    - infrared
+    </details>
+
+15. **Target highest threat**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - highest threat
+    - target highest threat
+    - most dangerous
+    - biggest threat
+    - priority target
+    - target enemy
+    </details>
+
+16. **Target subsystem on locked ship**
 
     - `subsystem`: String (options: "Drive", "Shield Generator", "Power Distributor", "Life Support", "FSD", "Point Defence Turret", "Power Plant")
 
-21. Charge ECM
+    <details>
+    <summary>Examples</summary>
+    
+    - target drive
+    - target drives
+    - target power distributor
+    - target distributor
+    - target shields
+    - target shield generator
+    - target life support
+    - target frame shift drive
+    - target fsd
+    - target power
+    - target power plant
+    - target the drive
+    - target the drives
+    - target the power distributor
+    - target the distributor
+    - target the shields
+    - target the shield generator
+    - target the life support
+    - target the frame shift drive
+    - target the fsd
+    - target the power
+    - target the power plant
+    </details>
+
+17. **Charge ECM**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - ecm
+    - charge ecm
+    - electronic countermeasures
+    - activate ecm
+    - ecm blast
+    - disrupt
+    </details>
+
+18. **NPC crew orders**
+
+    - `orders`: Array of strings (options: "DefensiveBehaviour", "AggressiveBehaviour", "FocusTarget", "HoldFire", "HoldPosition", "Follow", "ReturnToShip", "LaunchFighter1", "LaunchFighter2")
+
+    <details>
+    <summary>Examples</summary>
+    
+    - launch fighter
+    - deploy fighter
+    - recall fighter
+    - attack my target
+    - engage target
+    - defend me
+    - be aggressive
+    - hold fire
+    - cease fire
+    - hold position
+    - follow me
+    </details>
 
 ### Main Ship Operations
 
-1. Toggle cargo scoop
-2. Eject all cargo
-3. Toggle landing gear
-4. Use shield cell
-5. Request docking
-6. Undock ship
+1. **Initiate FSD jump**
+
+    - `jump_type`: String (options: "next_system", "supercruise", "auto")
+
+    <details>
+    <summary>Examples</summary>
+    
+    - jump
+    - engage fsd
+    - frame shift drive
+    - jump to next system
+    - hyperspace jump
+    - supercruise
+    - enter supercruise
+    - punch it
+    - let's go
+    </details>
+
+2. **Target next system in route**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - next system
+    - target next system
+    - next destination
+    - next waypoint
+    - continue route
+    - next in route
+    </details>
+
+3. **Toggle cargo scoop**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - cargo scoop
+    - scoop
+    - deploy scoop
+    - retract scoop
+    - toggle scoop
+    - open cargo scoop
+    - close cargo scoop
+    </details>
+
+4. **Eject all cargo**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - eject cargo
+    - dump cargo
+    - jettison cargo
+    - drop cargo
+    - emergency cargo drop
+    - purge cargo
+    </details>
+
+5. **Toggle landing gear**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - landing gear
+    - gear
+    - deploy gear
+    - retract gear
+    - landing gear up
+    - landing gear down
+    - gear up
+    - gear down
+    </details>
+
+6. **Use shield cell**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - shield cell
+    - use shield cell
+    - scb
+    - activate scb
+    - shield boost
+    - repair shields
+    - restore shields
+    </details>
+
+7. **Request docking**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - request docking
+    - dock
+    - docking request
+    - permission to dock
+    - requesting docking
+    - docking permission
+    </details>
+
+8. **Undock ship**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - undock
+    - launch
+    - depart
+    - leave station
+    - takeoff
+    - disengage
+    </details>
 
 ### Ship Launched Fighter (SLF) Actions
 
-1. Request docking with main ship
+1. **Request docking with main ship**
 
-### NPC Orders
-
-1. Defensive Behavior
-2. Aggressive Behavior
-3. Focus on Target
-4. Hold Fire
-5. Hold Position
-6. Follow Command
-7. Recall Fighter
+    <details>
+    <summary>Examples</summary>
+    
+    - request docking
+    - dock
+    - docking request
+    - permission to dock
+    - requesting docking
+    - docking permission
+    </details>
 
 ### Surface Reconnaissance Vehicle (SRV) Actions
 
-1. Toggle Drive Assist
-2. Primary Fire
-3. Secondary Fire
-4. Toggle Auto-Brake
-5. Toggle Headlights
+1. **Toggle Drive Assist**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - drive assist
+    - toggle drive assist
+    - assistance
+    - auto drive
+    - driving assistance
+    - stability
+    </details>
+
+2. **Fire SRV weapons**
+
+    - `weaponType`: String (options: "primary", "secondary")
+    - `action`: String (options: "fire", "start", "stop")
+    - `duration`: Number (optional, seconds)
+    - `repetitions`: Integer (optional, 0-10)
+
+    <details>
+    <summary>Examples</summary>
+    
+    - fire srv weapons
+    - shoot
+    - fire plasma
+    - fire missiles
+    - srv weapons
+    - engage weapons
+    </details>
+
+3. **Toggle Auto-Brake**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - auto brake
+    - toggle brake
+    - automatic braking
+    - brake assist
+    - handbrake
+    - parking brake
+    </details>
+
+4. **Toggle Headlights**
 
     - `desired_state`: String (options: "off", "low", "high", "toggle")
 
-6. Toggle Night Vision
-7. Toggle Turret Mode
-8. Select Target
-9. Manage Power Distribution
+    <details>
+    <summary>Examples</summary>
+    
+    - lights
+    - headlights
+    - toggle lights
+    - lights on
+    - lights off
+    - bright lights
+    - dim lights
+    - full beam
+    </details>
+
+5. **Toggle Night Vision**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - nightvision
+    - night vision
+    - toggle nightvision
+    - thermal vision
+    - enhanced vision
+    - infrared
+    </details>
+
+6. **Toggle Turret Mode**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - turret
+    - toggle turret
+    - turret mode
+    - gun turret
+    - deploy turret
+    - retract turret
+    </details>
+
+7. **Select Target**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - target
+    - select target
+    - lock target
+    - acquire target
+    - scan
+    - focus
+    </details>
+
+8. **Manage Power Distribution**
 
     - `power_category`: Array of strings (options: "Engines", "Weapons", "Systems")
     - `balance_power`: Boolean (whether to balance power)
     - `pips`: Array of integers (1-4, number of pips per category)
 
-10. Toggle Cargo Scoop
-11. Eject All Cargo
-12. Recall/Dismiss Ship
-13. Open/Close Galaxy Map
+    <details>
+    <summary>Examples</summary>
+    
+    - balance power
+    - reset power
+    - four pips to engines
+    - four pips to weapons
+    - four pips to systems
+    - max engines
+    - max weapons
+    - max systems
+    - pips to engines
+    - pips to weapons
+    - pips to systems
+    </details>
+
+9. **Toggle Cargo Scoop**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - cargo scoop
+    - scoop
+    - deploy scoop
+    - retract scoop
+    - toggle scoop
+    - collect materials
+    </details>
+
+10. **Eject All Cargo**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - eject cargo
+    - dump cargo
+    - jettison cargo
+    - drop cargo
+    - purge cargo
+    - drop materials
+    </details>
+
+11. **Recall/Dismiss Ship**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - recall ship
+    - dismiss ship
+    - call ship
+    - send ship away
+    - summon ship
+    - ship pickup
+    </details>
+
+12. **Open/Close Galaxy Map**
 
     - `desired_state`: String (options: "open", "close")
     - `system_name`: String (optional)
     - `start_navigation`: Boolean (optional)
 
-14. Open/Close System Map
+    <details>
+    <summary>Examples</summary>
+    
+    - galaxy map
+    - open galaxy map
+    - close galaxy map
+    - galmap
+    - navigation
+    - star map
+    - nav map
+    </details>
+
+13. **Open/Close System Map**
 
     - `desired_state`: String (options: "open", "close")
 
+    <details>
+    <summary>Examples</summary>
+    
+    - system map
+    - open system map
+    - close system map
+    - orrery
+    - local map
+    - sysmap
+    - show system map
+    </details>
+
 ### On-Foot (Suits) Actions
 
-1. Primary Interaction
-2. Secondary Interaction
-3. Equip Gear
+1. **Primary Interaction**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - interact
+    - primary interact
+    - use
+    - activate
+    - press
+    - engage
+    </details>
+
+2. **Secondary Interaction**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - secondary interact
+    - alternate use
+    - secondary action
+    - hold interact
+    - long press
+    - alternative
+    </details>
+
+3. **Equip Gear**
 
     - `equipment`: String (options: "HumanoidSelectPrimaryWeaponButton", "HumanoidSelectSecondaryWeaponButton", "HumanoidSelectUtilityWeaponButton", "HumanoidSwitchToRechargeTool", "HumanoidSwitchToCompAnalyser", "HumanoidSwitchToSuitTool", "HumanoidHideWeaponButton", "HumanoidSelectFragGrenade", "HumanoidSelectEMPGrenade", "HumanoidSelectShieldGrenade")
 
-4. Toggle Flashlight
-5. Toggle Night Vision
-6. Toggle Shields
-7. Clear Authority Level
-8. Use Health Pack
-9. Use Battery Pack
-10. Open/Close Galaxy Map
-11. Open/Close System Map
-12. Recall/Dismiss Ship
+    <details>
+    <summary>Examples</summary>
+    
+    - primary weapon
+    - secondary weapon
+    - utility weapon
+    - recharge tool
+    - comp analyser
+    - composition scanner
+    - suit tool
+    - hide weapon
+    - holster
+    - frag grenade
+    - emp grenade
+    - shield grenade
+    - scanner
+    - energylink
+    - profile analyser
+    </details>
+
+4. **Toggle Flashlight**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - flashlight
+    - torch
+    - lights
+    - toggle lights
+    - illumination
+    - helmet light
+    </details>
+
+5. **Toggle Night Vision**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - nightvision
+    - night vision
+    - toggle nightvision
+    - thermal vision
+    - enhanced vision
+    - infrared
+    </details>
+
+6. **Toggle Shields**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - suit shields
+    - personal shields
+    - toggle suit shields
+    - energy shield
+    - shield generator
+    - protective field
+    </details>
+
+7. **Clear Authority Level**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - clear authority
+    - reset authority
+    - clear wanted level
+    - clear notoriety
+    - authority reset
+    - clean record
+    </details>
+
+8. **Use Health Pack**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - health pack
+    - medkit
+    - heal
+    - use medkit
+    - medical
+    - first aid
+    </details>
+
+9. **Use Battery Pack**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - battery
+    - energy cell
+    - recharge
+    - power up
+    - restore power
+    - charge suit
+    </details>
+
+10. **Open/Close Galaxy Map**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - galaxy map
+    - open galaxy map
+    - galmap
+    - navigation
+    - star map
+    - nav map
+    - show galaxy map
+    </details>
+
+11. **Open/Close System Map**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - system map
+    - open system map
+    - close system map
+    - orrery
+    - local map
+    - sysmap
+    - show system map
+    </details>
+
+12. **Recall/Dismiss Ship**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - recall ship
+    - dismiss ship
+    - call ship
+    - send ship away
+    - summon ship
+    - ship pickup
+    </details>
 
 ## Available Online-Lookup Actions
 
