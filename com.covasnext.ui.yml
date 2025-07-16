@@ -7,10 +7,6 @@ finish-args:
   # X11 + XShm access (forced, no Wayland)
   - --socket=x11
   - --share=ipc
-  # Force X11, no Wayland support
-  - --env=GDK_BACKEND=x11
-  - --env=QT_QPA_PLATFORM=xcb
-  - --env=WEBKIT_DISABLE_COMPOSITING_MODE=1
   # Network access
   - --share=network
   # Audio access
