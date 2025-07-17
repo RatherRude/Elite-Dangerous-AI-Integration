@@ -163,18 +163,56 @@ def manage_power_distribution(args, projected_states):
     return message
 
 
-def cycle_target(args, projected_states):
+def target_ship(args, projected_states):
+    """Unified target selection function that handles cycling and highest threat selection."""
     setGameWindowActive()
 
-    direction = args.get('direction', 'next').lower()
+    # Get the target selection mode - can be 'next', 'previous', or 'highest_threat'
+    mode = args.get('mode', 'next').lower()
 
-    if direction == 'previous':
+    if mode == 'highest_threat':
+        keys.send('SelectHighestThreat')
+        return "Highest threat (if one exists) is now target locked"
+    elif mode == 'previous':
         keys.send('CyclePreviousTarget')
         return "Selected previous target"
+    elif mode == 'next_hostile':
+        keys.send('CycleNextHostileTarget')
+        return "Selected next hostile target"
+    elif mode == 'previous_hostile':
+        keys.send('CyclePreviousHostileTarget')
+        return "Selected previous hostile target"
+    elif mode == 'wingman_1':
+        keys.send('TargetWingman0')
+        return "Targeting wingman 1"
+    elif mode == 'wingman_2':
+        keys.send('TargetWingman1')
+        return "Targeting wingman 2"
+    elif mode == 'wingman_3':
+        keys.send('TargetWingman2')
+        return "Targeting wingman 3"
+    elif mode == 'wingman_1_target':
+        keys.send('TargetWingman0')
+        keys.send('SelectTargetsTarget')
+        return "Targeting wingman 1's target"
+    elif mode == 'wingman_2_target':
+        keys.send('TargetWingman1')
+        keys.send('SelectTargetsTarget')
+        return "Targeting wingman 2's target"
+    elif mode == 'wingman_3_target':
+        keys.send('TargetWingman2')
+        keys.send('SelectTargetsTarget')
+        return "Targeting wingman 3's target"
     else:
-        # Default to 'next' for any invalid direction
+        # Default to 'next' for any invalid mode
         keys.send('CycleNextTarget')
         return "Selected next target"
+
+
+def toggle_wing_nav_lock(args, projected_states):
+    setGameWindowActive()
+    keys.send('WingNavLock')
+    return "Wing nav lock toggled"
 
 
 def change_hud_mode(args, projected_states):
@@ -254,10 +292,7 @@ def night_vision_toggle(args, projected_states):
     return f"Night vision {'activated ' if not projected_states.get('CurrentStatus').get('flags').get('NightVision') else 'deactivated'}"
 
 
-def select_highest_threat(args, projected_states):
-    setGameWindowActive()
-    keys.send('SelectHighestThreat')
-    return f"Highest threat (if one exists) is now target locked"
+
 
 
 def charge_ecm(args, projected_states):
@@ -4556,19 +4591,85 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "show system map": {"desired_state": "open"},
     })
 
-    actionManager.registerAction('cycleTarget', "Cycle to next target", {
+    actionManager.registerAction('targetShip', "Target a ship - cycle to next/previous target or select highest threat", {
         "type": "object",
         "properties": {
-            "direction": {
+            "mode": {
                 "type": "string",
-                "description": "Direction to cycle (next or previous)",
-                "enum": ["next", "previous"],
+                "description": "Target selection mode",
+                "enum": ["next", "previous", "highest_threat", "next_hostile", "previous_hostile", "wingman_1", "wingman_2", "wingman_3", "wingman_1_target", "wingman_2_target", "wingman_3_target"],
                 "default": "next"
             }
         }
-    }, cycle_target, 'ship', cache_prefill={
-        "next target": {"direction":"next"},
-        "previous target": {"direction":"previous"},
+    }, target_ship, 'ship', cache_prefill={
+        "next target": {"mode": "next"},
+        "previous target": {"mode": "previous"},
+        "highest threat": {"mode": "highest_threat"},
+        "target highest threat": {"mode": "highest_threat"},
+        "target biggest threat": {"mode": "highest_threat"},
+        "target enemy": {"mode": "next_hostile"},
+        "cycle target": {"mode": "next"},
+        "select target": {"mode": "next"},
+        "next hostile": {"mode": "next_hostile"},
+        "next enemy": {"mode": "next_hostile"},
+        "cycle hostile": {"mode": "next_hostile"},
+        "hostile target": {"mode": "next_hostile"},
+        "previous hostile": {"mode": "previous_hostile"},
+        "previous enemy": {"mode": "previous_hostile"},
+        "first wingman": {"mode": "wingman_1"},
+        "target first wingman": {"mode": "wingman_1"},
+        "first wingmate": {"mode": "wingman_1"},
+        "target first wingmate": {"mode": "wingman_1"},
+        "first teammate": {"mode": "wingman_1"},
+        "target first teammate": {"mode": "wingman_1"},
+        "second wingman": {"mode": "wingman_2"},
+        "target second wingman": {"mode": "wingman_2"},
+        "second wingmate": {"mode": "wingman_2"},
+        "target second wingmate": {"mode": "wingman_2"},
+        "second teammate": {"mode": "wingman_2"},
+        "target second teammate": {"mode": "wingman_2"},
+        "third wingman": {"mode": "wingman_3"},
+        "target third wingman": {"mode": "wingman_3"},
+        "third wingmate": {"mode": "wingman_3"},
+        "target third wingmate": {"mode": "wingman_3"},
+        "third teammate": {"mode": "wingman_3"},
+        "target third teammate": {"mode": "wingman_3"},
+        "first wingman target": {"mode": "wingman_1_target"},
+        "target first wingman's target": {"mode": "wingman_1_target"},
+        "first wingmate target": {"mode": "wingman_1_target"},
+        "target first wingmate's target": {"mode": "wingman_1_target"},
+        "first teammate target": {"mode": "wingman_1_target"},
+        "target first teammate's target": {"mode": "wingman_1_target"},
+        "second wingman target": {"mode": "wingman_2_target"},
+        "target second wingman's target": {"mode": "wingman_2_target"},
+        "second wingmate target": {"mode": "wingman_2_target"},
+        "target second wingmate's target": {"mode": "wingman_2_target"},
+        "second teammate target": {"mode": "wingman_2_target"},
+        "target second teammate's target": {"mode": "wingman_2_target"},
+        "third wingman target": {"mode": "wingman_3_target"},
+        "target third wingman's target": {"mode": "wingman_3_target"},
+        "third wingmate target": {"mode": "wingman_3_target"},
+        "target third wingmate's target": {"mode": "wingman_3_target"},
+        "third teammate target": {"mode": "wingman_3_target"},
+        "target third teammate's target": {"mode": "wingman_3_target"},
+    })
+
+    actionManager.registerAction('toggleWingNavLock', "Toggle wing nav lock", {
+        "type": "object",
+        "properties": {}
+    }, toggle_wing_nav_lock, 'ship', cache_prefill={
+        "wing nav lock": {},
+        "disable wing nav lock": {},
+        "disengage wing nav lock": {},
+        "enable wing nav lock": {},
+        "engage wing nav lock": {},
+        "toggle wing nav lock": {},
+        "wing navigation lock": {},
+        "wing nav": {},
+        "nav lock": {},
+        "navigation lock": {},
+        "wing follow": {},
+        "follow wing": {},
     })
 
     actionManager.registerAction(
@@ -4656,17 +4757,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "infrared": {},
     })
 
-    actionManager.registerAction('selectHighestThreat', "Target lock highest threat", {
-        "type": "object",
-        "properties": {}
-    }, select_highest_threat, 'ship', cache_prefill={
-        "highest threat": {},
-        "target highest threat": {},
-        "most dangerous": {},
-        "biggest threat": {},
-        "priority target": {},
-        "target enemy": {},
-    })
+
 
     actionManager.registerAction('targetSubmodule', "Target a subsystem on locked ship", {
         "type": "object",
