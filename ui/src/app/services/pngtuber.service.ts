@@ -24,9 +24,13 @@ export class PngTuberService {
     private avatarIdSubject = new BehaviorSubject<string | null>(null);
     public avatarId$ = this.avatarIdSubject.asObservable();
 
+    private chatPreviewSubject = new BehaviorSubject<ChatMessage[]>([])
+    public chatPreview$ = this.chatPreviewSubject.asObservable()
+
     constructor(
         private tauriService: TauriService,
         private eventService: EventService,
+        private chatService: ChatService,
         private characterService: CharacterService
     ) {
         this.tauriService.output$.pipe().subscribe(
@@ -59,6 +63,15 @@ export class PngTuberService {
                 }
             }
         )
+        this.chatService.chatHistory$.subscribe((chat)=>{
+            const preview = chat.filter(value => ['covas', 'cmdr', 'action'].includes(value.role)).slice(-2)
+            this.chatPreviewSubject.next(preview)
+        })
+        this.chatService.chatMessage$.subscribe((msg)=>{
+            if(msg?.role==='error') {
+                this.actionSubject.next('idle')
+            }
+        })
         
         // Subscribe to character changes to track avatar
         this.characterService.character$.subscribe(character => {

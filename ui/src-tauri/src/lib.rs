@@ -254,6 +254,17 @@ fn get_commit_hash() -> String {
 }
 
 #[tauri::command]
+async fn destroy_floating_overlay(app_handle: tauri::AppHandle) -> Result<(), String> {
+    info!("Trying to destroy floating overlay window");
+    let overlay_window = app_handle
+        .get_webview_window("overlay")
+        .ok_or_else(|| "Overlay not found".to_string())?;
+    overlay_window.close();
+
+    Ok(())
+}
+
+#[tauri::command]
 async fn create_floating_overlay(app_handle: tauri::AppHandle) -> Result<(), String> {
     let mut window_builder = tauri::WebviewWindowBuilder::new(
         &app_handle,
@@ -314,7 +325,8 @@ pub async fn run() {
             stop_process,
             send_json_line,
             get_commit_hash,
-            create_floating_overlay
+            create_floating_overlay,
+            destroy_floating_overlay
         ])
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { .. } = event {

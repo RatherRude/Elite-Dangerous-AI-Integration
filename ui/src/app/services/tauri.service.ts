@@ -73,6 +73,10 @@ export class TauriService {
         invoke("create_floating_overlay", {});
     }
 
+    public async destroyOverlay(): Promise<void> {
+        invoke("destroy_floating_overlay", {});
+    }
+
     private async startReadingOutput(): Promise<void> {
         if (this.stopListener) this.stopListener();
         this.stopListener = await listen(

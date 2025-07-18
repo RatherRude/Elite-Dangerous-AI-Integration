@@ -133,6 +133,7 @@ export class MainViewComponent implements OnInit, OnDestroy {
     async stop(): Promise<void> {
         try {
             this.isLoading = true;
+            await this.destroyOverlay();
             await this.tauri.restart_process();
         } catch (error) {
             console.error("Failed to stop:", error);
@@ -142,6 +143,14 @@ export class MainViewComponent implements OnInit, OnDestroy {
     async createOverlay(): Promise<void> {
         try {
             await this.tauri.createOverlay();
+        } catch (error) {
+            console.error("Failed to create overlay:", error);
+        }
+    }
+
+    async destroyOverlay(): Promise<void> {
+        try {
+            await this.tauri.destroyOverlay();
         } catch (error) {
             console.error("Failed to create overlay:", error);
         }

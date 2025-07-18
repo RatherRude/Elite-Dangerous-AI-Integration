@@ -56,8 +56,8 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
     
     // Subscribe to chat changes
     this.subscriptions.push(
-      chatService.chat$.subscribe(chat=>{
-        this.chat = chat.filter(value => ['covas', 'cmdr', 'action'].includes(value.role)).slice(-2)
+      pngTuberService.chatPreview$.subscribe(preview=>{
+        this.chat = preview;
       })
     );
     
