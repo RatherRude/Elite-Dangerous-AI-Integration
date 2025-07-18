@@ -672,7 +672,7 @@ def npc_order(args, projected_states):
     if 'orders' in args:
         for order in args['orders']:
             if order in ['LaunchFighter1', 'LaunchFighter2']:
-                if len(fighters) == 1 and order == 'LaunchFighter1':
+                if len(fighters) == 1 and order == 'LaunchFighter2':
                     raise Exception("No second figher bay installed in this ship.")
                 keys.send('FocusRadarPanel')
                 keys.send('UI_Left', repeat=2)
