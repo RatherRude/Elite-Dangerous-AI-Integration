@@ -5328,7 +5328,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     }, toggle_shields_humanoid, 'humanoid', cache_prefill={
         "suit shields": {},
         "personal shields": {},
-        "toggle suit shields": {},
+        "toggle shields": {},
         "energy shield": {},
         "shield generator": {},
         "protective field": {},

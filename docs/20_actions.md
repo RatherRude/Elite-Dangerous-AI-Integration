@@ -766,7 +766,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     
     - suit shields
     - personal shields
-    - toggle suit shields
+    - toggle shields
     - energy shield
     - shield generator
     - protective field
