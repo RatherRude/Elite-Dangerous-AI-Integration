@@ -169,6 +169,7 @@ def target_ship(args, projected_states):
 
     # Get the target selection mode - can be 'next', 'previous', or 'highest_threat'
     mode = args.get('mode', 'next').lower()
+    wing = projected_states.get('wing', []).get('Members', [])
 
     if mode == 'highest_threat':
         keys.send('SelectHighestThreat')
@@ -183,23 +184,35 @@ def target_ship(args, projected_states):
         keys.send('CyclePreviousHostileTarget')
         return "Selected previous hostile target"
     elif mode == 'wingman_1':
+        if len(wing) < 1:
+            raise Exception(f'Can\'t select first wingman: Wing has {len(wing)} Members')
         keys.send('TargetWingman0')
         return "Targeting wingman 1"
     elif mode == 'wingman_2':
+        if len(wing) < 2:
+            raise Exception(f'Can\'t select second wingman: Wing has {len(wing)} Members')
         keys.send('TargetWingman1')
         return "Targeting wingman 2"
     elif mode == 'wingman_3':
+        if len(wing) < 3:
+            raise Exception(f'Can\'t select third wingman: Wing has {len(wing)} Members')
         keys.send('TargetWingman2')
         return "Targeting wingman 3"
     elif mode == 'wingman_1_target':
+        if len(wing) < 1:
+            raise Exception(f'Can\'t select first wingman: Wing has {len(wing)} Members')
         keys.send('TargetWingman0')
         keys.send('SelectTargetsTarget')
         return "Targeting wingman 1's target"
     elif mode == 'wingman_2_target':
+        if len(wing) < 2:
+            raise Exception(f'Can\'t select second wingman: Wing has {len(wing)} Members')
         keys.send('TargetWingman1')
         keys.send('SelectTargetsTarget')
         return "Targeting wingman 2's target"
     elif mode == 'wingman_3_target':
+        if len(wing) < 3:
+            raise Exception(f'Can\'t select third wingman: Wing has {len(wing)} Members')
         keys.send('TargetWingman2')
         keys.send('SelectTargetsTarget')
         return "Targeting wingman 3's target"
