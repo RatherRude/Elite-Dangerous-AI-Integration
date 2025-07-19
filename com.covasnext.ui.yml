@@ -37,6 +37,16 @@ modules:
         path: ui/src-tauri/icons/EDAI_logo_transparent_512.png
         dest-filename: EDAI_logo_transparent_512.png
     build-commands:
+      # Download and build WebKitGTK
+      - echo "Building COVAS:NEXT UI..."
+      - echo "This will take a while, please be patient." 
+      - curl -L -O https://webkitgtk.org/releases/webkitgtk-2.48.3.tar.xz
+      - tar -xf webkitgtk-2.48.3.tar.xz
+      - cd webkitgtk-2.48.3
+      - make
+      - sudo make install
+      - cd ..
+
       # Create directories
       - mkdir -p /app/bin
       - mkdir -p /app/lib/covas-next-ui
