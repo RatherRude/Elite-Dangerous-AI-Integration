@@ -58,7 +58,7 @@
   aspect-ratio: 1;
   grid-area: pngtuber;
   /* Default fallback image - will be dynamically replaced with character avatar */
-  background-image: url('../../assets/cn_avatar1.png');
+  background-image: url('../../assets/cn_avatar_default.png');
   background-size: 200%;
   background-position: 0% 0%;
   background-repeat: no-repeat;

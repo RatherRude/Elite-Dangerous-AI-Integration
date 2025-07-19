@@ -255,6 +255,6 @@ export class CharacterService {
     }
 
     public getAvatarUrl(): string {
-        return this.currentAvatarUrl || 'assets/cn_avatar1.png';
+        return this.currentAvatarUrl || 'assets/cn_avatar_default.png';
     }
 }
