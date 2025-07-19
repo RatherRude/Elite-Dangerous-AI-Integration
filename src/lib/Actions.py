@@ -224,6 +224,9 @@ def target_ship(args, projected_states):
 
 def toggle_wing_nav_lock(args, projected_states):
     setGameWindowActive()
+    wing = projected_states.get('wing', []).get('Members', [])
+    if len(wing) < 1:
+        raise Exception(f'Can\'t toggle wing nav lock: Not in a team')
     keys.send('WingNavLock')
     return "Wing nav lock toggled"
 
