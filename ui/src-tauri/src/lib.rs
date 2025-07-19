@@ -265,7 +265,12 @@ async fn destroy_floating_overlay(app_handle: tauri::AppHandle) -> Result<(), St
 }
 
 #[tauri::command]
-async fn create_floating_overlay(app_handle: tauri::AppHandle) -> Result<(), String> {
+async fn create_floating_overlay(
+    app_handle: tauri::AppHandle,
+    fullscreen: bool,
+    maximized: bool,
+    always_on_top: bool,
+) -> Result<(), String> {
     let mut window_builder = tauri::WebviewWindowBuilder::new(
         &app_handle,
         "overlay",
@@ -281,10 +286,10 @@ async fn create_floating_overlay(app_handle: tauri::AppHandle) -> Result<(), Str
         //         .inner_size(480.0, 480.0)
         .decorations(false)
         .transparent(true)
-        .always_on_top(true)
+        .always_on_top(always_on_top)
         .skip_taskbar(false)
-        .maximized(true)
-        //         .fullscreen(true)
+        .maximized(maximized)
+        .fullscreen(fullscreen)
         .visible(true);
 
     let window = window_builder

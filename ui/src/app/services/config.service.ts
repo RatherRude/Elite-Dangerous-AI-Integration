@@ -114,6 +114,7 @@ export class ConfigService {
 
     private systemSubject = new BehaviorSubject<SystemInfo | null>(null);
     public system$ = this.systemSubject.asObservable();
+    public systemInfo: SystemInfo | null = null;
 
     private validationSubject = new BehaviorSubject<
         ModelValidationMessage | null
@@ -152,6 +153,7 @@ export class ConfigService {
                 this.configSubject.next(message.config);
             } else if (message.type === "system") {
                 this.systemSubject.next(message.system);
+                this.systemInfo = message.system;
             } else if (message.type === "model_validation") {
                 this.validationSubject.next(message);
             } else if (message.type === "plugin_settings_configs") {

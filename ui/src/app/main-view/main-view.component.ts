@@ -8,7 +8,6 @@ import { TauriService } from "../services/tauri.service";
 import { LoggingService } from "../services/logging.service";
 import { LogContainerComponent } from "../components/log-container/log-container.component";
 import { SettingsMenuComponent } from "../components/settings-menu/settings-menu.component";
-import { Router } from "@angular/router";
 import { InputContainerComponent } from "../components/input-container/input-container.component";
 import { ConfigService } from "../services/config.service";
 import { Subscription } from "rxjs";
@@ -142,7 +141,16 @@ export class MainViewComponent implements OnInit, OnDestroy {
 
     async createOverlay(): Promise<void> {
         try {
-            await this.tauri.createOverlay();
+            const isLinux = this.configService.systemInfo?.os === "Linux";
+            await this.tauri.createOverlay(isLinux ? {
+                fullscreen: true,
+                maximized: false,
+                alwaysOnTop: true
+            } : {
+                fullscreen: false,
+                maximized: true,
+                alwaysOnTop: true
+            });
         } catch (error) {
             console.error("Failed to create overlay:", error);
         }
