@@ -1,4 +1,4 @@
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 from functools import lru_cache
 from typing import Any, Callable, cast, Dict, Union, List, Optional
 import random
@@ -2559,6 +2559,9 @@ class PromptGenerator:
         active_mode, vehicle_status = self.generate_vehicle_status(projected_states.get('CurrentStatus', {}), projected_states.get('InCombat', {}))
         status_entries.append((active_mode+" status", vehicle_status))
 
+        wingmembers = projected_states.get('Wing', {}).get('Members', [])
+        if len(wingmembers) > 0:
+            status_entries.append(("Current wing members: ", wingmembers))
 
         guifocus = projected_states.get('CurrentStatus', {}).get('GuiFocus', '')
         if guifocus != "NoFocus":
@@ -2567,11 +2570,39 @@ class PromptGenerator:
         # Get ship and cargo info
         ship_info: ShipInfoState = projected_states.get('ShipInfo', {})  # pyright: ignore[reportAssignmentType]
         cargo_info: CargoState = projected_states.get('Cargo', {})  # pyright: ignore[reportAssignmentType]
+        fighters = ship_info.get('Fighters', [])
         
         # Create a copy of ship_info so we don't modify the original
         ship_display = dict(ship_info)
         ship_display.pop('IsMiningShip', None)
         ship_display.pop('hasLimpets', None)
+        if len(fighters) == 0:
+            ship_display.pop('Fighters', None)
+        else:
+            # Calculate remaining seconds for fighters being rebuilt
+            current_time = datetime.now(timezone.utc)
+            processed_fighters = []
+            
+            for fighter in fighters:
+                fighter_copy = dict(fighter)
+                
+                # If fighter is being rebuilt and has RebuiltAt timestamp, calculate remaining seconds
+                rebuilt_at = fighter.get('RebuiltAt')
+                if fighter.get('Status') == 'BeingRebuilt' and rebuilt_at:
+                    try:
+                        rebuilt_time = datetime.fromisoformat(rebuilt_at.replace('Z', '+00:00'))
+                        remaining_seconds = int((rebuilt_time - current_time).total_seconds())
+                        
+                        # Replace RebuiltAt with ReadyInSeconds
+                        fighter_copy.pop('RebuiltAt', None)
+                        fighter_copy['ReadyInSeconds'] = max(0, remaining_seconds)  # Don't show negative seconds
+                    except (ValueError, TypeError):
+                        # If timestamp parsing fails, remove RebuiltAt field
+                        fighter_copy.pop('RebuiltAt', None)
+                
+                processed_fighters.append(fighter_copy)
+            
+            ship_display['Fighters'] = processed_fighters
 
         # Add cargo inventory in a more efficient format if available
 

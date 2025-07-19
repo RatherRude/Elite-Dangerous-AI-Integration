@@ -7,10 +7,6 @@ finish-args:
   # X11 + XShm access (forced, no Wayland)
   - --socket=x11
   - --share=ipc
-  # Force X11, no Wayland support
-  - --env=GDK_BACKEND=x11
-  - --env=QT_QPA_PLATFORM=xcb
-  - --env=WEBKIT_DISABLE_COMPOSITING_MODE=1
   # Network access
   - --share=network
   # Audio access
@@ -27,8 +23,8 @@ finish-args:
   - --socket=system-bus
   # Environment variables for better compatibility
   - --env=RUST_BACKTRACE=1
-  - --env=WEBKIT_DISABLE_DMABUF_RENDERER=1
   - --env=SSL_CERT_DIR=/etc/ssl/certs
+  #- --env=WEBKIT_DISABLE_DMABUF_RENDERER=1 # This is a fix for Nvidia+Wayland rendering, but it breaks the transparent overlay window – we are forcing X11 in flatpak so we might get away without it
 
 modules:
   - name: covas-next-ui
@@ -41,6 +37,16 @@ modules:
         path: ui/src-tauri/icons/EDAI_logo_transparent_512.png
         dest-filename: EDAI_logo_transparent_512.png
     build-commands:
+      # Download and build WebKitGTK
+      - echo "Building COVAS:NEXT UI..."
+      - echo "This will take a while, please be patient." 
+      - curl -L -O https://webkitgtk.org/releases/webkitgtk-2.48.3.tar.xz
+      - tar -xf webkitgtk-2.48.3.tar.xz
+      - cd webkitgtk-2.48.3
+      - make
+      - sudo make install
+      - cd ..
+
       # Create directories
       - mkdir -p /app/bin
       - mkdir -p /app/lib/covas-next-ui
@@ -61,10 +67,6 @@ modules:
       - |
         cat > /app/bin/covas-next-ui-wrapper << EOF
         #!/bin/bash
-        export GDK_BACKEND=x11
-        export QT_QPA_PLATFORM=xcb
-        export WEBKIT_DISABLE_COMPOSITING_MODE=1
-        export WEBKIT_DISABLE_DMABUF_RENDERER=1
         exec /app/bin/covas-next-ui "\$@"
         EOF
       - chmod +x /app/bin/covas-next-ui-wrapper

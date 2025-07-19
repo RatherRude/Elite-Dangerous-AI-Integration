@@ -254,7 +254,23 @@ fn get_commit_hash() -> String {
 }
 
 #[tauri::command]
-async fn create_floating_overlay(app_handle: tauri::AppHandle) -> Result<(), String> {
+async fn destroy_floating_overlay(app_handle: tauri::AppHandle) -> Result<(), String> {
+    info!("Trying to destroy floating overlay window");
+    let overlay_window = app_handle
+        .get_webview_window("overlay")
+        .ok_or_else(|| "Overlay not found".to_string())?;
+    overlay_window.close();
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn create_floating_overlay(
+    app_handle: tauri::AppHandle,
+    fullscreen: bool,
+    maximized: bool,
+    always_on_top: bool,
+) -> Result<(), String> {
     let mut window_builder = tauri::WebviewWindowBuilder::new(
         &app_handle,
         "overlay",
@@ -267,18 +283,18 @@ async fn create_floating_overlay(app_handle: tauri::AppHandle) -> Result<(), Str
 
     window_builder = window_builder
         .title("COVAS:NEXT Overlay")
-        .inner_size(480.0, 480.0)
+        //         .inner_size(480.0, 480.0)
         .decorations(false)
         .transparent(true)
-        .always_on_top(true)
+        .always_on_top(always_on_top)
         .skip_taskbar(false)
-        .maximized(true)
-        //.fullscreen(true)
+        .maximized(maximized)
+        .fullscreen(fullscreen)
         .visible(true);
 
     let window = window_builder
-        .parent(&main_window)
-        .map_err(|e| format!("Failed to assign parent window: {}", e))?
+        //         .parent(&main_window)
+        //         .map_err(|e| format!("Failed to assign parent window: {}", e))?
         .build()
         .map_err(|e| format!("Failed to create floating overlay window: {}", e))?;
 
@@ -314,14 +330,25 @@ pub async fn run() {
             stop_process,
             send_json_line,
             get_commit_hash,
-            create_floating_overlay
+            create_floating_overlay,
+            destroy_floating_overlay
         ])
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::CloseRequested { .. } = event {
                 let handle = window.app_handle().clone();
+                let window_label = window.label().to_string();
+
                 tokio::spawn(async move {
                     let state: State<'_, AppState> = handle.state();
                     let _ = stop_process(state).await;
+
+                    // If the main window is being closed, also close the overlay window
+                    if window_label == "main" {
+                        if let Some(overlay_window) = handle.get_webview_window("overlay") {
+                            let _ = overlay_window.close();
+                            info!("Closed overlay window due to main window close");
+                        }
+                    }
                 });
             }
         })
