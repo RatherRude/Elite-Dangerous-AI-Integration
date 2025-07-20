@@ -1,17 +1,14 @@
 import sys
-from time import time, sleep # Modified import
+from time import sleep
 from typing import Any, cast, final
-import os # Added import
-import threading # Added import
-import json # Added import
-import io # Added import
-import traceback # Added import
-import platform # Added import
+import os
+import threading
+import json
+import io
+import traceback
 
 from EDMesg.CovasNext import ExternalChatNotification, ExternalBackgroundChatNotification
 from openai import OpenAI
-from openai.types.chat import ChatCompletion
-from openai.types.chat import ChatCompletionMessageToolCall
 
 from lib.PluginHelper import PluginHelper
 from lib.Config import Config, assign_ptt, get_ed_appdata_path, get_ed_journals_path, get_system_info, load_config, save_config, update_config, update_event_config, validate_config, update_character, reset_game_events
@@ -27,7 +24,7 @@ from lib.Projections import registerProjections
 from lib.PromptGenerator import PromptGenerator
 from lib.STT import STT
 from lib.TTS import TTS
-from lib.StatusParser import Status, StatusParser
+from lib.StatusParser import StatusParser
 from lib.EDJournal import *
 from lib.EventManager import EventManager
 from lib.UI import send_message
