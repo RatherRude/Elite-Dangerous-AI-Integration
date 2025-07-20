@@ -4232,6 +4232,39 @@ def prepare_body_request(obj, projected_states):
 
     known_subtypes = [item for sublist in known_planet_types_obj.values() for item in sublist]
     known_landmarks = [item for sublist in known_planet_landmarks_obj.values() for item in sublist]
+    
+    known_mining_commodities = [
+        "Alexandrite",
+        "Bauxite", 
+        "Benitoite",
+        "Bertrandite",
+        "Bromellite",
+        "Cobalt",
+        "Coltan",
+        "Gallite",
+        "Grandidierite",
+        "Hydrogen Peroxide",
+        "Indite",
+        "Lepidolite",
+        "Liquid oxygen",
+        "Lithium Hydroxide",
+        "Low Temperature Diamonds",
+        "Methane Clathrate",
+        "Methanol Monohydrate Crystals",
+        "Monazite",
+        "Musgravite",
+        "Painite",
+        "Platinum",
+        "Praseodymium",
+        "Rhodplumsite",
+        "Rutile",
+        "Samarium",
+        "Serendibite",
+        "Tritium",
+        "Uraninite",
+        "Void Opal",
+        "Water"
+    ]
 
     filters = {
         "distance": {
@@ -4273,6 +4306,13 @@ def prepare_body_request(obj, projected_states):
     if "rings" in obj and obj["rings"]:
         rings_config = obj["rings"]
         if "material" in rings_config and "hotspots" in rings_config:
+            # Validate and auto-correct mining material using fuzzy matching
+            material = rings_config["material"]
+            matching_material = find_best_match(material, known_mining_commodities)
+            if not matching_material:
+                raise Exception(
+                    f"Invalid mining material: {material}. {educated_guesses_message(material, known_mining_commodities)}")
+            
             filters["reserve_level"] = {
                 "value": [
                     "Pristine"
@@ -4280,7 +4320,7 @@ def prepare_body_request(obj, projected_states):
             }
             filters["ring_signals"] = [
                 {
-                    "name": rings_config["material"],
+                    "name": matching_material,
                     "value": [
                         rings_config["hotspots"],
                         99
