@@ -4253,18 +4253,41 @@ def prepare_body_request(obj, projected_states):
         filters["subtype"] = {"value": validated_subtypes}
 
     if "landmark_subtype" in obj and obj["landmark_subtype"]:
+        validated_landmarks = []
         for landmark_subtype in obj["landmark_subtype"]:
             # Find matching landmark subtype using fuzzy matching
             matching_landmark = find_best_match(landmark_subtype, known_landmarks)
             if not matching_landmark:
                 raise Exception(
                     f"Invalid Landmark Subtype: {landmark_subtype}. {educated_guesses_message(landmark_subtype, known_landmarks)}")
-        filters["landmarks"] = [{"subtype": matching_landmark}]
+            validated_landmarks.append(matching_landmark)
+
+        filters["landmark_subtype"] = [{"value": validated_landmarks}]
 
     if "name" in obj and obj["name"]:
         filters["name"] = {
             "value": obj["name"]
         }
+
+    # Add ring filters if rings parameter is provided
+    if "rings" in obj and obj["rings"]:
+        rings_config = obj["rings"]
+        if "material" in rings_config and "hotspots" in rings_config:
+            filters["reserve_level"] = {
+                "value": [
+                    "Pristine"
+                ]
+            }
+            filters["ring_signals"] = [
+                {
+                    "name": rings_config["material"],
+                    "value": [
+                        rings_config["hotspots"],
+                        99
+                    ],
+                    "comparison": "<=>"
+                }
+            ]
 
     # Build the request body
     request_body = {
@@ -4314,6 +4337,17 @@ def filter_body_response(request, response):
                 ]
 
                 filtered_body["landmarks"] = filtered_landmarks
+
+        # rings information
+        if "ring_signals" in request_filters:
+            if "rings" in body and body["rings"]:
+                ring_signals = []
+                for ring in body["rings"]:
+                    if "signals" in ring and ring["signals"]:
+                        ring_signals.extend(ring["signals"])
+                
+                if ring_signals:
+                    filtered_body["rings"] = {"signals": ring_signals}
 
         # Add filtered system to the list
         filtered_results.append(filtered_body)
@@ -5726,6 +5760,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             {'called ' + i.get('name', '') if i.get('name', '') else ''}
             {'of subtype ' + ', '.join(i.get('subtype', [])) if i.get('subtype', []) else ''}
             {'with a landmark of subtype ' + ', '.join(i.get('landmark_subtype', [])) if i.get('landmark_subtype', []) else ''}
+            {'with rings containing ' + str(i.get('rings', {}).get('hotspots', '')) + '+ hotspots of ' + i.get('rings', {}).get('material', '') if i.get('rings') else ''}
             near {i.get('reference_system', 'Sol')}
             {'within ' + str(i.get('distance', 50000)) + ' light years.' if i.get('distance', 50000) else ''}.
         """,
@@ -5758,6 +5793,22 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                     "type": "number",
                     "description": "Maximum distance to search",
                     "example": 50000.0
+                },
+                "rings": {
+                    "type": "object",
+                    "description": "Ring search criteria",
+                    "properties": {
+                        "material": {
+                            "type": "string",
+                            "description": "Material to look for in rings"
+                        },
+                        "hotspots": {
+                            "type": "integer",
+                            "description": "Minimum number of hotspots required",
+                            "minimum": 1
+                        }
+                    },
+                    "required": ["material", "hotspots"]
                 },
             },
             "required": [
