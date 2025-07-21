@@ -14,7 +14,7 @@ from EDMesg.CovasNext import (
     CovasReplied,
     ConfigurationUpdated
 )
-from EDMesg.EDCoPilot import create_edcopilot_client, OpenPanelAction
+from EDMesg.EDCoPilot import create_edcopilot_client, OpenPanelAction, PanelNavigationAction
 from EDMesg.base import EDMesgWelcomeAction
 
 from .ActionManager import ActionManager
@@ -131,6 +131,7 @@ class EDCoPilot:
     def edcopilot_open_panel(self, args: dict, projected_states: dict) -> str:
         """Open a specific panel in EDCoPilot"""
         panel_name = args.get("panelName", "")
+        details = args.get("details", "")
         if not panel_name or not self.provider:
             return "Failed to open panel: No panel specified or EDCoPilot provider not available"
 
@@ -138,15 +139,23 @@ class EDCoPilot:
             # Log the request for debugging
             log('info', f'Opening EDCoPilot panel: {panel_name}')
 
-            # For now, we'll use CovasReplied to send a message to show the panel
-            # This is a temporary solution until we have a proper OpenPanelCommand
-            # Implementation might vary based on the actual EDCoPilot API
-
-            # ToDo: Send OpenPanelAction
-            self.client.publish(OpenPanelAction(panelName=panel_name))
-
+            self.client.publish(OpenPanelAction(panelName=panel_name, details=details))
 
             return f"Successfully requested to open {panel_name} panel in EDCoPilot"
+        except Exception as e:
+            return f"Failed to open panel: {str(e)}{traceback.format_exc()}"
+
+    def edcopilot_navigate_panel(self, args: dict, projected_states: dict) -> str:
+        """Open a specific panel in EDCoPilot"""
+        select_item = args.get("selectItem", 0)
+        navigate = args.get("navigate", "")
+
+        try:
+            # Log the request for debugging
+            log('info', f'Navigating on EDCoPilot panel: {select_item}{navigate}')
+            self.client.publish(PanelNavigationAction(navigate=navigate, selectItem=select_item))
+
+            return f"Successfully requested to navigate in panel: {navigate}{select_item}"
         except Exception as e:
             return f"Failed to open panel: {str(e)}{traceback.format_exc()}"
 
@@ -180,14 +189,14 @@ class EDCoPilot:
                     },
                     "details": {
                         "type": "string",
-                        "description": "Additional inputs for panel"
+                        "description": "Additional inputs for panel, like system names"
                     }
                 },
                 "required": ["panelName"]
             },
             self.edcopilot_open_panel,
             "global",  # Make this action available in all modes
-            lambda args, _: f"Opening EDCoPilot panel: {args.get('panelName', '')}"
+            lambda args, _: f"Opening EDCoPilot panel: {args.get('panelName', '')} {args.get('details', '')}"
         )
 
         # Register the open panel action
@@ -200,19 +209,20 @@ class EDCoPilot:
                     "navigate": {
                         "type": "string",
                         "enum": [
-                            "scrolldown", "scrollup", "scrolltop", "scrollbottom", "back"
+                            "scrolldown", "scrollup", "scrolltop", "scrollbottom", "back", "selectItem"
                         ],
                         "description": "Type of navigation"
                     },
                     "selectItem": {
                         "type": "number",
-                        "description": "Select item to navigate"
+                        "description": "Item to select (only if navigate is selectItem)"
                     }
-                }
+                },
+                "required": ["navigate"]
             },
-            self.edcopilot_open_panel,
+            self.edcopilot_navigate_panel,
             "global",  # Make this action available in all modes
-            lambda args, _: f"Opening EDCoPilot panel: {args.get('panelName', '')}"
+            lambda args, _: f"Navigating in EDCoPilot panel: {args.get('navigate', '')}{args.get('selectItem', '')}"
         )
 
 if __name__ == "__main__":
