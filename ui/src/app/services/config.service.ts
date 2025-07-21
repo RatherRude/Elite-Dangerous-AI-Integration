@@ -7,6 +7,10 @@ export interface ConfigMessage extends BaseMessage {
     type: "config";
     config: Config;
 }
+export interface RunningConfigMessage extends BaseMessage {
+    type: 'running_config';
+    config: Config;
+}
 export interface ChangeConfigMessage extends BaseCommand {
     type: "change_config";
     config: Partial<Config>;
@@ -110,6 +114,7 @@ export class ConfigService {
 
     private systemSubject = new BehaviorSubject<SystemInfo | null>(null);
     public system$ = this.systemSubject.asObservable();
+    public systemInfo: SystemInfo | null = null;
 
     private validationSubject = new BehaviorSubject<
         ModelValidationMessage | null
@@ -129,11 +134,13 @@ export class ConfigService {
                 message,
             ): message is
                 | ConfigMessage
+                | RunningConfigMessage
                 | SystemInfoMessage
                 | ModelValidationMessage
                 | PluginSettingsMessage
                 | StartMessage =>
                 message.type === "config" ||
+                message.type === "running_config" ||
                 message.type === "system" ||
                 message.type === "model_validation" ||
                 message.type === "plugin_settings_configs" ||
@@ -142,8 +149,11 @@ export class ConfigService {
         ).subscribe((message) => {
             if (message.type === "config") {
                 this.configSubject.next(message.config);
+            } else if (message.type === "running_config") {
+                this.configSubject.next(message.config);
             } else if (message.type === "system") {
                 this.systemSubject.next(message.system);
+                this.systemInfo = message.system;
             } else if (message.type === "model_validation") {
                 this.validationSubject.next(message);
             } else if (message.type === "plugin_settings_configs") {

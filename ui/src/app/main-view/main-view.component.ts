@@ -8,7 +8,6 @@ import { TauriService } from "../services/tauri.service";
 import { LoggingService } from "../services/logging.service";
 import { LogContainerComponent } from "../components/log-container/log-container.component";
 import { SettingsMenuComponent } from "../components/settings-menu/settings-menu.component";
-import { Router } from "@angular/router";
 import { InputContainerComponent } from "../components/input-container/input-container.component";
 import { ConfigService } from "../services/config.service";
 import { Subscription } from "rxjs";
@@ -117,9 +116,10 @@ export class MainViewComponent implements OnInit, OnDestroy {
 
     async start(): Promise<void> {
         try {
-            if(this.config && this.config.pngtuber) {
-                this.createOverlay();
+            if(this.config && this.config.characters[this.config.active_character_index] && this.config.characters[this.config.active_character_index]['avatar_show']) {
+                await this.createOverlay();
             }
+
             this.isLoading = true;
             this.loggingService.clearLogs(); // Clear logs when starting
             this.chatService.clearChat(); // Clear chat when starting
@@ -132,6 +132,7 @@ export class MainViewComponent implements OnInit, OnDestroy {
     async stop(): Promise<void> {
         try {
             this.isLoading = true;
+            await this.destroyOverlay();
             await this.tauri.restart_process();
         } catch (error) {
             console.error("Failed to stop:", error);
@@ -140,7 +141,24 @@ export class MainViewComponent implements OnInit, OnDestroy {
 
     async createOverlay(): Promise<void> {
         try {
-            await this.tauri.createOverlay();
+            const isLinux = this.configService.systemInfo?.os === "Linux";
+            await this.tauri.createOverlay(isLinux ? {
+                fullscreen: true,
+                maximized: false,
+                alwaysOnTop: true
+            } : {
+                fullscreen: false,
+                maximized: true,
+                alwaysOnTop: true
+            });
+        } catch (error) {
+            console.error("Failed to create overlay:", error);
+        }
+    }
+
+    async destroyOverlay(): Promise<void> {
+        try {
+            await this.tauri.destroyOverlay();
         } catch (error) {
             console.error("Failed to create overlay:", error);
         }

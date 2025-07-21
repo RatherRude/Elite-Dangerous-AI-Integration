@@ -69,8 +69,12 @@ export class TauriService {
         window.localStorage.setItem("install_id", this.installId);
     }
 
-    public async createOverlay(): Promise<void> {
-        invoke("create_floating_overlay", {});
+    public async createOverlay(config: {fullscreen: boolean, maximized: boolean, alwaysOnTop: boolean}): Promise<void> {
+        invoke("create_floating_overlay", config);
+    }
+
+    public async destroyOverlay(): Promise<void> {
+        invoke("destroy_floating_overlay", {});
     }
 
     private async startReadingOutput(): Promise<void> {

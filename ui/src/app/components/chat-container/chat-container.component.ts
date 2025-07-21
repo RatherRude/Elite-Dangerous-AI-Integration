@@ -17,7 +17,7 @@ export class ChatContainerComponent implements AfterViewChecked {
 
   constructor(private chatService: ChatService, element: ElementRef) {
     this.element = element;
-    this.chatService.chat$.subscribe((chat) => {
+    this.chatService.chatHistory$.subscribe((chat) => {
       console.log("Logs received", chat);
       this.chat = chat;
       setTimeout(() => {

@@ -150,18 +150,78 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - show system map
     </details>
 
-9. **Cycle target**
+9. **Target ship**
 
-    - `direction`: String (options: "next", "previous")
+    - `mode`: String (options: "next", "previous", "highest_threat", "next_hostile", "previous_hostile", "wingman_1", "wingman_2", "wingman_3", "wingman_1_target", "wingman_2_target", "wingman_3_target")
 
     <details>
     <summary>Examples</summary>
     
     - next target
     - previous target
+    - highest threat
+    - target highest threat
+    - target biggest threat
+    - next hostile
+    - next enemy
+    - cycle hostile
+    - hostile target
+    - previous hostile
+    - previous enemy
+    - first wingman
+    - target first wingman
+    - first wingmate
+    - target first wingmate
+    - first teammate
+    - target first teammate
+    - second wingman
+    - target second wingman
+    - second wingmate
+    - target second wingmate
+    - second teammate
+    - target second teammate
+    - third wingman
+    - target third wingman
+    - third wingmate
+    - target third wingmate
+    - third teammate
+    - target third teammate
+    - first wingman target
+    - target first wingman's target
+    - first wingmate target
+    - target first wingmate's target
+    - first teammate target
+    - target first teammate's target
+    - second wingman target
+    - target second wingman's target
+    - second wingmate target
+    - target second wingmate's target
+    - second teammate target
+    - target second teammate's target
+    - third wingman target
+    - target third wingman's target
+    - third wingmate target
+    - target third wingmate's target
+    - third teammate target
+    - target third teammate's target
     </details>
 
-10. **Cycle fire group**
+10. **Toggle wing nav lock**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - wing nav lock
+    - toggle wing nav lock
+    - wing navigation lock
+    - wing nav
+    - nav lock
+    - navigation lock
+    - wing follow
+    - follow wing
+    </details>
+
+11. **Cycle fire group**
 
     - `direction`: String (options: "next", "previous")
 
@@ -174,7 +234,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - select previous fire group
     </details>
 
-11. **Switch HUD mode**
+12. **Switch HUD mode**
 
     - `hud mode`: String (options: "combat", "analysis", "toggle")
 
@@ -190,7 +250,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - change hud
     </details>
 
-12. **Toggle ship spotlight**
+13. **Toggle ship spotlight**
 
     <details>
     <summary>Examples</summary>
@@ -204,7 +264,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - toggle the lights
     </details>
 
-13. **Fire chaff launcher**
+14. **Fire chaff launcher**
 
     <details>
     <summary>Examples</summary>
@@ -217,7 +277,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - evade
     </details>
 
-14. **Toggle night vision**
+15. **Toggle night vision**
 
     <details>
     <summary>Examples</summary>
@@ -228,19 +288,6 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - thermal vision
     - enhanced vision
     - infrared
-    </details>
-
-15. **Target highest threat**
-
-    <details>
-    <summary>Examples</summary>
-    
-    - highest threat
-    - target highest threat
-    - most dangerous
-    - biggest threat
-    - priority target
-    - target enemy
     </details>
 
 16. **Target subsystem on locked ship**
@@ -719,7 +766,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     
     - suit shields
     - personal shields
-    - toggle suit shields
+    - toggle shields
     - energy shield
     - shield generator
     - protective field
