@@ -60,9 +60,11 @@ class EDCoPilot:
             thread.daemon = True
             thread.start()
 
-        # Register EDCoPilot-specific actions if action_manager is provided
+            # Register EDCoPilot-specific actions if action_manager is provided
         if self.action_manager:
             self.register_actions()
+
+
 
     def listen_actions(self):
         while True:
@@ -175,9 +177,38 @@ class EDCoPilot:
                             "commandreference", "settings"
                         ],
                         "description": "The name of the panel to open in EDCoPilot"
+                    },
+                    "details": {
+                        "type": "string",
+                        "description": "Additional inputs for panel"
                     }
                 },
                 "required": ["panelName"]
+            },
+            self.edcopilot_open_panel,
+            "global",  # Make this action available in all modes
+            lambda args, _: f"Opening EDCoPilot panel: {args.get('panelName', '')}"
+        )
+
+        # Register the open panel action
+        self.action_manager.registerAction(
+            "edcopilot_navigate_panel",
+            "Navigate the current panel in EDCoPilot",
+            {
+                "type": "object",
+                "properties": {
+                    "navigate": {
+                        "type": "string",
+                        "enum": [
+                            "scrolldown", "scrollup", "scrolltop", "scrollbottom", "back"
+                        ],
+                        "description": "Type of navigation"
+                    },
+                    "selectItem": {
+                        "type": "number",
+                        "description": "Select item to navigate"
+                    }
+                }
             },
             self.edcopilot_open_panel,
             "global",  # Make this action available in all modes
