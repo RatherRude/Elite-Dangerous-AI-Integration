@@ -4295,7 +4295,7 @@ def prepare_body_request(obj, projected_states):
                     f"Invalid Landmark Subtype: {landmark_subtype}. {educated_guesses_message(landmark_subtype, known_landmarks)}")
             validated_landmarks.append(matching_landmark)
 
-        filters["landmark_subtype"] = [{"value": validated_landmarks}]
+        filters["landmark_subtype"] = {"value": validated_landmarks}
 
     if "name" in obj and obj["name"]:
         filters["name"] = {
