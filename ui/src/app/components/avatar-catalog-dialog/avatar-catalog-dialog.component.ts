@@ -81,6 +81,19 @@ export class AvatarCatalogDialogComponent implements OnInit {
       return;
     }
 
+    // Check aspect ratio
+    try {
+      const hasSquareAspectRatio = await this.checkImageAspectRatio(file);
+      if (!hasSquareAspectRatio) {
+        this.snackBar.open('Image must have a 1:1 aspect ratio (square)', 'Dismiss', { duration: 3000 });
+        return;
+      }
+    } catch (error) {
+      console.error('Error checking image dimensions:', error);
+      this.snackBar.open('Error validating image', 'Dismiss', { duration: 3000 });
+      return;
+    }
+
     this.uploading = true;
     try {
       const avatarId = await this.avatarService.uploadAvatar(file);
@@ -92,6 +105,24 @@ export class AvatarCatalogDialogComponent implements OnInit {
     } finally {
       this.uploading = false;
     }
+  }
+
+  private checkImageAspectRatio(file: File): Promise<boolean> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      
+      img.onload = () => {
+        URL.revokeObjectURL(img.src); // Clean up
+        resolve(img.width === img.height);
+      };
+      
+      img.onerror = () => {
+        URL.revokeObjectURL(img.src); // Clean up
+        reject(new Error('Failed to load image'));
+      };
+      
+      img.src = URL.createObjectURL(file);
+    });
   }
 
   selectAvatar(avatarId: string) {
