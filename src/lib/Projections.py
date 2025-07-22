@@ -522,6 +522,7 @@ ship_sizes: dict[str, Literal['S', 'M', 'L', 'Unknown']] = {
     'type8':                         'L',
     'type9':                         'L',
     'type9_military':                'L',
+    'panthermkii':                   'L',
     'typex':                         'M',
     'typex_2':                       'M',
     'typex_3':                       'M',

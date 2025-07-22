@@ -1484,14 +1484,12 @@ def blueprint_finder(obj, projected_states):
                 formatted_engineers = [format_engineer_info(eng) for eng in engineers]
 
                 grade_results = {
-                    "materials_needed": total_materials,
-                    "engineers": formatted_engineers,
-                    "enough_mats": has_all_materials
+                    "materials_needed": total_materials
                 }
-
-                # Only add materials_missing if there are missing materials
                 if missing_materials:
                     grade_results["materials_missing"] = missing_materials
+                grade_results["engineers"] = formatted_engineers
+                grade_results["enough_mats"] = has_all_materials
 
                 module_results[f"Grade {grade}"] = grade_results
 
@@ -2675,6 +2673,7 @@ def prepare_station_request(obj, projected_states):# Helper function for fuzzy m
         "Business Class Passenger Cabin",
         "Cannon",
         "Cargo Rack",
+        "Large Cargo Rack",
         "Cargo Scanner",
         "Caustic Sink Launcher",
         "Chaff Launcher",
@@ -3207,6 +3206,7 @@ def prepare_station_request(obj, projected_states):# Helper function for fuzzy m
         "Krait Phantom",
         "Mamba",
         "Orca",
+        "Panther Clipper",
         "Python",
         "Python MkII",
         "Sidewinder",
