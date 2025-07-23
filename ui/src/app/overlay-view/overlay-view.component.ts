@@ -138,17 +138,25 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
   }
 
   private applyAvatarBackground() {
-    // Wait for next tick to ensure view is rendered, with longer timeout for *ngIf changes
-    setTimeout(() => {
       // Only apply if avatar should be shown and element exists
-      if (this.avatarShow && this.pngtuberElement?.nativeElement) {
+      setTimeout(() => {
+    if (this.avatarShow && this.pngtuberElement?.nativeElement) {
         if (this.currentAvatarUrl) {
-          this.pngtuberElement.nativeElement.style.backgroundImage = `url('${this.currentAvatarUrl}')`;
+        // set css variable for avatar url
+        document.documentElement.style.setProperty('--avatar-url-listening', `url(${this.currentAvatarUrl}#listening)`);
+        document.documentElement.style.setProperty('--avatar-url-speaking', `url(${this.currentAvatarUrl}#speaking)`);
+        document.documentElement.style.setProperty('--avatar-url-thinking', `url(${this.currentAvatarUrl}#thinking)`);
+        document.documentElement.style.setProperty('--avatar-url-acting', `url(${this.currentAvatarUrl}#acting)`);
+        document.documentElement.style.setProperty('--avatar-url-idle', `url(${this.currentAvatarUrl}#idle)`);
         } else {
-          // Revert to CSS default background image when no avatar URL
-          this.pngtuberElement.nativeElement.style.backgroundImage = '';
-        }
+        // Revert to CSS default background image when no avatar
+        document.documentElement.style.setProperty('--avatar-url-listening', '');
+        document.documentElement.style.setProperty('--avatar-url-speaking', '');
+        document.documentElement.style.setProperty('--avatar-url-thinking', '');
+        document.documentElement.style.setProperty('--avatar-url-acting', '');
+        document.documentElement.style.setProperty('--avatar-url-idle', '');
       }
+    }
     }, 10); // Slightly longer timeout to handle *ngIf rendering
   }
 

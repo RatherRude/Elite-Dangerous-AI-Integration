@@ -49,12 +49,13 @@ LocationEvent = dict
 NavRouteEvent = dict
 
 class PromptGenerator:
-    def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str], system_db: SystemDatabase):
+    def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str], hidden_game_events: list[str], system_db: SystemDatabase):
         self.registered_prompt_event_handlers: list[Callable[[Event], list[ChatCompletionMessageParam]]] = []
         self.registered_status_generators: list[Callable[[dict[str, dict]], list[tuple[str, Any]]]] = []
         self.commander_name = commander_name
         self.character_prompt = character_prompt
         self.important_game_events = important_game_events
+        self.hidden_game_events = hidden_game_events
         self.system_db = system_db
         
         # Pad map for station docking positions

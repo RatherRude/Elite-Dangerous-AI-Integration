@@ -49,10 +49,19 @@ class Chat:
         self.backstory = self.character["character"].replace("{commander_name}", self.config['commander_name'])
 
         self.enabled_game_events: list[str] = []
+        self.hidden_game_events: list[str] = []
+        self.debounce_durations: dict[str, int] = {}
+        
         if self.character["event_reaction_enabled_var"]:
             for event, state in self.character["game_events"].items():
-                if state:
+                if state == "react":
                     self.enabled_game_events.append(event)
+                elif state == "hidden":
+                    self.hidden_game_events.append(event)
+                elif isinstance(state, int) and state > 0:
+                    # React with cooldown - store debounce duration but don't add to enabled_game_events
+                    self.debounce_durations[event] = state
+                # "no_react" events are simply ignored (not added to any list)
 
         log("debug", "Initializing Controller Manager...")
         self.controller_manager = ControllerManager()
@@ -65,7 +74,7 @@ class Chat:
             
         log("debug", "Initializing Third Party Services...")
         self.copilot = EDCoPilot(self.config["edcopilot"], is_edcopilot_dominant=self.config["edcopilot_dominant"],
-                            enabled_game_events=self.enabled_game_events)
+                            enabled_game_events=self.enabled_game_events, debounce_durations=self.debounce_durations)
 
         # gets API Key from config.json
         self.llmClient = OpenAI(
@@ -108,7 +117,7 @@ class Chat:
         log("debug", "Initializing status parser...")
         self.status_parser = StatusParser(get_ed_journals_path(config))
         log("debug", "Initializing prompt generator...")
-        self.prompt_generator = PromptGenerator(self.config["commander_name"], self.character["character"], important_game_events=self.enabled_game_events, system_db=self.system_database)
+        self.prompt_generator = PromptGenerator(self.config["commander_name"], self.character["character"], important_game_events=self.enabled_game_events, hidden_game_events=self.hidden_game_events, system_db=self.system_database)
         
         log("debug", "Getting plugin event classes...")
         plugin_event_classes = self.plugin_manager.register_event_classes()
@@ -116,6 +125,8 @@ class Chat:
         log("debug", "Initializing event manager...")
         self.event_manager = EventManager(
             game_events=self.enabled_game_events,
+            hidden_game_events=self.hidden_game_events,
+            debounce_durations=self.debounce_durations,
             plugin_event_classes=plugin_event_classes,
         )
 
@@ -123,6 +134,8 @@ class Chat:
         self.assistant = Assistant(
             config=self.config,
             enabled_game_events=self.enabled_game_events,
+            hidden_game_events=self.hidden_game_events,
+            debounce_durations=self.debounce_durations,
             event_manager=self.event_manager,
             action_manager=self.action_manager,
             llmClient=self.llmClient,

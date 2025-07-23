@@ -40,12 +40,16 @@ class EventManager:
     def __init__(
             self, 
             game_events: list[str],
+            hidden_game_events: list[str],
+            debounce_durations: dict[str, int],
             plugin_event_classes: list[type[Event]],
         ):
         self.incoming: Queue[Event] = Queue()
         self.pending: list[Event] = []
         self.processed: list[Event] = []
         self.game_events = game_events
+        self.hidden_game_events = hidden_game_events
+        self.debounce_durations = debounce_durations
         self._conditions_registry = defaultdict(list)
         self._registry_lock = threading.Lock()
 

@@ -47,7 +47,7 @@ export interface Character {
     react_to_danger_mining_var: boolean;
     react_to_danger_onfoot_var: boolean;
     react_to_danger_supercruise_var: boolean;
-    game_events: { [key: string]: boolean };
+    game_events: { [key: string]: string | number };
 }
 
 

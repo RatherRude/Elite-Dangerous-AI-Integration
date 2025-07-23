@@ -17,9 +17,11 @@ from threading import Thread
 
 @final
 class Assistant:
-    def __init__(self, config: Config, enabled_game_events: list[str], event_manager: EventManager, action_manager: ActionManager, llmClient: OpenAI, tts: TTS, prompt_generator: PromptGenerator, copilot: EDCoPilot):
+    def __init__(self, config: Config, enabled_game_events: list[str], hidden_game_events: list[str], debounce_durations: dict[str, int], event_manager: EventManager, action_manager: ActionManager, llmClient: OpenAI, tts: TTS, prompt_generator: PromptGenerator, copilot: EDCoPilot):
         self.config = config
         self.enabled_game_events = enabled_game_events
+        self.hidden_game_events = hidden_game_events
+        self.debounce_durations = debounce_durations
         self.event_manager = event_manager
         self.action_manager = action_manager
         self.llmClient = llmClient
@@ -30,6 +32,10 @@ class Assistant:
         self.reply_pending = False
         self.pending: list[Event] = []
         self.registered_should_reply_handlers: list[Callable[[Event, dict[str, Any]], bool | None]] = []
+
+    def should_react_to_event(self, event_name: str) -> bool:
+        """Check if we should react to an event (either enabled or has debounce)"""
+        return event_name in self.enabled_game_events or event_name in self.debounce_durations
     
     def on_event(self, event: Event, projected_states: dict[str, Any]):
         self.pending.append(event)
@@ -222,7 +228,7 @@ class Assistant:
             if isinstance(event, ToolEvent):
                 return True
 
-            if isinstance(event, GameEvent) and event.content.get("event") in self.enabled_game_events:
+            if isinstance(event, GameEvent) and self.should_react_to_event(event.content.get("event")):
                 if event.content.get("event") == "ReceiveText":
                     if event.content.get("Channel") not in ['wing', 'voicechat', 'friend', 'player'] and (
                         (not character["react_to_text_local_var"] and event.content.get("Channel") == 'local') or
@@ -250,7 +256,7 @@ class Assistant:
 
                 return True
 
-            if isinstance(event, StatusEvent) and event.status.get("event") in self.enabled_game_events:
+            if isinstance(event, StatusEvent) and self.should_react_to_event(event.status.get("event")):
                 if event.status.get("event") in ["InDanger", "OutOfDanger"]:
                     if not character["react_to_danger_mining_var"]:
                         if states.get('ShipInfo', {}).get('IsMiningShip', False) and states.get('Location', {}).get('PlanetaryRing', False):
@@ -269,9 +275,9 @@ class Assistant:
                 return True
 
             if isinstance(event, ProjectedEvent):
-                if event.content.get("event").startswith('ScanOrganic') and 'ScanOrganic' in self.enabled_game_events:
+                if event.content.get("event").startswith('ScanOrganic') and self.should_react_to_event('ScanOrganic'):
                     return True
-                if event.content.get("event") in self.enabled_game_events:
+                if self.should_react_to_event(event.content.get("event")):
                     return True
             
             # run should_reply handlers for each plugin

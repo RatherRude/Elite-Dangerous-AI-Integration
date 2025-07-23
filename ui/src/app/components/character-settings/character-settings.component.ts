@@ -98,7 +98,7 @@ export class CharacterSettingsComponent {
     initializing: boolean = true;
     private localCharacterCopy: Character | null = null;
     expandedSection: string | null = null;
-    filteredGameEvents: Record<string, Record<string, boolean>> = {};
+    filteredGameEvents: Record<string, Record<string, string | number>> = {};
     eventSearchQuery: string = "";
     isApplyingChange: boolean = false;
     public GameEventTooltips = GameEventTooltips;
@@ -591,7 +591,7 @@ export class CharacterSettingsComponent {
     async onEventConfigChange(
         section: string,
         event: string,
-        enabled: boolean,
+        enabled: string | number,
     ) {
         if (!this.config) return;
 
@@ -1099,16 +1099,16 @@ export class CharacterSettingsComponent {
     }
 
     private categorizeEvents(
-        events: Record<string, boolean>,
-    ): Record<string, Record<string, boolean>> {
-        const categorizedEvents: Record<string, Record<string, boolean>> = {};
+        events: Record<string, string | number>,
+    ): Record<string, Record<string, string | number>> {
+        const categorizedEvents: Record<string, Record<string, string | number>> = {};
 
         for (
             const [category, list] of Object.entries(this.gameEventCategories)
         ) {
             categorizedEvents[category] = {};
             for (const event of list) {
-                categorizedEvents[category][event] = events[event] || false;
+                categorizedEvents[category][event] = events[event] || "no_react";
             }
         }
         return categorizedEvents;
@@ -1136,7 +1136,7 @@ export class CharacterSettingsComponent {
             for (
                 const [sectionKey, events] of Object.entries(all_game_events)
             ) {
-                const matchingEvents: Record<string, boolean> = {};
+                const matchingEvents: Record<string, string | number> = {};
                 for (const [eventKey, value] of Object.entries(events)) {
                     if (
                         eventKey.toLowerCase().includes(searchTerm) ||
@@ -1277,10 +1277,23 @@ export class CharacterSettingsComponent {
             return 0;
         }
 
-        // Count the number of true entries in the game_events object
+        // Count the number of react entries in the game_events object
         return Object.values(character["game_events"]).filter((value) =>
-            value === true
+            value === "react" || (typeof value === "number" && value > 0)
         ).length;
+    }
+
+    getEventCooldownValue(eventKey: string): number {
+        const currentValue = this.activeCharacter?.game_events?.[eventKey];
+        if (typeof currentValue === "number" && currentValue > 0) {
+            return currentValue;
+        }
+        return 60; // Default cooldown
+    }
+
+    isEventValueNumber(eventKey: string): boolean {
+        const value = this.activeCharacter?.game_events?.[eventKey];
+        return typeof value === "number";
     }
 
     duplicateSelectedCharacter(): void {

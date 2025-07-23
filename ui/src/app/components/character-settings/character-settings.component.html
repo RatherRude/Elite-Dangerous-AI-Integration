@@ -566,14 +566,31 @@
                                 </mat-panel-title>
                             </mat-expansion-panel-header>
                             @for (e of section.value | keyvalue:orderByKey; track e.key) {
-                                <mat-slide-toggle
-                                        [(ngModel)]="activeCharacter.game_events[e.key]"
-                                        (ngModelChange)="onEventConfigChange(section.key, e.key, $event)"
-                                        [appTooltip]="GameEventTooltips[e.key]"
-                                        tooltipPosition="right"
-                                    >
+                                <div class="event-config-row">
+                                    <span class="event-name" 
+                                          [appTooltip]="GameEventTooltips[e.key]"
+                                          tooltipPosition="right">
                                         {{ e.key }}
-                                </mat-slide-toggle>
+                                    </span>
+                                    <mat-form-field class="event-select" appearance="fill">
+                                        <mat-select [(ngModel)]="activeCharacter.game_events[e.key]"
+                                                    (ngModelChange)="onEventConfigChange(section.key, e.key, $event)">
+                                            <mat-option value="hidden">Hide from LLM</mat-option>
+                                            <mat-option value="no_react">Don't react</mat-option>
+                                            <mat-option value="react">React</mat-option>
+                                            <mat-option [value]="getEventCooldownValue(e.key)">React with cooldown</mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                    @if (isEventValueNumber(e.key)) {
+                                        <mat-form-field class="cooldown-input" appearance="fill">
+                                            <mat-label>Cooldown (seconds)</mat-label>
+                                            <input matInput type="number" min="1" 
+                                                   [(ngModel)]="activeCharacter.game_events[e.key]"
+                                                   (ngModelChange)="onEventConfigChange(section.key, e.key, $event)"
+                                                   placeholder="60">
+                                        </mat-form-field>
+                                    }
+                                </div>
                                 @if (e.key === "ProspectedAsteroid") {
                                     <mat-form-field>
                                         <mat-label>React to material</mat-label>

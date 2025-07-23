@@ -18,7 +18,7 @@ from EDMesg.base import EDMesgWelcomeAction
 
 @final
 class EDCoPilot:
-    def __init__(self, is_enabled: bool, is_edcopilot_dominant: bool=False, enabled_game_events: list[str]=[]):
+    def __init__(self, is_enabled: bool, is_edcopilot_dominant: bool=False, enabled_game_events: list[str]=[], debounce_durations: dict[str, int]={}):
         self.install_path = get_install_path()
         self.proc_id = self.get_process_id()
         self.is_enabled = is_enabled and self.is_installed()
@@ -26,7 +26,14 @@ class EDCoPilot:
         self.provider = None
         self.is_edcopilot_dominant = is_edcopilot_dominant
         self.enabled_game_events = enabled_game_events
+        self.debounce_durations = debounce_durations
         self.event_publication_queue: queue.Queue[ExternalChatNotification|ExternalBackgroundChatNotification] = queue.Queue()
+
+    def get_all_reactive_events(self) -> list[str]:
+        """Get all events that should trigger reactions (enabled + debounced)"""
+        all_events = list(self.enabled_game_events)
+        all_events.extend(self.debounce_durations.keys())
+        return list(set(all_events))  # Remove duplicates
 
         try:
             if self.is_enabled:
@@ -85,7 +92,7 @@ class EDCoPilot:
         """send Config"""
         if self.provider:
             return self.provider.publish(
-                ConfigurationUpdated(is_dominant=not self.is_edcopilot_dominant ,enabled_game_events=self.enabled_game_events)
+                ConfigurationUpdated(is_dominant=not self.is_edcopilot_dominant ,enabled_game_events=self.get_all_reactive_events())
             )
 
     def output_commander(self, message: str):

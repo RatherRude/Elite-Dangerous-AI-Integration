@@ -59,7 +59,6 @@
   aspect-ratio: 1;
   grid-area: pngtuber;
   /* Default fallback image - will be dynamically replaced with character avatar */
-  background-image: url('../../assets/cn_avatar_default.png');
   background-size: 200%;
   background-position: 0% 0%;
   background-repeat: no-repeat;
@@ -67,18 +66,23 @@
   transform: none;
   
   &.listening {
+    background-image: var(--avatar-url-listening, 'url(../../assets/cn_avatar_default.png#listening)');
     background-position: 0% 0%;
   }
   &.speaking {
+    background-image: var(--avatar-url-speaking, 'url(../../assets/cn_avatar_default.png#speaking)');
     background-position: 100% 0%;
   }
   &.thinking {
+    background-image: var(--avatar-url-thinking, 'url(../../assets/cn_avatar_default.png#thinking)');
     background-position: 0% 100%;
   }
   &.acting {
+    background-image: var(--avatar-url-acting, 'url(../../assets/cn_avatar_default.png#acting)');
     background-position: 100% 100%;
   }
   &.idle {
+    background-image: var(--avatar-url-idle, 'url(../../assets/cn_avatar_default.png#idle)');
     background-position: 0% 0%;
   }
   
