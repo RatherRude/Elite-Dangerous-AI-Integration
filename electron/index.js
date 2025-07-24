@@ -1,7 +1,34 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, protocol, net } = require('electron');
 const { spawn } = require('child_process');
 const path = require('path');
+const url = require('node:url')
 const contextMenu = require('electron-context-menu');
+
+for (const x of ["home","userData","temp","appData","sessionData","exe","module","desktop","documents","downloads","music","pictures","videos","logs","crashDumps"]) {
+  console.log(x, app.getPath(x));
+}
+
+const isDevelopment = process.env.NODE_ENV === 'development';
+
+console.log('isDevelopment:', isDevelopment);
+
+const config = isDevelopment ? {
+  ui: 'http://localhost:1420',
+  overlay: 'http://localhost:1420#/overlay',
+  backend: 'python3',
+  backend_cwd: path.join(__dirname, '..'),
+  backend_args: [path.join(__dirname, '../src/Chat.py')],
+} : {
+  ui: 'app://./index.html',
+  overlay: 'app://./index.html#/overlay',
+  backend: path.resolve(__dirname, '../Chat/Chat'),
+  backend_cwd: app.getPath('sessionData'),
+  backend_args: [],
+}
+
+// list files in the backend directory
+const files = require('fs').readdirSync(config.backend_cwd);
+console.log('Backend files:', files); 
 
 contextMenu.default({
   showSpellCheck: false,
@@ -22,7 +49,7 @@ contextMenu.default({
   showCopyVideoAddress: false,
   showCopyLink: false,
   showSaveLinkAs: false,
-  //showInspectElement: true,
+  showInspectElement: true,
   showServices: false,
   prepend: (defaultActions,parameters,browserWindow,event)=>[{
     click: (menuItem, window, event) => {
@@ -33,6 +60,18 @@ contextMenu.default({
     label: 'Reload'
   }]
 });
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'app',
+    privileges: {
+      secure: true,
+      supportFetchAPI: true,
+      bypassCSP: true,
+      standard: true,
+    }
+  }
+]);
 
 class BackendService {
   #currentProcess = null;
@@ -57,9 +96,11 @@ class BackendService {
       console.warn('Process is already running, stopping it first');
       this.#currentProcess.kill();
     }
-    this.#currentProcess = spawn('python3', ['./src/Chat.py'], {
+    console.log('Starting process:', config.backend);
+
+    this.#currentProcess = spawn(config.backend, config.backend_args, {
       stdio: ['pipe', 'pipe', 'pipe'],
-      cwd: path.join(__dirname, '../..')
+      cwd: config.backend_cwd
     });
 
     this.#currentProcess.stdout.setEncoding('utf8');
@@ -123,7 +164,7 @@ function createMainWindow() {
   });
   mainWindow.setMenuBarVisibility(false);
 
-  mainWindow.loadURL('http://localhost:1420'); // Adjust the URL as needed
+  mainWindow.loadURL(config.ui);
 
   return mainWindow;
 }
@@ -146,8 +187,8 @@ function createOverlayWindow(opts) {
       preload: path.join(__dirname, 'preload.js'),
     }
   });
-  overlayWindow.loadURL('http://localhost:1420#/overlay'); // Adjust the URL as needed
-  overlayWindow.setIgnoreMouseEvents(true); // Ignore mouse events if needed
+  overlayWindow.loadURL(config.overlay);
+  //overlayWindow.setIgnoreMouseEvents(true); // Ignore mouse events if needed
   if (opts.fullscreen) {
     overlayWindow.setFullScreen(true);
   }
@@ -157,6 +198,14 @@ function createOverlayWindow(opts) {
   return overlayWindow;
 }
 app.whenReady().then(async ()=>{
+
+  protocol.handle('app', (request) => {
+    const filePath = request.url.slice('app://'.length)
+    const resolved = url.pathToFileURL(path.join(__dirname, './ui/', filePath)).toString()
+    console.log(request.url, '->', resolved)
+    return net.fetch(resolved)
+  })
+
   const backend = new BackendService();
   const mainWindow = createMainWindow();
   let floatingOverlay = null;
@@ -178,12 +227,14 @@ app.whenReady().then(async ()=>{
   });
 
   mainWindow.on('closed', () => {
-    backend.stopProcess(mainWindow);
-    mainWindow = null;
     if (floatingOverlay) {
       backend.detachWindow(floatingOverlay);
-      floatingOverlay.close();
-      floatingOverlay = null;
+      if (!floatingOverlay.isDestroyed()) {
+        floatingOverlay.close();
+        floatingOverlay = null;
+      };
     }
+    backend.stopProcess(mainWindow);
+    process.exit(0);
   });
 });

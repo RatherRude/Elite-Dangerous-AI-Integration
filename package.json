@@ -1,0 +1,57 @@
+{
+  "name": "covas-next",
+  "version": "0.0.0",
+  "description": "[Getting Started](https://ratherrude.github.io/Elite-Dangerous-AI-Integration/) | [Join our Discord](https://discord.gg/9c58jxVuAT) | [Download latest version](https://github.com/RatherRude/Elite-Dangerous-AI-Integration/releases)",
+  "homepage": "https://github.com/RatherRude/Elite-Dangerous-AI-Integration#readme",
+  "bugs": {
+    "url": "https://github.com/RatherRude/Elite-Dangerous-AI-Integration/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RatherRude/Elite-Dangerous-AI-Integration.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "install": "pip install -r requirements.txt && cd ui && npm install && cd ../electron && npm install",
+    "start": "NODE_ENV=development concurrently --kill-others \"cd ui && npx ng serve\" \"cd electron && npx electron ./index.js\"",
+    "build": "cd ui && npx ng build --configuration production && cd ../ && ./e2e/build.sh",
+    "package:dir": "electron-builder --dir",
+    "package:flatpak": "npm run package:dir && flatpak-builder --force-clean --install-deps-from=flathub --repo=.flatpak-repo --force-clean .flatpak-build  com.covasnext.ui.yml && flatpak build-bundle .flatpak-repo covas-next-ui-development.flatpak com.covasnext.ui --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo",
+    "package:run": "cd dist/linux-unpacked/ && ./covas-next"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.0",
+    "electron": "^37.2.4",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "productName": "com.covasnext.ui",
+    "appId": "com.covasnext.ui",
+    "extraResources": [
+      {
+        "from": "electron/icons",
+        "to": "."
+      },
+      {
+        "from": "dist/Chat",
+        "to": "Chat"
+      }
+    ],
+    "files": [
+      {
+        "from": "electron",
+        "to": "."
+      },
+      {
+        "from": "ui/dist/covas-next-ui/browser",
+        "to": "ui"
+      }
+    ]
+  },
+  "dependencies": {
+    "electron-context-menu": "^4.1.0"
+  }
+}

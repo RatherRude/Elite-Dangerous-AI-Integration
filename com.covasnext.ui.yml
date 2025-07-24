@@ -2,6 +2,8 @@ app-id: com.covasnext.ui
 runtime: org.gnome.Platform
 runtime-version: '48'
 sdk: org.gnome.Sdk
+base: org.electronjs.Electron2.BaseApp
+base-version: 24.08
 command: covas-next-ui-wrapper
 finish-args:
   # X11 + XShm access (forced, no Wayland)
@@ -30,9 +32,8 @@ modules:
   - name: covas-next-ui
     buildsystem: simple
     sources:
-      - type: archive
-        path: covas-next-ui-linux.tar.gz
-        strip-components: 0
+      - type: dir
+        path: dist/linux-unpacked
       - type: file
         path: ui/src-tauri/icons/EDAI_logo_transparent_512.png
         dest-filename: EDAI_logo_transparent_512.png
@@ -46,18 +47,16 @@ modules:
       - mkdir -p /app/share/icons/hicolor/scalable/apps
       
       # Install the application
-      - cp -r bin/* /app/bin/
-      - cp -r lib/* /app/lib/
+      - cp -r * /app/bin/
       
       # Make sure executables are executable
-      - chmod +x /app/bin/covas-next-ui
-      - find /app/lib -type f -executable -exec chmod +x {} \;
+      - chmod +x /app/bin/covas-next
       
       # Create wrapper script to ensure X11 environment
       - |
         cat > /app/bin/covas-next-ui-wrapper << EOF
         #!/bin/bash
-        exec /app/bin/covas-next-ui "\$@"
+        exec zypak-wrapper /app/bin/covas-next "$@"
         EOF
       - chmod +x /app/bin/covas-next-ui-wrapper
       

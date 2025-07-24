@@ -5,10 +5,9 @@
     "ng": "ng",
     "start": "ng serve",
     "dev": "tauri dev",
-    "build": "ng build",
+    "build": "ng build --base-href ./",
     "watch": "ng build --watch --configuration development",
-    "tauri": "tauri",
-    "electron": "concurrently \"ng serve\" \"electron ./src-electron/main.js\""
+    "tauri": "tauri"
   },
   "private": true,
   "dependencies": {
@@ -28,8 +27,6 @@
     "@tauri-apps/plugin-http": "^2.4.4",
     "@tauri-apps/plugin-log": "^2.3.1",
     "@tauri-apps/plugin-opener": "^2",
-    "concurrently": "^9.2.0",
-    "electron-context-menu": "^4.1.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.14.2"
@@ -40,7 +37,6 @@
     "@angular/compiler-cli": "^17.0.0",
     "@tauri-apps/cli": "^2",
     "@types/jasmine": "~5.1.0",
-    "electron": "^37.2.4",
     "jasmine-core": "~5.1.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
