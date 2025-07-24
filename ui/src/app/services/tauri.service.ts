@@ -1,11 +1,22 @@
 // src/app/services/tauri.service.ts
 import { Injectable, NgZone } from "@angular/core";
-import { invoke } from "@tauri-apps/api/core";
-import { listen, UnlistenFn } from "@tauri-apps/api/event";
+//import { invoke } from "@tauri-apps/api/core";
+import { type UnlistenFn } from "@tauri-apps/api/event";
 import { BehaviorSubject, Observable, ReplaySubject } from "rxjs";
 import { MatDialog } from "@angular/material/dialog";
 import { UpdateDialogComponent } from "../components/update-dialog/update-dialog.component";
 import { environment } from "../../environments/environment";
+
+declare global {
+    interface Window {
+        electronAPI: {
+            invoke: (call: string, opts?: any) => Promise<any>;
+            onStdout: (callback: (value: any) => void) => Promise<void> | void;
+            onStderr: (callback: (value: any) => void) => Promise<void> | void;
+        };
+    }
+}
+const electronAPI = window.electronAPI;
 
 export interface BaseCommand {
     type: string;
@@ -70,22 +81,20 @@ export class TauriService {
     }
 
     public async createOverlay(config: {fullscreen: boolean, maximized: boolean, alwaysOnTop: boolean}): Promise<void> {
-        invoke("create_floating_overlay", config);
+        electronAPI.invoke("create_floating_overlay", config);
     }
 
     public async destroyOverlay(): Promise<void> {
-        invoke("destroy_floating_overlay", {});
+        electronAPI.invoke("destroy_floating_overlay", {});
     }
 
     private async startReadingOutput(): Promise<void> {
         if (this.stopListener) this.stopListener();
-        this.stopListener = await listen(
-            "process-stdout",
+        await electronAPI.onStdout(
             (e) => this.processStdout(e),
         );
         if (this.stopStderrListener) this.stopStderrListener();
-        this.stopStderrListener = await listen(
-            "process-stderr",
+        await electronAPI.onStderr(
             (e) => this.processStderr(e),
         );
     }
@@ -138,7 +147,7 @@ export class TauriService {
     public async runExe(): Promise<string[]> {
         this.stopExe();
         try {
-            const output: string[] = await invoke("start_process", {});
+            const output: string[] = await electronAPI.invoke("start_process", {});
             this.startReadingOutput();
             return output;
         } catch (error) {
@@ -155,7 +164,7 @@ export class TauriService {
         try {
             this.runModeSubject.next("starting");
             console.log("process stopping...");
-            await invoke("stop_process", {});
+            await electronAPI.invoke("stop_process", {});
         } catch (error) {
             console.error("Error running exe:", error);
             throw error;
@@ -173,7 +182,7 @@ export class TauriService {
         });
     }
     public async send_command(message: BaseCommand): Promise<void> {
-        await invoke("send_json_line", {
+        await electronAPI.invoke("send_json_line", {
             jsonLine: JSON.stringify(message) + "\n",
         });
     }
@@ -182,7 +191,7 @@ export class TauriService {
     public async checkForUpdates(): Promise<void> {
         try {
             // Get the current commit hash from the Tauri app
-            const currentCommit: string = await invoke("get_commit_hash");
+            const currentCommit: string = await electronAPI.invoke("get_commit_hash");
             console.log("Current commit hash:", currentCommit);
             console.log("Frontend commit hash:", this.commitHash);
 
