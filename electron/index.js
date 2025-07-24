@@ -15,7 +15,7 @@ console.log('isDevelopment:', isDevelopment);
 const config = isDevelopment ? {
   ui: 'http://localhost:1420',
   overlay: 'http://localhost:1420#/overlay',
-  backend: 'python3',
+  backend: 'python',
   backend_cwd: path.join(__dirname, '..'),
   backend_args: [path.join(__dirname, '../src/Chat.py')],
 } : {
@@ -188,7 +188,7 @@ function createOverlayWindow(opts) {
     }
   });
   overlayWindow.loadURL(config.overlay);
-  //overlayWindow.setIgnoreMouseEvents(true); // Ignore mouse events if needed
+  overlayWindow.setIgnoreMouseEvents(true);
   if (opts.fullscreen) {
     overlayWindow.setFullScreen(true);
   }
@@ -217,6 +217,10 @@ app.whenReady().then(async ()=>{
     if (floatingOverlay) return true;
     floatingOverlay = createOverlayWindow(opts);
     backend.attachWindow(floatingOverlay);
+    floatingOverlay.on('closed', () => {
+      backend.detachWindow(floatingOverlay);
+      floatingOverlay = null;
+    });
   });
   ipcMain.handle('destroy_floating_overlay', async (event) => {
     if (floatingOverlay) {
