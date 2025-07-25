@@ -8,4 +8,4 @@ $VEC_EXTENSION = python -c "import os, sqlite_vec; print(os.path.join(os.path.di
 Write-Host $VAD_MODEL
 Write-Host $VEC_EXTENSION
 
-pyinstaller ./src/Chat.py -y --onedir --console --hidden-import=comtypes.stream --add-data ./src:. --add-data $VAD_MODEL:./pysilero_vad/models --add-binary $VEC_EXTENSION:./sqlite_vec
+pyinstaller ./src/Chat.py -y --onedir --console --hidden-import=comtypes.stream --add-data ./src:. --add-data ${VAD_MODEL}:./pysilero_vad/models --add-binary ${VEC_EXTENSION}:./sqlite_vec

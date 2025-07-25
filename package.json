@@ -18,7 +18,7 @@
     "install": "pip install -r requirements.txt && cd ui && npm install && cd ../electron && npm install",
     "start": "cross-env NODE_ENV=development concurrently --kill-others \"cd ui && npx ng serve\" \"cd electron && wait-on http://localhost:1420/ && npx electron ./index.js\"",
     "build": "run-script-os",
-    "build:win32": "cd ui && npx ng build --configuration production && cd ../ && ./e2e/build.ps1",
+    "build:win32": "cd ui && npx ng build --configuration production && cd .. && powershell ./e2e/build.ps1",
     "build:linux": "cd ui && npx ng build --configuration production && cd ../ && ./e2e/build.sh",
     "package": "run-script-os",
     "package:win32": "npm run package:dir",
@@ -26,7 +26,7 @@
     "package:dir": "electron-builder --dir",
     "package:flatpak": "flatpak-builder --force-clean --install-deps-from=flathub --repo=.flatpak-repo --force-clean .flatpak-build  com.covasnext.ui.yml && flatpak build-bundle .flatpak-repo covas-next-ui-development.flatpak com.covasnext.ui --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo",
     "package:run": "run-script-os",
-    "package:run:win32": "cd dist/win32-unpacked/ && start covas-next-ui.exe",
+    "package:run:win32": "cd dist/win-unpacked/ && start covas-next-ui.exe",
     "package:run:linux": "cd dist/linux-unpacked/ && ./covas-next"
   },
   "devDependencies": {
@@ -37,11 +37,10 @@
   "build": {
     "productName": "com.covasnext.ui",
     "appId": "com.covasnext.ui",
+    "directories": {
+      "buildResources": "electron"
+    },
     "extraResources": [
-      {
-        "from": "electron/icons",
-        "to": "."
-      },
       {
         "from": "dist/Chat",
         "to": "Chat"
