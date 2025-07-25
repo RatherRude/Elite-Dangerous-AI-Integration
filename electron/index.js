@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, protocol, net } = require('electron');
+const { app, BrowserWindow, ipcMain, protocol, net, screen } = require('electron');
 const { spawn } = require('child_process');
 const path = require('path');
 const url = require('node:url')
@@ -9,6 +9,7 @@ for (const x of ["home","userData","temp","appData","sessionData","exe","module"
 }
 
 const isDevelopment = process.env.NODE_ENV === 'development';
+const isLinux = process.platform === 'linux';
 
 console.log('isDevelopment:', isDevelopment);
 
@@ -22,7 +23,7 @@ const config = isDevelopment ? {
   ui: 'app://./index.html',
   overlay: 'app://./index.html#/overlay',
   backend: path.resolve(__dirname, '../Chat/Chat'),
-  backend_cwd: app.getPath('sessionData'),
+  backend_cwd: isLinux ? process.env.XDG_DATA_HOME || app.getPath('sessionData') : app.getPath('userData'),
   backend_args: [],
 }
 
@@ -116,8 +117,8 @@ class BackendService {
       for (const line of lines) {
         if (line.trim()) {
           //console.log('Sending stdout to', this.#windows.length, 'windows');
+          console.log('[stdout]', line);
           for (const window of this.#windows) {
-            console.log('[stdout]', line);
             window.webContents.send('stdout', { payload: line });
           }
         }
@@ -137,8 +138,8 @@ class BackendService {
       for (const line of lines) {
         if (line.trim()) {
           //console.error('Sending stderr to', this.#windows.length, 'windows');
+          console.error('[stderr]', line);
           for (const window of this.#windows) {
-            console.error('[stderr]', line);
             window.webContents.send('stderr', { payload: line });
           }
         }
@@ -182,26 +183,33 @@ function createOverlayWindow(opts) {
     height: 600,
     frame: false, // No frame for the overlay
     transparent: true, // Make it transparent
-    alwaysOnTop: opts.alwaysOnTop, // Keep it on top of other windows
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     }
   });
   overlayWindow.loadURL(config.overlay);
   overlayWindow.setIgnoreMouseEvents(true);
+  
   if (opts.fullscreen) {
     overlayWindow.setFullScreen(true);
   }
   if (opts.maximized) {
     overlayWindow.maximize();
+  } else {
+    const primaryDisplay = screen.getPrimaryDisplay()
+    const { width, height } = primaryDisplay.workAreaSize
+    overlayWindow.setBounds({ x: 0, y: 0, width, height });
+  }
+  if (opts.alwaysOnTop) {
+    overlayWindow.setAlwaysOnTop(true, 'screen-saver', 2);
   }
   return overlayWindow;
 }
 app.whenReady().then(async ()=>{
 
   protocol.handle('app', (request) => {
-    const filePath = request.url.slice('app://'.length)
-    const resolved = url.pathToFileURL(path.join(__dirname, './ui/', filePath)).toString()
+    const requestUrl = new URL(request.url);
+    const resolved = url.pathToFileURL(path.join(__dirname, './ui/', requestUrl.pathname)).toString()
     console.log(request.url, '->', resolved)
     return net.fetch(resolved)
   })

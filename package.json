@@ -16,7 +16,7 @@
   "main": "index.js",
   "scripts": {
     "install": "pip install -r requirements.txt && cd ui && npm install && cd ../electron && npm install",
-    "start": "cross-env NODE_ENV=development concurrently --kill-others \"cd ui && npx ng serve\" \"cd electron && npx electron ./index.js\"",
+    "start": "cross-env NODE_ENV=development concurrently --kill-others \"cd ui && npx ng serve\" \"cd electron && wait-on http://localhost:1420/ && npx electron ./index.js\"",
     "build": "cd ui && npx ng build --configuration production && cd ../ && ./e2e/build.sh",
     "package:dir": "electron-builder --dir",
     "package:flatpak": "npm run package:dir && flatpak-builder --force-clean --install-deps-from=flathub --repo=.flatpak-repo --force-clean .flatpak-build  com.covasnext.ui.yml && flatpak build-bundle .flatpak-repo covas-next-ui-development.flatpak com.covasnext.ui --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo",
@@ -53,6 +53,7 @@
   },
   "dependencies": {
     "cross-env": "^7.0.3",
-    "electron-context-menu": "^4.1.0"
+    "electron-context-menu": "^4.1.0",
+    "wait-on": "^8.0.4"
   }
 }
