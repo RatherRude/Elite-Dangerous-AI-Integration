@@ -15,9 +15,9 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "install": "npm run install:py && npm run install:electron && npm run install:ui",
+    "install:all": "npm run install:py && npm run install:electron && npm run install:ui",
     "install:py": "pip install -r requirements.txt",
-    "install:electron": "cd electron && npm install",
+    "install:electron": "npm install",
     "install:ui": "cd ui && npm install",
     "start": "cross-env NODE_ENV=development concurrently --kill-others \"cd ui && npx ng serve\" \"cd electron && wait-on http://localhost:1420/ && npx electron ./index.js\"",
     "build": "npm run build:ui && npm run build:py",
