@@ -90,11 +90,11 @@ jobs:
 
       - name: Install electron dependencies
         working-directory: .
-        run: npm install:electron
+        run: npm run install:electron
 
       - name: Install frontend dependencies
         working-directory: .
-        run: npm install:ui
+        run: npm run install:ui
 
       - name: Replace Commit HASH in environment.prod.ts
         working-directory: ui
