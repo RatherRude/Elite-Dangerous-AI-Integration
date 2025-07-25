@@ -23,7 +23,7 @@ const config = isDevelopment ? {
   ui: 'app://./index.html',
   overlay: 'app://./index.html#/overlay',
   backend: path.resolve(__dirname, '../Chat/Chat'),
-  backend_cwd: isLinux ? process.env.XDG_DATA_HOME || app.getPath('sessionData') : app.getPath('userData'),
+  backend_cwd: isLinux ? path.join(process.env.XDG_DATA_HOME, './com.covas-next.ui') || app.getPath('sessionData') : app.getPath('userData'),
   backend_args: [],
 }
 
