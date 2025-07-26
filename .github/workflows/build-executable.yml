@@ -93,12 +93,13 @@ jobs:
         shell: pwsh
 
       - name: Build UI
-        working-directory: ui
+        working-directory: .
         run: npm run build:ui
         env:
           COMMIT_HASH: ${{ github.sha }}
 
       - name: Build Electron App
+        working-directory: .
         run: npm run package:dir
 
       - name: Create simple zip with only required files
