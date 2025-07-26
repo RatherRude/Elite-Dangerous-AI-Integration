@@ -308,114 +308,114 @@ class StatusParser:
 
         # Only in mainship
         if new_status["flags"]["InMainShip"]:
-            if old_status["flags"]["LandingGearDown"] and not new_status["flags"]["LandingGearDown"]:
+            if old_status["flags"]["LandingGearDown"] and new_status["flags"]["LandingGearDown"] == False:
                 events.append({"event": "LandingGearUp"})
-            if not old_status["flags"]["LandingGearDown"] and new_status["flags"]["LandingGearDown"]:
+            if old_status["flags"]["LandingGearDown"] == False and new_status["flags"]["LandingGearDown"]:
                 events.append({"event": "LandingGearDown"})
 
-            if old_status["flags"]["FlightAssistOff"] and not new_status["flags"]["FlightAssistOff"]:
+            if old_status["flags"]["FlightAssistOff"] and new_status["flags"]["FlightAssistOff"] == False:
                 events.append({"event": "FlightAssistOn"})
-            if not old_status["flags"]["FlightAssistOff"] and new_status["flags"]["FlightAssistOff"]:
+            if old_status["flags"]["FlightAssistOff"] == False and new_status["flags"]["FlightAssistOff"]:
                 events.append({"event": "FlightAssistOff"})
 
-            if old_status["flags"]["HardpointsDeployed"] and not new_status["flags"]["HardpointsDeployed"]:
+            if old_status["flags"]["HardpointsDeployed"] and new_status["flags"]["HardpointsDeployed"] == False:
                 events.append({"event": "HardpointsRetracted"})
-            if not old_status["flags"]["HardpointsDeployed"] and new_status["flags"]["HardpointsDeployed"]:
+            if old_status["flags"]["HardpointsDeployed"] == False and new_status["flags"]["HardpointsDeployed"]:
                 events.append({"event": "HardpointsDeployed"})
 
-            if old_status["flags"]["SilentRunning"] and not new_status["flags"]["SilentRunning"]:
+            if old_status["flags"]["SilentRunning"] and new_status["flags"]["SilentRunning"] == False:
                 events.append({"event": "SilentRunningOff"})
-            if not old_status["flags"]["SilentRunning"] and new_status["flags"]["SilentRunning"]:
+            if old_status["flags"]["SilentRunning"] == False and new_status["flags"]["SilentRunning"]:
                 events.append({"event": "SilentRunningOn"})
 
-            if old_status["flags"]["ScoopingFuel"] and not new_status["flags"]["ScoopingFuel"]:
+            if old_status["flags"]["ScoopingFuel"] and new_status["flags"]["ScoopingFuel"] == False:
                 events.append({"event": "FuelScoopEnded"})
-            if not old_status["flags"]["ScoopingFuel"] and new_status["flags"]["ScoopingFuel"]:
+            if old_status["flags"]["ScoopingFuel"] == False and new_status["flags"]["ScoopingFuel"]:
                 events.append({"event": "FuelScoopStarted"})
 
-            if old_status["flags"]["LightsOn"] and not new_status["flags"]["LightsOn"]:
+            if old_status["flags"]["LightsOn"] and new_status["flags"]["LightsOn"] == False:
                 events.append({"event": "LightsOff"})
-            if not old_status["flags"]["LightsOn"] and new_status["flags"]["LightsOn"]:
+            if old_status["flags"]["LightsOn"] == False and new_status["flags"]["LightsOn"]:
                 events.append({"event": "LightsOn"})
 
-            if old_status["flags"]["CargoScoopDeployed"] and not new_status["flags"]["CargoScoopDeployed"]:
+            if old_status["flags"]["CargoScoopDeployed"] and new_status["flags"]["CargoScoopDeployed"] == False:
                 events.append({"event": "CargoScoopRetracted"})
-            if not old_status["flags"]["CargoScoopDeployed"] and new_status["flags"]["CargoScoopDeployed"]:
+            if old_status["flags"]["CargoScoopDeployed"] == False and new_status["flags"]["CargoScoopDeployed"]:
                 events.append({"event": "CargoScoopDeployed"})
 
-            if old_status["flags"]["FsdMassLocked"] and not new_status["flags"]["FsdMassLocked"]:
+            if old_status["flags"]["FsdMassLocked"] and new_status["flags"]["FsdMassLocked"] == False:
                 events.append({"event": "FsdMassLockEscaped"})
-            if not old_status["flags"]["FsdMassLocked"] and new_status["flags"]["FsdMassLocked"]:
+            if old_status["flags"]["FsdMassLocked"] == False and new_status["flags"]["FsdMassLocked"]:
                 events.append({"event": "FsdMassLocked"})
 
             if old_status["flags2"] and new_status["flags2"]:
-                if old_status.get("flags2", {}).get("GlideMode") and not new_status.get("flags2", {}).get("GlideMode"):
+                if old_status["flags2"]["GlideMode"] and new_status["flags2"]["GlideMode"] == False:
                     events.append({"event": "GlideModeExited"})
-                if not old_status.get("flags2", {}).get("GlideMode") and new_status.get("flags2", {}).get("GlideMode"):
+                if old_status["flags2"]["GlideMode"] == False and new_status["flags2"]["GlideMode"]:
                     events.append({"event": "GlideModeEntered"})
 
-            if old_status["flags"]["LowFuel"] and not new_status["flags"]["LowFuel"]:
+            if old_status["flags"]["LowFuel"] and new_status["flags"]["LowFuel"] == False:
                 events.append({"event": "LowFuelWarningCleared"})
-            if not old_status["flags"]["LowFuel"] and new_status["flags"]["LowFuel"]:
+            if old_status["flags"]["LowFuel"] == False and new_status["flags"]["LowFuel"]:
                 events.append({"event": "LowFuelWarning"})
 
-            if not old_status["flags"]["FsdCharging"] and new_status["flags"]["FsdCharging"]:
+            if old_status["flags"]["FsdCharging"] == False and new_status["flags"]["FsdCharging"]:
                 events.append({"event": "FsdCharging"})
 
-            if not old_status["flags"]["BeingInterdicted"] and new_status["flags"]["BeingInterdicted"]:
+            if old_status["flags"]["BeingInterdicted"] == False and new_status["flags"]["BeingInterdicted"]:
                 events.append({"event": "BeingInterdicted"})
 
         # Only SRV
         if new_status["flags"]["InSRV"]:
-            if old_status["flags"]["SrvHandbrake"] and not new_status["flags"]["SrvHandbrake"]:
+            if old_status["flags"]["SrvHandbrake"] and new_status["flags"]["SrvHandbrake"] == False:
                 events.append({"event": "SrvHandbrakeOff"})
-            if not old_status["flags"]["SrvHandbrake"] and new_status["flags"]["SrvHandbrake"]:
+            if old_status["flags"]["SrvHandbrake"] == False and new_status["flags"]["SrvHandbrake"]:
                 events.append({"event": "SrvHandbrakeOn"})
 
-            if old_status["flags"]["SrvUsingTurretView"] and not new_status["flags"]["SrvUsingTurretView"]:
+            if old_status["flags"]["SrvUsingTurretView"] and new_status["flags"]["SrvUsingTurretView"] == False:
                 events.append({"event": "SrvTurretViewDisconnected"})
-            if not old_status["flags"]["SrvUsingTurretView"] and new_status["flags"]["SrvUsingTurretView"]:
+            if old_status["flags"]["SrvUsingTurretView"] == False and new_status["flags"]["SrvUsingTurretView"]:
                 events.append({"event": "SrvTurretViewConnected"})
 
-            if old_status["flags"]["SrvDriveAssist"] and not new_status["flags"]["SrvDriveAssist"]:
+            if old_status["flags"]["SrvDriveAssist"] and new_status["flags"]["SrvDriveAssist"] == False:
                 events.append({"event": "SrvDriveAssistOff"})
-            if not old_status["flags"]["SrvDriveAssist"] and new_status["flags"]["SrvDriveAssist"]:
+            if old_status["flags"]["SrvDriveAssist"] == False and new_status["flags"]["SrvDriveAssist"]:
                 events.append({"event": "SrvDriveAssistOn"})
 
         # Only Suit
         if old_status["flags2"] and new_status["flags2"] and new_status["flags2"]["OnFoot"]:
-            if old_status["flags2"]["LowOxygen"] and not new_status["flags2"]["LowOxygen"]:
+            if old_status["flags2"]["LowOxygen"] and new_status["flags2"]["LowOxygen"] == False:
                 events.append({"event": "LowOxygenWarningCleared"})
-            if not old_status["flags2"]["LowOxygen"] and new_status["flags2"]["LowOxygen"]:
+            if old_status["flags2"]["LowOxygen"] == False and new_status["flags2"]["LowOxygen"]:
                 events.append({"event": "LowOxygenWarning"})
 
-            if old_status["flags2"]["LowHealth"] and not new_status["flags2"]["LowHealth"]:
+            if old_status["flags2"]["LowHealth"] and new_status["flags2"]["LowHealth"] == False:
                 events.append({"event": "LowHealthWarningCleared"})
-            if not old_status["flags2"]["LowHealth"] and new_status["flags2"]["LowHealth"]:
+            if old_status["flags2"]["LowHealth"] == False and new_status["flags2"]["LowHealth"]:
                 events.append({"event": "LowHealthWarning"})
 
-            if old_status["flags2"]["BreathableAtmosphere"] and not new_status["flags2"]["BreathableAtmosphere"]:
+            if old_status["flags2"]["BreathableAtmosphere"] and new_status["flags2"]["BreathableAtmosphere"] == False:
                 events.append({"event": "BreathableAtmosphereExited"})
-            if not old_status["flags2"]["BreathableAtmosphere"] and new_status["flags2"]["BreathableAtmosphere"]:
+            if old_status["flags2"]["BreathableAtmosphere"] == False and new_status["flags2"]["BreathableAtmosphere"]:
                 events.append({"event": "BreathableAtmosphereEntered"})
 
             if old_status["SelectedWeapon"] and old_status["SelectedWeapon"] != new_status["SelectedWeapon"]:
                 events.append({"event": "WeaponSelected", "SelectedWeapon": new_status["SelectedWeapon"]})
 
         # Always
-        if old_status["flags"]["InDanger"] and not new_status["flags"]["InDanger"]:
+        if old_status["flags"]["InDanger"] and new_status["flags"]["InDanger"] == False:
             events.append({"event": "OutofDanger"})
-        if not old_status["flags"]["InDanger"] and new_status["flags"]["InDanger"]:
+        if old_status["flags"]["InDanger"] == False and new_status["flags"]["InDanger"]:
             events.append({"event": "InDanger"})
 
-        if old_status["flags"]["NightVision"] and not new_status["flags"]["NightVision"]:
+        if old_status["flags"]["NightVision"] and new_status["flags"]["NightVision"] == False:
             events.append({"event": "NightVisionOff"})
-        if not old_status["flags"]["NightVision"] and new_status["flags"]["NightVision"]:
+        if old_status["flags"]["NightVision"] == False and new_status["flags"]["NightVision"]:
             events.append({"event": "NightVisionOn"})
 
-        if old_status["flags"]["HudInAnalysisMode"] and not new_status["flags"]["HudInAnalysisMode"]:
+        if old_status["flags"]["HudInAnalysisMode"] and new_status["flags"]["HudInAnalysisMode"] == False:
             events.append({"event": "HudSwitchedToCombatMode"})
-        if not old_status["flags"]["HudInAnalysisMode"] and new_status["flags"]["HudInAnalysisMode"]:
+        if old_status["flags"]["HudInAnalysisMode"] == False and new_status["flags"]["HudInAnalysisMode"]:
             events.append({"event": "HudSwitchedToAnalysisMode"})
 
         if (
