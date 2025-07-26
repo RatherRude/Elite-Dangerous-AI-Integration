@@ -3,15 +3,60 @@ const { spawn } = require('child_process');
 const path = require('path');
 const url = require('node:url')
 const contextMenu = require('electron-context-menu');
-
-for (const x of ["home","userData","temp","appData","sessionData","exe","module","desktop","documents","downloads","music","pictures","videos","logs","crashDumps"]) {
-  console.log(x, app.getPath(x));
-}
+const pino = require('pino')
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 const isLinux = process.platform === 'linux';
 
-console.log('isDevelopment:', isDevelopment);
+function logMethod (args, method) {
+  if (args.length >= 2) {
+    for (let i = 1; i < args.length; i++) {
+      args[0] = `${args[0]} %j`
+    }
+  }
+  method.apply(this, args)
+}
+
+const transport = {
+  targets: [{
+    target: 'pino-pretty',
+    options: { destination: 1 } // use 2 for stderr
+  }]
+}
+if (!isDevelopment) {
+  transport.targets.push({
+    target: 'pino-roll',
+    options: { 
+      file: path.join(app.getPath('logs'), 'com.covas-next.ui.log'), 
+      size: '50m', 
+      mkdir: true, 
+      limit: { removeOtherLogFiles: true, count: 1 } 
+    }
+  });
+}
+const logger = pino({
+  level: 'debug',
+  transport: transport,
+  hooks: {logMethod}
+});
+
+// delete old tauri log files
+if (process.platform === 'win32') {
+  const logsPath = path.join(process.env.APPDATA, 'com.covas-next.ui', 'logs');
+  require('fs').rmSync(logsPath, { recursive: true, force: true });
+  logger.info('Deleted logs directory:', logsPath);
+} else if (isLinux) {
+  const logsPath = path.join(process.env.XDG_DATA_HOME, 'com.covas-next.ui', 'logs');
+  require('fs').rmSync(logsPath, { recursive: true, force: true });
+  logger.info('Deleted logs directory:', logsPath);
+}
+
+for (const x of ["home","userData","temp","appData","sessionData","exe","module","desktop","documents","downloads","music","pictures","videos","logs","crashDumps"]) {
+  logger.info(x, app.getPath(x));
+}
+
+
+logger.info('isDevelopment:', isDevelopment);
 
 const config = isDevelopment ? {
   ui: 'http://localhost:1420',
@@ -29,7 +74,7 @@ const config = isDevelopment ? {
 
 // list files in the backend directory
 const files = require('fs').readdirSync(config.backend_cwd);
-console.log('Backend files:', files); 
+logger.info('Backend files:', files);
 
 contextMenu.default({
   showSpellCheck: false,
@@ -82,7 +127,7 @@ class BackendService {
     if (!this.#currentProcess || this.#currentProcess.killed) {
       throw new Error('No active process to send JSON line to');
     }
-    console.log('[stdin]', jsonLine);
+    logger.info('[stdin]', jsonLine);
     this.#currentProcess.stdin.write(jsonLine + '\n');
     return true;
   }
@@ -95,10 +140,10 @@ class BackendService {
   startProcess(mainWindow) {
     this.attachWindow(mainWindow);
     if (this.#currentProcess && !this.#currentProcess.killed) {
-      console.warn('Process is already running, stopping it first');
+      logger.warn('Process is already running, stopping it first');
       this.#currentProcess.kill();
     }
-    console.log('Starting process:', config.backend);
+    logger.info('Starting process:', config.backend);
 
     this.#currentProcess = spawn(config.backend, config.backend_args, {
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -123,8 +168,12 @@ class BackendService {
       }
       for (const line of lines) {
         if (line.trim()) {
-          //console.log('Sending stdout to', this.#windows.length, 'windows');
-          console.log('[stdout]', line);
+          //logger.info('Sending stdout to', this.#windows.length, 'windows');
+          if (!line.includes('"type": "config"')) {
+            logger.info('[stdout]', line);
+          } else {
+            logger.debug('[stdout]', "[config redacted]");
+          }
           for (const window of this.#windows) {
             window.webContents.send('stdout', { payload: line });
           }
@@ -144,8 +193,12 @@ class BackendService {
       }
       for (const line of lines) {
         if (line.trim()) {
-          //console.error('Sending stderr to', this.#windows.length, 'windows');
-          console.error('[stderr]', line);
+          //logger.error('Sending stderr to', this.#windows.length, 'windows');
+          if (!line.includes('"type": "config"')) {
+            logger.info('[stderr]', line);
+          } else {
+            logger.debug('[stderr]', "[config redacted]");
+          }
           for (const window of this.#windows) {
             window.webContents.send('stderr', { payload: line });
           }
@@ -212,7 +265,7 @@ function createMainWindow() {
     event.preventDefault();
     // If the user confirms, then close the window
     ipcMain.handleOnce('window-close-ready', () => {
-      console.log('Main window close handler done, stopping process');
+      logger.info('Main window close handler done, stopping process');
       mainWindow.close();
     });
     // Call renderer close handler
@@ -263,7 +316,7 @@ app.whenReady().then(async ()=>{
   protocol.handle('app', (request) => {
     const requestUrl = new URL(request.url);
     const resolved = url.pathToFileURL(path.join(__dirname, './ui/', requestUrl.pathname)).toString()
-    console.log(request.url, '->', resolved)
+    //logger.info(request.url, '->', resolved)
     // if file is directory, return index.html
     if (requestUrl.pathname.endsWith('/')) {
       return net.fetch(url.pathToFileURL(path.join(__dirname, './ui/index.html')).toString())
