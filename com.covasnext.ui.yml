@@ -51,6 +51,7 @@ modules:
       
       # Make sure executables are executable
       - chmod +x /app/bin/covas-next
+      - chmod +x /app/bin/resources/Chat/Chat
       
       # Create wrapper script to ensure X11 environment
       - |
