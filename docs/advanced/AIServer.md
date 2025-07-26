@@ -24,7 +24,7 @@ Upon starting the AIServer, need to configure it using the window that pops up. 
 
 1. Select a TTS Model. At the time of writing we recommend using `hexgrad/Kokoro-82M`.
 
-2. Select a STT model. At the time of writing we recommend using `onnx_asr/nemo-parakeet-tdt-0.6b-v2`
+2. Select a STT model. At the time of writing we recommend using `sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8.tar.bz2`
 
 3. Select an LLM model. At the time of writing we recommend using `Salesforce/xLAM-2-3b-fc-r-gguf`.
 
@@ -51,7 +51,7 @@ If you don't want to configure every time you start the AIServer, you can place 
   "host": "127.0.0.1",
   "port": 8080,
   "embed_model_name": "None",
-  "stt_model_name": "onnx_asr/nemo-parakeet-tdt-0.6b-v2",
+  "stt_model_name": "sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8.tar.bz2",
   "tts_model_name": "hexgrad/Kokoro-82M",
   "llm_model_name": "None",
   "use_disk_cache": false
