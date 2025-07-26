@@ -1,11 +1,24 @@
 // src/app/services/tauri.service.ts
 import { Injectable, NgZone } from "@angular/core";
-import { invoke } from "@tauri-apps/api/core";
-import { listen, UnlistenFn } from "@tauri-apps/api/event";
+//import { invoke } from "@tauri-apps/api/core";
+import { type UnlistenFn } from "@tauri-apps/api/event";
 import { BehaviorSubject, Observable, ReplaySubject } from "rxjs";
 import { MatDialog } from "@angular/material/dialog";
 import { UpdateDialogComponent } from "../components/update-dialog/update-dialog.component";
 import { environment } from "../../environments/environment";
+
+declare global {
+    interface Window {
+        electronAPI: {
+            invoke: (call: string, opts?: any) => Promise<any>;
+            onStdout: (callback: (value: any) => void) => Promise<void> | void;
+            onStderr: (callback: (value: any) => void) => Promise<void> | void;
+            onWindowClose: (callback: (event: Event) => void) => void;
+            confirmWindowClose: () => Promise<void>;
+        };
+    }
+}
+const electronAPI = window.electronAPI;
 
 export interface BaseCommand {
     type: string;
@@ -44,6 +57,7 @@ export class TauriService {
         Math.random().toString(36).substring(2, 15)
     }`;
     public readonly commitHash = environment.COMMIT_HASH;
+    public readonly windowCloseCallbacks = [] as ((event: Event) => void)[];
     private runModeSubject = new BehaviorSubject<
         "starting" | "configuring" | "running"
     >(
@@ -67,25 +81,25 @@ export class TauriService {
     constructor(private ngZone: NgZone, private dialog: MatDialog) {
         this.startReadingOutput();
         window.localStorage.setItem("install_id", this.installId);
+
+        electronAPI.onWindowClose((event) => this.onWindowClose(event));
     }
 
     public async createOverlay(config: {fullscreen: boolean, maximized: boolean, alwaysOnTop: boolean}): Promise<void> {
-        invoke("create_floating_overlay", config);
+        electronAPI.invoke("create_floating_overlay", config);
     }
 
     public async destroyOverlay(): Promise<void> {
-        invoke("destroy_floating_overlay", {});
+        electronAPI.invoke("destroy_floating_overlay", {});
     }
 
     private async startReadingOutput(): Promise<void> {
         if (this.stopListener) this.stopListener();
-        this.stopListener = await listen(
-            "process-stdout",
+        await electronAPI.onStdout(
             (e) => this.processStdout(e),
         );
         if (this.stopStderrListener) this.stopStderrListener();
-        this.stopStderrListener = await listen(
-            "process-stderr",
+        await electronAPI.onStderr(
             (e) => this.processStderr(e),
         );
     }
@@ -138,7 +152,7 @@ export class TauriService {
     public async runExe(): Promise<string[]> {
         this.stopExe();
         try {
-            const output: string[] = await invoke("start_process", {});
+            const output: string[] = await electronAPI.invoke("start_process", {});
             this.startReadingOutput();
             return output;
         } catch (error) {
@@ -155,7 +169,7 @@ export class TauriService {
         try {
             this.runModeSubject.next("starting");
             console.log("process stopping...");
-            await invoke("stop_process", {});
+            await electronAPI.invoke("stop_process", {});
         } catch (error) {
             console.error("Error running exe:", error);
             throw error;
@@ -173,7 +187,7 @@ export class TauriService {
         });
     }
     public async send_command(message: BaseCommand): Promise<void> {
-        await invoke("send_json_line", {
+        await electronAPI.invoke("send_json_line", {
             jsonLine: JSON.stringify(message) + "\n",
         });
     }
@@ -182,14 +196,18 @@ export class TauriService {
     public async checkForUpdates(): Promise<void> {
         try {
             // Get the current commit hash from the Tauri app
-            const currentCommit: string = await invoke("get_commit_hash");
-            console.log("Current commit hash:", currentCommit);
-            console.log("Frontend commit hash:", this.commitHash);
+            console.log("Commit hash:", this.commitHash);
 
             // Skip update check for development builds
-            if (currentCommit === "development") {
+            if (this.commitHash === "development") {
                 console.log("Development build, skipping update check");
                 return;
+            }
+
+            if (this.commitHash === "__COMMIT_HASH_PLACEHOLDER__") {
+                throw new Error(
+                    "__COMMIT_HASH_PLACEHOLDER__ placeholder not correctly resolved. Please check your build configuration.",
+                );
             }
 
             // Check for updates from GitHub API
@@ -221,7 +239,6 @@ export class TauriService {
                     console.log("Release commit hash:", releaseCommit);
 
                     if (
-                        releaseCommit !== currentCommit &&
                         releaseCommit !== this.commitHash
                     ) {
                         console.log("Update available, showing prompt");
@@ -260,5 +277,14 @@ export class TauriService {
                 }
             });
         });
+    }
+
+    async onWindowClose(event: Event): Promise<void> {
+        console.log('Window close requested, running callbacks');
+        //event.preventDefault();
+        // Promise all windowCloseCallbacks
+        await Promise.all(this.windowCloseCallbacks.map(callback => callback(event)));
+        // confirm close to electron
+        await electronAPI.confirmWindowClose();
     }
 }

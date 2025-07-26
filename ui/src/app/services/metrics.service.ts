@@ -144,12 +144,11 @@ export class MetricsService {
     }
 
     private async setupTeardown(): Promise<void> {
-        const unlisten = await getCurrentWindow().onCloseRequested(
-            async (event) => {
+        this.tauriService.windowCloseCallbacks.push(
+            async (event: Event) => {
                 this.readySessionsGauge.record(0);
                 this.startedSessionsGauge.record(0);
                 await this.metricReader.shutdown();
-                unlisten();
             },
         );
     }
