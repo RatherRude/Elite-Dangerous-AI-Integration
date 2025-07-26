@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, protocol, net, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, protocol, net, screen, shell } = require('electron');
 const { spawn } = require('child_process');
 const path = require('path');
 const url = require('node:url')
@@ -191,6 +191,18 @@ function createMainWindow() {
       },
     });
   });
+
+  // Handle opening external links
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+      // config.fileProtocol is my custom file protocol
+      if (url.startsWith(config.fileProtocol)) {
+          return { action: 'allow' };
+      }
+      // open url in a browser and prevent default
+      shell.openExternal(url);
+      return { action: 'deny' };
+  });
+
 
   mainWindow.loadURL(config.ui);
 
