@@ -110,11 +110,11 @@ jobs:
           New-Item -ItemType Directory -Path .\simple-zip\files -Force
           # Copy only the executable and resources folder
           Copy-Item -Path .\dist\win-unpacked\* -Destination .\simple-zip\files -Recurse
-          # Create a link from .\simple-zip\covas-next.lnk to the executable .\simple-zip\files\com.covas-next.ui.exe
+          # Create a link from .\simple-zip\covas-next.lnk to the executable .\simple-zip\files\com.covasnext.ui.exe
           cd .\simple-zip
           $WshShell = New-Object -ComObject WScript.Shell
           $Shortcut = $WshShell.CreateShortcut("covas-next.lnk")
-          $Shortcut.TargetPath = ".\files\com.covas-next.ui.exe"
+          $Shortcut.TargetPath = ".\files\com.covasnext.ui.exe"
           $Shortcut.WorkingDirectory = ".\files"
           $Shortcut.Save()
 
