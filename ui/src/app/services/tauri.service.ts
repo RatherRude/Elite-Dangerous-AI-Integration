@@ -13,6 +13,8 @@ declare global {
             invoke: (call: string, opts?: any) => Promise<any>;
             onStdout: (callback: (value: any) => void) => Promise<void> | void;
             onStderr: (callback: (value: any) => void) => Promise<void> | void;
+            onWindowClose: (callback: (event: Event) => void) => void;
+            confirmWindowClose: () => Promise<void>;
         };
     }
 }
@@ -55,6 +57,7 @@ export class TauriService {
         Math.random().toString(36).substring(2, 15)
     }`;
     public readonly commitHash = environment.COMMIT_HASH;
+    public readonly windowCloseCallbacks = [] as ((event: Event) => void)[];
     private runModeSubject = new BehaviorSubject<
         "starting" | "configuring" | "running"
     >(
@@ -78,6 +81,8 @@ export class TauriService {
     constructor(private ngZone: NgZone, private dialog: MatDialog) {
         this.startReadingOutput();
         window.localStorage.setItem("install_id", this.installId);
+
+        electronAPI.onWindowClose((event) => this.onWindowClose(event));
     }
 
     public async createOverlay(config: {fullscreen: boolean, maximized: boolean, alwaysOnTop: boolean}): Promise<void> {
@@ -191,14 +196,18 @@ export class TauriService {
     public async checkForUpdates(): Promise<void> {
         try {
             // Get the current commit hash from the Tauri app
-            const currentCommit: string = await electronAPI.invoke("get_commit_hash");
-            console.log("Current commit hash:", currentCommit);
-            console.log("Frontend commit hash:", this.commitHash);
+            console.log("Commit hash:", this.commitHash);
 
             // Skip update check for development builds
-            if (currentCommit === "development") {
+            if (this.commitHash === "development") {
                 console.log("Development build, skipping update check");
                 return;
+            }
+
+            if (this.commitHash === "__COMMIT_HASH_PLACEHOLDER__") {
+                throw new Error(
+                    "__COMMIT_HASH_PLACEHOLDER__ placeholder not correctly resolved. Please check your build configuration.",
+                );
             }
 
             // Check for updates from GitHub API
@@ -230,7 +239,6 @@ export class TauriService {
                     console.log("Release commit hash:", releaseCommit);
 
                     if (
-                        releaseCommit !== currentCommit &&
                         releaseCommit !== this.commitHash
                     ) {
                         console.log("Update available, showing prompt");
@@ -269,5 +277,14 @@ export class TauriService {
                 }
             });
         });
+    }
+
+    async onWindowClose(event: Event): Promise<void> {
+        console.log('Window close requested, running callbacks');
+        //event.preventDefault();
+        // Promise all windowCloseCallbacks
+        await Promise.all(this.windowCloseCallbacks.map(callback => callback(event)));
+        // confirm close to electron
+        await electronAPI.confirmWindowClose();
     }
 }

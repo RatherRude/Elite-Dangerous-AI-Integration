@@ -109,7 +109,7 @@ jobs:
           New-Item -ItemType Directory -Path .\simple-zip -Force
           New-Item -ItemType Directory -Path .\simple-zip\files -Force
           # Copy only the executable and resources folder
-          Copy-Item -Path .\dist\win-unpacked -Destination .\simple-zip\files -Recurse
+          Copy-Item -Path .\dist\win-unpacked\* -Destination .\simple-zip\files -Recurse
           # Create a link from .\simple-zip\covas-next.lnk to the executable .\simple-zip\files\com.covas-next.ui.exe
           cd .\simple-zip
           $WshShell = New-Object -ComObject WScript.Shell

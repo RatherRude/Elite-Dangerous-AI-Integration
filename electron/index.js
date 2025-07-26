@@ -70,6 +70,7 @@ protocol.registerSchemesAsPrivileged([
       supportFetchAPI: true,
       bypassCSP: true,
       standard: true,
+      corsEnabled: false,
     }
   }
 ]);
@@ -102,6 +103,12 @@ class BackendService {
     this.#currentProcess = spawn(config.backend, config.backend_args, {
       stdio: ['pipe', 'pipe', 'pipe'],
       cwd: config.backend_cwd
+    });
+
+    app.on('before-quit', () => {
+      if (this.#currentProcess && !this.#currentProcess.killed) {
+        this.#currentProcess.kill();
+      }
     });
 
     this.#currentProcess.stdout.setEncoding('utf8');
@@ -165,7 +172,40 @@ function createMainWindow() {
   });
   mainWindow.setMenuBarVisibility(false);
 
+  // Handle CORS
+  mainWindow.webContents.session.webRequest.onBeforeSendHeaders(
+    (details, callback) => {
+      callback({ requestHeaders: { Origin: '*', ...details.requestHeaders } });
+    },
+  );
+
+  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        'access-control-allow-origin': '*',
+        'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        'access-control-allow-headers': 'Authorization, User-Agent, content-type',
+        'access-control-allow-credentials': 'true',
+        'access-control-max-age': '86400',
+        ...details.responseHeaders,
+      },
+    });
+  });
+
   mainWindow.loadURL(config.ui);
+
+  // Handle window close
+  mainWindow.once('close', (event) => {
+    // Prevent the window from closing immediately
+    event.preventDefault();
+    // If the user confirms, then close the window
+    ipcMain.handleOnce('window-close-ready', () => {
+      console.log('Main window close handler done, stopping process');
+      mainWindow.close();
+    });
+    // Call renderer close handler
+    mainWindow.webContents.send('window-close');
+  });
 
   return mainWindow;
 }
@@ -203,6 +243,7 @@ function createOverlayWindow(opts) {
   if (opts.alwaysOnTop) {
     overlayWindow.setAlwaysOnTop(true, 'screen-saver', 2);
   }
+
   return overlayWindow;
 }
 app.whenReady().then(async ()=>{
@@ -211,13 +252,16 @@ app.whenReady().then(async ()=>{
     const requestUrl = new URL(request.url);
     const resolved = url.pathToFileURL(path.join(__dirname, './ui/', requestUrl.pathname)).toString()
     console.log(request.url, '->', resolved)
+    // if file is directory, return index.html
+    if (requestUrl.pathname.endsWith('/')) {
+      return net.fetch(url.pathToFileURL(path.join(__dirname, './ui/index.html')).toString())
+    }
     return net.fetch(resolved)
   })
 
   const backend = new BackendService();
   const mainWindow = createMainWindow();
   let floatingOverlay = null;
-  ipcMain.handle('get_commit_hash', (...args)=>'development');
   ipcMain.handle('send_json_line', (...args)=>backend.sendJsonLine(...args));
   ipcMain.handle('start_process', (...args)=>backend.startProcess(mainWindow, ...args));
   ipcMain.handle('stop_process', (...args)=>backend.stopProcess(mainWindow, ...args));
