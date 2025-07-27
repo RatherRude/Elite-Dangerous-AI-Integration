@@ -522,6 +522,7 @@ ship_sizes: dict[str, Literal['S', 'M', 'L', 'Unknown']] = {
     'type8':                         'L',
     'type9':                         'L',
     'type9_military':                'L',
+    'panthermkii':                   'L',
     'typex':                         'M',
     'typex_2':                       'M',
     'typex_3':                       'M',
@@ -529,6 +530,13 @@ ship_sizes: dict[str, Literal['S', 'M', 'L', 'Unknown']] = {
     'viper_mkiv':                    'S',
     'vulture':                       'S',
 }
+
+FighterState = TypedDict('FighterState', {
+    "ID": NotRequired[int],
+    "Status": Literal['Ready', 'Launched', 'BeingRebuilt', 'Idle'],
+    "Pilot": NotRequired[str],
+    "RebuiltAt": NotRequired[str]
+})
 
 ShipInfoState = TypedDict('ShipInfoState', {
     "Name": str,
@@ -546,6 +554,7 @@ ShipInfoState = TypedDict('ShipInfoState', {
     "LandingPadSize": Literal['S', 'M', 'L', 'Unknown'],
     "IsMiningShip": bool,
     "hasLimpets": bool,
+    "Fighters": list[FighterState],
 })
 
 @final
@@ -567,6 +576,7 @@ class ShipInfo(Projection[ShipInfoState]):
             #"CurrentJumpRange": 0,
             "IsMiningShip": False,
             "hasLimpets": False,
+            "Fighters": [],
             "LandingPadSize": 'Unknown',
         }
     
@@ -612,6 +622,25 @@ class ShipInfo(Projection[ShipInfoState]):
                 else:
                     self.state['hasLimpets'] = False
 
+                # Check for fighter bay modules
+                fighter_count = 0
+                modules = event.content.get("Modules", [])
+                if modules:
+                    for module in modules:  # type: ignore
+                        item = module.get("Item", "")
+                        if item == "int_fighterbay_size5_class1":
+                            fighter_count = 1
+                            break
+                        elif item in ["int_fighterbay_size6_class1", "int_fighterbay_size7_class1"]:
+                            fighter_count = 2
+                            break
+
+                if fighter_count > 0:
+                    # Initialize fighters in Ready state without IDs
+                    self.state['Fighters'] = [{"Status": "Ready"} for _ in range(fighter_count)]
+                else:
+                    self.state['Fighters'] = []
+
         if isinstance(event, GameEvent) and event.content.get('event') == 'Cargo':
             self.state['Cargo'] = event.content.get('Count', 0)
 
@@ -624,6 +653,104 @@ class ShipInfo(Projection[ShipInfoState]):
                 self.state['Name'] = event.content.get('UserShipName', 'Unknown')
             if 'UserShipId' in event.content:
                 self.state['ShipIdent'] = event.content.get('UserShipId', 'Unknown')
+
+        # Fighter events
+        # No events for crew fighter destroyed or docked...
+        # if isinstance(event, GameEvent) and event.content.get('event') == 'CrewLaunchFighter':
+        #     # Commander launches fighter for crew member
+        #     crew_name = event.content.get('Crew', 'Unknown Crew')
+        #
+        #     # Find a ready fighter without ID to assign to crew
+        #     for fighter in self.state['Fighters']:
+        #         if fighter['Status'] == 'Ready' and 'ID' not in fighter:
+        #             fighter['Status'] = 'Launched'
+        #             fighter['Pilot'] = crew_name
+        #             break
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'LaunchFighter':
+            fighter_id = event.content.get('ID')
+            player_controlled = event.content.get('PlayerControlled', False)
+            
+            if fighter_id is not None:
+                # Determine pilot based on PlayerControlled flag
+                pilot = "Commander" if player_controlled else "NPC Crew"
+                
+                # Find existing fighter with this ID or a ready fighter without ID
+                fighter_found = False
+                for fighter in self.state['Fighters']:
+                    if fighter.get('ID') == fighter_id:
+                        # Fighter with this ID already exists
+                        fighter['Status'] = 'Launched'
+                        fighter['Pilot'] = pilot
+                        fighter_found = True
+                        break
+                
+                if not fighter_found:
+                    # Find a ready fighter without ID
+                    for fighter in self.state['Fighters']:
+                        if fighter['Status'] == 'Ready' and 'ID' not in fighter:
+                            fighter['ID'] = fighter_id
+                            fighter['Status'] = 'Launched'
+                            fighter['Pilot'] = pilot
+                            break
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'DockFighter':
+            fighter_id = event.content.get('ID')
+            
+            # Find fighter by ID and set to ready, clear ID
+            for fighter in self.state['Fighters']:
+                if fighter.get('ID') == fighter_id:
+                    fighter['Status'] = 'Ready'
+                    fighter.pop('ID', None)
+                    fighter.pop('Pilot', None)
+                    break
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'FighterDestroyed':
+            fighter_id = event.content.get('ID')
+            
+            # Calculate rebuild completion time (80 seconds from now)
+            current_time = datetime.fromisoformat(event.timestamp.replace('Z', '+00:00'))
+            rebuild_time = current_time + timedelta(seconds=90)
+            rebuild_timestamp = rebuild_time.isoformat().replace('+00:00', 'Z')
+            
+            # Find fighter by ID and set to being rebuilt
+            for fighter in self.state['Fighters']:
+                if fighter.get('ID') == fighter_id:
+                    fighter['Status'] = 'BeingRebuilt'
+                    fighter['RebuiltAt'] = rebuild_timestamp
+                    fighter.pop('Pilot', None)
+                    break
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'FighterRebuilt':
+            fighter_id = event.content.get('ID')
+            
+            # Find fighter by ID and set to ready, clear ID
+            for fighter in self.state['Fighters']:
+                if fighter.get('ID') == fighter_id:
+                    fighter['Status'] = 'Ready'
+                    fighter.pop('ID', None)
+                    fighter.pop('Pilot', None)
+                    fighter.pop('RebuiltAt', None)
+                    break
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'VehicleSwitch':
+            vehicle_to = event.content.get('To', '')
+            
+            if vehicle_to == 'Mothership':
+                # Commander switched back to mothership, fighter becomes idle
+                for fighter in self.state['Fighters']:
+                    if fighter.get('Pilot') == 'Commander' and fighter['Status'] == 'Launched':
+                        fighter['Status'] = 'Idle'
+                        fighter['Pilot'] = 'No pilot'
+                        break
+            
+            elif vehicle_to == 'Fighter':
+                # Commander switched to fighter, set fighter back to launched
+                for fighter in self.state['Fighters']:
+                    if fighter['Status'] == 'Idle' and fighter.get('Pilot') == 'No pilot':
+                        fighter['Status'] = 'Launched'
+                        fighter['Pilot'] = 'Commander'
+                        break
 
         if self.state['Type'] != 'Unknown':
             self.state['LandingPadSize'] = ship_sizes.get(self.state['Type'], 'Unknown')
@@ -1258,6 +1385,38 @@ class InCombat(Projection[InCombatState]):
 
         return projected_events
 
+
+# Define types for Wing Projection
+WingState = TypedDict('WingState', {
+    "Members": list[str]
+})
+
+@final
+class Wing(Projection[WingState]):
+    @override
+    def get_default_state(self) -> WingState:
+        return {
+            "Members": []
+        }
+
+    @override
+    def process(self, event: Event) -> None:
+        if isinstance(event, GameEvent) and event.content.get('event') == 'WingJoin':
+            # Initialize with existing members if any
+            others = event.content.get('Others', [])
+            if others:
+                self.state['Members'] = [member.get('Name', 'Unknown') for member in others]  # type: ignore
+            else:
+                self.state['Members'] = []
+        
+        if isinstance(event, GameEvent) and event.content.get('event') == 'WingAdd':
+            name = event.content.get('Name', 'Unknown')
+            if name and name not in self.state['Members']:
+                self.state['Members'].append(name)
+        
+        if isinstance(event, GameEvent) and event.content.get('event') in ['WingLeave', 'LoadGame']:
+            self.state['Members'] = []
+
 # Define types for Idle Projection
 IdleState = TypedDict('IdleState', {
     "LastInteraction": str,  # ISO timestamp of last interaction
@@ -1320,6 +1479,7 @@ def registerProjections(event_manager: EventManager, system_db: SystemDatabase, 
     event_manager.register_projection(ColonisationConstruction())
     event_manager.register_projection(DockingEvents())
     event_manager.register_projection(InCombat())
+    event_manager.register_projection(Wing())
     event_manager.register_projection(Idle(idle_timeout))
 
     # ToDo: SLF, SRV,

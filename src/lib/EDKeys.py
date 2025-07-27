@@ -57,10 +57,16 @@ class EDKeys:
             'IncreaseSystemsPower',
             'ResetPowerDistribution',
             'GalaxyMapOpen',
-            'CamYawLeft',
             'SystemMapOpen',
             'CycleNextTarget',
             'CyclePreviousTarget',
+            'CycleNextHostileTarget',
+            'CyclePreviousHostileTarget',
+            'TargetWingman0',
+            'TargetWingman1',
+            'TargetWingman2',
+            'SelectTargetsTarget',
+            'WingNavLock',
             'CycleNextSubsystem',
             'CycleFireGroupNext',
             'CycleFireGroupPrevious',
@@ -85,8 +91,6 @@ class EDKeys:
             'UI_Right',
             'UI_Select',
             'UI_Back',
-            'CamTranslateForward',
-            'CamTranslateRight',
             'CamZoomOut',
             'CamZoomIn',
             'UIFocus',
@@ -243,7 +247,7 @@ class EDKeys:
         if binding is None:
             raise Exception(
                 f"Unable to retrieve keybinding for {key_name}. Advise user to check game settings for keyboard bindings.")
-        if not binding['key']:
+        if not 'key' in binding:
             raise Exception(f"Unsupported key {key_name}.")
 
         for i in range(repeat):

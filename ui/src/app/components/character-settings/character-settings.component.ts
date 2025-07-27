@@ -22,6 +22,7 @@ import { ConfirmationDialogService } from "../../services/confirmation-dialog.se
 import { MatDialog } from "@angular/material/dialog";
 import { EdgeTtsVoicesDialogComponent } from "../edge-tts-voices-dialog/edge-tts-voices-dialog.component.js";
 import { ConfirmationDialogComponent } from "../confirmation-dialog/confirmation-dialog.component.js";
+import { AvatarCatalogDialogComponent, AvatarCatalogResult } from "../avatar-catalog-dialog/avatar-catalog-dialog.component.js";
 import {
     MatAccordion,
     MatExpansionPanel,
@@ -788,7 +789,7 @@ export class CharacterSettingsComponent {
         }
 
         if (knowledgeAreas.length === 0) {
-            return "Stick to factual information and avoid references to specific domains.";
+            return "Stick to factual information.";
         }
 
         return `Incorporate knowledge of ${
@@ -1351,6 +1352,31 @@ export class CharacterSettingsComponent {
         dialogRef.afterClosed().subscribe(async (result) => {
             if (result) {
                 await this.configService.clearHistory();
+            }
+        });
+    }
+
+    // Avatar-related methods
+    async loadCharacterAvatar() {
+        // This method is now handled by the character service
+        // We can remove this implementation as the service handles it automatically
+    }
+
+    getAvatarUrl(): string {
+        return this.characterService.getAvatarUrl();
+    }
+
+    openAvatarCatalog() {
+        const dialogRef = this.dialog.open(AvatarCatalogDialogComponent, {
+            width: '850px',
+            maxWidth: '95vw',
+            data: { currentAvatarId: this.activeCharacter?.avatar }
+        });
+
+        dialogRef.afterClosed().subscribe((result: AvatarCatalogResult) => {
+            if (result !== undefined && this.activeCharacter) {
+                this.setCharacterProperty('avatar', result.avatarId);
+                // The character service will automatically reload the avatar
             }
         });
     }

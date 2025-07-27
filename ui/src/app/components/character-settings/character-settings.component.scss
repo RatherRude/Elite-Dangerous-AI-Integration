@@ -25,7 +25,7 @@
   padding: 20px;
 }
 
-mat-form-field {
+:not(.avatar-option) mat-form-field {
   width: 100%;
 }
 
@@ -277,4 +277,128 @@ ul {
 /* Hide empty subscript wrapper for mat-select */
 .character-selector ::ng-deep .mat-mdc-form-field-subscript-wrapper {
   display: none !important;
+}
+
+// Avatar-related styles
+.character-avatar-preview {
+  width: 80px;
+  height: 80px;
+  float: left;
+  margin-right: 16px;
+  margin-bottom: 8px;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  
+  .avatar-preview-image {
+    width: 200%; // Make image larger so we only see 1/4 
+    height: 200%; // Make image larger so we only see 1/4
+  }
+}
+
+.character-display {
+  overflow: hidden;
+  
+  &.with-traits {
+    // Add extra space for traits when they're shown
+    min-height: 120px;
+  }
+}
+
+.avatar-edit-section {
+  margin-bottom: 20px;
+  
+  .avatar-container {
+    display: inline-flex;
+    gap: 24px;
+    align-items: flex-start;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    width: fit-content;
+  }
+  
+  .avatar-display-container {
+    display: flex;
+    justify-content: center;
+    flex-shrink: 0;
+    
+    .avatar-full-display {
+      position: relative;
+      width: 200px;
+      height: 200px;
+      
+      .avatar-full-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 12px;
+        border: 3px solid rgba(255, 255, 255, 0.2);
+        transition: all 0.2s ease;
+        
+        &:hover {
+          border-color: rgba(255, 255, 255, 0.4);
+        }
+      }
+      
+      .avatar-edit-button {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        
+        &:hover {
+          background: rgba(0, 0, 0, 0.9);
+          border-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        mat-icon {
+          font-size: 18px;
+          width: 18px;
+          height: 18px;
+        }
+      }
+    }
+  }
+}
+
+// Avatar options styling
+.avatar-options-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 200px;
+  justify-content: center;
+
+  .avatar-option {
+    display: flex;
+    align-items: center;
+    
+    mat-form-field {
+      width: 119px;
+    }
+    
+    mat-slide-toggle {
+      margin: 0;
+    }
+  }
+}
+
+.character-edit-header {
+  display: flex;
+  gap: 1rem;
+
+  .character-edit-header-left-column {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+.character-voice-container {
+  display: flex;
+  gap: 8px;
 }

@@ -121,7 +121,7 @@
             <mat-form-field>
                 <mat-label>LLM Temperature</mat-label>
                 <input matInput type="number" [(ngModel)]="config.llm_temperature"
-                        (ngModelChange)="onConfigChange({llm_temperature: parseFloat($event)})" min="0" max="2" step="0.01">
+                        (ngModelChange)="onConfigChange({llm_temperature: $event})" min="0" max="2" step="0.01">
             </mat-form-field>
 
             <mat-form-field>
@@ -161,6 +161,11 @@
                         (ngModelChange)="onConfigChange({stt_model_name: $event})">
             </mat-form-field>
             <mat-form-field>
+                <mat-label>STT Language Code</mat-label>
+                <input matInput [(ngModel)]="config.stt_language" placeholder="auto" pattern="([a-z]{2})?"
+                        (ngModelChange)="onConfigChange({stt_language: $event})">
+            </mat-form-field>
+            <mat-form-field>
                 <mat-label>Override STT API Key</mat-label>
                 <input matInput type="password" [(ngModel)]="config.stt_api_key"
                         (ngModelChange)="onConfigChange({stt_api_key: $event})">
@@ -184,6 +189,11 @@
                 <input matInput [(ngModel)]="config.stt_endpoint"
                         (ngModelChange)="onConfigChange({stt_endpoint: $event})">
             </mat-form-field>
+            <mat-form-field>
+                <mat-label>STT Language Code</mat-label>
+                <input matInput [(ngModel)]="config.stt_language" placeholder="default" pattern="([a-z]{2})?"
+                        (ngModelChange)="onConfigChange({stt_language: $event})">
+            </mat-form-field>
         }
         @if (config.stt_provider === "custom") {
             <mat-form-field>
@@ -195,6 +205,11 @@
                 <mat-label>STT Model Name</mat-label>
                 <input matInput [(ngModel)]="config.stt_model_name"
                         (ngModelChange)="onConfigChange({stt_model_name: $event})">
+            </mat-form-field>
+            <mat-form-field>
+                <mat-label>STT Language Code</mat-label>
+                <input matInput [(ngModel)]="config.stt_language" placeholder="default"
+                        (ngModelChange)="onConfigChange({stt_language: $event})">
             </mat-form-field>
             <mat-form-field>
                 <mat-label>Override STT API Key</mat-label>

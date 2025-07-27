@@ -12,8 +12,11 @@ export interface ChatMessage extends BaseMessage {
     providedIn: "root",
 })
 export class ChatService {
-    private chatSubject = new BehaviorSubject<ChatMessage[]>([]);
-    public chat$ = this.chatSubject.asObservable();
+    private chatHistorySubject = new BehaviorSubject<ChatMessage[]>([]);
+    public chatHistory$ = this.chatHistorySubject.asObservable();
+
+    private chatMessageSubject = new BehaviorSubject<ChatMessage | null>(null);
+    public chatMessage$ = this.chatMessageSubject.asObservable()
 
     constructor(private tauriService: TauriService) {
         // Subscribe to log messages from the TauriService
@@ -23,17 +26,18 @@ export class ChatService {
             ),
         ).subscribe((chatMessage) => {
             if (chatMessage.type === "chat") {
-                const currentLogs = this.chatSubject.getValue();
-                this.chatSubject.next([...currentLogs, chatMessage]);
+                this.chatMessageSubject.next(chatMessage);
+                const currentLogs = this.chatHistorySubject.getValue();
+                this.chatHistorySubject.next([...currentLogs, chatMessage]);
             }
         });
     }
 
     public clearChat(): void {
-        this.chatSubject.next([]);
+        this.chatHistorySubject.next([]);
     }
 
     public getCurrentChat(): ChatMessage[] {
-        return this.chatSubject.getValue();
+        return this.chatHistorySubject.getValue();
     }
 }

@@ -1,17 +1,14 @@
 import sys
-from time import time, sleep # Modified import
+from time import sleep
 from typing import Any, cast, final
-import os # Added import
-import threading # Added import
-import json # Added import
-import io # Added import
-import traceback # Added import
-import platform # Added import
+import os
+import threading
+import json
+import io
+import traceback
 
 from EDMesg.CovasNext import ExternalChatNotification, ExternalBackgroundChatNotification
 from openai import OpenAI
-from openai.types.chat import ChatCompletion
-from openai.types.chat import ChatCompletionMessageToolCall
 
 from lib.PluginHelper import PluginHelper
 from lib.Config import Config, assign_ptt, get_ed_appdata_path, get_ed_journals_path, get_system_info, load_config, save_config, update_config, update_event_config, validate_config, update_character, reset_game_events
@@ -27,7 +24,7 @@ from lib.Projections import registerProjections
 from lib.PromptGenerator import PromptGenerator
 from lib.STT import STT
 from lib.TTS import TTS
-from lib.StatusParser import Status, StatusParser
+from lib.StatusParser import StatusParser
 from lib.EDJournal import *
 from lib.EventManager import EventManager
 from lib.UI import send_message
@@ -102,7 +99,7 @@ class Chat:
             
         tts_provider = 'none' if self.config["edcopilot"] and self.config["edcopilot_dominant"] else self.config["tts_provider"]
         self.tts = TTS(openai_client=self.ttsClient, provider=tts_provider, model=self.config["tts_model_name"], voice=self.character["tts_voice"], voice_instructions=self.character["tts_prompt"], speed=self.character["tts_speed"], output_device=self.config["output_device_name"])
-        self.stt = STT(openai_client=self.sttClient, provider=self.config["stt_provider"], input_device_name=self.config["input_device_name"], model=self.config["stt_model_name"], custom_prompt=self.config["stt_custom_prompt"], required_word=self.config["stt_required_word"])
+        self.stt = STT(openai_client=self.sttClient, provider=self.config["stt_provider"], input_device_name=self.config["input_device_name"], model=self.config["stt_model_name"], language=self.config["stt_language"], custom_prompt=self.config["stt_custom_prompt"], required_word=self.config["stt_required_word"])
 
         log("debug", "Initializing SystemDatabase...")
         self.system_database = SystemDatabase()
@@ -317,12 +314,15 @@ class Chat:
 
 def read_stdin(chat: Chat):
     log("debug", "Reading stdin...")
+    print(json.dumps({"type": "running_config", "config": config}) + '\n', flush=True)
     while True:
         line = sys.stdin.readline().strip()
         if line:
             data = json.loads(line)
             if data.get("type") == "submit_input":
                 chat.submit_input(data["input"])
+            if data.get("type") == "init_overlay":
+                print(json.dumps({"type": "running_config", "config": config})+'\n', flush=True)
 
 def check_zombie_status():
     """Checks if the current process is a zombie and exits if it is."""
@@ -379,6 +379,8 @@ if __name__ == "__main__":
                 if data.get("type") == "clear_history":
                     EventManager.clear_history()
                     #ActionManager.clear_action_cache()
+                if data.get("type") == "init_overlay":
+                    update_config(config, {}) # Ensure that the overlay gets a new config on start
                 
             except json.JSONDecodeError:
                 continue

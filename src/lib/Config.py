@@ -339,6 +339,10 @@ class Character(TypedDict, total=False):
     tts_voice: str
     tts_speed: str
     tts_prompt: str
+    avatar: str  # IndexedDB key for the avatar image
+    avatar_show: bool  # Show Avatar: boolean (disabled and false if edcopilot_dominant equals true)
+    avatar_position: str  # Position: Left or Right as dropdown (hidden if not showing avatar)
+    avatar_flip: bool  # Flip: boolean (hidden if not showing avatar)
     game_events: dict[str, bool]
     event_reaction_enabled_var: bool
     react_to_text_local_var: bool
@@ -371,6 +375,7 @@ class Config(TypedDict):
     stt_model_name: str
     stt_api_key: str
     stt_endpoint: str
+    stt_language: str
     stt_custom_prompt: str
     stt_required_word: str
     tts_provider: Literal['openai', 'edge-tts', 'custom', 'none', 'local-ai-server']
@@ -425,7 +430,9 @@ def get_ed_appdata_path(config: Config) -> str:
     from os import environ
     return environ['LOCALAPPDATA'] + "\\Frontier Developments\\Elite Dangerous"
 
-
+def get_color_matrix():
+    from os import environ
+    return environ['LOCALAPPDATA'] + "\\Frontier Developments\\Elite Dangerous\\Options\\Graphics"
 def get_asset_path(filename: str) -> str:
     assets_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../assets'))
     if hasattr(sys, 'frozen'):
@@ -528,7 +535,7 @@ def migrate(data: dict) -> dict:
 
         if len(data['characters']) > 0 and data['characters'][0]['name'] != 'Default':
             # Insert default character at beginning
-            data['characters'].insert(0, getDefaultCharacter(data))
+            data['characters'].insert(0, getDefaultCharacter(cast(Config, data)))
             # Adjust active character index if it exists
             if 'active_character_index' in data:
                 data['active_character_index'] += 1
@@ -580,11 +587,23 @@ def merge_config_data(defaults: dict, user: dict):
                 
             # Handle dict type specially
             if isinstance(defaults.get(key), dict) and isinstance(user.get(key), dict):
-                merge[key] = merge_config_data(defaults.get(key), user.get(key))
-            # Skip list type (not supported in merge)
-            elif isinstance(defaults.get(key), list):
-                # Just copy the user list directly
-                merge[key] = user.get(key)
+                merge[key] = merge_config_data(cast(dict, defaults.get(key)), cast(dict, user.get(key)))
+            elif isinstance(defaults.get(key), list) and isinstance(user.get(key), list):
+                if not defaults.get(key):
+                    # We have no default for this list, so we cannot merge, just copy the user config over
+                    merge[key] = user.get(key)
+                    continue
+
+                default_elem = defaults.get(key)[0]
+                merge[key] = []
+                for i,user_elem in enumerate(user.get(key)):
+                    if isinstance(default_elem, dict) and isinstance(user_elem, dict):
+                        merge[key].append(merge_config_data(default_elem, user_elem))
+                    else:
+                        # the elements in the list are not dictionaries, so we cannot merge, just copy the user config over
+                        # TODO we can be smarter here and still type check the elements
+                        merge[key].append(user_elem)
+
             else:
                 merge[key] = user.get(key)
 
@@ -593,7 +612,7 @@ def merge_config_data(defaults: dict, user: dict):
 def getDefaultCharacter(config: Config) -> Character:
     return Character({
         "name": 'Default',
-        "character": 'Provide concise answers that address the main points. Include humor and light-hearted elements in your responses when appropriate. Stick to factual information and avoid references to specific domains. Your responses should be inspired by the character or persona of COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal). Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS. Always respond in English regardless of the language spoken to you. Show some consideration for emotions while maintaining focus on information. Maintain a friendly yet respectful conversational style. Speak with confidence and conviction in your responses. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.',
+        "character": 'Provide concise answers that address the main points. Include humor and light-hearted elements in your responses when appropriate. Your responses should be that of a neurally enhanced ship computer. Your name is COVAS. Always respond in English regardless of the language spoken to you. Show some consideration for emotions while maintaining focus on information. Maintain a friendly yet respectful conversational style. Speak with confidence and conviction in your responses. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.',
         "personality_preset": 'default',
         "personality_verbosity": 0,
         "personality_vulgarity": 0,
@@ -611,6 +630,10 @@ def getDefaultCharacter(config: Config) -> Character:
         "tts_voice": 'en-US-AvaMultilingualNeural' if config.get('tts_provider') == 'edge-tts' else 'nova',
         "tts_speed": '1.2',
         "tts_prompt": '',
+        "avatar": '',  # No avatar by default
+        "avatar_show": True,
+        "avatar_position": "right",
+        "avatar_flip": False,
         "game_events": game_events,
         "event_reaction_enabled_var": True,
         "react_to_text_local_var": True,
@@ -658,6 +681,7 @@ def load_config() -> Config:
         'stt_model_name': "gpt-4o-mini-transcribe",
         'stt_endpoint': "https://api.openai.com/v1",
         'stt_api_key': "",
+        'stt_language': "",
         'stt_custom_prompt': '',
         'stt_required_word': '',
         'tts_provider': "edge-tts",
@@ -801,6 +825,7 @@ class SystemInfo(TypedDict):
     input_device_names: list[str]
     output_device_names: list[str]
     edcopilot_installed: bool
+    hud_color_matrix: list[list[float]]
 
 
 def get_system_info() -> SystemInfo:
@@ -810,6 +835,7 @@ def get_system_info() -> SystemInfo:
         "input_device_names": get_input_device_names(),
         "output_device_names": get_output_device_names(),
         "edcopilot_installed": get_install_path() is not None,
+        "hud_color_matrix": [[0.2, 0, 0], [-2, 1, 0], [0, 0, 1]]
     }
 
 

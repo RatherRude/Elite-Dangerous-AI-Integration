@@ -1,6 +1,6 @@
 import json
 import traceback
-from openai.types.chat import ChatCompletion
+from openai.types.chat import ChatCompletion, ChatCompletionMessageToolCall
 from time import time
 
 from .Logger import log, show_chat_message
@@ -46,35 +46,45 @@ class Assistant:
             action_result = self.action_manager.runAction(action, projected_states)
             action_results.append(action_result)
 
-            if action_result['content'] != '': # We don't add a response if the return from an action is blank
-                self.event_manager.add_tool_call([action.model_dump()], [action_result], [action_input_desc] if action_input_desc else None)
+            self.event_manager.add_tool_call([action.model_dump()], [action_result], [action_input_desc] if action_input_desc else None)
 
 
-    def verify_action(self, user_input: list[str], action: dict[str, Any], prompt: list, tools: list):
+    def verify_action(self, user_input: str, action: ChatCompletionMessageToolCall, prompt: list, tools: list):
         """ Verify the action prediction by sending the user input without any context to the model and check if the action is still predicted """
-        log("debug", "Verifying action:", user_input, action)
+        log("debug", "Cache: Verifying action", user_input, action)
         
-        draft_action = self.action_manager.has_prediction_draft(user_input, tools)
-        if not draft_action:
-            self.action_manager.save_prediction_draft(user_input, action, tools)
+        cache_state = self.action_manager.has_action_in_cache(user_input, action, tools)
+        if cache_state == False:
+            self.action_manager.suggest_action_for_cache(user_input, action, tools)
             return
         
+        if cache_state == "confirmed":
+            log("debug", "Cache: Action already confirmed in cache, skipping verification")
+            return
+        
+        # confirm the action by sending the user input to the model without any context
+
         completion = self.llmClient.chat.completions.create(
             model=self.config["llm_model_name"],
-            messages=[prompt[0]] + [{"role": "user", "content": user} for user in user_input],
+            messages=[prompt[0]] + [{"role": "user", "content": user_input}],
+            temperature=0,
             tools=tools
         )
         
         if not isinstance(completion, ChatCompletion) or hasattr(completion, 'error'):
-            log("debug", "error during action verification:", completion)
+            log("debug", "Cache: error during action verification:", completion)
+            return
+        if not completion.choices:
+            log("debug", "Cache: LLM completion has no choices:", completion)
             return
 
-        self.action_manager.save_prediction_verification(user_input, action, completion.choices[0].message.tool_calls, tools)
+        if completion.choices[0].message.tool_calls:
+            self.action_manager.confirm_action_in_cache(user_input, completion.choices[0].message.tool_calls[0], tools)
 
 
     def reply(self, events: list[Event], projected_states: dict[str, dict]):
         if self.is_replying:
-            log('debug', 'Reply already in progress, skipping new reply')
+            log('debug', 'Cache: Reply already in progress, skipping new reply')
             return
         thread = Thread(target=self.reply_thread, args=(events, projected_states), daemon=True)
         thread.start()
@@ -115,7 +125,7 @@ class Assistant:
             tool_list = self.action_manager.getToolsList(active_mode, uses_actions, uses_web_actions) if use_tools else None
             predicted_actions = None
             if tool_list and user_input:
-                predicted_actions = self.action_manager.predict_action(user_input, tool_list)
+                predicted_actions = self.action_manager.predict_action(user_input[-1], tool_list)
                 
             if predicted_actions:
                 #log('info', 'predicted_actions', predicted_actions)
@@ -166,6 +176,9 @@ class Assistant:
                 
                 if hasattr(completion.choices[0].message, 'content'):
                     response_text = completion.choices[0].message.content
+                    if completion.choices[0].message.content is None: 
+                        log("debug", "LLM completion no content:", completion)
+                        show_chat_message("covas", "...")
                 else:
                     log("debug", f'LLM completion without text')
                     response_text = None
@@ -187,7 +200,8 @@ class Assistant:
                 self.execute_actions(response_actions, projected_states)
 
                 if not predicted_actions and self.config["use_action_cache_var"]:
-                    self.verify_action(user_input, response_actions, prompt, tool_list)
+                    if len(response_actions) == 1:
+                        self.verify_action(user_input[-1], response_actions[0], prompt, tool_list)
                     
         except Exception as e:
             log("debug", "LLM error during reply:", e, traceback.format_exc())
