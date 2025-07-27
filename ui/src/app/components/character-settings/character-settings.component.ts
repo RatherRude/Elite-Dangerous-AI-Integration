@@ -789,7 +789,7 @@ export class CharacterSettingsComponent {
         }
 
         if (knowledgeAreas.length === 0) {
-            return "Stick to factual information and avoid references to specific domains.";
+            return "Stick to factual information.";
         }
 
         return `Incorporate knowledge of ${
