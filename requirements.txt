@@ -82,5 +82,5 @@ typing-extensions==4.12.2
 urllib3==2.2.2
 wrapt==1.16.0
 zipp==3.19.2
-EDMesg @ git+https://github.com/RatherRude/EDMesg.git@d4543dc
+EDMesg @ git+https://github.com/RatherRude/EDMesg.git@dcb7045
 python-json-logger==3.3.0
