@@ -219,6 +219,7 @@ function createMainWindow() {
   const mainWindow = new BrowserWindow({
     width: 1024,
     height: 768,
+    title: 'COVAS:NEXT',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js')
     }
@@ -286,6 +287,7 @@ function createOverlayWindow(opts) {
   const overlayWindow = new BrowserWindow({
     width: 800,
     height: 600,
+    title: 'COVAS:NEXT Overlay',
     frame: false, // No frame for the overlay
     transparent: true, // Make it transparent
     webPreferences: {
