@@ -8,6 +8,7 @@ import sys
 from typing import Any, Callable, Literal, Self, TypedDict, cast, final
 
 import openai
+import requests
 
 from .PluginBase import PluginBase
 from .PluginHelper import PluginHelper, PluginManifest
@@ -27,6 +28,7 @@ class PluginManager:
         self.plugin_list: dict[str, PluginBase] = {}
         self.plugin_settings_configs: list[PluginSettings] = []
         self.PLUGIN_FOLDER: str = "plugins"
+        self.PLUGIN_DL_FOLDER: str = "plugin_downloads"
         self.PLUGIN_DEPENDENCIES_FOLDER: str = "deps"
         
         # Add the plugin folder to sys.path
@@ -104,6 +106,118 @@ class PluginManager:
             except Exception as e:
                 log('error', f"Failed to load plugin {file}: {e}")
         return self
+    
+    def check_for_plugin_updates(self):
+        """
+        Check for updates to plugins by looking for a 'source' field in the manifest.
+        If the source is a GitHub repository, it will the release information from the GitHub API.
+        If the source is not a GitHub repository, it will skip the update check, for now. More will be implemented later.
+        """
+        from semantic_version import Version
+
+        available_updates = []
+
+        for key in self.plugin_list.keys():
+            module = self.plugin_list[key]
+
+            if module.plugin_manifest.source and module.plugin_manifest.source.type == "github":
+                log('debug', f"Checking for updates for plugin {module.plugin_manifest.name} from {module.plugin_manifest.source.repo}")
+                try:
+                    # Get the latest release information from GitHub
+                    response = requests.get(
+                        url=f"https://api.github.com/repos/{module.plugin_manifest.source.repo}/releases/latest"
+                    )
+                    if response.status_code == 200:
+                        release_info = cast(dict[str, Any], response.json())
+                        latest_version = cast(str, release_info.get("tag_name", "unknown"))
+                        log('info', f"Plugin {module.plugin_manifest.name}'s latest version is {latest_version}")
+                        
+                        # Compare with the current version, using SemVer
+                        if not hasattr(module.plugin_manifest, 'version'):
+                            log('error', f"Plugin {module.plugin_manifest.name} does not have a version defined in its manifest.")
+                            continue
+                        current_version = Version(module.plugin_manifest.version)
+                        latest_version = Version(latest_version.lstrip('v'))  # Remove 'v'
+                        log('debug', f"Current version: {current_version}, Latest version: {latest_version}")
+                        if latest_version > current_version:
+                            log('info', f"Plugin {module.plugin_manifest.name} has an update available: {latest_version} (current: {current_version})")
+                            available_updates.append({
+                                "plugin_name": module.plugin_manifest.name,
+                                "current_version": str(current_version),
+                                "latest_version": str(latest_version),
+                                "repo": module.plugin_manifest.source.repo,
+                                'release_url': release_info.get('url', '')
+                            })
+                    else:
+                        log('error', f"Failed to check for updates for {module.plugin_manifest.name}: {response.text}")
+                except Exception as e:
+                    log('error', f"Error checking for updates for {module.plugin_manifest.name}: {e}")
+
+        # Notify frontend about the updates
+        print(json.dumps({
+            "type": "plugin_updates_available",
+            "available_updates": available_updates
+        }) + '\n', flush=True)
+    
+    def update_plugins(self):
+        """
+        Download and install updates for plugins that have an update available.
+        """
+        from semantic_version import Version
+
+        for key in self.plugin_list.keys():
+            module = self.plugin_list[key]
+
+            if module.plugin_manifest.source and module.plugin_manifest.source.type == "github":
+                log('debug', f"Checking for updates for plugin {module.plugin_manifest.name} from {module.plugin_manifest.source.repo}")
+                try:
+                    # Get the latest release information from GitHub
+                    response = requests.get(
+                        url=f"https://api.github.com/repos/{module.plugin_manifest.source.repo}/releases/latest"
+                    )
+                    if response.status_code == 200:
+                        release_info = cast(dict[str, Any], response.json())
+                        latest_version = cast(str, release_info.get("tag_name", "unknown"))
+                        log('info', f"Plugin {module.plugin_manifest.name}'s latest version is {latest_version}")
+                        
+                        # Compare with the current version, using SemVer
+                        if not hasattr(module.plugin_manifest, 'version'):
+                            log('error', f"Plugin {module.plugin_manifest.name} does not have a version defined in its manifest.")
+                            continue
+                        current_version = Version(module.plugin_manifest.version)
+                        latest_version = Version(latest_version.lstrip('v'))  # Remove 'v'
+                        log('debug', f"Current version: {current_version}, Latest version: {latest_version}")
+                        if latest_version > current_version:
+                            log('info', f"Installing update for plugin {module.plugin_manifest.name}. Updating from {latest_version} to {current_version})")
+                            # Download and install the update from GitHub Releases
+                            release_response = requests.get(
+                                url=f"https://api.github.com/repos/{module.plugin_manifest.source.repo}/releases/assets/{release_info['assets'][0]['id']}",
+                                headers={"Accept": "application/octet-stream"}
+                            )
+
+                            if release_response.status_code == 200:
+                                # Save the zip file to the plugin downloads folder
+                                zip_file_path = os.path.abspath(os.path.join('.', self.PLUGIN_DL_FOLDER, f"{module.plugin_manifest.name}-{latest_version}.zip"))
+                                with open(zip_file_path, 'wb') as zip_file:
+                                    zip_file.write(response.content)
+                                log('info', f"Downloaded update for {module.plugin_manifest.name} to {zip_file_path}")
+
+                                # Extract zip file to the plugin folder
+                                import zipfile
+                                with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
+                                    extract_path = os.path.abspath(os.path.join('.', self.PLUGIN_FOLDER, key))
+                                    if os.path.exists(extract_path):
+                                        os.rmdir(extract_path)  # Remove old directory if it exists
+                                    os.makedirs(extract_path)
+                                    zip_ref.extractall(extract_path)
+                                log('info', f"Extracted update for {module.plugin_manifest.name} to {self.PLUGIN_FOLDER}")
+                    else:
+                        log('error', f"Failed to check for updates for {module.plugin_manifest.name}: {response.text}")
+                except Exception as e:
+                    log('error', f"Error checking for updates for {module.plugin_manifest.name}: {e}")
+
+        # Shutdown the application to apply updates
+        print(json.dumps({"type": "plugin_updates_installed", "message": "Plugins have been updated. Please restart the application."}) + '\n', flush=True)
 
     def register_actions(self, helper: PluginHelper) -> None:
         """Register all actions for each plugin."""

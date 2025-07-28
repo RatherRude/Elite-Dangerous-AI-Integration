@@ -17,6 +17,7 @@ import { ChatContainerComponent } from "../components/chat-container/chat-contai
 import { ProjectionsService } from "../services/projections.service";
 import { MetricsService } from "../services/metrics.service.js";
 import { PolicyService } from "../services/policy.service.js";
+import { PluginUpdateService } from "../services/plugin-update.service";
 
 @Component({
     selector: "app-main-view",
@@ -54,6 +55,7 @@ export class MainViewComponent implements OnInit, OnDestroy {
         private projectionsService: ProjectionsService,
         private metricsService: MetricsService,
         private policyService: PolicyService,
+        private plugin_update_service: PluginUpdateService,
     ) {
         this.policyService.usageDisclaimerAccepted$.subscribe(
             (accepted) => {

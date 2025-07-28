@@ -84,3 +84,4 @@ wrapt==1.16.0
 zipp==3.19.2
 EDMesg @ git+https://github.com/RatherRude/EDMesg.git@e4a387e
 python-json-logger==3.3.0
+semantic-version==2.10.0

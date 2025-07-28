@@ -1,0 +1,15 @@
+<h2 mat-dialog-title>Plugin Update(s) Available</h2>
+<mat-dialog-content>
+  <p>One or more plugins have updates available:</p>
+  <ul>
+    <li *ngFor="let p_update of data.plugin_updates">
+      <strong>{{ p_update.name }}</strong> - {{ p_update.version }}
+      <a [href]="p_update.release_url" target="_blank">View Release in Browser</a>
+    </li>
+  </ul>
+  <p>Would you like to automatically download and install all plugin updates?</p>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onNoClick()">Not Now</button>
+  <button mat-raised-button color="primary" (click)="onDownloadClick()">Yes, please</button>
+</mat-dialog-actions> 
