@@ -42,7 +42,7 @@ const logger = pino({
 
 // delete old tauri log files
 if (process.platform === 'win32') {
-  const logsPath = path.join(process.env.APPDATA, 'com.covas-next.ui', 'logs');
+  const logsPath = path.join(process.env.LOCALAPPDATA, 'com.covas-next.ui', 'logs');
   require('fs').rmSync(logsPath, { recursive: true, force: true });
   logger.info('Deleted logs directory:', logsPath);
 } else if (isLinux) {
@@ -147,7 +147,12 @@ class BackendService {
 
     this.#currentProcess = spawn(config.backend, config.backend_args, {
       stdio: ['pipe', 'pipe', 'pipe'],
-      cwd: config.backend_cwd
+      cwd: config.backend_cwd,
+      env: {
+        ...process.env, // inherit environment variables
+        // set unbuffered python
+        PYTHONUNBUFFERED: 1,
+      }
     });
 
     app.on('before-quit', () => {
@@ -161,6 +166,7 @@ class BackendService {
     this.#currentProcess.stdout.on('data', (data) => {
       if (!data) return;
       data = partialStdout + data;
+      partialStdout = '';
       const lines = data.split('\n');
       const lastLine = lines.pop() ?? '';
       if (lastLine.trim() !== '') {
@@ -172,7 +178,7 @@ class BackendService {
           if (!line.includes('"type": "config"')) {
             logger.info('[stdout]', line);
           } else {
-            logger.debug('[stdout]', "[config redacted]");
+            logger.info('[stdout]', "[config redacted]");
           }
           for (const window of this.#windows) {
             window.webContents.send('stdout', { payload: line });
@@ -186,6 +192,7 @@ class BackendService {
     this.#currentProcess.stderr.on('data', (data) => {
       if (!data) return;
       data = partialStderr + data;
+      partialStderr = '';
       const lines = data.split('\n');
       const lastLine = lines.pop() ?? '';
       if (lastLine.trim() !== '') {
@@ -197,7 +204,7 @@ class BackendService {
           if (!line.includes('"type": "config"')) {
             logger.info('[stderr]', line);
           } else {
-            logger.debug('[stderr]', "[config redacted]");
+            logger.info('[stderr]', "[config redacted]");
           }
           for (const window of this.#windows) {
             window.webContents.send('stderr', { payload: line });
