@@ -403,30 +403,32 @@ class StatusParser:
                 events.append({"event": "WeaponSelected", "SelectedWeapon": new_status["SelectedWeapon"]})
 
         # Always
-        if old_status["flags"]["InDanger"] and new_status["flags"]["InDanger"] == False:
-            events.append({"event": "OutofDanger"})
-        if old_status["flags"]["InDanger"] == False and new_status["flags"]["InDanger"]:
-            events.append({"event": "InDanger"})
+        if (new_status["flags"]["InMainShip"] or new_status["flags"]["InFighter"] or new_status["flags"]["InSRV"] or
+                new_status["flags2"] and new_status["flags2"]["OnFoot"]):
+            if old_status["flags"]["InDanger"] and new_status["flags"]["InDanger"] == False:
+                events.append({"event": "OutofDanger"})
+            if old_status["flags"]["InDanger"] == False and new_status["flags"]["InDanger"]:
+                events.append({"event": "InDanger"})
 
-        if old_status["flags"]["NightVision"] and new_status["flags"]["NightVision"] == False:
-            events.append({"event": "NightVisionOff"})
-        if old_status["flags"]["NightVision"] == False and new_status["flags"]["NightVision"]:
-            events.append({"event": "NightVisionOn"})
+            if old_status["flags"]["NightVision"] and new_status["flags"]["NightVision"] == False:
+                events.append({"event": "NightVisionOff"})
+            if old_status["flags"]["NightVision"] == False and new_status["flags"]["NightVision"]:
+                events.append({"event": "NightVisionOn"})
 
-        if old_status["flags"]["HudInAnalysisMode"] and new_status["flags"]["HudInAnalysisMode"] == False:
-            events.append({"event": "HudSwitchedToCombatMode"})
-        if old_status["flags"]["HudInAnalysisMode"] == False and new_status["flags"]["HudInAnalysisMode"]:
-            events.append({"event": "HudSwitchedToAnalysisMode"})
+            if old_status["flags"]["HudInAnalysisMode"] and new_status["flags"]["HudInAnalysisMode"] == False:
+                events.append({"event": "HudSwitchedToCombatMode"})
+            if old_status["flags"]["HudInAnalysisMode"] == False and new_status["flags"]["HudInAnalysisMode"]:
+                events.append({"event": "HudSwitchedToAnalysisMode"})
 
-        if (
-            old_status["LegalState"] and new_status["LegalState"]
-            and old_status["LegalState"] != new_status["LegalState"]
-            and (
-                old_status["LegalState"] not in ["Clean", "Speeding", "Allied"]
-                or new_status["LegalState"] not in ["Clean", "Speeding", "Allied"]
-            )
-        ):
-            events.append({"event": "LegalStateChanged", "LegalState": new_status["LegalState"]})
+            if (
+                old_status["LegalState"] and new_status["LegalState"]
+                and old_status["LegalState"] != new_status["LegalState"]
+                and (
+                    old_status["LegalState"] not in ["Clean", "Speeding", "Allied"]
+                    or new_status["LegalState"] not in ["Clean", "Speeding", "Allied"]
+                )
+            ):
+                events.append({"event": "LegalStateChanged", "LegalState": new_status["LegalState"]})
         
 
 
