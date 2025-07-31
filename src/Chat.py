@@ -31,8 +31,8 @@ from lib.UI import send_message
 from lib.SystemDatabase import SystemDatabase
 from lib.Assistant import Assistant
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', write_through=True)
+sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', write_through=True)
 
 
 @final

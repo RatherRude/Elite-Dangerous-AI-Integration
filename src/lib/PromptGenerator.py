@@ -3040,7 +3040,7 @@ class PromptGenerator:
             starsystem = colonisation_info.get('StarSystem', 'Unknown')
 
             construction_status = {
-                "Location": f"{starsystem}",
+                "System": f"{starsystem}",
                 "Progress": f"{progress:.1%}",
                 "Status": "Complete" if complete else "Failed" if failed else "In Progress"
             }
