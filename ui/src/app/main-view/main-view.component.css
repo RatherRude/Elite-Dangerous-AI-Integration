@@ -53,7 +53,7 @@
 /* Use ::ng-deep as Material might encapsulate its view */
 ::ng-deep .mat-mdc-tab-body-content {
   height: 100%;
-  overflow: hidden;
+  padding: 0 !important;
   display: flex;
   flex-direction: column;
 }
