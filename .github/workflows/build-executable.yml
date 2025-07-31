@@ -55,8 +55,8 @@ jobs:
         # output the upload URL for later use
         id: upload-artifact
 
-  tauri-build:
-    name: Build Tauri App
+  electron-build:
+    name: Build Electron App
     needs: pyinstaller-build
     runs-on: windows-latest
     steps:
@@ -76,17 +76,13 @@ jobs:
           cache: "npm"
           cache-dependency-path: ui/package-lock.json
 
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: "./src-tauri -> target"
+      - name: Install electron dependencies
+        working-directory: .
+        run: npm run install:electron
 
       - name: Install frontend dependencies
-        working-directory: ui
-        run: npm install
+        working-directory: .
+        run: npm run install:ui
 
       - name: Replace Commit HASH in environment.prod.ts
         working-directory: ui
@@ -96,32 +92,36 @@ jobs:
           Set-Content -Path src/environments/environment.prod.ts -Value $newContent
         shell: pwsh
 
-      - name: Set Tauri version
-        working-directory: ui
-        run: |
-          $SHORT_HASH = "${{ github.sha }}".Substring(0, 7)
-          npx tauri-version "0.0.0-$SHORT_HASH"
-          echo "Using version: 0.0.0-$SHORT_HASH"
-
-      - name: Build tauri app
-        working-directory: ui
-        run: npm run tauri build
+      - name: Build UI
+        working-directory: .
+        run: npm run build:ui
         env:
           COMMIT_HASH: ${{ github.sha }}
+
+      - name: Build Electron App
+        working-directory: .
+        run: npm run package:dir
 
       - name: Create simple zip with only required files
         run: |
           $SHORT_HASH = "${{ github.sha }}".Substring(0, 7)
           # Create a temporary directory for the files
           New-Item -ItemType Directory -Path .\simple-zip -Force
+          New-Item -ItemType Directory -Path .\simple-zip\files -Force
           # Copy only the executable and resources folder
-          Copy-Item -Path .\ui\src-tauri\target\release\covas-next-ui.exe -Destination .\simple-zip\
-          Copy-Item -Path .\ui\src-tauri\target\release\resources -Destination .\simple-zip\ -Recurse
+          Copy-Item -Path .\dist\win-unpacked\* -Destination .\simple-zip\files -Recurse
+          # Create a link from .\simple-zip\covas-next.lnk to the executable .\simple-zip\files\com.covasnext.ui.exe
+          cd .\simple-zip
+          $WshShell = New-Object -ComObject WScript.Shell
+          $Shortcut = $WshShell.CreateShortcut("covas-next.lnk")
+          $Shortcut.TargetPath = ".\files\com.covasnext.ui.exe"
+          $Shortcut.WorkingDirectory = ".\files"
+          $Shortcut.Save()
 
       - name: Upload simple zip file
         uses: actions/upload-artifact@v4
         with:
-          name: COVAS_NEXT_TAURI_v${{ github.sha }}
+          name: COVAS_NEXT_ELECTRON_v${{ github.sha }}
           path: .\simple-zip
 
   e2e-and-scan:
