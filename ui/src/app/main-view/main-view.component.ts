@@ -163,8 +163,8 @@ export class MainViewComponent implements OnInit, OnDestroy {
         try {
             const isLinux = this.configService.systemInfo?.os === "Linux";
             await this.tauri.createOverlay(isLinux ? {
-                fullscreen: true,
-                maximized: false,
+                fullscreen: false,
+                maximized: true,
                 alwaysOnTop: true
             } : {
                 fullscreen: false,
