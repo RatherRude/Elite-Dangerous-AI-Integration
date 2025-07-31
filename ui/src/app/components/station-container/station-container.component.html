@@ -1,0 +1,251 @@
+<!-- STATION TAB -->
+<div class="station-container">
+  <div class="station-content">
+    <h2>Station Services at {{ getStationName() }}, {{ getLocationSystem() }}</h2>
+    
+    <!-- Stored Ships Section -->
+    <div class="station-section">
+      <div class="section-header">
+        <h3>Stored Ships</h3>
+      </div>
+      <div class="section-content">
+                 @if (isStoredShipsAtCurrentLocation()) {
+           <mat-tab-group>
+             <!-- Ships at Current Location -->
+             <mat-tab label="Ships Here">
+               @if (getShipsHere().length > 0) {
+                 <div class="ships-list">
+                   @for (ship of getShipsHere(); track ship.ShipID) {
+                     <div class="ship-item">
+                       <div class="ship-icon">
+                         <mat-icon>directions_boat</mat-icon>
+                       </div>
+                       <div class="ship-details">
+                         <div class="ship-name">{{ ship.Name || ship.ShipType_Localised || ship.ShipType }}</div>
+                         @if (ship.Name) {
+                           <div class="ship-type">{{ ship.ShipType_Localised || ship.ShipType }}</div>
+                         }
+                         <div class="ship-value">{{ formatNumber(ship.Value) }} Cr</div>
+                         @if (ship.Hot) {
+                           <div class="ship-hot">HOT</div>
+                         }
+                       </div>
+                     </div>
+                   }
+                 </div>
+               } @else {
+                 <div class="no-ships">
+                   <mat-icon>directions_boat</mat-icon>
+                   No ships stored at this location.
+                 </div>
+               }
+             </mat-tab>
+
+             <!-- Remote Ships -->
+             <mat-tab label="Remote Ships">
+               @if (getShipsRemote().length > 0) {
+                 <div class="ships-list">
+                   @for (ship of getShipsRemote(); track ship.ShipID) {
+                     <div class="ship-item">
+                       <div class="ship-icon">
+                         <mat-icon>directions_boat</mat-icon>
+                       </div>
+                       <div class="ship-details">
+                         <div class="ship-name">{{ ship.Name || ship.ShipType_Localised || ship.ShipType }}</div>
+                         @if (ship.Name) {
+                           <div class="ship-type">{{ ship.ShipType_Localised || ship.ShipType }}</div>
+                         }
+                         <div class="ship-location">{{ ship.StarSystem }}</div>
+                         <div class="ship-value">{{ formatNumber(ship.Value) }} Cr</div>
+                         <div class="ship-transfer">
+                           <div>Transfer: {{ formatNumber(ship.TransferPrice) }} Cr</div>
+                           <div>Time: {{ formatTransferTime(ship.TransferTime) }}</div>
+                         </div>
+                         @if (ship.Hot) {
+                           <div class="ship-hot">HOT</div>
+                         }
+                       </div>
+                     </div>
+                   }
+                 </div>
+               } @else {
+                 <div class="no-ships">
+                   <mat-icon>directions_boat</mat-icon>
+                   No ships stored remotely.
+                 </div>
+               }
+             </mat-tab>
+           </mat-tab-group>
+         } @else {
+           <div class="no-data-message">
+             @if (storedShips && !isStoredShipsAtCurrentLocation()) {
+               <mat-icon>info</mat-icon>
+               Stored ships data is from a different station. Visit this station's shipyard to get current data.
+             } @else {
+               <mat-icon>directions_boat</mat-icon>
+               No stored ships information available. Visit the local shipyard to update.
+             }
+           </div>
+         }
+      </div>
+    </div>
+
+    <!-- Station Facilities Section -->
+    <div class="station-section">
+      <div class="section-header">
+        <h3>Station Facilities</h3>
+        @if (getProjection('Market')?.StarSystem) {
+          <div class="section-subtitle">{{ getProjection('Market')?.StarSystem }}</div>
+        }
+      </div>
+      <div class="section-content">
+        <!-- Station services buttons -->
+        <div class="station-services">
+          <button mat-button [class.active]="selectedStationService === 'market'" (click)="showStationService('market')">
+            <mat-icon>shopping_cart</mat-icon>
+            Market
+          </button>
+          <button mat-button [class.active]="selectedStationService === 'outfitting'" (click)="showStationService('outfitting')">
+            <mat-icon>build</mat-icon>
+            Outfitting
+          </button>
+          <button mat-button [class.active]="selectedStationService === 'shipyard'" (click)="showStationService('shipyard')">
+            <mat-icon>directions_boat</mat-icon>
+            Shipyard
+          </button>
+        </div>
+
+                 <!-- Market data -->
+         @if (selectedStationService === 'market') {
+           <div class="station-service-display">
+             <h4>Commodity Market</h4>
+             @if (isMarketDataCurrent() && getFilteredMarketItems().length > 0) {
+               <div class="market-list">
+                 <div class="search-box">
+                   <mat-icon>search</mat-icon>
+                   <input type="text" [(ngModel)]="marketSearchTerm" placeholder="Search commodities...">
+                 </div>
+                 <table class="market-table">
+                   <thead>
+                     <tr>
+                       <th>Commodity</th>
+                       <th>Category</th>
+                       <th>Buy Price</th>
+                       <th>Sell Price</th>
+                       <th>Demand</th>
+                       <th>Stock</th>
+                     </tr>
+                   </thead>
+                   <tbody>
+                     @for (item of getFilteredMarketItems(); track item.id) {
+                       <tr>
+                         <td>{{ formatItemName(item.Name_Localised || item.Name) }}</td>
+                         <td>{{ item.Category_Localised || item.Category }}</td>
+                         <td>{{ item.BuyPrice > 0 ? (formatNumber(item.BuyPrice) + ' Cr') : '-' }}</td>
+                         <td>{{ item.SellPrice > 0 ? (formatNumber(item.SellPrice) + ' Cr') : '-' }}</td>
+                         <td>{{ item.Demand || 0 }}</td>
+                         <td>{{ item.Stock || 0 }}</td>
+                       </tr>
+                     }
+                   </tbody>
+                 </table>
+               </div>
+             } @else {
+               <div class="no-data-message">
+                 @if (!isMarketDataCurrent()) {
+                   <mat-icon>info</mat-icon>
+                   Market data is from a different station. Visit this station's commodity market to get current data.
+                 } @else {
+                   <mat-icon>shopping_cart</mat-icon>
+                   No market data available. Visit the station's commodity market to update.
+                 }
+               </div>
+             }
+           </div>
+         }
+
+                 <!-- Outfitting data -->
+         @if (selectedStationService === 'outfitting') {
+           <div class="station-service-display">
+             <h4>Ship Outfitting</h4>
+             @if (isOutfittingDataCurrent() && getFilteredOutfittingItems().length > 0) {
+               <div class="outfitting-list">
+                 <div class="search-box">
+                   <mat-icon>search</mat-icon>
+                   <input type="text" [(ngModel)]="outfittingSearchTerm" placeholder="Search modules...">
+                 </div>
+                 <table class="outfitting-table">
+                   <thead>
+                     <tr>
+                       <th>Module</th>
+                       <th>Price</th>
+                     </tr>
+                   </thead>
+                   <tbody>
+                     @for (item of getFilteredOutfittingItems(); track item.id) {
+                       <tr>
+                         <td>{{ formatModuleName(item.Name) }}</td>
+                         <td>{{ formatNumber(item.BuyPrice) }} Cr</td>
+                       </tr>
+                     }
+                   </tbody>
+                 </table>
+               </div>
+             } @else {
+               <div class="no-data-message">
+                 @if (!isOutfittingDataCurrent()) {
+                   <mat-icon>info</mat-icon>
+                   Outfitting data is from a different station. Visit this station's outfitting service to get current data.
+                 } @else {
+                   <mat-icon>build</mat-icon>
+                   No outfitting data available. Visit the station's outfitting service to update.
+                 }
+               </div>
+             }
+           </div>
+         }
+
+                 <!-- Shipyard data -->
+         @if (selectedStationService === 'shipyard') {
+           <div class="station-service-display">
+             <h4>Ship Dealer</h4>
+             @if (isShipyardDataCurrent() && getFilteredShipyardItems().length > 0) {
+               <div class="shipyard-list">
+                 <div class="search-box">
+                   <mat-icon>search</mat-icon>
+                   <input type="text" [(ngModel)]="shipyardSearchTerm" placeholder="Search ships...">
+                 </div>
+                 <table class="shipyard-table">
+                   <thead>
+                     <tr>
+                       <th>Ship</th>
+                       <th>Price</th>
+                     </tr>
+                   </thead>
+                   <tbody>
+                     @for (ship of getFilteredShipyardItems(); track ship.id) {
+                       <tr>
+                         <td>{{ ship.ShipType_Localised || ship.ShipType }}</td>
+                         <td>{{ formatNumber(ship.ShipPrice) }} Cr</td>
+                       </tr>
+                     }
+                   </tbody>
+                 </table>
+               </div>
+             } @else {
+               <div class="no-data-message">
+                 @if (!isShipyardDataCurrent()) {
+                   <mat-icon>info</mat-icon>
+                   Shipyard data is from a different station. Visit this station's ship dealer to get current data.
+                 } @else {
+                   <mat-icon>directions_boat</mat-icon>
+                   No shipyard data available. Visit the station's ship dealer to update.
+                 }
+               </div>
+             }
+           </div>
+         }
+      </div>
+    </div>
+  </div>
+</div> 

@@ -1,0 +1,358 @@
+/* Main container */
+.station-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Station Section Boxes - matching other components style */
+.station-section {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid #333;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.section-header {
+  padding: 20px 20px 0 20px;
+  border-bottom: 1px solid #333;
+}
+
+.section-header h3 {
+  margin: 0 0 16px 0;
+  font-size: 20px;
+  color: #e0e0e0;
+  font-weight: 600;
+}
+
+.section-subtitle {
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: #bbb;
+}
+
+.section-content {
+  padding: 20px;
+}
+
+.station-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: transparent;
+  color: #e0e0e0;
+  font-family: 'Roboto', sans-serif;
+  position: relative;
+  padding: 10px;
+}
+
+/* Main title styling */
+.station-content h2 {
+  margin: 0 0 24px 0;
+  font-size: 28px;
+  color: #e0e0e0;
+  font-weight: 600;
+  text-align: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #333;
+}
+
+/* Scrollbar Styling */
+.station-content::-webkit-scrollbar {
+  width: 8px;
+}
+.station-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+.station-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+.station-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Ships styling */
+.ships-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.ship-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid #444;
+  border-radius: 6px;
+  gap: 16px;
+}
+
+.ship-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: rgba(64, 181, 246, 0.2);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ship-icon mat-icon {
+  color: #40b5f6;
+  font-size: 20px;
+}
+
+.ship-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ship-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.ship-type {
+  font-size: 14px;
+  color: #bbb;
+}
+
+.ship-location {
+  font-size: 14px;
+  color: #64b5f6;
+  font-weight: 500;
+}
+
+.ship-value {
+  font-size: 14px;
+  color: #4caf50;
+  font-weight: 500;
+}
+
+.ship-transfer {
+  font-size: 12px;
+  color: #ff9800;
+  margin-top: 4px;
+}
+
+.ship-hot {
+  display: inline-block;
+  padding: 2px 6px;
+  background: rgba(244, 67, 54, 0.2);
+  color: #f44336;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.no-ships, .no-data-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px 20px;
+  color: #888;
+  font-style: italic;
+}
+
+.no-data-message mat-icon {
+  color: #888;
+  font-size: 20px;
+}
+
+/* Station Services Buttons */
+.station-services {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.station-services button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid #444;
+  border-radius: 6px;
+  color: #e0e0e0;
+  transition: all 0.2s ease;
+}
+
+.station-services button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #666;
+}
+
+.station-services button.active {
+  background: rgba(64, 181, 246, 0.2);
+  border-color: #40b5f6;
+  color: #40b5f6;
+}
+
+.station-services button mat-icon {
+  font-size: 18px;
+}
+
+/* Station Service Display */
+.station-service-display {
+  margin-top: 16px;
+}
+
+.station-service-display h4 {
+  margin: 0 0 16px 0;
+  font-size: 18px;
+  color: #e0e0e0;
+  font-weight: 500;
+}
+
+/* Search Box */
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid #444;
+  border-radius: 6px;
+}
+
+.search-box mat-icon {
+  color: #888;
+  font-size: 20px;
+}
+
+.search-box input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #e0e0e0;
+  font-size: 14px;
+}
+
+.search-box input::placeholder {
+  color: #888;
+}
+
+/* Tables */
+.market-table,
+.outfitting-table,
+.shipyard-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.market-table th,
+.outfitting-table th,
+.shipyard-table th {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #e0e0e0;
+  border-bottom: 1px solid #444;
+}
+
+.market-table td,
+.outfitting-table td,
+.shipyard-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #333;
+  color: #e0e0e0;
+}
+
+.market-table tbody tr:hover,
+.outfitting-table tbody tr:hover,
+.shipyard-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Market specific styles */
+.market-table td:nth-child(3),
+.market-table td:nth-child(4) {
+  color: #4caf50;
+  font-weight: 500;
+}
+
+.market-table td:nth-child(5),
+.market-table td:nth-child(6) {
+  text-align: right;
+}
+
+/* Outfitting and Shipyard specific styles */
+.outfitting-table td:nth-child(2),
+.shipyard-table td:nth-child(2) {
+  color: #4caf50;
+  font-weight: 500;
+  text-align: right;
+}
+
+/* Tab content styling */
+::ng-deep .mat-mdc-tab-group {
+  margin-top: 16px;
+}
+
+::ng-deep .mat-mdc-tab-header {
+  border-bottom: 1px solid #333;
+}
+
+::ng-deep .mat-mdc-tab {
+  color: #bbb;
+}
+
+::ng-deep .mat-mdc-tab.mdc-tab--active {
+  color: #40b5f6;
+}
+
+::ng-deep .mat-mdc-tab-body-content {
+  padding: 16px 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .station-services {
+    flex-direction: column;
+  }
+  
+  .station-services button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .ship-item {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .market-table,
+  .outfitting-table,
+  .shipyard-table {
+    font-size: 12px;
+  }
+  
+  .market-table th,
+  .outfitting-table th,
+  .shipyard-table th,
+  .market-table td,
+  .outfitting-table td,
+  .shipyard-table td {
+    padding: 8px 6px;
+  }
+} 

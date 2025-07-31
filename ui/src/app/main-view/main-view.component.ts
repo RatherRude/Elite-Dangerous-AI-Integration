@@ -14,6 +14,9 @@ import { Subscription } from "rxjs";
 import { ChatService } from "../services/chat.service.js";
 import { MatTabsModule } from "@angular/material/tabs";
 import { ChatContainerComponent } from "../components/chat-container/chat-container.component.js";
+import { StatusContainerComponent } from "../components/status-container/status-container.component";
+import { StorageContainerComponent } from "../components/storage-container/storage-container.component";
+import { StationContainerComponent } from "../components/station-container/station-container.component";
 import { ProjectionsService } from "../services/projections.service";
 import { MetricsService } from "../services/metrics.service.js";
 import { PolicyService } from "../services/policy.service.js";
@@ -32,6 +35,9 @@ import { PolicyService } from "../services/policy.service.js";
         InputContainerComponent,
         MatTabsModule,
         ChatContainerComponent,
+        StatusContainerComponent,
+        StorageContainerComponent,
+        StationContainerComponent,
     ],
     templateUrl: "./main-view.component.html",
     styleUrl: "./main-view.component.css",
@@ -39,10 +45,12 @@ import { PolicyService } from "../services/policy.service.js";
 export class MainViewComponent implements OnInit, OnDestroy {
     isLoading = true;
     isRunning = false;
-    isInDanger = false;
+    isInCombat = false;
+    isDockedAtStation = false;
     config: any;
     private configSubscription!: Subscription;
-    private inDangerSubscription!: Subscription;
+    private inCombatSubscription!: Subscription;
+    private currentStatusSubscription!: Subscription;
     private hasAutoStarted = false;
     public usageDisclaimerAccepted = false;
 
@@ -85,15 +93,24 @@ export class MainViewComponent implements OnInit, OnDestroy {
             },
         );
 
-        // Subscribe to CurrentStatus projection and check for InDanger
-        this.inDangerSubscription = this.projectionsService
-            .getProjection("CurrentStatus")
-            .subscribe((currentStatus) => {
-                if (currentStatus && currentStatus.flags) {
-                    this.isInDanger = Boolean(currentStatus.flags.InDanger);
+        // Subscribe to InCombat projection
+        this.inCombatSubscription = this.projectionsService.inCombat$
+            .subscribe((inCombatData) => {
+                // InCombat projection might be a boolean or an object
+                if (typeof inCombatData === 'boolean') {
+                    this.isInCombat = inCombatData;
+                } else if (inCombatData && typeof inCombatData === 'object') {
+                    // If it's an object, check for a combat flag or status
+                    this.isInCombat = Boolean(inCombatData.InCombat || inCombatData.combat || inCombatData.active);
                 } else {
-                    this.isInDanger = false;
+                    this.isInCombat = false;
                 }
+            });
+
+        // Subscribe to CurrentStatus projection to track station docking
+        this.currentStatusSubscription = this.projectionsService.currentStatus$
+            .subscribe((currentStatusData) => {
+                this.isDockedAtStation = Boolean(currentStatusData?.flags?.Docked === true);
             });
 
         // Initialize the main view
@@ -105,8 +122,11 @@ export class MainViewComponent implements OnInit, OnDestroy {
         if (this.configSubscription) {
             this.configSubscription.unsubscribe();
         }
-        if (this.inDangerSubscription) {
-            this.inDangerSubscription.unsubscribe();
+        if (this.inCombatSubscription) {
+            this.inCombatSubscription.unsubscribe();
+        }
+        if (this.currentStatusSubscription) {
+            this.currentStatusSubscription.unsubscribe();
         }
     }
 

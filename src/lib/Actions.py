@@ -3282,6 +3282,7 @@ def prepare_station_request(obj, projected_states):# Helper function for fuzzy m
     if "commodities" in obj and obj["commodities"]:
         market_filters = []
         for market_item in obj["commodities"]:
+            amount = market_item.get("amount", 1)
             # Find matching commodity name using fuzzy matching
             matching_commodity = find_best_match(market_item["name"], known_commodities)
             if not matching_commodity:
@@ -3294,7 +3295,7 @@ def prepare_station_request(obj, projected_states):# Helper function for fuzzy m
             if market_item["transaction"] == "Buy":
                 market_filter["supply"] = {
                     "value": [
-                        str(market_item["amount"]),
+                        str(amount),
                         "999999999"
                     ],
                     "comparison": "<=>"
@@ -3302,7 +3303,7 @@ def prepare_station_request(obj, projected_states):# Helper function for fuzzy m
             elif market_item["transaction"] == "Sell":
                 market_filter["demand"] = {
                     "value": [
-                        str(market_item["amount"]),
+                        str(amount),
                         "999999999"
                     ],
                     "comparison": "<=>"

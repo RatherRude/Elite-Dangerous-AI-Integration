@@ -2,7 +2,7 @@
   <mat-progress-bar mode="indeterminate" class="toolbar-progress"></mat-progress-bar>
 }
 
-<main class="app" [class.red]="isInDanger">
+<main class="app" [class.red]="isInCombat">
   @if (!isRunning) {
     <div class="settings-container">
       <app-settings-menu></app-settings-menu>
@@ -36,6 +36,29 @@
           </div>
           <app-input-container class="input-container"></app-input-container>
         </mat-tab>
+        <mat-tab label="Status">
+          <div class="tab-content-container">
+            <div class="status-container-tab">
+              <app-status-container></app-status-container>
+            </div>
+          </div>
+        </mat-tab>
+        <mat-tab label="Storage">
+          <div class="tab-content-container">
+            <div class="storage-container-tab">
+              <app-storage-container></app-storage-container>
+            </div>
+          </div>
+        </mat-tab>
+        @if (isDockedAtStation) {
+          <mat-tab label="Station">
+            <div class="tab-content-container">
+              <div class="station-container-tab">
+                <app-station-container></app-station-container>
+              </div>
+            </div>
+          </mat-tab>
+        }
         @if (false) {
           <mat-tab label="Logs">
             <div class="tab-content-container">
