@@ -141,7 +141,10 @@ class BackendService {
     this.attachWindow(mainWindow);
     if (this.#currentProcess && !this.#currentProcess.killed) {
       logger.warn('Process is already running, stopping it first');
-      this.#currentProcess.kill();
+      this.#currentProcess.kill('SIGINT');
+      setTimeout(() => {
+        process.kill(pid, 'SIGKILL');
+      }, 5000);
     }
     logger.info('Starting process:', config.backend);
 
@@ -154,10 +157,14 @@ class BackendService {
         PYTHONUNBUFFERED: 1,
       }
     });
+    logger.info('Process started with PID:', this.#currentProcess.pid);
 
     app.on('before-quit', () => {
       if (this.#currentProcess && !this.#currentProcess.killed) {
-        this.#currentProcess.kill();
+        this.#currentProcess.kill('SIGINT');
+        setTimeout(() => {
+          process.kill(pid, 'SIGKILL');
+        }, 5000);
       }
     });
 
@@ -216,7 +223,12 @@ class BackendService {
   stopProcess(mainWindow) {
     this.detachWindow(mainWindow);
     if (this.#currentProcess && !this.#currentProcess.killed) {
-      this.#currentProcess.kill();
+      logger.info('Stopping process:', this.#currentProcess.pid);
+      const pid = this.#currentProcess.pid;
+      this.#currentProcess.kill('SIGINT');
+      setTimeout(() => {
+        process.kill(pid, 'SIGKILL');
+      }, 5000);
     }
   } 
 }
