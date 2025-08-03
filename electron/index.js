@@ -213,6 +213,12 @@ class BackendService {
         }
       }
     });
+    mainWindow.on('close', () => {
+      this.stopProcess(mainWindow);
+      // remove all stdin and stdout listeners
+      this.#currentProcess.stdout.removeAllListeners('data');
+      this.#currentProcess.stderr.removeAllListeners('data');
+    });
   }
   stopProcess(mainWindow) {
     this.detachWindow(mainWindow);
