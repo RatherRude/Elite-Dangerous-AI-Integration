@@ -129,6 +129,16 @@ export class AvatarCatalogDialogComponent implements OnInit {
     this.dialogRef.close({ avatarId } as AvatarCatalogResult);
   }
 
+  setToDefault() {
+    // Return empty string to indicate default avatar should be used
+    this.dialogRef.close({ avatarId: '' } as AvatarCatalogResult);
+  }
+
+  isCurrentlyDefault(): boolean {
+    // Current avatar is default if it's empty, null, or undefined
+    return !this.data.currentAvatarId;
+  }
+
   async deleteAvatar(avatarId: string) {
     try {
       await this.avatarService.deleteAvatar(avatarId);

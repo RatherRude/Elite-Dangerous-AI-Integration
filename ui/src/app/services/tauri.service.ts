@@ -83,14 +83,24 @@ export class TauriService {
         window.localStorage.setItem("install_id", this.installId);
 
         electronAPI.onWindowClose((event) => this.onWindowClose(event));
+
     }
 
-    public async createOverlay(config: {fullscreen: boolean, maximized: boolean, alwaysOnTop: boolean}): Promise<void> {
-        electronAPI.invoke("create_floating_overlay", config);
+    public async createOverlay(config: {alwaysOnTop: boolean, screenId?: number}): Promise<void> {
+        const result = await electronAPI.invoke("create_floating_overlay", config);
+        return result;
     }
 
     public async destroyOverlay(): Promise<void> {
-        electronAPI.invoke("destroy_floating_overlay", {});
+        await electronAPI.invoke("destroy_floating_overlay", {});
+    }
+
+    public async getAvailableScreens(): Promise<Array<{id: number, label: string, bounds: { x: number; y: number; width: number; height: number }, primary: boolean}>> {
+        if (!electronAPI) {
+            throw new Error('electronAPI not available');
+        }
+        const result = await electronAPI.invoke('get_available_screens');
+        return result;
     }
 
     private async startReadingOutput(): Promise<void> {
@@ -106,7 +116,7 @@ export class TauriService {
 
     private processStdout(event: any): void {
         this.ngZone.run(() => {
-            console.log("Subprocess output:", event.payload);
+            // console.log("Subprocess output:", event.payload);
             try {
                 const message = JSON.parse(event.payload);
                 if (message.type === "ready") {

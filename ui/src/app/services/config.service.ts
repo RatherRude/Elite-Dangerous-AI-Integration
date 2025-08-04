@@ -38,6 +38,12 @@ export interface SystemInfo {
     input_device_names: string[];
     output_device_names: string[];
     edcopilot_installed: boolean;
+    available_screens?: Array<{
+        id: number;
+        label: string;
+        bounds: { x: number; y: number; width: number; height: number };
+        primary: boolean;
+    }>;
 }
 
 export interface SystemInfoMessage extends BaseMessage {
@@ -101,6 +107,12 @@ export interface Config {
     reset_game_events?: boolean; // Flag to request resetting game events to defaults
     qol_autobrake: boolean; // Quality of life: Auto brake when approaching stations
     qol_autoscan: boolean; // Quality of life: Auto scan when entering new systems
+    
+    // Overlay settings
+    overlay_show_avatar: boolean;
+    overlay_show_chat: boolean;
+    overlay_position: "left" | "right";
+    overlay_screen_id: number;
 
     plugin_settings: { [key: string]: any };
 }
@@ -152,8 +164,15 @@ export class ConfigService {
             } else if (message.type === "running_config") {
                 this.configSubject.next(message.config);
             } else if (message.type === "system") {
-                this.systemSubject.next(message.system);
-                this.systemInfo = message.system;
+                // Enhance system info with screen information from Electron
+                this.enhanceSystemInfoWithScreens(message.system).then(() => {
+                    this.systemSubject.next(message.system);
+                    this.systemInfo = message.system;
+                }).catch(error => {
+                    console.error('Error enhancing system info:', error);
+                    this.systemSubject.next(message.system);
+                    this.systemInfo = message.system;
+                });
             } else if (message.type === "model_validation") {
                 this.validationSubject.next(message);
             } else if (message.type === "plugin_settings_configs") {
@@ -249,6 +268,21 @@ export class ConfigService {
             await this.tauriService.send_command(message);
         } catch (error) {
             console.error("Error sending clear history request:", error);
+        }
+    }
+
+    private async enhanceSystemInfoWithScreens(systemInfo: SystemInfo): Promise<void> {
+        // Initialize available_screens if it doesn't exist
+        if (!systemInfo.available_screens) {
+            systemInfo.available_screens = [];
+        }
+        
+        try {
+            const screens = await this.tauriService.getAvailableScreens();
+            systemInfo.available_screens = screens || [];
+        } catch (error) {
+            console.error('Failed to get screen information:', error);
+            systemInfo.available_screens = [];
         }
     }
 }

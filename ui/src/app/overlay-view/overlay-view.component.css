@@ -58,12 +58,12 @@
   margin: 0 auto;
   aspect-ratio: 1;
   grid-area: pngtuber;
-  /* Default fallback image - will be dynamically replaced with character avatar */
+  /* Default fallback image - now handled dynamically in TypeScript based on position */
   background-image: url('../../assets/cn_avatar_default.png');
   background-size: 200%;
   background-position: 0% 0%;
   background-repeat: no-repeat;
-  /* Remove default flip - now conditional */
+  /* No transform by default */
   transform: none;
   
   &.listening {
@@ -82,10 +82,7 @@
     background-position: 0% 0%;
   }
   
-  /* Conditional flip when flip class is applied */
-  &.flip {
-    transform: scaleX(-1);
-  }
+
 }
 
 

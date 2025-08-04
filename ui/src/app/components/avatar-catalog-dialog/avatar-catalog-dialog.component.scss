@@ -70,6 +70,21 @@
         box-shadow: 0 0 0 1px var(--mat-primary);
       }
 
+      &.default-avatar-card {
+        border-color: var(--mat-color-accent, #ff9800);
+        background: linear-gradient(135deg, rgba(255, 152, 0, 0.1), rgba(255, 152, 0, 0.05));
+        
+        .avatar-filename {
+          font-weight: 600;
+          color: var(--mat-color-accent, #ff9800);
+        }
+        
+        &.selected {
+          border-color: var(--mat-color-accent, #ff9800);
+          box-shadow: 0 0 0 1px var(--mat-color-accent, #ff9800);
+        }
+      }
+
       mat-card-content {
         padding: 8px !important;
       }

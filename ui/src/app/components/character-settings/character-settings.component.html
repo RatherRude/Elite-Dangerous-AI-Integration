@@ -244,46 +244,9 @@
                                         </button>
                                     </div>
                                 </div>
-
-                                <!-- Avatar Options (Right Side) -->
-                                <div class="avatar-options-container">
-                                    <!-- Show Avatar -->
-                                    <div class="avatar-option">
-                                        <mat-slide-toggle
-                                            [ngModel]="getCharacterProperty('avatar_show', true)"
-                                            [disabled]="config?.edcopilot === true && config?.edcopilot_dominant === true"
-                                            (ngModelChange)="setCharacterProperty('avatar_show', $event)"
-                                            [matTooltip]="config?.edcopilot === true && config?.edcopilot_dominant === true ? 'Avatars are disabled while using EDCP-dominant mode' : 'Toggle avatar visibility'">
-                                            Show Avatar
-                                        </mat-slide-toggle>
-                                    </div>
-
-                                    <!-- Position (hidden if not showing avatar) -->
-                                    <div class="avatar-option" *ngIf="getCharacterProperty('avatar_show', true)">
-                                        <mat-form-field appearance="outline">
-                                            <mat-label>Position</mat-label>
-                                            <mat-select
-                                                [ngModel]="getCharacterProperty('avatar_position', 'right')"
-                                                (ngModelChange)="setCharacterProperty('avatar_position', $event)">
-                                                <mat-option value="left">Left</mat-option>
-                                                <mat-option value="right">Right</mat-option>
-                                            </mat-select>
-                                        </mat-form-field>
-                                    </div>
-
-                                    <!-- Flip (hidden if not showing avatar) -->
-                                    <div class="avatar-option" *ngIf="getCharacterProperty('avatar_show', true)">
-                                        <mat-slide-toggle
-                                            [ngModel]="getCharacterProperty('avatar_flip', false)"
-                                            (ngModelChange)="setCharacterProperty('avatar_flip', $event)"
-                                            matTooltip="Flip avatar horizontally">
-                                            Flip
-                                        </mat-slide-toggle>
-                                    </div>
-                                </div>
                             </div>
                         </div>
-                        </div>
+                    </div>
                 </div>
 
                 <!-- TTS Prompt -->
