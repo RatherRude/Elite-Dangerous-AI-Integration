@@ -127,6 +127,7 @@ game_events = {
     'FsdMassLocked': False,
     'LowFuelWarningCleared': True,
     'LowFuelWarning': True,
+    'HighGravityWarning': True,
     'NoScoopableStars': True,
     'NightVisionOff': False,
     'NightVisionOn': False,
