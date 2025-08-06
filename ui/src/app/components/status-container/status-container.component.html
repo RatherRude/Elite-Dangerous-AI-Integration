@@ -2,196 +2,135 @@
 <div class="status-container">
 <div class="info-tab">
     <!-- Expandable panels at top -->
-    <div *ngIf="showFriendsPanel" class="expandable-panel friends-panel">
-        <h3>Friends Online</h3>
-        <mat-list>
-            <mat-list-item *ngFor="let friend of getOnlineFriends()" class="friend-item">
-                <mat-icon>person</mat-icon>
-                <span class="friend-name">CMDR {{ friend }}</span>
-            </mat-list-item>
-        </mat-list>
-        <div *ngIf="!getOnlineFriends().length" class="empty-message">
-            No friends currently online
-        </div>
-    </div>
-
-    <div *ngIf="showWingPanel" class="expandable-panel wing-panel">
-        <h3>Wing Members</h3>
-        <mat-list>
-            <mat-list-item *ngFor="let member of getWingMembers()" class="wing-item">
-                <mat-icon>person</mat-icon>
-                <span class="wing-member-name">CMDR {{ member.Name || member }}</span>
-                <div class="wing-member-details" *ngIf="member.Ship">
-                    <span class="wing-ship">{{ member.Ship }}</span>
-                </div>
-            </mat-list-item>
-        </mat-list>
-        <div *ngIf="!getWingMembers().length" class="empty-message">
-            No wing members
-        </div>
-    </div>
-
-    <div *ngIf="showFightersPanel" class="expandable-panel fighters-panel">
-        <h3>Ship Fighters</h3>
-        <mat-list>
-            <mat-list-item *ngFor="let fighter of getFighters(); let i = index" class="fighter-item">
-                <mat-icon>flight</mat-icon>
-                <div class="fighter-details">
-                    <div class="fighter-header">
-                        <span class="fighter-id">Fighter {{ fighter.ID || (i + 1) }}</span>
-                        <span class="fighter-status" [ngClass]="'status-' + (fighter.Status || 'unknown').toLowerCase()">
-                            {{ formatFighterStatus(fighter.Status) }}
-                        </span>
-                    </div>
-                    <div class="fighter-pilot" *ngIf="fighter.Pilot">
-                        <mat-icon class="pilot-icon">person</mat-icon>
-                        <span>{{ fighter.Pilot }}</span>
-                    </div>
-                    <div class="fighter-rebuilt" *ngIf="fighter.RebuiltAt">
-                        <mat-icon class="rebuilt-icon">build</mat-icon>
-                        <span>Rebuilt: {{ fighter.RebuiltAt }}</span>
-                    </div>
-                </div>
-            </mat-list-item>
-        </mat-list>
-        <div *ngIf="!getFighters().length" class="empty-message">
-            No fighters available
-        </div>
-    </div>
-
-    <div *ngIf="showColonisationPanel" class="expandable-panel colonisation-panel">
-        <h3>Colony Construction</h3>
-        <div class="colony-header">
-            <h4>{{ getColonisationSystem() }}</h4>
-            <div class="colony-status" [ngClass]="getColonisationStatusClass()">
-                {{ getColonisationStatusText() }}
+    <div *ngIf="showFriendsPanel" class="expandable-panel friends-panel" (click)="onBackgroundClick($event, 'friends')">
+        <div class="panel-content" (click)="onPanelClick($event)">
+            <div class="panel-header">
+                <h3>Friends Online</h3>
+                <button class="panel-close-btn" (click)="closeFriendsPanel()" mat-icon-button>
+                    <mat-icon>close</mat-icon>
+                </button>
             </div>
-        </div>
-
-        <div class="progress-container">
-            <h4>Construction Progress</h4>
-            <div class="stat-bar">
-                <mat-progress-bar
-                    mode="determinate"
-                    [value]="getColonisationProgressValue()"
-                ></mat-progress-bar>
-                <span>{{ formatPercentage(getColonisationProgress()) }}</span>
-            </div>
-        </div>
-
-        <div *ngIf="getColonisationResources().length > 0" class="resources-needed">
-            <h4>Resources Needed</h4>
             <mat-list>
-                <mat-list-item *ngFor="let resource of getColonisationResources()" class="resource-item">
-                    <div class="resource-details">
-                        <span class="resource-name">{{ resource.Name_Localised || resource.Name }}</span>
-                        <div class="resource-progress">
-                            <mat-progress-bar
-                                mode="determinate"
-                                [value]="(resource.ProvidedAmount / resource.RequiredAmount) * 100"
-                            ></mat-progress-bar>
-                            <span class="resource-count">
-                                {{ resource.ProvidedAmount }}/{{ resource.RequiredAmount }}
+                <mat-list-item *ngFor="let friend of getOnlineFriends()" class="friend-item">
+                    <mat-icon>person</mat-icon>
+                    <span class="friend-name">CMDR {{ friend }}</span>
+                </mat-list-item>
+            </mat-list>
+            <div *ngIf="!getOnlineFriends().length" class="empty-message">
+                No friends currently online
+            </div>
+        </div>
+    </div>
+
+    <div *ngIf="showWingPanel" class="expandable-panel wing-panel" (click)="onBackgroundClick($event, 'wing')">
+        <div class="panel-content" (click)="onPanelClick($event)">
+            <div class="panel-header">
+                <h3>Wing Members</h3>
+                <button class="panel-close-btn" (click)="closeWingPanel()" mat-icon-button>
+                    <mat-icon>close</mat-icon>
+                </button>
+            </div>
+            <mat-list>
+                <mat-list-item *ngFor="let member of getWingMembers()" class="wing-item">
+                    <mat-icon>person</mat-icon>
+                    <span class="wing-member-name">CMDR {{ member.Name || member }}</span>
+                    <div class="wing-member-details" *ngIf="member.Ship">
+                        <span class="wing-ship">{{ member.Ship }}</span>
+                    </div>
+                </mat-list-item>
+            </mat-list>
+            <div *ngIf="!getWingMembers().length" class="empty-message">
+                No wing members
+            </div>
+        </div>
+    </div>
+
+    <div *ngIf="showFightersPanel" class="expandable-panel fighters-panel" (click)="onBackgroundClick($event, 'fighters')">
+        <div class="panel-content" (click)="onPanelClick($event)">
+            <div class="panel-header">
+                <h3>Ship Fighters</h3>
+                <button class="panel-close-btn" (click)="closeFightersPanel()" mat-icon-button>
+                    <mat-icon>close</mat-icon>
+                </button>
+            </div>
+            <mat-list>
+                <mat-list-item *ngFor="let fighter of getFighters(); let i = index" class="fighter-item">
+                    <mat-icon>flight</mat-icon>
+                    <div class="fighter-details">
+                        <div class="fighter-header">
+                            <span class="fighter-id">Fighter {{ fighter.ID || (i + 1) }}</span>
+                            <span class="fighter-status" [ngClass]="'status-' + (fighter.Status || 'unknown').toLowerCase()">
+                                {{ formatFighterStatus(fighter.Status) }}
                             </span>
+                        </div>
+                        <div class="fighter-pilot" *ngIf="fighter.Pilot">
+                            <mat-icon class="pilot-icon">person</mat-icon>
+                            <span>{{ fighter.Pilot }}</span>
+                        </div>
+                        <div class="fighter-rebuilt" *ngIf="fighter.RebuiltAt">
+                            <mat-icon class="rebuilt-icon">build</mat-icon>
+                            <span>Rebuilt: {{ fighter.RebuiltAt }}</span>
                         </div>
                     </div>
                 </mat-list-item>
             </mat-list>
+            <div *ngIf="!getFighters().length" class="empty-message">
+                No fighters available
+            </div>
+        </div>
+    </div>
+
+    <div *ngIf="showColonisationPanel" class="expandable-panel colonisation-panel" (click)="onBackgroundClick($event, 'colonisation')">
+        <div class="panel-content" (click)="onPanelClick($event)">
+            <div class="panel-header">
+                <h3>Colony Construction</h3>
+                <button class="panel-close-btn" (click)="closeColonisationPanel()" mat-icon-button>
+                    <mat-icon>close</mat-icon>
+                </button>
+            </div>
+            <div class="colony-header">
+                <h4>{{ getColonisationSystem() }}</h4>
+                <div class="colony-status" [ngClass]="getColonisationStatusClass()">
+                    {{ getColonisationStatusText() }}
+                </div>
+            </div>
+
+            <div class="progress-container">
+                <h4>Construction Progress</h4>
+                <div class="stat-bar">
+                    <mat-progress-bar
+                        mode="determinate"
+                        [value]="getColonisationProgressValue()"
+                    ></mat-progress-bar>
+                    <span>{{ formatPercentage(getColonisationProgress()) }}</span>
+                </div>
+            </div>
+
+            <div *ngIf="getColonisationResources().length > 0" class="resources-needed">
+                <h4>Resources Needed</h4>
+                <mat-list>
+                    <mat-list-item *ngFor="let resource of getColonisationResources()" class="resource-item">
+                        <div class="resource-details">
+                            <span class="resource-name">{{ resource.Name_Localised || resource.Name }}</span>
+                            <div class="resource-progress">
+                                <mat-progress-bar
+                                    mode="determinate"
+                                    [value]="(resource.ProvidedAmount / resource.RequiredAmount) * 100"
+                                ></mat-progress-bar>
+                                <span class="resource-count">
+                                    {{ resource.ProvidedAmount }}/{{ resource.RequiredAmount }}
+                                </span>
+                            </div>
+                        </div>
+                    </mat-list-item>
+                </mat-list>
+            </div>
         </div>
     </div>
     
-    <!-- Current Status Icons (fixed at upper right) -->
-    <div class="status-indicators-fixed">
-        <div class="active-status-icons">
-            <!-- Colonisation Construction indicator - first position -->
-            <div *ngIf="isColonisationActive(getProjection('ColonisationConstruction'))"
-                 class="colonisation-indicator"
-                 (click)="toggleColonisationPanel()">
-                <mat-icon>construction</mat-icon>
-                <span class="progress-text">{{ formatPercentage(getColonisationProgress()) }}</span>
-            </div>
 
-            <!-- Friends counter - second position -->
-            <div class="friends-counter" (click)="toggleFriendsPanel()" *ngIf="getFriendsCount() > 0">
-                <mat-icon>people</mat-icon>
-                <span class="badge">{{ getFriendsCount() }}</span>
-            </div>
 
-            <!-- Wing counter - third position -->
-            <div class="wing-counter" (click)="toggleWingPanel()" *ngIf="getWingCount() > 0">
-                <mat-icon>group</mat-icon>
-                <span class="badge">{{ getWingCount() }}</span>
-            </div>
 
-            <!-- Fighters counter - fourth position -->
-            <div class="fighters-counter" (click)="toggleFightersPanel()" *ngIf="hasFighters()">
-                <mat-icon>flight</mat-icon>
-                <span class="badge">{{ getFightersCount() }}</span>
-            </div>
-            
-            <!-- Status flags -->
-            <ng-container *ngFor="let flag of statusFlags">
-                <div *ngIf="getCurrentStatusValue('flags', flag)" class="status-icon">
-                    <mat-icon matTooltip="{{ formatFlagName(flag) }}">{{ getIconForFlag(flag) }}</mat-icon>
-                </div>
-            </ng-container>
-            
-            <!-- Odyssey flags -->
-            <ng-container *ngFor="let flag of odysseyFlags">
-                <div *ngIf="getCurrentStatusValue('flags2', flag)" class="status-icon">
-                    <mat-icon matTooltip="{{ formatFlagName(flag) }}">{{ getIconForOdysseyFlag(flag) }}</mat-icon>
-                </div>
-            </ng-container>
-        </div>
-    </div>
-
-    <!-- Location & Nav info (minimalistic) -->
-    <div class="location-nav-container">
-        <div class="location-info">
-            <mat-icon>public</mat-icon>
-            <div class="location-details">
-                <div class="system-name">{{ getLocationSystem() }}</div>
-                <div *ngIf="getLocationDetail()" class="location-detail">
-                    <mat-icon class="small-icon">{{ getLocationDetailIcon() }}</mat-icon>
-                    <span>{{ getLocationDetail() }}</span>
-                    <span *ngIf="getProjection('CurrentStatus')?.LegalState"
-                          [ngClass]="'status-' + getProjection('CurrentStatus')?.LegalState?.toLowerCase()">
-                        {{ getProjection('CurrentStatus')?.LegalState }}
-                    </span>
-                </div>
-            </div>
-        </div>
-        <div *ngIf="hasNavRoute()" class="nav-info" (click)="toggleNavDetails()">
-            <mat-icon>navigation</mat-icon>
-            <span>{{ getNavRouteInfo() }}</span>
-            <mat-icon class="expander">{{ showNavDetails ? 'expand_less' : 'expand_more' }}</mat-icon>
-        </div>
-    </div>
-
-    <!-- Nav Route Details -->
-    <div *ngIf="showNavDetails" class="nav-details">
-        <div class="nav-route-list">
-            <div *ngFor="let system of getNavRouteDetails(); let i = index" class="nav-route-item">
-                <div class="nav-index">{{ i + 1 }}</div>
-                <div class="nav-system">{{ system.StarSystem }}</div>
-                <div class="nav-star-info" *ngIf="system.StarClass">
-                    <mat-icon class="star-icon" [ngClass]="getStarClassColor(system.StarClass)">
-                        {{ getStarTypeIcon(system.StarClass) }}
-                    </mat-icon>
-                    <span class="star-class">{{ system.StarClass }}</span>
-                </div>
-                <div class="nav-distance" *ngIf="system.StarPos && i > 0">
-                    {{ getJumpDistance(i) }} ly
-                </div>
-                <div class="star-scoopable" *ngIf="system.Scoopable !== undefined">
-                    <mat-icon class="fuel-icon" [ngClass]="system.Scoopable ? 'scoopable' : 'not-scoopable'">
-                        {{ system.Scoopable ? 'local_gas_station' : 'not_interested' }}
-                    </mat-icon>
-                    <span class="small-text">{{ system.Scoopable ? 'Scoopable' : 'Not scoopable' }}</span>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Context-dependent content based on active mode -->
     <div *ngIf="getActiveMode() === 'humanoid'" class="context-content character-sheet">
@@ -363,12 +302,44 @@
     <div *ngIf="['mainship', 'fighter', 'buggy'].includes(getActiveMode())" class="context-content character-sheet">
         <!-- TOP SECTION - Ship Identity -->
         <div class="character-header">
+            <!-- Size on the left -->
+            <div class="character-class">
+                <div class="class-circle">
+                    <div class="circle-value">{{ getLandingPadSize() }}</div>
+                </div>
+                <div class="class-label">SIZE</div>
+            </div>
+            
+            <!-- Ship Name -->
             <div class="character-name">
                 <h2>{{ getShipName() }}</h2>
                 <div class="character-subtitle">{{ getShipType() }} {{ getActiveMode() !== 'buggy' ? '(' + getShipIdent() + ')' : '' }}</div>
             </div>
             
-            <!-- Target info display -->
+            <!-- Location Info -->
+            <div class="location-nav-container-header">
+                <div class="location-info">
+                    <mat-icon>public</mat-icon>
+                    <div class="location-details">
+                        <div class="system-name">{{ getLocationSystem() }}</div>
+                        <div *ngIf="getLocationDetail()" class="location-detail">
+                            <mat-icon class="small-icon">{{ getLocationDetailIcon() }}</mat-icon>
+                            <span>{{ getLocationDetail() }}</span>
+                            <span *ngIf="getProjection('CurrentStatus')?.LegalState"
+                                  [ngClass]="'status-' + getProjection('CurrentStatus')?.LegalState?.toLowerCase()">
+                                {{ getProjection('CurrentStatus')?.LegalState }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div *ngIf="hasNavRoute()" class="nav-info" (click)="toggleNavDetails()">
+                    <mat-icon>navigation</mat-icon>
+                    <span>{{ getNavRouteInfo() }}</span>
+                    <mat-icon class="expander">{{ showNavDetails ? 'expand_less' : 'expand_more' }}</mat-icon>
+                </div>
+            </div>
+            
+            <!-- Target info -->
             <div *ngIf="getProjection('Target')?.Ship" class="target-info">
                 <div class="target-header">
                     <mat-icon>track_changes</mat-icon>
@@ -390,11 +361,72 @@
                 </div>
             </div>
             
-            <div class="character-class">
-                <div class="class-circle">
-                    <div class="circle-value">{{ getLandingPadSize() }}</div>
+            <!-- Status Icons on the very right -->
+            <div class="status-indicators-header">
+                <!-- Top row: Construction, Friends, Wing -->
+                <div class="status-icons-top-row">
+                    <!-- Colonisation Construction indicator -->
+                    <div *ngIf="isColonisationActive(getProjection('ColonisationConstruction'))"
+                         class="colonisation-indicator"
+                         (click)="toggleColonisationPanel()">
+                        <mat-icon>construction</mat-icon>
+                        <span class="progress-text">{{ formatPercentage(getColonisationProgress()) }}</span>
+                    </div>
+
+                    <!-- Friends counter -->
+                    <div class="friends-counter" (click)="toggleFriendsPanel()" *ngIf="getFriendsCount() > 0">
+                        <mat-icon>people</mat-icon>
+                        <span class="badge">{{ getFriendsCount() }}</span>
+                    </div>
+
+                    <!-- Wing counter -->
+                    <div class="wing-counter" (click)="toggleWingPanel()" *ngIf="getWingCount() > 0">
+                        <mat-icon>group</mat-icon>
+                        <span class="badge">{{ getWingCount() }}</span>
+                    </div>
                 </div>
-                <div class="class-label">SIZE</div>
+                
+                <!-- Status flags in rows of max 5 -->
+                <div class="status-icons-grid">
+                    <!-- Status flags -->
+                    <ng-container *ngFor="let flag of statusFlags">
+                        <div *ngIf="shouldShowFlag('flags', flag)" class="status-icon" [ngClass]="getStatusIconClass('flags', flag)">
+                            <mat-icon matTooltip="{{ formatFlagName(flag) }}">{{ getIconForFlag(flag) }}</mat-icon>
+                        </div>
+                    </ng-container>
+                    
+                    <!-- Odyssey flags -->
+                    <ng-container *ngFor="let flag of odysseyFlags">
+                        <div *ngIf="shouldShowFlag('flags2', flag)" class="status-icon" [ngClass]="getStatusIconClass('flags2', flag)">
+                            <mat-icon matTooltip="{{ formatFlagName(flag) }}">{{ getIconForOdysseyFlag(flag) }}</mat-icon>
+                        </div>
+                    </ng-container>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nav Route Details - integrated into character sheet -->
+        <div *ngIf="showNavDetails" class="nav-details-header">
+            <div class="nav-route-list">
+                <div *ngFor="let system of getNavRouteDetails(); let i = index" class="nav-route-item">
+                    <div class="nav-index">{{ i + 1 }}</div>
+                    <div class="nav-system">{{ system.StarSystem }}</div>
+                    <div class="nav-star-info" *ngIf="system.StarClass">
+                        <mat-icon class="star-icon" [ngClass]="getStarClassColor(system.StarClass)">
+                            {{ getStarTypeIcon(system.StarClass) }}
+                        </mat-icon>
+                        <span class="star-class">{{ system.StarClass }}</span>
+                    </div>
+                    <div class="nav-distance" *ngIf="system.StarPos && i > 0">
+                        {{ getJumpDistance(i) }} ly
+                    </div>
+                    <div class="star-scoopable" *ngIf="system.Scoopable !== undefined">
+                        <mat-icon class="fuel-icon" [ngClass]="system.Scoopable ? 'scoopable' : 'not-scoopable'">
+                            {{ system.Scoopable ? 'local_gas_station' : 'not_interested' }}
+                        </mat-icon>
+                        <span class="small-text">{{ system.Scoopable ? 'Scoopable' : 'Not scoopable' }}</span>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -445,9 +477,40 @@
 
                     <div *ngIf="getCargoCapacity() > 0" class="defense-stat-item cargo-box" (click)="toggleCargoDetails()">
                         <div class="stat-label">CARGO <mat-icon class="tiny-icon">{{ showCargoDetails ? 'expand_less' : 'expand_more' }}</mat-icon></div>
-                        <div class="stat-value-with-bar">
+                        
+                        <!-- Cargo manifest when expanded -->
+                        <div *ngIf="showCargoDetails" class="cargo-manifest">
+                            <div class="cargo-list">
+                                <div *ngFor="let item of getCargoItems()" class="cargo-item">
+                                    <span class="cargo-item-name">{{ item.Name_Localised || item.Name }}</span>
+                                    <span class="cargo-item-count">x{{ item.Count }}</span>
+                                </div>
+                                <div *ngIf="!hasCargoItems()" class="empty-state">Cargo hold empty</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Cargo summary bar (moves to bottom when expanded) -->
+                        <div class="stat-value-with-bar" [ngClass]="{'expanded-summary': showCargoDetails}">
                             <div class="stat-value">{{ getCargoAmount() }}/{{ getCargoCapacity() }}</div>
                             <mat-progress-bar class="stat-bar" mode="determinate" [value]="getCargoPercentage()"></mat-progress-bar>
+                        </div>
+                    </div>
+
+                    <!-- Fighters container -->
+                    <div *ngIf="hasFighters()" class="defense-stat-item fighters-container">
+                        <div class="stat-label">FIGHTERS</div>
+                        <div class="fighters-display" [ngClass]="'fighters-count-' + getFightersCount()">
+                            <div *ngFor="let fighter of getFighters(); let i = index" class="fighter-box">
+                                <div class="fighter-status" [ngClass]="'status-' + (fighter.Status || 'unknown').toLowerCase()">
+                                    {{ formatFighterStatus(fighter.Status) }}
+                                </div>
+                                <div class="fighter-pilot" *ngIf="fighter.Pilot">
+                                    {{ fighter.Pilot }}
+                                </div>
+                                <div class="fighter-pilot-placeholder" *ngIf="!fighter.Pilot">
+                                    No pilot
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -491,73 +554,67 @@
             </div>
         </div>
 
-        <!-- SHIP CARGO DISPLAY -->
-        <div *ngIf="showCargoDetails" class="cargo-details">
-            <h3 class="section-header">CARGO MANIFEST</h3>
-            <div class="cargo-list">
-                <div *ngFor="let item of getCargoItems()" class="cargo-item">
-                    <span class="cargo-item-name">{{ item.Name_Localised || item.Name }}</span>
-                    <span class="cargo-item-count">x{{ item.Count }}</span>
-                </div>
-                <div *ngIf="!hasCargoItems()" class="empty-state">Cargo hold empty</div>
-            </div>
-        </div>
+
 
         <!-- BOTTOM SECTION - Core & Optional Modules -->
         <div class="character-sheet-footer">
-            <div class="modules-section">
-                <h3 class="section-header">CORE INTERNALS</h3>
-                <div class="module-list core-modules">
-                    <ng-container *ngFor="let module of getCoreModules()">
-                        <div class="module-item">
-                            <div class="module-slot">{{ formatSlotName(module.Slot) }}</div>
-                            <div class="module-details">
-                                <span class="module-name">{{ formatModuleName(module.Item) }}</span>
+            <div class="modules-container">
+                <div class="modules-section core-section">
+                    <h3 class="section-header">CORE INTERNALS</h3>
+                    <div class="module-list core-modules">
+                        <ng-container *ngFor="let module of getCoreModules()">
+                            <div class="module-item">
+                                <div class="module-slot">{{ formatSlotName(module.Slot) }}</div>
+                                <div class="module-content">
+                                    <div class="module-name">{{ formatModuleName(module.Item) }}</div>
+                                    <div class="module-engineering" *ngIf="module.Engineering">
+                                        <mat-icon class="engineering-icon">build</mat-icon>
+                                        <span class="engineering-text">{{ module.Engineering.BlueprintName || 'Unknown' }} (G{{ module.Engineering.Level || '?' }})
+                                            <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
+                                                - {{ module.Engineering.ExperimentalEffect_Localised }}
+                                            </span>
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="module-engineering" *ngIf="module.Engineering">
-                                <mat-icon class="engineering-icon">build</mat-icon>
-                                <span class="engineering-text">{{ module.Engineering.BlueprintName || 'Unknown' }} (G{{ module.Engineering.Level || '?' }})
-                                    <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
-                                        - {{ module.Engineering.ExperimentalEffect_Localised }}
-                                    </span>
-                                </span>
-                            </div>
-                        </div>
-                    </ng-container>
-                </div>
-            </div>
-
-            <div class="modules-section">
-                <h3 class="section-header">OPTIONAL INTERNALS</h3>
-                <div class="module-list optional-modules">
-                    <ng-container *ngFor="let module of getOptionalModules(); let i = index">
-                        <div *ngIf="showAllModules || i < getVisibleModulesCount()" class="module-item">
-                            <div class="module-slot">{{ formatSlotName(module.Slot) }}</div>
-                            <div class="module-details">
-                                <span class="module-name">{{ formatModuleName(module.Item) }}</span>
-                            </div>
-                            <div class="module-engineering" *ngIf="module.Engineering">
-                                <mat-icon class="engineering-icon">build</mat-icon>
-                                <span class="engineering-text">{{ module.Engineering.BlueprintName || 'Unknown' }} (G{{ module.Engineering.Level || '?' }})
-                                    <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
-                                        - {{ module.Engineering.ExperimentalEffect_Localised }}
-                                    </span>
-                                </span>
-                            </div>
-                        </div>
-                    </ng-container>
+                        </ng-container>
+                    </div>
                 </div>
 
-                <div *ngIf="getOptionalModules().length > getVisibleModulesCount() && !showAllModules"
-                     class="show-more" (click)="toggleAllModules()">
-                    Show All Modules
-                </div>
+                <div class="modules-section optional-section">
+                    <h3 class="section-header">OPTIONAL INTERNALS</h3>
+                    <div class="module-list optional-modules">
+                        <ng-container *ngFor="let module of getOptionalModules(); let i = index">
+                            <div *ngIf="showAllModules || i < getVisibleModulesCount()" class="module-item">
+                                <div class="module-slot">{{ formatSlotName(module.Slot) }}</div>
+                                <div class="module-content">
+                                    <div class="module-name">{{ formatModuleName(module.Item) }}</div>
+                                    <div class="module-engineering" *ngIf="module.Engineering">
+                                        <mat-icon class="engineering-icon">build</mat-icon>
+                                        <span class="engineering-text">{{ module.Engineering.BlueprintName || 'Unknown' }} (G{{ module.Engineering.Level || '?' }})
+                                            <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
+                                                - {{ module.Engineering.ExperimentalEffect_Localised }}
+                                            </span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </ng-container>
+                    </div>
 
-                <div *ngIf="showAllModules" class="show-less" (click)="toggleAllModules()">
-                    Show Less
+                    <div *ngIf="getOptionalModules().length > getVisibleModulesCount() && !showAllModules"
+                         class="show-more" (click)="toggleAllModules()">
+                        Show All Modules
+                    </div>
+
+                    <div *ngIf="showAllModules" class="show-less" (click)="toggleAllModules()">
+                        Show Less
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+
 </div>
 </div> 

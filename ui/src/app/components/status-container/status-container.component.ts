@@ -2,6 +2,7 @@ import { Component, OnDestroy, OnInit } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatCardModule } from "@angular/material/card";
 import { MatIconModule } from "@angular/material/icon";
+import { MatButtonModule } from "@angular/material/button";
 import { MatListModule } from "@angular/material/list";
 import { MatProgressBarModule } from "@angular/material/progress-bar";
 import { MatTooltipModule } from "@angular/material/tooltip";
@@ -11,7 +12,7 @@ import { Subscription } from "rxjs";
 @Component({
   selector: "app-status-container",
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatIconModule, MatListModule, MatProgressBarModule, MatTooltipModule],
+  imports: [CommonModule, MatCardModule, MatIconModule, MatButtonModule, MatListModule, MatProgressBarModule, MatTooltipModule],
   templateUrl: "./status-container.component.html",
   styleUrl: "./status-container.component.css",
 })
@@ -67,7 +68,7 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
     'ScoopingFuel', 'SrvHandbrake', 'SrvUsingTurretView', 'SrvTurretRetracted', 'SrvDriveAssist',
     'FsdMassLocked', 'FsdCharging', 'FsdCooldown', 'LowFuel', 'OverHeating', 'HasLatLong',
     'IsInDanger', 'BeingInterdicted', 'InMainShip', 'InFighter', 'InSRV', 'HudInAnalysisMode',
-    'NightVision', 'AltitudeFromAverageRadius', 'fsdJump', 'srvHighBeam'
+    'NightVision', 'fsdJump', 'srvHighBeam'
   ];
   
   odysseyFlags = [
@@ -287,12 +288,12 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
   }
 
   // Toggle methods
-  toggleFriendsPanel(): void {
-    this.showFriendsPanel = !this.showFriendsPanel;
-  }
-
   toggleColonisationPanel(): void {
     this.showColonisationPanel = !this.showColonisationPanel;
+  }
+
+  toggleFriendsPanel(): void {
+    this.showFriendsPanel = !this.showFriendsPanel;
   }
 
   toggleWingPanel(): void {
@@ -303,6 +304,86 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
     this.showFightersPanel = !this.showFightersPanel;
   }
 
+  // Methods to close panels
+  closeFriendsPanel(): void {
+    this.showFriendsPanel = false;
+  }
+
+  closeWingPanel(): void {
+    this.showWingPanel = false;
+  }
+
+  closeFightersPanel(): void {
+    this.showFightersPanel = false;
+  }
+
+  closeColonisationPanel(): void {
+    this.showColonisationPanel = false;
+  }
+
+  // Handle background clicks to close panels
+  onBackgroundClick(event: Event, panelType: string): void {
+    event.stopPropagation();
+    switch (panelType) {
+      case 'friends':
+        this.closeFriendsPanel();
+        break;
+      case 'wing':
+        this.closeWingPanel();
+        break;
+      case 'fighters':
+        this.closeFightersPanel();
+        break;
+      case 'colonisation':
+        this.closeColonisationPanel();
+        break;
+    }
+  }
+
+  // Prevent panel content clicks from closing the panel
+  onPanelClick(event: Event): void {
+    event.stopPropagation();
+  }
+
+  // Check if status flag should be shown (active only, except shields)
+  shouldShowFlag(section: string, flag: string): boolean {
+    const isActive = this.getCurrentStatusValue(section, flag);
+    
+    // Special case: always show shields (both up and down states)
+    if (flag === 'ShieldsUp') {
+      return true;
+    }
+    
+    // For all other flags, only show when active
+    return isActive;
+  }
+
+  // Get status icon class for styling
+  getStatusIconClass(section: string, flag: string): string {
+    const isActive = this.getCurrentStatusValue(section, flag);
+    
+    // Special case: shields show active/inactive states
+    if (flag === 'ShieldsUp') {
+      return isActive ? 'status-active' : 'status-inactive';
+    }
+    
+    // Warning/danger flags that should be red when active
+    const warningFlags = [
+      'FlightAssistOff', 'HardpointsDeployed', 'SilentRunning', 'SrvHandbrake', 
+      'SrvTurretRetracted', 'FsdMassLocked', 'FsdCharging', 'FsdCooldown', 
+      'LowFuel', 'OverHeating', 'IsInDanger', 'BeingInterdicted', 'fsdJump', 
+      'srvHighBeam', 'LowOxygen', 'LowHealth', 'Cold', 'Hot', 'VeryCold', 'VeryHot'
+    ];
+    
+    if (warningFlags.includes(flag)) {
+      return 'status-warning';
+    }
+    
+    // All other flags are shown in green when active
+    return 'status-active';
+  }
+
+  // Toggle methods
   toggleNavDetails(): void {
     this.showNavDetails = !this.showNavDetails;
   }
@@ -416,14 +497,28 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
       'HardpointsDeployed': 'gps_fixed',
       'InWing': 'group',
       'LightsOn': 'lightbulb',
-      'CargoScoopDeployed': 'call_received',
+      'CargoScoopDeployed': 'construction', // Better icon for cargo scoop (like a grappler/shovel)
       'SilentRunning': 'volume_off',
       'ScoopingFuel': 'local_gas_station',
+      'FsdCharging': 'hourglass_empty', // Hourglass for FSD charging
+      'FsdCooldown': 'hourglass_full', // Hourglass for FSD cooldown
+      'LowFuel': 'local_gas_station', // Gas station for low fuel
+      'OverHeating': 'local_fire_department', // Fire symbol for overheating
       'IsInDanger': 'warning',
-      'BeingInterdicted': 'error',
+      'BeingInterdicted': 'report_problem', // Warning/danger sign for interdiction
+      'fsdJump': 'rocket', // Rocket for FSD jump
       'InMainShip': 'rocket',
       'InFighter': 'flight',
-      'InSRV': 'directions_car'
+      'InSRV': 'directions_car',
+      'SrvHandbrake': 'pan_tool',
+      'SrvUsingTurretView': 'center_focus_strong',
+      'SrvTurretRetracted': 'unfold_less',
+      'SrvDriveAssist': 'assistant_direction',
+      'FsdMassLocked': 'lock',
+      'HasLatLong': 'my_location',
+      'HudInAnalysisMode': 'search',
+      'NightVision': 'visibility',
+      'srvHighBeam': 'highlight'
     };
     return iconMap[flag] || 'info';
   }
@@ -435,6 +530,9 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
       'InMulticrew': 'group',
       'OnFootInStation': 'business',
       'OnFootOnPlanet': 'public',
+      'OnFootInHangar': 'directions_walk', // Use onfoot icon for hangar
+      'OnFootSocialSpace': 'directions_walk', // Use onfoot icon for social space
+      'OnFootExterior': 'directions_walk', // Use onfoot icon for exterior
       'AimDownSight': 'center_focus_strong',
       'LowOxygen': 'air',
       'LowHealth': 'favorite_border',
@@ -677,7 +775,7 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
   }
 
   getCurrentBalance(): number {
-    return this.commander?.Credits || 0;
+    return this.currentStatus?.Balance || 0;
   }
 
   // Module methods
@@ -738,7 +836,11 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
   }
 
   formatModuleName(item: string): string {
-    return item?.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim() || 'Unknown Module';
+    return item?.replace(/^hpt_/i, '') // Remove "hpt_" prefix (case insensitive)
+               .replace(/^int_/i, '') // Remove "int_" prefix (case insensitive)
+               .replace(/_/g, ' ')      // Replace underscores with spaces
+               .replace(/([A-Z])/g, ' $1') // Add space before capital letters
+               .trim() || 'Unknown Module';
   }
 
   formatSlotName(slot: string): string {

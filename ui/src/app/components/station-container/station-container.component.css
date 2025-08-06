@@ -306,7 +306,7 @@
 
 /* Tab content styling */
 ::ng-deep .mat-mdc-tab-group {
-  margin-top: 16px;
+  /*margin: 20px;*/
 }
 
 ::ng-deep .mat-mdc-tab-header {

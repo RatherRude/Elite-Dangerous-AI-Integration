@@ -28,20 +28,262 @@
   background: rgba(0, 0, 0, 0.9);
   border: 1px solid #333;
   border-radius: 8px;
-  padding: 16px;
+  padding: 20px;
   z-index: 100;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.expandable-panel button>mat-icon {
+    top: 3px;
+    left: 3px;
+    position: absolute;
 }
 
-.friends-panel h3,
-.wing-panel h3,
-.fighters-panel h3,
-.colonisation-panel h3 {
-  margin: 0 0 16px 0;
+.panel-content {
+  cursor: default;
+  padding: 4px;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.panel-header h3 {
+  margin: 0;
   color: #64b5f6;
   font-size: 16px;
   font-weight: 500;
 }
+
+.panel-close-btn {
+  min-width: 32px;
+  width: 32px;
+  height: 32px;
+  line-height: 32px;
+  color: #999;
+  background: transparent;
+  border: 1px solid #444;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.panel-close-btn:hover {
+  color: #ff5722;
+  border-color: #ff5722;
+  background: rgba(255, 87, 34, 0.1);
+}
+
+/* Fighters container */
+.fighters-container {
+  min-height: 60px;
+  text-align: left;
+}
+
+.fighters-display {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.fighters-display.fighters-count-1 {
+  justify-content: center;
+}
+
+.fighters-display.fighters-count-2 {
+  justify-content: space-between;
+}
+
+.fighter-box {
+  flex: 1;
+  max-width: 120px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid #444;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.fighter-status {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.fighter-status.status-ready {
+  color: #4caf50;
+}
+
+.fighter-status.status-launched {
+  color: #2196f3;
+}
+
+.fighter-status.status-beingrebuilt {
+  color: #ff9800;
+}
+
+.fighter-status.status-idle {
+  color: #9e9e9e;
+}
+
+.fighter-status.status-unknown {
+  color: #f44336;
+}
+
+.fighter-pilot {
+  font-size: 10px;
+  color: #ccc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fighter-pilot-placeholder {
+  font-size: 10px;
+  color: #666;
+  font-style: italic;
+}
+
+/* Status icons new layout */
+.status-indicators-header {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.status-icons-top-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.status-icons-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  max-width: 220px;
+  justify-items: center;
+}
+
+/* Adjust character header items */
+.character-name {
+  flex: 0 0 auto;
+}
+
+.location-nav-container-header {
+  flex: 1;
+  min-width: 0;
+}
+
+.target-info {
+  flex: 0 0 auto;
+}
+
+/* Modules layout improvements */
+.modules-container {
+  display: flex;
+  gap: 20px;
+}
+
+.core-section,
+.optional-section {
+  flex: 1;
+  min-width: 0;
+}
+
+.module-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 8px 0;
+  border-bottom: 1px solid #333;
+}
+
+.module-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.module-name {
+  font-weight: 500;
+  color: #e0e0e0;
+  word-wrap: break-word;
+}
+
+.module-engineering {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #888;
+}
+
+.engineering-icon {
+  font-size: 14px !important;
+  width: 14px;
+  height: 14px;
+  color: #ff9800;
+}
+
+/* Cargo container improvements */
+.cargo-box {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.cargo-manifest {
+  margin: 8px 0;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.cargo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cargo-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 0;
+  font-size: 11px;
+}
+
+.cargo-item-name {
+  color: #e0e0e0;
+  flex: 1;
+}
+
+.cargo-item-count {
+  color: #999;
+  font-weight: 500;
+}
+
+.expanded-summary {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #444;
+}
+
+/* Legacy h3 styles - now handled by .panel-header h3 */
 
 .friend-item {
   display: flex;
@@ -273,8 +515,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   background: rgba(0, 0, 0, 0.8);
   border: 1px solid #333;
   border-radius: 6px;
@@ -292,10 +534,56 @@
   transform: scale(1.05);
 }
 
+/* Status icon states */
+.status-icon.status-active {
+  color: #4caf50;
+  border-color: #4caf50;
+}
+
+.status-icon.status-inactive {
+  color: #f44336;
+  border-color: #f44336;
+  opacity: 0.7;
+}
+
+.status-icon.status-warning {
+  color: #f44336;
+  border-color: #f44336;
+}
+
+.status-icon.status-active mat-icon {
+  color: #4caf50;
+}
+
+.status-icon.status-inactive mat-icon {
+  color: #f44336;
+}
+
+.status-icon.status-warning mat-icon {
+  color: #f44336;
+}
+
 .friends-counter,
 .wing-counter,
-.fighters-counter {
+.fighters-counter,
+.colonisation-indicator {
   position: relative;
+  min-width: 32px;
+  width: auto;
+  padding: 0 8px;
+}
+
+.colonisation-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 60px;
+}
+
+.progress-text {
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .badge {
@@ -314,17 +602,9 @@
   font-weight: bold;
 }
 
-.colonisation-indicator {
-  flex-direction: column;
-  width: 60px;
-  padding: 4px;
-}
+/* Legacy colonisation indicator style - removed */
 
-.progress-text {
-  font-size: 10px;
-  color: #bbb;
-  margin-top: 2px;
-}
+/* Progress text styling moved above */
 
 /* Location and Navigation */
 .location-nav-container {
@@ -389,11 +669,12 @@
 
 /* Navigation route details */
 .nav-details {
-  margin: 16px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid #333;
+  margin: 20px 16px 16px 16px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid #444;
   border-radius: 8px;
   overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .nav-route-list {
@@ -480,7 +761,8 @@
 /* Context content */
 .context-content {
   flex: 1;
-  padding: 16px;
+  padding: 20px;
+  margin-top: 8px;
 }
 
 /* Character sheet layout */
@@ -492,12 +774,22 @@
 
 .character-header {
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
-  padding: 20px;
+  padding: 8px;
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid #333;
   border-radius: 8px;
+  gap: 12px;
+}
+
+/* Nav details within character sheet */
+.nav-details-header {
+  /*margin: 16px 0;*/
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid #444;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .character-name h2 {
@@ -849,6 +1141,7 @@
   background: rgba(0, 0, 0, 0.2);
   border-radius: 6px;
   padding: 12px;
+  text-align: center;
 }
 
 .defense-stat-item.cargo-box {
@@ -958,7 +1251,7 @@
 }
 
 .engineering-text {
-  font-size: 10px;
+  font-size: 0.9em;
   color: #bbb;
 }
 
@@ -1237,10 +1530,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.5rem 0;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-  padding-bottom: 15px;
-  margin-bottom: 20px;
+  /*padding: 0.5rem 0;*/
+  /*border-bottom: 2px solid rgba(255, 255, 255, 0.1);*/
+  /*padding-bottom: 15px;*/
+  /*margin-bottom: 20px;*/
 }
 
 .character-name h2 {
@@ -1689,7 +1982,7 @@
   background: rgba(255, 255, 255, 0.05);
   border-radius: 4px;
   font-size: 14px;
-  width: 90%;
+  width: 95%;
 }
 
 .hardpoint-details, .utility-details {
