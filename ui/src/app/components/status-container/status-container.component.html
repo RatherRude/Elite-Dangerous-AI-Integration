@@ -137,8 +137,8 @@
         <!-- TOP SECTION - Character Identity -->
         <div class="character-header">
             <div class="character-name">
-                <h2>{{ getSuitName() }}</h2>
-                <div class="character-subtitle">{{ getSuitLoadoutName() }}</div>
+                <h2>{{ getSuitLoadoutName() }}</h2>
+                <div class="character-subtitle">{{ getSuitName() }}</div>
             </div>
             
             <!-- Exobiology scan info -->
@@ -157,7 +157,7 @@
             
             <div class="character-class">
                 <div class="class-circle">
-                    <div class="circle-value">{{getSuitClass()}}</div>
+                    <mat-icon class="suit-class-icon">{{ getSuitClassIcon() }}</mat-icon>
                 </div>
                 <div class="class-label">CLASS</div>
             </div>

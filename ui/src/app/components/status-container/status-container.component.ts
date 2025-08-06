@@ -629,7 +629,27 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
 
   // Character/Suit methods (for humanoid mode)
   getSuitName(): string {
-    return this.suitLoadout?.SuitName_Localised || this.suitLoadout?.SuitName || 'Unknown Suit';
+    const suitName = this.suitLoadout?.SuitName || '';
+    const localizedName = this.suitLoadout?.SuitName_Localised || '';
+    
+    // Check if localized name contains raw key (starts with $ and ends with ;)
+    const isRawKey = localizedName.startsWith('$') && localizedName.endsWith(';');
+    
+    // Map internal suit names to localized display names
+    if (suitName.includes('TacticalSuit') || localizedName.includes('TacticalSuit')) {
+      return 'Dominator';
+    } else if (suitName.includes('UtilitySuit') || localizedName.includes('UtilitySuit')) {
+      return 'Maverick';
+    } else if (suitName.includes('ExplorationSuit') || localizedName.includes('ExplorationSuit')) {
+      return 'Artemis';
+    }
+    
+    // Use localized name only if it's not a raw key
+    if (!isRawKey && localizedName) {
+      return localizedName;
+    }
+    
+    return this.suitLoadout?.SuitName || 'Unknown Suit';
   }
 
   getSuitLoadoutName(): string {
@@ -637,8 +657,34 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
   }
 
   getSuitClass(): string {
-    // Suit class is not directly available in SuitLoadout, might need to derive from SuitName
-    return '?';
+    const suitName = this.suitLoadout?.SuitName || '';
+    const localizedName = this.suitLoadout?.SuitName_Localised || '';
+    
+    // Determine suit type from both SuitName and SuitName_Localised
+    if (suitName.includes('TacticalSuit') || localizedName.includes('TacticalSuit')) {
+      return 'tactical';
+    } else if (suitName.includes('UtilitySuit') || localizedName.includes('UtilitySuit')) {
+      return 'utility';
+    } else if (suitName.includes('ExplorationSuit') || localizedName.includes('ExplorationSuit')) {
+      return 'exploration';
+    }
+    
+    return 'unknown';
+  }
+
+  getSuitClassIcon(): string {
+    const suitClass = this.getSuitClass();
+    
+    switch (suitClass) {
+      case 'tactical':
+        return 'security'; // Shield/security icon for combat/tactical
+      case 'utility':
+        return 'build'; // Build/wrench icon for utility/engineering
+      case 'exploration':
+        return 'explore'; // Explore/compass icon for exploration
+      default:
+        return 'help_outline'; // Question mark for unknown
+    }
   }
 
   getBackpackItems(category?: string): any[] {
@@ -679,8 +725,17 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
   }
 
   formatModName(mod: any): string {
-    if (typeof mod === 'string') return mod.replace(/_/g, ' ');
-    return mod?.Name || mod?.ModuleName || 'Unknown Mod';
+    let name = '';
+    if (typeof mod === 'string') {
+      name = mod;
+    } else {
+      name = mod?.Name || mod?.ModuleName || 'Unknown Mod';
+    }
+    
+    return name.replace(/^suit_/i, '')    // Remove "suit_" prefix (case insensitive)
+               .replace(/^weapon_/i, '')  // Remove "weapon_" prefix (case insensitive)
+               .replace(/_/g, ' ')        // Replace underscores with spaces
+               .trim();
   }
 
   getSuitWeapons(): any[] {
