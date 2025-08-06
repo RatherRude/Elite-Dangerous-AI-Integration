@@ -5,9 +5,7 @@ Thank you for your interest in contributing! Here's how to set up your developme
 ## Prerequisites
 
 - **Python 3.12**: Make sure you have Python 3.12 installed. You can download it from [python.org](https://www.python.org/downloads/).
-- **Tauri Prerequisites**: Ensure you have all the necessary system dependencies for Tauri development. Follow the guide for your operating system: [Tauri Prerequisites](https://tauri.app/start/prerequisites/).
-- **Node.js**: Required by Tauri, as described in their prerequisites.
-- **Rust**: Required by Tauri, as described in their prerequisites.
+- **Node.js**: For Angular and Electron development.
 
 ## Getting the Code
 
