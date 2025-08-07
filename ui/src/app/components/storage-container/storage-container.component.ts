@@ -6,6 +6,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatTabsModule } from "@angular/material/tabs";
 import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { MatProgressBarModule } from "@angular/material/progress-bar";
 import { ProjectionsService } from "../../services/projections.service";
 import { Subscription } from "rxjs";
 import * as shipEngineersData from "../../../../../src/assets/ship_engineers.json";
@@ -14,7 +15,7 @@ import * as suitEngineersData from "../../../../../src/assets/suit_engineers.jso
 @Component({
   selector: "app-storage-container",
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatTabsModule, MatButtonToggleModule, MatTooltipModule],
+  imports: [CommonModule, FormsModule, MatIconModule, MatTabsModule, MatButtonToggleModule, MatTooltipModule, MatProgressBarModule],
   templateUrl: "./storage-container.component.html",
   styleUrl: "./storage-container.component.css",
 })
@@ -23,10 +24,22 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
   materials: any = null;
   shipLocker: any = null;
   engineerProgress: any = null;
+  colonisationConstruction: any = null;
+  cargo: any = null;
   
   // UI state
   engineerFilter: string = 'all';
   onFootEngineerFilter: string = 'all';
+  
+  // Collapsible sections state
+  sectionsCollapsed = {
+    materials: false,
+    shipLocker: false,
+    engineers: false,
+    onFootEngineers: false,
+    colonisation: false,
+    cargo: false
+  };
   
   private subscriptions: Subscription[] = [];
 
@@ -183,6 +196,14 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
       
       this.projectionsService.engineerProgress$.subscribe(engineerProgress => {
         this.engineerProgress = engineerProgress;
+      }),
+      
+      this.projectionsService.colonisationConstruction$.subscribe(colonisation => {
+        this.colonisationConstruction = colonisation;
+      }),
+      
+      this.projectionsService.cargo$.subscribe(cargo => {
+        this.cargo = cargo;
       })
     );
   }
@@ -391,5 +412,74 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
 
   getArray(length: number): any[] {
     return new Array(length);
+  }
+
+  // Collapsible section methods
+  toggleSection(section: keyof typeof this.sectionsCollapsed): void {
+    this.sectionsCollapsed[section] = !this.sectionsCollapsed[section];
+  }
+
+  // Colonisation methods
+  isColonisationActive(): boolean {
+    return this.colonisationConstruction && this.colonisationConstruction.StarSystem && this.colonisationConstruction.StarSystem !== 'Unknown';
+  }
+
+  getColonisationSystem(): string {
+    return this.colonisationConstruction?.StarSystem || 'Unknown System';
+  }
+
+  getColonisationStatusText(): string {
+    if (this.colonisationConstruction?.ConstructionComplete) return 'Complete';
+    if (this.colonisationConstruction?.ConstructionFailed) return 'Failed';
+    return 'In Progress';
+  }
+
+  getColonisationStatusClass(): string {
+    if (this.colonisationConstruction?.ConstructionComplete) return 'status-complete';
+    if (this.colonisationConstruction?.ConstructionFailed) return 'status-failed';
+    return 'status-active';
+  }
+
+  getColonisationProgress(): number {
+    return this.colonisationConstruction?.ConstructionProgress || 0;
+  }
+
+  getColonisationProgressValue(): number {
+    return this.getColonisationProgress() * 100;
+  }
+
+  getColonisationResources(): any[] {
+    return this.colonisationConstruction?.ResourcesRequired || [];
+  }
+
+  formatPercentage(value: number): string {
+    return `${(value * 100).toFixed(1)}%`;
+  }
+
+  // Cargo methods
+  getCargoItems(): any[] {
+    return this.cargo?.Inventory || [];
+  }
+
+  hasCargoItems(): boolean {
+    return this.getCargoItems().length > 0;
+  }
+
+  getCargoAmount(): number {
+    return this.getCargoItems().reduce((total, item) => total + (item.Count || 0), 0);
+  }
+
+  getCargoCapacity(): number {
+    return this.cargo?.CargoCapacity || 0;
+  }
+
+  getCargoPercentage(): number {
+    const capacity = this.getCargoCapacity();
+    if (capacity === 0) return 0;
+    return (this.getCargoAmount() / capacity) * 100;
+  }
+
+  formatNumber(num: number): string {
+    return num.toLocaleString();
   }
 } 

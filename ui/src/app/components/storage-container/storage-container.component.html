@@ -3,12 +3,95 @@
   <div class="storage-content">
     <h2>Storage & Materials</h2>
 
+    <!-- Colonisation Section -->
+    <div class="storage-section" *ngIf="isColonisationActive()">
+      <div class="section-header" (click)="toggleSection('colonisation')">
+        <h3>Colony Construction</h3>
+        <mat-icon class="collapse-icon">{{ sectionsCollapsed.colonisation ? 'expand_more' : 'expand_less' }}</mat-icon>
+      </div>
+      <div class="section-content" [class.collapsed]="sectionsCollapsed.colonisation">
+        <div class="colonisation-container">
+          <div class="colony-header">
+            <h4>{{ getColonisationSystem() }}</h4>
+            <div class="colony-status" [ngClass]="getColonisationStatusClass()">
+              {{ getColonisationStatusText() }}
+            </div>
+          </div>
+
+          <div class="progress-container">
+            <h4>Construction Progress</h4>
+            <div class="stat-bar">
+              <mat-progress-bar
+                mode="determinate"
+                [value]="getColonisationProgressValue()"
+              ></mat-progress-bar>
+              <span>{{ formatPercentage(getColonisationProgress()) }}</span>
+            </div>
+          </div>
+
+          <div *ngIf="getColonisationResources().length > 0" class="resources-needed">
+            <h4>Resources Needed</h4>
+            <div class="resources-list">
+              <div *ngFor="let resource of getColonisationResources()" class="resource-item">
+                <div class="resource-details">
+                  <span class="resource-name">{{ resource.Name_Localised || resource.Name }}</span>
+                  <div class="resource-progress">
+                    <mat-progress-bar
+                      mode="determinate"
+                      [value]="(resource.ProvidedAmount / resource.RequiredAmount) * 100"
+                    ></mat-progress-bar>
+                    <span class="resource-count">
+                      {{ resource.ProvidedAmount }}/{{ resource.RequiredAmount }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cargo Hold Section -->
+    <div class="storage-section" *ngIf="getCargoCapacity() > 0">
+      <div class="section-header" (click)="toggleSection('cargo')">
+        <h3>Cargo Hold</h3>
+        <mat-icon class="collapse-icon">{{ sectionsCollapsed.cargo ? 'expand_more' : 'expand_less' }}</mat-icon>
+      </div>
+      <div class="section-content" [class.collapsed]="sectionsCollapsed.cargo">
+        <div class="cargo-container">
+          <div class="cargo-summary">
+            <div class="cargo-info">
+              <span class="cargo-amount">{{ getCargoAmount() }}/{{ getCargoCapacity() }}</span>
+              <mat-progress-bar
+                mode="determinate"
+                [value]="getCargoPercentage()"
+                class="cargo-progress"
+              ></mat-progress-bar>
+            </div>
+          </div>
+
+          <div class="cargo-manifest">
+            <h4>Cargo Manifest</h4>
+            <div class="cargo-list">
+              <div *ngFor="let item of getCargoItems()" class="cargo-item">
+                <span class="cargo-item-name">{{ item.Name_Localised || item.Name }}</span>
+                <span class="cargo-item-count">x{{ item.Count }}</span>
+              </div>
+              <div *ngIf="!hasCargoItems()" class="empty-state">Cargo hold empty</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Materials Section -->
     <div class="storage-section">
-      <div class="section-header">
+      <div class="section-header" (click)="toggleSection('materials')">
         <h3>Materials</h3>
+        <mat-icon class="collapse-icon">{{ sectionsCollapsed.materials ? 'expand_more' : 'expand_less' }}</mat-icon>
       </div>
-      <div class="section-content">
+      <div class="section-content" [class.collapsed]="sectionsCollapsed.materials">
         <div class="materials-container">
           <mat-tab-group>
             <!-- Raw Materials -->
@@ -142,10 +225,11 @@
 
     <!-- Ship Locker Section -->
     <div class="storage-section">
-      <div class="section-header">
+      <div class="section-header" (click)="toggleSection('shipLocker')">
         <h3>Ship Locker</h3>
+        <mat-icon class="collapse-icon">{{ sectionsCollapsed.shipLocker ? 'expand_more' : 'expand_less' }}</mat-icon>
       </div>
-      <div class="section-content">
+      <div class="section-content" [class.collapsed]="sectionsCollapsed.shipLocker">
         <div class="locker-container">
           <mat-tab-group>
             <!-- General Items -->
@@ -236,10 +320,11 @@
 
     <!-- Engineers Section -->
     <div class="storage-section">
-      <div class="section-header">
+      <div class="section-header" (click)="toggleSection('engineers')">
         <h3>Engineers</h3>
+        <mat-icon class="collapse-icon">{{ sectionsCollapsed.engineers ? 'expand_more' : 'expand_less' }}</mat-icon>
       </div>
-      <div class="section-content">
+      <div class="section-content" [class.collapsed]="sectionsCollapsed.engineers">
         <div class="engineers-container">
           <mat-tab-group>
             <!-- Ship Engineers -->
@@ -499,5 +584,6 @@
         </div>
       </div>
     </div>
+
   </div>
 </div> 
