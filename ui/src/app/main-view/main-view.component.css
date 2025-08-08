@@ -103,3 +103,13 @@
 ::ng-deep .mat-mdc-tab-body-wrapper {
   flex-grow: 1;
 }
+
+.floating-action-container {
+  position: fixed;
+  right: 3em;
+  bottom: 3em;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

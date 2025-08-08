@@ -7,24 +7,6 @@
     <div class="settings-container">
       <app-settings-menu></app-settings-menu>
     </div>
-    <div class="button-container">
-      @if (isLoading) {
-        <button mat-raised-button color="primary" (click)="start()" [disabled]="isLoading">
-          <mat-icon>hourglass_empty</mat-icon>
-          Starting...
-        </button>
-      } @else if (!usageDisclaimerAccepted) {
-        <button mat-raised-button color="primary" (click)="acceptUsageDisclaimer()" [disabled]="isLoading">
-          <mat-icon>info</mat-icon>
-          Accept Policy
-        </button>
-      } @else {
-        <button mat-raised-button color="primary" (click)="start()" [disabled]="isLoading || !usageDisclaimerAccepted">
-          <mat-icon>play_arrow</mat-icon>
-          Start AI Assistant
-        </button>
-      }
-    </div>
   } @else {
     <div class="runtime-container">
       <mat-tab-group>
@@ -70,18 +52,33 @@
         }
       </mat-tab-group>
     </div>
-    <div class="button-container">
+  }
+
+  <div class="floating-action-container">
+    @if (!isRunning) {
       @if (isLoading) {
-        <button mat-raised-button color="warn" (click)="stop()" [disabled]="isLoading">
+        <button mat-fab color="primary" aria-label="Starting" [disabled]="true">
           <mat-icon>hourglass_empty</mat-icon>
-          Stopping...
+        </button>
+      } @else if (!usageDisclaimerAccepted) {
+        <button mat-fab color="primary" aria-label="Accept Policy" (click)="focusPolicy()">
+          <mat-icon>info</mat-icon>
         </button>
       } @else {
-        <button mat-raised-button color="warn" (click)="stop()" [disabled]="isLoading">
-          <mat-icon>stop</mat-icon>
-          Stop AI Assistant
+        <button mat-fab color="primary" aria-label="Start AI Assistant" (click)="start()" [disabled]="isLoading">
+          <mat-icon>play_arrow</mat-icon>
         </button>
       }
-    </div>
-  }
+    } @else {
+      @if (isLoading) {
+        <button mat-fab color="warn" aria-label="Stopping" [disabled]="true">
+          <mat-icon>hourglass_empty</mat-icon>
+        </button>
+      } @else {
+        <button mat-fab color="warn" aria-label="Stop AI Assistant" (click)="stop()" [disabled]="isLoading">
+          <mat-icon>stop</mat-icon>
+        </button>
+      }
+    }
+  </div>
 </main>

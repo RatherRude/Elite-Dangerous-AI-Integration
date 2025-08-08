@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from "@angular/core";
+import { Component, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
@@ -43,6 +43,8 @@ import { PolicyService } from "../services/policy.service.js";
     styleUrl: "./main-view.component.css",
 })
 export class MainViewComponent implements OnInit, OnDestroy {
+    @ViewChild(SettingsMenuComponent) private settingsMenu?: SettingsMenuComponent;
+
     isLoading = true;
     isRunning = false;
     isInCombat = false;
@@ -128,6 +130,12 @@ export class MainViewComponent implements OnInit, OnDestroy {
         if (this.currentStatusSubscription) {
             this.currentStatusSubscription.unsubscribe();
         }
+    }
+
+    // Called by the floating FAB when the policy is not yet accepted
+    focusPolicy(): void {
+        // Ensure the settings menu is visible (only visible when not running)
+        this.settingsMenu?.focusDisclaimer();
     }
 
     acceptUsageDisclaimer() {
