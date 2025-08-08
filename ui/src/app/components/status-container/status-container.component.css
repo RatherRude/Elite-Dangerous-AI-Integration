@@ -1,3 +1,16 @@
+/* CSS Custom Properties */
+:root {
+  --color-primary-blue: #64b5f6;
+  --color-success-green: #4caf50;
+  --color-warning-orange: #ff9800;
+  --color-error-red: #f44336;
+  --color-text-primary: #e0e0e0;
+  --color-text-secondary: #bbb;
+  --color-text-muted: #666;
+  --color-background-dark: rgba(0, 0, 0, 0.3);
+  --color-border: #333;
+}
+
 /* Main container */
 .status-container {
   flex: 1;
@@ -56,7 +69,7 @@
 
 .panel-header h3 {
   margin: 0;
-  color: #64b5f6;
+  color: var(--color-primary-blue);
   font-size: 16px;
   font-weight: 500;
 }
@@ -109,33 +122,6 @@
   border: 1px solid #444;
   border-radius: 4px;
   text-align: center;
-}
-
-.fighter-status {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  margin-bottom: 4px;
-}
-
-.fighter-status.status-ready {
-  color: #4caf50;
-}
-
-.fighter-status.status-launched {
-  color: #2196f3;
-}
-
-.fighter-status.status-beingrebuilt {
-  color: #ff9800;
-}
-
-.fighter-status.status-idle {
-  color: #9e9e9e;
-}
-
-.fighter-status.status-unknown {
-  color: #f44336;
 }
 
 .fighter-pilot {
@@ -199,6 +185,10 @@
 .optional-section {
   flex: 1;
   min-width: 0;
+}
+
+.module-slot {
+  width: 160px;
 }
 
 .module-item {
@@ -292,8 +282,6 @@
   color: #64b5f6;
 }
 
-/* Legacy h3 styles - now handled by .panel-header h3 */
-
 .friend-item {
   display: flex;
   align-items: center;
@@ -379,26 +367,6 @@
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
-}
-
-.fighter-status.status-ready {
-  background: rgba(76, 175, 80, 0.2);
-  color: #4caf50;
-}
-
-.fighter-status.status-launched {
-  background: rgba(33, 150, 243, 0.2);
-  color: #2196f3;
-}
-
-.fighter-status.status-beingrebuilt {
-  background: rgba(255, 152, 0, 0.2);
-  color: #ff9800;
-}
-
-.fighter-status.status-idle {
-  background: rgba(158, 158, 158, 0.2);
-  color: #9e9e9e;
 }
 
 .fighter-pilot,
@@ -611,9 +579,7 @@
   font-weight: bold;
 }
 
-/* Legacy colonisation indicator style - removed */
 
-/* Progress text styling moved above */
 
 /* Location and Navigation */
 .location-nav-container {
@@ -1252,13 +1218,6 @@
   color: #bbb;
 }
 
-.engineering-icon {
-  font-size: 12px !important;
-  width: 12px !important;
-  height: 12px !important;
-  color: #ff9800;
-}
-
 .engineering-text {
   font-size: 0.9em;
   color: #bbb;
@@ -1378,28 +1337,7 @@
   gap: 8px;
 }
 
-.module-item {
-  display: grid;
-  grid-template-columns: 100px 1fr;
-  gap: 12px;
-  padding: 10px;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 4px;
-  align-items: start;
-}
 
-.module-slot {
-  font-size: 10px;
-  color: #666;
-  font-weight: 500;
-  letter-spacing: 1px;
-}
-
-.module-name {
-  font-size: 12px;
-  color: #e0e0e0;
-  font-weight: 500;
-}
 
 .show-more,
 .show-less {
@@ -1457,72 +1395,7 @@
   }
 }
 
-/* Additional tab layout styles */
-.tab-layout {
-  display: flex;
-  height: 100%;
-}
 
-.tab-sidebar {
-  width: 80px;
-  background-color: #1e1e1e;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding-top: 10px;
-}
-
-.tab-button {
-  width: 70px;
-  height: 70px;
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.6);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  margin-bottom: 5px;
-  border-radius: 5px;
-}
-
-.tab-button mat-icon {
-  font-size: 24px;
-  height: 24px;
-  width: 24px;
-}
-
-.tab-button span {
-  font-size: 12px;
-  margin-top: 5px;
-}
-
-.tab-button.active {
-  background-color: rgba(255, 255, 255, 0.1);
-  color: white;
-}
-
-.tab-content {
-  flex-grow: 1;
-  padding: 0;
-  overflow-y: auto;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-}
-
-.tab-pane {
-  height: 100%;
-  position: relative;
-  flex: 1 1 auto;
-  overflow-y: auto;
-}
-
-.tab-pane[style*="display: block"] {
-  display: flex !important;
-  flex-direction: column;
-}
 
 /* Character Sheet Styles (D&D 5E Inspired) */
 .character-sheet {
@@ -1535,28 +1408,7 @@
   min-height: 0;
 }
 
-.character-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  /*padding: 0.5rem 0;*/
-  /*border-bottom: 2px solid rgba(255, 255, 255, 0.1);*/
-  /*padding-bottom: 15px;*/
-  /*margin-bottom: 20px;*/
-}
 
-.character-name h2 {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 600;
-  color: #d0a85c;
-}
-
-.character-subtitle {
-  font-size: 16px;
-  color: rgba(255, 255, 255, 0.7);
-  margin-top: 5px;
-}
 
 .character-class {
   display: flex;
@@ -1588,39 +1440,17 @@
   letter-spacing: 1px;
 }
 
-.character-stats {
-  display: flex;
-  gap: 15px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-}
 
-.stat-column {
-  flex: 1;
-  min-width: 120px;
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
 
-.stat-box {
-  background-color: rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
-  padding: 10px;
-  text-align: center;
-  border: 1px solid rgba(208, 168, 92, 0.3);
-  position: relative;
-}
 
-.cargo-box:hover, .nav-box:hover {
+
+
+
+.cargo-box:hover {
   background-color: rgba(0, 0, 0, 0.3);
 }
 
-.stat-value {
-  font-size: 22px;
-  font-weight: bold;
-  color: white;
-}
+
 
 .stat-label {
   font-size: 12px;
@@ -1653,30 +1483,7 @@
   gap: 5px;
 }
 
-.module-item {
-  display: flex;
-  padding: 8px;
-  border-radius: 4px;
-  background-color: rgba(255, 255, 255, 0.05);
-  align-items: center;
-}
 
-.module-slot {
-  flex: 0 0 80px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 13px;
-}
-
-.module-details {
-  flex: 1;
-  display: flex;
-  justify-content: space-between;
-}
-
-.module-name {
-  font-size: 14px;
-}
 
 .module-class {
   font-size: 14px;
@@ -1698,116 +1505,12 @@
   background-color: rgba(255, 255, 255, 0.1);
 }
 
-/* Navigation styles */
-.nav-route-summary {
-  background-color: rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
-  padding: 10px;
-  border: 1px solid rgba(208, 168, 92, 0.3);
-  cursor: pointer;
-}
 
-.nav-route-summary:hover {
-  background-color: rgba(0, 0, 0, 0.3);
-}
 
-.nav-summary {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
 
-.nav-summary .expander {
-  margin-left: auto;
-}
-
-.nav-route-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.nav-route-item {
-  display: grid;
-  grid-template-columns: 30px 1fr auto auto;
-  align-items: center;
-  padding: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
-  gap: 10px;
-}
-
-.nav-index {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 500;
-}
-
-.nav-system {
-  font-weight: 500;
-}
-
-.nav-star-info {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.star-icon {
-  width: 20px;
-  height: 20px;
-  font-size: 20px;
-}
-
-.small-text {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.jumps-remaining {
-  text-align: right;
-}
-
-/* Cargo details */
-.cargo-details {
-  background-color: rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
-  padding: 15px;
-  margin: 20px 0;
-}
-
-.cargo-list {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.cargo-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 15px;
-  background-color: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
-}
-
-.cargo-item-count {
-  font-weight: 500;
-  color: #d0a85c;
-}
 
 /* Weapons style for suit */
-.weapons-block {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
-  margin-bottom: 20px;
-}
+
 
 .weapon-card {
   flex: 1;
@@ -1906,31 +1609,7 @@
   border: 1px solid rgba(208, 168, 92, 0.3);
 }
 
-.stat-value-large {
-  font-size: 28px;
-  font-weight: bold;
-  text-align: center;
-  margin: 5px 0;
-}
 
-.stat-suffix {
-  text-align: center;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
-  letter-spacing: 1px;
-}
-
-.cr:after {
-  content: " CR";
-  font-size: 14px;
-  opacity: 0.7;
-}
-
-.stat-value-with-bar {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
 
 /* Combat Stats for Suit */
 .combat-stats {
@@ -1957,11 +1636,7 @@
   margin-bottom: 5px;
 }
 
-.combat-stat-value {
-  font-size: 16px;
-  font-weight: bold;
-  color: white;
-}
+
 
 .combat-stat-label {
   font-size: 12px;
@@ -2020,25 +1695,12 @@
 }
 
 .engineering-text {
-  font-size: 0.8em;
+  font-size: 0.9em;
   margin-left: 4px;
   color: #aaddff;
 }
 
-/* Star Class Colors */
-.star-o { color: #9db4ff; }      /* Blue */
-.star-b { color: #aabfff; }      /* Blue-white */
-.star-a { color: #cad7ff; }      /* White */
-.star-f { color: #f8f7ff; }      /* Yellow-white */
-.star-g { color: #fff4ea; }      /* Yellow (Sun-like) */
-.star-k { color: #ffd2a1; }      /* Orange */
-.star-m { color: #ffbd6f; }      /* Red */
-.star-brown { color: #a66c3c; }  /* Brown dwarf */
-.star-w { color: #70b7ff; }      /* Wolf-Rayet */
-.star-carbon { color: #ff7c7c; } /* Carbon star */
-.star-black-hole { color: #440a5c; } /* Black hole */
-.star-exotic { color: #7f18ff; }   /* Exotic */
-.star-default { color: #ffffff; }  /* Default white */
+
 
 .star-scoopable {
   display: flex;
@@ -2060,71 +1722,7 @@
   color: #f44336;
 }
 
-/* Materials Table Styling */
-.materials-table {
-  padding: 15px 0;
-  overflow-x: auto;
-  width: 100%;
-}
 
-.material-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  border-radius: 8px;
-  overflow: hidden;
-  background: rgba(0, 0, 0, 0.2);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.material-table thead th {
-  background-color: rgba(208, 168, 92, 0.2);
-  color: #d0a85c;
-  font-weight: 500;
-  text-align: center;
-  padding: 12px 10px;
-  font-size: 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  position: sticky;
-  top: 0;
-  z-index: 1;
-}
-
-.material-table tbody td {
-  padding: 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  vertical-align: top;
-}
-
-.material-table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.material-table tbody tr:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-.material-table tbody td:first-child {
-  color: #d0a85c;
-  font-weight: 500;
-  white-space: nowrap;
-  background-color: rgba(0, 0, 0, 0.1);
-}
-
-.material-cell {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 5px 8px;
-  margin-bottom: 5px;
-  background-color: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
-  min-height: 32px;
-}
-
-.material-cell:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
 
 .material-cell.empty {
   opacity: 0.6;

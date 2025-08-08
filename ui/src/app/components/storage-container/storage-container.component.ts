@@ -26,6 +26,7 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
   engineerProgress: any = null;
   colonisationConstruction: any = null;
   cargo: any = null;
+  shipInfo: any = null;
   
   // UI state
   engineerFilter: string = 'all';
@@ -204,6 +205,10 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
       
       this.projectionsService.cargo$.subscribe(cargo => {
         this.cargo = cargo;
+      }),
+      
+      this.projectionsService.shipInfo$.subscribe(shipInfo => {
+        this.shipInfo = shipInfo;
       })
     );
   }
@@ -470,7 +475,7 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
   }
 
   getCargoCapacity(): number {
-    return this.cargo?.CargoCapacity || 0;
+    return this.shipInfo?.CargoCapacity || this.cargo?.Capacity || 0;
   }
 
   getCargoPercentage(): number {
