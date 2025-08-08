@@ -1,4 +1,4 @@
-import { AfterViewChecked, Component, ElementRef } from "@angular/core";
+import { AfterViewChecked, Component, ElementRef, Input, OnChanges, SimpleChanges } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatCardModule } from "@angular/material/card";
 import { ChatMessage, ChatService } from "../../services/chat.service.js";
@@ -10,8 +10,11 @@ import { ChatMessage, ChatService } from "../../services/chat.service.js";
   templateUrl: "./chat-container.component.html",
   styleUrl: "./chat-container.component.css",
 })
-export class ChatContainerComponent implements AfterViewChecked {
+export class ChatContainerComponent implements AfterViewChecked, OnChanges {
+  @Input() limit?: number;
+
   chat: ChatMessage[] = [];
+  private fullChat: ChatMessage[] = [];
 
   private element!: ElementRef;
 
@@ -19,15 +22,30 @@ export class ChatContainerComponent implements AfterViewChecked {
     this.element = element;
     this.chatService.chatHistory$.subscribe((chat) => {
       console.log("Logs received", chat);
-      this.chat = chat;
+      this.fullChat = chat;
+      this.applyLimit();
       setTimeout(() => {
         this.scrollToBottom();
       }, 0);
     });
   }
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if ("limit" in changes) {
+      this.applyLimit();
+    }
+  }
+
   ngAfterViewChecked() {
     this.scrollToBottom();
+  }
+
+  private applyLimit(): void {
+    if (typeof this.limit === "number" && this.limit > 0) {
+      this.chat = this.fullChat.filter(value => ['covas', 'cmdr', 'action'].includes(value.role)).slice(-this.limit);
+    } else {
+      this.chat = this.fullChat;
+    }
   }
 
   private scrollToBottom(): void {

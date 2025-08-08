@@ -835,12 +835,7 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
 
   // Module methods
   getShipModules(): any[] {
-    const modules = this.loadout?.Modules || [];
-    // Debug logging - remove this later
-    if (modules.length > 0) {
-      console.log('Available modules:', modules.map((m: any) => m.Slot).sort());
-    }
-    return modules;
+    return this.loadout?.Modules || [];
   }
 
   getCoreModules(): any[] {
@@ -871,10 +866,6 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
       // Utility slots are typically named TinyHardpoint1, TinyHardpoint2, etc.
       return slot.includes('TinyHardpoint') || slot.includes('Utility');
     });
-    // Debug logging - remove this later
-    if (this.getShipModules().length > 0) {
-      console.log('Utility modules found:', utilityModules.map((m: any) => m.Slot));
-    }
     return utilityModules;
   }
 

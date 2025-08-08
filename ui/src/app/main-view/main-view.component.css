@@ -62,6 +62,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
 }
 
 .log-container {
@@ -112,4 +113,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+app-chat-container[ng-reflect-limit] {
+  max-height: 4em;
+  overflow-y: auto;
+  border-top: 1px solid #666;
+  margin-right: 80px;
 }
