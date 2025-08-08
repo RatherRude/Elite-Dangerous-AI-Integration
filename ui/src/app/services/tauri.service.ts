@@ -6,6 +6,7 @@ import { BehaviorSubject, Observable, ReplaySubject } from "rxjs";
 import { MatDialog } from "@angular/material/dialog";
 import { UpdateDialogComponent } from "../components/update-dialog/update-dialog.component";
 import { environment } from "../../environments/environment";
+import { ScreenInfo } from "../models/screen-info";
 
 declare global {
     interface Window {
@@ -95,12 +96,12 @@ export class TauriService {
         await electronAPI.invoke("destroy_floating_overlay", {});
     }
 
-    public async getAvailableScreens(): Promise<Array<{id: number, label: string, bounds: { x: number; y: number; width: number; height: number }, primary: boolean}>> {
+    public async getAvailableScreens(): Promise<ScreenInfo[]> {
         if (!electronAPI) {
             throw new Error('electronAPI not available');
         }
         const result = await electronAPI.invoke('get_available_screens');
-        return result;
+        return result as ScreenInfo[];
     }
 
     private async startReadingOutput(): Promise<void> {

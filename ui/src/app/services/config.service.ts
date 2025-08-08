@@ -2,6 +2,7 @@ import { Injectable } from "@angular/core";
 import { BehaviorSubject, filter, Observable } from "rxjs";
 import { BaseCommand, type BaseMessage, TauriService } from "./tauri.service";
 import { PluginSettings, PluginSettingsMessage } from "./plugin-settings";
+import { ScreenInfo } from "../models/screen-info";
 
 export interface ConfigMessage extends BaseMessage {
     type: "config";
@@ -38,12 +39,6 @@ export interface SystemInfo {
     input_device_names: string[];
     output_device_names: string[];
     edcopilot_installed: boolean;
-    available_screens?: Array<{
-        id: number;
-        label: string;
-        bounds: { x: number; y: number; width: number; height: number };
-        primary: boolean;
-    }>;
 }
 
 export interface SystemInfoMessage extends BaseMessage {
@@ -128,6 +123,10 @@ export class ConfigService {
     public system$ = this.systemSubject.asObservable();
     public systemInfo: SystemInfo | null = null;
 
+    // Screens are managed separately from SystemInfo
+    private screensSubject = new BehaviorSubject<ScreenInfo[] | null>(null);
+    public screens$ = this.screensSubject.asObservable();
+
     private validationSubject = new BehaviorSubject<
         ModelValidationMessage | null
     >(null);
@@ -158,21 +157,17 @@ export class ConfigService {
                 message.type === "plugin_settings_configs" ||
                 message.type === "start"
             ),
-        ).subscribe((message) => {
+        ).subscribe((message: ConfigMessage | RunningConfigMessage | SystemInfoMessage | ModelValidationMessage | PluginSettingsMessage | StartMessage) => {
             if (message.type === "config") {
                 this.configSubject.next(message.config);
             } else if (message.type === "running_config") {
                 this.configSubject.next(message.config);
             } else if (message.type === "system") {
-                // Enhance system info with screen information from Electron
-                this.enhanceSystemInfoWithScreens(message.system).then(() => {
-                    this.systemSubject.next(message.system);
-                    this.systemInfo = message.system;
-                }).catch(error => {
-                    console.error('Error enhancing system info:', error);
-                    this.systemSubject.next(message.system);
-                    this.systemInfo = message.system;
-                });
+                // Do not mutate SystemInfo with screen data
+                this.systemSubject.next(message.system);
+                this.systemInfo = message.system;
+                // Load screens separately
+                this.loadScreens();
             } else if (message.type === "model_validation") {
                 this.validationSubject.next(message);
             } else if (message.type === "plugin_settings_configs") {
@@ -181,6 +176,16 @@ export class ConfigService {
                 this.validationSubject.next(null);
             }
         });
+    }
+
+    private async loadScreens(): Promise<void> {
+        try {
+            const screens = await this.tauriService.getAvailableScreens();
+            this.screensSubject.next(screens ?? []);
+        } catch (error) {
+            console.error('Failed to get screen information:', error);
+            this.screensSubject.next([]);
+        }
     }
 
     public async changeConfig(partialConfig: Partial<Config>): Promise<void> {
@@ -268,21 +273,6 @@ export class ConfigService {
             await this.tauriService.send_command(message);
         } catch (error) {
             console.error("Error sending clear history request:", error);
-        }
-    }
-
-    private async enhanceSystemInfoWithScreens(systemInfo: SystemInfo): Promise<void> {
-        // Initialize available_screens if it doesn't exist
-        if (!systemInfo.available_screens) {
-            systemInfo.available_screens = [];
-        }
-        
-        try {
-            const screens = await this.tauriService.getAvailableScreens();
-            systemInfo.available_screens = screens || [];
-        } catch (error) {
-            console.error('Failed to get screen information:', error);
-            systemInfo.available_screens = [];
         }
     }
 }
