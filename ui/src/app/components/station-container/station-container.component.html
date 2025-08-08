@@ -1,12 +1,10 @@
 <!-- STATION TAB -->
 <div class="station-container">
   <div class="station-content">
-    <h2>Station Services at {{ getStationName() }}, {{ getLocationSystem() }}</h2>
-    
     <!-- Stored Ships Section -->
     <div class="station-section">
       <div class="section-header">
-        <h3>Stored Ships</h3>
+        <h3>Stored Ships at {{ getStationName() }}, {{ getLocationSystem() }}</h3>
       </div>
       <div class="section-content">
                  @if (isStoredShipsAtCurrentLocation()) {

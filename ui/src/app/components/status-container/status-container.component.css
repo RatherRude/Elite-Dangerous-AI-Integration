@@ -920,16 +920,6 @@
   padding: 16px;
 }
 
-.stat-header {
-  margin: 0 0 16px 0;
-  font-size: 14px;
-  color: #64b5f6;
-  font-weight: 500;
-  letter-spacing: 1px;
-  border-bottom: 1px solid #333;
-  padding-bottom: 8px;
-}
-
 /* Combat stats */
 .combat-stats {
   display: grid;
@@ -1231,10 +1221,10 @@
   padding: 20px;
 }
 
-.section-header {
+.section-header, .stat-header {
   margin: 0 0 16px 0;
   font-size: 16px;
-  color: #64b5f6;
+  color: #d0a85c;
   font-weight: 500;
   letter-spacing: 1px;
   border-bottom: 1px solid #333;
@@ -1395,20 +1385,16 @@
   }
 }
 
-
-
 /* Character Sheet Styles (D&D 5E Inspired) */
 .character-sheet {
-  background-color: rgba(245, 240, 230, 0.05);
+  /*background-color: rgba(245, 240, 230, 0.05);*/
   border-radius: 8px;
-  padding: 20px;
+  padding: 0;
   position: relative;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   flex-shrink: 0;
   min-height: 0;
 }
-
-
 
 .character-class {
   display: flex;
@@ -1440,32 +1426,14 @@
   letter-spacing: 1px;
 }
 
-
-
-
-
-
-
 .cargo-box:hover {
   background-color: rgba(0, 0, 0, 0.3);
 }
-
-
 
 .stat-label {
   font-size: 12px;
   color: #d0a85c;
   margin-top: 5px;
-  letter-spacing: 1px;
-}
-
-.section-header {
-  font-size: 16px;
-  font-weight: 600;
-  color: #d0a85c;
-  margin: 25px 0 15px;
-  padding-bottom: 5px;
-  border-bottom: 1px solid rgba(208, 168, 92, 0.3);
   letter-spacing: 1px;
 }
 
@@ -1482,8 +1450,6 @@
   flex-direction: column;
   gap: 5px;
 }
-
-
 
 .module-class {
   font-size: 14px;
@@ -1505,13 +1471,7 @@
   background-color: rgba(255, 255, 255, 0.1);
 }
 
-
-
-
-
 /* Weapons style for suit */
-
-
 .weapon-card {
   flex: 1;
   min-width: 250px;
@@ -1576,7 +1536,7 @@
 .sheet-column {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  /*gap: 15px;*/
 }
 
 .attributes-column {
@@ -1609,8 +1569,6 @@
   border: 1px solid rgba(208, 168, 92, 0.3);
 }
 
-
-
 /* Combat Stats for Suit */
 .combat-stats {
   display: grid;
@@ -1635,8 +1593,6 @@
   background-color: rgba(208, 168, 92, 0.1);
   margin-bottom: 5px;
 }
-
-
 
 .combat-stat-label {
   font-size: 12px;
@@ -1666,7 +1622,6 @@
   background: rgba(255, 255, 255, 0.05);
   border-radius: 4px;
   font-size: 14px;
-  width: 95%;
 }
 
 .hardpoint-details, .utility-details {
@@ -1677,15 +1632,6 @@
   display: flex;
   flex-direction: column;
   padding: 2px 0;
-}
-
-.hardpoint-name {
-  font-weight: 500;
-  color: #d0a85c;
-}
-
-.utility-name {
-  font-weight: 500;
 }
 
 .utility-engineering, .hardpoint-engineering {
@@ -1699,8 +1645,6 @@
   margin-left: 4px;
   color: #aaddff;
 }
-
-
 
 .star-scoopable {
   display: flex;
@@ -1721,8 +1665,6 @@
 .not-scoopable {
   color: #f44336;
 }
-
-
 
 .material-cell.empty {
   opacity: 0.6;

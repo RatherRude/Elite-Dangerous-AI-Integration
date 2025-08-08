@@ -16,9 +16,9 @@ export class ChatContainerComponent implements AfterViewChecked, OnChanges {
   chat: ChatMessage[] = [];
   private fullChat: ChatMessage[] = [];
 
-  private element!: ElementRef;
+  private element!: ElementRef<HTMLElement>;
 
-  constructor(private chatService: ChatService, element: ElementRef) {
+  constructor(private chatService: ChatService, element: ElementRef<HTMLElement>) {
     this.element = element;
     this.chatService.chatHistory$.subscribe((chat) => {
       console.log("Logs received", chat);
@@ -50,9 +50,13 @@ export class ChatContainerComponent implements AfterViewChecked, OnChanges {
 
   private scrollToBottom(): void {
     try {
-      const scrollContainer = this.element.nativeElement.parentElement;
+      const hostElement = this.element.nativeElement;
+      const scrollContainer = (typeof this.limit === "number" && this.limit > 0)
+        ? hostElement
+        : hostElement.parentElement;
+
       scrollContainer?.scrollTo({
-        top: scrollContainer?.scrollHeight,
+        top: scrollContainer?.scrollHeight ?? 0,
         behavior: "smooth",
       });
     } catch (err) {}

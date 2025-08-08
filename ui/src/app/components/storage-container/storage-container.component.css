@@ -377,8 +377,6 @@
 
 /* Tab Group Styling */
 ::ng-deep .mat-mdc-tab-group {
-  --mdc-tab-indicator-active-indicator-color: #3f51b5;
-  --mdc-secondary-navigation-tab-label-text-color: #e0e0e0;
   background: transparent;
 }
 
