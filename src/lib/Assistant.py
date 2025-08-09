@@ -133,12 +133,18 @@ class Assistant:
                 response_actions = predicted_actions
             else:
                 start_time = time()
+                llm_params: dict[str, str] = {}
+                if self.config["llm_model_name"].startswith("gpt-5-"):
+                    llm_params["verbosity"] = "low"
+                    llm_params["reasoning_effort"] = "minimal"
+                    
                 try:
-                    response = self.llmClient.chat.completions.with_raw_response.create(
+                    response = self.llmClient.chat.completions.with_raw_response.create(  # pyright: ignore[reportCallIssue]
                         model=self.config["llm_model_name"],
                         messages=prompt,
                         temperature=self.config["llm_temperature"],
-                        tools=tool_list
+                        tools=tool_list,  # pyright: ignore[reportArgumentType]
+                        **llm_params,  # pyright: ignore[reportArgumentType]
                     )
                     end_time = time()
                     log('debug', 'Response time LLM', end_time - start_time)

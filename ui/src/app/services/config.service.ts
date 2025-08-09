@@ -2,6 +2,7 @@ import { Injectable } from "@angular/core";
 import { BehaviorSubject, filter, Observable } from "rxjs";
 import { BaseCommand, type BaseMessage, TauriService } from "./tauri.service";
 import { PluginSettings, PluginSettingsMessage } from "./plugin-settings";
+import { ScreenInfo } from "../models/screen-info";
 
 export interface ConfigMessage extends BaseMessage {
     type: "config";
@@ -101,6 +102,12 @@ export interface Config {
     reset_game_events?: boolean; // Flag to request resetting game events to defaults
     qol_autobrake: boolean; // Quality of life: Auto brake when approaching stations
     qol_autoscan: boolean; // Quality of life: Auto scan when entering new systems
+    
+    // Overlay settings
+    overlay_show_avatar: boolean;
+    overlay_show_chat: boolean;
+    overlay_position: "left" | "right";
+    overlay_screen_id: number;
 
     plugin_settings: { [key: string]: any };
 }
@@ -115,6 +122,10 @@ export class ConfigService {
     private systemSubject = new BehaviorSubject<SystemInfo | null>(null);
     public system$ = this.systemSubject.asObservable();
     public systemInfo: SystemInfo | null = null;
+
+    // Screens are managed separately from SystemInfo
+    private screensSubject = new BehaviorSubject<ScreenInfo[] | null>(null);
+    public screens$ = this.screensSubject.asObservable();
 
     private validationSubject = new BehaviorSubject<
         ModelValidationMessage | null
@@ -146,14 +157,17 @@ export class ConfigService {
                 message.type === "plugin_settings_configs" ||
                 message.type === "start"
             ),
-        ).subscribe((message) => {
+        ).subscribe((message: ConfigMessage | RunningConfigMessage | SystemInfoMessage | ModelValidationMessage | PluginSettingsMessage | StartMessage) => {
             if (message.type === "config") {
                 this.configSubject.next(message.config);
             } else if (message.type === "running_config") {
                 this.configSubject.next(message.config);
             } else if (message.type === "system") {
+                // Do not mutate SystemInfo with screen data
                 this.systemSubject.next(message.system);
                 this.systemInfo = message.system;
+                // Load screens separately
+                this.loadScreens();
             } else if (message.type === "model_validation") {
                 this.validationSubject.next(message);
             } else if (message.type === "plugin_settings_configs") {
@@ -162,6 +176,16 @@ export class ConfigService {
                 this.validationSubject.next(null);
             }
         });
+    }
+
+    private async loadScreens(): Promise<void> {
+        try {
+            const screens = await this.tauriService.getAvailableScreens();
+            this.screensSubject.next(screens ?? []);
+        } catch (error) {
+            console.error('Failed to get screen information:', error);
+            this.screensSubject.next([]);
+        }
     }
 
     public async changeConfig(partialConfig: Partial<Config>): Promise<void> {

@@ -116,6 +116,7 @@ export const GameEventTooltips: Record<string, string> = {
   "FsdMassLocked": "COVAS:NEXT will react when your ship becomes mass locked.",
   "LowFuelWarningCleared": "COVAS:NEXT will react when a low fuel warning is cleared.",
   "LowFuelWarning": "COVAS:NEXT will react when your fuel level is critically low.",
+  "HighGravityWarning": "COVAS:NEXT will react when you enter a high gravity environment (above 2G).",
   "NoScoopableStars": "COVAS:NEXT will react when no scoopable stars are within your jump range.",
   "NightVisionOff": "COVAS:NEXT will react when night vision is turned off.",
   "NightVisionOn": "COVAS:NEXT will react when night vision is activated.",

@@ -310,7 +310,6 @@ ul {
   
   .avatar-container {
     display: inline-flex;
-    gap: 24px;
     align-items: flex-start;
     padding: 16px;
     background: rgba(255, 255, 255, 0.05);
@@ -401,4 +400,21 @@ ul {
 .character-voice-container {
   display: flex;
   gap: 8px;
+}
+
+// Mute category button styling
+.mute-category-button {
+  margin-left: auto;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+  
+  &:hover {
+    opacity: 1;
+  }
+  
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
 }

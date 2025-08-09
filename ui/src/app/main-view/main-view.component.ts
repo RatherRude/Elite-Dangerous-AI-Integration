@@ -144,7 +144,7 @@ export class MainViewComponent implements OnInit, OnDestroy {
 
     async start(): Promise<void> {
         try {
-            if(this.config && this.config.characters[this.config.active_character_index] && this.config.characters[this.config.active_character_index]['avatar_show']) {
+            if(this.config && (this.config.overlay_show_avatar || this.config.overlay_show_chat)) {
                 await this.createOverlay();
             }
 
@@ -170,14 +170,11 @@ export class MainViewComponent implements OnInit, OnDestroy {
     async createOverlay(): Promise<void> {
         try {
             const isLinux = this.configService.systemInfo?.os === "Linux";
-            await this.tauri.createOverlay(isLinux ? {
-                fullscreen: false,
-                maximized: true,
-                alwaysOnTop: true
-            } : {
-                fullscreen: false,
-                maximized: true,
-                alwaysOnTop: true
+            const screenId = this.config?.overlay_screen_id ?? -1; // -1 for primary screen
+            
+            await this.tauri.createOverlay({
+                alwaysOnTop: true,
+                screenId: screenId
             });
         } catch (error) {
             console.error("Failed to create overlay:", error);

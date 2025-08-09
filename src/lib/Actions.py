@@ -5514,7 +5514,10 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             "required": ["query"]
         },
         get_galnet_news,
-        'web'
+        'web',
+        input_template=lambda i, s: f"""Fetching GalNet articles
+            {'regarding: ' + i.get('query', '') if i.get('query', '') else ''}
+        """,
     )
 
     # if ARC:

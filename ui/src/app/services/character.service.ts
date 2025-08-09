@@ -30,9 +30,6 @@ export interface Character {
     tts_speed: string;
     tts_prompt: string;
     avatar?: string; // IndexedDB key for the avatar image
-    avatar_show?: boolean; // Show Avatar: boolean (disabled and false if edcopilot_dominant equals true)
-    avatar_position?: 'left' | 'right'; // Position: Left or Right as dropdown (hidden if not showing avatar)
-    avatar_flip?: boolean; // Flip: boolean (hidden if not showing avatar)
 
     
 
