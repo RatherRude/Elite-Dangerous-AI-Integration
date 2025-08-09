@@ -28,6 +28,7 @@ import {
     MatExpansionPanel,
     MatExpansionPanelHeader,
     MatExpansionPanelTitle,
+    MatExpansionPanelDescription,
 } from "@angular/material/expansion";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { TooltipDirective } from "./tooltip.directive.js";
@@ -82,6 +83,7 @@ interface PromptSettings {
         MatExpansionPanel,
         MatExpansionPanelTitle,
         MatExpansionPanelHeader,
+        MatExpansionPanelDescription,
         MatTooltipModule,
         TooltipDirective,
     ],
@@ -1377,6 +1379,39 @@ export class CharacterSettingsComponent {
             if (result !== undefined && this.activeCharacter) {
                 this.setCharacterProperty('avatar', result.avatarId);
                 // The character service will automatically reload the avatar
+            }
+        });
+    }
+
+    async muteAllEventsInCategory(categoryName: string) {
+        if (!this.configService || !this.activeCharacter) return;
+
+        const dialogRef = this.confirmationDialog.openConfirmationDialog({
+            title: "Mute Category",
+            message: `Are you sure you want to mute all events in the "${categoryName}" category? This will disable all event reactions for this category.`,
+            confirmButtonText: "Mute All",
+            cancelButtonText: "Cancel",
+        });
+
+        dialogRef.subscribe(async (result: boolean) => {
+            if (result) {
+                // Get current game events
+                const currentGameEvents = { ...this.activeCharacter!.game_events };
+                
+                // Get all events in this category
+                const eventsInCategory = this.gameEventCategories[categoryName] || [];
+                
+                // Disable all events in this category in the copied object
+                for (const eventName of eventsInCategory) {
+                    currentGameEvents[eventName] = false;
+                }
+
+                // Update the entire game_events object at once
+                await this.characterService.setCharacterProperty('game_events', currentGameEvents);
+
+                this.snackBar.open(`All events in "${categoryName}" category have been muted`, "OK", {
+                    duration: 3000,
+                });
             }
         });
     }

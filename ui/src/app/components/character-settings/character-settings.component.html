@@ -527,6 +527,15 @@
                                 <mat-panel-title>
                                     {{ section.key }}
                                 </mat-panel-title>
+                                <mat-panel-description>
+                                    <button mat-icon-button
+                                            color="warn"
+                                            (click)="muteAllEventsInCategory(section.key); $event.stopPropagation()"
+                                            [matTooltip]="'Mute all events in ' + section.key+' category'"
+                                            class="mute-category-button">
+                                        <mat-icon>volume_off</mat-icon>
+                                    </button>
+                                </mat-panel-description>
                             </mat-expansion-panel-header>
                             @for (e of section.value | keyvalue:orderByKey; track e.key) {
                                 <mat-slide-toggle
