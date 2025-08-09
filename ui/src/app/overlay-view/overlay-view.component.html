@@ -1,13 +1,13 @@
 <div class="overlay-container" 
      [class.position-left]="avatarPosition === 'left'" 
      [class.position-right]="avatarPosition === 'right'"
-     *ngIf="avatarShow">
+     *ngIf="avatarShow || chatShow">
     <div class="overlay-character" [ngClass]="action">
         <div class="overlay-pngtuber" 
              [ngClass]="action"
-             [class.flip]="avatarFlip"
+             *ngIf="avatarShow"
              #pngtuberElement></div>
-        <div class="overlay-chat">
+        <div class="overlay-chat" *ngIf="chatShow">
 <!--            <p class="ready-text" *ngIf="runMode=='starting'">System preparing...</p>-->
             @for (msg of chat; track msg.index) {
               <div class="chat-entry">

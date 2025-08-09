@@ -26,10 +26,10 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
   private currentAvatarUrl: string | null = null;
   private subscriptions: Subscription[] = [];
 
-  // Avatar positioning and flip settings
+  // Overlay display settings
   avatarPosition: 'left' | 'right' = 'right';
-  avatarFlip: boolean = false;
   avatarShow: boolean = true;
+  chatShow: boolean = true;
   private isInitialized: boolean = false;
 
   constructor(
@@ -69,29 +69,31 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
       })
     );
 
-    // Subscribe to character changes to get avatar settings
+    // Subscribe to config changes to get overlay settings
     this.subscriptions.push(
-      characterService.character$.subscribe(character => {
-        if (character) {
-          this.avatarPosition = character.avatar_position || 'right';
-          this.avatarFlip = character.avatar_flip || false;
-          this.updateAvatarShowStatus(character);
+      configService.config$.subscribe(config => {
+        if (config) {
+          this.avatarPosition = config.overlay_position || 'right';
+          this.updateAvatarShowStatus(config);
+          this.updateChatShowStatus(config);
+          this.applyAvatarBackground(); // Update avatar when position changes
           this.isInitialized = true;
         } else if (!this.isInitialized) {
           // Reset to defaults if no character and not yet initialized
           this.avatarPosition = 'right';
-          this.avatarFlip = false;
           this.avatarShow = true;
+          this.chatShow = true;
+          this.applyAvatarBackground(); // Update avatar when resetting to defaults
         }
       })
     );
 
-    // Subscribe to config changes to update avatar visibility based on EDCP settings
+    // Subscribe to config changes to update overlay visibility settings
     this.subscriptions.push(
       configService.config$.subscribe(config => {
-        const character = this.characterService.getCurrentCharacter();
-        if (character && config) {
-          this.updateAvatarShowStatus(character, config);
+        if (config) {
+          this.updateAvatarShowStatus(config);
+          this.updateChatShowStatus(config);
         }
       })
     );
@@ -123,18 +125,21 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
     }
   }
   
-  private updateAvatarShowStatus(character: any, config?: any): void {
-    const currentConfig = config || this.configService.getCurrentConfig();
-    
+  private updateAvatarShowStatus(config: any): void {
     // Hide avatar if EDCP is enabled and dominant
-    const isEDCPDominant = currentConfig?.edcopilot === true && currentConfig?.edcopilot_dominant === true;
+    const isEDCPDominant = config?.edcopilot === true && config?.edcopilot_dominant === true;
     
     if (isEDCPDominant) {
       this.avatarShow = false;
     } else {
-      // Default to true if avatar_show is undefined, only false if explicitly set to false
-      this.avatarShow = character?.avatar_show !== false;
+      // Use global overlay setting
+      this.avatarShow = config?.overlay_show_avatar !== false;
     }
+  }
+
+  private updateChatShowStatus(config: any): void {
+    // Use global overlay setting for chat
+    this.chatShow = config?.overlay_show_chat !== false;
   }
 
   private applyAvatarBackground() {
@@ -145,8 +150,11 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
         if (this.currentAvatarUrl) {
           this.pngtuberElement.nativeElement.style.backgroundImage = `url('${this.currentAvatarUrl}')`;
         } else {
-          // Revert to CSS default background image when no avatar URL
-          this.pngtuberElement.nativeElement.style.backgroundImage = '';
+          // Use flipped default avatar when overlay position is left
+          const defaultAvatar = this.avatarPosition === 'left' 
+            ? 'assets/cn_avatar_default_flipped.png' 
+            : 'assets/cn_avatar_default.png';
+          this.pngtuberElement.nativeElement.style.backgroundImage = `url('${defaultAvatar}')`;
         }
       }
     }, 10); // Slightly longer timeout to handle *ngIf rendering
