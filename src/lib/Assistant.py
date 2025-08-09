@@ -101,8 +101,8 @@ class Assistant:
             prompt = self.prompt_generator.generate_prompt(events=events, projected_states=projected_states, pending_events=new_events)
 
             user_input: list[str] = [event.content for event in new_events if event.kind == 'user']
-            use_tools = self.config["tools_var"] and len(user_input)
             reasons = [event.content.get('event', event.kind) if event.kind=='game' else event.kind for event in new_events if event.kind in ['user', 'game', 'tool', 'status']]
+            use_tools = self.config["tools_var"] and ('user' in reasons or 'tool' in reasons)
 
             current_status = projected_states.get("CurrentStatus")
             flags = current_status["flags"]
@@ -134,7 +134,7 @@ class Assistant:
             else:
                 start_time = time()
                 llm_params: dict[str, str] = {}
-                if self.config["llm_model_name"].startswith("gpt-5-"):
+                if self.config["llm_model_name"] in ['gpt-5', 'gpt-5-mini', 'gpt-5-nano']:
                     llm_params["verbosity"] = "low"
                     llm_params["reasoning_effort"] = "minimal"
                     
