@@ -3,7 +3,7 @@ import platform
 import threading
 from time import sleep
 import math
-from typing import Any, Literal, Optional
+from typing import Any, Literal
 from pyautogui import typewrite
 
 import openai
@@ -11,10 +11,10 @@ import requests
 
 from .actions_web import register_web_actions
 
-from .Logger import log, show_chat_message
-from .EDKeys import EDKeys
-from .EventManager import EventManager
-from .ActionManager import ActionManager
+from ..Logger import log, show_chat_message
+from ..EDKeys import EDKeys
+from ..EventManager import EventManager
+from ..ActionManager import ActionManager
 
 keys: EDKeys = None
 vision_client: openai.OpenAI | None = None
