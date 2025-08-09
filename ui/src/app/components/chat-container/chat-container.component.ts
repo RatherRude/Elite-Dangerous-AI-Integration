@@ -21,7 +21,7 @@ export class ChatContainerComponent implements AfterViewChecked, OnChanges {
   constructor(private chatService: ChatService, element: ElementRef<HTMLElement>) {
     this.element = element;
     this.chatService.chatHistory$.subscribe((chat) => {
-      console.log("Logs received", chat);
+      console.log("chat received", chat);
       this.fullChat = chat;
       this.applyLimit();
       setTimeout(() => {

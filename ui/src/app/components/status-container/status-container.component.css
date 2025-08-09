@@ -138,6 +138,28 @@
   font-style: italic;
 }
 
+/* Rebuilt countdown centering */
+.fighter-rebuilt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  text-align: center;
+  color: var(--color-warning-orange);
+}
+
+/* Smaller in compact fighter boxes */
+.fighters-display .fighter-box .fighter-rebuilt {
+  margin-top: 4px;
+  font-size: 10px;
+}
+
+/* Slightly larger in detailed fighters panel */
+.fighters-panel .fighter-rebuilt {
+  font-size: 12px;
+}
+
 /* Status icons new layout */
 .status-indicators-header {
   margin-left: auto;
@@ -376,6 +398,9 @@
   gap: 4px;
   color: #bbb;
   font-size: 12px;
+  text-align: center;
+  justify-content: center;
+  width: 100%;
 }
 
 .pilot-icon,

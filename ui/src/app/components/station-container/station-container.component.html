@@ -3,10 +3,11 @@
   <div class="station-content">
     <!-- Stored Ships Section -->
     <div class="station-section">
-      <div class="section-header">
+      <div class="section-header" (click)="toggleSection('storedShips')">
         <h3>Stored Ships at {{ getStationName() }}, {{ getLocationSystem() }}</h3>
+        <mat-icon class="collapse-icon">{{ sectionsCollapsed.storedShips ? 'expand_more' : 'expand_less' }}</mat-icon>
       </div>
-      <div class="section-content">
+      <div class="section-content" [class.collapsed]="sectionsCollapsed.storedShips">
                  @if (isStoredShipsAtCurrentLocation()) {
            <mat-tab-group>
              <!-- Ships at Current Location -->
@@ -90,13 +91,14 @@
 
     <!-- Station Facilities Section -->
     <div class="station-section">
-      <div class="section-header">
+      <div class="section-header" (click)="toggleSection('stationFacilities')">
         <h3>Station Facilities</h3>
         @if (getProjection('Market')?.StarSystem) {
           <div class="section-subtitle">{{ getProjection('Market')?.StarSystem }}</div>
         }
+        <mat-icon class="collapse-icon">{{ sectionsCollapsed.stationFacilities ? 'expand_more' : 'expand_less' }}</mat-icon>
       </div>
-      <div class="section-content">
+      <div class="section-content" [class.collapsed]="sectionsCollapsed.stationFacilities">
         <!-- Station services buttons -->
         <div class="station-services">
           <button mat-button [class.active]="selectedStationService === 'market'" (click)="showStationService('market')">

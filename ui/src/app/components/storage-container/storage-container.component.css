@@ -65,8 +65,6 @@
   padding: 10px;
 }
 
-
-
 /* Materials Table Styles from provided CSS */
 .materials-container {
   width: 100%;
@@ -157,8 +155,6 @@
   min-width: 24px;
   text-align: center;
 }
-
-
 
 /* Ship Locker Styles from provided CSS */
 .locker-container {
@@ -378,6 +374,9 @@
 /* Tab Group Styling */
 ::ng-deep .mat-mdc-tab-group {
   background: transparent;
+  --mdc-tab-indicator-active-indicator-color: rgba(255, 255, 255, 0.7) !important;
+  --mdc-tab-: rgba(255, 255, 255, 0.7) !important;
+  --mdc-secondary-navigation-tab-label-text-color: rgba(255, 255, 255, 0.7) !important;
 }
 
 ::ng-deep .mat-mdc-tab-header {

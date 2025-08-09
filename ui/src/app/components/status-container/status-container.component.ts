@@ -78,6 +78,10 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
   ];
   
   private subscriptions: Subscription[] = [];
+  
+  // Timer state for countdowns
+  private rebuildIntervalId: any = null;
+  currentTimeMs: number = Date.now();
 
   constructor(private projectionsService: ProjectionsService) {}
 
@@ -213,10 +217,19 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
         this.outfitting = outfitting;
       })
     );
+
+    // Start 1-second interval to update countdowns
+    this.rebuildIntervalId = setInterval(() => {
+      this.currentTimeMs = Date.now();
+    }, 1000);
   }
 
   ngOnDestroy(): void {
     this.subscriptions.forEach(sub => sub.unsubscribe());
+    if (this.rebuildIntervalId) {
+      clearInterval(this.rebuildIntervalId);
+      this.rebuildIntervalId = null;
+    }
   }
 
   // Helper function for template to get object keys
@@ -439,6 +452,14 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
       case 'Idle': return 'Idle';
       default: return status;
     }
+  }
+
+  getFighterRebuiltSecondsRemaining(fighter: any): number {
+    if (!fighter || !fighter.RebuiltAt) return 0;
+    const etaMs = new Date(fighter.RebuiltAt).getTime();
+    if (Number.isNaN(etaMs)) return 0;
+    const remainingSeconds = Math.ceil((etaMs - this.currentTimeMs) / 1000);
+    return remainingSeconds > 0 ? remainingSeconds : 0;
   }
 
   // Colonisation methods

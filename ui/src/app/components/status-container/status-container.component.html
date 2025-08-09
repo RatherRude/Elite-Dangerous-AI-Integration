@@ -63,13 +63,15 @@
                                 {{ formatFighterStatus(fighter.Status) }}
                             </span>
                         </div>
-                        <div class="fighter-pilot" *ngIf="fighter.Pilot">
+                        <div class="fighter-pilot" *ngIf="fighter.Pilot && fighter.Status !== 'BeingRebuilt'">
                             <mat-icon class="pilot-icon">person</mat-icon>
                             <span>{{ fighter.Pilot }}</span>
                         </div>
                         <div class="fighter-rebuilt" *ngIf="fighter.RebuiltAt">
                             <mat-icon class="rebuilt-icon">build</mat-icon>
-                            <span>Rebuilt: {{ fighter.RebuiltAt }}</span>
+                            <span matTooltip="{{ fighter.RebuiltAt }}">
+                              Rebuilt in {{ getFighterRebuiltSecondsRemaining(fighter) }}s
+                            </span>
                         </div>
                     </div>
                 </mat-list-item>
@@ -504,11 +506,16 @@
                                 <div class="fighter-status" [ngClass]="'status-' + (fighter.Status || 'unknown').toLowerCase()">
                                     {{ formatFighterStatus(fighter.Status) }}
                                 </div>
-                                <div class="fighter-pilot" *ngIf="fighter.Pilot">
+                                <div class="fighter-pilot" *ngIf="fighter.Pilot && fighter.Status !== 'BeingRebuilt'">
                                     {{ fighter.Pilot }}
                                 </div>
-                                <div class="fighter-pilot-placeholder" *ngIf="!fighter.Pilot">
+                                <div class="fighter-pilot-placeholder" *ngIf="!fighter.Pilot && fighter.Status !== 'BeingRebuilt'">
                                     No pilot
+                                </div>
+                                <div class="fighter-rebuilt" *ngIf="fighter.RebuiltAt">
+                                    <span>
+                                        {{ getFighterRebuiltSecondsRemaining(fighter) }}s
+                                    </span>
                                 </div>
                             </div>
                         </div>

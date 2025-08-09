@@ -17,13 +17,27 @@
 .section-header {
   padding: 20px 20px 0 20px;
   border-bottom: 1px solid #333;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background-color 0.2s ease;
+}
+
+.section-header:hover {
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
 .section-header h3 {
   margin: 0 0 16px 0;
   font-size: 20px;
-  color: #e0e0e0;
+  /*color: #e0e0e0;*/
   font-weight: 600;
+}
+
+.collapse-icon {
+  color: #999;
+  transition: transform 0.2s ease;
 }
 
 .section-subtitle {
@@ -34,6 +48,14 @@
 
 .section-content {
   padding: 20px;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  overflow: hidden;
+}
+
+.section-content.collapsed {
+  max-height: 0;
+  padding: 0 20px;
+  opacity: 0;
 }
 
 .station-content {

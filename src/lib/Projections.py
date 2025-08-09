@@ -533,7 +533,7 @@ ship_sizes: dict[str, Literal['S', 'M', 'L', 'Unknown']] = {
 
 FighterState = TypedDict('FighterState', {
     "ID": NotRequired[int],
-    "Status": Literal['Ready', 'Launched', 'BeingRebuilt', 'Idle'],
+    "Status": Literal['Ready', 'Launched', 'BeingRebuilt', 'Abandoned'],
     "Pilot": NotRequired[str],
     "RebuiltAt": NotRequired[str]
 })
@@ -737,17 +737,17 @@ class ShipInfo(Projection[ShipInfoState]):
             vehicle_to = event.content.get('To', '')
             
             if vehicle_to == 'Mothership':
-                # Commander switched back to mothership, fighter becomes idle
+                # Commander switched back to mothership, fighter becomes abandoned
                 for fighter in self.state['Fighters']:
                     if fighter.get('Pilot') == 'Commander' and fighter['Status'] == 'Launched':
-                        fighter['Status'] = 'Idle'
+                        fighter['Status'] = 'Abandoned'
                         fighter['Pilot'] = 'No pilot'
                         break
             
             elif vehicle_to == 'Fighter':
                 # Commander switched to fighter, set fighter back to launched
                 for fighter in self.state['Fighters']:
-                    if fighter['Status'] == 'Idle' and fighter.get('Pilot') == 'No pilot':
+                    if fighter['Status'] == 'Abandoned' and fighter.get('Pilot') == 'No pilot':
                         fighter['Status'] = 'Launched'
                         fighter['Pilot'] = 'Commander'
                         break

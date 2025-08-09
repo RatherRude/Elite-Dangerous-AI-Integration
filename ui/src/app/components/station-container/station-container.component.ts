@@ -27,6 +27,12 @@ export class StationContainerComponent implements OnInit, OnDestroy {
   marketSearchTerm: string = '';
   outfittingSearchTerm: string = '';
   shipyardSearchTerm: string = '';
+
+  // Collapsible sections state
+  sectionsCollapsed = {
+    storedShips: false,
+    stationFacilities: false
+  };
   
   private subscriptions: Subscription[] = [];
 
@@ -119,6 +125,11 @@ export class StationContainerComponent implements OnInit, OnDestroy {
 
   showStationService(service: string): void {
     this.selectedStationService = service;
+  }
+
+  // Collapsible section methods
+  toggleSection(section: keyof typeof this.sectionsCollapsed): void {
+    this.sectionsCollapsed[section] = !this.sectionsCollapsed[section];
   }
 
   // Stored Ships methods
