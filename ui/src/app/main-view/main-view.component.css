@@ -122,6 +122,5 @@ app-chat-container[ng-reflect-limit] {
   max-height: 4em;
   overflow-y: auto;
   border-top: 1px solid #666;
-  margin-right: 65px;
-  padding: 0 16px;
+  padding: 0 64px 0 16px;
 }
