@@ -779,7 +779,9 @@ class Target(Projection[TargetState]):
         return {}
 
     @override
-    def process(self, event: Event) -> None:
+    def process(self, event: Event) -> list[ProjectedEvent]:
+        projected_events: list[ProjectedEvent] = []
+
         global keys
         if isinstance(event, GameEvent) and event.content.get('event') == 'LoadGame':
             self.state = self.get_default_state()
@@ -797,10 +799,14 @@ class Target(Projection[TargetState]):
                     self.state["PilotRank"] = event.content.get('PilotRank', '')
                     self.state["Faction"] = event.content.get('Faction', '')
                     self.state["LegalStatus"] = event.content.get('LegalStatus', '')
-                    self.state["Bounty"] = event.content.get('Bounty', '')
+                    self.state["Bounty"] = event.content.get('Bounty', 0)
+
+                    if (event.content.get('Bounty', 0) > 1 and not event.content.get('Subsystem', False)):
+                        projected_events.append(ProjectedEvent({"event": "BountyScanned"}))
                 if event.content.get('Subsystem_Localised', False):
                     self.state["Subsystem"] = event.content.get('Subsystem_Localised', '')
             self.state['EventID'] = event.content.get('id')
+        return projected_events
 
 
 NavRouteItem = TypedDict('NavRouteItem', {

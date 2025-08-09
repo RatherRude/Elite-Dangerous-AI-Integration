@@ -2184,6 +2184,8 @@ class PromptGenerator:
             return f"{self.commander_name}'s fuel is insufficient to reach the destination and there are not enough scoopable stars on the route. Alternative route required."
         if event_name == 'RememberLimpets':
             return f"{self.commander_name} has cargo capacity available to buy limpets. Remember to buy more."
+        if event_name == 'BountyScanned':
+            return f"{self.commander_name} has scanned a wanted ship with a bounty."
         if event_name == 'CombatEntered':
             return f"{self.commander_name} is now in combat."
         if event_name == 'CombatExited':

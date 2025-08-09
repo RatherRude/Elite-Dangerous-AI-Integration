@@ -375,21 +375,12 @@
 ::ng-deep .mat-mdc-tab-group {
   background: transparent;
   --mdc-tab-indicator-active-indicator-color: rgba(255, 255, 255, 0.7) !important;
-  --mdc-tab-: rgba(255, 255, 255, 0.7) !important;
   --mdc-secondary-navigation-tab-label-text-color: rgba(255, 255, 255, 0.7) !important;
 }
 
 ::ng-deep .mat-mdc-tab-header {
   background: rgba(0, 0, 0, 0.2);
   border-radius: 8px 8px 0 0;
-}
-
-::ng-deep .mat-mdc-tab {
-  color: #e0e0e0;
-}
-
-::ng-deep .mat-mdc-tab.mdc-tab--active {
-  color: #ffffff;
 }
 
 ::ng-deep .mat-mdc-tab-body-wrapper {

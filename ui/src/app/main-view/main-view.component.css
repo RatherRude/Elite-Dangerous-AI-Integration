@@ -104,6 +104,9 @@
 ::ng-deep .mat-mdc-tab-body-wrapper {
   flex-grow: 1;
 }
+::ng-deep  .mat-mdc-tab.mdc-tab--active:focus, .mat-mdc-tab.mdc-tab--active:hover {
+  border-color: rgba(255, 255, 255, 0.7) !important;
+}
 
 .floating-action-container {
   position: fixed;

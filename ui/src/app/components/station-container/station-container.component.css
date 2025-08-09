@@ -339,10 +339,6 @@
   color: #bbb;
 }
 
-::ng-deep .mat-mdc-tab.mdc-tab--active {
-  color: #40b5f6;
-}
-
 ::ng-deep .mat-mdc-tab-body-content {
   padding: 16px 0;
 }
