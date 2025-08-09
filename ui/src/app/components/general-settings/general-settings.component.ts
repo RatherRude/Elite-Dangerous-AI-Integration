@@ -20,6 +20,7 @@ import { MatSnackBar } from "@angular/material/snack-bar";
 import { FormsModule } from "@angular/forms";
 import { MatInputModule } from "@angular/material/input";
 import { MatButtonModule } from "@angular/material/button";
+import { ScreenInfo } from "../../models/screen-info";
 
 @Component({
     selector: "app-general-settings",
@@ -45,8 +46,10 @@ import { MatButtonModule } from "@angular/material/button";
 export class GeneralSettingsComponent implements OnDestroy {
     config: Config | null = null;
     system: SystemInfo | null = null;
+    screens: ScreenInfo[] = [];
     private configSubscription: Subscription;
     private systemSubscription: Subscription;
+    private screensSubscription?: Subscription;
     hideApiKey = true;
     apiKeyType: string | null = null;
     isAssigningPTT = false;
@@ -66,6 +69,11 @@ export class GeneralSettingsComponent implements OnDestroy {
                 this.system = system;
             },
         );
+        this.screensSubscription = this.configService.screens$.subscribe(
+            (screens) => {
+                this.screens = screens ?? [];
+            }
+        );
     }
 
     ngOnDestroy() {
@@ -75,6 +83,9 @@ export class GeneralSettingsComponent implements OnDestroy {
         }
         if (this.systemSubscription) {
             this.systemSubscription.unsubscribe();
+        }
+        if (this.screensSubscription) {
+            this.screensSubscription.unsubscribe();
         }
     }
 

@@ -105,7 +105,7 @@
                     <mat-select [(ngModel)]="config.overlay_screen_id"
                                 (ngModelChange)="onConfigChange({overlay_screen_id: $event})">
                         <mat-option [value]="-1">Primary Screen</mat-option>
-                        @for (screen of system?.available_screens; track screen.id) {
+                        @for (screen of screens; track screen.id) {
                             <mat-option [value]="screen.id">{{ screen.label }}</mat-option>
                         }
                     </mat-select>
