@@ -369,7 +369,7 @@ class Config(TypedDict):
     vision_model_name: str
     vision_endpoint: str
     vision_api_key: str
-    stt_provider: Literal['openai', 'custom', 'custom-multi-modal', 'google-ai-studio', 'none']
+    stt_provider: Literal['openai', 'custom', 'custom-multi-modal', 'google-ai-studio', 'none', 'local-ai-server']
     stt_model_name: str
     stt_api_key: str
     stt_endpoint: str
@@ -382,7 +382,8 @@ class Config(TypedDict):
     tts_endpoint: str
     tools_var: bool
     vision_var: bool
-    ptt_var: bool
+    ptt_var: Literal['voice_activation', 'push_to_talk', 'push_to_mute', 'toggle']
+    ptt_inverted_var: bool
     mute_during_response_var: bool
     game_actions_var: bool
     web_search_actions_var: bool
@@ -546,12 +547,23 @@ def migrate(data: dict) -> dict:
 
     if data['config_version'] == 1:
         data['config_version'] = 2
+
         if 'llm_provider' in data and data['llm_provider'] == 'google-ai-studio':
             if 'llm_model_name' in data and data['llm_model_name'] == 'gemini-2.5-flash-preview-04-17':
                 data['llm_model_name'] = 'gemini-2.5-flash-preview-05-20'
 
-    if len(data.get('characters', [])) > 0:
-        data['characters'][0]['game_events'] = game_events
+        if len(data.get('characters', [])) > 0:
+            data['characters'][0]['game_events'] = game_events
+
+    if data['config_version'] < 3:
+        data['config_version'] = 3
+
+        if isinstance(data.get('ptt_var'), bool):
+            data['ptt_var'] = 'push_to_talk' if data.get('ptt_var') else 'voice_activation'
+
+        if 'llm_model_name' in data and data['llm_model_name'] == 'gemini-2.5-flash-preview-04-17':
+            data['llm_model_name'] = 'gemini-2.5-flash'
+
 
     return data
 
@@ -657,7 +669,8 @@ def load_config() -> Config:
         'api_key': "",
         'tools_var': True,
         'vision_var': False,
-        'ptt_var': False,
+        'ptt_var': 'voice_activation',
+        'ptt_inverted_var': False,
         'mute_during_response_var': False,
         'event_reaction_enabled_var': True,
         'game_actions_var': True,
