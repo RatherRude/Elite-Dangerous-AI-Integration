@@ -2184,6 +2184,8 @@ class PromptGenerator:
             return f"{self.commander_name}'s fuel is insufficient to reach the destination and there are not enough scoopable stars on the route. Alternative route required."
         if event_name == 'RememberLimpets':
             return f"{self.commander_name} has cargo capacity available to buy limpets. Remember to buy more."
+        if event_name == 'BountyScanned':
+            return f"{self.commander_name} has scanned a wanted ship with a bounty."
         if event_name == 'CombatEntered':
             return f"{self.commander_name} is now in combat."
         if event_name == 'CombatExited':
@@ -2288,6 +2290,8 @@ class PromptGenerator:
             return 'Fuel levels restored to acceptable levels'
         if event_name == 'LowFuelWarning':
             return 'Warning: Fuel reserves critically low, refueling recommended'
+        if event_name == 'HighGravityWarning':
+            return 'Warning: High gravity environment detected, gravity exceeds 2G'
         if event_name == 'FsdCharging':
             return 'Frame Shift Drive charging, preparing for jump'
         if event_name == "BeingInterdicted":
@@ -2556,6 +2560,10 @@ class PromptGenerator:
     def generate_status_message(self, projected_states: dict[str, dict]):
         status_entries: list[tuple[str, Any]] = []
 
+        gravity = projected_states.get('CurrentStatus', {}).get('Gravity', None)
+        if gravity:
+            status_entries.append(("Gravity", gravity))
+
         active_mode, vehicle_status = self.generate_vehicle_status(projected_states.get('CurrentStatus', {}), projected_states.get('InCombat', {}))
         status_entries.append((active_mode+" status", vehicle_status))
 
@@ -2780,7 +2788,7 @@ class PromptGenerator:
                 ship_display['Loadout'] = loadout_display
 
         status_entries.append(("Main Ship", ship_display))
-        
+
         # Get location info
         location_info: LocationState = projected_states.get('Location', {})  # pyright: ignore[reportAssignmentType]
         
@@ -2806,7 +2814,7 @@ class PromptGenerator:
                 if not location_info.get('Docked'):
                     location_info["Station"] = f"Outside {location_info['Station']}"
 
-            altitude = projected_states.get('CurrentStatus', {}).get('Altitude') or None
+            altitude = projected_states.get('CurrentStatus', {}).get('Altitude', None)
             if altitude:
                 location_info["Altitude"] = f"{altitude} km"
 

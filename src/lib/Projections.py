@@ -533,7 +533,7 @@ ship_sizes: dict[str, Literal['S', 'M', 'L', 'Unknown']] = {
 
 FighterState = TypedDict('FighterState', {
     "ID": NotRequired[int],
-    "Status": Literal['Ready', 'Launched', 'BeingRebuilt', 'Idle'],
+    "Status": Literal['Ready', 'Launched', 'BeingRebuilt', 'Abandoned'],
     "Pilot": NotRequired[str],
     "RebuiltAt": NotRequired[str]
 })
@@ -737,17 +737,17 @@ class ShipInfo(Projection[ShipInfoState]):
             vehicle_to = event.content.get('To', '')
             
             if vehicle_to == 'Mothership':
-                # Commander switched back to mothership, fighter becomes idle
+                # Commander switched back to mothership, fighter becomes abandoned
                 for fighter in self.state['Fighters']:
                     if fighter.get('Pilot') == 'Commander' and fighter['Status'] == 'Launched':
-                        fighter['Status'] = 'Idle'
+                        fighter['Status'] = 'Abandoned'
                         fighter['Pilot'] = 'No pilot'
                         break
             
             elif vehicle_to == 'Fighter':
                 # Commander switched to fighter, set fighter back to launched
                 for fighter in self.state['Fighters']:
-                    if fighter['Status'] == 'Idle' and fighter.get('Pilot') == 'No pilot':
+                    if fighter['Status'] == 'Abandoned' and fighter.get('Pilot') == 'No pilot':
                         fighter['Status'] = 'Launched'
                         fighter['Pilot'] = 'Commander'
                         break
@@ -779,7 +779,9 @@ class Target(Projection[TargetState]):
         return {}
 
     @override
-    def process(self, event: Event) -> None:
+    def process(self, event: Event) -> list[ProjectedEvent]:
+        projected_events: list[ProjectedEvent] = []
+
         global keys
         if isinstance(event, GameEvent) and event.content.get('event') == 'LoadGame':
             self.state = self.get_default_state()
@@ -797,10 +799,14 @@ class Target(Projection[TargetState]):
                     self.state["PilotRank"] = event.content.get('PilotRank', '')
                     self.state["Faction"] = event.content.get('Faction', '')
                     self.state["LegalStatus"] = event.content.get('LegalStatus', '')
-                    self.state["Bounty"] = event.content.get('Bounty', '')
+                    self.state["Bounty"] = event.content.get('Bounty', 0)
+
+                    if (event.content.get('Bounty', 0) > 1 and not event.content.get('Subsystem', False)):
+                        projected_events.append(ProjectedEvent({"event": "BountyScanned"}))
                 if event.content.get('Subsystem_Localised', False):
                     self.state["Subsystem"] = event.content.get('Subsystem_Localised', '')
             self.state['EventID'] = event.content.get('id')
+        return projected_events
 
 
 NavRouteItem = TypedDict('NavRouteItem', {

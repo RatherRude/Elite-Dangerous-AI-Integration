@@ -53,7 +53,8 @@ game_events = {
     'HullDamage': False,
     'PVPKill': True,
     'ShieldState': True,
-    'ShipTargetted': False,
+    'ShipTargeted': False,
+    'BountyScanned': False,
     'UnderAttack': False,
     'CockpitBreached': True,
     'CrimeVictim': True,
@@ -127,6 +128,7 @@ game_events = {
     'FsdMassLocked': False,
     'LowFuelWarningCleared': True,
     'LowFuelWarning': True,
+    'HighGravityWarning': True,
     'NoScoopableStars': True,
     'NightVisionOff': False,
     'NightVisionOn': False,
@@ -340,9 +342,6 @@ class Character(TypedDict, total=False):
     tts_speed: str
     tts_prompt: str
     avatar: str  # IndexedDB key for the avatar image
-    avatar_show: bool  # Show Avatar: boolean (disabled and false if edcopilot_dominant equals true)
-    avatar_position: str  # Position: Left or Right as dropdown (hidden if not showing avatar)
-    avatar_flip: bool  # Flip: boolean (hidden if not showing avatar)
     game_events: dict[str, bool]
     event_reaction_enabled_var: bool
     react_to_text_local_var: bool
@@ -399,6 +398,12 @@ class Config(TypedDict):
     ed_appdata_path: str
     qol_autobrake: bool  # Quality of life: Auto brake when approaching stations
     qol_autoscan: bool  # Quality of life: Auto scan when entering new systems
+    
+    # Overlay settings
+    overlay_show_avatar: bool
+    overlay_show_chat: bool
+    overlay_position: Literal['left', 'right']
+    overlay_screen_id: int
 
     plugin_settings: dict[str, Any]
     pngtuber: bool
@@ -631,9 +636,6 @@ def getDefaultCharacter(config: Config) -> Character:
         "tts_speed": '1.2',
         "tts_prompt": '',
         "avatar": '',  # No avatar by default
-        "avatar_show": True,
-        "avatar_position": "right",
-        "avatar_flip": False,
         "game_events": game_events,
         "event_reaction_enabled_var": True,
         "react_to_text_local_var": True,
@@ -691,7 +693,13 @@ def load_config() -> Config:
         "ed_journal_path": "",
         "ed_appdata_path": "",
         "qol_autobrake": False,  # Quality of life: Auto brake when approaching stations
-        "qol_autoscan": False,   # Quality of life: Auto scan when entering new systems
+        "qol_autoscan": False,  # Quality of life: Auto scan when entering new systems
+        
+        # Overlay settings - defaults
+        "overlay_show_avatar": True,
+        "overlay_show_chat": True,
+        "overlay_position": "right",
+        "overlay_screen_id": -1,  # -1 means primary screen
         "plugin_settings": {},
         "pngtuber": False
     }

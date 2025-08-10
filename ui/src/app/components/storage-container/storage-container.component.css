@@ -1,0 +1,640 @@
+/* Use the provided status-container styles for the main container */
+.storage-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Storage Section Boxes - matching status component style */
+.storage-section {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid #333;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.section-header {
+  padding: 20px 20px 0 20px;
+  border-bottom: 1px solid #333;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background-color 0.2s ease;
+}
+
+.section-header:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.section-header h3 {
+  margin: 0 0 16px 0;
+  font-size: 20px;
+  color: #e0e0e0;
+  font-weight: 600;
+}
+
+.collapse-icon {
+  color: #999;
+  transition: transform 0.2s ease;
+}
+
+.section-content {
+  padding: 20px;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  overflow: hidden;
+}
+
+.section-content.collapsed {
+  max-height: 0;
+  padding: 0 20px;
+  opacity: 0;
+}
+
+.storage-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: transparent;
+  color: #e0e0e0;
+  font-family: 'Roboto', sans-serif;
+  position: relative;
+  padding: 10px;
+}
+
+/* Materials Table Styles from provided CSS */
+.materials-container {
+  width: 100%;
+}
+
+.materials-table {
+  padding: 15px 0;
+  overflow-x: auto;
+  width: 100%;
+}
+
+.material-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.material-table thead th {
+  background-color: rgba(208, 168, 92, 0.2);
+  color: #d0a85c;
+  font-weight: 500;
+  text-align: center;
+  padding: 12px 10px;
+  font-size: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.material-table tbody td {
+  padding: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  vertical-align: top;
+}
+
+.material-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.material-table tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.material-table tbody td:first-child {
+  color: #d0a85c;
+  font-weight: 500;
+  white-space: nowrap;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.material-cell {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 8px;
+  margin-bottom: 5px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  min-height: 32px;
+}
+
+.material-cell:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.material-cell.empty {
+  opacity: 0.6;
+  background-color: rgba(255, 255, 255, 0.02);
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.material-name {
+  flex: 1;
+  font-size: 13px;
+}
+
+.material-count {
+  font-weight: 600;
+  color: #d0a85c;
+  padding: 2px 6px;
+  border-radius: 10px;
+  background-color: rgba(208, 168, 92, 0.1);
+  min-width: 24px;
+  text-align: center;
+}
+
+/* Ship Locker Styles from provided CSS */
+.locker-container {
+  padding: 15px 0;
+  width: 100%;
+}
+
+.items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  padding: 15px 0;
+}
+
+.locker-item {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.locker-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(208, 168, 92, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.item-count {
+  font-weight: 600;
+  color: #d0a85c;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background-color: rgba(208, 168, 92, 0.1);
+  margin-right: 10px;
+  min-width: 30px;
+  text-align: center;
+}
+
+.item-name {
+  font-size: 14px;
+  flex: 1;
+}
+
+.mission-tag, .owner-tag {
+  font-size: 10px;
+  padding: 1px 4px;
+  margin-left: 5px;
+  border-radius: 3px;
+  vertical-align: middle;
+}
+
+.mission-tag {
+  background-color: rgba(33, 150, 243, 0.2);
+  color: #2196F3;
+}
+
+.owner-tag {
+  background-color: rgba(156, 39, 176, 0.2);
+  color: #9c27b0;
+}
+
+.no-items {
+  padding: 20px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.6);
+  font-style: italic;
+}
+
+/* Engineers styling from provided CSS */
+.engineers-container {
+  width: 100%;
+  overflow: auto;
+}
+
+.engineers-filters {
+  margin: 12px;
+  display: flex;
+  justify-content: center;
+}
+
+.engineers-table-container {
+  margin: 12px;
+  overflow-x: auto;
+}
+
+.engineers-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+
+.engineers-table th {
+  background-color: rgba(0, 0, 0, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+  text-align: left;
+  padding: 10px;
+  font-weight: 500;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.engineers-table td {
+  padding: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  vertical-align: top;
+}
+
+.engineers-table tr:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.engineer-name {
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.engineer-rank {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rank-stars {
+  color: #ffc107;
+  letter-spacing: 3px;
+}
+
+.star.filled {
+  color: #ffc107;
+}
+
+.star.empty {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.rank-progress {
+  height: 4px;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: #2196f3;
+}
+
+/* Engineer status colors */
+.engineer-unlocked {
+  background-color: rgba(76, 175, 80, 0.1);
+}
+
+.engineer-invited {
+  background-color: rgba(33, 150, 243, 0.1);
+}
+
+.engineer-known {
+  background-color: rgba(255, 193, 7, 0.1);
+}
+
+.engineer-locked {
+  background-color: rgba(158, 158, 158, 0.1);
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.8em;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.status-badge.unlocked {
+  background-color: rgba(76, 175, 80, 0.2);
+  color: #4CAF50;
+}
+
+.status-badge.invited {
+  background-color: rgba(33, 150, 243, 0.2);
+  color: #2196F3;
+}
+
+.status-badge.known {
+  background-color: rgba(255, 193, 7, 0.2);
+  color: #FFC107;
+}
+
+.status-badge.locked {
+  background-color: rgba(158, 158, 158, 0.2);
+  color: #9E9E9E;
+}
+
+.engineer-status-cell {
+  white-space: nowrap;
+}
+
+.engineer-mods, .engineer-location, .engineer-find, .engineer-invite, .engineer-unlock, .engineer-rep {
+  font-size: 0.9em;
+  color: rgba(255, 255, 255, 0.8);
+  max-width: 300px;
+}
+
+.no-engineers {
+  padding: 20px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+
+
+/* Tab Group Styling */
+::ng-deep .mat-mdc-tab-group {
+  background: transparent;
+  --mdc-tab-indicator-active-indicator-color: rgba(255, 255, 255, 0.7) !important;
+  --mdc-secondary-navigation-tab-label-text-color: rgba(255, 255, 255, 0.7) !important;
+}
+
+::ng-deep .mat-mdc-tab-header {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px 8px 0 0;
+}
+
+::ng-deep .mat-mdc-tab-body-wrapper {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* Button Toggle Styling */
+::ng-deep .mat-button-toggle-group {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+::ng-deep .mat-button-toggle {
+  color: #e0e0e0;
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+::ng-deep .mat-button-toggle-checked {
+  background: rgba(63, 81, 181, 0.5) !important;
+  color: #ffffff;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .items-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 8px;
+  }
+  
+  .engineers-table-container {
+    padding: 8px;
+  }
+  
+  .engineers-table th,
+  .engineers-table td {
+    padding: 6px 4px;
+    font-size: 0.8em;
+  }
+  
+  .engineer-mods,
+  .engineer-location,
+  .engineer-find,
+  .engineer-invite,
+  .engineer-unlock,
+  .engineer-rep {
+    max-width: 150px;
+    font-size: 0.75em;
+  }
+}
+
+/* Scrollbar Styling */
+.storage-content::-webkit-scrollbar,
+.engineers-table-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.storage-content::-webkit-scrollbar-track,
+.engineers-table-container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.storage-content::-webkit-scrollbar-thumb,
+.engineers-table-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+.storage-content::-webkit-scrollbar-thumb:hover,
+.engineers-table-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Colonisation Section */
+.colonisation-container {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.colony-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.colony-header h4 {
+  margin: 0;
+  color: #64b5f6;
+  font-size: 18px;
+}
+
+.colony-status {
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.colony-status.status-active {
+  background: rgba(33, 150, 243, 0.2);
+  color: #2196f3;
+}
+
+.colony-status.status-complete {
+  background: rgba(76, 175, 80, 0.2);
+  color: #4caf50;
+}
+
+.colony-status.status-failed {
+  background: rgba(244, 67, 54, 0.2);
+  color: #f44336;
+}
+
+.progress-container {
+  margin-bottom: 16px;
+}
+
+.progress-container h4 {
+  margin: 0 0 8px 0;
+  color: #e0e0e0;
+  font-size: 14px;
+}
+
+.stat-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stat-bar mat-progress-bar {
+  flex: 1;
+  height: 8px;
+}
+
+.stat-bar span {
+  color: #999;
+  font-size: 12px;
+  min-width: 40px;
+}
+
+.resources-needed h4 {
+  margin: 0 0 12px 0;
+  color: #e0e0e0;
+  font-size: 14px;
+}
+
+.resources-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.resource-item {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  padding: 8px;
+}
+
+.resource-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.resource-name {
+  color: #e0e0e0;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.resource-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.resource-progress mat-progress-bar {
+  flex: 1;
+  height: 6px;
+}
+
+.resource-count {
+  color: #999;
+  font-size: 11px;
+  min-width: 60px;
+}
+
+/* Cargo Section */
+.cargo-container {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.cargo-summary {
+  margin-bottom: 16px;
+}
+
+.cargo-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cargo-amount {
+  color: #e0e0e0;
+  font-weight: 500;
+  min-width: 80px;
+}
+
+.cargo-progress {
+  flex: 1;
+  height: 8px;
+}
+
+.cargo-manifest h4 {
+  margin: 0 0 12px 0;
+  color: #e0e0e0;
+  font-size: 14px;
+}
+
+.cargo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.cargo-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.cargo-item-name {
+  color: #e0e0e0;
+  flex: 1;
+}
+
+.cargo-item-count {
+  color: #999;
+  font-weight: 500;
+}
+
+.empty-state {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  padding: 16px;
+} 
