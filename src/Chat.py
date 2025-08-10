@@ -198,7 +198,7 @@ class Chat:
     def run(self):
         show_chat_message('info', f"Initializing CMDR {self.config['commander_name']}'s personal AI...\n")
         show_chat_message('info', "API Key: Loaded")
-        show_chat_message('info', f"Using Push-to-Talk: {self.config['ptt_var']}")
+        show_chat_message('info', f"Mic Mode: {self.config['ptt_var']}")
         show_chat_message('info', f"Using Function Calling: {self.config['tools_var']}")
         show_chat_message('info', f"Current model: {self.config['llm_model_name']}")
         show_chat_message('info', f"Current TTS voice: {self.character['tts_voice']}")
@@ -211,14 +211,35 @@ class Chat:
         if self.config["edcopilot"] and self.config["edcopilot_dominant"]:
             show_chat_message('info', "EDCoPilot is dominant, voice output will be handled by EDCoPilot.")
 
-        if self.config['ptt_var'] and self.config['ptt_key']:
-            show_chat_message('info', f"Setting push-to-talk hotkey {self.config['ptt_key']}.")
+        # Microphone/Listening setup based on mode
+        mode = self.config.get('ptt_var', 'voice_activation')
+        ptt_key = self.config.get('ptt_key', '')
+        if mode == 'push_to_talk' and ptt_key:
+            log('info', f"Setting push-to-talk hotkey {ptt_key}.")
             self.controller_manager.register_hotkey(
-                self.config["ptt_key"], 
+                ptt_key,
                 lambda _: self.stt.listen_once_start(),
                 lambda _: self.stt.listen_once_end()
             )
+        elif mode == 'push_to_mute' and ptt_key:
+            log('info', f"Setting push-to-mute hotkey {ptt_key}.")
+            self.stt.listen_continuous()
+            self.controller_manager.register_hotkey(
+                ptt_key,
+                lambda _: self.stt.pause_continuous_listening(True),
+                lambda _: self.stt.pause_continuous_listening(False)
+            )
+        elif mode == 'toggle' and ptt_key:
+            log('info', f"Setting hotkey {ptt_key} to toggle voice activation.")
+            self.stt.listen_continuous()
+            self.stt.pause_continuous_listening(self.config.get('ptt_inverted_var', False))
+            self.controller_manager.register_hotkey(
+                ptt_key,
+                lambda _: _,
+                lambda _: self.stt.pause_continuous_listening(not self.stt.continuous_listening_paused)
+            )
         else:
+            log('info', f"Setting automatic voice activation.")
             self.stt.listen_continuous()
         show_chat_message('info', "Voice interface ready.")
 
@@ -253,7 +274,7 @@ class Chat:
                     self.event_manager.add_status_event(status)
                     
                 # mute continuous listening during response
-                if self.config["mute_during_response_var"]:
+                if self.config.get("mute_during_response_var"):
                     if self.tts.get_is_playing():
                         self.stt.pause_continuous_listening(True)
                     else:

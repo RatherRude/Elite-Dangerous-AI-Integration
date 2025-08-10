@@ -114,8 +114,7 @@ jobs:
           cd .\simple-zip
           $WshShell = New-Object -ComObject WScript.Shell
           $Shortcut = $WshShell.CreateShortcut("covas-next.lnk")
-          $Shortcut.TargetPath = ".\files\com.covasnext.ui.exe"
-          $Shortcut.WorkingDirectory = ".\files"
+          $Shortcut.TargetPath = "%COMSPEC% /C start .\files\com.covasnext.ui.exe"
           $Shortcut.Save()
 
       - name: Upload simple zip file
