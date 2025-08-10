@@ -76,8 +76,8 @@ export class AvatarCatalogDialogComponent implements OnInit {
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) { // 5MB limit
-      this.snackBar.open('Image size must be less than 5MB', 'Dismiss', { duration: 3000 });
+    if (file.size > 50 * 1024 * 1024) { // 50MB limit
+      this.snackBar.open('Image size must be less than 50MB', 'Dismiss', { duration: 3000 });
       return;
     }
 
