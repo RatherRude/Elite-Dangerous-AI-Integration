@@ -49,10 +49,12 @@ export class MainViewComponent implements OnInit, OnDestroy {
     isRunning = false;
     isInCombat = false;
     isDockedAtStation = false;
+    isShipIdentUnknown = false;
     config: any;
     private configSubscription!: Subscription;
     private inCombatSubscription!: Subscription;
     private currentStatusSubscription!: Subscription;
+    private shipInfoSubscription!: Subscription;
     private hasAutoStarted = false;
     public usageDisclaimerAccepted = false;
 
@@ -115,6 +117,13 @@ export class MainViewComponent implements OnInit, OnDestroy {
                 this.isDockedAtStation = Boolean(currentStatusData?.flags?.Docked === true);
             });
 
+        // Subscribe to ShipInfo projection to track unknown ship ident
+        this.shipInfoSubscription = this.projectionsService.shipInfo$
+            .subscribe((shipInfo) => {
+                const shipIdent = shipInfo?.ShipIdent ?? 'Unknown';
+                this.isShipIdentUnknown = shipIdent === 'Unknown';
+            });
+
         // Initialize the main view
         this.tauri.runExe();
         this.tauri.checkForUpdates();
@@ -129,6 +138,9 @@ export class MainViewComponent implements OnInit, OnDestroy {
         }
         if (this.currentStatusSubscription) {
             this.currentStatusSubscription.unsubscribe();
+        }
+        if (this.shipInfoSubscription) {
+            this.shipInfoSubscription.unsubscribe();
         }
     }
 
