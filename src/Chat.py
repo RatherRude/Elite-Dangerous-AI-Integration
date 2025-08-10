@@ -14,7 +14,7 @@ from lib.PluginHelper import PluginHelper
 from lib.Config import Config, assign_ptt, get_ed_appdata_path, get_ed_journals_path, get_system_info, load_config, save_config, update_config, update_event_config, validate_config, update_character, reset_game_events
 from lib.PluginManager import PluginManager
 from lib.ActionManager import ActionManager
-from lib.Actions import register_actions
+from lib.actions.Actions import register_actions
 from lib.ControllerManager import ControllerManager
 from lib.EDCoPilot import EDCoPilot
 from lib.EDKeys import EDKeys
