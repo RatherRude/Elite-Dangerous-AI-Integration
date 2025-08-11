@@ -6,53 +6,57 @@ RESET_FUEL_ON_LOADOUT = False
 
 #----Fsd Types
 FSD_STATS: Dict[tuple[int, str], dict] = {
-    (2,"E"): {"mass":2.50, "opt_mass":48.0,  "max_fuel":0.60},
-    (2,"D"): {"mass":1.00, "opt_mass":54.0,  "max_fuel":0.60},
-    (2,"C"): {"mass":2.50, "opt_mass":60.0,  "max_fuel":0.60},
-    (2,"B"): {"mass":4.00, "opt_mass":75.0,  "max_fuel":0.80},
-    (2,"A"): {"mass":2.50, "opt_mass":90.0,  "max_fuel":0.90},
+    (2,"E"): {"mass":2.50, "opt_mass":48.0,  "max_fuel":0.60, "power_const": 11.0, "linear_const": 2.00},
+    (2,"D"): {"mass":1.00, "opt_mass":54.0,  "max_fuel":0.60, "power_const": 10.0, "linear_const": 2.00},
+    (2,"C"): {"mass":2.50, "opt_mass":60.0,  "max_fuel":0.60, "power_const": 8.00, "linear_const": 2.00},
+    (2,"B"): {"mass":4.00, "opt_mass":75.0,  "max_fuel":0.80, "power_const": 10.00, "linear_const": 2.00},
+    (2,"A"): {"mass":2.50, "opt_mass":90.0,  "max_fuel":0.90, "power_const": 12.00, "linear_const": 2.00},
 
-    (3,"E"): {"mass":5.00, "opt_mass":80.0,  "max_fuel":1.20},
-    (3,"D"): {"mass":2.00, "opt_mass":90.0,  "max_fuel":1.20},
-    (3,"C"): {"mass":5.00, "opt_mass":100.0, "max_fuel":1.20},
-    (3,"B"): {"mass":8.00, "opt_mass":125.0, "max_fuel":1.50},
-    (3,"A"): {"mass":5.00, "opt_mass":150.0, "max_fuel":1.80},
+    (3,"E"): {"mass":5.00, "opt_mass":80.0,  "max_fuel":1.20, "power_const": 11.0, "linear_const": 2.15},
+    (3,"D"): {"mass":2.00, "opt_mass":90.0,  "max_fuel":1.20, "power_const": 10.0, "linear_const": 2.15},
+    (3,"C"): {"mass":5.00, "opt_mass":100.0, "max_fuel":1.20, "power_const": 8.00, "linear_const": 2.15},
+    (3,"B"): {"mass":8.00, "opt_mass":125.0, "max_fuel":1.50, "power_const": 10.00, "linear_const": 2.15},
+    (3,"A"): {"mass":5.00, "opt_mass":150.0, "max_fuel":1.80, "power_const": 12.00, "linear_const": 2.15},
 
-    (4,"E"): {"mass":10.00,"opt_mass":280.0, "max_fuel":2.00},
-    (4,"D"): {"mass":4.00, "opt_mass":315.0, "max_fuel":2.00},
-    (4,"C"): {"mass":10.00,"opt_mass":350.0, "max_fuel":2.00},
-    (4,"B"): {"mass":16.00,"opt_mass":438.0, "max_fuel":2.50},
-    (4,"A"): {"mass":10.00,"opt_mass":525.0, "max_fuel":3.00},
+    (4,"E"): {"mass":10.00,"opt_mass":280.0, "max_fuel":2.00, "power_const": 11.0, "linear_const": 2.30},
+    (4,"D"): {"mass":4.00, "opt_mass":315.0, "max_fuel":2.00, "power_const": 10.0, "linear_const": 2.30},
+    (4,"C"): {"mass":10.00,"opt_mass":350.0, "max_fuel":2.00, "power_const": 8.00, "linear_const": 2.30},
+    (4,"B"): {"mass":16.00,"opt_mass":438.0, "max_fuel":2.50, "power_const": 10.00, "linear_const": 2.30},
+    (4,"A"): {"mass":10.00,"opt_mass":525.0, "max_fuel":3.00, "power_const": 12.00, "linear_const": 2.30},
 
-    (5,"E"): {"mass":20.00,"opt_mass":560.0, "max_fuel":3.30},
-    (5,"D"): {"mass":8.00, "opt_mass":630.0, "max_fuel":3.30},
-    (5,"C"): {"mass":20.00,"opt_mass":700.0, "max_fuel":3.30},
-    (5,"B"): {"mass":32.00,"opt_mass":875.0, "max_fuel":4.10},
-    (5,"A"): {"mass":20.00,"opt_mass":1050.0,"max_fuel":5.00},
+    (5,"E"): {"mass":20.00,"opt_mass":560.0, "max_fuel":3.30, "power_const": 11.0, "linear_const": 2.45},
+    (5,"D"): {"mass":8.00, "opt_mass":630.0, "max_fuel":3.30, "power_const": 10.0, "linear_const": 2.45},
+    (5,"C"): {"mass":20.00,"opt_mass":700.0, "max_fuel":3.30, "power_const": 8.00, "linear_const": 2.45},
+    (5,"B"): {"mass":32.00,"opt_mass":875.0, "max_fuel":4.10, "power_const": 10.00, "linear_const": 2.45},
+    (5,"A"): {"mass":20.00,"opt_mass":1050.0,"max_fuel":5.00, "power_const": 12.00, "linear_const": 2.45},
 
-    (6,"E"): {"mass":40.00,"opt_mass":960.0, "max_fuel":5.30},
-    (6,"D"): {"mass":16.00,"opt_mass":1080.0,"max_fuel":5.30},
-    (6,"C"): {"mass":40.00,"opt_mass":1200.0,"max_fuel":5.30},
-    (6,"B"): {"mass":64.00,"opt_mass":1500.0,"max_fuel":6.60},
-    (6,"A"): {"mass":40.00,"opt_mass":1800.0,"max_fuel":8.00},
+    (6,"E"): {"mass":40.00,"opt_mass":960.0, "max_fuel":5.30, "power_const": 11.0, "linear_const": 2.60},
+    (6,"D"): {"mass":16.00,"opt_mass":1080.0,"max_fuel":5.30, "power_const": 10.0, "linear_const": 2.60},
+    (6,"C"): {"mass":40.00,"opt_mass":1200.0,"max_fuel":5.30, "power_const": 8.00, "linear_const": 2.60},
+    (6,"B"): {"mass":64.00,"opt_mass":1500.0,"max_fuel":6.60, "power_const": 10.00, "linear_const": 2.60},
+    (6,"A"): {"mass":40.00,"opt_mass":1800.0,"max_fuel":8.00, "power_const": 12.00, "linear_const": 2.60},
 
-    (7,"E"): {"mass":80.00,"opt_mass":1440.0,"max_fuel":8.50},
-    (7,"D"): {"mass":32.00,"opt_mass":1620.0,"max_fuel":8.50},
-    (7,"C"): {"mass":80.00,"opt_mass":1800.0,"max_fuel":8.50},
-    (7,"B"): {"mass":128.00,"opt_mass":2250.0,"max_fuel":10.60},
-    (7,"A"): {"mass":80.00,"opt_mass":2700.0,"max_fuel":12.80},
+    (7,"E"): {"mass":80.00,"opt_mass":1440.0,"max_fuel":8.50, "power_const": 11.0, "linear_const": 2.75},
+    (7,"D"): {"mass":32.00,"opt_mass":1620.0,"max_fuel":8.50, "power_const": 10.0, "linear_const": 2.75},
+    (7,"C"): {"mass":80.00,"opt_mass":1800.0,"max_fuel":8.50, "power_const": 8.00, "linear_const": 2.75},
+    (7,"B"): {"mass":128.00,"opt_mass":2250.0,"max_fuel":10.60, "power_const": 10.00, "linear_const": 2.75},
+    (7,"A"): {"mass":80.00,"opt_mass":2700.0,"max_fuel":12.80, "power_const": 12.00, "linear_const": 2.75},
+
+    # 8 ?
 }
 
 FSD_OVERCHARGE_STATS: Dict[tuple[int, str], dict] = {
-    (2,"A"): {"mass":3.25,  "opt_mass":170.0,   "max_fuel":1.00},
-    (3,"A"): {"mass":6.50,  "opt_mass":283.9,   "max_fuel":1.90},
-    (4,"A"): {"mass":13.00, "opt_mass":994.5,   "max_fuel":3.20},
-    (5,"A"): {"mass":26.00, "opt_mass":1997.5,  "max_fuel":5.20},
-    (6,"A"): {"mass":52.00, "opt_mass":3400.0,  "max_fuel":8.30},
-    (7,"A"): {"mass":104.0, "opt_mass":5100.0,  "max_fuel":13.10},
+    (2,"A"): {"mass":3.25,  "opt_mass":170.0,   "max_fuel":1.00, "power_const": 12.00, "linear_const": 2.00},
+    (3,"A"): {"mass":6.50,  "opt_mass":283.9,   "max_fuel":1.90, "power_const": 12.00, "linear_const": 2.15},
+    (4,"A"): {"mass":13.00, "opt_mass":994.5,   "max_fuel":3.20, "power_const": 12.00, "linear_const": 2.30},
+    (5,"A"): {"mass":26.00, "opt_mass":1997.5,  "max_fuel":5.20, "power_const": 12.00, "linear_const": 2.45},
+    (6,"A"): {"mass":52.00, "opt_mass":3400.0,  "max_fuel":8.30, "power_const": 12.00, "linear_const": 2.60},
+    (7,"A"): {"mass":104.0, "opt_mass":5100.0,  "max_fuel":13.10, "power_const": 12.00, "linear_const": 2.75},
 }
 
 RATING_BY_CLASSNUM = {1:"E", 2:"D", 3:"C", 4:"B", 5:"A"}
+
+
 
 #----hard reset
 _state: Dict[str, Any] = {
