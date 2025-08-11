@@ -7,6 +7,7 @@ from typing_extensions import NotRequired, override
 from .Event import Event, StatusEvent, GameEvent, ProjectedEvent, ExternalEvent, ConversationEvent, ToolEvent
 from .EventManager import EventManager, Projection
 from .Logger import log
+from .EDFuelCalc import ingest_event, get_current_jump_range
 from .StatusParser import parse_status_flags, parse_status_json, Status
 from .SystemDatabase import SystemDatabase
 
@@ -550,7 +551,7 @@ ShipInfoState = TypedDict('ShipInfoState', {
     "FuelReservoir": float,
     "FuelReservoirCapacity": float,
     "MaximumJumpRange": float,
-    #"CurrentJumpRange": float,
+    "CurrentJumpRange": float,
     "LandingPadSize": Literal['S', 'M', 'L', 'Unknown'],
     "IsMiningShip": bool,
     "hasLimpets": bool,
@@ -573,7 +574,7 @@ class ShipInfo(Projection[ShipInfoState]):
             "FuelReservoir": 0,
             "FuelReservoirCapacity": 0,
             "MaximumJumpRange": 0,
-            #"CurrentJumpRange": 0,
+            "CurrentJumpRange": 0,
             "IsMiningShip": False,
             "hasLimpets": False,
             "Fighters": [],
@@ -583,6 +584,13 @@ class ShipInfo(Projection[ShipInfoState]):
     @override
     def process(self, event: Event) -> list[ProjectedEvent]:
         projected_events: list[ProjectedEvent] = []
+        try:
+            if isinstance(event, StatusEvent):
+                ingest_event(event)
+            elif isinstance(event, GameEvent) and event.content.get('event') in ('Loadout','Cargo','FSDJump'):
+                ingest_event(event)
+        except Exception:
+            pass
         if isinstance(event, StatusEvent) and event.status.get('event') == 'Status':
             status: Status = event.status  # pyright: ignore[reportAssignmentType]
             if 'Cargo' in event.status:
@@ -593,7 +601,7 @@ class ShipInfo(Projection[ShipInfoState]):
                 self.state['FuelReservoir'] = status['Fuel'].get('FuelReservoir', 0)
         
         if isinstance(event, GameEvent) and event.content.get('event') == 'Loadout':
-            # { "timestamp":"2024-07-12T21:01:20Z", "event":"Loadout", "Ship":"empire_courier", "ShipID":88, "ShipName":" ", "ShipIdent":"TR-12E", "HullValue":2542931, "ModulesValue":9124352, "HullHealth":1.000000, "UnladenMass":61.713188, "CargoCapacity":0, "MaxJumpRange":50.628967, "FuelCapacity":{ "Main":12.000000, "Reserve":0.410000 }, "Rebuy":583368,
+            #    { "timestamp":"2025-08-09T17:59:53Z", "event":"Loadout", "Ship":"krait_mkii", "ShipID":56, "ShipName":"", "ShipIdent":"FL-09K", "HullValue":43047807, "ModulesValue":1621043, "HullHealth":1.000000, "UnladenMass":634.000000, "CargoCapacity":82, "MaxJumpRange":9.013926, "FuelCapacity":{ "Main":32.000000, "Reserve":0.630000 }, "Rebuy":2233443, "Modules":[ { "Slot":"MediumHardpoint1", "Item":"hpt_pulselaser_fixed_small", "On":true, "Priority":2, "Health":1.000000, "Value":2145 }, { "Slot":"MediumHardpoint2", "Item":"hpt_pulselaser_fixed_small", "On":true, "Priority":2, "Health":1.000000, "Value":2145 }, { "Slot":"Armour", "Item":"krait_mkii_armour_grade1", "On":true, "Priority":1, "Health":1.000000 }, { "Slot":"PowerPlant", "Item":"int_powerplant_size7_class1", "On":true, "Priority":1, "Health":1.000000, "Value":468400 }, { "Slot":"MainEngines", "Item":"int_engine_size6_class1", "On":true, "Priority":2, "Health":1.000000, "Value":194753 }, { "Slot":"FrameShiftDrive", "Item":"int_hyperdrive_size5_class1", "On":true, "Priority":2, "Health":1.000000, "Value":61436 }, { "Slot":"LifeSupport", "Item":"int_lifesupport_size4_class1", "On":true, "Priority":2, "Health":1.000000, "Value":11065 }, { "Slot":"PowerDistributor", "Item":"int_powerdistributor_size7_class1", "On":true, "Priority":2, "Health":1.000000, "Value":242908 }, { "Slot":"Radar", "Item":"int_sensors_size6_class1", "On":true, "Priority":2, "Health":1.000000, "Value":86753 }, { "Slot":"FuelTank", "Item":"int_fueltank_size5_class3", "On":true, "Priority":1, "Health":1.000000, "Value":95310 }, { "Slot":"Slot01_Size6", "Item":"int_shieldgenerator_size6_class1", "On":true, "Priority":2, "Health":1.000000, "Value":194753 }, { "Slot":"Slot02_Size6", "Item":"int_cargorack_size5_class1", "On":true, "Priority":1, "Health":1.000000, "Value":108776 }, { "Slot":"Slot03_Size5", "Item":"int_cargorack_size5_class1", "On":true, "Priority":1, "Health":1.000000, "Value":108776 }, { "Slot":"Slot04_Size5", "Item":"int_cargorack_size4_class1", "On":true, "Priority":1, "Health":1.000000, "Value":33469 }, { "Slot":"Slot08_Size2", "Item":"int_cargorack_size1_class1", "On":true, "Priority":1, "Health":1.000000, "Value":975 }, { "Slot":"Slot09_Size1", "Item":"int_supercruiseassist", "On":true, "Priority":2, "Health":1.000000, "Value":8892 }, { "Slot":"PlanetaryApproachSuite", "Item":"int_planetapproachsuite_advanced", "On":true, "Priority":1, "Health":1.000000, "Value":487 }, { "Slot":"VesselVoice", "Item":"voicepack_gerhard", "On":true, "Priority":1, "Health":1.000000 }, { "Slot":"ShipCockpit", "Item":"krait_mkii_cockpit", "On":true, "Priority":1, "Health":1.000000 }, { "Slot":"CargoHatch", "Item":"modularcargobaydoor", "On":true, "Priority":2, "Health":1.000000 } ] }
             if 'ShipName' in event.content:
                 self.state['Name'] = event.content.get('ShipName', 'Unknown')
             if 'Ship' in event.content:
@@ -607,8 +615,11 @@ class ShipInfo(Projection[ShipInfoState]):
             if 'FuelCapacity' in event.content:
                 self.state['FuelMainCapacity'] = event.content['FuelCapacity'].get('Main', 0)
                 self.state['FuelReservoirCapacity'] = event.content['FuelCapacity'].get('Reserve', 0)
+                self.state['FuelMain'] = status['Fuel'].get('FuelMain', 0)
+                self.state['FuelReservoir'] = status['Fuel'].get('FuelReservoir', 0)
             if 'MaxJumpRange' in event.content:
                 self.state['MaximumJumpRange'] = event.content.get('MaxJumpRange', 0)
+
             if 'Modules' in event.content:
                 has_refinery = any(module["Item"].startswith("int_refinery") for module in event.content["Modules"])
                 if has_refinery:
@@ -754,7 +765,13 @@ class ShipInfo(Projection[ShipInfoState]):
 
         if self.state['Type'] != 'Unknown':
             self.state['LandingPadSize'] = ship_sizes.get(self.state['Type'], 'Unknown')
-
+        try:
+            cur = get_current_jump_range()
+            if cur is not None:
+                self.state['CurrentJumpRange'] = cur
+        except Exception:
+            pass
+        
         return projected_events
 
 TargetState = TypedDict('TargetState', {
