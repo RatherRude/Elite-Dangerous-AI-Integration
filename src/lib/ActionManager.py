@@ -118,7 +118,7 @@ class ActionManager:
         }
         if cache_prefill is not None:
             for user_input, arguments in cache_prefill.items():
-                log('debug', 'Cache: prefilling', name, user_input, arguments)
+                #log('debug', 'Cache: prefilling', name, user_input, arguments)
                 self.prefill_action_in_cache(user_input, ChatCompletionMessageFunctionToolCall(
                     type="function",
                     id=str(random.randint(100000, 999999)),
@@ -183,7 +183,7 @@ class ActionManager:
         # check if action is already in cache
         input_hash = self.hash_action_input(user_input, tool)
         if self.action_cache.get(input_hash) is not None:
-            log("debug", "Cache: Action already in cache")
+            #log("debug", "Cache: Action already in cache")
             return
         
         # add action to cache

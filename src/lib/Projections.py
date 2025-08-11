@@ -1,4 +1,6 @@
 import math
+import re
+import traceback
 from typing import Any, Literal, TypedDict, final, List, cast
 from datetime import datetime, timezone, timedelta
 
@@ -594,6 +596,12 @@ class ShipInfo(Projection[ShipInfoState]):
     @override
     def process(self, event: Event) -> list[ProjectedEvent]:
         projected_events: list[ProjectedEvent] = []
+        log('info', 'updating status')
+        try: 
+            log('info', 'computed ranges', self.compute_jump_range())
+        except Exception as e:
+            log('info', 'computed ranges error', e, traceback.format_exc())
+            
      
         if isinstance(event, StatusEvent) and event.status.get('event') == 'Status':
             status: Status = event.status  # pyright: ignore[reportAssignmentType]
@@ -603,7 +611,6 @@ class ShipInfo(Projection[ShipInfoState]):
             if 'Fuel' in status and status['Fuel']:
                 self.state['FuelMain'] = status['Fuel'].get('FuelMain', 0)
                 self.state['FuelReservoir'] = status['Fuel'].get('FuelReservoir', 0)
-                self._compute()
                 
         
         if isinstance(event, GameEvent) and event.content.get('event') == 'Loadout':
@@ -677,14 +684,13 @@ class ShipInfo(Projection[ShipInfoState]):
                                 break
                         src = FSD_OVERCHARGE_STATS if over else FSD_STATS
                         s = src.get((size, rating))
+                        if not s:
+                            continue
                         
-                        this.state['DriveOptimalMass'] = s.get('opt_mass')
-                        this.state['DriveMaxFuel'] = s.get('max_fuel')
-                        this.state['Drive_linear_const'] = s.get('linear_const')
-                        this.state['Drive_power_const'] = s.get('power_const')
-                            
-
-
+                        self.state['DriveOptimalMass'] = s.get('opt_mass', 0.0)
+                        self.state['DriveMaxFuel'] = s.get('max_fuel', 0.0)
+                        self.state['Drive_linear_const'] = s.get('linear_const', 0.0)
+                        self.state['Drive_power_const'] = s.get('power_const', 0.0)
                             
                 self.state['CargoCapacity'] = event.content.get('CargoCapacity', 0)
 
@@ -803,37 +809,36 @@ class ShipInfo(Projection[ShipInfoState]):
 
         if self.state['Type'] != 'Unknown':
             self.state['LandingPadSize'] = ship_sizes.get(self.state['Type'], 'Unknown')
-               
+        
         return projected_events
     
-    def _compute(self) -> None:
+    def compute_jump_range(self) -> tuple[float, float, float] | None:
 
-        unladen   = this.state.get("UnladenMass")
-        cargo_cap = this.state.get("CargoCapacity")
-        fuel_cap  = this.state.get("FuelMainCapacity")
-        d_max     = this.state.get("MaximumJumpRange")
-        d_power   = this.state.get("Drive_power_const")
-        d_optmass = this.state.get("DriveOptimalMass")
-        d_linear  = this.state.get("Drive_linear_const") 
-        max_fuel = this.state.get("DriveMaxFuel")
+        unladen   = self.state.get("UnladenMass")
+        cargo_cap = self.state.get("CargoCapacity")
+        fuel_cap  = self.state.get("FuelMainCapacity")
+        d_max     = self.state.get("MaximumJumpRange")
+        d_power   = self.state.get("Drive_power_const")
+        d_optmass = self.state.get("DriveOptimalMass")
+        d_linear  = self.state.get("Drive_linear_const") 
+        max_fuel = self.state.get("DriveMaxFuel")
 
         if not (unladen > 0 and fuel_cap > 0 and d_max > 0 and max_fuel):
             return
 
-        cargo_cur = this.state.get("ShipCargo")
-        fuel_cur  = this.state.get("FuelMain")
+        cargo_cur = self.state.get("ShipCargo")
+        fuel_cur  = self.state.get("FuelMain")
 
         M_ref = unladen + max_fuel #max jump with just right anmount
         M_cur = unladen + cargo_cur + fuel_cur #current mass
         M_min = unladen + cargo_cap + fuel_cap # minimal jump with min mass
 
-        if min(M_ref, M_cur, M_min) <= 0:
-            return
-
-        cur_ly = (d_optmass / M_cur) * ( (10^3 * max_fuel) / d_linear )^(1/d_power)
-        min_ly = (d_optmass / M_min) * ( (10^3 * max_fuel) / d_linear )^(1/d_power)
-        max_ly = (d_optmass / M_ref) * ( (10^3 * max_fuel) / d_linear )^(1/d_power)
+        cur_ly: float = (d_optmass / M_cur) * ( (10**3 * max_fuel) / d_linear )**(1/d_power)
+        min_ly: float = (d_optmass / M_min) * ( (10**3 * max_fuel) / d_linear )**(1/d_power)
+        max_ly: float = (d_optmass / M_ref) * ( (10**3 * max_fuel) / d_linear )**(1/d_power)
+        
         log("info","updated jump ranges",min_ly,cur_ly,max_ly)
+        return min_ly, cur_ly, max_ly
 
 TargetState = TypedDict('TargetState', {
     "EventID": NotRequired[str],
