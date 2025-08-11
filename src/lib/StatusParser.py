@@ -429,6 +429,10 @@ class StatusParser:
                 )
             ):
                 events.append({"event": "LegalStateChanged", "LegalState": new_status["LegalState"]})
+
+            # Handle gravity warnings
+            if old_status["Gravity"] is None and new_status["Gravity"] is not None and new_status["Gravity"] > 2:
+                events.append({"event": "HighGravityWarning"})
         
 
 

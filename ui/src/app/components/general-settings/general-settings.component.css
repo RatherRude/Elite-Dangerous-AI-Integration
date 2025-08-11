@@ -13,7 +13,7 @@ mat-slide-toggle {
   margin: 10px 0;
 }
 
-.ptt-container, .sound-devices {
+.ptt-container, .sound-devices, .overlay-controls {
   display: flex;
   align-items: center;
   justify-content: center;

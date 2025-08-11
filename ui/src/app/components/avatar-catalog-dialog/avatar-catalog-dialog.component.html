@@ -27,6 +27,37 @@
 
     <!-- Avatar Grid -->
     <div class="avatar-grid">
+      <!-- Default Avatar Option -->
+      <mat-card class="avatar-card default-avatar-card" [class.selected]="isCurrentlyDefault()">
+        <mat-card-content>
+          <div class="avatar-image-container" (click)="setToDefault()">
+            <img 
+              src="assets/cn_avatar_default.png" 
+              alt="Default Avatar"
+              class="avatar-image">
+            
+            <div class="avatar-overlay">
+              @if (isCurrentlyDefault()) {
+                <div class="selected-indicator">
+                  <mat-icon>check_circle</mat-icon>
+                  <span>Selected</span>
+                </div>
+              } @else {
+                <div class="selection-prompt">
+                  <mat-icon>touch_app</mat-icon>
+                  <span>Click to Select</span>
+                </div>
+              }
+            </div>
+          </div>
+          
+          <div class="avatar-info">
+            <div class="avatar-filename">Default Avatar</div>
+            <div class="avatar-upload-time">Built-in</div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
       @if (avatars.length === 0) {
         <div class="no-avatars">
           <mat-icon>image</mat-icon>
