@@ -15,7 +15,245 @@ from ..ActionManager import ActionManager
 
 llm_client: openai.OpenAI = None
 llm_model_name: str = None
-event_manager: EventManager = None
+event_manager = None
+
+
+def web_search(obj, projected_states):
+    """
+    Uses an agentic loop to answer a web-related query by calling various internal tools.
+    """
+    query = obj.get('query')
+    if not query:
+        return "Please provide a query for the web search."
+
+    # These are the tools the agent can use.
+    # The functions are defined later in this file.
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "get_galnet_news",
+                "description": "Retrieve current interstellar news from Galnet. Use this for questions about recent events, thargoids, etc.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "Inquiry you are trying to answer. Example: 'What happened to the thargoids recently?'"
+                        },
+                    },
+                    "required": ["query"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "system_finder",
+                "description": "Find a star system based on allegiance, government, state, power, primary economy, and more.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "reference_system": { "type": "string", "description": "Name of the current system. Example: 'Sol'" },
+                        "name": { "type": "string", "description": "Required string in system name" },
+                        "distance": { "type": "number", "description": "The maximum distance to search" },
+                        "allegiance": { "type": "array", "items": { "type": "string", "enum": ["Alliance", "Empire", "Federation", "Guardian", "Independent", "Pilots Federation", "Player Pilots", "Thargoid"] } },
+                        "state": { "type": "array", "items": { "type": "string" } },
+                        "government": { "type": "array", "items": { "type": "string" } },
+                        "power": { "type": "array", "items": { "type": "string" } },
+                        "primary_economy": { "type": "array", "items": { "type": "string" } },
+                        "security": { "type": "array", "items": { "type": "string" } },
+                        "thargoid_war_state": { "type": "array", "items": { "type": "string" } },
+                        "population": { "type": "object", "properties": { "comparison": { "type": "string", "enum": ["<", ">"] }, "value": { "type": "number" } } }
+                    },
+                    "required": ["reference_system"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "station_finder",
+                "description": "Find a station for commodities, modules and ships.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "reference_system": { "type": "string", "description": "Name of the current system. Example: 'Sol'" },
+                        "name": { "type": "string", "description": "Required string in station name" },
+                        "distance": { "type": "number", "description": "The maximum distance to search" },
+                        "material_trader": { "type": "array", "items": { "type": "string", "enum": ["Encoded", "Manufactured", "Raw"] } },
+                        "technology_broker": { "type": "array", "items": { "type": "string", "enum": ["Guardian", "Human"] } },
+                        "modules": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" }, "class": { "type": "array", "items": { "type": "string" } }, "rating": { "type": "array", "items": { "type": "string" } } }, "required": ["name"] } },
+                        "commodities": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" }, "amount": { "type": "integer" }, "transaction": { "type": "string", "enum": ["Buy", "Sell"] } }, "required": ["name", "amount", "transaction"] } },
+                        "ships": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" } }, "required": ["name"] } },
+                        "services": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string", "enum": ["Black Market", "Interstellar Factors Contact"] } }, "required": ["name"] } }
+                    },
+                    "required": ["reference_system"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "body_finder",
+                "description": "Find a planet or star of a certain type or with a landmark.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "reference_system": { "type": "string", "description": "Name of the current system. Example: 'Sol'" },
+                        "name": { "type": "string", "description": "Required string in body name" },
+                        "subtype": { "type": "array", "items": { "type": "string" } },
+                        "landmark_subtype": { "type": "array", "items": { "type": "string" } },
+                        "distance": { "type": "number", "description": "Maximum distance to search" },
+                        "rings": { "type": "object", "properties": { "material": { "type": "string" }, "hotspots": { "type": "integer" } }, "required": ["material", "hotspots"] }
+                    },
+                    "required": ["reference_system"]
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "engineer_finder",
+                "description": "Get information about engineers' location, standing and modifications.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "name": { "type": "string", "description": "Filter engineers by name" },
+                        "system": { "type": "string", "description": "Filter engineers by system/location" },
+                        "modifications": { "type": "string", "description": "Filter engineers by what they modify" },
+                        "progress": { "type": "string", "enum": ["Unknown", "Known", "Invited", "Unlocked"], "description": "Filter engineers by their current progress status" }
+                    }
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "blueprint_finder",
+                "description": "Find engineer blueprints based on search criteria. Returns material costs with grade calculations.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "modifications": { "type": "array", "items": { "type": "string" }, "description": "Array of modification names to search for - supports fuzzy search." },
+                        "engineer": { "type": "string", "description": "Engineer name to search for" },
+                        "module": { "type": "string", "description": "Module/hardware name to search for" },
+                        "grade": { "type": "integer", "description": "Grade to search for" }
+                    }
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "material_finder",
+                "description": "Find and search a list of materials for both ship and suit engineering from my inventory and where to source them from.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "name": { "type": "array", "items": { "type": "string" }, "description": "Array of material names to search for - supports fuzzy search." },
+                        "grade": { "type": "integer", "minimum": 1, "maximum": 5, "description": "Filter ship materials by grade (1-5). Suit materials don't have grades." },
+                        "type": { "type": "string", "enum": ["raw", "manufactured", "encoded", "items", "components", "data", "consumables", "ship", "suit"], "description": "Filter by material type." }
+                    }
+                }
+            }
+        }
+    ]
+
+    # The available_functions dict maps function names to the actual functions
+    available_functions = {
+        "get_galnet_news": get_galnet_news,
+        "system_finder": system_finder,
+        "station_finder": station_finder,
+        "body_finder": body_finder,
+        "engineer_finder": engineer_finder,
+        "blueprint_finder": blueprint_finder,
+        "material_finder": material_finder,
+    }
+
+    system_prompt = """
+    You are an expert assistant for the game Elite: Dangerous.
+    Your goal is to answer the user's question by using the available tools.
+    You will be given a user query and a set of tools.
+    You can call one or more tools to gather information.
+    Once you have enough information, you must generate a concise and helpful final report answering the user's query.
+    Do not just regurgitate the tool outputs. Synthesize them into a coherent answer.
+    Always use the `reference_system` parameter for finders if you know the user's current location. The current location is provided in the `projected_states`.
+    If a tool returns an error or no results, try to call it again with different parameters if it makes sense, or try a different tool.
+    If the user asks a question that cannot be answered with the available tools, just say so.
+
+    Here are some examples of how to use the tools:
+
+    User Query: "Where can I buy a Fer-de-Lance near Sol?"
+    1. Call `station_finder` with `{"ships": [{"name": "Fer-de-Lance"}], "reference_system": "Sol"}`.
+    2. Summarize the results from `station_finder` and present them to the user in the final report.
+
+    User Query: "I need to engineer my FSD for increased range. What do I need?"
+    1. Call `blueprint_finder` with `{"modifications": ["Increased FSD Range"]}`.
+    2. The result will show the materials needed for different grades.
+    3. Call `material_finder` for each of the required materials to check if you have them and where to find them.
+    4. Call `engineer_finder` to find the location of the engineers that can perform the modification.
+    5. Generate a report summarizing the required materials, where to find them, and which engineers can apply the blueprint.
+
+    User Query: "What's the latest news about the Thargoids?"
+    1. Call `get_galnet_news` with `{"query": "Thargoids"}`.
+    2. Summarize the news articles in the final report.
+    """
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": f"Current game state is: {json.dumps(projected_states)}\n\nUser query: {query}"}
+    ]
+
+    max_loops = 7
+    for _ in range(max_loops):
+        try:
+            completion = llm_client.chat.completions.create(
+                model=llm_model_name,
+                messages=messages,
+                tools=tools,
+                tool_choice="auto",
+            )
+
+            response_message = completion.choices[0].message
+            tool_calls = response_message.tool_calls
+
+            if tool_calls:
+                messages.append(response_message)
+                for tool_call in tool_calls:
+                    function_name = tool_call.function.name
+                    function_to_call = available_functions.get(function_name)
+                    if not function_to_call:
+                        function_response = f"Error: function {function_name} does not exist."
+                    else:
+                        try:
+                            function_args = json.loads(tool_call.function.arguments)
+                            print(function_name, "request:", function_args, file=sys.stderr, flush=True)
+                            # All tool functions expect (obj, projected_states)
+                            function_response = function_to_call(function_args, projected_states)
+                        except Exception as e:
+                            log('error', f"Error calling function {function_name}: {e}", traceback.format_exc())
+                            print(function_name, "error:", e, traceback.format_exc(), file=sys.stderr, flush=True)
+                            function_response = f"Error executing function {function_name}: {e}"
+
+                    print(function_name, "result:", str(function_response), file=sys.stderr, flush=True)
+                    messages.append(
+                        {
+                            "tool_call_id": tool_call.id,
+                            "role": "tool",
+                            "name": function_name,
+                            "content": str(function_response),
+                        }
+                    )
+            else:
+                # No tool call, so this should be the final answer
+                return response_message.content
+
+        except Exception as e:
+            log('error', f"An error occurred in the agentic loop: {e}", traceback.format_exc())
+            return "Sorry, an error occurred while processing your request."
+
+    return "The request could not be completed within the allowed number of steps."
 
 
 # returns summary of galnet news
@@ -1239,7 +1477,7 @@ def prepare_station_request(obj, projected_states):# Helper function for fuzzy m
     if filters.get("market") and len(filters["market"]) > 0:
         if filters.get("market")[0].get("demand"):
             sort_object = {"market_sell_price": [{"name": filters["market"][0]["name"], "direction": "desc"}]}
-        elif filters["market"][0].get("demand"):
+        elif filters["market"][0].get("supply"):
             sort_object = {"market_buy_price": [{"name": filters["market"][0]["name"], "direction": "asc"}]}
 
     # Build the request body
@@ -1717,453 +1955,88 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
     llm_client = llmClient
     llm_model_name = llmModelName
 
-    # Register actions - Web Tools
     actionManager.registerAction(
-        'getGalnetNews',
-        "Retrieve current interstellar news from Galnet",
+        'web_search',
+        "Find information about Elite: Dangerous from the web, including news, system, station, body, engineer, blueprint, and material lookups.",
         {
             "type": "object",
             "properties": {
                 "query": {
                     "type": "string",
-                    "description": "Inquiry you are trying to answer. Example: 'What happened to the thargoids recently?'"
+                    "description": "The search query. Be as specific as possible. E.g., 'Where can I buy a Fer-de-Lance near Sol?' or 'What do I need to engineer my FSD for increased range?'"
                 },
             },
             "required": ["query"]
         },
-        get_galnet_news,
+        web_search,
         'web',
-        input_template=lambda i, s: f"""Fetching GalNet articles
-            {'regarding: ' + i.get('query', '') if i.get('query', '') else ''}
-        """,
+        input_template=lambda i, s: f"Searching: {i.get('query', '')}",
     )
+    action_manager.register_action("web_search", web_search)
 
-    # if ARC:
-    # Register AI action for system finder
-    actionManager.registerAction(
-        'system_finder',
-        "Find a star system based on allegiance, government, state, power, primary economy, and more. Ask for unknown values and ensure they are filled out.",
-        input_template=lambda i, s: f"""Searching for systems
-            {'called ' + i.get('name', '') if i.get('name', '') else ''}
-            {'with allegiance to ' + ' and '.join(i.get('allegiance', [])) if i.get('allegiance', []) else ''}
-            {'in state ' + ' and '.join(i.get('state', [])) if i.get('state', []) else ''}
-            {'with government type ' + ' and '.join(i.get('government', [])) if i.get('government', []) else ''}
-            {'controlled by ' + ' and '.join(i.get('power', [])) if i.get('power', []) else ''}
-            {'with primary economy type ' + ' and '.join(i.get('primary_economy', [])) if i.get('primary_economy', []) else ''}
-            {'with security level ' + ' and '.join(i.get('security', [])) if i.get('security', []) else ''}
-            {'in Thargoid war state ' + ' and '.join(i.get('thargoid_war_state', [])) if i.get('thargoid_war_state', []) else ''}
-            {'with a population over ' + i.get('population', {}).get('comparison', '') + ' ' + str(i.get('population', {}).get('value', '')) if i.get('population', {}) else ''}
-            near {i.get('reference_system', 'Sol')}.
-        """,
-        parameters={
-            "type": "object",
-            "properties": {
-                "reference_system": {
-                    "type": "string",
-                    "description": "Name of the current system. Example: 'Sol'"
-                },
-                "name": {
-                    "type": "string",
-                    "description": "Required string in system name"
-                },
-                "distance": {
-                    "type": "number",
-                    "description": "The maximum distance to search",
-                    "example": 50000.0
-                },
-                "allegiance": {
-                    "type": "array",
-                    "description": "System allegiance to filter by",
-                    "items": {
-                        "type": "string",
-                        "enum": [
-                            "Alliance",
-                            "Empire",
-                            "Federation",
-                            "Guardian",
-                            "Independent",
-                            "Pilots Federation",
-                            "Player Pilots",
-                            "Thargoid"
-                        ]
-                    }
-                },
-                "state": {
-                    "type": "array",
-                    "description": "System state to filter by",
-                    "items": {
-                        "type": "string",
-                    }
-                },
-                "government": {
-                    "type": "array",
-                    "description": "System government type to filter by",
-                    "items": {
-                        "type": "string",
-                    }
-                },
-                "power": {
-                    "type": "array",
-                    "description": "Powers controlling or exploiting the system",
-                    "items": {
-                        "type": "string",
-                    }
-                },
-                "primary_economy": {
-                    "type": "array",
-                    "description": "Primary economy type of the system",
-                    "items": {
-                        "type": "string",
-                    }
-                },
-                "security": {
-                    "type": "array",
-                    "description": "Security level of the system",
-                    "items": {
-                        "type": "string",
-                    }
-                },
-                "thargoid_war_state": {
-                    "type": "array",
-                    "description": "System's state in the Thargoid War",
-                    "items": {
-                        "type": "string",
-                    }
-                },
-                "population": {
-                    "type": "object",
-                    "description": "Population comparison and value",
-                    "properties": {
-                        "comparison": {
-                            "type": "string",
-                            "description": "Comparison type",
-                            "enum": ["<", ">"]
-                        },
-                        "value": {
-                            "type": "number",
-                            "description": "Size to compare with",
-                        }
-                    }
-                }
-            },
-            "required": ["reference_system"]
+
+if __name__ == '__main__':
+    # This is a simple CLI for testing the web_search agent.
+    import os
+    import openai
+    import json
+    import traceback
+    import sys
+
+    # Initialize the OpenAI client
+    # Make sure you have OPENAI_API_KEY set in your environment or a .env file
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        print("Error: OPENAI_API_KEY environment variable not set.")
+        exit(1)
+
+    llm_client = openai.OpenAI(api_key=api_key)
+    llm_model_name = os.getenv("OPENAI_MODEL_NAME", "gpt-4.1")
+
+    # Dummy projected state for testing
+    dummy_projected_state = {
+        "Location": {
+            "StarSystem": "Sol",
+            "StarPos": [0.0, 0.0, 0.0],
+            "SystemAddress": 10477373803
         },
-        method=system_finder,
-        action_type='web'
-    )
-    actionManager.registerAction(
-        'station_finder',
-        "Find a station for commodities, modules and ships. Ask for unknown values and make sure they are known.",
-        input_template=lambda i, s: f"""Searching for stations
-            {'called ' + i.get('name', '') if i.get('name', '') else ''}
-            {'with large pad' if i.get('has_large_pad', False) else ''}
-            {'with material traders for ' + ' and '.join(i.get('material_trader', [])) + ' Materials' if i.get('material_trader', []) else ''}
-            {'with technology brokers for ' + ' and '.join(i.get('technology_broker', [])) + ' Technology' if i.get('technology_broker', []) else ''}
-            {'selling a ' + ' and a '.join([f"{module['name']} module class {module.get('class', 'any')} {module.get('class', '')} " for module in i.get('modules', [])]) if i.get('modules', []) else ''}
-            {'selling a ' + ' and a '.join([f"{ship['name']}" for ship in i.get('ships', [])]) if i.get('ships', []) else ''}
-            {' and '.join([f"where we can {market.get('transaction')} {market.get('amount', 'some')} {market.get('name')}" for market in i.get('commodities', [])]) if len(i.get('commodities', [])) <= 3 else f'where we can trade {len(i.get("commodities", []))} commodities'}
-            {'with a ' + ' and '.join([service['name'] for service in i.get('services', [])]) if i.get('services', []) else ''}
-            near {i.get('reference_system', 'Sol')}
-            {'within ' + str(i.get('distance', 50000)) + ' light years' if i.get('distance', 50000) else ''}.
-        """,
-        parameters={
-            "type": "object",
-            "properties": {
-                "reference_system": {
-                    "type": "string",
-                    "description": "Name of the current system. Example: 'Sol'"
-                },
-                "name": {
-                    "type": "string",
-                    "description": "Required string in station name"
-                },
-                "distance": {
-                    "type": "number",
-                    "description": "The maximum distance to search",
-                    "default": 50000.0
-                },
-                "material_trader": {
-                    "type": "array",
-                    "description": "Material traders to find",
-                    "items": {
-                        "type": "string",
-                        "enum": [
-                            "Encoded",
-                            "Manufactured",
-                            "Raw"
-                        ]
-                    },
-                    "minItems": 1,
-                },
-                "technology_broker": {
-                    "type": "array",
-                    "description": "Technology brokers to find",
-                    "items": {
-                        "type": "string",
-                        "enum": [
-                            "Guardian",
-                            "Human"
-                        ]
-                    },
-                    "minItems": 1,
-                },
-                "modules": {
-                    "type": "array",
-                    "description": "Outfitting modules to buy",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "name": {
-                                "type": "string",
-                                "description": "Name of the module.",
-                                "example": "Frame Shift Drive"
-                            },
-                            "class": {
-                                "type": "array",
-                                "description": "Classes of the modules.",
-                                "items": {
-                                    "type": "string",
-                                    "enum": [
-                                        "0", "1", "2", "3", "4", "5", "6", "7", "8"
-                                    ],
-                                },
-                                "minItems": 1,
-                            },
-                            "rating": {
-                                "type": "array",
-                                "description": "Ratings of the modules.",
-                                "items": {
-                                    "type": "string",
-                                    "enum": [
-                                        "A", "B", "C", "D", "E", "F", "G", "H", "I"
-                                    ]
-                                },
-                                "example": ["A", "B", "C", "D"],
-                                "minItems": 1
-                            }
-                        },
-                        "required": ["name"]
-                    },
-                    "minItems": 1,
-                },
-                "commodities": {
-                    "type": "array",
-                    "description": "Commodities to buy or sell at a station. This is not the station name and must map to a commodity name",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "name": {
-                                "type": "string",
-                                "description": "Name of the commodity.",
-                                "example": "Tritium"
-                            },
-                            "amount": {
-                                "type": "integer",
-                                "description": "Tons of cargo to sell or buy. Use maximum cargo capacity."
-                            },
-                            "transaction": {
-                                "type": "string",
-                                "description": "Type of transaction.",
-                                "enum": [
-                                    "Buy", "Sell"
-                                ],
-                            }
-                        },
-                        "required": ["name", "amount", "transaction"]
-                    },
-                    "minItems": 1,
-                },
-                "ships": {
-                    "type": "array",
-                    "description": "Ships to buy",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "name": {
-                                "type": "string",
-                                "description": "Name of ship",
-                            }
-                        },
-                        "required": ["name"]
-                    },
-                    "minItems": 1,
-                },
-                "services": {
-                    "type": "array",
-                    "description": "Services to use",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "name": {
-                                "type": "string",
-                                "description": "Name services",
-                                "enum": [
-                                    "Black Market",
-                                    "Interstellar Factors Contact"
-                                ]
-                            }
-                        },
-                        "required": ["name"]
-                    },
-                    "minItems": 1,
+        "EngineerProgress": {
+            "Engineers": [
+                {
+                    "EngineerID": 300160,
+                    "Engineer": "Marco Qwent",
+                    "Progress": "Unlocked"
                 }
-            },
-            "required": [
-                "reference_system"
             ]
         },
-        method=station_finder,
-        action_type='web'
-    )
-    actionManager.registerAction(
-        'body_finder',
-        "Find a planet or star of a certain type or with a landmark. Ask for unknown values and make sure they are known.",
-        input_template=lambda i, s: f"""Searching for bodies 
-            {'called ' + i.get('name', '') if i.get('name', '') else ''}
-            {'of subtype ' + ', '.join(i.get('subtype', [])) if i.get('subtype', []) else ''}
-            {'with a landmark of subtype ' + ', '.join(i.get('landmark_subtype', [])) if i.get('landmark_subtype', []) else ''}
-            {'with rings containing ' + str(i.get('rings', {}).get('hotspots', '')) + '+ hotspots of ' + i.get('rings', {}).get('material', '') if i.get('rings') else ''}
-            near {i.get('reference_system', 'Sol')}
-            {'within ' + str(i.get('distance', 50000)) + ' light years.' if i.get('distance', 50000) else ''}.
-        """,
-        parameters={
-            "type": "object",
-            "properties": {
-                "reference_system": {
-                    "type": "string",
-                    "description": "Name of the current system. Example: 'Sol'"
-                },
-                "name": {
-                    "type": "string",
-                    "description": "Required string in station name"
-                },
-                "subtype": {
-                    "type": "array",
-                    "description": "Subtype of celestial body",
-                    "items": {
-                        "type": "string",
-                    }
-                },
-                "landmark_subtype": {
-                    "type": "array",
-                    "description": "Landmark subtype on celestial body",
-                    "items": {
-                        "type": "string",
-                    }
-                },
-                "distance": {
-                    "type": "number",
-                    "description": "Maximum distance to search",
-                    "example": 50000.0
-                },
-                "rings": {
-                    "type": "object",
-                    "description": "Ring search criteria",
-                    "properties": {
-                        "material": {
-                            "type": "string",
-                            "description": "Material to look for in rings"
-                        },
-                        "hotspots": {
-                            "type": "integer",
-                            "description": "Minimum number of hotspots required",
-                            "minimum": 1
-                        }
-                    },
-                    "required": ["material", "hotspots"]
-                },
-            },
-            "required": [
-                "reference_system"
-            ]
+        "Materials": {
+            "Raw": [{"Name": "iron", "Count": 100}],
+            "Manufactured": [],
+            "Encoded": []
         },
-        method=body_finder,
-        action_type='web'
-    )
+        "ShipInfo": {"LandingPadSize": 'L'},
+        "ShipLocker": {
+            "Items": [],
+            "Components": [],
+            "Data": [],
+            "Consumables": []
+        }
+    }
 
-    actionManager.registerAction(
-        'engineer_finder', "Get information about engineers' location, standing and modifications.", {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string",
-                    "description": "Filter engineers by name"
-                },
-                "system": {
-                    "type": "string",
-                    "description": "Filter engineers by system/location"
-                },
-                "modifications": {
-                    "type": "string",
-                    "description": "Filter engineers by what they modify"
-                },
-                "progress": {
-                    "type": "string",
-                    "enum": ["Unknown", "Known", "Invited", "Unlocked"],
-                    "description": "Filter engineers by their current progress status"
-                }
-            }
-        },
-        engineer_finder,
-        'web'
-    )
+    print("Elite Dangerous AI Web Search CLI")
+    print("Type 'exit' to quit.")
+    print("-" * 30)
 
-    # Register AI action for blueprint finder
-    actionManager.registerAction(
-        'blueprint_finder', "Find engineer blueprints based on search criteria. Returns material costs with grade calculations.", {
-            "type": "object",
-            "properties": {
-                "modifications": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "Array of modification names to search for - supports fuzzy search."
-                },
-                "engineer": {
-                    "type": "string",
-                    "description": "Engineer name to search for"
-                },
-                "module": {
-                    "type": "string",
-                    "description": "Module/hardware name to search for"
-                },
-                "grade": {
-                    "type": "integer",
-                    "description": "Grade to search for"
-                }
-            }
-        },
-        blueprint_finder,
-        'web'
-    )
+    while True:
+        print('You: ', file=sys.stderr, flush=True)
+        user_query = input("You: ")
+        if user_query.lower() == 'exit':
+            break
+        
+        if not user_query:
+            continue
 
-    actionManager.registerAction(
-        'material_finder',
-        "Find and search a list of materials for both ship and suit engineering from my inventory and where to source them from.",
-        {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "Array of material names to search for - supports fuzzy search."
-                },
-                "grade": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 5,
-                    "description": "Filter ship materials by grade (1-5). Suit materials don't have grades."
-                },
-                "type": {
-                    "type": "string",
-                    "enum": ["raw", "manufactured", "encoded", "items", "components", "data", "consumables", "ship", "suit"],
-                    "description": "Filter by material type. Ship types: raw, manufactured, encoded. Suit types: items, components, data, consumables. Category filters: ship, suit."
-                }
-            }
-        },
-        material_finder,
-        'web'
-    )
-
-if __name__ == "__main__":
-    req = prepare_station_request({'reference_system': 'Coelho', 'market': [{'name': 'Gold', 'amount': 8, 'transaction': 'Buy'}]})
-    print(json.dumps(req))
+        print("Agent: Thinking...", file=sys.stderr, flush=True)
+        response = web_search({"query": user_query}, dummy_projected_state)
+        print(f"Agent: {response}", file=sys.stderr, flush=True)
+        print("-" * 30, file=sys.stderr, flush=True)
