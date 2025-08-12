@@ -15,6 +15,12 @@
         </mat-slide-toggle>
         <p>Web actions are performed by the AI on your behalf and allow you to search the web for
             information, like searching for stations selling a specific commodity or material.</p>
+        <mat-slide-toggle [ngModel]="config.tools_var && config.ui_actions_var"
+                            (ngModelChange)="onConfigChange({ui_actions_var: $event})"
+                            [disabled]="!config.tools_var">
+            Enable UI Actions
+        </mat-slide-toggle>
+        <p>UI actions let the AI switch tabs and control the app interface when needed.</p>
         <mat-slide-toggle [ngModel]="config.tools_var && config.use_action_cache_var"
                             (ngModelChange)="onConfigChange({use_action_cache_var: $event})"
                             [disabled]="!config.tools_var">

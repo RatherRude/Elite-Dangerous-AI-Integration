@@ -90,6 +90,7 @@ export interface Config {
     mute_during_response_var: boolean;
     game_actions_var: boolean;
     web_search_actions_var: boolean;
+    ui_actions_var: boolean;
     use_action_cache_var: boolean;
     edcopilot: boolean;
     edcopilot_dominant: boolean;

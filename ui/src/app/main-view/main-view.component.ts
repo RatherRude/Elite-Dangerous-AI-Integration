@@ -20,6 +20,7 @@ import { StationContainerComponent } from "../components/station-container/stati
 import { ProjectionsService } from "../services/projections.service";
 import { MetricsService } from "../services/metrics.service.js";
 import { PolicyService } from "../services/policy.service.js";
+import {UIService} from "../services/ui.service";
 
 @Component({
     selector: "app-main-view",
@@ -50,7 +51,9 @@ export class MainViewComponent implements OnInit, OnDestroy {
     isInCombat = false;
     isDockedAtStation = false;
     isShipIdentUnknown = false;
+    selectedTabIndex: number = 0;
     config: any;
+    private uiChangeSubscription?: Subscription;
     private configSubscription!: Subscription;
     private inCombatSubscription!: Subscription;
     private currentStatusSubscription!: Subscription;
@@ -66,6 +69,7 @@ export class MainViewComponent implements OnInit, OnDestroy {
         private projectionsService: ProjectionsService,
         private metricsService: MetricsService,
         private policyService: PolicyService,
+        private uiService: UIService
     ) {
         this.policyService.usageDisclaimerAccepted$.subscribe(
             (accepted) => {
@@ -96,6 +100,22 @@ export class MainViewComponent implements OnInit, OnDestroy {
                 this.isLoading = mode === "starting";
             },
         );
+
+
+        this.uiChangeSubscription = this.uiService.changeUI$.subscribe(
+            (tabName) => {
+                if (tabName === null) return;
+                const desiredIndex = {
+                    chat: 0,
+                    status: 1,
+                    storage: 2,
+                    station: 3,
+                }[tabName];
+                if (desiredIndex !== undefined) {
+                    this.selectedTabIndex = desiredIndex;
+                }
+            }
+        )
 
         // Subscribe to InCombat projection
         this.inCombatSubscription = this.projectionsService.inCombat$
@@ -132,6 +152,9 @@ export class MainViewComponent implements OnInit, OnDestroy {
     ngOnDestroy(): void { // Implement ngOnDestroy
         if (this.configSubscription) {
             this.configSubscription.unsubscribe();
+        }
+        if (this.uiChangeSubscription) {
+            this.uiChangeSubscription.unsubscribe();
         }
         if (this.inCombatSubscription) {
             this.inCombatSubscription.unsubscribe();
