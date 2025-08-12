@@ -40,4 +40,4 @@ While technically possible, reasoning models have a response time of many second
 
 ## I have encounter a bug or an issue, what should I do?
 
-Please report the bug on our [Discord server](https://discord.gg/8Z2a3b6c7C), make sure to include screenshots and a description of what happened before the bug occurred. If you can, please also include the log file, which can be found in `%localappdata%\com.covas-next.ui\logs` using Windows Explorer.
+Please report the bug on our [Discord server](https://discord.gg/8Z2a3b6c7C), make sure to include screenshots and a description of what happened before the bug occurred. If you can, please also include the log file, which can be found in `%appdata%\com.covas-next.ui\logs` using Windows Explorer.
