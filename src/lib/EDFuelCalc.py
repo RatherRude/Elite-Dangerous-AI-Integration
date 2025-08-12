@@ -42,6 +42,8 @@ FSD_STATS: Dict[tuple[int, str], dict] = { #Normal FSD
     (7,"B"): {"mass":128.00,"opt_mass":2250.0,"max_fuel":10.60, "linear_const": 10.00, "power_const": 2.75},
     (7,"A"): {"mass":80.00,"opt_mass":2700.0,"max_fuel":12.80, "linear_const": 12.00, "power_const": 2.75},
 
+    (8,"D"): {"mass":1,"opt_mass":1,"max_fuel":1, "linear_const": 1, "power_const": 1},
+    (8,"C"): {"mass":1,"opt_mass":1,"max_fuel":1, "linear_const": 1, "power_const": 1},
     # 8 ?
 }
 FSD_OVERCHARGE_STATS: Dict[tuple[int, str], dict] = {# FSD SCO
@@ -82,19 +84,18 @@ FSD_OVERCHARGE_STATS: Dict[tuple[int, str], dict] = {# FSD SCO
     (7,"A"): {"mass": 80.00, "opt_mass": 3000.0,"max_fuel": 13.10,"linear_const": 13.0, "power_const": 2.75},
 }
 
-
-
-
-
-
 FSD_OVERCHARGE_V1PRE_STATS: Dict[tuple[int, str], dict] = {# FSD V1Pre
-    (2,"A"): {"mass":3.25,  "opt_mass":170.0,   "max_fuel":1.00, "linear_const": 12.00, "power_const": 2.00},
-    (3,"A"): {"mass":6.50,  "opt_mass":283.9,   "max_fuel":1.90, "linear_const": 12.00, "power_const": 2.15},
-    (4,"A"): {"mass":13.00, "opt_mass":994.5,   "max_fuel":3.20, "linear_const": 12.00, "power_const": 2.30},
-    (5,"A"): {"mass":26.00, "opt_mass":1997.5,  "max_fuel":5.20, "linear_const": 12.00, "power_const": 2.45},
-    (6,"A"): {"mass":52.00, "opt_mass":3400.0,  "max_fuel":8.30, "linear_const": 12.00, "power_const": 2.60},
-    (7,"A"): {"mass":104.0, "opt_mass":5100.0,  "max_fuel":13.10, "linear_const": 12.00, "power_const": 2.75},
+    (2,"A"): {"mass":3.25,   "max_fuel":1.00, "linear_const": 12.00, "power_const": 2.00},
+    (3,"A"): {"mass":6.50,   "max_fuel":1.90, "linear_const": 12.00, "power_const": 2.15},
+    (4,"A"): {"mass":13.00,   "max_fuel":3.20, "linear_const": 12.00, "power_const": 2.30},
+    (5,"A"): {"mass":26.00,  "max_fuel":5.20, "linear_const": 12.00, "power_const": 2.45},
+    (6,"A"): {"mass":52.00,  "max_fuel":8.30, "linear_const": 12.00, "power_const": 2.60},
+    (7,"A"): {"mass":104.00,  "max_fuel":13.10, "linear_const": 12.00, "power_const": 2.75},
 }
+
+
+
+
 FSD_GUARDIAN_BOOSTER: Dict[tuple[int, str], dict] = {
     (1,"H"): {"jump_boost": 4.00},
     (2,"H"): {"jump_boost": 6.00},

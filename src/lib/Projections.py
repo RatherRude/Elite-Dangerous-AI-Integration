@@ -679,49 +679,55 @@ class ShipInfo(Projection[ShipInfoState]):
                 #Check for FSD Engine
                 if modules:
                     for module in modules:
-                        slot = module.get("Slot", "")
+                        slot = module.get("Slot", "") 
                         if slot != "FrameShiftDrive":
                             continue
                         
                         item = module.get('Item')
                         over = "hyperdrive_overcharge" in item
-                        fsdboost = "int_guardianfsdbooster_size" in item
                         ms = re.search(r"size(\d)", item)
                         mc = re.search(r"class(\d)", item)
                         size = int(ms.group(1)) if ms else None
                         rating = RATING_BY_CLASSNUM.get(int(mc.group(1))) if mc else None
                         eng = module.get("Engineering", {}) or {}
                         opt = None
-                        log("debug", f"FSD setup: item={item}, size={size}, rating={rating}, over={over}")
-                        if fsdboost:
-                           int(item[-1])
-                        
+                       
+
                         for mod in eng.get("Modifiers", []) or []:
                             if mod.get("Label") in ("FSDOptimalMass", "fsdoptimalmass"):
                                 opt = float(mod.get("Value"))
                                 break
-                        src = FSD_OVERCHARGE_STATS if over else FSD_STATS
-                        s = src.get((size, rating))
-                        
-                        if not s:                          
-                            continue
-                        
-                        self.state['DriveOptimalMass'] = opt if opt else s.get('opt_mass', 0.0)
-                        for module in event.content.get("Modules", []):
-                            item = module.get("Item", "")
-                            if item.startswith("int_guardianfsdbooster_size"):
-                                ms = re.search(r"size(\d+)", item)
-                                if ms:
-                                    booster_size = int(ms.group(1))
-                                    self.state['GuardianfsdBooster'] = FSD_GUARDIAN_BOOSTER.get((booster_size, "H"), {}).get('jump_boost', 0.0)
-                                                
                             
+                        if not eng: 
+                            src = FSD_OVERCHARGE_STATS if over else FSD_STATS
+                            s = src.get((size, rating))
+                            self.state['DriveOptimalMass'] = s.get('opt_mass', 0.00)
+                            self.state['DriveMaxFuel'] = s.get('max_fuel', 0.00)
+                            self.state['Drive_linear_const'] = s.get('linear_const', 0.00)
+                            self.state['Drive_power_const'] = s.get('power_const', 0.00)
+                            
+                        else:
+                            src = FSD_OVERCHARGE_V1PRE_STATS
+                            s =src.get((size, rating))
+                            
+                            self.state['DriveOptimalMass'] = opt if opt is not None else s.get('opt_mass', 0.00)
+                            self.state['DriveMaxFuel'] = s.get('max_fuel', 0.00)
+                            self.state['Drive_linear_const'] = s.get('linear_const', 0.00)
+                            self.state['Drive_power_const'] = s.get('power_const', 0.00)
                         
-                        self.state['DriveOptimalMass'] = s.get('opt_mass', 0.0) # opt if opt else
-                        self.state['DriveMaxFuel'] = s.get('max_fuel', 0.0)
-                        self.state['Drive_linear_const'] = s.get('linear_const', 0.0)
-                        self.state['Drive_power_const'] = s.get('power_const', 0.0)
+
+                        log("info", "My FSD : ",s,"  My opt: ",opt)
                         
+                        
+        #                for module in event.content.get("Modules", []):
+        #                    item = module.get("Item", "")
+        #                    if item.startswith("$int_guardianfsd"):
+        #                        ms = re.search(r"size(\d+)", item)
+        #                        if ms:
+        #                            booster_size = int(ms.group(1))
+        #                            self.state['GuardianfsdBooster'] = FSD_GUARDIAN_BOOSTER.get((booster_size, "H"), {}).get('jump_boost', 0.0)
+                                                                                                
+                                                
                             
                 self.state['CargoCapacity'] = event.content.get('CargoCapacity', 0)
 
@@ -853,7 +859,9 @@ class ShipInfo(Projection[ShipInfoState]):
         d_optmass = self.state.get("DriveOptimalMass")
         d_linear  = self.state.get("Drive_linear_const") 
         max_fuel  = self.state.get("DriveMaxFuel")
-        fsd_boost = self.state.get("GuardianfsdBooster") 
+        fsd_boost = self.state.get("GuardianfsdBooster")
+        fsd_star_boost = 1 #neutron x4 , whitedwarf boost x1.5
+        fsd_inject = 0 # +inject juice 25% , 50% ,100% but cant be with star_boost
 
         if not (unladen > 0 and fuel_cap > 0 and d_max > 0 and max_fuel):
             
@@ -861,21 +869,18 @@ class ShipInfo(Projection[ShipInfoState]):
 
         cargo_cur = self.state.get("ShipCargo")
         fuel_cur  = self.state.get("FuelMain")
+        res_cur = self.state.get("FuelReservoir")
 
         M_ref = unladen + max_fuel  #max jump with just right anmount
-        M_cur = unladen + cargo_cur + fuel_cur   #current mass
+        M_cur = unladen + cargo_cur + fuel_cur + res_cur  #current mass
         M_min = unladen + cargo_cap + fuel_cap  # minimal jump with min mass
 
         
         base = lambda M: (d_optmass / M) * ( (10**3 * max_fuel) / d_linear )**(1/d_power)
         # adding stuff here for more future fsd boost stuff 
-        cur_ly = base(M_cur) + fsd_boost
+        cur_ly = base(M_cur) + fsd_boost * fsd_star_boost
         min_ly = base(M_min) + fsd_boost
         max_ly = base(M_ref) + fsd_boost 
-        
-        #cur_ly: float = (d_optmass / M_cur) * ( (10**3 * max_fuel) / d_linear )**(1/d_power)
-        #min_ly: float = (d_optmass / M_min) * ( (10**3 * max_fuel) / d_linear )**(1/d_power)
-        #max_ly: float = (d_optmass / M_ref) * ( (10**3 * max_fuel) / d_linear )**(1/d_power)
 
         log("info","updated jump ranges",min_ly,cur_ly,max_ly," Guardian Boost: ",fsd_boost)
         return min_ly, cur_ly, max_ly
