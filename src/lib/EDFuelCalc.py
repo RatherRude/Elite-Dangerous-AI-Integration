@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional, Tuple
 RESET_FUEL_ON_LOADOUT = False
 
 #----Fsd Types
-FSD_STATS: Dict[tuple[int, str], dict] = {
+FSD_STATS: Dict[tuple[int, str], dict] = { #Normal FSD
     (2,"E"): {"mass":2.50, "opt_mass":48.0,  "max_fuel":0.60, "linear_const": 11.0, "power_const": 2.00},
     (2,"D"): {"mass":1.00, "opt_mass":54.0,  "max_fuel":0.60, "linear_const": 10.0, "power_const": 2.00},
     (2,"C"): {"mass":2.50, "opt_mass":60.0,  "max_fuel":0.60, "linear_const": 8.00, "power_const": 2.00},
@@ -44,8 +44,50 @@ FSD_STATS: Dict[tuple[int, str], dict] = {
 
     # 8 ?
 }
+FSD_OVERCHARGE_STATS: Dict[tuple[int, str], dict] = {# FSD SCO
+    (2,"E"): {"mass": 2.50, "opt_mass": 60.0,  "max_fuel": 0.60, "linear_const": 8.0,  "power_const": 2.00},
+    (2,"D"): {"mass": 2.50, "opt_mass": 90.0,  "max_fuel": 0.90, "linear_const": 12.0, "power_const": 2.00},
+    (2,"C"): {"mass": 2.50, "opt_mass": 90.0,  "max_fuel": 0.90, "linear_const": 12.0, "power_const": 2.00},
+    (2,"B"): {"mass": 2.50, "opt_mass": 90.0,  "max_fuel": 0.90, "linear_const": 12.0, "power_const": 2.00},
+    (2,"A"): {"mass": 2.50, "opt_mass": 100.0, "max_fuel": 1.00, "linear_const": 13.0, "power_const": 2.00},
 
-FSD_OVERCHARGE_STATS: Dict[tuple[int, str], dict] = {
+    (3,"E"): {"mass": 5.00, "opt_mass": 100.0, "max_fuel": 1.20, "linear_const": 8.0,  "power_const": 2.15},
+    (3,"D"): {"mass": 2.00, "opt_mass": 150.0, "max_fuel": 1.80, "linear_const": 12.0, "power_const": 2.15},
+    (3,"C"): {"mass": 5.00, "opt_mass": 150.0, "max_fuel": 1.80, "linear_const": 12.0, "power_const": 2.15},
+    (3,"B"): {"mass": 5.00, "opt_mass": 150.0, "max_fuel": 1.80, "linear_const": 12.0, "power_const": 2.15},
+    (3,"A"): {"mass": 5.00, "opt_mass": 167.0, "max_fuel": 1.90, "linear_const": 13.0, "power_const": 2.15},
+
+    (4,"E"): {"mass": 10.00, "opt_mass": 350.0, "max_fuel": 2.00, "linear_const": 8.0,  "power_const": 2.30},
+    (4,"D"): {"mass": 4.00,  "opt_mass": 525.0, "max_fuel": 3.00, "linear_const": 12.0, "power_const": 2.30},
+    (4,"C"): {"mass": 10.00, "opt_mass": 525.0, "max_fuel": 3.00, "linear_const": 12.0, "power_const": 2.30},
+    (4,"B"): {"mass": 10.00, "opt_mass": 525.0, "max_fuel": 3.00, "linear_const": 12.0, "power_const": 2.30},
+    (4,"A"): {"mass": 10.00, "opt_mass": 585.0, "max_fuel": 3.20, "linear_const": 13.0, "power_const": 2.30},
+
+    (5,"E"): {"mass": 20.00, "opt_mass": 700.0, "max_fuel": 3.30, "linear_const": 8.0,  "power_const": 2.45},
+    (5,"D"): {"mass": 8.00,  "opt_mass": 1050.0,"max_fuel": 5.00, "linear_const": 12.0, "power_const": 2.45},
+    (5,"C"): {"mass": 20.00, "opt_mass": 1050.0,"max_fuel": 5.00, "linear_const": 12.0, "power_const": 2.45},
+    (5,"B"): {"mass": 20.00, "opt_mass": 1050.0,"max_fuel": 5.00, "linear_const": 12.0, "power_const": 2.45},
+    (5,"A"): {"mass": 20.00, "opt_mass": 1175.0,"max_fuel": 5.20, "linear_const": 13.0, "power_const": 2.45},
+
+    (6,"E"): {"mass": 40.00, "opt_mass": 1200.0,"max_fuel": 5.30, "linear_const": 8.0,  "power_const": 2.60},
+    (6,"D"): {"mass": 16.00, "opt_mass": 1800.0,"max_fuel": 8.00, "linear_const": 12.0, "power_const": 2.60},
+    (6,"C"): {"mass": 40.00, "opt_mass": 1800.0,"max_fuel": 8.00, "linear_const": 12.0, "power_const": 2.60},
+    (6,"B"): {"mass": 40.00, "opt_mass": 1800.0,"max_fuel": 8.00, "linear_const": 12.0, "power_const": 2.60},
+    (6,"A"): {"mass": 40.00, "opt_mass": 2000.0,"max_fuel": 8.30, "linear_const": 13.0, "power_const": 2.60},
+
+    (7,"E"): {"mass": 80.00, "opt_mass": 1800.0,"max_fuel": 8.50, "linear_const": 8.0,  "power_const": 2.75},
+    (7,"D"): {"mass": 32.00, "opt_mass": 2700.0,"max_fuel": 12.80,"linear_const": 12.0, "power_const": 2.75},
+    (7,"C"): {"mass": 80.00, "opt_mass": 2700.0,"max_fuel": 12.80,"linear_const": 12.0, "power_const": 2.75},
+    (7,"B"): {"mass": 80.00, "opt_mass": 2700.0,"max_fuel": 12.80,"linear_const": 12.0, "power_const": 2.75},
+    (7,"A"): {"mass": 80.00, "opt_mass": 3000.0,"max_fuel": 13.10,"linear_const": 13.0, "power_const": 2.75},
+}
+
+
+
+
+
+
+FSD_OVERCHARGE_V1PRE_STATS: Dict[tuple[int, str], dict] = {# FSD V1Pre
     (2,"A"): {"mass":3.25,  "opt_mass":170.0,   "max_fuel":1.00, "linear_const": 12.00, "power_const": 2.00},
     (3,"A"): {"mass":6.50,  "opt_mass":283.9,   "max_fuel":1.90, "linear_const": 12.00, "power_const": 2.15},
     (4,"A"): {"mass":13.00, "opt_mass":994.5,   "max_fuel":3.20, "linear_const": 12.00, "power_const": 2.30},
@@ -53,10 +95,15 @@ FSD_OVERCHARGE_STATS: Dict[tuple[int, str], dict] = {
     (6,"A"): {"mass":52.00, "opt_mass":3400.0,  "max_fuel":8.30, "linear_const": 12.00, "power_const": 2.60},
     (7,"A"): {"mass":104.0, "opt_mass":5100.0,  "max_fuel":13.10, "linear_const": 12.00, "power_const": 2.75},
 }
+FSD_GUARDIAN_BOOSTER: Dict[tuple[int, str], dict] = {
+    (1,"H"): {"jump_boost": 4.00},
+    (2,"H"): {"jump_boost": 6.00},
+    (3,"H"): {"jump_boost": 7.75},
+    (4,"H"): {"jump_boost": 9.25},
+    (5,"H"): {"jump_boost": 10.50},
+}
 
 RATING_BY_CLASSNUM = {1:"E", 2:"D", 3:"C", 4:"B", 5:"A"}
-
-
 
 #----hard reset
 _state: Dict[str, Any] = {
@@ -66,70 +113,6 @@ _state: Dict[str, Any] = {
     "last_written": None,
     "last_trigger_id": None
 }
-
-def _find_fsd(modules: list | None) -> Tuple[Optional[int], Optional[str], bool, Optional[float]]:
-    if not isinstance(modules, list):
-        return None, None, False, None
-    for m in modules:
-        if m.get("Slot") != "FrameShiftDrive":
-            continue
-        item = m.get("Item", "")
-        over = "hyperdrive_overcharge" in item
-        ms = re.search(r"size(\d)", item)
-        mc = re.search(r"class(\d)", item)
-        size = int(ms.group(1)) if ms else None
-        rating = RATING_BY_CLASSNUM.get(int(mc.group(1))) if mc else None
-        eng = m.get("Engineering", {}) or {}
-        opt = None
-        for mod in eng.get("Modifiers", []) or []:
-            if mod.get("Label") in ("FSDOptimalMass", "fsdoptimalmass"):
-                opt = float(mod.get("Value"))
-                break
-        return size, rating, over, opt
-    return None, None, False, None
-
-def _max_fuel_per_jump(size: Optional[int], rating: Optional[str], over: bool) -> Optional[float]:
-    if size is None or rating is None:
-        return None
-    src = FSD_OVERCHARGE_STATS if over else FSD_STATS
-    s = src.get((size, rating))
-    return float(s["max_fuel"]) if s else None
-
-def _compute() -> None:
-    lo = _state["loadout"] or {}
-    if _state["fuel_frac"] is None:
-        return
-
-    unladen   = float(lo.get("UnladenMass") or 0.0)
-    cargo_cap = float(lo.get("CargoCapacity") or 0.0)
-    fuel_cap  = float((lo.get("FuelCapacity") or {}).get("Main") or 0.0)
-    d_max     = float(lo.get("MaxJumpRange") or 0.0)
-
-    size, rating, over, _opt_from_eng = _find_fsd(lo.get("Modules"))
-    max_fuel = _max_fuel_per_jump(size, rating, over)
-
-    if not (unladen > 0 and fuel_cap > 0 and d_max > 0 and max_fuel):
-        return
-
-    cargo_cur = float(_state["cargo_cur"] or 0.0)
-    fuel_cur  = max(0.0, min(1.0, float(_state["fuel_frac"]))) * fuel_cap
-
-    M_ref = unladen + max_fuel
-    M_cur = unladen + cargo_cur + fuel_cur
-    M_min = unladen + cargo_cap + fuel_cap
-
-    if min(M_ref, M_cur, M_min) <= 0:
-        return
-
-    cur_ly = d_max * (M_ref / M_cur)
-    min_ly = d_max * (M_ref / M_min)
-
-    if cur_ly < 0.0: cur_ly = 0.0
-    if min_ly < 0.0: min_ly = 0.0
-    if cur_ly > d_max: cur_ly = d_max
-    if min_ly > d_max: min_ly = d_max
-
-    _state["last_written"] = (round(min_ly, 2), round(cur_ly, 2), round(d_max, 2))
 
 #--ask for event
 def ingest_event(event: Any) -> None:
@@ -182,7 +165,7 @@ def ingest_event(event: Any) -> None:
         if _state["last_trigger_id"] is not None and _state["last_trigger_id"] == trigger_id:
             return
         _state["last_trigger_id"] = trigger_id
-        _compute()
+       
 
 def get_current_jump_range() -> Optional[float]:
     if _state.get("last_written") is None:
