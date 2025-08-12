@@ -17,74 +17,49 @@ def checkStatus(projected_states: dict[str, dict], blocked_status_dict: dict[str
                         raise Exception(f"Action not possible due to {'not ' if not expected_value else ''}being in a state of {blocked_status}!")
 
 
-# open chat tab
-def show_chat(obj, projected_states):
+def show_ui(obj, projected_states):
+    """Show a specific UI tab: chat | status | storage | station"""
+    tab: str = (obj or {}).get('tab', 'chat')
+    valid_tabs = {"chat", "status", "storage", "station"}
+
+    if tab not in valid_tabs:
+        raise Exception(f"Unknown tab '{tab}'. Expected one of: {', '.join(sorted(valid_tabs))}.")
+
+    # Guard for station tab when not docked
+    if tab == 'station':
+        checkStatus(projected_states, {'Docked': False})
+
     send_message({
         "type": "ui",
-        "show": "chat",
+        "show": tab,
     })
 
-    return "Chat is now being displayed"
+    return f"{tab.capitalize()} is now being displayed"
 
-# open status tab
-def show_status(obj, projected_states):
-    send_message({
-        "type": "ui",
-        "show": "status",
-    })
-
-    return "Status is now being displayed"
-
-# open storage tab
-def show_storage(obj, projected_states):
-    send_message({
-        "type": "ui",
-        "show": "storage",
-    })
-
-    return "Storage is now being displayed"
-
-# open station tab
-def show_station(obj, projected_states):
-    checkStatus(projected_states, {'Docked': False})
-    send_message({
-        "type": "ui",
-        "show": "station",
-    })
-
-    return "Station is now being displayed"
 
 def register_ui_actions(actionManager: ActionManager, eventManager: EventManager):
     global event_manager
     event_manager = eventManager
 
-    # Register actions - Web Tools
+    # Single parameterized UI action
     actionManager.registerAction(
-        'showChat',
-        "Display an overview of the current conversation",
-        {},
-        show_chat,
+        'showUI',
+        "Display a specific tab",
+        {
+            "type": "object",
+            "properties": {
+                "tab": {
+                    "type": "string",
+                    "description": "4 tabs to display. 1) Chat: current conversation 2)status: ship/suit loadout and state 3)storage: colony constructions materials and engineers 4)station: outfitting and market info of docked station)",
+                    "enum": ["chat", "status", "storage", "station"],
+                }
+            },
+            "required": ["tab"]
+        },
+        show_ui,
         'ui',
-    )
-    actionManager.registerAction(
-        'showStatus',
-        "Display current ship or suit loadout details and state, alerts, and key telemetry",
-        {},
-        show_status,
-        'ui',
-    )
-    actionManager.registerAction(
-        'showStorage',
-        "Display construction efforts, ship and suits materials and engineer info",
-        {},
-        show_storage,
-        'ui',
-    )
-    actionManager.registerAction(
-        'showStation',
-        "Display docked station's outfitting and market information",
-        {},
-        show_station,
-        'ui',
+        cache_prefill={
+            "show chat": {"tab": "chat"},
+        }
     )
 
