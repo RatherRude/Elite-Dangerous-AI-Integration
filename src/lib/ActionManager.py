@@ -45,6 +45,9 @@ class ActionManager:
                 if action.get("type") == 'web':
                     valid_actions.append(action.get("tool"))
 
+            if action.get("type") == 'ui':
+                valid_actions.append(action.get("tool"))
+
         return valid_actions
     
     def getActionDesc(self, tool_call: ChatCompletionMessageFunctionToolCall, projected_states: dict[str, dict]):

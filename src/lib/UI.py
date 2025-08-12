@@ -23,6 +23,10 @@ class EventMessage(TypedDict):
     type: Literal['event']
     event: Any
 
+class UIMessage(TypedDict):
+    type: Literal['ui']
+    show: str
+
 # Convert the message object to a dictionary with proper handling of nested objects
 def serialize_object(obj) -> dict|list|str:
     if hasattr(obj, '__dict__'):
