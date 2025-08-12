@@ -50,7 +50,7 @@ def register_ui_actions(actionManager: ActionManager, eventManager: EventManager
             "properties": {
                 "tab": {
                     "type": "string",
-                    "description": "4 tabs to display. 1) Chat: current conversation 2)status: ship/suit loadout and state 3)storage: colony constructions materials and engineers 4)station: outfitting and market info of docked station)",
+                    "description": "Chat: current conversation; Status: ship/suit loadout and state; Storage: colony construction, materials and engineers; Station: outfitting and market info of docked station",
                     "enum": ["chat", "status", "storage", "station"],
                 }
             },
