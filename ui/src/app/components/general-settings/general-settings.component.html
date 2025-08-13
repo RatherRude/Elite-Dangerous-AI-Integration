@@ -32,23 +32,31 @@
             Voice activation should only be used wearing headphones.</p>
         <div class="ptt-container">
             <mat-form-field>
-                <mat-label>Voice Activation Mode</mat-label>
-                <mat-select [value]="config.ptt_var ? 'ptt' : 'continuous'"
-                            (selectionChange)="onConfigChange({ptt_var: $event.value === 'ptt'})">
-                    <mat-option value="continuous">Voice Activation (Use Headphones)</mat-option>
-                    <mat-option value="ptt">Push-to-Talk (Recommended)</mat-option>
+                <mat-label>Microphone Mode</mat-label>
+                <mat-select [value]="config.ptt_var"
+                            (selectionChange)="onConfigChange({ptt_var: $event.value})">
+                    <mat-option value="voice_activation">Voice Detection (Use Headphones)</mat-option>
+                    <mat-option value="push_to_talk">Push-to-Talk (Recommended)</mat-option>
+                    <mat-option value="push_to_mute">Push-to-Mute</mat-option>
+                    <mat-option value="toggle">Toggle Mic On/Off</mat-option>
                 </mat-select>
             </mat-form-field>
-            @if (config.ptt_var) {
+            @if (config.ptt_var !== 'voice_activation') {
                 <mat-form-field (click)="onAssignPTT($event)">
-                    <mat-label>Push-to-Talk Key</mat-label>
+                    <mat-label>Hotkey</mat-label>
                     <input required matInput [value]="isAssigningPTT ? 'Press any key...' : config.ptt_key" readonly>
                     <button matSuffix mat-icon-button>
                         <mat-icon>keyboard</mat-icon>
                     </button>
                 </mat-form-field>
             }
-            @if (!config.ptt_var) {
+            @if (config.ptt_var === 'toggle') {
+                <mat-slide-toggle [(ngModel)]="config.ptt_inverted_var"
+                                  (ngModelChange)="onConfigChange({ptt_inverted_var: $event})">
+                    Start with Mic Muted
+                </mat-slide-toggle>
+            }
+            @if (config.ptt_var !== 'push_to_talk') {
                 <mat-slide-toggle [(ngModel)]="config.mute_during_response_var"
                                     (ngModelChange)="onConfigChange({mute_during_response_var: $event})">
                     Mute microphone during response

@@ -86,7 +86,8 @@ export interface Config {
     tts_endpoint: string;
     tools_var: boolean;
     vision_var: boolean;
-    ptt_var: boolean;
+    ptt_var: "voice_activation" | "push_to_talk" | "push_to_mute" | "toggle";
+    ptt_inverted_var: boolean;
     mute_during_response_var: boolean;
     game_actions_var: boolean;
     web_search_actions_var: boolean;
