@@ -35,7 +35,7 @@ class STT:
     recording = False
     resultQueue = queue.Queue()
 
-    def __init__(self, openai_client: openai.OpenAI | None, provider: Literal['openai', 'custom', 'custom-multi-modal', 'google-ai-studio', 'none'], input_device_name, model='whisper-1', language=None, custom_prompt=None, required_word=None):
+    def __init__(self, openai_client: openai.OpenAI | None, provider: Literal['openai', 'custom', 'custom-multi-modal', 'google-ai-studio', 'none', 'local-ai-server'], input_device_name, model='whisper-1', language=None, custom_prompt=None, required_word=None):
         self.openai_client = openai_client
         self.provider = provider
         self.vad = SileroVoiceActivityDetector()
