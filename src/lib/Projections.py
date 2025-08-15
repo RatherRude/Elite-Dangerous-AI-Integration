@@ -715,18 +715,30 @@ class ShipInfo(Projection[ShipInfoState]):
                             self.state['Drive_linear_const'] = s.get('linear_const', 0.00)
                             self.state['Drive_power_const'] = s.get('power_const', 0.00)
                         
-
                         log("info", "My FSD : ",s,"  My opt: ",opt)
+
+
+
+#++++++++++++++++++++++++++++++++++++++++++++++++++++++++Does not Work +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        for module in event.content.get("Modules", []):
+                            item = module.get("Item", "")
+                            
+                            if item == "int_guardianfsdbooster":
+                                msb = re.search(r"size(\d+)", item)
+                                mcb = re.search(r"class(\d)", item)
+                                srcb = FSD_GUARDIAN_BOOSTER
+                                sb = srcb.get((size,rating))
+                                log("info", "Current GuardianDrive: ",sb," Size of GD: ",msb," Item found Name: ",item)
+                                if msb:
+                                    self.state['GuardianfsdBooster'] =sb.get('jump_boost', 0.0)
+                                else:
+                                    self.state['GuardianfsdBooster'] = 0
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++                                    
+                                
                         
+                                
+                                    
                         
-        #                for module in event.content.get("Modules", []):
-        #                    item = module.get("Item", "")
-        #                    if item.startswith("$int_guardianfsd"):
-        #                        ms = re.search(r"size(\d+)", item)
-        #                        if ms:
-        #                            booster_size = int(ms.group(1))
-        #                            self.state['GuardianfsdBooster'] = FSD_GUARDIAN_BOOSTER.get((booster_size, "H"), {}).get('jump_boost', 0.0)
-                                                                                                
                                                 
                             
                 self.state['CargoCapacity'] = event.content.get('CargoCapacity', 0)
@@ -882,7 +894,7 @@ class ShipInfo(Projection[ShipInfoState]):
         min_ly = base(M_min) + fsd_boost
         max_ly = base(M_ref) + fsd_boost 
 
-        log("info","updated jump ranges",min_ly,cur_ly,max_ly," Guardian Boost: ",fsd_boost)
+        
         return min_ly, cur_ly, max_ly
 
 TargetState = TypedDict('TargetState', {
