@@ -2292,6 +2292,28 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "summon ship": {},
         "ship pickup": {},
     })
+
+    actionManager.registerAction('textMessage', "Send message to commander or local", {
+        "type": "object",
+        "properties": {
+            "message": {
+                "type": "string",
+                "description": "Message to send"
+            },
+            "channel": {
+                "type": "string",
+                "description": "Channel to send the message on.",
+                "example": "commander",
+                "enum": ['local', 'system', 'wing', 'squadron', 'commander']
+            },
+            "recipient": {
+                "type": "string",
+                "description": "Commander name to send message to. Only used if channel is commander.",
+                "example": "RatherRude.TTV",
+            },
+        },
+        "required": ["message", "channel"]
+    }, send_message, 'global')
     
     register_web_actions(
         actionManager, eventManager, 

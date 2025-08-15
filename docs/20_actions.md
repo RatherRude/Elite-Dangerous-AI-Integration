@@ -901,6 +901,21 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 
     Find a celestial body based on various filters.
 
+## UI Actions
+
+1. **Show UI**
+
+    - `tab`: String (options: "chat", "status", "storage", "station")
+
+    <details>
+    <summary>Examples</summary>
+    
+    - display chat
+    - show status
+    - open storage
+    - open station tab
+    </details>
+
 ## Miscellaneous Actions
 
 1. Get Visuals
