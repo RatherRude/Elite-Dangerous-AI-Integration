@@ -120,13 +120,13 @@ jobs:
       - name: Upload MSI
         uses: actions/upload-artifact@v4
         with:
-          name: COVAS_NEXT_ELECTRON_v${{ github.sha }}
+          name: COVAS_NEXT_v${{ github.sha }}
           path: .\dist\*.msi
 
       - name: Upload simple zip file
         uses: actions/upload-artifact@v4
         with:
-          name: COVAS_NEXT_ELECTRON_v${{ github.sha }}
+          name: COVAS_NEXT_DIR_v${{ github.sha }}
           path: .\simple-zip
 
   e2e-and-scan:
