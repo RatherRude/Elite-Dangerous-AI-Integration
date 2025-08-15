@@ -11,7 +11,7 @@
     "url": "git+https://github.com/RatherRude/Elite-Dangerous-AI-Integration.git"
   },
   "license": "ISC",
-  "author": "",
+  "author": "ratherrude",
   "type": "module",
   "main": "index.js",
   "scripts": {
@@ -26,9 +26,10 @@
     "build:py:win32": "powershell ./e2e/build.ps1",
     "build:py:linux": "./e2e/build.sh",
     "package": "run-script-os",
-    "package:win32": "npm run package:dir",
+    "package:win32": "npm run package:dir && npm run package:msi",
     "package:linux": "npm run package:dir && npm run package:flatpak",
     "package:dir": "electron-builder --dir",
+    "package:msi": "electron-builder --win msi",
     "package:flatpak": "flatpak-builder --force-clean --install-deps-from=flathub --repo=.flatpak-repo --force-clean .flatpak-build  com.covasnext.ui.yml && flatpak build-bundle .flatpak-repo covas-next-ui-development.flatpak com.covasnext.ui --runtime-repo=https://flathub.org/repo/flathub.flatpakrepo",
     "package:run": "run-script-os",
     "package:run:win32": "cd dist/win-unpacked/ && start covas-next-ui.exe",
@@ -40,7 +41,7 @@
     "electron-builder": "^26.0.12"
   },
   "build": {
-    "productName": "com.covasnext.ui",
+    "productName": "COVAS NEXT",
     "appId": "com.covasnext.ui",
     "directories": {
       "buildResources": "electron"

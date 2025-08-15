@@ -100,7 +100,7 @@ jobs:
 
       - name: Build Electron App
         working-directory: .
-        run: npm run package:dir
+        run: npm run package
 
       - name: Create simple zip with only required files
         run: |
@@ -116,6 +116,12 @@ jobs:
           $Shortcut = $WshShell.CreateShortcut("covas-next.lnk")
           $Shortcut.TargetPath = "%COMSPEC% /C start .\files\com.covasnext.ui.exe"
           $Shortcut.Save()
+
+      - name: Upload MSI
+        uses: actions/upload-artifact@v4
+        with:
+          name: COVAS_NEXT_ELECTRON_v${{ github.sha }}
+          path: .\dist\*.msi
 
       - name: Upload simple zip file
         uses: actions/upload-artifact@v4
