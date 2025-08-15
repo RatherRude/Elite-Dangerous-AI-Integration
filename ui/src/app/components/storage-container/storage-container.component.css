@@ -307,23 +307,6 @@
   background-color: #2196f3;
 }
 
-/* Engineer status colors */
-.engineer-unlocked {
-  background-color: rgba(76, 175, 80, 0.1);
-}
-
-.engineer-invited {
-  background-color: rgba(33, 150, 243, 0.1);
-}
-
-.engineer-known {
-  background-color: rgba(255, 193, 7, 0.1);
-}
-
-.engineer-locked {
-  background-color: rgba(158, 158, 158, 0.1);
-}
-
 .status-badge {
   display: inline-block;
   padding: 3px 8px;

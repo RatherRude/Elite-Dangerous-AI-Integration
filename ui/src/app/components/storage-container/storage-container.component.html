@@ -342,7 +342,6 @@
                   <thead>
                     <tr>
                       <th>Engineer</th>
-                      <th>Status</th>
                       <th>Rank</th>
                       <th>Modifies</th>
                       <th>Location</th>
@@ -375,14 +374,10 @@
                         'engineer-locked': !engineer.Progress
                       }">
                         <td>
-                          <div class="engineer-name">{{ engineer.Engineer }}</div>
-                        </td>
-                        <td>
-                          <div class="engineer-status-cell">
+                          <div class="engineer-name">{{ engineer.Engineer }}
                             <span [ngClass]="'status-badge ' + (engineer.Progress?.toLowerCase() || 'locked')">
                               {{ engineer.Progress || 'Locked' }}
-                            </span>
-                          </div>
+                            </span></div>
                         </td>
                         <td>
                           @if (engineer.Rank !== undefined) {
@@ -395,7 +390,7 @@
                                   <span class="star empty">☆</span>
                                 }
                               </div>
-                              @if (engineer.RankProgress > 0) {
+                              @if (engineer.Rank < 5) {
                                 <div class="rank-progress">
                                   <div class="progress-bar" [style.width.%]="engineer.RankProgress"></div>
                                 </div>
