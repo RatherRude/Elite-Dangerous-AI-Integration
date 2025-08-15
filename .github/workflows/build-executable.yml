@@ -120,7 +120,7 @@ jobs:
       - name: Upload MSI
         uses: actions/upload-artifact@v4
         with:
-          name: COVAS_NEXT_v${{ github.sha }}
+          name: COVAS_NEXT_MSI_v${{ github.sha }}
           path: .\dist\*.msi
 
       - name: Upload simple zip file
