@@ -176,7 +176,7 @@ class BackendService {
       for (const line of lines) {
         if (line.trim()) {
           //logger.info('Sending stdout to', this.#windows.length, 'windows');
-          if (!line.includes('"type": "config"')) {
+          if (!line.includes('"type": "config"') && !line.includes('"type": "running_config"')) {
             logger.info('[stdout]', line);
           } else {
             logger.info('[stdout]', "[config redacted]");
@@ -202,7 +202,7 @@ class BackendService {
       for (const line of lines) {
         if (line.trim()) {
           //logger.error('Sending stderr to', this.#windows.length, 'windows');
-          if (!line.includes('"type": "config"')) {
+          if (!line.includes('"type": "config"') && !line.includes('"type": "running_config"')) {
             logger.info('[stderr]', line);
           } else {
             logger.info('[stderr]', "[config redacted]");
