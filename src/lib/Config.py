@@ -388,6 +388,7 @@ class Config(TypedDict):
     mute_during_response_var: bool
     game_actions_var: bool
     web_search_actions_var: bool
+    ui_actions_var: bool
     use_action_cache_var: bool
     edcopilot: bool
     edcopilot_dominant: bool
@@ -676,6 +677,7 @@ def load_config() -> Config:
         'event_reaction_enabled_var': True,
         'game_actions_var': True,
         'web_search_actions_var': True,
+        'ui_actions_var': True,
         'use_action_cache_var': True,
         'cn_autostart': False,
         'edcopilot': True,

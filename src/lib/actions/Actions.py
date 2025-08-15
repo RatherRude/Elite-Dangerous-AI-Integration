@@ -10,6 +10,7 @@ import openai
 import requests
 
 from .actions_web import register_web_actions
+from .actions_ui import register_ui_actions
 
 from ..Logger import log, show_chat_message
 from ..EDKeys import EDKeys
@@ -2295,6 +2296,10 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     register_web_actions(
         actionManager, eventManager, 
         llmClient, llmModelName, edKeys
+    )
+
+    register_ui_actions(
+        actionManager, eventManager
     )
 
     if vision_client:

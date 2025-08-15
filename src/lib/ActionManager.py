@@ -23,7 +23,7 @@ class ActionManager:
     def __init__(self):
         self.action_cache = KeyValueStore("action_cache")
 
-    def getToolsList(self, active_mode: str, uses_actions:bool, uses_web_actions: bool):
+    def getToolsList(self, active_mode: str, uses_actions: bool, uses_web_actions: bool, uses_ui_actions: bool):
         """return list of functions as passed to gpt"""
 
         actions = self.actions.values()
@@ -43,6 +43,10 @@ class ActionManager:
             if uses_web_actions:
                 # enable web tools
                 if action.get("type") == 'web':
+                    valid_actions.append(action.get("tool"))
+
+            if uses_ui_actions:
+                if action.get("type") == 'ui':
                     valid_actions.append(action.get("tool"))
 
         return valid_actions
