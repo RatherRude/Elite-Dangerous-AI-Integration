@@ -23,17 +23,16 @@ const transport = {
     options: { destination: 1 } // use 2 for stderr
   }]
 }
-if (!isDevelopment) {
-  transport.targets.push({
-    target: 'pino-roll',
-    options: { 
-      file: path.join(app.getPath('logs'), 'com.covas-next.ui.log'), 
-      size: '50m', 
-      mkdir: true, 
-      limit: { removeOtherLogFiles: true, count: 1 } 
-    }
-  });
-}
+transport.targets.push({
+  target: 'pino-roll',
+  options: { 
+    file: isDevelopment ? '../logs/com.covas-next.ui.log' : path.join(app.getPath('logs'), 'com.covas-next.ui.log'), 
+    size: '50m', 
+    mkdir: true, 
+    limit: { removeOtherLogFiles: true, count: 1 } 
+  }
+});
+
 const logger = pino({
   level: 'debug',
   transport: transport,
