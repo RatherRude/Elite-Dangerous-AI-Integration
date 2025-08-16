@@ -3,6 +3,7 @@ import re
 import traceback
 from typing import Any, Literal, TypedDict, final, List, cast
 from datetime import datetime, timezone, timedelta
+from webbrowser import get
 
 from typing_extensions import NotRequired, override
 
@@ -563,6 +564,7 @@ ShipInfoState = TypedDict('ShipInfoState', {
     "maximum_jump_range":float,
     "GuardianfsdBooster":float,
     "DriveMaxFuel":float,
+    "jetConeBoost":float,
     "LandingPadSize": Literal['S', 'M', 'L', 'Unknown'],
     "IsMiningShip": bool,
     "hasLimpets": bool,
@@ -591,6 +593,7 @@ class ShipInfo(Projection[ShipInfoState]):
             "GuardianfsdBooster":0,
             "Drive_power_const":0,
             "DriveMaxFuel":0,
+            "jetConeBoost":1,
             "IsMiningShip": False,
             "hasLimpets": False,
             "Fighters": [],
@@ -709,9 +712,6 @@ class ShipInfo(Projection[ShipInfoState]):
                         self.state['Drive_linear_const'] = s.get('linear_const', 0.00)
                         self.state['Drive_power_const'] = s.get('power_const', 0.00)
                         
-                        log("info", "My FSD : ",s,"  My opt: ",opt)
-
-
 
                         self.state['GuardianfsdBooster'] = 0
                         for module in event.content.get("Modules", []):
@@ -723,21 +723,23 @@ class ShipInfo(Projection[ShipInfoState]):
                                 srcb = FSD_GUARDIAN_BOOSTER
                                 sb = srcb.get((int(msb.group(1)),"H"))
                                
-                                log("info", "Current GuardianDrive: ",sb," Size of GD: ",msb," Item found Name: ",item)
+                                
                                 if msb:
                                     self.state['GuardianfsdBooster'] =sb.get('jump_boost', 0.0)
                                 
                         
                                                                     
-                                
-                        
-                                
-                                    
-                        
-                                                
-                            
                 self.state['CargoCapacity'] = event.content.get('CargoCapacity', 0)
-
+        
+        if isinstance(event, GameEvent) and event.content.get('event') == 'JetConeBoost':
+            fsd_star_boost = event.content.get('BoostValue', 1)
+            log("info","FSD CONE: ",fsd_star_boost)
+            self.state['jetConeBoost'] = fsd_star_boost
+        
+        if isinstance(event,GameEvent) and event.content.get('event') == 'FSDJump':
+            self.state['jetConeBoost'] = 1
+        
+        
         if isinstance(event, GameEvent) and event.content.get('event') == 'Cargo':
             self.state['Cargo'] = event.content.get('Count', 0)
             if event.content.get('Vessel') == 'Ship': 
@@ -867,7 +869,6 @@ class ShipInfo(Projection[ShipInfoState]):
         d_linear  = self.state.get("Drive_linear_const") 
         max_fuel  = self.state.get("DriveMaxFuel")
         fsd_boost = self.state.get("GuardianfsdBooster")
-        fsd_star_boost = 1 #neutron x4 , whitedwarf boost x1.5
         fsd_inject = 0 # +inject juice 25% , 50% ,100% but cant be with star_boost
 
         if not (unladen > 0 and fuel_cap > 0 and d_max > 0 and max_fuel):
@@ -877,6 +878,7 @@ class ShipInfo(Projection[ShipInfoState]):
         cargo_cur = self.state.get("ShipCargo")
         fuel_cur  = self.state.get("FuelMain")
         res_cur = self.state.get("FuelReservoir")
+        fsd_star_boost = self.state.get("jetConeBoost")
 
         M_ref = unladen + max_fuel  #max jump with just right anmount
         M_cur = unladen + cargo_cur + fuel_cur + res_cur  #current mass
@@ -885,9 +887,9 @@ class ShipInfo(Projection[ShipInfoState]):
         
         base = lambda M: (d_optmass / M) * ( (10**3 * max_fuel) / d_linear )**(1/d_power)
         # adding stuff here for more future fsd boost stuff 
-        cur_ly = base(M_cur) + fsd_boost 
-        min_ly = base(M_min) + fsd_boost
-        max_ly = base(M_ref) + fsd_boost 
+        cur_ly = (base(M_cur) + fsd_boost) * fsd_star_boost
+        min_ly = (base(M_min) + fsd_boost) * fsd_star_boost
+        max_ly = (base(M_ref) + fsd_boost) * fsd_star_boost
 
         
         return min_ly, cur_ly, max_ly
