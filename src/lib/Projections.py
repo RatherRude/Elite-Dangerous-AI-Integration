@@ -9,7 +9,7 @@ from typing_extensions import NotRequired, override
 from .Event import Event, StatusEvent, GameEvent, ProjectedEvent, ExternalEvent, ConversationEvent, ToolEvent
 from .EventManager import EventManager, Projection
 from .Logger import log
-from .EDFuelCalc import ingest_event, get_current_jump_range ,RATING_BY_CLASSNUM , FSD_OVERCHARGE_STATS ,FSD_OVERCHARGE_V1PRE_STATS,FSD_STATS ,FSD_GUARDIAN_BOOSTER
+from .EDFuelCalc import ingest_event, get_current_jump_range ,RATING_BY_CLASSNUM , FSD_OVERCHARGE_STATS ,FSD_OVERCHARGE_V2PRE_STATS,FSD_STATS ,FSD_GUARDIAN_BOOSTER
 from .StatusParser import parse_status_flags, parse_status_json, Status
 from .SystemDatabase import SystemDatabase
 
@@ -691,49 +691,44 @@ class ShipInfo(Projection[ShipInfoState]):
                         rating = RATING_BY_CLASSNUM.get(int(mc.group(1))) if mc else None
                         eng = module.get("Engineering", {}) or {}
                         opt = None
+                        maxfuel = None
                        
 
                         for mod in eng.get("Modifiers", []) or []:
                             if mod.get("Label") in ("FSDOptimalMass", "fsdoptimalmass"):
                                 opt = float(mod.get("Value"))
-                                break
+                                
+                            if mod.get("Label") in ("MaxFuelPerJump", "maxfuelperjump"):
+                                maxfuel = float(mod.get("Value"))
+                                
                             
-                        if not eng: 
-                            src = FSD_OVERCHARGE_STATS if over else FSD_STATS
-                            s = src.get((size, rating))
-                            self.state['DriveOptimalMass'] = s.get('opt_mass', 0.00)
-                            self.state['DriveMaxFuel'] = s.get('max_fuel', 0.00)
-                            self.state['Drive_linear_const'] = s.get('linear_const', 0.00)
-                            self.state['Drive_power_const'] = s.get('power_const', 0.00)
-                            
-                        else:
-                            src = FSD_OVERCHARGE_V1PRE_STATS
-                            s =src.get((size, rating))
-                            
-                            self.state['DriveOptimalMass'] = opt if opt is not None else s.get('opt_mass', 0.00)
-                            self.state['DriveMaxFuel'] = s.get('max_fuel', 0.00)
-                            self.state['Drive_linear_const'] = s.get('linear_const', 0.00)
-                            self.state['Drive_power_const'] = s.get('power_const', 0.00)
+                        src = FSD_OVERCHARGE_STATS if over else FSD_STATS
+                        s = src.get((size, rating))
+                        self.state['DriveOptimalMass'] = opt if opt is not None else s.get('opt_mass', 0.00)
+                        self.state['DriveMaxFuel'] = maxfuel if maxfuel is not None else s.get('max_fuel', 0.00)
+                        self.state['Drive_linear_const'] = s.get('linear_const', 0.00)
+                        self.state['Drive_power_const'] = s.get('power_const', 0.00)
                         
                         log("info", "My FSD : ",s,"  My opt: ",opt)
 
 
 
-#++++++++++++++++++++++++++++++++++++++++++++++++++++++++Does not Work +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                        self.state['GuardianfsdBooster'] = 0
                         for module in event.content.get("Modules", []):
-                            item = module.get("Item", "")
-                            
-                            if item == "int_guardianfsdbooster":
+                            item = module.get("Item", "")                       
+                            if "int_guardianfsdbooster" in item.lower():
+                                
                                 msb = re.search(r"size(\d+)", item)
-                                mcb = re.search(r"class(\d)", item)
+                                
                                 srcb = FSD_GUARDIAN_BOOSTER
-                                sb = srcb.get((size,rating))
+                                sb = srcb.get((int(msb.group(1)),"H"))
+                               
                                 log("info", "Current GuardianDrive: ",sb," Size of GD: ",msb," Item found Name: ",item)
                                 if msb:
                                     self.state['GuardianfsdBooster'] =sb.get('jump_boost', 0.0)
-                                else:
-                                    self.state['GuardianfsdBooster'] = 0
-#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++                                    
+                                
+                        
+                                                                    
                                 
                         
                                 
@@ -890,7 +885,7 @@ class ShipInfo(Projection[ShipInfoState]):
         
         base = lambda M: (d_optmass / M) * ( (10**3 * max_fuel) / d_linear )**(1/d_power)
         # adding stuff here for more future fsd boost stuff 
-        cur_ly = base(M_cur) + fsd_boost * fsd_star_boost
+        cur_ly = base(M_cur) + fsd_boost 
         min_ly = base(M_min) + fsd_boost
         max_ly = base(M_ref) + fsd_boost 
 

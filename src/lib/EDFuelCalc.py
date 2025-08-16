@@ -84,7 +84,7 @@ FSD_OVERCHARGE_STATS: Dict[tuple[int, str], dict] = {# FSD SCO
     (7,"A"): {"mass": 80.00, "opt_mass": 3000.0,"max_fuel": 13.10,"linear_const": 13.0, "power_const": 2.75},
 }
 
-FSD_OVERCHARGE_V1PRE_STATS: Dict[tuple[int, str], dict] = {# FSD V1Pre
+FSD_OVERCHARGE_V2PRE_STATS: Dict[tuple[int, str], dict] = {# FSD V1Pre
     (2,"A"): {"mass":3.25,   "max_fuel":1.00, "linear_const": 12.00, "power_const": 2.00},
     (3,"A"): {"mass":6.50,   "max_fuel":1.90, "linear_const": 12.00, "power_const": 2.15},
     (4,"A"): {"mass":13.00,   "max_fuel":3.20, "linear_const": 12.00, "power_const": 2.30},
