@@ -8,6 +8,10 @@ export interface ConfigMessage extends BaseMessage {
     type: "config";
     config: Config;
 }
+export interface SecretsMessage extends BaseMessage {
+    type: "secrets";
+    secrets: Secrets;
+}
 export interface RunningConfigMessage extends BaseMessage {
     type: 'running_config';
     config: Config;
@@ -46,8 +50,23 @@ export interface SystemInfoMessage extends BaseMessage {
     system: SystemInfo;
 }
 
+export interface ProviderSecrets {
+    openai?: string | null;
+    openrouter?: string | null;
+    google_ai_studio?: string | null;
+    custom?: string | null;
+    custom_multi_modal?: string | null;
+    local_ai_server?: string | null;
+}
+
+export interface Secrets {
+    llm: ProviderSecrets;
+    stt: ProviderSecrets;
+    tts: ProviderSecrets;
+    vision: ProviderSecrets;
+}
+
 export interface Config {
-    api_key: string;
     commander_name: string;
     // Stored characters
     characters: unknown[];
@@ -60,13 +79,11 @@ export interface Config {
         | "custom"
         | "local-ai-server";
     llm_model_name: string;
-    llm_api_key: string;
     llm_endpoint: string;
     llm_temperature: number;
     vision_provider: "openai" | "google-ai-studio" | "custom" | "none";
     vision_model_name: string;
     vision_endpoint: string;
-    vision_api_key: string;
     stt_provider:
         | "openai"
         | "custom"
@@ -75,14 +92,12 @@ export interface Config {
         | "none"
         | "local-ai-server";
     stt_model_name: string;
-    stt_api_key: string;
     stt_endpoint: string;
     stt_language: string;
     stt_custom_prompt: string;
     stt_required_word: string;
     tts_provider: "openai" | "edge-tts" | "custom" | "none" | "local-ai-server";
     tts_model_name: string;
-    tts_api_key: string;
     tts_endpoint: string;
     tools_var: boolean;
     vision_var: boolean;
@@ -120,6 +135,9 @@ export interface Config {
 export class ConfigService {
     private configSubject = new BehaviorSubject<Config | null>(null);
     public config$ = this.configSubject.asObservable();
+
+    private secretsSubject = new BehaviorSubject<Secrets | null>(null);
+    public secrets$ = this.secretsSubject.asObservable();
 
     private systemSubject = new BehaviorSubject<SystemInfo | null>(null);
     public system$ = this.systemSubject.asObservable();
@@ -159,9 +177,11 @@ export class ConfigService {
                 message.type === "plugin_settings_configs" ||
                 message.type === "start"
             ),
-        ).subscribe((message: ConfigMessage | RunningConfigMessage | SystemInfoMessage | ModelValidationMessage | PluginSettingsMessage | StartMessage) => {
+        ).subscribe((message: ConfigMessage | SecretsMessage | RunningConfigMessage | SystemInfoMessage | ModelValidationMessage | PluginSettingsMessage | StartMessage) => {
             if (message.type === "config") {
                 this.configSubject.next(message.config);
+            } else if (message.type === "secrets") {
+                this.secretsSubject.next(message.secrets);
             } else if (message.type === "running_config") {
                 this.configSubject.next(message.config);
             } else if (message.type === "system") {

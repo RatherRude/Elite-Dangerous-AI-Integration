@@ -354,11 +354,26 @@ class Character(TypedDict, total=False):
     react_to_danger_supercruise_var: bool
     idle_timeout_var: int
 
+class ProviderSecrets(TypedDict):
+    openai: str
+    openrouter: str
+    google_ai_studio: str
+    custom: str
+    custom_multi_modal: str
+    local_ai_server: str
+
+class Secrets(TypedDict):
+    llm: ProviderSecrets
+    stt: ProviderSecrets
+    tts: ProviderSecrets
+    vision: ProviderSecrets
+    current_llm_key: str
+    current_stt_key: str
+    current_tts_key: str
+    current_vision_key: str
 
 class Config(TypedDict):
     config_version: int
-    api_key: str
-    llm_api_key: str
     llm_endpoint: str
     commander_name: str
     characters: List[Character]
@@ -369,17 +384,14 @@ class Config(TypedDict):
     vision_provider: Literal['openai', 'google-ai-studio', 'custom', 'none']
     vision_model_name: str
     vision_endpoint: str
-    vision_api_key: str
     stt_provider: Literal['openai', 'custom', 'custom-multi-modal', 'google-ai-studio', 'none', 'local-ai-server']
     stt_model_name: str
-    stt_api_key: str
     stt_endpoint: str
     stt_language: str
     stt_custom_prompt: str
     stt_required_word: str
     tts_provider: Literal['openai', 'edge-tts', 'custom', 'none', 'local-ai-server']
     tts_model_name: str
-    tts_api_key: str
     tts_endpoint: str
     tools_var: bool
     vision_var: bool
@@ -553,6 +565,54 @@ def migrate(data: dict) -> dict:
         if 'llm_provider' in data and data['llm_provider'] == 'google-ai-studio':
             if 'llm_model_name' in data and data['llm_model_name'] == 'gemini-2.5-flash-preview-04-17':
                 data['llm_model_name'] = 'gemini-2.5-flash-preview-05-20'
+    
+    if data['config_version'] == 2:
+        data['config_version'] = 3
+        # Migrate secrets to new structure
+        secrets: Secrets = {
+            'llm': {
+                'openai': data.get('llm_api_key', '') if data.get('llm_provider') == 'openai' else '',
+                'openrouter': data.get('llm_api_key', '') if data.get('llm_provider') == 'openrouter' else '',
+                'google_ai_studio': data.get('llm_api_key', '') if data.get('llm_provider') == 'google-ai-studio' else '',
+                'custom': data.get('llm_api_key', '') if data.get('llm_provider') == 'custom' else '',
+                'custom_multi_modal': '',
+                'local_ai_server': data.get('llm_api_key', '') if data.get('llm_provider') == 'local-ai-server' else '',
+            },
+            'stt': {
+                'openai': data.get('stt_api_key', '') if data.get('stt_provider') == 'openai' else '',
+                'openrouter': '',
+                'google_ai_studio': data.get('stt_api_key', '') if data.get('stt_provider') == 'google-ai-studio' else '',
+                'custom': data.get('stt_api_key', '') if data.get('stt_provider') == 'custom' else '',
+                'custom_multi_modal': data.get('stt_api_key', '') if data.get('stt_provider') == 'custom-multi-modal' else '',
+                'local_ai_server': data.get('stt_api_key', '') if data.get('stt_provider') == 'local-ai-server' else '',
+            },
+            'tts': {
+                'openai': data.get('tts_api_key', '') if data.get('tts_provider') == 'openai' else '',
+                'openrouter': '',
+                'google_ai_studio': data.get('tts_api_key', '') if data.get('tts_provider') == 'google-ai-studio' else '',
+                'custom': data.get('tts_api_key', '') if data.get('tts_provider') == 'custom' else '',
+                'custom_multi_modal': data.get('tts_api_key', '') if data.get('tts_provider') == 'custom-multi-modal' else '',
+                'local_ai_server': data.get('tts_api_key', '') if data.get('tts_provider') == 'local-ai-server' else '',
+            },
+            'vision': {
+                'openai': data.get('vision_api_key', '') if data.get('vision_provider') == 'openai' else '',
+                'openrouter': '',
+                'google_ai_studio': data.get('vision_api_key', '') if data.get('vision_provider') == 'google-ai-studio' else '',
+                'custom': data.get('vision_api_key', '') if data.get('vision_provider') == 'custom' else '',
+                'custom_multi_modal': '',
+                'local_ai_server': '',
+            },
+            'current_llm_key': data.get('llm_api_key', data.get('api_key', '')),
+            'current_stt_key': data.get('stt_api_key', data.get('api_key', '')),
+            'current_tts_key': data.get('tts_api_key', data.get('api_key', '')),
+            'current_vision_key': data.get('vision_api_key', data.get('api_key', '')),
+        }
+        save_secrets(secrets)
+        data.pop('api_key', None)
+        data.pop('llm_api_key', None)
+        data.pop('stt_api_key', None)
+        data.pop('tts_api_key', None)
+        data.pop('vision_api_key', None)
 
         if len(data.get('characters', [])) > 0:
             data['characters'][0]['game_events'] = game_events
@@ -664,11 +724,10 @@ def getDefaultCharacter(config: Config) -> Character:
 
 def load_config() -> Config:
     defaults: Config = {
-        'config_version': 1,
+        'config_version': 3,
         'commander_name': "",
         'characters': [],
         'active_character_index': 0,  # -1 means using the default legacy character
-        'api_key': "",
         'tools_var': True,
         'vision_var': False,
         'ptt_var': 'voice_activation',
@@ -687,24 +746,20 @@ def load_config() -> Config:
         'llm_provider': "openai",
         'llm_model_name': "gpt-4.1-mini",
         'llm_endpoint': "https://api.openai.com/v1",
-        'llm_api_key': "",
         'llm_temperature': 1.0,
         'ptt_key': '',
         'vision_provider': "none",
         'vision_model_name': "gpt-4.1-mini",
         'vision_endpoint': "https://api.openai.com/v1",
-        'vision_api_key': "",
         'stt_provider': "openai",
         'stt_model_name': "gpt-4o-mini-transcribe",
         'stt_endpoint': "https://api.openai.com/v1",
-        'stt_api_key': "",
         'stt_language': "",
         'stt_custom_prompt': '',
         'stt_required_word': '',
         'tts_provider': "edge-tts",
         'tts_model_name': "edge-tts",
         'tts_endpoint': "",
-        'tts_api_key': "",
         "ed_journal_path": "",
         "ed_appdata_path": "",
         "qol_autobrake": False,  # Quality of life: Auto brake when approaching stations
@@ -772,6 +827,55 @@ def save_config(config: Config):
     with open(config_file, 'w', encoding='utf-8') as f:
         json.dump(config, f)
 
+
+def load_secrets() -> Secrets:
+    secrets_file = Path("secrets.json")
+    if secrets_file.exists():
+        with open(secrets_file, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return {
+        'llm': {
+            'openai': '',
+            'openrouter': '',
+            'google_ai_studio': '',
+            'custom': '',
+            'custom_multi_modal': '',
+            'local_ai_server': ''
+        },
+        'stt': {
+            'openai': '',
+            'openrouter': '',
+            'google_ai_studio': '',
+            'custom': '',
+            'custom_multi_modal': '',
+            'local_ai_server': ''
+        },
+        'tts': {
+            'openai': '',
+            'openrouter': '',
+            'google_ai_studio': '',
+            'custom': '',
+            'custom_multi_modal': '',
+            'local_ai_server': ''
+        },
+        'vision': {
+            'openai': '',
+            'openrouter': '',
+            'google_ai_studio': '',
+            'custom': '',
+            'custom_multi_modal': '',
+            'local_ai_server': '',
+        },
+        'current_llm_key': '',
+        'current_stt_key': '',
+        'current_tts_key': '',
+        'current_vision_key': ''
+    }
+
+def save_secrets(secrets: Secrets):
+    secrets_file = Path("secrets.json")
+    with open(secrets_file, 'w', encoding='utf-8') as f:
+        json.dump(secrets, f, indent=4)
 
 def assign_ptt(config: Config, controller_manager):
     semaphore = Semaphore(1)
