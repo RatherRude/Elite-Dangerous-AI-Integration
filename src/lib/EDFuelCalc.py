@@ -1,11 +1,7 @@
 from __future__ import annotations
-import re
-from typing import Any, Dict, Optional, Tuple
-
-RESET_FUEL_ON_LOADOUT = False
 
 #----Fsd Types
-FSD_STATS: Dict[tuple[int, str], dict] = { #Normal FSD
+FSD_STATS: dict[tuple[int, str], dict] = { #Normal FSD
     (2,"E"): {"mass":2.50, "opt_mass":48.0,  "max_fuel":0.60, "linear_const": 11.0, "power_const": 2.00},
     (2,"D"): {"mass":1.00, "opt_mass":54.0,  "max_fuel":0.60, "linear_const": 10.0, "power_const": 2.00},
     (2,"C"): {"mass":2.50, "opt_mass":60.0,  "max_fuel":0.60, "linear_const": 8.00, "power_const": 2.00},
@@ -46,7 +42,7 @@ FSD_STATS: Dict[tuple[int, str], dict] = { #Normal FSD
     (8,"C"): {"mass":1,"opt_mass":1,"max_fuel":1, "linear_const": 1, "power_const": 1},
     # 8 ?
 }
-FSD_OVERCHARGE_STATS: Dict[tuple[int, str], dict] = {# FSD SCO
+FSD_OVERCHARGE_STATS: dict[tuple[int, str], dict] = {# FSD SCO
     (2,"E"): {"mass": 2.50, "opt_mass": 60.0,  "max_fuel": 0.60, "linear_const": 8.0,  "power_const": 2.00},
     (2,"D"): {"mass": 2.50, "opt_mass": 90.0,  "max_fuel": 0.90, "linear_const": 12.0, "power_const": 2.00},
     (2,"C"): {"mass": 2.50, "opt_mass": 90.0,  "max_fuel": 0.90, "linear_const": 12.0, "power_const": 2.00},
@@ -84,7 +80,7 @@ FSD_OVERCHARGE_STATS: Dict[tuple[int, str], dict] = {# FSD SCO
     (7,"A"): {"mass": 80.00, "opt_mass": 3000.0,"max_fuel": 13.10,"linear_const": 13.0, "power_const": 2.75},
 }
 
-FSD_OVERCHARGE_V2PRE_STATS: Dict[tuple[int, str], dict] = {# FSD V1Pre
+FSD_OVERCHARGE_V2PRE_STATS: dict[tuple[int, str], dict] = {# FSD V1Pre
     (2,"A"): {"mass":3.25,   "max_fuel":1.00, "linear_const": 12.00, "power_const": 2.00},
     (3,"A"): {"mass":6.50,   "max_fuel":1.90, "linear_const": 12.00, "power_const": 2.15},
     (4,"A"): {"mass":13.00,   "max_fuel":3.20, "linear_const": 12.00, "power_const": 2.30},
@@ -94,9 +90,7 @@ FSD_OVERCHARGE_V2PRE_STATS: Dict[tuple[int, str], dict] = {# FSD V1Pre
 }
 
 
-
-
-FSD_GUARDIAN_BOOSTER: Dict[tuple[int, str], dict] = {
+FSD_GUARDIAN_BOOSTER: dict[tuple[int, str], dict] = {
     (1,"H"): {"jump_boost": 4.00},
     (2,"H"): {"jump_boost": 6.00},
     (3,"H"): {"jump_boost": 7.75},
@@ -105,71 +99,3 @@ FSD_GUARDIAN_BOOSTER: Dict[tuple[int, str], dict] = {
 }
 
 RATING_BY_CLASSNUM = {1:"E", 2:"D", 3:"C", 4:"B", 5:"A"}
-
-#----hard reset
-_state: Dict[str, Any] = {
-    "loadout": None,
-    "cargo_cur": 0.0,
-    "fuel_frac": None,
-    "last_written": None,
-    "last_trigger_id": None
-}
-
-#--ask for event
-def ingest_event(event: Any) -> None:
-    try:
-        kind = getattr(event, "kind", None)
-        trigger_id = getattr(event, "id", None)
-        trigger_write = False
-
-        if kind == "game":
-            evt = getattr(event, "content", {}) or {}
-            et  = evt.get("event", "")
-
-            if et == "Loadout":
-                _state["loadout"] = evt
-                _state["cargo_cur"] = 0.0
-                if RESET_FUEL_ON_LOADOUT:
-                    _state["fuel_frac"] = None
-                _state["last_written"] = None
-                _state["last_trigger_id"] = None
-
-            elif et == "Cargo" and evt.get("Vessel") == "Ship":
-                if "Count" in evt:
-                    _state["cargo_cur"] = float(evt.get("Count", 0.0))
-                trigger_write = True
-
-            elif et == "FSDJump":
-                lo = _state["loadout"] or {}
-                fuel_cap = float((lo.get("FuelCapacity") or {}).get("Main") or 0.0)
-                fuel_level_t = evt.get("FuelLevel")
-                if fuel_cap > 0 and isinstance(fuel_level_t, (int, float)):
-                    _state["fuel_frac"] = max(0.0, min(1.0, float(fuel_level_t) / fuel_cap))
-                trigger_write = True
-
-        elif kind == "status":
-            st = getattr(event, "status", {}) or {}
-            if st.get("event") == "Status":
-                fuel = st.get("Fuel")
-                if isinstance(fuel, dict) and "FuelMain" in fuel:
-                    lo = _state["loadout"] or {}
-                    fuel_cap = float((lo.get("FuelCapacity") or {}).get("Main") or 0.0)
-                    if fuel_cap > 0:
-                        fuel_main_t = float(fuel["FuelMain"])
-                        _state["fuel_frac"] = max(0.0, min(1.0, fuel_main_t / fuel_cap))
-                        trigger_write = True
-
-    except Exception:
-        return
-
-    if trigger_write:
-        if _state["last_trigger_id"] is not None and _state["last_trigger_id"] == trigger_id:
-            return
-        _state["last_trigger_id"] = trigger_id
-       
-
-def get_current_jump_range() -> Optional[float]:
-    if _state.get("last_written") is None:
-        return None
-    _, cur, _ = _state["last_written"]
-    return float(cur)
