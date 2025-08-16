@@ -12,6 +12,7 @@ target
 __pycache__
 conversation.json
 *.log
+*.log.*
 .env
 .cache
 node_modules
