@@ -93,8 +93,8 @@
     <div class="station-section">
       <div class="section-header" (click)="toggleSection('stationFacilities')">
         <h3>Station Facilities</h3>
-        @if (getProjection('Market')?.StarSystem) {
-          <div class="section-subtitle">{{ getProjection('Market')?.StarSystem }}</div>
+        @if (market?.StarSystem) {
+          <div class="section-subtitle">{{ market?.StarSystem }}</div>
         }
         <mat-icon class="collapse-icon">{{ sectionsCollapsed.stationFacilities ? 'expand_more' : 'expand_less' }}</mat-icon>
       </div>

@@ -217,16 +217,6 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
     this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 
-  // Projection helper method
-  getProjection(name: string): any {
-    const projectionMap: Record<string, any> = {
-      'Materials': this.materials,
-      'ShipLocker': this.shipLocker,
-      'EngineerProgress': this.engineerProgress
-    };
-    return projectionMap[name] || null;
-  }
-
   // Raw material methods
   getRawMaterialByGradeAndCategory(grade: number, category: number): any[] {
     if (!this.materials?.Raw ||
