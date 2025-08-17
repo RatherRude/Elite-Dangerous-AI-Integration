@@ -86,7 +86,7 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
   constructor(private projectionsService: ProjectionsService) {}
 
   ngOnInit(): void {
-    // Subscribe to all available projections
+    // Subscribe only to projections referenced in the template
     this.subscriptions.push(
       this.projectionsService.currentStatus$.subscribe(status => {
         this.currentStatus = status;
@@ -98,14 +98,6 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
       
       this.projectionsService.shipInfo$.subscribe(shipInfo => {
         this.shipInfo = shipInfo;
-      }),
-      
-      this.projectionsService.commander$.subscribe(commander => {
-        this.commander = commander;
-      }),
-      
-      this.projectionsService.inCombat$.subscribe(combat => {
-        this.inCombat = combat?.InCombat || false;
       }),
       
       this.projectionsService.friends$.subscribe(friends => {
@@ -144,77 +136,8 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
         this.loadout = loadout;
       }),
       
-      // Add missing projections
-      this.projectionsService.missions$.subscribe(missions => {
-        this.missions = missions;
-      }),
-      
-      this.projectionsService.engineerProgress$.subscribe(progress => {
-        this.engineerProgress = progress;
-      }),
-      
-      this.projectionsService.communityGoal$.subscribe(goal => {
-        this.communityGoal = goal;
-      }),
-      
-      this.projectionsService.dockingEvents$.subscribe(events => {
-        this.dockingEvents = events;
-      }),
-      
       this.projectionsService.wing$.subscribe(wing => {
         this.wing = wing;
-      }),
-      
-      this.projectionsService.idle$.subscribe(idle => {
-        this.idle = idle;
-      }),
-      
-      this.projectionsService.materials$.subscribe(materials => {
-        this.materials = materials;
-      }),
-      
-      this.projectionsService.moduleInfo$.subscribe(moduleInfo => {
-        this.moduleInfo = moduleInfo;
-      }),
-      
-      this.projectionsService.rank$.subscribe(rank => {
-        this.rank = rank;
-      }),
-      
-      this.projectionsService.progress$.subscribe(progress => {
-        this.progress = progress;
-      }),
-      
-      this.projectionsService.reputation$.subscribe(reputation => {
-        this.reputation = reputation;
-      }),
-      
-      this.projectionsService.statistics$.subscribe(statistics => {
-        this.statistics = statistics;
-      }),
-      
-      this.projectionsService.powerplay$.subscribe(powerplay => {
-        this.powerplay = powerplay;
-      }),
-      
-      this.projectionsService.shipLocker$.subscribe(shipLocker => {
-        this.shipLocker = shipLocker;
-      }),
-      
-      this.projectionsService.shipyard$.subscribe(shipyard => {
-        this.shipyard = shipyard;
-      }),
-      
-      this.projectionsService.storedShips$.subscribe(storedShips => {
-        this.storedShips = storedShips;
-      }),
-      
-      this.projectionsService.market$.subscribe(market => {
-        this.market = market;
-      }),
-      
-      this.projectionsService.outfitting$.subscribe(outfitting => {
-        this.outfitting = outfitting;
       })
     );
 
@@ -259,45 +182,6 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
     if (status.flags?.Supercruise) return '#9c27b0';
     
     return '#666';
-  }
-
-  // Projection helper method
-  getProjection(name: string): any {
-    const projectionMap: Record<string, any> = {
-      'CurrentStatus': this.currentStatus,
-      'Location': this.location,
-      'ShipInfo': this.shipInfo,
-      'Commander': this.commander,
-      'InCombat': this.inCombat,
-      'Friends': this.friends,
-      'ColonisationConstruction': this.colonisationConstruction,
-      'Target': this.target,
-      'NavInfo': this.navInfo,
-      'ExobiologyScan': this.exobiologyScan,
-      'Cargo': this.cargo,
-      'Backpack': this.backpack,
-      'SuitLoadout': this.suitLoadout,
-      'Loadout': this.loadout,
-      'Missions': this.missions,
-      'EngineerProgress': this.engineerProgress,
-      'CommunityGoal': this.communityGoal,
-      'DockingEvents': this.dockingEvents,
-      'Wing': this.wing,
-      'Idle': this.idle,
-      'Materials': this.materials,
-      'ModuleInfo': this.moduleInfo,
-      'Rank': this.rank,
-      'Progress': this.progress,
-      'Reputation': this.reputation,
-      'Statistics': this.statistics,
-      'Powerplay': this.powerplay,
-      'ShipLocker': this.shipLocker,
-      'Shipyard': this.shipyard,
-      'StoredShips': this.storedShips,
-      'Market': this.market,
-      'Outfitting': this.outfitting
-    };
-    return projectionMap[name] || null;
   }
 
   // Toggle methods

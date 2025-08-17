@@ -232,9 +232,9 @@
           <mat-tab-group>
             <!-- General Items -->
             <mat-tab label="Items">
-              @if (getProjection('ShipLocker')?.Items?.length) {
+              @if (shipLocker?.Items?.length) {
                 <div class="items-grid">
-                  @for (item of getProjection('ShipLocker')?.Items; track item.Name) {
+                  @for (item of shipLocker?.Items; track item.Name) {
                     <div class="locker-item">
                       <div class="item-count">{{ item.Count }}</div>
                       <div class="item-name">
@@ -255,9 +255,9 @@
 
             <!-- Components -->
             <mat-tab label="Components">
-              @if (getProjection('ShipLocker')?.Components?.length) {
+              @if (shipLocker?.Components?.length) {
                 <div class="items-grid">
-                  @for (item of getProjection('ShipLocker')?.Components; track item.Name) {
+                  @for (item of shipLocker?.Components; track item.Name) {
                     <div class="locker-item">
                       <div class="item-count">{{ item.Count }}</div>
                       <div class="item-name">{{ formatItemName(item.Name_Localised || item.Name) }}</div>
@@ -273,9 +273,9 @@
 
             <!-- Consumables -->
             <mat-tab label="Consumables">
-              @if (getProjection('ShipLocker')?.Consumables?.length) {
+              @if (shipLocker?.Consumables?.length) {
                 <div class="items-grid">
-                  @for (item of getProjection('ShipLocker')?.Consumables; track item.Name) {
+                  @for (item of shipLocker?.Consumables; track item.Name) {
                     <div class="locker-item">
                       <div class="item-count">{{ item.Count }}</div>
                       <div class="item-name">{{ formatItemName(item.Name_Localised || item.Name) }}</div>
@@ -291,9 +291,9 @@
 
             <!-- Data -->
             <mat-tab label="Data">
-              @if (getProjection('ShipLocker')?.Data?.length) {
+              @if (shipLocker?.Data?.length) {
                 <div class="items-grid">
-                  @for (item of getProjection('ShipLocker')?.Data; track item.Name) {
+                  @for (item of shipLocker?.Data; track item.Name) {
                     <div class="locker-item">
                       <div class="item-count">{{ item.Count }}</div>
                       <div class="item-name">

@@ -1,87 +1,93 @@
 @if (isLoading) {
-  <mat-progress-bar mode="indeterminate" class="toolbar-progress"></mat-progress-bar>
+    <mat-progress-bar mode="indeterminate" class="toolbar-progress"></mat-progress-bar>
 }
 
 <main class="app" [class.red]="isInCombat">
-  @if (!isRunning) {
-    <div class="settings-container">
-      <app-settings-menu></app-settings-menu>
-    </div>
-  } @else {
-    <div class="runtime-container">
-      <mat-tab-group [selectedIndex]="selectedTabIndex">
-        <mat-tab label="Chat">
-          <div class="tab-content-container">
-            <div class="chat-container">
-              <app-chat-container></app-chat-container>
-            </div>
-          </div>
-<!--          <app-input-container class="input-container"></app-input-container>-->
-        </mat-tab>
-        <mat-tab label="Status">
-          <div class="tab-content-container">
-            <div class="status-container-tab">
-              <app-status-container></app-status-container>
-            </div>
-          </div>
-          <app-chat-container [limit]="2"></app-chat-container>
-        </mat-tab>
-        <mat-tab label="Storage">
-          <div class="tab-content-container">
-            <div class="storage-container-tab">
-              <app-storage-container></app-storage-container>
-            </div>
-          </div>
-          <app-chat-container [limit]="2"></app-chat-container>
-        </mat-tab>
-        <mat-tab label="Station">
-          <div class="tab-content-container">
-            <div class="station-container-tab">
-              <app-station-container></app-station-container>
-            </div>
-          </div>
-          <app-chat-container [limit]="2"></app-chat-container>
-        </mat-tab>
-        @if (false) {
-          <mat-tab label="Logs">
-            <div class="tab-content-container">
-              <div class="log-container">
-                <app-log-container></app-log-container>
-              </div>
-            </div>
-          <app-chat-container [limit]="2"></app-chat-container>
-          </mat-tab>
-        }
-      </mat-tab-group>
-      <app-input-container class="input-container"></app-input-container>
-    </div>
-  }
-
-  <div class="floating-action-container">
     @if (!isRunning) {
-      @if (isLoading) {
-        <button mat-fab color="primary" aria-label="Starting" [disabled]="true">
-          <mat-icon>hourglass_empty</mat-icon>
-        </button>
-      } @else if (!usageDisclaimerAccepted) {
-        <button mat-fab color="primary" aria-label="Accept Policy" (click)="focusPolicy()">
-          <mat-icon>info</mat-icon>
-        </button>
-      } @else {
-        <button mat-fab color="primary" aria-label="Start AI Assistant" (click)="start()" [disabled]="isLoading">
-          <mat-icon>play_arrow</mat-icon>
-        </button>
-      }
+        <div class="settings-container">
+            <app-settings-menu></app-settings-menu>
+        </div>
     } @else {
-      @if (isLoading) {
-        <button mat-fab color="warn" aria-label="Stopping" [disabled]="true">
-          <mat-icon>hourglass_empty</mat-icon>
-        </button>
-      } @else {
-        <button mat-fab color="warn" aria-label="Stop AI Assistant" (click)="stop()" [disabled]="isLoading">
-          <mat-icon>stop</mat-icon>
-        </button>
-      }
+        <div class="runtime-container">
+            <mat-tab-group [selectedIndex]="selectedTabIndex">
+                <mat-tab label="Chat">
+                    <div class="tab-content-container">
+                        <div class="chat-container">
+                            <app-chat-container></app-chat-container>
+                        </div>
+                    </div>
+                    <!--          <app-input-container class="input-container"></app-input-container>-->
+                </mat-tab>
+                @if (!isShipIdentUnknown) {
+                    <mat-tab label="Status">
+                        <div class="tab-content-container">
+                            <div class="status-container-tab">
+                                <app-status-container></app-status-container>
+                            </div>
+                        </div>
+                        <app-chat-container [limit]="2"></app-chat-container>
+                    </mat-tab>
+                    <mat-tab label="Storage">
+                        <div class="tab-content-container">
+                            <div class="storage-container-tab">
+                                <app-storage-container></app-storage-container>
+                            </div>
+                        </div>
+                        <app-chat-container [limit]="2"></app-chat-container>
+                    </mat-tab>
+                    @if (isDockedAtStation) {
+                        <mat-tab label="Station">
+                            <div class="tab-content-container">
+                                <div class="station-container-tab">
+                                    <app-station-container></app-station-container>
+                                </div>
+                            </div>
+                            <app-chat-container [limit]="2"></app-chat-container>
+                        </mat-tab>
+                    }
+                }
+
+                @if (false) {
+                    <mat-tab label="Logs">
+                        <div class="tab-content-container">
+                            <div class="log-container">
+                                <app-log-container></app-log-container>
+                            </div>
+                        </div>
+                        <app-chat-container [limit]="2"></app-chat-container>
+                    </mat-tab>
+                }
+            </mat-tab-group>
+            <app-input-container class="input-container"></app-input-container>
+        </div>
     }
-  </div>
+
+    <div class="floating-action-container">
+        @if (!isRunning) {
+            @if (isLoading) {
+                <button mat-fab color="primary" aria-label="Starting" [disabled]="true">
+                    <mat-icon>hourglass_empty</mat-icon>
+                </button>
+            } @else if (!usageDisclaimerAccepted) {
+                <button mat-fab color="primary" aria-label="Accept Policy" (click)="focusPolicy()">
+                    <mat-icon>info</mat-icon>
+                </button>
+            } @else {
+                <button mat-fab color="primary" aria-label="Start AI Assistant" (click)="start()"
+                        [disabled]="isLoading">
+                    <mat-icon>play_arrow</mat-icon>
+                </button>
+            }
+        } @else {
+            @if (isLoading) {
+                <button mat-fab color="warn" aria-label="Stopping" [disabled]="true">
+                    <mat-icon>hourglass_empty</mat-icon>
+                </button>
+            } @else {
+                <button mat-fab color="warn" aria-label="Stop AI Assistant" (click)="stop()" [disabled]="isLoading">
+                    <mat-icon>stop</mat-icon>
+                </button>
+            }
+        }
+    </div>
 </main>

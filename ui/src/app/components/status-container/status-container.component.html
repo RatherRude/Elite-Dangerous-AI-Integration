@@ -133,7 +133,6 @@
 
 
 
-
     <!-- Context-dependent content based on active mode -->
     <div *ngIf="getActiveMode() === 'humanoid'" class="context-content character-sheet">
         <!-- TOP SECTION - Character Identity -->
@@ -144,15 +143,15 @@
             </div>
             
             <!-- Exobiology scan info -->
-            <div *ngIf="getProjection('ExobiologyScan')?.scans?.length > 0" class="bio-scan-mini">
-                <div class="bio-scan-header">{{ getProjection('ExobiologyScan')?.life_form || 'Unknown lifeform' }} {{ getProjection('ExobiologyScan')?.scans?.length || 0 }}/3</div>
+            <div *ngIf="exobiologyScan?.scans?.length > 0" class="bio-scan-mini">
+                <div class="bio-scan-header">{{ exobiologyScan?.life_form || 'Unknown lifeform' }} {{ exobiologyScan?.scans?.length || 0 }}/3</div>
                 <div class="bio-scan-content">
-                    <mat-icon [ngClass]="getProjection('ExobiologyScan')?.within_scan_radius ? 'scan-bad' : 'scan-good'">
-                        {{ getProjection('ExobiologyScan')?.within_scan_radius ? 'error' : 'check_circle' }}
+                    <mat-icon [ngClass]="exobiologyScan?.within_scan_radius ? 'scan-bad' : 'scan-good'">
+                        {{ exobiologyScan?.within_scan_radius ? 'error' : 'check_circle' }}
                     </mat-icon>
                     <div class="bio-scan-details">
-                        <span class="scan-status">{{ getProjection('ExobiologyScan')?.within_scan_radius ? 'Too close' : 'Good distance' }}</span>
-                        <span class="scan-radius">Distance: {{ (getProjection('ExobiologyScan')?.distance || 0).toFixed(1) }}/{{ getProjection('ExobiologyScan')?.scan_radius || 0 }}m</span>
+                        <span class="scan-status">{{ exobiologyScan?.within_scan_radius ? 'Too close' : 'Good distance' }}</span>
+                        <span class="scan-radius">Distance: {{ (exobiologyScan?.distance || 0).toFixed(1) }}/{{ exobiologyScan?.scan_radius || 0 }}m</span>
                     </div>
                 </div>
             </div>
@@ -184,28 +183,28 @@
                 <div class="combat-stats">
                     <div class="combat-stat-item">
                         <div class="combat-stat-circle">
-                            <span class="combat-stat-value">{{ ((getProjection('CurrentStatus')?.Health ?? 0) * 100).toFixed(0) }}%</span>
+                            <span class="combat-stat-value">{{ ((currentStatus?.Health ?? 0) * 100).toFixed(0) }}%</span>
                         </div>
                         <div class="combat-stat-label">HEALTH</div>
                     </div>
 
                     <div class="combat-stat-item">
                         <div class="combat-stat-circle">
-                            <span class="combat-stat-value">{{ getProjection('CurrentStatus')?.flags?.ShieldsUp ? 'ON' : 'OFF' }}</span>
+                            <span class="combat-stat-value">{{ currentStatus?.flags?.ShieldsUp ? 'ON' : 'OFF' }}</span>
                         </div>
                         <div class="combat-stat-label">SHIELDS</div>
                     </div>
 
                     <div class="combat-stat-item">
                         <div class="combat-stat-circle">
-                            <span class="combat-stat-value">{{ ((getProjection('CurrentStatus')?.Oxygen ?? 0) * 100).toFixed(0) }}%</span>
+                            <span class="combat-stat-value">{{ ((currentStatus?.Oxygen ?? 0) * 100).toFixed(0) }}%</span>
                         </div>
                         <div class="combat-stat-label">OXYGEN</div>
                     </div>
 
                     <div class="combat-stat-item">
                         <div class="combat-stat-circle">
-                            <span class="combat-stat-value">{{ getProjection('CurrentStatus')?.Gravity?.toFixed(2) || '0.00' }}</span>
+                            <span class="combat-stat-value">{{ currentStatus?.Gravity?.toFixed(2) || '0.00' }}</span>
                         </div>
                         <div class="combat-stat-label">GRAVITY</div>
                     </div>
@@ -215,7 +214,7 @@
                 <div class="temperature-indicator">
                     <div class="temp-label">
                         <mat-icon>whatshot</mat-icon>
-                        Temperature: {{ getProjection('CurrentStatus')?.Temperature?.toFixed(1) || '0.0' }} K
+                        Temperature: {{ currentStatus?.Temperature?.toFixed(1) || '0.0' }} K
                     </div>
                 </div>
                 
@@ -327,9 +326,9 @@
                         <div *ngIf="getLocationDetail()" class="location-detail">
                             <mat-icon class="small-icon">{{ getLocationDetailIcon() }}</mat-icon>
                             <span>{{ getLocationDetail() }}</span>
-                            <span *ngIf="getProjection('CurrentStatus')?.LegalState"
-                                  [ngClass]="'status-' + getProjection('CurrentStatus')?.LegalState?.toLowerCase()">
-                                {{ getProjection('CurrentStatus')?.LegalState }}
+                            <span *ngIf="currentStatus?.LegalState"
+                                  [ngClass]="'status-' + currentStatus?.LegalState?.toLowerCase()">
+                                {{ currentStatus?.LegalState }}
                             </span>
                         </div>
                     </div>
@@ -342,22 +341,22 @@
             </div>
             
             <!-- Target info -->
-            <div *ngIf="getProjection('Target')?.Ship" class="target-info">
+            <div *ngIf="target?.Ship" class="target-info">
                 <div class="target-header">
                     <mat-icon>track_changes</mat-icon>
-                    <span class="target-ship">{{ getProjection('Target')?.Ship }}</span>
+                    <span class="target-ship">{{ target?.Ship }}</span>
                 </div>
                 <div class="target-details">
                     <div class="target-row">
-                        <span class="target-pilot" *ngIf="getProjection('Target')?.PilotName">{{ getProjection('Target')?.PilotName }}</span>
-                        <span class="target-rank" *ngIf="getProjection('Target')?.PilotRank">{{ getProjection('Target')?.PilotRank }}</span>
-                        <span *ngIf="getProjection('Target')?.LegalStatus" class="target-legal"
-                              [ngClass]="'status-' + getProjection('Target')?.LegalStatus?.toLowerCase()">
-                            {{ getProjection('Target')?.LegalStatus }}
+                        <span class="target-pilot" *ngIf="target?.PilotName">{{ target?.PilotName }}</span>
+                        <span class="target-rank" *ngIf="target?.PilotRank">{{ target?.PilotRank }}</span>
+                        <span *ngIf="target?.LegalStatus" class="target-legal"
+                              [ngClass]="'status-' + target?.LegalStatus?.toLowerCase()">
+                            {{ target?.LegalStatus }}
                         </span>
                     </div>
-                    <div class="target-row" *ngIf="getProjection('Target')?.Scanned">
-                        <span class="target-faction" *ngIf="getProjection('Target')?.Faction">{{ getProjection('Target')?.Faction }}</span>
+                    <div class="target-row" *ngIf="target?.Scanned">
+                        <span class="target-faction" *ngIf="target?.Faction">{{ target?.Faction }}</span>
                         <span class="target-scanned">SCANNED</span>
                     </div>
                 </div>
@@ -368,7 +367,7 @@
                 <!-- Top row: Construction, Friends, Wing -->
                 <div class="status-icons-top-row">
                     <!-- Colonisation Construction indicator -->
-                    <div *ngIf="isColonisationActive(getProjection('ColonisationConstruction'))"
+                    <div *ngIf="isColonisationActive(colonisationConstruction)"
                          class="colonisation-indicator"
                          (click)="toggleColonisationPanel()">
                         <mat-icon>construction</mat-icon>

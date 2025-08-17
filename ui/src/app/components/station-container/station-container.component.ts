@@ -21,6 +21,7 @@ export class StationContainerComponent implements OnInit, OnDestroy {
   outfitting: any = null;
   shipyard: any = null;
   location: any = null;
+  currentStatus: any = null;
   
   // UI state
   selectedStationService: string = 'market';
@@ -55,6 +56,9 @@ export class StationContainerComponent implements OnInit, OnDestroy {
       }),
       this.projectionsService.location$.subscribe(location => {
         this.location = location;
+      }),
+      this.projectionsService.currentStatus$.subscribe(status => {
+        this.currentStatus = status;
       })
     );
   }
@@ -63,43 +67,14 @@ export class StationContainerComponent implements OnInit, OnDestroy {
     this.subscriptions.forEach(sub => sub.unsubscribe());
   }
 
-  // Helper methods
-  getProjection(name: string): any {
-    return this.projectionsService.getProjectionValue(name);
-  }
-
   getStationName(): string {
-    // Check station name from multiple projections to ensure accuracy
-    const marketStation = this.market?.StationName;
-    const outfittingStation = this.outfitting?.StationName;
-    const shipyardStation = this.shipyard?.StationName;
-    const locationStation = this.location?.StationName;
-
-
-
-    // Prefer the most recent station data (Market > Outfitting > Shipyard > Location)
-    if (marketStation) return marketStation;
-    if (outfittingStation) return outfittingStation;
-    if (shipyardStation) return shipyardStation;
-    if (locationStation) return locationStation;
-    
-    return 'Unknown Station';
+    // Use Location projection only; support StationName or Station keys
+    return this.location?.Station || 'Unknown Station';
   }
 
   getLocationSystem(): string {
-    // Check system name from multiple projections
-    const marketSystem = this.market?.StarSystem;
-    const outfittingSystem = this.outfitting?.StarSystem;
-    const shipyardSystem = this.shipyard?.StarSystem;
-    const locationSystem = this.location?.StarSystem;
-
-    // Prefer the most recent system data
-    if (marketSystem) return marketSystem;
-    if (outfittingSystem) return outfittingSystem;
-    if (shipyardSystem) return shipyardSystem;
-    if (locationSystem) return locationSystem;
-    
-    return 'Unknown System';
+    // Use Location projection only
+    return this.location?.StarSystem || 'Unknown System';
   }
 
   // Check if specific service data is for current station
@@ -119,8 +94,7 @@ export class StationContainerComponent implements OnInit, OnDestroy {
   }
 
   isDockedAtStation(): boolean {
-    const currentStatus = this.getProjection('CurrentStatus');
-    return Boolean(currentStatus?.flags?.Docked === true);
+    return Boolean(this.currentStatus?.flags?.Docked === true);
   }
 
   showStationService(service: string): void {
