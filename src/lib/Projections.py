@@ -10,7 +10,7 @@ from typing_extensions import NotRequired, override
 from .Event import Event, StatusEvent, GameEvent, ProjectedEvent, ExternalEvent, ConversationEvent, ToolEvent
 from .EventManager import EventManager, Projection
 from .Logger import log
-from .EDFuelCalc import ingest_event, get_current_jump_range ,RATING_BY_CLASSNUM , FSD_OVERCHARGE_STATS ,FSD_OVERCHARGE_V2PRE_STATS,FSD_STATS ,FSD_GUARDIAN_BOOSTER
+from .EDFuelCalc import RATING_BY_CLASSNUM , FSD_OVERCHARGE_STATS ,FSD_OVERCHARGE_V2PRE_STATS, FSD_STATS ,FSD_GUARDIAN_BOOSTER
 from .StatusParser import parse_status_flags, parse_status_json, Status
 from .SystemDatabase import SystemDatabase
 
