@@ -157,6 +157,29 @@
   text-align: center;
 }
 
+/* Material fill indicator */
+.material-cell {
+  position: relative;
+  overflow: hidden;
+}
+
+.material-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0%;
+  background: linear-gradient(to right, rgba(208, 168, 92, 0.25), rgba(208, 168, 92, 0.12));
+  border-radius: 4px;
+  z-index: 0;
+}
+
+.material-cell .material-name,
+.material-cell .material-count {
+  position: relative;
+  z-index: 1;
+}
+
 /* Ship Locker Styles from provided CSS */
 .locker-container {
   padding: 15px 0;

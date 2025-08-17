@@ -114,12 +114,14 @@
                             @if (getRawMaterialByGradeAndCategory(grade, category).length > 0) {
                               @for (material of getRawMaterialByGradeAndCategory(grade, category); track material.Name) {
                                 <div class="material-cell">
+                                  <div class="material-fill" [style.width.%]="getMaterialFillPercent(material.Count, grade)"></div>
                                   <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
                                   <span class="material-count">{{ material.Count }}</span>
                                 </div>
                               }
                             } @else {
                               <div class="material-cell empty">
+                                <div class="material-fill" [style.width.%]="0"></div>
                                 <span class="material-name">{{ getEmptyRawMaterialName(grade, category) }}</span>
                                 <span class="material-count">0</span>
                               </div>
@@ -156,12 +158,14 @@
                             @if (getManufacturedMaterialByGradeAndSection(section, grade).length > 0) {
                               @for (material of getManufacturedMaterialByGradeAndSection(section, grade); track material.Name) {
                                 <div class="material-cell">
+                                  <div class="material-fill" [style.width.%]="getMaterialFillPercent(material.Count, grade)"></div>
                                   <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
                                   <span class="material-count">{{ material.Count }}</span>
                                 </div>
                               }
                             } @else {
                               <div class="material-cell empty">
+                                <div class="material-fill" [style.width.%]="0"></div>
                                 <span class="material-name">{{ getEmptyManufacturedMaterialName(section, grade) }}</span>
                                 <span class="material-count">0</span>
                               </div>
@@ -198,12 +202,14 @@
                             @if (getEncodedMaterialByGradeAndSection(section, grade).length > 0) {
                               @for (material of getEncodedMaterialByGradeAndSection(section, grade); track material.Name) {
                                 <div class="material-cell">
+                                  <div class="material-fill" [style.width.%]="getMaterialFillPercent(material.Count, grade)"></div>
                                   <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
                                   <span class="material-count">{{ material.Count }}</span>
                                 </div>
                               }
                             } @else {
                               <div class="material-cell empty">
+                                <div class="material-fill" [style.width.%]="0"></div>
                                 <span class="material-name">{{ getEmptyEncodedMaterialName(section, grade) }}</span>
                                 <span class="material-count">0</span>
                               </div>
@@ -260,7 +266,12 @@
                   @for (item of shipLocker?.Components; track item.Name) {
                     <div class="locker-item">
                       <div class="item-count">{{ item.Count }}</div>
-                      <div class="item-name">{{ formatItemName(item.Name_Localised || item.Name) }}</div>
+                      <div class="item-name">
+                        {{ formatItemName(item.Name_Localised || item.Name) }}
+                        @if (item.MissionID) {
+                          <span class="mission-tag">[Mission]</span>
+                        }
+                      </div>
                     </div>
                   }
                 </div>

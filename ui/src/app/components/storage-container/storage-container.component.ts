@@ -47,6 +47,8 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
   // Constants
   readonly STORAGE_TAB = 'storage';
 
+  private readonly gradeMaxByGrade: { [grade: number]: number } = { 1: 300, 2: 250, 3: 200, 4: 150, 5: 100 };
+  
   // Raw material mappings by category and grade
   private rawMaterialsMap: {[category: number]: {[grade: number]: string[]}} = {
     1: { 1: ['carbon'], 2: ['vanadium'], 3: ['niobium'], 4: ['yttrium'] },
@@ -260,6 +262,13 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
     });
   }
 
+  getMaterialFillPercent(count: number, grade: number): number {
+    const max = this.gradeMaxByGrade[grade] ?? 100;
+    const safeCount = typeof count === 'number' ? count : 0;
+    const clamped = Math.max(0, Math.min(max, safeCount));
+    return Math.round((clamped / max) * 100);
+  }
+  
   private normalizeMaterialName(name: string): string {
     return name.toLowerCase()
       .replace(/^tg_/, '')
