@@ -725,17 +725,14 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
     return this.getCargoItems().length > 0;
   }
 
-  getJumpRange(): number {
+    getMaxJumpRange(): number {
     return this.shipInfo?.MaximumJumpRange || 0;
   }
-    getMaxJumpRange(): number {
-    return this.shipInfo?.maximum_jump_range || 0;
-  }
     getMinJumpRange(): number {
-    return this.shipInfo?.minimum_jump_range || 0;
+    return this.shipInfo?.MinimumJumpRange || 0;
   }
     getCUrJumpRange(): number {
-    return this.shipInfo?.current_jump_range || 0;
+    return this.shipInfo?.CurrentJumpRange || 0;
   }
 
   getShipRebuy(): number {

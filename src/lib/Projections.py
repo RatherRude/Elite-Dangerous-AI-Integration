@@ -555,16 +555,16 @@ ShipInfoState = TypedDict('ShipInfoState', {
     "FuelMainCapacity": float,
     "FuelReservoir": float,
     "FuelReservoirCapacity": float,
-    "MaximumJumpRange": float,
+    "ReportedMaximumJumpRange": float,
     "DriveOptimalMass":float,
     "DriveLinearConst":float,
     "DrivePowerConst":float,
     "GuardianfsdBooster":float,
     "DriveMaxFuel":float,
     "JetConeBoost":float,
-    "minimum_jump_range":float,
-    "current_jump_range":float,
-    "maximum_jump_range":float,
+    "MinimumJumpRange":float,
+    "CurrentJumpRange":float,
+    "MaximumJumpRange":float,
     "LandingPadSize": Literal['S', 'M', 'L', 'Unknown'],
     "IsMiningShip": bool,
     "hasLimpets": bool,
@@ -587,7 +587,7 @@ class ShipInfo(Projection[ShipInfoState]):
             "FuelMainCapacity": 0,
             "FuelReservoir": 0,
             "FuelReservoirCapacity": 0,
-            "MaximumJumpRange": 0, 
+            "ReportedMaximumJumpRange": 0,
             "DriveOptimalMass": 0,
             "DriveLinearConst":0,
             "GuardianfsdBooster":0,
@@ -597,9 +597,9 @@ class ShipInfo(Projection[ShipInfoState]):
             "IsMiningShip": False,
             "hasLimpets": False,
             "Fighters": [],
-            "minimum_jump_range":0,
-            "current_jump_range":0,
-            "maximum_jump_range":0,
+            "MinimumJumpRange":0,
+            "CurrentJumpRange":0,
+            "MaximumJumpRange":0,
             "LandingPadSize": 'Unknown',
         }
     
@@ -633,7 +633,7 @@ class ShipInfo(Projection[ShipInfoState]):
                 self.state['FuelReservoirCapacity'] = event.content['FuelCapacity'].get('Reserve', 0)
 
             if 'MaxJumpRange' in event.content:
-                self.state['MaximumJumpRange'] = event.content.get('MaxJumpRange', 0)
+                self.state['ReportedMaximumJumpRange'] = event.content.get('MaxJumpRange', 0)
 
             if 'Modules' in event.content:
                 has_refinery = any(module["Item"].startswith("int_refinery") for module in event.content["Modules"])
@@ -835,9 +835,9 @@ class ShipInfo(Projection[ShipInfoState]):
         if isinstance(event, StatusEvent) and event.status.get('event') == 'Status':
             try:
                 min_jr,cur_jr,max_jr = self.calculate_jump_range()
-                self.state['minimum_jump_range'] = min_jr
-                self.state['current_jump_range'] = cur_jr
-                self.state['maximum_jump_range'] = max_jr
+                self.state['MinimumJumpRange'] = min_jr
+                self.state['CurrentJumpRange'] = cur_jr
+                self.state['MaximumJumpRange'] = max_jr
             except Exception as e:
                 log('error', 'Error calculating jump ranges:', e, traceback.format_exc())
         

@@ -2582,6 +2582,16 @@ class PromptGenerator:
         
         # Create a copy of ship_info so we don't modify the original
         ship_display = dict(ship_info)
+        ship_display.pop('JetConeBoost', None)
+        ship_display.pop('DriveMaxFuel', None)
+        ship_display.pop('DrivePowerConst', None)
+        ship_display.pop('GuardianfsdBooster', None)
+        ship_display.pop('DriveLinearConst', None)
+        ship_display.pop('DriveOptimalMass', None)
+        ship_display.pop('ReportedMaximumJumpRange', None)
+        ship_display.pop('FuelReservoirCapacity', None)
+        ship_display.pop('FuelReservoir', None)
+        ship_display.pop('UnladenMass', None)
         ship_display.pop('IsMiningShip', None)
         ship_display.pop('hasLimpets', None)
         if len(fighters) == 0:
