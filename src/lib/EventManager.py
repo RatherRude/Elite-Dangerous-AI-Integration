@@ -57,7 +57,10 @@ class EventManager:
         self.event_store = EventStore('events', self.event_classes)
         self.projection_store = KeyValueStore('projections')
         
-        self.load_history()
+        min_history_id, max_history_id = self.load_history()
+        self.min_history_id = min_history_id
+        self.max_history_id = max_history_id
+
         if self.processed:
             show_chat_message('info', 'Continuing conversation with', len(self.processed), 'events.')
         else:
@@ -68,12 +71,21 @@ class EventManager:
         event = GameEvent(content=content, historic=False)
         self.incoming.put(event)
 
-    def add_historic_game_event(self, content: dict[str, Any]):
-        max_event_id = max([event.content.get('id') for event in self.processed if isinstance(event, GameEvent)], default='') # TODO: this is not efficient
-        if content.get('id', '') <= max_event_id:
-            return
-        event = GameEvent(content=content, historic=True)
-        self.incoming.put(event)
+    def add_historic_game_events(self, events = list[dict[str, Any]]):
+        events_before = []
+        events_after = []
+        while events:
+            content = events.pop(0)
+            event = GameEvent(content=content, historic=True)
+            id = event.content.get('id')
+            if id > self.max_history_id:
+                events_after.append(event)
+            elif id < self.min_history_id:
+                events_before.insert(0, event)
+        for event in events_before:
+            self.processed.insert(0, event)
+        for event in events_after:
+            self.incoming.put(event)
         
     def add_external_event(self, application: str, content: dict[str, Any]):
         event = ExternalEvent(content={**content, 'event': application})
@@ -203,9 +215,9 @@ class EventManager:
             projection.last_processed = state["last_processed"]
 
             for event in self.processed + self.pending:
-                if event.processed_at <= projection.last_processed:
+                if event.processed_at > 0.0 and event.processed_at <= projection.last_processed:
+                    # log('debug', 'skipping update due to timestamp')
                     continue
-                #log('debug', 'updating', projection_class_name, 'with', event, 'after starting from', projection.last_processed)
                 self.update_projection(projection, event, save_later=True)
             
             self.projections.append(projection)
@@ -291,4 +303,6 @@ class EventManager:
         events: list[Event] = self.event_store.get_latest()
         for event in reversed(events):
             self.processed.append(event)
-    
+        min_event_id = min([event.content.get('id') for event in self.processed if isinstance(event, GameEvent)], default='')
+        max_event_id = max([event.content.get('id') for event in self.processed if isinstance(event, GameEvent)], default='')
+        return min_event_id, max_event_id

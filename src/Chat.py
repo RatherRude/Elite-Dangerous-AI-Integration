@@ -243,8 +243,16 @@ class Chat:
             self.stt.listen_continuous()
         show_chat_message('info', "Voice interface ready.")
 
+        show_chat_message('info', 'Initializing states...')
+        self.event_manager.add_historic_game_events(self.jn.historic_events)
+
+        self.event_manager.add_status_event(self.status_parser.current_status)
+
+        show_chat_message('info', 'Register projections...')
         registerProjections(self.event_manager, self.system_database, self.character.get('idle_timeout_var', 300))
         self.plugin_manager.register_projections(self.plugin_helper)
+
+        self.event_manager.process()
 
         if self.config['tools_var']:
             log('info', "Register actions...")
@@ -255,12 +263,6 @@ class Chat:
             log('info', "Plugin provided Actions ready.")
             show_chat_message('info', "Actions ready.")
 
-        show_chat_message('info', 'Initializing states...')
-        while self.jn.historic_events:
-            self.event_manager.add_historic_game_event(self.jn.historic_events.pop(0))
-            
-        self.event_manager.add_status_event(self.status_parser.current_status)
-        self.event_manager.process()
 
         # Cue the user that we're ready to go.
         show_chat_message('info', "System Ready.")

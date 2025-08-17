@@ -241,7 +241,7 @@ class ActionManager:
         """
         input_hash = self.hash_action_input(user_input, tool)
         if self.action_cache.get(input_hash) is not None:
-            log("debug", "Cache: Action already in cache, skipping prefill")
+            #log("debug", "Cache: Action already in cache, skipping prefill")
             return
         
         # add action to cache

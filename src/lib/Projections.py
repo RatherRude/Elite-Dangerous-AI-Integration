@@ -618,7 +618,6 @@ class ShipInfo(Projection[ShipInfoState]):
                 
         
         if isinstance(event, GameEvent) and event.content.get('event') == 'Loadout':
-            #    { "timestamp":"2025-08-09T17:59:53Z", "event":"Loadout", "Ship":"krait_mkii", "ShipID":56, "ShipName":"", "ShipIdent":"FL-09K", "HullValue":43047807, "ModulesValue":1621043, "HullHealth":1.000000, "UnladenMass":634.000000, "CargoCapacity":82, "MaxJumpRange":9.013926, "FuelCapacity":{ "Main":32.000000, "Reserve":0.630000 }, "Rebuy":2233443, "Modules":[ { "Slot":"MediumHardpoint1", "Item":"hpt_pulselaser_fixed_small", "On":true, "Priority":2, "Health":1.000000, "Value":2145 }, { "Slot":"MediumHardpoint2", "Item":"hpt_pulselaser_fixed_small", "On":true, "Priority":2, "Health":1.000000, "Value":2145 }, { "Slot":"Armour", "Item":"krait_mkii_armour_grade1", "On":true, "Priority":1, "Health":1.000000 }, { "Slot":"PowerPlant", "Item":"int_powerplant_size7_class1", "On":true, "Priority":1, "Health":1.000000, "Value":468400 }, { "Slot":"MainEngines", "Item":"int_engine_size6_class1", "On":true, "Priority":2, "Health":1.000000, "Value":194753 }, { "Slot":"FrameShiftDrive", "Item":"int_hyperdrive_size5_class1", "On":true, "Priority":2, "Health":1.000000, "Value":61436 }, { "Slot":"LifeSupport", "Item":"int_lifesupport_size4_class1", "On":true, "Priority":2, "Health":1.000000, "Value":11065 }, { "Slot":"PowerDistributor", "Item":"int_powerdistributor_size7_class1", "On":true, "Priority":2, "Health":1.000000, "Value":242908 }, { "Slot":"Radar", "Item":"int_sensors_size6_class1", "On":true, "Priority":2, "Health":1.000000, "Value":86753 }, { "Slot":"FuelTank", "Item":"int_fueltank_size5_class3", "On":true, "Priority":1, "Health":1.000000, "Value":95310 }, { "Slot":"Slot01_Size6", "Item":"int_shieldgenerator_size6_class1", "On":true, "Priority":2, "Health":1.000000, "Value":194753 }, { "Slot":"Slot02_Size6", "Item":"int_cargorack_size5_class1", "On":true, "Priority":1, "Health":1.000000, "Value":108776 }, { "Slot":"Slot03_Size5", "Item":"int_cargorack_size5_class1", "On":true, "Priority":1, "Health":1.000000, "Value":108776 }, { "Slot":"Slot04_Size5", "Item":"int_cargorack_size4_class1", "On":true, "Priority":1, "Health":1.000000, "Value":33469 }, { "Slot":"Slot08_Size2", "Item":"int_cargorack_size1_class1", "On":true, "Priority":1, "Health":1.000000, "Value":975 }, { "Slot":"Slot09_Size1", "Item":"int_supercruiseassist", "On":true, "Priority":2, "Health":1.000000, "Value":8892 }, { "Slot":"PlanetaryApproachSuite", "Item":"int_planetapproachsuite_advanced", "On":true, "Priority":1, "Health":1.000000, "Value":487 }, { "Slot":"VesselVoice", "Item":"voicepack_gerhard", "On":true, "Priority":1, "Health":1.000000 }, { "Slot":"ShipCockpit", "Item":"krait_mkii_cockpit", "On":true, "Priority":1, "Health":1.000000 }, { "Slot":"CargoHatch", "Item":"modularcargobaydoor", "On":true, "Priority":2, "Health":1.000000 } ] }
             if 'ShipName' in event.content:
                 self.state['Name'] = event.content.get('ShipName', 'Unknown')
             if 'Ship' in event.content:
@@ -665,12 +664,12 @@ class ShipInfo(Projection[ShipInfoState]):
                     self.state['Fighters'] = [{"Status": "Ready"} for _ in range(fighter_count)]
                 else:
                     self.state['Fighters'] = []
-                    
+
                 #Check for FSD Engine
                 for module in event.content.get("Modules", []):
                     module_slot = module.get("Slot", "") 
                     if module_slot != "FrameShiftDrive":
-                        break
+                        continue
                     
                     module_item = module.get('Item')
                     over = "hyperdrive_overcharge" in module_item
@@ -681,7 +680,6 @@ class ShipInfo(Projection[ShipInfoState]):
 
                     engineering_optimal_mass_override = None
                     engineering_max_fuel_override = None
-                    
 
                     for modifier in module.get("Engineering", {}).get("Modifiers", []) or []:
                         if modifier.get("Label") in ("FSDOptimalMass", "fsdoptimalmass"):
@@ -689,14 +687,13 @@ class ShipInfo(Projection[ShipInfoState]):
                             
                         if modifier.get("Label") in ("MaxFuelPerJump", "maxfuelperjump"):
                             engineering_max_fuel_override = float(modifier.get("Value"))
-                            
-                        
+
                     all_module_stats = FSD_OVERCHARGE_STATS if over else FSD_STATS
                     module_stat: dict = all_module_stats.get((module_size, module_rating))
                     self.state['DriveOptimalMass'] = engineering_optimal_mass_override if engineering_optimal_mass_override is not None else module_stat.get('opt_mass', 0.00)
                     self.state['DriveMaxFuel'] = engineering_max_fuel_override if engineering_max_fuel_override is not None else module_stat.get('max_fuel', 0.00)
-                    self.state['DriveLinearConst'] = module_stat.get('linear_const', 0.00)
-                    self.state['DrivePowerConst'] = module_stat.get('power_const', 0.00)
+                    self.state['DriveLinearConst'] = module_stat.get('linear_const', 0.0)
+                    self.state['DrivePowerConst'] = module_stat.get('power_const', 0.0)
                     
                 # Check for GuardianfsdBooster
                 self.state['GuardianfsdBooster'] = 0
@@ -870,14 +867,15 @@ class ShipInfo(Projection[ShipInfoState]):
         minimal_mass = unladen_mass + drive_max_fuel  #max jump with just right anmount
         current_mass = unladen_mass + current_cargo + current_fuel + current_fuel_reservoir  #current mass
         maximal_mass = unladen_mass + cargo_capacity + fuel_capacity  # minimal jump with min mass
-
+        log('info', 'minimal_mass', minimal_mass)
+        log('info', 'current_mass', current_mass)
+        log('info', 'maximal_mass', maximal_mass)
         
         base = lambda M: (drive_optimal_mass / M) * ( (10**3 * drive_max_fuel) / drive_linear_const )**(1/drive_power_const)
         # adding stuff here for more future fsd boost stuff 
         min_ly = (base(maximal_mass) + fsd_boost) * fsd_star_boost
         cur_ly = (base(current_mass) + fsd_boost) * fsd_star_boost
         max_ly = (base(minimal_mass) + fsd_boost) * fsd_star_boost
-
         
         return min_ly, cur_ly, max_ly
 
@@ -1591,7 +1589,6 @@ class Idle(Projection[IdleState]):
         return projected_events
 
 def registerProjections(event_manager: EventManager, system_db: SystemDatabase, idle_timeout: int):
-
     event_manager.register_projection(EventCounter())
     event_manager.register_projection(CurrentStatus())
     event_manager.register_projection(Location())
