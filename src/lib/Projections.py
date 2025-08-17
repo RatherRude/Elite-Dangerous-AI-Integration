@@ -1,12 +1,16 @@
 import math
+import re
+import traceback
 from typing import Any, Literal, TypedDict, final, List, cast
 from datetime import datetime, timezone, timedelta
+from webbrowser import get
 
 from typing_extensions import NotRequired, override
 
 from .Event import Event, StatusEvent, GameEvent, ProjectedEvent, ExternalEvent, ConversationEvent, ToolEvent
 from .EventManager import EventManager, Projection
 from .Logger import log
+from .EDFuelCalc import RATING_BY_CLASSNUM , FSD_OVERCHARGE_STATS ,FSD_OVERCHARGE_V2PRE_STATS, FSD_STATS ,FSD_GUARDIAN_BOOSTER
 from .StatusParser import parse_status_flags, parse_status_json, Status
 from .SystemDatabase import SystemDatabase
 
@@ -526,6 +530,7 @@ ship_sizes: dict[str, Literal['S', 'M', 'L', 'Unknown']] = {
     'typex':                         'M',
     'typex_2':                       'M',
     'typex_3':                       'M',
+    'type11':                        'M',
     'viper':                         'S',
     'viper_mkiv':                    'S',
     'vulture':                       'S',
@@ -545,12 +550,21 @@ ShipInfoState = TypedDict('ShipInfoState', {
     "UnladenMass": float,
     "Cargo": float,
     "CargoCapacity": float,
+    "ShipCargo": float,
     "FuelMain": float,
     "FuelMainCapacity": float,
     "FuelReservoir": float,
     "FuelReservoirCapacity": float,
     "MaximumJumpRange": float,
-    #"CurrentJumpRange": float,
+    "DriveOptimalMass":float,
+    "DriveLinearConst":float,
+    "DrivePowerConst":float,
+    "GuardianfsdBooster":float,
+    "DriveMaxFuel":float,
+    "JetConeBoost":float,
+    "minimum_jump_range":float,
+    "current_jump_range":float,
+    "maximum_jump_range":float,
     "LandingPadSize": Literal['S', 'M', 'L', 'Unknown'],
     "IsMiningShip": bool,
     "hasLimpets": bool,
@@ -568,21 +582,31 @@ class ShipInfo(Projection[ShipInfoState]):
             "UnladenMass": 0,
             "Cargo": 0,
             "CargoCapacity": 0,
+            "ShipCargo": 0,
             "FuelMain": 0,
             "FuelMainCapacity": 0,
             "FuelReservoir": 0,
             "FuelReservoirCapacity": 0,
-            "MaximumJumpRange": 0,
-            #"CurrentJumpRange": 0,
+            "MaximumJumpRange": 0, 
+            "DriveOptimalMass": 0,
+            "DriveLinearConst":0,
+            "GuardianfsdBooster":0,
+            "DrivePowerConst":0,
+            "DriveMaxFuel":0,
+            "JetConeBoost":1,
             "IsMiningShip": False,
             "hasLimpets": False,
             "Fighters": [],
+            "minimum_jump_range":0,
+            "current_jump_range":0,
+            "maximum_jump_range":0,
             "LandingPadSize": 'Unknown',
         }
     
     @override
     def process(self, event: Event) -> list[ProjectedEvent]:
         projected_events: list[ProjectedEvent] = []
+     
         if isinstance(event, StatusEvent) and event.status.get('event') == 'Status':
             status: Status = event.status  # pyright: ignore[reportAssignmentType]
             if 'Cargo' in event.status:
@@ -591,9 +615,9 @@ class ShipInfo(Projection[ShipInfoState]):
             if 'Fuel' in status and status['Fuel']:
                 self.state['FuelMain'] = status['Fuel'].get('FuelMain', 0)
                 self.state['FuelReservoir'] = status['Fuel'].get('FuelReservoir', 0)
+                
         
         if isinstance(event, GameEvent) and event.content.get('event') == 'Loadout':
-            # { "timestamp":"2024-07-12T21:01:20Z", "event":"Loadout", "Ship":"empire_courier", "ShipID":88, "ShipName":" ", "ShipIdent":"TR-12E", "HullValue":2542931, "ModulesValue":9124352, "HullHealth":1.000000, "UnladenMass":61.713188, "CargoCapacity":0, "MaxJumpRange":50.628967, "FuelCapacity":{ "Main":12.000000, "Reserve":0.410000 }, "Rebuy":583368,
             if 'ShipName' in event.content:
                 self.state['Name'] = event.content.get('ShipName', 'Unknown')
             if 'Ship' in event.content:
@@ -607,8 +631,10 @@ class ShipInfo(Projection[ShipInfoState]):
             if 'FuelCapacity' in event.content:
                 self.state['FuelMainCapacity'] = event.content['FuelCapacity'].get('Main', 0)
                 self.state['FuelReservoirCapacity'] = event.content['FuelCapacity'].get('Reserve', 0)
+
             if 'MaxJumpRange' in event.content:
                 self.state['MaximumJumpRange'] = event.content.get('MaxJumpRange', 0)
+
             if 'Modules' in event.content:
                 has_refinery = any(module["Item"].startswith("int_refinery") for module in event.content["Modules"])
                 if has_refinery:
@@ -624,16 +650,14 @@ class ShipInfo(Projection[ShipInfoState]):
 
                 # Check for fighter bay modules
                 fighter_count = 0
-                modules = event.content.get("Modules", [])
-                if modules:
-                    for module in modules:  # type: ignore
-                        item = module.get("Item", "")
-                        if item == "int_fighterbay_size5_class1":
-                            fighter_count = 1
-                            break
-                        elif item in ["int_fighterbay_size6_class1", "int_fighterbay_size7_class1"]:
-                            fighter_count = 2
-                            break
+                for module in event.content.get("Modules", []):  # type: ignore
+                    module_item = module.get("Item", "")
+                    if module_item == "int_fighterbay_size5_class1":
+                        fighter_count = 1
+                        break
+                    elif module_item in ["int_fighterbay_size6_class1", "int_fighterbay_size7_class1"]:
+                        fighter_count = 2
+                        break
 
                 if fighter_count > 0:
                     # Initialize fighters in Ready state without IDs
@@ -641,8 +665,60 @@ class ShipInfo(Projection[ShipInfoState]):
                 else:
                     self.state['Fighters'] = []
 
+                #Check for FSD Engine
+                for module in event.content.get("Modules", []):
+                    module_slot = module.get("Slot", "") 
+                    if module_slot != "FrameShiftDrive":
+                        continue
+                    
+                    module_item = module.get('Item')
+                    over = "hyperdrive_overcharge" in module_item
+                    module_size_match = re.search(r"size(\d)", module_item)
+                    module_class_match = re.search(r"class(\d)", module_item)
+                    module_size = int(module_size_match.group(1)) if module_size_match else None
+                    module_rating = RATING_BY_CLASSNUM.get(int(module_class_match.group(1))) if module_class_match else None
+
+                    engineering_optimal_mass_override = None
+                    engineering_max_fuel_override = None
+
+                    for modifier in module.get("Engineering", {}).get("Modifiers", []) or []:
+                        if modifier.get("Label") in ("FSDOptimalMass", "fsdoptimalmass"):
+                            engineering_optimal_mass_override = float(modifier.get("Value"))
+                            
+                        if modifier.get("Label") in ("MaxFuelPerJump", "maxfuelperjump"):
+                            engineering_max_fuel_override = float(modifier.get("Value"))
+
+                    all_module_stats = FSD_OVERCHARGE_STATS if over else FSD_STATS
+                    module_stat: dict = all_module_stats.get((module_size, module_rating))
+                    self.state['DriveOptimalMass'] = engineering_optimal_mass_override if engineering_optimal_mass_override is not None else module_stat.get('opt_mass', 0.00)
+                    self.state['DriveMaxFuel'] = engineering_max_fuel_override if engineering_max_fuel_override is not None else module_stat.get('max_fuel', 0.00)
+                    self.state['DriveLinearConst'] = module_stat.get('linear_const', 0.0)
+                    self.state['DrivePowerConst'] = module_stat.get('power_const', 0.0)
+                    
+                # Check for GuardianfsdBooster
+                self.state['GuardianfsdBooster'] = 0
+                for module in event.content.get("Modules", []):
+                    module_item = module.get('Item')
+                    if "int_guardianfsdbooster" in module_item.lower():    
+                        module_size_match = re.search(r"size(\d+)", module_item)
+                        module_size = int(module_size_match.group(1))
+                        guardian_booster_stats = FSD_GUARDIAN_BOOSTER.get((module_size,"H"))
+                        
+                        self.state['GuardianfsdBooster'] =guardian_booster_stats.get('jump_boost', 0.0)
+                          
+        
+        if isinstance(event, GameEvent) and event.content.get('event') == 'JetConeBoost':
+            fsd_star_boost = event.content.get('BoostValue', 1)
+            self.state['JetConeBoost'] = fsd_star_boost
+        
+        if isinstance(event,GameEvent) and event.content.get('event') == 'FSDJump':
+            self.state['JetConeBoost'] = 1
+        
+        
         if isinstance(event, GameEvent) and event.content.get('event') == 'Cargo':
             self.state['Cargo'] = event.content.get('Count', 0)
+            if event.content.get('Vessel') == 'Ship': 
+                self.state['ShipCargo'] = event.content.get('Count', 0)
 
         if isinstance(event, GameEvent) and event.content.get('event') in ['RefuelAll','RepairAll','BuyAmmo']:
             if self.state['hasLimpets'] and self.state['Cargo'] < self.state['CargoCapacity']:
@@ -754,8 +830,54 @@ class ShipInfo(Projection[ShipInfoState]):
 
         if self.state['Type'] != 'Unknown':
             self.state['LandingPadSize'] = ship_sizes.get(self.state['Type'], 'Unknown')
-
+            
+        # Recalculate jump ranges on weight, module or modifier changes
+        if isinstance(event, StatusEvent) and event.status.get('event') == 'Status':
+            try:
+                min_jr,cur_jr,max_jr = self.calculate_jump_range()
+                self.state['minimum_jump_range'] = min_jr
+                self.state['current_jump_range'] = cur_jr
+                self.state['maximum_jump_range'] = max_jr
+            except Exception as e:
+                log('error', 'Error calculating jump ranges:', e, traceback.format_exc())
+        
         return projected_events
+    
+    def calculate_jump_range(self) -> tuple[float, float, float]:
+
+        unladen_mass   = self.state.get("UnladenMass")
+        cargo_capacity = self.state.get("CargoCapacity")
+        fuel_capacity  = self.state.get("FuelMainCapacity")
+        maximum_jump_range     = self.state.get("MaximumJumpRange")
+        drive_power_const   = self.state.get("DrivePowerConst")
+        drive_optimal_mass = self.state.get("DriveOptimalMass")
+        drive_linear_const  = self.state.get("DriveLinearConst") 
+        drive_max_fuel  = self.state.get("DriveMaxFuel")
+        fsd_star_boost = self.state.get("JetConeBoost")
+        fsd_boost = self.state.get("GuardianfsdBooster")
+        fsd_inject = 0 # +inject juice 25% , 50% ,100% but cant be with star_boost
+
+        if not (unladen_mass > 0 and fuel_capacity > 0 and maximum_jump_range > 0 and drive_max_fuel):
+            return 0, 0, 0
+
+        current_cargo = self.state.get("ShipCargo")
+        current_fuel  = self.state.get("FuelMain")
+        current_fuel_reservoir = self.state.get("FuelReservoir")
+
+        minimal_mass = unladen_mass + drive_max_fuel  #max jump with just right anmount
+        current_mass = unladen_mass + current_cargo + current_fuel + current_fuel_reservoir  #current mass
+        maximal_mass = unladen_mass + cargo_capacity + fuel_capacity  # minimal jump with min mass
+        log('info', 'minimal_mass', minimal_mass)
+        log('info', 'current_mass', current_mass)
+        log('info', 'maximal_mass', maximal_mass)
+        
+        base = lambda M: (drive_optimal_mass / M) * ( (10**3 * drive_max_fuel) / drive_linear_const )**(1/drive_power_const)
+        # adding stuff here for more future fsd boost stuff 
+        min_ly = (base(maximal_mass) + fsd_boost) * fsd_star_boost
+        cur_ly = (base(current_mass) + fsd_boost) * fsd_star_boost
+        max_ly = (base(minimal_mass) + fsd_boost) * fsd_star_boost
+        
+        return min_ly, cur_ly, max_ly
 
 TargetState = TypedDict('TargetState', {
     "EventID": NotRequired[str],
@@ -1467,7 +1589,6 @@ class Idle(Projection[IdleState]):
         return projected_events
 
 def registerProjections(event_manager: EventManager, system_db: SystemDatabase, idle_timeout: int):
-
     event_manager.register_projection(EventCounter())
     event_manager.register_projection(CurrentStatus())
     event_manager.register_projection(Location())

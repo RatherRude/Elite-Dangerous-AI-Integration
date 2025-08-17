@@ -728,6 +728,15 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
   getJumpRange(): number {
     return this.shipInfo?.MaximumJumpRange || 0;
   }
+    getMaxJumpRange(): number {
+    return this.shipInfo?.maximum_jump_range || 0;
+  }
+    getMinJumpRange(): number {
+    return this.shipInfo?.minimum_jump_range || 0;
+  }
+    getCUrJumpRange(): number {
+    return this.shipInfo?.current_jump_range || 0;
+  }
 
   getShipRebuy(): number {
     // Rebuy is not tracked in ShipInfo projection, would need to be from Loadout event

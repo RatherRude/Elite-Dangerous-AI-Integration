@@ -1200,6 +1200,26 @@
   color: #ffcc02 !important;
 }
 
+/* Ship jump stats */
+.jump-range-values {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+.jump-range-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.jump-range-label {
+  font-size: 9px;
+  color: #aaa;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+
 /* Utility and hardpoints */
 .utility-list,
 .hardpoints-list {

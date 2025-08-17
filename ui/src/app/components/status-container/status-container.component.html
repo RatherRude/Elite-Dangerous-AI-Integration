@@ -1,626 +1,658 @@
 <!-- STATUS CONTAINER -->
 <div class="status-container">
-<div class="info-tab">
-    <!-- Expandable panels at top -->
-    <div *ngIf="showFriendsPanel" class="expandable-panel friends-panel" (click)="onBackgroundClick($event, 'friends')">
-        <div class="panel-content" (click)="onPanelClick($event)">
-            <div class="panel-header">
-                <h3>Friends Online</h3>
-                <button class="panel-close-btn" (click)="closeFriendsPanel()" mat-icon-button>
-                    <mat-icon>close</mat-icon>
-                </button>
-            </div>
-            <mat-list>
-                <mat-list-item *ngFor="let friend of getOnlineFriends()" class="friend-item">
-                    <mat-icon>person</mat-icon>
-                    <span class="friend-name">CMDR {{ friend }}</span>
-                </mat-list-item>
-            </mat-list>
-            <div *ngIf="!getOnlineFriends().length" class="empty-message">
-                No friends currently online
-            </div>
-        </div>
-    </div>
-
-    <div *ngIf="showWingPanel" class="expandable-panel wing-panel" (click)="onBackgroundClick($event, 'wing')">
-        <div class="panel-content" (click)="onPanelClick($event)">
-            <div class="panel-header">
-                <h3>Wing Members</h3>
-                <button class="panel-close-btn" (click)="closeWingPanel()" mat-icon-button>
-                    <mat-icon>close</mat-icon>
-                </button>
-            </div>
-            <mat-list>
-                <mat-list-item *ngFor="let member of getWingMembers()" class="wing-item">
-                    <mat-icon>person</mat-icon>
-                    <span class="wing-member-name">CMDR {{ member.Name || member }}</span>
-                    <div class="wing-member-details" *ngIf="member.Ship">
-                        <span class="wing-ship">{{ member.Ship }}</span>
-                    </div>
-                </mat-list-item>
-            </mat-list>
-            <div *ngIf="!getWingMembers().length" class="empty-message">
-                No wing members
+    <div class="info-tab">
+        <!-- Expandable panels at top -->
+        <div *ngIf="showFriendsPanel" class="expandable-panel friends-panel"
+             (click)="onBackgroundClick($event, 'friends')">
+            <div class="panel-content" (click)="onPanelClick($event)">
+                <div class="panel-header">
+                    <h3>Friends Online</h3>
+                    <button class="panel-close-btn" (click)="closeFriendsPanel()" mat-icon-button>
+                        <mat-icon>close</mat-icon>
+                    </button>
+                </div>
+                <mat-list>
+                    <mat-list-item *ngFor="let friend of getOnlineFriends()" class="friend-item">
+                        <mat-icon>person</mat-icon>
+                        <span class="friend-name">CMDR {{ friend }}</span>
+                    </mat-list-item>
+                </mat-list>
+                <div *ngIf="!getOnlineFriends().length" class="empty-message">
+                    No friends currently online
+                </div>
             </div>
         </div>
-    </div>
 
-    <div *ngIf="showFightersPanel" class="expandable-panel fighters-panel" (click)="onBackgroundClick($event, 'fighters')">
-        <div class="panel-content" (click)="onPanelClick($event)">
-            <div class="panel-header">
-                <h3>Ship Fighters</h3>
-                <button class="panel-close-btn" (click)="closeFightersPanel()" mat-icon-button>
-                    <mat-icon>close</mat-icon>
-                </button>
+        <div *ngIf="showWingPanel" class="expandable-panel wing-panel" (click)="onBackgroundClick($event, 'wing')">
+            <div class="panel-content" (click)="onPanelClick($event)">
+                <div class="panel-header">
+                    <h3>Wing Members</h3>
+                    <button class="panel-close-btn" (click)="closeWingPanel()" mat-icon-button>
+                        <mat-icon>close</mat-icon>
+                    </button>
+                </div>
+                <mat-list>
+                    <mat-list-item *ngFor="let member of getWingMembers()" class="wing-item">
+                        <mat-icon>person</mat-icon>
+                        <span class="wing-member-name">CMDR {{ member.Name || member }}</span>
+                        <div class="wing-member-details" *ngIf="member.Ship">
+                            <span class="wing-ship">{{ member.Ship }}</span>
+                        </div>
+                    </mat-list-item>
+                </mat-list>
+                <div *ngIf="!getWingMembers().length" class="empty-message">
+                    No wing members
+                </div>
             </div>
-            <mat-list>
-                <mat-list-item *ngFor="let fighter of getFighters(); let i = index" class="fighter-item">
-                    <mat-icon>flight</mat-icon>
-                    <div class="fighter-details">
-                        <div class="fighter-header">
-                            <span class="fighter-id">Fighter {{ fighter.ID || (i + 1) }}</span>
-                            <span class="fighter-status" [ngClass]="'status-' + (fighter.Status || 'unknown').toLowerCase()">
+        </div>
+
+        <div *ngIf="showFightersPanel" class="expandable-panel fighters-panel"
+             (click)="onBackgroundClick($event, 'fighters')">
+            <div class="panel-content" (click)="onPanelClick($event)">
+                <div class="panel-header">
+                    <h3>Ship Fighters</h3>
+                    <button class="panel-close-btn" (click)="closeFightersPanel()" mat-icon-button>
+                        <mat-icon>close</mat-icon>
+                    </button>
+                </div>
+                <mat-list>
+                    <mat-list-item *ngFor="let fighter of getFighters(); let i = index" class="fighter-item">
+                        <mat-icon>flight</mat-icon>
+                        <div class="fighter-details">
+                            <div class="fighter-header">
+                                <span class="fighter-id">Fighter {{ fighter.ID || (i + 1) }}</span>
+                                <span class="fighter-status"
+                                      [ngClass]="'status-' + (fighter.Status || 'unknown').toLowerCase()">
                                 {{ formatFighterStatus(fighter.Status) }}
                             </span>
-                        </div>
-                        <div class="fighter-pilot" *ngIf="fighter.Pilot && fighter.Status !== 'BeingRebuilt'">
-                            <mat-icon class="pilot-icon">person</mat-icon>
-                            <span>{{ fighter.Pilot }}</span>
-                        </div>
-                        <div class="fighter-rebuilt" *ngIf="fighter.RebuiltAt">
-                            <mat-icon class="rebuilt-icon">build</mat-icon>
-                            <span matTooltip="{{ fighter.RebuiltAt }}">
+                            </div>
+                            <div class="fighter-pilot" *ngIf="fighter.Pilot && fighter.Status !== 'BeingRebuilt'">
+                                <mat-icon class="pilot-icon">person</mat-icon>
+                                <span>{{ fighter.Pilot }}</span>
+                            </div>
+                            <div class="fighter-rebuilt" *ngIf="fighter.RebuiltAt">
+                                <mat-icon class="rebuilt-icon">build</mat-icon>
+                                <span matTooltip="{{ fighter.RebuiltAt }}">
                               Rebuilt in {{ getFighterRebuiltSecondsRemaining(fighter) }}s
                             </span>
-                        </div>
-                    </div>
-                </mat-list-item>
-            </mat-list>
-            <div *ngIf="!getFighters().length" class="empty-message">
-                No fighters available
-            </div>
-        </div>
-    </div>
-
-    <div *ngIf="showColonisationPanel" class="expandable-panel colonisation-panel" (click)="onBackgroundClick($event, 'colonisation')">
-        <div class="panel-content" (click)="onPanelClick($event)">
-            <div class="panel-header">
-                <h3>Colony Construction</h3>
-                <button class="panel-close-btn" (click)="closeColonisationPanel()" mat-icon-button>
-                    <mat-icon>close</mat-icon>
-                </button>
-            </div>
-            <div class="colony-header">
-                <h4>{{ getColonisationSystem() }}</h4>
-                <div class="colony-status" [ngClass]="getColonisationStatusClass()">
-                    {{ getColonisationStatusText() }}
-                </div>
-            </div>
-
-            <div class="progress-container">
-                <h4>Construction Progress</h4>
-                <div class="stat-bar">
-                    <mat-progress-bar
-                        mode="determinate"
-                        [value]="getColonisationProgressValue()"
-                    ></mat-progress-bar>
-                    <span>{{ formatPercentage(getColonisationProgress()) }}</span>
-                </div>
-            </div>
-
-            <div *ngIf="getColonisationResources().length > 0" class="resources-needed">
-                <h4>Resources Needed</h4>
-                <mat-list>
-                    <mat-list-item *ngFor="let resource of getColonisationResources()" class="resource-item">
-                        <div class="resource-details">
-                            <span class="resource-name">{{ resource.Name_Localised || resource.Name }}</span>
-                            <div class="resource-progress">
-                                <mat-progress-bar
-                                    mode="determinate"
-                                    [value]="(resource.ProvidedAmount / resource.RequiredAmount) * 100"
-                                ></mat-progress-bar>
-                                <span class="resource-count">
-                                    {{ resource.ProvidedAmount }}/{{ resource.RequiredAmount }}
-                                </span>
                             </div>
                         </div>
                     </mat-list-item>
                 </mat-list>
-            </div>
-        </div>
-    </div>
-    
-
-
-
-    <!-- Context-dependent content based on active mode -->
-    <div *ngIf="getActiveMode() === 'humanoid'" class="context-content character-sheet">
-        <!-- TOP SECTION - Character Identity -->
-        <div class="character-header">
-            <div class="character-name">
-                <h2>{{ getSuitLoadoutName() }}</h2>
-                <div class="character-subtitle">{{ getSuitName() }}</div>
-            </div>
-            
-            <!-- Exobiology scan info -->
-            <div *ngIf="exobiologyScan?.scans?.length > 0" class="bio-scan-mini">
-                <div class="bio-scan-header">{{ exobiologyScan?.life_form || 'Unknown lifeform' }} {{ exobiologyScan?.scans?.length || 0 }}/3</div>
-                <div class="bio-scan-content">
-                    <mat-icon [ngClass]="exobiologyScan?.within_scan_radius ? 'scan-bad' : 'scan-good'">
-                        {{ exobiologyScan?.within_scan_radius ? 'error' : 'check_circle' }}
-                    </mat-icon>
-                    <div class="bio-scan-details">
-                        <span class="scan-status">{{ exobiologyScan?.within_scan_radius ? 'Too close' : 'Good distance' }}</span>
-                        <span class="scan-radius">Distance: {{ (exobiologyScan?.distance || 0).toFixed(1) }}/{{ exobiologyScan?.scan_radius || 0 }}m</span>
-                    </div>
+                <div *ngIf="!getFighters().length" class="empty-message">
+                    No fighters available
                 </div>
-            </div>
-            
-            <div class="character-class">
-                <div class="class-circle">
-                    <mat-icon class="suit-class-icon">{{ getSuitClassIcon() }}</mat-icon>
-                </div>
-                <div class="class-label">CLASS</div>
             </div>
         </div>
 
-        <!-- CHARACTER SHEET MAIN SECTION -->
-        <div class="character-sheet-body">
-            <!-- LEFT COLUMN - Now showing Consumables -->
-            <div class="sheet-column attributes-column">
-                <h3 class="stat-header">CONSUMABLES</h3>
-                <div class="consumables-list">
-                    <div *ngFor="let item of getBackpackItems('Consumables')" class="backpack-item">
-                        <span class="item-name">{{ item.Name_Localised || item.Name }}</span>
-                        <span class="item-count" *ngIf="item.Count">x{{ item.Count }}</span>
-                    </div>
-                    <div *ngIf="!getBackpackItems('Consumables').length" class="empty-state">No consumables</div>
+        <div *ngIf="showColonisationPanel" class="expandable-panel colonisation-panel"
+             (click)="onBackgroundClick($event, 'colonisation')">
+            <div class="panel-content" (click)="onPanelClick($event)">
+                <div class="panel-header">
+                    <h3>Colony Construction</h3>
+                    <button class="panel-close-btn" (click)="closeColonisationPanel()" mat-icon-button>
+                        <mat-icon>close</mat-icon>
+                    </button>
                 </div>
-            </div>
-
-            <!-- MIDDLE COLUMN - Combat Stats and now Suit Mods -->
-            <div class="sheet-column stats-column">
-                <div class="combat-stats">
-                    <div class="combat-stat-item">
-                        <div class="combat-stat-circle">
-                            <span class="combat-stat-value">{{ ((currentStatus?.Health ?? 0) * 100).toFixed(0) }}%</span>
-                        </div>
-                        <div class="combat-stat-label">HEALTH</div>
-                    </div>
-
-                    <div class="combat-stat-item">
-                        <div class="combat-stat-circle">
-                            <span class="combat-stat-value">{{ currentStatus?.flags?.ShieldsUp ? 'ON' : 'OFF' }}</span>
-                        </div>
-                        <div class="combat-stat-label">SHIELDS</div>
-                    </div>
-
-                    <div class="combat-stat-item">
-                        <div class="combat-stat-circle">
-                            <span class="combat-stat-value">{{ ((currentStatus?.Oxygen ?? 0) * 100).toFixed(0) }}%</span>
-                        </div>
-                        <div class="combat-stat-label">OXYGEN</div>
-                    </div>
-
-                    <div class="combat-stat-item">
-                        <div class="combat-stat-circle">
-                            <span class="combat-stat-value">{{ currentStatus?.Gravity?.toFixed(2) || '0.00' }}</span>
-                        </div>
-                        <div class="combat-stat-label">GRAVITY</div>
+                <div class="colony-header">
+                    <h4>{{ getColonisationSystem() }}</h4>
+                    <div class="colony-status" [ngClass]="getColonisationStatusClass()">
+                        {{ getColonisationStatusText() }}
                     </div>
                 </div>
-                
-                <!-- Temperature indicator -->
-                <div class="temperature-indicator">
-                    <div class="temp-label">
-                        <mat-icon>whatshot</mat-icon>
-                        Temperature: {{ currentStatus?.Temperature?.toFixed(1) || '0.0' }} K
-                    </div>
-                </div>
-                
-                <!-- Suit Modifications moved from left to middle column -->
-                <div class="stat-block suit-mods">
-                    <h3 class="stat-header">SUIT MODIFICATIONS</h3>
-                    <div class="mod-list">
-                        <div *ngFor="let mod of getSuitMods()" class="mod-item">
-                            <div class="mod-icon">
-                                <mat-icon>{{ getSuitModIcon(mod) }}</mat-icon>
-                            </div>
-                            <div class="mod-name">{{ formatModName(mod) }}</div>
-                        </div>
-                        <div *ngIf="!getSuitMods().length" class="empty-state">No modifications</div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- RIGHT COLUMN - Weapons/Equipment -->
-            <div class="sheet-column weapons-column">
-                <h3 class="stat-header">ARMAMENTS</h3>
-                <div class="weapons-list">
-                    <ng-container *ngFor="let weapon of getSuitWeapons()">
-                        <div class="weapon-card">
-                            <div class="weapon-header">
-                                <div class="weapon-name">{{ weapon.ModuleName_Localised || weapon.ModuleName }}</div>
-                                <div class="weapon-class">
-                                    <div class="class-bubble">{{ weapon.Class || '?' }}</div>
+                <div class="progress-container">
+                    <h4>Construction Progress</h4>
+                    <div class="stat-bar">
+                        <mat-progress-bar
+                                mode="determinate"
+                                [value]="getColonisationProgressValue()"
+                        ></mat-progress-bar>
+                        <span>{{ formatPercentage(getColonisationProgress()) }}</span>
+                    </div>
+                </div>
+
+                <div *ngIf="getColonisationResources().length > 0" class="resources-needed">
+                    <h4>Resources Needed</h4>
+                    <mat-list>
+                        <mat-list-item *ngFor="let resource of getColonisationResources()" class="resource-item">
+                            <div class="resource-details">
+                                <span class="resource-name">{{ resource.Name_Localised || resource.Name }}</span>
+                                <div class="resource-progress">
+                                    <mat-progress-bar
+                                            mode="determinate"
+                                            [value]="(resource.ProvidedAmount / resource.RequiredAmount) * 100"
+                                    ></mat-progress-bar>
+                                    <span class="resource-count">
+                                    {{ resource.ProvidedAmount }}/{{ resource.RequiredAmount }}
+                                </span>
                                 </div>
                             </div>
-                            <div class="weapon-type">{{ getWeaponType(weapon) }}</div>
-                            <div class="weapon-slot">{{ formatWeaponSlot(weapon.SlotName) }}</div>
-                            <div class="weapon-mods">
-                                <ng-container *ngIf="weapon.WeaponMods && weapon.WeaponMods.length">
-                                    <div *ngFor="let mod of weapon.WeaponMods" class="weapon-mod-tag">
-                                        {{ formatModName(mod) }}
+                        </mat-list-item>
+                    </mat-list>
+                </div>
+            </div>
+        </div>
+
+
+        <!-- Context-dependent content based on active mode -->
+        <div *ngIf="getActiveMode() === 'humanoid'" class="context-content character-sheet">
+            <!-- TOP SECTION - Character Identity -->
+            <div class="character-header">
+                <div class="character-name">
+                    <h2>{{ getSuitLoadoutName() }}</h2>
+                    <div class="character-subtitle">{{ getSuitName() }}</div>
+                </div>
+
+                <!-- Exobiology scan info -->
+                <div *ngIf="exobiologyScan?.scans?.length > 0" class="bio-scan-mini">
+                    <div class="bio-scan-header">{{ exobiologyScan?.life_form || 'Unknown lifeform' }} {{ exobiologyScan?.scans?.length || 0 }}
+                        /3
+                    </div>
+                    <div class="bio-scan-content">
+                        <mat-icon [ngClass]="exobiologyScan?.within_scan_radius ? 'scan-bad' : 'scan-good'">
+                            {{ exobiologyScan?.within_scan_radius ? 'error' : 'check_circle' }}
+                        </mat-icon>
+                        <div class="bio-scan-details">
+                            <span class="scan-status">{{ exobiologyScan?.within_scan_radius ? 'Too close' : 'Good distance' }}</span>
+                            <span class="scan-radius">Distance: {{ (exobiologyScan?.distance || 0).toFixed(1) }}
+                                /{{ exobiologyScan?.scan_radius || 0 }}m</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="character-class">
+                    <div class="class-circle">
+                        <mat-icon class="suit-class-icon">{{ getSuitClassIcon() }}</mat-icon>
+                    </div>
+                    <div class="class-label">CLASS</div>
+                </div>
+            </div>
+
+            <!-- CHARACTER SHEET MAIN SECTION -->
+            <div class="character-sheet-body">
+                <!-- LEFT COLUMN - Now showing Consumables -->
+                <div class="sheet-column attributes-column">
+                    <h3 class="stat-header">CONSUMABLES</h3>
+                    <div class="consumables-list">
+                        <div *ngFor="let item of getBackpackItems('Consumables')" class="backpack-item">
+                            <span class="item-name">{{ item.Name_Localised || item.Name }}</span>
+                            <span class="item-count" *ngIf="item.Count">x{{ item.Count }}</span>
+                        </div>
+                        <div *ngIf="!getBackpackItems('Consumables').length" class="empty-state">No consumables</div>
+                    </div>
+                </div>
+
+                <!-- MIDDLE COLUMN - Combat Stats and now Suit Mods -->
+                <div class="sheet-column stats-column">
+                    <div class="combat-stats">
+                        <div class="combat-stat-item">
+                            <div class="combat-stat-circle">
+                                <span class="combat-stat-value">{{ ((currentStatus?.Health ?? 0) * 100).toFixed(0) }}
+                                    %</span>
+                            </div>
+                            <div class="combat-stat-label">HEALTH</div>
+                        </div>
+
+                        <div class="combat-stat-item">
+                            <div class="combat-stat-circle">
+                                <span class="combat-stat-value">{{ currentStatus?.flags?.ShieldsUp ? 'ON' : 'OFF' }}</span>
+                            </div>
+                            <div class="combat-stat-label">SHIELDS</div>
+                        </div>
+
+                        <div class="combat-stat-item">
+                            <div class="combat-stat-circle">
+                                <span class="combat-stat-value">{{ ((currentStatus?.Oxygen ?? 0) * 100).toFixed(0) }}
+                                    %</span>
+                            </div>
+                            <div class="combat-stat-label">OXYGEN</div>
+                        </div>
+
+                        <div class="combat-stat-item">
+                            <div class="combat-stat-circle">
+                                <span class="combat-stat-value">{{ currentStatus?.Gravity?.toFixed(2) || '0.00' }}</span>
+                            </div>
+                            <div class="combat-stat-label">GRAVITY</div>
+                        </div>
+                    </div>
+
+                    <!-- Temperature indicator -->
+                    <div class="temperature-indicator">
+                        <div class="temp-label">
+                            <mat-icon>whatshot</mat-icon>
+                            Temperature: {{ currentStatus?.Temperature?.toFixed(1) || '0.0' }} K
+                        </div>
+                    </div>
+
+                    <!-- Suit Modifications moved from left to middle column -->
+                    <div class="stat-block suit-mods">
+                        <h3 class="stat-header">SUIT MODIFICATIONS</h3>
+                        <div class="mod-list">
+                            <div *ngFor="let mod of getSuitMods()" class="mod-item">
+                                <div class="mod-icon">
+                                    <mat-icon>{{ getSuitModIcon(mod) }}</mat-icon>
+                                </div>
+                                <div class="mod-name">{{ formatModName(mod) }}</div>
+                            </div>
+                            <div *ngIf="!getSuitMods().length" class="empty-state">No modifications</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT COLUMN - Weapons/Equipment -->
+                <div class="sheet-column weapons-column">
+                    <h3 class="stat-header">ARMAMENTS</h3>
+                    <div class="weapons-list">
+                        <ng-container *ngFor="let weapon of getSuitWeapons()">
+                            <div class="weapon-card">
+                                <div class="weapon-header">
+                                    <div class="weapon-name">{{ weapon.ModuleName_Localised || weapon.ModuleName }}</div>
+                                    <div class="weapon-class">
+                                        <div class="class-bubble">{{ weapon.Class || '?' }}</div>
                                     </div>
-                                </ng-container>
-                                <div *ngIf="!weapon.WeaponMods || !weapon.WeaponMods.length" class="empty-state">
-                                    No modifications
+                                </div>
+                                <div class="weapon-type">{{ getWeaponType(weapon) }}</div>
+                                <div class="weapon-slot">{{ formatWeaponSlot(weapon.SlotName) }}</div>
+                                <div class="weapon-mods">
+                                    <ng-container *ngIf="weapon.WeaponMods && weapon.WeaponMods.length">
+                                        <div *ngFor="let mod of weapon.WeaponMods" class="weapon-mod-tag">
+                                            {{ formatModName(mod) }}
+                                        </div>
+                                    </ng-container>
+                                    <div *ngIf="!weapon.WeaponMods || !weapon.WeaponMods.length" class="empty-state">
+                                        No modifications
+                                    </div>
+                                </div>
+                            </div>
+                        </ng-container>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BOTTOM SECTION - Backpack Contents (now without consumables) -->
+            <div class="character-sheet-footer">
+                <h3 class="section-header">BACKPACK CONTENTS</h3>
+                <div class="backpack-block">
+                    <div class="backpack-summary" (click)="toggleBackpackDetails()">
+                        <div class="backpack-category" *ngIf="getBackpackItems('Items').length > 0">
+                            <span class="category-name">Items:</span>
+                            <span class="category-count">{{ getBackpackItems('Items').length }}</span>
+                        </div>
+                        <div class="backpack-category" *ngIf="getBackpackItems('Components').length > 0">
+                            <span class="category-name">Components:</span>
+                            <span class="category-count">{{ getBackpackItems('Components').length }}</span>
+                        </div>
+                        <div class="backpack-category" *ngIf="getBackpackItems('Data').length > 0">
+                            <span class="category-name">Data:</span>
+                            <span class="category-count">{{ getBackpackItems('Data').length }}</span>
+                        </div>
+                        <mat-icon>{{ showBackpackDetails ? 'expand_less' : 'expand_more' }}</mat-icon>
+                    </div>
+
+                    <div class="backpack-details" *ngIf="showBackpackDetails">
+                        <div *ngFor="let category of ['Items', 'Components', 'Data']">
+                            <div *ngIf="getBackpackItems(category).length > 0" class="backpack-category-section">
+                                <h4>{{ category }}</h4>
+                                <div class="backpack-items">
+                                    <div *ngFor="let item of getBackpackItems(category)" class="backpack-item">
+                                        <span class="item-name">{{ item.Name_Localised || item.Name }}</span>
+                                        <span class="item-count" *ngIf="item.Count">x{{ item.Count }}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </ng-container>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- BOTTOM SECTION - Backpack Contents (now without consumables) -->
-        <div class="character-sheet-footer">
-            <h3 class="section-header">BACKPACK CONTENTS</h3>
-            <div class="backpack-block">
-                <div class="backpack-summary" (click)="toggleBackpackDetails()">
-                    <div class="backpack-category" *ngIf="getBackpackItems('Items').length > 0">
-                        <span class="category-name">Items:</span>
-                        <span class="category-count">{{ getBackpackItems('Items').length }}</span>
+        <div *ngIf="['mainship', 'fighter', 'buggy'].includes(getActiveMode())" class="context-content character-sheet">
+            <!-- TOP SECTION - Ship Identity -->
+            <div class="character-header">
+                <!-- Size on the left -->
+                <div class="character-class">
+                    <div class="class-circle">
+                        <div class="circle-value">{{ getLandingPadSize() }}</div>
                     </div>
-                    <div class="backpack-category" *ngIf="getBackpackItems('Components').length > 0">
-                        <span class="category-name">Components:</span>
-                        <span class="category-count">{{ getBackpackItems('Components').length }}</span>
-                    </div>
-                    <div class="backpack-category" *ngIf="getBackpackItems('Data').length > 0">
-                        <span class="category-name">Data:</span>
-                        <span class="category-count">{{ getBackpackItems('Data').length }}</span>
-                    </div>
-                    <mat-icon>{{ showBackpackDetails ? 'expand_less' : 'expand_more' }}</mat-icon>
+                    <div class="class-label">SIZE</div>
                 </div>
 
-                <div class="backpack-details" *ngIf="showBackpackDetails">
-                    <div *ngFor="let category of ['Items', 'Components', 'Data']">
-                        <div *ngIf="getBackpackItems(category).length > 0" class="backpack-category-section">
-                            <h4>{{ category }}</h4>
-                            <div class="backpack-items">
-                                <div *ngFor="let item of getBackpackItems(category)" class="backpack-item">
-                                    <span class="item-name">{{ item.Name_Localised || item.Name }}</span>
-                                    <span class="item-count" *ngIf="item.Count">x{{ item.Count }}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <!-- Ship Name -->
+                <div class="character-name">
+                    <h2>{{ getShipName() }}</h2>
+                    <div class="character-subtitle">{{ getShipType() }} {{ getActiveMode() !== 'buggy' ? '(' + getShipIdent() + ')' : '' }}</div>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <div *ngIf="['mainship', 'fighter', 'buggy'].includes(getActiveMode())" class="context-content character-sheet">
-        <!-- TOP SECTION - Ship Identity -->
-        <div class="character-header">
-            <!-- Size on the left -->
-            <div class="character-class">
-                <div class="class-circle">
-                    <div class="circle-value">{{ getLandingPadSize() }}</div>
-                </div>
-                <div class="class-label">SIZE</div>
-            </div>
-            
-            <!-- Ship Name -->
-            <div class="character-name">
-                <h2>{{ getShipName() }}</h2>
-                <div class="character-subtitle">{{ getShipType() }} {{ getActiveMode() !== 'buggy' ? '(' + getShipIdent() + ')' : '' }}</div>
-            </div>
-            
-            <!-- Location Info -->
-            <div class="location-nav-container-header">
-                <div class="location-info">
-                    <mat-icon>public</mat-icon>
-                    <div class="location-details">
-                        <div class="system-name">{{ getLocationSystem() }}</div>
-                        <div *ngIf="getLocationDetail()" class="location-detail">
-                            <mat-icon class="small-icon">{{ getLocationDetailIcon() }}</mat-icon>
-                            <span>{{ getLocationDetail() }}</span>
-                            <span *ngIf="currentStatus?.LegalState"
-                                  [ngClass]="'status-' + currentStatus?.LegalState?.toLowerCase()">
+                <!-- Location Info -->
+                <div class="location-nav-container-header">
+                    <div class="location-info">
+                        <mat-icon>public</mat-icon>
+                        <div class="location-details">
+                            <div class="system-name">{{ getLocationSystem() }}</div>
+                            <div *ngIf="getLocationDetail()" class="location-detail">
+                                <mat-icon class="small-icon">{{ getLocationDetailIcon() }}</mat-icon>
+                                <span>{{ getLocationDetail() }}</span>
+                                <span *ngIf="currentStatus?.LegalState"
+                                      [ngClass]="'status-' + currentStatus?.LegalState?.toLowerCase()">
                                 {{ currentStatus?.LegalState }}
                             </span>
+                            </div>
                         </div>
                     </div>
+                    <div *ngIf="hasNavRoute()" class="nav-info" (click)="toggleNavDetails()">
+                        <mat-icon>navigation</mat-icon>
+                        <span>{{ getNavRouteInfo() }}</span>
+                        <mat-icon class="expander">{{ showNavDetails ? 'expand_less' : 'expand_more' }}</mat-icon>
+                    </div>
                 </div>
-                <div *ngIf="hasNavRoute()" class="nav-info" (click)="toggleNavDetails()">
-                    <mat-icon>navigation</mat-icon>
-                    <span>{{ getNavRouteInfo() }}</span>
-                    <mat-icon class="expander">{{ showNavDetails ? 'expand_less' : 'expand_more' }}</mat-icon>
-                </div>
-            </div>
-            
-            <!-- Target info -->
-            <div *ngIf="target?.Ship" class="target-info">
-                <div class="target-header">
-                    <mat-icon>track_changes</mat-icon>
-                    <span class="target-ship">{{ target?.Ship }}</span>
-                </div>
-                <div class="target-details">
-                    <div class="target-row">
-                        <span class="target-pilot" *ngIf="target?.PilotName">{{ target?.PilotName }}</span>
-                        <span class="target-rank" *ngIf="target?.PilotRank">{{ target?.PilotRank }}</span>
-                        <span *ngIf="target?.LegalStatus" class="target-legal"
-                              [ngClass]="'status-' + target?.LegalStatus?.toLowerCase()">
+
+                <!-- Target info -->
+                <div *ngIf="target?.Ship" class="target-info">
+                    <div class="target-header">
+                        <mat-icon>track_changes</mat-icon>
+                        <span class="target-ship">{{ target?.Ship }}</span>
+                    </div>
+                    <div class="target-details">
+                        <div class="target-row">
+                            <span class="target-pilot" *ngIf="target?.PilotName">{{ target?.PilotName }}</span>
+                            <span class="target-rank" *ngIf="target?.PilotRank">{{ target?.PilotRank }}</span>
+                            <span *ngIf="target?.LegalStatus" class="target-legal"
+                                  [ngClass]="'status-' + target?.LegalStatus?.toLowerCase()">
                             {{ target?.LegalStatus }}
                         </span>
-                    </div>
-                    <div class="target-row" *ngIf="target?.Scanned">
-                        <span class="target-faction" *ngIf="target?.Faction">{{ target?.Faction }}</span>
-                        <span class="target-scanned">SCANNED</span>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Status Icons on the very right -->
-            <div class="status-indicators-header">
-                <!-- Top row: Construction, Friends, Wing -->
-                <div class="status-icons-top-row">
-                    <!-- Colonisation Construction indicator -->
-                    <div *ngIf="isColonisationActive(colonisationConstruction)"
-                         class="colonisation-indicator"
-                         (click)="toggleColonisationPanel()">
-                        <mat-icon>construction</mat-icon>
-                        <span class="progress-text">{{ formatPercentage(getColonisationProgress()) }}</span>
-                    </div>
-
-                    <!-- Friends counter -->
-                    <div class="friends-counter" (click)="toggleFriendsPanel()" *ngIf="getFriendsCount() > 0">
-                        <mat-icon>people</mat-icon>
-                        <span class="badge">{{ getFriendsCount() }}</span>
-                    </div>
-
-                    <!-- Wing counter -->
-                    <div class="wing-counter" (click)="toggleWingPanel()" *ngIf="getWingCount() > 0">
-                        <mat-icon>group</mat-icon>
-                        <span class="badge">{{ getWingCount() }}</span>
-                    </div>
-                </div>
-                
-                <!-- Status flags in rows of max 5 -->
-                <div class="status-icons-grid">
-                    <!-- Status flags -->
-                    <ng-container *ngFor="let flag of statusFlags">
-                        <div *ngIf="shouldShowFlag('flags', flag)" class="status-icon" [ngClass]="getStatusIconClass('flags', flag)">
-                            <mat-icon matTooltip="{{ formatFlagName(flag) }}">{{ getIconForFlag(flag) }}</mat-icon>
                         </div>
-                    </ng-container>
-                    
-                    <!-- Odyssey flags -->
-                    <ng-container *ngFor="let flag of odysseyFlags">
-                        <div *ngIf="shouldShowFlag('flags2', flag)" class="status-icon" [ngClass]="getStatusIconClass('flags2', flag)">
-                            <mat-icon matTooltip="{{ formatFlagName(flag) }}">{{ getIconForOdysseyFlag(flag) }}</mat-icon>
+                        <div class="target-row" *ngIf="target?.Scanned">
+                            <span class="target-faction" *ngIf="target?.Faction">{{ target?.Faction }}</span>
+                            <span class="target-scanned">SCANNED</span>
                         </div>
-                    </ng-container>
-                </div>
-            </div>
-        </div>
-
-        <!-- Nav Route Details - integrated into character sheet -->
-        <div *ngIf="showNavDetails" class="nav-details-header">
-            <div class="nav-route-list">
-                <div *ngFor="let system of getNavRouteDetails(); let i = index" class="nav-route-item">
-                    <div class="nav-index">{{ i + 1 }}</div>
-                    <div class="nav-system">{{ system.StarSystem }}</div>
-                    <div class="nav-star-info" *ngIf="system.StarClass">
-                        <mat-icon class="star-icon" [ngClass]="getStarClassColor(system.StarClass)">
-                            {{ getStarTypeIcon(system.StarClass) }}
-                        </mat-icon>
-                        <span class="star-class">{{ system.StarClass }}</span>
-                    </div>
-                    <div class="nav-distance" *ngIf="system.StarPos && i > 0">
-                        {{ getJumpDistance(i) }} ly
-                    </div>
-                    <div class="star-scoopable" *ngIf="system.Scoopable !== undefined">
-                        <mat-icon class="fuel-icon" [ngClass]="system.Scoopable ? 'scoopable' : 'not-scoopable'">
-                            {{ system.Scoopable ? 'local_gas_station' : 'not_interested' }}
-                        </mat-icon>
-                        <span class="small-text">{{ system.Scoopable ? 'Scoopable' : 'Not scoopable' }}</span>
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- SHIP SHEET MAIN SECTION -->
-        <div class="character-sheet-body">
-            <!-- LEFT COLUMN - Utility -->
-            <div class="sheet-column attributes-column">
-                <!-- Utility section (already moved from right to left) -->
-                <h3 class="stat-header">UTILITY</h3>
-                <div class="utility-list">
-                    <ng-container *ngFor="let module of getUtilityModules()">
-                        <div class="utility-item">
-                            <div class="utility-details">
-                                <span class="utility-name">{{ formatModuleName(module.Item) }}</span>
+                <!-- Status Icons on the very right -->
+                <div class="status-indicators-header">
+                    <!-- Top row: Construction, Friends, Wing -->
+                    <div class="status-icons-top-row">
+                        <!-- Colonisation Construction indicator -->
+                        <div *ngIf="isColonisationActive(colonisationConstruction)"
+                             class="colonisation-indicator"
+                             (click)="toggleColonisationPanel()">
+                            <mat-icon>construction</mat-icon>
+                            <span class="progress-text">{{ formatPercentage(getColonisationProgress()) }}</span>
+                        </div>
+
+                        <!-- Friends counter -->
+                        <div class="friends-counter" (click)="toggleFriendsPanel()" *ngIf="getFriendsCount() > 0">
+                            <mat-icon>people</mat-icon>
+                            <span class="badge">{{ getFriendsCount() }}</span>
+                        </div>
+
+                        <!-- Wing counter -->
+                        <div class="wing-counter" (click)="toggleWingPanel()" *ngIf="getWingCount() > 0">
+                            <mat-icon>group</mat-icon>
+                            <span class="badge">{{ getWingCount() }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Status flags in rows of max 5 -->
+                    <div class="status-icons-grid">
+                        <!-- Status flags -->
+                        <ng-container *ngFor="let flag of statusFlags">
+                            <div *ngIf="shouldShowFlag('flags', flag)" class="status-icon"
+                                 [ngClass]="getStatusIconClass('flags', flag)">
+                                <mat-icon matTooltip="{{ formatFlagName(flag) }}">{{ getIconForFlag(flag) }}</mat-icon>
                             </div>
-                            <div class="utility-engineering" *ngIf="module.Engineering">
-                                <mat-icon class="engineering-icon">build</mat-icon>
-                                <span class="engineering-text">{{ module.Engineering.BlueprintName || 'Unknown' }} (G{{ module.Engineering.Level || '?' }})
+                        </ng-container>
+
+                        <!-- Odyssey flags -->
+                        <ng-container *ngFor="let flag of odysseyFlags">
+                            <div *ngIf="shouldShowFlag('flags2', flag)" class="status-icon"
+                                 [ngClass]="getStatusIconClass('flags2', flag)">
+                                <mat-icon matTooltip="{{ formatFlagName(flag) }}">{{ getIconForOdysseyFlag(flag) }}
+                                </mat-icon>
+                            </div>
+                        </ng-container>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Nav Route Details - integrated into character sheet -->
+            <div *ngIf="showNavDetails" class="nav-details-header">
+                <div class="nav-route-list">
+                    <div *ngFor="let system of getNavRouteDetails(); let i = index" class="nav-route-item">
+                        <div class="nav-index">{{ i + 1 }}</div>
+                        <div class="nav-system">{{ system.StarSystem }}</div>
+                        <div class="nav-star-info" *ngIf="system.StarClass">
+                            <mat-icon class="star-icon" [ngClass]="getStarClassColor(system.StarClass)">
+                                {{ getStarTypeIcon(system.StarClass) }}
+                            </mat-icon>
+                            <span class="star-class">{{ system.StarClass }}</span>
+                        </div>
+                        <div class="nav-distance" *ngIf="system.StarPos && i > 0">
+                            {{ getJumpDistance(i) }} ly
+                        </div>
+                        <div class="star-scoopable" *ngIf="system.Scoopable !== undefined">
+                            <mat-icon class="fuel-icon" [ngClass]="system.Scoopable ? 'scoopable' : 'not-scoopable'">
+                                {{ system.Scoopable ? 'local_gas_station' : 'not_interested' }}
+                            </mat-icon>
+                            <span class="small-text">{{ system.Scoopable ? 'Scoopable' : 'Not scoopable' }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SHIP SHEET MAIN SECTION -->
+            <div class="character-sheet-body">
+                <!-- LEFT COLUMN - Utility -->
+                <div class="sheet-column attributes-column">
+                    <!-- Utility section (already moved from right to left) -->
+                    <h3 class="stat-header">UTILITY</h3>
+                    <div class="utility-list">
+                        <ng-container *ngFor="let module of getUtilityModules()">
+                            <div class="utility-item">
+                                <div class="utility-details">
+                                    <span class="utility-name">{{ formatModuleName(module.Item) }}</span>
+                                </div>
+                                <div class="utility-engineering" *ngIf="module.Engineering">
+                                    <mat-icon class="engineering-icon">build</mat-icon>
+                                    <span class="engineering-text">{{ module.Engineering.BlueprintName || 'Unknown' }}
+                                        (G{{ module.Engineering.Level || '?' }})
                                     <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
                                         - {{ module.Engineering.ExperimentalEffect_Localised }}
                                     </span>
                                 </span>
+                                </div>
                             </div>
-                        </div>
-                    </ng-container>
-                    <div *ngIf="!getUtilityModules().length" class="empty-state">No utility modules equipped</div>
+                        </ng-container>
+                        <div *ngIf="!getUtilityModules().length" class="empty-state">No utility modules equipped</div>
+                    </div>
                 </div>
-            </div>
 
-            <!-- MIDDLE COLUMN - Defense Stats -->
-            <div class="sheet-column stats-column">
-                <div class="ship-defense-stats">
-                    <div class="defense-stat-item">
-                        <div class="stat-label">HULL</div>
-                        <div class="stat-value-with-bar">
-                            <div class="stat-value">{{ getShipHealth() }}</div>
-                            <mat-progress-bar class="stat-bar" mode="determinate" [value]="getShipHealthPercentage()"></mat-progress-bar>
-                        </div>
-                    </div>
-
-                    <div class="defense-stat-item">
-                        <div class="stat-label">FUEL</div>
-                        <div class="stat-value-with-bar">
-                            <div class="stat-value">{{ getFuelAmount() }}/{{ getFuelCapacity() }}</div>
-                            <mat-progress-bar class="stat-bar" mode="determinate" [value]="getFuelPercentage()"></mat-progress-bar>
-                        </div>
-                    </div>
-
-                    <div *ngIf="getCargoCapacity() > 0" class="defense-stat-item cargo-box" (click)="toggleCargoDetails()">
-                        <div class="stat-label">CARGO <mat-icon class="tiny-icon">{{ showCargoDetails ? 'expand_less' : 'expand_more' }}</mat-icon></div>
-                        
-                        <!-- Cargo manifest when expanded -->
-                        <div *ngIf="showCargoDetails" class="cargo-manifest">
-                            <div class="cargo-list">
-                                <div *ngFor="let item of getCargoItems()" class="cargo-item">
-                                    <span class="cargo-item-name">{{ item.Name_Localised || item.Name }}</span>
-                                    <span class="cargo-item-count">x{{ item.Count }}</span>
-                                </div>
-                                <div *ngIf="!hasCargoItems()" class="empty-state">Cargo hold empty</div>
+                <!-- MIDDLE COLUMN - Defense Stats -->
+                <div class="sheet-column stats-column">
+                    <div class="ship-defense-stats">
+                        <div class="defense-stat-item">
+                            <div class="stat-label">HULL</div>
+                            <div class="stat-value-with-bar">
+                                <div class="stat-value">{{ getShipHealth() }}</div>
+                                <mat-progress-bar class="stat-bar" mode="determinate"
+                                                  [value]="getShipHealthPercentage()"></mat-progress-bar>
                             </div>
                         </div>
-                        
-                        <!-- Cargo summary bar (moves to bottom when expanded) -->
-                        <div class="stat-value-with-bar" [ngClass]="{'expanded-summary': showCargoDetails}">
-                            <div class="stat-value">{{ getCargoAmount() }}/{{ getCargoCapacity() }}</div>
-                            <mat-progress-bar class="stat-bar" mode="determinate" [value]="getCargoPercentage()"></mat-progress-bar>
-                        </div>
-                    </div>
 
-                    <!-- Fighters container -->
-                    <div *ngIf="hasFighters()" class="defense-stat-item fighters-container">
-                        <div class="stat-label">FIGHTERS</div>
-                        <div class="fighters-display" [ngClass]="'fighters-count-' + getFightersCount()">
-                            <div *ngFor="let fighter of getFighters(); let i = index" class="fighter-box">
-                                <div class="fighter-status" [ngClass]="'status-' + (fighter.Status || 'unknown').toLowerCase()">
-                                    {{ formatFighterStatus(fighter.Status) }}
+                        <div class="defense-stat-item">
+                            <div class="stat-label">FUEL</div>
+                            <div class="stat-value-with-bar">
+                                <div class="stat-value">{{ getFuelAmount() }}/{{ getFuelCapacity() }}</div>
+                                <mat-progress-bar class="stat-bar" mode="determinate"
+                                                  [value]="getFuelPercentage()"></mat-progress-bar>
+                            </div>
+                        </div>
+
+                        <div *ngIf="getCargoCapacity() > 0" class="defense-stat-item cargo-box"
+                             (click)="toggleCargoDetails()">
+                            <div class="stat-label">CARGO
+                                <mat-icon class="tiny-icon">{{ showCargoDetails ? 'expand_less' : 'expand_more' }}
+                                </mat-icon>
+                            </div>
+
+                            <!-- Cargo manifest when expanded -->
+                            <div *ngIf="showCargoDetails" class="cargo-manifest">
+                                <div class="cargo-list">
+                                    <div *ngFor="let item of getCargoItems()" class="cargo-item">
+                                        <span class="cargo-item-name">{{ item.Name_Localised || item.Name }}</span>
+                                        <span class="cargo-item-count">x{{ item.Count }}</span>
+                                    </div>
+                                    <div *ngIf="!hasCargoItems()" class="empty-state">Cargo hold empty</div>
                                 </div>
-                                <div class="fighter-pilot" *ngIf="fighter.Pilot && fighter.Status !== 'BeingRebuilt'">
-                                    {{ fighter.Pilot }}
-                                </div>
-                                <div class="fighter-pilot-placeholder" *ngIf="!fighter.Pilot && fighter.Status !== 'BeingRebuilt'">
-                                    No pilot
-                                </div>
-                                <div class="fighter-rebuilt" *ngIf="fighter.RebuiltAt">
+                            </div>
+
+                            <!-- Cargo summary bar (moves to bottom when expanded) -->
+                            <div class="stat-value-with-bar" [ngClass]="{'expanded-summary': showCargoDetails}">
+                                <div class="stat-value">{{ getCargoAmount() }}/{{ getCargoCapacity() }}</div>
+                                <mat-progress-bar class="stat-bar" mode="determinate"
+                                                  [value]="getCargoPercentage()"></mat-progress-bar>
+                            </div>
+                        </div>
+
+                        <!-- Fighters container -->
+                        <div *ngIf="hasFighters()" class="defense-stat-item fighters-container">
+                            <div class="stat-label">FIGHTERS</div>
+                            <div class="fighters-display" [ngClass]="'fighters-count-' + getFightersCount()">
+                                <div *ngFor="let fighter of getFighters(); let i = index" class="fighter-box">
+                                    <div class="fighter-status"
+                                         [ngClass]="'status-' + (fighter.Status || 'unknown').toLowerCase()">
+                                        {{ formatFighterStatus(fighter.Status) }}
+                                    </div>
+                                    <div class="fighter-pilot"
+                                         *ngIf="fighter.Pilot && fighter.Status !== 'BeingRebuilt'">
+                                        {{ fighter.Pilot }}
+                                    </div>
+                                    <div class="fighter-pilot-placeholder"
+                                         *ngIf="!fighter.Pilot && fighter.Status !== 'BeingRebuilt'">
+                                        No pilot
+                                    </div>
+                                    <div class="fighter-rebuilt" *ngIf="fighter.RebuiltAt">
                                     <span>
                                         {{ getFighterRebuiltSecondsRemaining(fighter) }}s
                                     </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="defense-stat-item">
-                        <div class="stat-label">JUMP RANGE</div>
-                        <div class="stat-value-large">{{ getJumpRange().toFixed(1) }}</div>
-                        <div class="stat-suffix">LY</div>
-                    </div>
-
-                    <div class="defense-stat-item">
-                        <div class="stat-label">REBUY</div>
-                        <div class="stat-value-large cr">{{ getShipRebuy() | number }}</div>
-                        <div class="credit-balance">
-                            Balance: {{ formatNumber(getCurrentBalance()) }} CR
+                        <div class="defense-stat-item">
+                            <div class="stat-label">JUMP RANGE</div>
+                            <div class="jump-range-values">
+                                <div class="jump-range-item">
+                                    <div class="jump-range-label">MIN</div>
+                                    <div>{{ getMinJumpRange().toFixed(2) }}</div>
+                                </div>
+                                <div class="jump-range-item">
+                                    <div class="jump-range-label">CURRENT</div>
+                                    <div class="stat-value-large">{{ getCUrJumpRange().toFixed(2) }}</div>
+                                </div>
+                                <div class="jump-range-item">
+                                    <div class="jump-range-label">MAX</div>
+                                    <div>{{ getMaxJumpRange().toFixed(2) }}</div>
+                                </div>
+                            </div>
+                            <div class="stat-suffix">LY</div>
+                        </div>
+                        <div class="defense-stat-item">
+                            <div class="stat-label">REBUY</div>
+                            <div class="stat-value-large cr">{{ getShipRebuy() | number }}</div>
+                            <div class="credit-balance">
+                                Balance: {{ formatNumber(getCurrentBalance()) }} CR
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- RIGHT COLUMN - Weapons/Hardpoints -->
-            <div class="sheet-column weapons-column">
-                <h3 class="stat-header">ARMAMENTS</h3>
-                <div class="hardpoints-list">
-                    <ng-container *ngFor="let module of getWeaponModules()">
-                        <div class="hardpoint-item">
-                            <div class="hardpoint-details weapon-display">
-                                <span class="hardpoint-name">{{ formatModuleName(module.Item) }}</span>
-                            </div>
-                            <div class="hardpoint-engineering" *ngIf="module.Engineering">
-                                <mat-icon class="engineering-icon">build</mat-icon>
-                                <span class="engineering-text">{{ module.Engineering.BlueprintName || 'Unknown' }} (G{{ module.Engineering.Level || '?' }})
+                <!-- RIGHT COLUMN - Weapons/Hardpoints -->
+                <div class="sheet-column weapons-column">
+                    <h3 class="stat-header">ARMAMENTS</h3>
+                    <div class="hardpoints-list">
+                        <ng-container *ngFor="let module of getWeaponModules()">
+                            <div class="hardpoint-item">
+                                <div class="hardpoint-details weapon-display">
+                                    <span class="hardpoint-name">{{ formatModuleName(module.Item) }}</span>
+                                </div>
+                                <div class="hardpoint-engineering" *ngIf="module.Engineering">
+                                    <mat-icon class="engineering-icon">build</mat-icon>
+                                    <span class="engineering-text">{{ module.Engineering.BlueprintName || 'Unknown' }}
+                                        (G{{ module.Engineering.Level || '?' }})
                                     <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
                                         - {{ module.Engineering.ExperimentalEffect_Localised }}
                                     </span>
                                 </span>
+                                </div>
                             </div>
-                        </div>
-                    </ng-container>
-                    <div *ngIf="!getWeaponModules().length" class="empty-state">No weapons equipped</div>
+                        </ng-container>
+                        <div *ngIf="!getWeaponModules().length" class="empty-state">No weapons equipped</div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-
-
-        <!-- BOTTOM SECTION - Core & Optional Modules -->
-        <div class="character-sheet-footer">
-            <div class="modules-container">
-                <div class="modules-section core-section">
-                    <h3 class="section-header">CORE INTERNALS</h3>
-                    <div class="module-list core-modules">
-                        <ng-container *ngFor="let module of getCoreModules()">
-                            <div class="module-item">
-                                <div class="module-slot">{{ formatSlotName(module.Slot) }}</div>
-                                <div class="module-content">
-                                    <div class="module-name">{{ formatModuleName(module.Item) }}</div>
-                                    <div class="module-engineering" *ngIf="module.Engineering">
-                                        <mat-icon class="engineering-icon">build</mat-icon>
-                                        <span class="engineering-text">{{ module.Engineering.BlueprintName || 'Unknown' }} (G{{ module.Engineering.Level || '?' }})
+            <!-- BOTTOM SECTION - Core & Optional Modules -->
+            <div class="character-sheet-footer">
+                <div class="modules-container">
+                    <div class="modules-section core-section">
+                        <h3 class="section-header">CORE INTERNALS</h3>
+                        <div class="module-list core-modules">
+                            <ng-container *ngFor="let module of getCoreModules()">
+                                <div class="module-item">
+                                    <div class="module-slot">{{ formatSlotName(module.Slot) }}</div>
+                                    <div class="module-content">
+                                        <div class="module-name">{{ formatModuleName(module.Item) }}</div>
+                                        <div class="module-engineering" *ngIf="module.Engineering">
+                                            <mat-icon class="engineering-icon">build</mat-icon>
+                                            <span class="engineering-text">{{ module.Engineering.BlueprintName || 'Unknown' }}
+                                                (G{{ module.Engineering.Level || '?' }})
                                             <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
                                                 - {{ module.Engineering.ExperimentalEffect_Localised }}
                                             </span>
                                         </span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </ng-container>
+                            </ng-container>
+                        </div>
                     </div>
-                </div>
 
-                <div class="modules-section optional-section">
-                    <h3 class="section-header">OPTIONAL INTERNALS</h3>
-                    <div class="module-list optional-modules">
-                        <ng-container *ngFor="let module of getOptionalModules(); let i = index">
-                            <div *ngIf="showAllModules || i < getVisibleModulesCount()" class="module-item">
-                                <div class="module-slot">{{ formatSlotName(module.Slot) }}</div>
-                                <div class="module-content">
-                                    <div class="module-name">{{ formatModuleName(module.Item) }}</div>
-                                    <div class="module-engineering" *ngIf="module.Engineering">
-                                        <mat-icon class="engineering-icon">build</mat-icon>
-                                        <span class="engineering-text">{{ module.Engineering.BlueprintName || 'Unknown' }} (G{{ module.Engineering.Level || '?' }})
+                    <div class="modules-section optional-section">
+                        <h3 class="section-header">OPTIONAL INTERNALS</h3>
+                        <div class="module-list optional-modules">
+                            <ng-container *ngFor="let module of getOptionalModules(); let i = index">
+                                <div *ngIf="showAllModules || i < getVisibleModulesCount()" class="module-item">
+                                    <div class="module-slot">{{ formatSlotName(module.Slot) }}</div>
+                                    <div class="module-content">
+                                        <div class="module-name">{{ formatModuleName(module.Item) }}</div>
+                                        <div class="module-engineering" *ngIf="module.Engineering">
+                                            <mat-icon class="engineering-icon">build</mat-icon>
+                                            <span class="engineering-text">{{ module.Engineering.BlueprintName || 'Unknown' }}
+                                                (G{{ module.Engineering.Level || '?' }})
                                             <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
                                                 - {{ module.Engineering.ExperimentalEffect_Localised }}
                                             </span>
                                         </span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </ng-container>
-                    </div>
+                            </ng-container>
+                        </div>
 
-                    <div *ngIf="getOptionalModules().length > getVisibleModulesCount() && !showAllModules"
-                         class="show-more" (click)="toggleAllModules()">
-                        Show All Modules
-                    </div>
+                        <div *ngIf="getOptionalModules().length > getVisibleModulesCount() && !showAllModules"
+                             class="show-more" (click)="toggleAllModules()">
+                            Show All Modules
+                        </div>
 
-                    <div *ngIf="showAllModules" class="show-less" (click)="toggleAllModules()">
-                        Show Less
+                        <div *ngIf="showAllModules" class="show-less" (click)="toggleAllModules()">
+                            Show Less
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
-
 </div>
-</div> 
