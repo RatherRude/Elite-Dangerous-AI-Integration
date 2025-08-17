@@ -832,8 +832,8 @@ class ShipInfo(Projection[ShipInfoState]):
             self.state['LandingPadSize'] = ship_sizes.get(self.state['Type'], 'Unknown')
             
         # Recalculate jump ranges on weight, module or modifier changes
-        if isinstance(event, GameEvent) and event.content.get('event') in ('Loadout', 'Cargo', 'FSDJump', 'JetConeBoost', 'ReservoirReplenished', 'RefuelAll', 'RefuelPartial', 'FuelScoop'):
-            try: 
+        if isinstance(event, StatusEvent) and event.status.get('event') == 'Status':
+            try:
                 min_jr,cur_jr,max_jr = self.calculate_jump_range()
                 self.state['minimum_jump_range'] = min_jr
                 self.state['current_jump_range'] = cur_jr

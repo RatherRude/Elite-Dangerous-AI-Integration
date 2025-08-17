@@ -522,31 +522,22 @@
 
                     <div class="defense-stat-item">
                         <div class="stat-label">JUMP RANGE</div>
-                            <div class="jump-range-values">
-                                <div class="jump-range-item">
-                                    <div class="jump-range-label">MAX</div>   
-                                    <div class="stat-value-large">{{ getJumpRange().toFixed(2)}}</div>
-                                </div>
-                                <div class="jump-range-item">
-                                    <div class="jump-range-label">MIN</div>
-                                    <div>{{ getMinJumpRange().toFixed(3) }}</div>
-                                </div>
-                                <div class="jump-range-item">
-                                    <div class="jump-range-label">CURRENT</div>
-                                    <div>{{ getCUrJumpRange().toFixed(3) }}</div>
-                                </div>
-                                <div class="jump-range-item">
-                                    <div class="jump-range-label">MAX</div>
-                                    <div>{{ getMaxJumpRange().toFixed(3) }}</div>
-                                </div>                 
+                        <div class="jump-range-values">
+                            <div class="jump-range-item">
+                                <div class="jump-range-label">MIN</div>
+                                <div>{{ getMinJumpRange().toFixed(2) }}</div>
                             </div>
-                            <div class="stat-suffix">LY</div>
+                            <div class="jump-range-item">
+                                <div class="jump-range-label">CURRENT</div>
+                                <div class="stat-value-large">{{ getCUrJumpRange().toFixed(2) }}</div>
+                            </div>
+                            <div class="jump-range-item">
+                                <div class="jump-range-label">MAX</div>
+                                <div>{{ getMaxJumpRange().toFixed(2) }}</div>
                             </div>
                         </div>
-                        
-                            
+                        <div class="stat-suffix">LY</div>
                     </div>
-
                     <div class="defense-stat-item">
                         <div class="stat-label">REBUY</div>
                         <div class="stat-value-large cr">{{ getShipRebuy() | number }}</div>

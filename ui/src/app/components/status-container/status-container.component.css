@@ -1203,8 +1203,8 @@
 /* Ship jump stats */
 .jump-range-values {
   display: flex;
-  justify-content: center; 
-  gap: 12px; 
+  justify-content: center;
+  gap: 12px;
 }
 .jump-range-item {
   display: flex;
