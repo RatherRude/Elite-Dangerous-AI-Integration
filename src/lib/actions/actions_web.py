@@ -1338,15 +1338,6 @@ def station_finder(obj, projected_states):
 
         filtered_data = filter_station_response(request_body, data)
         # tech broker, material trader
-        if obj.get("technology_broker") or obj.get("material_trader"):
-            if len(filtered_data["results"]) > 0:
-                return galaxy_map_open({
-                    "system_name": filtered_data["results"][0]["system"],
-                    "start_navigation": True,
-                    "details": filtered_data["results"][0]
-                }, projected_states)
-            else:
-                return 'No stations were found, so no route was plotted.'
 
         return f'Here is a list of stations: {json.dumps(filtered_data)}'
     except Exception as e:
