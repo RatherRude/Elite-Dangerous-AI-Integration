@@ -1575,16 +1575,6 @@ def station_finder(obj, projected_states):
         data = response.json()
 
         filtered_data = filter_station_response(request_body, data)
-        # tech broker, material trader
-        if obj.get("technology_broker") or obj.get("material_trader"):
-            if len(filtered_data["results"]) > 0:
-                return galaxy_map_open({
-                    "system_name": filtered_data["results"][0]["system"],
-                    "start_navigation": True,
-                    "details": filtered_data["results"][0]
-                }, projected_states)
-            else:
-                return 'No stations were found, so no route was plotted.'
 
         return f'Here is a list of stations: {json.dumps(filtered_data)}'
     except Exception as e:
@@ -1789,8 +1779,6 @@ def system_finder(obj, projected_states):
 
 
 def prepare_body_request(obj, projected_states):
-    
-
     filters = {
         "distance": {
             "min": "0",
@@ -1972,7 +1960,6 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
         'web',
         input_template=lambda i, s: f"Searching: {i.get('query', '')}",
     )
-    action_manager.register_action("web_search", web_search)
 
 
 if __name__ == '__main__':
