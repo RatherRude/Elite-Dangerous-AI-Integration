@@ -45,6 +45,15 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - honk
     </details>
 
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - PlayerHUDModeToggle
+    - CycleFireGroupNext
+    - PrimaryFire
+    - SecondaryFire
+    </details>
+
 2. **Set flight thrust speed**
 
     - `speed`: String (options: "Minus100", "Minus75", "Minus50", "Minus25", "Zero", "25", "50", "75", "100")
@@ -56,6 +65,20 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - half speed
     - full speed
     - reverse
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - SetSpeedMinus100
+    - SetSpeedMinus75
+    - SetSpeedMinus50
+    - SetSpeedMinus25
+    - SetSpeedZero
+    - SetSpeed25
+    - SetSpeed50
+    - SetSpeed75
+    - SetSpeed100
     </details>
 
 3. **Deploy heat sink**
@@ -72,6 +95,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - cooling
     </details>
 
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - DeployHeatSink
+    </details>
+
 4. **Toggle hardpoints**
 
     <details>
@@ -85,6 +114,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - hardpoints down
     - weapons out
     - weapons away
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - DeployHardpointToggle
     </details>
 
 5. **Manage power distribution**
@@ -109,6 +144,15 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - pips to systems
     </details>
 
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - ResetPowerDistribution
+    - IncreaseEnginesPower
+    - IncreaseWeaponsPower
+    - IncreaseSystemsPower
+    </details>
+
 6. **Open galaxy map**
 
     - `system_name`: String (optional)
@@ -126,12 +170,32 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - nav map
     </details>
 
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - GalaxyMapOpen
+    - CamZoomIn
+    - UI_Up
+    - UI_Left
+    - UI_Right
+    - UI_Select
+    - UI_Back
+    - CamZoomOut
+    - Key_Enter
+    </details>
+
 7. **Close galaxy map**
 
     <details>
     <summary>Examples</summary>
     
     - close galaxy map
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - GalaxyMapOpen
     </details>
 
 8. **Toggle system map**
@@ -148,6 +212,13 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - local map
     - sysmap
     - show system map
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - SystemMapOpen
+    - UI_Back
     </details>
 
 9. **Target ship**
@@ -206,6 +277,20 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - target third teammate's target
     </details>
 
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - CycleNextTarget
+    - CyclePreviousTarget
+    - SelectHighestThreat
+    - CycleNextHostileTarget
+    - CyclePreviousHostileTarget
+    - TargetWingman0
+    - TargetWingman1
+    - TargetWingman2
+    - SelectTargetsTarget
+    </details>
+
 10. **Toggle wing nav lock**
 
     <details>
@@ -221,6 +306,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - follow wing
     </details>
 
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - WingNavLock
+    </details>
+
 11. **Cycle fire group**
 
     - `direction`: String (options: "next", "previous")
@@ -232,6 +323,13 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - previous fire group
     - select next fire group
     - select previous fire group
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - CycleFireGroupNext
+    - CycleFireGroupPrevious
     </details>
 
 12. **Switch HUD mode**
@@ -250,6 +348,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - change hud
     </details>
 
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - PlayerHUDModeToggle
+    </details>
+
 13. **Toggle ship spotlight**
 
     <details>
@@ -262,6 +366,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - lights off
     - toggle lights
     - toggle the lights
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - ShipSpotLightToggle
     </details>
 
 14. **Fire chaff launcher**
@@ -277,6 +387,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - evade
     </details>
 
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - FireChaffLauncher
+    </details>
+
 15. **Toggle night vision**
 
     <details>
@@ -288,6 +404,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - thermal vision
     - enhanced vision
     - infrared
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - NightVisionToggle
     </details>
 
 16. **Target subsystem on locked ship**
@@ -321,6 +443,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - target the power plant
     </details>
 
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - CycleNextSubsystem
+    </details>
+
 17. **Charge ECM**
 
     <details>
@@ -332,6 +460,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - activate ecm
     - ecm blast
     - disrupt
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - ChargeECM
     </details>
 
 18. **NPC crew orders**
@@ -354,6 +488,25 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - follow me
     </details>
 
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - FocusRadarPanel
+    - UI_Left
+    - UI_Right
+    - UI_Up
+    - UI_Down
+    - UI_Select
+    - UIFocus
+    - OrderDefensiveBehaviour
+    - OrderAggressiveBehaviour
+    - OrderFocusTarget
+    - OrderHoldFire
+    - OrderHoldPosition
+    - OrderFollow
+    - OrderRequestDock
+    </details>
+
 ### Main Ship Operations
 
 1. **Initiate FSD jump**
@@ -374,6 +527,18 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - let's go
     </details>
 
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - Hyperspace (if NextJumpTarget set)
+    - Supercruise (if jump_type == supercruise)
+    - HyperSuperCombination (auto)
+    - SetSpeed100
+    - LandingGearToggle (auto retract when down)
+    - ToggleCargoScoop (auto retract when deployed)
+    - DeployHardpointToggle (auto retract when deployed)
+    </details>
+
 2. **Target next system in route**
 
     <details>
@@ -385,6 +550,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - next waypoint
     - continue route
     - next in route
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - TargetNextRouteSystem
     </details>
 
 3. **Toggle cargo scoop**
@@ -401,6 +572,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - close cargo scoop
     </details>
 
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - ToggleCargoScoop
+    </details>
+
 4. **Eject all cargo**
 
     <details>
@@ -412,6 +589,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - drop cargo
     - emergency cargo drop
     - purge cargo
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - EjectAllCargo
     </details>
 
 5. **Toggle landing gear**
@@ -429,6 +612,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - gear down
     </details>
 
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - LandingGearToggle
+    </details>
+
 6. **Use shield cell**
 
     <details>
@@ -441,6 +630,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - shield boost
     - repair shields
     - restore shields
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - UseShieldCell
     </details>
 
 7. **Request docking**
@@ -456,6 +651,18 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - docking permission
     </details>
 
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - FocusLeftPanel
+    - CyclePreviousPanel
+    - UI_Left
+    - UI_Right
+    - UI_Up
+    - UI_Select
+    - UIFocus
+    </details>
+
 8. **Undock ship**
 
     <details>
@@ -467,6 +674,14 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - leave station
     - takeoff
     - disengage
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - UI_Down
+    - UI_Up
+    - UI_Select
     </details>
 
 ### Ship Launched Fighter (SLF) Actions
@@ -484,6 +699,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - docking permission
     </details>
 
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - OrderRequestDock
+    </details>
+
 ### Surface Reconnaissance Vehicle (SRV) Actions
 
 1. **Toggle Drive Assist**
@@ -497,6 +718,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - auto drive
     - driving assistance
     - stability
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - ToggleDriveAssist
     </details>
 
 2. **Fire SRV weapons**
@@ -517,6 +744,13 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - engage weapons
     </details>
 
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - BuggyPrimaryFireButton
+    - BuggySecondaryFireButton
+    </details>
+
 3. **Toggle Auto-Brake**
 
     <details>
@@ -528,6 +762,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - brake assist
     - handbrake
     - parking brake
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - AutoBreakBuggyButton
     </details>
 
 4. **Toggle Headlights**
@@ -547,6 +787,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - full beam
     </details>
 
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - HeadlightsBuggyButton
+    </details>
+
 5. **Toggle Night Vision**
 
     <details>
@@ -558,6 +804,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - thermal vision
     - enhanced vision
     - infrared
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - NightVisionToggle
     </details>
 
 6. **Toggle Turret Mode**
@@ -573,6 +825,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - retract turret
     </details>
 
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - ToggleBuggyTurretButton
+    </details>
+
 7. **Select Target**
 
     <details>
@@ -584,6 +842,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - acquire target
     - scan
     - focus
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - SelectTarget_Buggy
     </details>
 
 8. **Manage Power Distribution**
@@ -608,6 +872,15 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - pips to systems
     </details>
 
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - ResetPowerDistribution_Buggy
+    - IncreaseEnginesPower_Buggy
+    - IncreaseWeaponsPower_Buggy
+    - IncreaseSystemsPower_Buggy
+    </details>
+
 9. **Toggle Cargo Scoop**
 
     <details>
@@ -619,6 +892,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - retract scoop
     - toggle scoop
     - collect materials
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - ToggleCargoScoop_Buggy
     </details>
 
 10. **Eject All Cargo**
@@ -634,6 +913,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - drop materials
     </details>
 
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - EjectAllCargo_Buggy
+    </details>
+
 11. **Recall/Dismiss Ship**
 
     <details>
@@ -645,6 +930,15 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - send ship away
     - summon ship
     - ship pickup
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - HumanoidOpenAccessPanelButton
+    - UI_Left
+    - UI_Up
+    - UI_Select
     </details>
 
 12. **Open/Close Galaxy Map**
@@ -665,6 +959,20 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - nav map
     </details>
 
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - GalaxyMapOpen_Buggy
+    - CamZoomIn
+    - UI_Up
+    - UI_Left
+    - UI_Right
+    - UI_Select
+    - UI_Back
+    - CamZoomOut
+    - Key_Enter
+    </details>
+
 13. **Open/Close System Map**
 
     - `desired_state`: String (options: "open", "close")
@@ -679,6 +987,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - local map
     - sysmap
     - show system map
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - SystemMapOpen_Buggy
     </details>
 
 ### On-Foot (Suits) Actions
@@ -696,6 +1010,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - engage
     </details>
 
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - HumanoidPrimaryInteractButton
+    </details>
+
 2. **Secondary Interaction**
 
     <details>
@@ -707,6 +1027,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - hold interact
     - long press
     - alternative
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - HumanoidSecondaryInteractButton
     </details>
 
 3. **Equip Gear**
@@ -733,6 +1059,21 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - profile analyser
     </details>
 
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - HumanoidSelectPrimaryWeaponButton
+    - HumanoidSelectSecondaryWeaponButton
+    - HumanoidSelectUtilityWeaponButton
+    - HumanoidSwitchToRechargeTool
+    - HumanoidSwitchToCompAnalyser
+    - HumanoidSwitchToSuitTool
+    - HumanoidHideWeaponButton
+    - HumanoidSelectFragGrenade
+    - HumanoidSelectEMPGrenade
+    - HumanoidSelectShieldGrenade
+    </details>
+
 4. **Toggle Flashlight**
 
     <details>
@@ -744,6 +1085,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - toggle lights
     - illumination
     - helmet light
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - HumanoidToggleFlashlightButton
     </details>
 
 5. **Toggle Night Vision**
@@ -759,6 +1106,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - infrared
     </details>
 
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - HumanoidToggleNightVisionButton
+    </details>
+
 6. **Toggle Shields**
 
     <details>
@@ -770,6 +1123,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - energy shield
     - shield generator
     - protective field
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - HumanoidToggleShieldsButton
     </details>
 
 7. **Clear Authority Level**
@@ -785,6 +1144,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - clean record
     </details>
 
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - HumanoidClearAuthorityLevel
+    </details>
+
 8. **Use Health Pack**
 
     <details>
@@ -798,6 +1163,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - first aid
     </details>
 
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - HumanoidHealthPack
+    </details>
+
 9. **Use Battery Pack**
 
     <details>
@@ -809,6 +1180,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - power up
     - restore power
     - charge suit
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - HumanoidBattery
     </details>
 
 10. **Open/Close Galaxy Map**
@@ -825,6 +1202,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - show galaxy map
     </details>
 
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - GalaxyMapOpen_Humanoid
+    </details>
+
 11. **Open/Close System Map**
 
     <details>
@@ -837,6 +1220,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - local map
     - sysmap
     - show system map
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - SystemMapOpen_Humanoid
     </details>
 
 12. **Recall/Dismiss Ship**
@@ -957,4 +1346,15 @@ This is a list of all currently supported actions the AI can perform. Just talk 
    - `recipient`: String (optional, only used if channel is "commander")
 
     Send a direct message to another commander. Can also send to system, local, wing and squadron chat.
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - QuickCommsPanel (ship)
+    - QuickCommsPanel_Buggy (SRV)
+    - QuickCommsPanel_Humanoid (on-foot)
+    - UI_Down (for system channel selection)
+    - UI_Select
+    - Key_Enter
+    </details>
 
