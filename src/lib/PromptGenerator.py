@@ -121,6 +121,8 @@ class PromptGenerator:
         event_name = content.get('event')
         
         # System events
+        if event_name == 'Materials':
+            return None
         if event_name == 'LoadGame':
             load_game_event = cast(LoadGameEvent, content)
             return f"{self.commander_name} is logging into the game in {load_game_event.get('GameMode', 'unknown')} mode."
@@ -223,6 +225,10 @@ class PromptGenerator:
         
         # Station events
 
+        if event_name == "StoredModules":
+            return None
+        if event_name == "StoredShips":
+            return None
         if event_name == "ColonisationConstructionDepot":
             return None
 
