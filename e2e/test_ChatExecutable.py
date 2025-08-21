@@ -379,6 +379,9 @@ def test_chat_executable():
     while proc.stdout:
         line = proc.stdout.readline()
         if not line:
+            while proc.stderr:
+                err = proc.stderr.readline()
+                print(err)
             raise Exception("Chat.exe exited unexpectedly")
         print(line)
         if '{"type": "ready"}' in line:
@@ -396,6 +399,9 @@ def test_chat_executable():
     while proc.stdout:
         line = proc.stdout.readline()
         if not line:
+            while proc.stderr:
+                err = proc.stderr.readline()
+                print(err)
             raise Exception("Chat.exe exited unexpectedly")
         print(line)
         if '"message": "System Ready."' in line:
