@@ -2,6 +2,7 @@ import json
 import traceback
 import math
 import yaml
+import sys
 
 import openai
 import requests
@@ -15,8 +16,12 @@ from ..ActionManager import ActionManager
 
 llm_client: openai.OpenAI = None
 llm_model_name: str = None
-event_manager = None
 
+def init_llm_client(llmClient: openai.OpenAI = None, llmModelName: str = None):
+    global llm_client, llm_model_name
+
+    llm_client = llmClient
+    llm_model_name = llmModelName
 
 def web_search(obj, projected_states):
     """
@@ -1937,9 +1942,8 @@ def body_finder(obj, projected_states):
 
 def register_web_actions(actionManager: ActionManager, eventManager: EventManager, 
                          llmClient: openai.OpenAI, llmModelName: str, edKeys: EDKeys):
-    global event_manager, llm_client, llm_model_name, keys
+    global llm_client, llm_model_name, keys
     keys = edKeys
-    event_manager = eventManager
     llm_client = llmClient
     llm_model_name = llmModelName
 
