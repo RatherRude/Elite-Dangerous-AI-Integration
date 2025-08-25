@@ -593,62 +593,10 @@
     <div class="storage-section">
       <div class="section-header" (click)="toggleSection('storedModules')">
         <h3>Stored Modules</h3>
-        <div class="section-subtitle" *ngIf="storedModules?.StationName || storedModules?.StarSystem">
-          Recorded at {{ storedModules?.StationName || 'Unknown Station' }}, {{ storedModules?.StarSystem || 'Unknown System' }}
-        </div>
         <mat-icon class="collapse-icon">{{ sectionsCollapsed.storedModules ? 'expand_more' : 'expand_less' }}</mat-icon>
       </div>
       <div class="section-content" [class.collapsed]="sectionsCollapsed.storedModules">
-        <div class="search-box">
-          <mat-icon>search</mat-icon>
-          <input type="text" [(ngModel)]="storedModulesSearchTerm" placeholder="Search modules, engineering or system...">
-        </div>
-        @if (getSortedFilteredStoredModulesItems().length > 0) {
-          <table class="stored-modules-table">
-            <thead>
-              <tr>
-                <th (click)="toggleStoredModulesSort('name')">
-                  Name & Engineering
-                  <span class="sort-ind" [class.active]="storedModulesSortKey==='name'">{{ storedModulesSortKey==='name' ? (storedModulesSortDir==='asc' ? '▲' : '▼') : '' }}</span>
-                </th>
-                <th (click)="toggleStoredModulesSort('system')">
-                  System
-                  <span class="sort-ind" [class.active]="storedModulesSortKey==='system'">{{ storedModulesSortKey==='system' ? (storedModulesSortDir==='asc' ? '▲' : '▼') : '' }}</span>
-                </th>
-                <th class="right" (click)="toggleStoredModulesSort('time')">
-                  Transfer Time
-                  <span class="sort-ind" [class.active]="storedModulesSortKey==='time'">{{ storedModulesSortKey==='time' ? (storedModulesSortDir==='asc' ? '▲' : '▼') : '' }}</span>
-                </th>
-                <th class="right" (click)="toggleStoredModulesSort('cost')">
-                  Transfer Cost
-                  <span class="sort-ind" [class.active]="storedModulesSortKey==='cost'">{{ storedModulesSortKey==='cost' ? (storedModulesSortDir==='asc' ? '▲' : '▼') : '' }}</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (mod of getSortedFilteredStoredModulesItems(); track mod.StorageSlot) {
-                <tr [class.hot]="mod.Hot">
-                  <td>
-                    <div class="name-cell">
-                      <div class="module-name">{{ formatModuleName(mod.Name_Localised || mod.Name) }} @if (mod.Hot) { <span class="hot-badge">HOT</span> }</div>
-                      @if (formatEngineering(mod)) {
-                        <div class="module-eng">{{ formatEngineering(mod) }}</div>
-                      }
-                    </div>
-                  </td>
-                  <td>{{ mod.StarSystem || '-' }}</td>
-                  <td class="right">{{ formatTransferTime(mod.TransferTime) }}</td>
-                  <td class="right">{{ mod.TransferCost ? (formatNumber(mod.TransferCost) + ' Cr') : '-' }}</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        } @else {
-          <div class="no-data-message">
-            <mat-icon>build</mat-icon>
-            No stored modules in the recorded data.
-          </div>
-        }
+        <app-stored-modules></app-stored-modules>
       </div>
     </div>
 
