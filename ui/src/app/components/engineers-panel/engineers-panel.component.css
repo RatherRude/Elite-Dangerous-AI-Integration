@@ -1,0 +1,27 @@
+.engineers-container { width: 100%; overflow: auto; }
+.engineers-filters { margin: 12px; display: flex; justify-content: center; }
+.engineers-table-container { margin: 12px; overflow-x: auto; }
+.engineers-table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+.engineers-table th { background-color: rgba(0, 0, 0, 0.2); color: rgba(255, 255, 255, 0.9); text-align: left; padding: 10px; font-weight: 500; position: sticky; top: 0; z-index: 10; }
+.engineers-table td { padding: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); vertical-align: top; }
+.engineers-table tr:hover { background-color: rgba(255, 255, 255, 0.05); }
+.engineer-name { font-weight: 500; margin-bottom: 6px; }
+.engineer-rank { display: flex; flex-direction: column; gap: 4px; }
+.rank-stars { color: #ffc107; letter-spacing: 3px; }
+.star.filled { color: #ffc107; }
+.star.empty { color: rgba(255, 255, 255, 0.3); }
+.rank-progress { height: 4px; background-color: rgba(255, 255, 255, 0.1); border-radius: 2px; overflow: hidden; }
+.progress-bar { height: 100%; background-color: #2196f3; }
+.status-badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 0.8em; font-weight: 500; text-transform: uppercase; }
+.status-badge.unlocked { background-color: rgba(76, 175, 80, 0.2); color: #4CAF50; }
+.status-badge.invited { background-color: rgba(33, 150, 243, 0.2); color: #2196F3; }
+.status-badge.known { background-color: rgba(255, 193, 7, 0.2); color: #FFC107; }
+.status-badge.locked { background-color: rgba(158, 158, 158, 0.2); color: #9E9E9E; }
+.engineer-status-cell { white-space: nowrap; }
+.engineer-mods, .engineer-location, .engineer-find, .engineer-invite, .engineer-unlock, .engineer-rep { font-size: 0.9em; color: rgba(255, 255, 255, 0.8); max-width: 300px; }
+@media (max-width: 768px) {
+  .engineers-table-container { padding: 8px; }
+  .engineers-table th, .engineers-table td { padding: 6px 4px; font-size: 0.8em; }
+  .engineer-mods, .engineer-location, .engineer-find, .engineer-invite, .engineer-unlock, .engineer-rep { max-width: 150px; font-size: 0.75em; }
+}
+

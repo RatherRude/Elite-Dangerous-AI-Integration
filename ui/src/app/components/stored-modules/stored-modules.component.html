@@ -1,0 +1,73 @@
+<div class="stored-modules">
+  <div class="section-subtitle" *ngIf="storedModules?.StationName || storedModules?.StarSystem">
+    Recorded at {{ storedModules?.StationName || 'Unknown Station' }}, {{ storedModules?.StarSystem || 'Unknown System' }}
+  </div>
+
+  <div class="search-box">
+    <mat-icon>search</mat-icon>
+    <input type="text" [(ngModel)]="searchTerm" placeholder="Search modules, engineering or system...">
+    @if (searchTerm) {
+      <button type="button" class="clear-btn" (click)="searchTerm=''" aria-label="Clear search">
+        <mat-icon>close</mat-icon>
+      </button>
+    }
+  </div>
+
+  @if (getSortedFilteredItems().length > 0) {
+    <table class="stored-modules-table">
+      <thead>
+        <tr>
+          <th (click)="toggleSort('name')">
+            Name & Engineering
+            <span class="sort-ind" [class.active]="sortKey==='name'">{{ sortKey==='name' ? (sortDir==='asc' ? '▲' : '▼') : '' }}</span>
+          </th>
+          <th (click)="toggleSort('system')">
+            System
+            <span class="sort-ind" [class.active]="sortKey==='system'">{{ sortKey==='system' ? (sortDir==='asc' ? '▲' : '▼') : '' }}</span>
+          </th>
+          <th class="right" (click)="toggleSort('time')">
+            Transfer Time
+            <span class="sort-ind" [class.active]="sortKey==='time'">{{ sortKey==='time' ? (sortDir==='asc' ? '▲' : '▼') : '' }}</span>
+          </th>
+          <th class="right" (click)="toggleSort('cost')">
+            Transfer Cost
+            <span class="sort-ind" [class.active]="sortKey==='cost'">{{ sortKey==='cost' ? (sortDir==='asc' ? '▲' : '▼') : '' }}</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (mod of getSortedFilteredItems(); track mod.StorageSlot) {
+          <tr [class.hot]="mod.Hot">
+            <td>
+              <div class="name-cell">
+                <div class="module-name">{{ formatModuleName(mod.Name_Localised || mod.Name) }} @if (mod.Hot) { <span class="hot-badge">HOT</span> }</div>
+                @if (formatEngineering(mod)) {
+                  <div class="module-eng">{{ formatEngineering(mod) }}</div>
+                }
+              </div>
+            </td>
+            <td>{{ mod.StarSystem || '-' }}</td>
+            <td class="right">{{ formatTransferTime(mod.TransferTime) }}</td>
+            <td class="right">{{ mod.TransferCost ? (formatNumber(mod.TransferCost) + ' Cr') : '-' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    <div class="pagination">
+      <button (click)="prevPage()" [disabled]="page===1">
+        <mat-icon>chevron_left</mat-icon>
+      </button>
+      <span>Page {{ page }} / {{ getTotalPages() }}</span>
+      <button (click)="nextPage()" [disabled]="page===getTotalPages()">
+        <mat-icon>chevron_right</mat-icon>
+      </button>
+    </div>
+  } @else {
+    <div class="no-data-message">
+      <mat-icon>build</mat-icon>
+      No stored modules in the recorded data.
+    </div>
+  }
+</div>
+
+

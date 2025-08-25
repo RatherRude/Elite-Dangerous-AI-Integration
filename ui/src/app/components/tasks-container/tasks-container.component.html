@@ -1,0 +1,102 @@
+<div class="tasks-container">
+  <div class="tasks-content">
+    <!-- Missions Section -->
+    <div class="tasks-section">
+      <div class="section-header" (click)="toggleSection('missions')">
+        <h3>Missions</h3>
+        <mat-icon class="collapse-icon">{{ sectionsCollapsed.missions ? 'expand_more' : 'expand_less' }}</mat-icon>
+      </div>
+      <div class="section-content" [class.collapsed]="sectionsCollapsed.missions">
+        @if (getActiveMissions().length > 0) {
+          <div class="missions-list">
+            @for (mission of getActiveMissions(); track mission.MissionID) {
+              <div class="mission-item">
+                <div class="mission-header">
+                  <div class="mission-title">{{ mission.LocalisedName || mission.Name }}</div>
+                  <div class="mission-faction">{{ mission.Faction }}</div>
+                </div>
+                <div class="mission-details">
+                  @if (mission.DestinationSystem || mission.DestinationStation || mission.DestinationSettlement) {
+                    <div class="mission-destination">
+                      <mat-icon>place</mat-icon>
+                      {{ mission.DestinationSystem || 'Unknown System' }}
+                      @if (mission.DestinationStation) { · {{ mission.DestinationStation }} }
+                      @if (mission.DestinationSettlement) { · {{ mission.DestinationSettlement }} }
+                    </div>
+                  }
+                  @if (mission.Commodity && mission.Count) {
+                    <div class="mission-commodity">
+                      <mat-icon>inventory_2</mat-icon>
+                      {{ mission.Commodity }} × {{ mission.Count }}
+                    </div>
+                  }
+                  <div class="mission-meta">
+                    <span class="influence">INF: {{ mission.Influence }}</span>
+                    <span class="reputation">REP: {{ mission.Reputation }}</span>
+                    @if (mission.Reward) { <span class="reward">{{ formatCr(mission.Reward) }}</span> }
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="no-data-message">
+            <mat-icon>assignment</mat-icon>
+            No active missions.
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Community Goals Section -->
+    <div class="tasks-section">
+      <div class="section-header" (click)="toggleSection('communityGoals')">
+        <h3>Community Goals</h3>
+        <mat-icon class="collapse-icon">{{ sectionsCollapsed.communityGoals ? 'expand_more' : 'expand_less' }}</mat-icon>
+      </div>
+      <div class="section-content" [class.collapsed]="sectionsCollapsed.communityGoals">
+        @if (getCurrentGoals().length > 0) {
+          <div class="cg-list">
+            @for (goal of getCurrentGoals(); track goal.CGID) {
+              <div class="cg-item">
+                <div class="cg-header">
+                  <div class="cg-title">{{ goal.Title }}</div>
+                  <div class="cg-location">{{ goal.SystemName }} · {{ goal.MarketName }}</div>
+                </div>
+                <div class="cg-details">
+                  <div class="cg-stats">
+                    <span>
+                      <mat-icon>group</mat-icon>
+                      {{ formatNumber(goal.NumContributors || 0) }} contributors
+                    </span>
+                    <span>
+                      <mat-icon>leaderboard</mat-icon>
+                      {{ goal.TierReached || goal.TopTier?.Name || 'Tier ?' }}
+                    </span>
+                    <span>
+                      <mat-icon>attach_money</mat-icon>
+                      Bonus: {{ formatCr(goal.Bonus) }}
+                    </span>
+                  </div>
+                  <div class="cg-progress">
+                    <span>Total: {{ formatNumber(goal.CurrentTotal || 0) }}</span>
+                    <span>Yours: {{ formatNumber(goal.PlayerContribution || 0) }}</span>
+                    <span>Rank: {{ goal.PlayerPercentileBand ?? '-' }}%</span>
+                    <span class="cg-expiry">{{ goal.IsComplete ? 'Completed' : ('Ends in ' + formatRemainingTime(goal.Expiry)) }}</span>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="no-data-message">
+            <mat-icon>emoji_events</mat-icon>
+            No community goals available.
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+

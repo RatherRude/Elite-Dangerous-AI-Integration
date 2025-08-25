@@ -7,6 +7,9 @@ import { MatTabsModule } from "@angular/material/tabs";
 import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatProgressBarModule } from "@angular/material/progress-bar";
+import { StoredModulesComponent } from "../stored-modules/stored-modules.component";
+import { EngineersPanelComponent } from "../engineers-panel/engineers-panel.component";
+import { EngineeringBlueprintsComponent } from "../engineering-blueprints/engineering-blueprints.component";
 import { ProjectionsService } from "../../services/projections.service";
 import { Subscription } from "rxjs";
 import * as shipEngineersData from "../../../../../src/assets/ship_engineers.json";
@@ -15,7 +18,7 @@ import * as suitEngineersData from "../../../../../src/assets/suit_engineers.jso
 @Component({
   selector: "app-storage-container",
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatTabsModule, MatButtonToggleModule, MatTooltipModule, MatProgressBarModule],
+  imports: [CommonModule, FormsModule, MatIconModule, MatTabsModule, MatButtonToggleModule, MatTooltipModule, MatProgressBarModule, StoredModulesComponent, EngineersPanelComponent, EngineeringBlueprintsComponent],
   templateUrl: "./storage-container.component.html",
   styleUrl: "./storage-container.component.css",
 })
@@ -23,23 +26,23 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
   // Projection data
   materials: any = null;
   shipLocker: any = null;
-  engineerProgress: any = null;
   colonisationConstruction: any = null;
   cargo: any = null;
   shipInfo: any = null;
+  storedShips: any = null;
   
-  // UI state
-  engineerFilter: string = 'all';
-  onFootEngineerFilter: string = 'all';
-  
+
   // Collapsible sections state
   sectionsCollapsed = {
     materials: false,
     shipLocker: false,
-    engineers: false,
-    onFootEngineers: false,
+    engineers: true,
+    onFootEngineers: true,
     colonisation: false,
-    cargo: false
+    cargo: true,
+    storedModules: true,
+    storedShips: true,
+    engineeringBlueprints: true,
   };
   
   private subscriptions: Subscription[] = [];
@@ -180,10 +183,6 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
     }
   };
 
-  // Engineer databases from JSON files
-  private shipEngineersDB = shipEngineersData;
-  private suitEngineersDB = suitEngineersData;
-
   constructor(private projectionsService: ProjectionsService) {}
 
   ngOnInit(): void {
@@ -196,11 +195,7 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
       this.projectionsService.shipLocker$.subscribe(shipLocker => {
         this.shipLocker = shipLocker;
       }),
-      
-      this.projectionsService.engineerProgress$.subscribe(engineerProgress => {
-        this.engineerProgress = engineerProgress;
-      }),
-      
+
       this.projectionsService.colonisationConstruction$.subscribe(colonisation => {
         this.colonisationConstruction = colonisation;
       }),
@@ -211,6 +206,10 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
       
       this.projectionsService.shipInfo$.subscribe(shipInfo => {
         this.shipInfo = shipInfo;
+      }),
+      
+      this.projectionsService.storedShips$.subscribe(storedShips => {
+        this.storedShips = storedShips;
       })
     );
   }
@@ -331,93 +330,6 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
     return this.formatMaterialName(name);
   }
 
-  // Engineer methods
-  getFilteredShipEngineers(): any[] {
-    const knownEngineers = this.engineerProgress?.Engineers || [];
-    
-    // Get all ship engineers (EngineerID 300xxx) from projection data
-    const shipEngineersFromData = knownEngineers.filter((e: any) => 
-      e.EngineerID >= 300000 && e.EngineerID < 400000
-    );
-
-    // Merge with static data for additional info, using projection data as primary source
-    const mergedEngineers = shipEngineersFromData.map((projectionEngineer: any) => {
-      const staticEngineer = (this.shipEngineersDB as any)[projectionEngineer.EngineerID.toString()];
-      return staticEngineer ? { ...staticEngineer, ...projectionEngineer } : projectionEngineer;
-    });
-
-    // Apply filter
-    if (this.engineerFilter === 'all') {
-      return mergedEngineers;
-    } else if (this.engineerFilter === 'locked') {
-      return mergedEngineers.filter((e: any) => !e.Progress);
-    } else {
-      return mergedEngineers.filter((e: any) => e.Progress === this.engineerFilter.charAt(0).toUpperCase() + this.engineerFilter.slice(1));
-    }
-  }
-
-  getFilteredOnFootEngineers(): any[] {
-    const knownEngineers = this.engineerProgress?.Engineers || [];
-    
-    // Get all on-foot engineers (EngineerID 400xxx) from projection data
-    const onFootEngineersFromData = knownEngineers.filter((e: any) => 
-      e.EngineerID >= 400000 && e.EngineerID < 500000
-    );
-
-    // Merge with static data for additional info, using projection data as primary source
-    const mergedEngineers = onFootEngineersFromData.map((projectionEngineer: any) => {
-      const staticEngineer = (this.suitEngineersDB as any)[projectionEngineer.EngineerID.toString()];
-      return staticEngineer ? { ...staticEngineer, ...projectionEngineer } : projectionEngineer;
-    });
-
-    // Apply filter
-    if (this.onFootEngineerFilter === 'all') {
-      return mergedEngineers;
-    } else if (this.onFootEngineerFilter === 'locked') {
-      return mergedEngineers.filter((e: any) => !e.Progress);
-    } else {
-      return mergedEngineers.filter((e: any) => e.Progress === this.onFootEngineerFilter.charAt(0).toUpperCase() + this.onFootEngineerFilter.slice(1));
-    }
-  }
-
-  getEngineerModules(engineerName: string): string {
-    // Find ship engineer by name
-    const shipEngineerEntry = Object.values(this.shipEngineersDB).find((e: any) => e.Engineer === engineerName);
-    if (shipEngineerEntry) {
-      if (typeof shipEngineerEntry.Modifies === 'object') {
-        return Object.keys(shipEngineerEntry.Modifies).join(', ');
-      }
-      return shipEngineerEntry.Modifies || 'Unknown';
-    }
-    return 'Unknown';
-  }
-
-  getOnFootEngineerModules(engineerName: string): string {
-    // Find suit engineer by name
-    const suitEngineerEntry = Object.values(this.suitEngineersDB).find((e: any) => e.Engineer === engineerName);
-    if (suitEngineerEntry) {
-      if (typeof suitEngineerEntry.Modifies === 'object') {
-        return Object.keys(suitEngineerEntry.Modifies).join(', ');
-      }
-      return suitEngineerEntry.Modifies || 'Unknown';
-    }
-    return 'Unknown';
-  }
-
-  getEngineerLocation(engineerName: string): string {
-    // Check ship engineers first
-    const shipEngineerEntry = Object.values(this.shipEngineersDB).find((e: any) => e.Engineer === engineerName);
-    if (shipEngineerEntry) return shipEngineerEntry.Location;
-
-    // Check suit engineers
-    const suitEngineerEntry = Object.values(this.suitEngineersDB).find((e: any) => e.Engineer === engineerName);
-    return suitEngineerEntry?.Location || 'Unknown';
-  }
-
-  getArray(length: number): any[] {
-    return new Array(length);
-  }
-
   // Collapsible section methods
   toggleSection(section: keyof typeof this.sectionsCollapsed): void {
     this.sectionsCollapsed[section] = !this.sectionsCollapsed[section];
@@ -486,4 +398,25 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
   formatNumber(num: number): string {
     return num.toLocaleString();
   }
+
+  // Stored Ships methods
+  getShipsHere(): any[] {
+    return this.storedShips?.ShipsHere || [];
+  }
+
+  getShipsRemote(): any[] {
+    return this.storedShips?.ShipsRemote || [];
+  }
+
+  formatTransferTime(seconds: number): string {
+    if (!seconds) return '-';
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+    return `${minutes}m`;
+  }
+
+  
 } 

@@ -16,7 +16,6 @@ import { Subscription } from "rxjs";
 })
 export class StationContainerComponent implements OnInit, OnDestroy {
   // Projection data
-  storedShips: any = null;
   market: any = null;
   outfitting: any = null;
   shipyard: any = null;
@@ -31,7 +30,6 @@ export class StationContainerComponent implements OnInit, OnDestroy {
 
   // Collapsible sections state
   sectionsCollapsed = {
-    storedShips: false,
     stationFacilities: false
   };
   
@@ -42,9 +40,6 @@ export class StationContainerComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     // Subscribe to relevant projections
     this.subscriptions.push(
-      this.projectionsService.storedShips$.subscribe(storedShips => {
-        this.storedShips = storedShips;
-      }),
       this.projectionsService.market$.subscribe(market => {
         this.market = market;
       }),
@@ -106,22 +101,6 @@ export class StationContainerComponent implements OnInit, OnDestroy {
     this.sectionsCollapsed[section] = !this.sectionsCollapsed[section];
   }
 
-  // Stored Ships methods
-  getShipsHere(): any[] {
-    return this.storedShips?.ShipsHere || [];
-  }
-
-  getShipsRemote(): any[] {
-    return this.storedShips?.ShipsRemote || [];
-  }
-
-  isStoredShipsAtCurrentLocation(): boolean {
-    const currentStationName = this.getStationName();
-    const storedShipsStation = this.storedShips?.StationName;
-    
-    // Check if stored ships data matches current station
-    return storedShipsStation && storedShipsStation === currentStationName;
-  }
 
   // Market methods
   getFilteredMarketItems(): any[] {

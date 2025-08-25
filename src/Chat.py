@@ -1,3 +1,4 @@
+import copy
 import sys
 from time import sleep
 from typing import Any, cast, final
@@ -164,7 +165,7 @@ class Chat:
                     "type": "states",
                     "states": {key: value},
                 })
-        self.previous_states = projected_states
+        self.previous_states = copy.deepcopy(projected_states)
         send_message({
             "type": "event",
             "event": event,
