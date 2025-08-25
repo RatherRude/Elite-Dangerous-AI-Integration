@@ -338,6 +338,17 @@
       </div>
     </div>
 
+    <!-- Engineering Blueprints Section -->
+    <div class="storage-section">
+      <div class="section-header" (click)="toggleSection('engineeringBlueprints')">
+        <h3>Blueprints</h3>
+        <mat-icon class="collapse-icon">{{ sectionsCollapsed.engineeringBlueprints ? 'expand_more' : 'expand_less' }}</mat-icon>
+      </div>
+      <div class="section-content" [class.collapsed]="sectionsCollapsed.engineeringBlueprints">
+        <app-engineering-blueprints></app-engineering-blueprints>
+      </div>
+    </div>
+
     <!-- Stored Modules Section (before Stored Ships) -->
     <div class="storage-section">
       <div class="section-header" (click)="toggleSection('storedModules')">

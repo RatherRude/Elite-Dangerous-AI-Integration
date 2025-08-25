@@ -1,0 +1,58 @@
+<div class="engineering-blueprints">
+  <div class="search-box">
+    <mat-icon>search</mat-icon>
+    <input type="text" [(ngModel)]="searchTerm" placeholder="Search blueprints, modules or engineers...">
+  </div>
+
+  @if (getFilteredBlueprintNames().length > 0) {
+    <div class="blueprint-list">
+      @for (modName of getFilteredBlueprintNames(); track modName) {
+        <div class="blueprint-item">
+          <div class="blueprint-header">
+            <div class="bp-name">{{ modName }}</div>
+            @if (isExperimental(modName)) { <span class="badge-exp">Experimental</span> }
+          </div>
+          <div class="bp-modules">
+            @for (moduleName of getModulesForFiltered(modName); track moduleName) {
+              <div class="bp-module">
+                <div class="module-name">{{ moduleName }}</div>
+                <table class="grades-table">
+                  <thead>
+                    <tr>
+                      <th>Grade</th>
+                      <th>Cost</th>
+                      <th>Engineers</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (row of getGradesFor(modName, moduleName); track row.grade) {
+                      <tr>
+                        <td>{{ row.grade }}</td>
+                        <td>
+                          @for (c of getCostLines(row.cost); track c) {
+                            <div class="cost-line">
+                              @for (key of getObjectKeys(c); track key) { <span class="cost-chip">{{ key }}: {{ c[key] }}</span> }
+                            </div>
+                          }
+                        </td>
+                        <td>
+                          <div class="engineers">
+                            @for (eng of row.engineers; track eng) { <span class="eng-chip">{{ eng }}</span> }
+                          </div>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="no-data">No blueprints found.</div>
+  }
+</div>
+
+

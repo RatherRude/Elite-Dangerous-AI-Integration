@@ -1,0 +1,19 @@
+.engineering-blueprints .search-box { position: relative; margin-bottom: 16px; }
+.engineering-blueprints .search-box mat-icon { position: absolute; top: 50%; left: 12px; transform: translateY(-50%); color: #888; }
+.engineering-blueprints .search-box input { width: 100%; padding: 12px 14px 12px 40px; background: rgba(255,255,255,0.06); border: 1px solid #444; border-radius: 6px; color: #e0e0e0; font-size: 14px; }
+.engineering-blueprints .blueprint-list { display: flex; flex-direction: column; gap: 16px; }
+.engineering-blueprints .blueprint-item { background: rgba(255,255,255,0.05); border: 1px solid #444; border-radius: 8px; padding: 12px; }
+.engineering-blueprints .blueprint-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.engineering-blueprints .bp-name { font-size: 16px; font-weight: 600; color: #e0e0e0; }
+.engineering-blueprints .badge-exp { padding: 2px 6px; background: rgba(255, 193, 7, 0.2); color: #FFC107; border-radius: 3px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+.engineering-blueprints .bp-modules { display: flex; flex-direction: column; gap: 12px; }
+.engineering-blueprints .bp-module .module-name { font-size: 14px; color: #bbb; margin-bottom: 6px; }
+.engineering-blueprints .grades-table { width: 100%; border-collapse: collapse; }
+.engineering-blueprints .grades-table th { background: rgba(0,0,0,0.3); padding: 8px; text-align: left; border-bottom: 1px solid #444; }
+.engineering-blueprints .grades-table td { padding: 8px; border-bottom: 1px solid #333; vertical-align: top; }
+.engineering-blueprints .cost-line { display: flex; flex-wrap: wrap; gap: 6px; }
+.engineering-blueprints .cost-chip { background: rgba(255,255,255,0.06); border: 1px solid #555; border-radius: 999px; padding: 2px 8px; font-size: 12px; color: #ddd; }
+.engineering-blueprints .engineers { display: flex; flex-wrap: wrap; gap: 6px; }
+.engineering-blueprints .eng-chip { background: rgba(64, 181, 246, 0.2); color: #40b5f6; border-radius: 999px; padding: 2px 8px; font-size: 12px; }
+.engineering-blueprints .no-data { padding: 20px; text-align: center; color: #888; font-style: italic; }
+

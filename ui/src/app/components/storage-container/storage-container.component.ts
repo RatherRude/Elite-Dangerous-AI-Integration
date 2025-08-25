@@ -9,6 +9,7 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatProgressBarModule } from "@angular/material/progress-bar";
 import { StoredModulesComponent } from "../stored-modules/stored-modules.component";
 import { EngineersPanelComponent } from "../engineers-panel/engineers-panel.component";
+import { EngineeringBlueprintsComponent } from "../engineering-blueprints/engineering-blueprints.component";
 import { ProjectionsService } from "../../services/projections.service";
 import { Subscription } from "rxjs";
 import * as shipEngineersData from "../../../../../src/assets/ship_engineers.json";
@@ -17,7 +18,7 @@ import * as suitEngineersData from "../../../../../src/assets/suit_engineers.jso
 @Component({
   selector: "app-storage-container",
   standalone: true,
-  imports: [CommonModule, FormsModule, MatIconModule, MatTabsModule, MatButtonToggleModule, MatTooltipModule, MatProgressBarModule, StoredModulesComponent, EngineersPanelComponent],
+  imports: [CommonModule, FormsModule, MatIconModule, MatTabsModule, MatButtonToggleModule, MatTooltipModule, MatProgressBarModule, StoredModulesComponent, EngineersPanelComponent, EngineeringBlueprintsComponent],
   templateUrl: "./storage-container.component.html",
   styleUrl: "./storage-container.component.css",
 })
@@ -41,6 +42,7 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
     cargo: true,
     storedModules: true,
     storedShips: true,
+    engineeringBlueprints: true,
   };
   
   private subscriptions: Subscription[] = [];
