@@ -13,7 +13,7 @@
   margin-bottom: 16px;
 }
 
-.stored-modules .search-box mat-icon {
+.stored-modules .search-box > mat-icon {
   position: absolute;
   top: 50%;
   left: 12px;
@@ -24,7 +24,7 @@
 }
 
 .stored-modules .search-box input {
-  width: 100%;
+  width: calc(100% - 54px);
   padding: 12px 14px 12px 40px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid #444;
@@ -32,7 +32,7 @@
   color: #e0e0e0;
   font-size: 14px;
 }
-.stored-modules .search-box .clear-btn { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: #aaa; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; }
+.stored-modules .search-box .clear-btn { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: #aaa; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; }
 .stored-modules .search-box .clear-btn:hover { color: #fff; }
 
 .stored-modules .search-box input::placeholder { color: #999; }
