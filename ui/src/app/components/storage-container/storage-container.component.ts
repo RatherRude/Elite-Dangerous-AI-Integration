@@ -27,19 +27,26 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
   colonisationConstruction: any = null;
   cargo: any = null;
   shipInfo: any = null;
+  storedShips: any = null;
+  storedModules: any = null;
   
   // UI state
   engineerFilter: string = 'all';
   onFootEngineerFilter: string = 'all';
+  storedModulesSearchTerm: string = '';
+  storedModulesSortKey: 'name' | 'system' | 'time' | 'cost' = 'name';
+  storedModulesSortDir: 'asc' | 'desc' = 'asc';
   
   // Collapsible sections state
   sectionsCollapsed = {
     materials: false,
     shipLocker: false,
-    engineers: false,
-    onFootEngineers: false,
+    engineers: true,
+    onFootEngineers: true,
     colonisation: false,
-    cargo: false
+    cargo: false,
+    storedModules: true,
+    storedShips: true,
   };
   
   private subscriptions: Subscription[] = [];
@@ -211,6 +218,20 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
       
       this.projectionsService.shipInfo$.subscribe(shipInfo => {
         this.shipInfo = shipInfo;
+      }),
+      
+      this.projectionsService.storedShips$.subscribe(storedShips => {
+        this.storedShips = storedShips;
+      }),
+      // StoredModules is not a dedicated subject; use generic accessor
+      (this.projectionsService.getProjection('StoredModules') || this.projectionsService.projections$)
+        .subscribe((value: any) => {
+          // If subscribing to projections$, extract the StoredModules value
+          if (value && value.event === 'StoredModules') {
+            this.storedModules = value;
+          } else if (value && value['StoredModules']) {
+            this.storedModules = value['StoredModules'];
+          }
       })
     );
   }
@@ -485,5 +506,90 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
 
   formatNumber(num: number): string {
     return num.toLocaleString();
+  }
+
+  // Stored Ships methods
+  getShipsHere(): any[] {
+    return this.storedShips?.ShipsHere || [];
+  }
+
+  getShipsRemote(): any[] {
+    return this.storedShips?.ShipsRemote || [];
+  }
+
+  formatTransferTime(seconds: number): string {
+    if (!seconds) return '-';
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`;
+    }
+    return `${minutes}m`;
+  }
+
+  // Stored Modules helpers
+  getStoredModulesItems(): any[] {
+    return this.storedModules?.Items || [];
+  }
+
+  getFilteredStoredModulesItems(): any[] {
+    const items = this.getStoredModulesItems();
+    const term = (this.storedModulesSearchTerm || '').toLowerCase();
+    if (!term) return items;
+    return items.filter((item: any) =>
+      (item.Name_Localised || item.Name || '').toLowerCase().includes(term) ||
+      (item.EngineerModifications || '').toLowerCase().includes(term) ||
+      (item.StarSystem || '').toLowerCase().includes(term)
+    );
+  }
+
+  formatModuleName(name: string): string {
+    if (!name) return 'Unknown';
+    return name.replace(/\$([^;]+);/g, '$1').replace(/_/g, ' ');
+  }
+
+  getSortedFilteredStoredModulesItems(): any[] {
+    const items = [...this.getFilteredStoredModulesItems()];
+    const dir = this.storedModulesSortDir === 'asc' ? 1 : -1;
+    const key = this.storedModulesSortKey;
+    return items.sort((a: any, b: any) => {
+      if (key === 'name') {
+        const an = this.formatModuleName(a.Name_Localised || a.Name || '');
+        const bn = this.formatModuleName(b.Name_Localised || b.Name || '');
+        return an.localeCompare(bn) * dir;
+      }
+      if (key === 'system') {
+        const as = (a.StarSystem || '').toString();
+        const bs = (b.StarSystem || '').toString();
+        return as.localeCompare(bs) * dir;
+      }
+      if (key === 'time') {
+        const at = typeof a.TransferTime === 'number' ? a.TransferTime : Number.POSITIVE_INFINITY;
+        const bt = typeof b.TransferTime === 'number' ? b.TransferTime : Number.POSITIVE_INFINITY;
+        return (at - bt) * dir;
+      }
+      // cost
+      const ac = typeof a.TransferCost === 'number' ? a.TransferCost : Number.POSITIVE_INFINITY;
+      const bc = typeof b.TransferCost === 'number' ? b.TransferCost : Number.POSITIVE_INFINITY;
+      return (ac - bc) * dir;
+    });
+  }
+
+  toggleStoredModulesSort(key: 'name' | 'system' | 'time' | 'cost'): void {
+    if (this.storedModulesSortKey === key) {
+      this.storedModulesSortDir = this.storedModulesSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.storedModulesSortKey = key;
+      this.storedModulesSortDir = 'asc';
+    }
+  }
+
+  formatEngineering(item: any): string {
+    if (!item?.EngineerModifications) return '';
+    const mod = this.formatModuleName(item.EngineerModifications);
+    const parts: string[] = [mod];
+    if (item.Level) parts.push(`G${item.Level}`);
+    if (item.Quality || item.Quality === 0) parts.push(`${Math.round((item.Quality as number) * 100)}%`);
+    return parts.join(' · ');
   }
 } 
