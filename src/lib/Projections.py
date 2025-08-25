@@ -848,7 +848,7 @@ class ShipInfo(Projection[ShipInfoState]):
         unladen_mass   = self.state.get("UnladenMass")
         cargo_capacity = self.state.get("CargoCapacity")
         fuel_capacity  = self.state.get("FuelMainCapacity")
-        maximum_jump_range     = self.state.get("MaximumJumpRange")
+        maximum_jump_range     = self.state.get("ReportedMaximumJumpRange")
         drive_power_const   = self.state.get("DrivePowerConst")
         drive_optimal_mass = self.state.get("DriveOptimalMass")
         drive_linear_const  = self.state.get("DriveLinearConst") 
