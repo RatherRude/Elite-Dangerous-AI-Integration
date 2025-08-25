@@ -1,6 +1,6 @@
 .engineering-blueprints .search-box { position: relative; margin-bottom: 16px; }
 .engineering-blueprints .search-box mat-icon { position: absolute; top: 50%; left: 12px; transform: translateY(-50%); color: #888; }
-.engineering-blueprints .search-box input { width: 100%; padding: 12px 14px 12px 40px; background: rgba(255,255,255,0.06); border: 1px solid #444; border-radius: 6px; color: #e0e0e0; font-size: 14px; }
+.engineering-blueprints .search-box input { width: calc(100% - 54px); padding: 12px 14px 12px 40px; background: rgba(255,255,255,0.06); border: 1px solid #444; border-radius: 6px; color: #e0e0e0; font-size: 14px; }
 .engineering-blueprints .blueprint-list { display: flex; flex-direction: column; gap: 16px; }
 .engineering-blueprints .blueprint-item { background: rgba(255,255,255,0.05); border: 1px solid #444; border-radius: 8px; padding: 12px; }
 .engineering-blueprints .blueprint-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
@@ -16,4 +16,8 @@
 .engineering-blueprints .engineers { display: flex; flex-wrap: wrap; gap: 6px; }
 .engineering-blueprints .eng-chip { background: rgba(64, 181, 246, 0.2); color: #40b5f6; border-radius: 999px; padding: 2px 8px; font-size: 12px; }
 .engineering-blueprints .no-data { padding: 20px; text-align: center; color: #888; font-style: italic; }
+
+.engineering-blueprints .module-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.engineering-blueprints .module-tags .tag { background: rgba(255,255,255,0.06); color: #e0e0e0; border: 1px solid #555; border-radius: 999px; padding: 6px 10px; font-size: 12px; cursor: pointer; }
+.engineering-blueprints .module-tags .tag:hover { background: rgba(255,255,255,0.1); }
 

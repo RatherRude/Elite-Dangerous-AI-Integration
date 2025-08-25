@@ -17,6 +17,8 @@ export class EngineeringBlueprintsComponent {
   searchTerm: string = '';
   // Loaded JSON
   data: BlueprintMap = (engineeringData as any) as BlueprintMap;
+  
+  constructor() {}
 
   getAllBlueprintNames(): string[] {
     return Object.keys(this.data || {});
@@ -32,47 +34,34 @@ export class EngineeringBlueprintsComponent {
     return Boolean(entry?.experimental);
   }
 
-  getFilteredBlueprintNames(): string[] {
-    const term = (this.searchTerm || '').toLowerCase();
-    const names = this.getAllBlueprintNames();
-    if (!term) return names;
-    return names.filter((modName) => {
-      const entry = this.data[modName];
-      if (!entry) return false;
-      if (modName.toLowerCase().includes(term)) return true;
-      const modules = Object.keys(entry.module_recipes || {});
-      if (modules.some(m => m.toLowerCase().includes(term))) return true;
-      // search engineers
-      const engineerHit = modules.some(m => {
-        const grades = entry.module_recipes[m];
-        return Object.values(grades).some((g: any) => Array.isArray(g.engineers) && g.engineers.some((e: string) => e.toLowerCase().includes(term)));
-      });
-      return engineerHit;
+  private matchesBlueprint(modName: string, term: string): boolean {
+    const entry = this.data[modName];
+    if (!entry) return false;
+    if (!term) return true;
+    if (modName.toLowerCase().includes(term)) return true;
+    const modules = Object.keys(entry.module_recipes || {});
+    if (modules.some(m => m.toLowerCase().includes(term))) return true;
+    // search engineers
+    return modules.some(m => {
+      const grades = entry.module_recipes[m];
+      return Object.values(grades).some((g: any) => Array.isArray(g.engineers) && g.engineers.some((e: string) => e.toLowerCase().includes(term)));
     });
   }
 
-  getModulesFor(modName: string): string[] {
+  private getModules(modName: string): string[] {
     const entry = this.data[modName];
     return Object.keys(entry?.module_recipes || {});
   }
 
-  getModulesForFiltered(modName: string): string[] {
-    const modules = this.getModulesFor(modName);
-    const term = (this.searchTerm || '').toLowerCase();
-    if (!term) return modules;
-    const matches = modules.filter(m => m.toLowerCase().includes(term));
-    // If the search term matches module names within this blueprint, only show those modules
-    return matches.length > 0 ? matches : modules;
-  }
-
-  getGradesFor(modName: string, moduleName: string): Array<{ grade: string; cost: Record<string, number> | Record<string, number>[]; engineers: string[] }>{
+  private getGrades(modName: string, moduleName: string): Array<{ grade: string; cost: Record<string, number>[]; engineers: string[] }>{
     const grades = this.data[modName]?.module_recipes?.[moduleName] || {};
-    // Normalize into array of rows
-    return Object.keys(grades).map((g) => ({
-      grade: g,
-      cost: (grades[g] as any).cost,
-      engineers: (grades[g] as any).engineers || [],
-    })).sort((a, b) => Number(a.grade) - Number(b.grade));
+    return Object.keys(grades)
+      .map((g) => ({
+        grade: g,
+        cost: this.getCostLines((grades[g] as any).cost),
+        engineers: (grades[g] as any).engineers || [],
+      }))
+      .sort((a, b) => Number(a.grade) - Number(b.grade));
   }
 
   // Template helpers
@@ -85,6 +74,40 @@ export class EngineeringBlueprintsComponent {
   getObjectKeys(obj: Record<string, any>): string[] {
     if (!obj) return [];
     return Object.keys(obj);
+  }
+
+  // Simpler filtering methods for template use
+  getFilteredBlueprintNames(): string[] {
+    const term = (this.searchTerm || '').toLowerCase();
+    if (!term) return [];
+    return this.getAllBlueprintNames().filter((n) => this.matchesBlueprint(n, term));
+  }
+
+  getModulesForFiltered(modName: string): string[] {
+    const modules = this.getModules(modName);
+    const term = (this.searchTerm || '').toLowerCase();
+    if (!term) return modules;
+    const matches = modules.filter(m => m.toLowerCase().includes(term));
+    return matches.length > 0 ? matches : modules;
+  }
+
+  getGradesFor(modName: string, moduleName: string): Array<{ grade: string; cost: Record<string, number>[]; engineers: string[] }>{
+    return this.getGrades(modName, moduleName);
+  }
+
+  // Tags when no search entered
+  getModuleTags(): string[] {
+    const seen = new Set<string>();
+    for (const bp of this.getAllBlueprintNames()) {
+      for (const mod of this.getModules(bp)) {
+        seen.add(mod);
+      }
+    }
+    return Array.from(seen).sort((a, b) => a.localeCompare(b)).slice(0, 100);
+  }
+
+  selectModuleTag(tag: string): void {
+    this.searchTerm = tag;
   }
 }
 

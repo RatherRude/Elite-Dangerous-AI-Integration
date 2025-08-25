@@ -4,6 +4,14 @@
     <input type="text" [(ngModel)]="searchTerm" placeholder="Search blueprints, modules or engineers...">
   </div>
 
+  @if (!searchTerm) {
+    <div class="module-tags">
+      @for (tag of getModuleTags(); track tag) {
+        <button class="tag" (click)="selectModuleTag(tag)">{{ tag }}</button>
+      }
+    </div>
+  }
+
   @if (getFilteredBlueprintNames().length > 0) {
     <div class="blueprint-list">
       @for (modName of getFilteredBlueprintNames(); track modName) {
