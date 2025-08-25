@@ -32,6 +32,8 @@
   color: #e0e0e0;
   font-size: 14px;
 }
+.stored-modules .search-box .clear-btn { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: #aaa; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; }
+.stored-modules .search-box .clear-btn:hover { color: #fff; }
 
 .stored-modules .search-box input::placeholder { color: #999; }
 

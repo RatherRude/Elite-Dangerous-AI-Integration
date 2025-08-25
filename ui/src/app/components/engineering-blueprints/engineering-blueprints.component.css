@@ -1,6 +1,8 @@
-.engineering-blueprints .search-box { position: relative; margin-bottom: 16px; }
-.engineering-blueprints .search-box mat-icon { position: absolute; top: 50%; left: 12px; transform: translateY(-50%); color: #888; }
-.engineering-blueprints .search-box input { width: calc(100% - 54px); padding: 12px 14px 12px 40px; background: rgba(255,255,255,0.06); border: 1px solid #444; border-radius: 6px; color: #e0e0e0; font-size: 14px; }
+.engineering-blueprints .search-box { position: relative; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.engineering-blueprints .search-box > mat-icon { position: absolute; top: 50%; left: 12px; transform: translateY(-50%); color: #888; }
+.engineering-blueprints .search-box input { flex: 1; padding: 12px 40px 12px 40px; background: rgba(255,255,255,0.06); border: 1px solid #444; border-radius: 6px; color: #e0e0e0; font-size: 14px; }
+.engineering-blueprints .search-box .clear-btn { position: absolute; right: 8px; background: transparent; border: none; color: #aaa; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; }
+.engineering-blueprints .search-box .clear-btn:hover { color: #fff; }
 .engineering-blueprints .blueprint-list { display: flex; flex-direction: column; gap: 16px; }
 .engineering-blueprints .blueprint-item { background: rgba(255,255,255,0.05); border: 1px solid #444; border-radius: 8px; padding: 12px; }
 .engineering-blueprints .blueprint-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }

@@ -6,6 +6,11 @@
   <div class="search-box">
     <mat-icon>search</mat-icon>
     <input type="text" [(ngModel)]="searchTerm" placeholder="Search modules, engineering or system...">
+    @if (searchTerm) {
+      <button type="button" class="clear-btn" (click)="searchTerm=''" aria-label="Clear search">
+        <mat-icon>close</mat-icon>
+      </button>
+    }
   </div>
 
   @if (getSortedFilteredItems().length > 0) {

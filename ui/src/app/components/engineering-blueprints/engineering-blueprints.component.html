@@ -2,6 +2,11 @@
   <div class="search-box">
     <mat-icon>search</mat-icon>
     <input type="text" [(ngModel)]="searchTerm" placeholder="Search blueprints, modules or engineers...">
+    @if (searchTerm) {
+      <button type="button" class="clear-btn" (click)="searchTerm=''" aria-label="Clear search">
+        <mat-icon>close</mat-icon>
+      </button>
+    }
   </div>
 
   @if (!searchTerm) {
