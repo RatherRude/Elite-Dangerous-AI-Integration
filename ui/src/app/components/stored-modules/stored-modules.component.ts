@@ -18,6 +18,8 @@ export class StoredModulesComponent implements OnInit, OnDestroy {
   searchTerm: string = '';
   sortKey: 'name' | 'system' | 'time' | 'cost' = 'name';
   sortDir: 'asc' | 'desc' = 'asc';
+  page: number = 1;
+  pageSize: number = 25;
 
   private subscriptions: Subscription[] = [];
 
@@ -57,7 +59,7 @@ export class StoredModulesComponent implements OnInit, OnDestroy {
     const items = [...this.getFilteredItems()];
     const dir = this.sortDir === 'asc' ? 1 : -1;
     const key = this.sortKey;
-    return items.sort((a: any, b: any) => {
+    const sorted = items.sort((a: any, b: any) => {
       if (key === 'name') {
         const an = this.formatModuleName(a.Name_Localised || a.Name || '');
         const bn = this.formatModuleName(b.Name_Localised || b.Name || '');
@@ -77,7 +79,18 @@ export class StoredModulesComponent implements OnInit, OnDestroy {
       const bc = typeof b.TransferCost === 'number' ? b.TransferCost : Number.POSITIVE_INFINITY;
       return (ac - bc) * dir;
     });
+    const start = (this.page - 1) * this.pageSize;
+    return sorted.slice(start, start + this.pageSize);
   }
+
+  getTotalPages(): number {
+    const total = this.getFilteredItems().length;
+    return Math.max(1, Math.ceil(total / this.pageSize));
+  }
+
+  prevPage(): void { this.page = Math.max(1, this.page - 1); }
+  nextPage(): void { this.page = Math.min(this.getTotalPages(), this.page + 1); }
+  goToPage(p: number): void { this.page = Math.min(Math.max(1, p), this.getTotalPages()); }
 
   toggleSort(key: 'name' | 'system' | 'time' | 'cost'): void {
     if (this.sortKey === key) {

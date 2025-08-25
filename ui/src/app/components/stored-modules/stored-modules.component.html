@@ -53,6 +53,15 @@
         }
       </tbody>
     </table>
+    <div class="pagination">
+      <button (click)="prevPage()" [disabled]="page===1">
+        <mat-icon>chevron_left</mat-icon>
+      </button>
+      <span>Page {{ page }} / {{ getTotalPages() }}</span>
+      <button (click)="nextPage()" [disabled]="page===getTotalPages()">
+        <mat-icon>chevron_right</mat-icon>
+      </button>
+    </div>
   } @else {
     <div class="no-data-message">
       <mat-icon>build</mat-icon>
