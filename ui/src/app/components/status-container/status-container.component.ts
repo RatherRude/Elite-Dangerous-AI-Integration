@@ -96,9 +96,6 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
       this.projectionsService.location$.subscribe(location => {
         this.location = location;
       }),
-      this.projectionsService.discoveryscan$.subscribe(discoveryscan => {
-        this.discoveryscan = discoveryscan;
-      }),
       
       this.projectionsService.shipInfo$.subscribe(shipInfo => {
         this.shipInfo = shipInfo;
@@ -461,7 +458,7 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
   }
 
   getLocationDiscovered(): boolean{
-    return this.discoveryscan?.
+    return this.discoveryscan?.discoveryscan
   }
 
   getLocationDetail(): string {

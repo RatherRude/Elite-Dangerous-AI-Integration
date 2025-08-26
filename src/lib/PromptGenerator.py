@@ -193,6 +193,9 @@ class PromptGenerator:
                     faction_info = f" Controlling faction: {faction_name}"
             
             return f"{self.commander_name} has arrived at {fsd_jump_event.get('StarSystem')}{details_str}{system_details_str}{population}{faction_info}"
+        
+        if event_name == 'FirstPlayerSystemDiscovery':
+            return f"{self.commander_name} has a new system discovered"
             
         if event_name == 'FSDTarget':
             fsd_target_event = cast(FSDTargetEvent, content)
