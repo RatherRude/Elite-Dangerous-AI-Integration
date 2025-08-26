@@ -20,6 +20,7 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
   // Core projections
   currentStatus: any = null;
   location: any = null;
+  discoveryscan: any = null;
   shipInfo: any = null;
   commander: any = null;
   inCombat: any = null;
@@ -94,6 +95,9 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
       
       this.projectionsService.location$.subscribe(location => {
         this.location = location;
+      }),
+      this.projectionsService.discoveryscan$.subscribe(discoveryscan => {
+        this.discoveryscan = discoveryscan;
       }),
       
       this.projectionsService.shipInfo$.subscribe(shipInfo => {
@@ -454,6 +458,10 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
   // Location methods
   getLocationSystem(): string {
     return this.location?.StarSystem || 'Unknown System';
+  }
+
+  getLocationDiscovered(): boolean{
+    return this.discoveryscan?.
   }
 
   getLocationDetail(): string {

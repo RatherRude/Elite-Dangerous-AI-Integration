@@ -106,6 +106,8 @@ LocationState = TypedDict('LocationState', {
     "Docked": NotRequired[Literal[True]],
     "Landed": NotRequired[Literal[True]], # only set when true
     "NearestDestination": NotRequired[str], # only when landed on a planet
+    "FirstDiscovery": bool,
+    "WasMapped": bool,
 })
 
 @final
@@ -168,6 +170,17 @@ class Location(Projection[LocationState]):
             
             if body_type and body_type != 'Null':
                 self.state[body_type] = body
+                
+        if isinstance(event, GameEvent) and event.content.get('event')== 'Scan':
+            was_discovered =event.content.get('WasDiscovered', True)
+            was_mapped =event.content.get('WasMapped', False)
+            log("info","First Discovery : ",was_discovered,"   And it was mapped ",was_mapped)
+            
+    
+    
+    #    if isinstance(event, GameEvent) and event.content.get('event') in ['RefuelAll','RepairAll','BuyAmmo']:
+    #        if self.state['hasLimpets'] and self.state['Cargo'] < self.state['CargoCapacity']:
+    #            projected_events.append(ProjectedEvent({"event": "RememberLimpets"}))
 
         if isinstance(event, GameEvent) and event.content.get('event') == 'Docked':
             self.state['Docked'] = True
