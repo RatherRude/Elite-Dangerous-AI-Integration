@@ -388,7 +388,7 @@ if __name__ == "__main__":
                         secrets = load_secrets()
                         break
                     else: 
-                        new_config = validate_config(config)
+                        new_config = validate_config(config, secrets)
                         if new_config:
                             config = new_config
                             break

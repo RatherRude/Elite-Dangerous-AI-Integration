@@ -566,8 +566,20 @@ def migrate(data: dict) -> dict:
             if 'llm_model_name' in data and data['llm_model_name'] == 'gemini-2.5-flash-preview-04-17':
                 data['llm_model_name'] = 'gemini-2.5-flash-preview-05-20'
     
-    if data['config_version'] == 2:
+    if data['config_version'] < 3:
         data['config_version'] = 3
+        
+        if len(data.get('characters', [])) > 0:
+            data['characters'][0]['game_events'] = game_events
+
+        if isinstance(data.get('ptt_var'), bool):
+            data['ptt_var'] = 'push_to_talk' if data.get('ptt_var') else 'voice_activation'
+
+        if 'llm_model_name' in data and data['llm_model_name'] == 'gemini-2.5-flash-preview-04-17':
+            data['llm_model_name'] = 'gemini-2.5-flash'
+            
+    if data['config_version'] == 3:
+        data['config_version'] = 4
         # Migrate secrets to new structure
         secrets: Secrets = {
             'llm': {
@@ -613,18 +625,6 @@ def migrate(data: dict) -> dict:
         data.pop('stt_api_key', None)
         data.pop('tts_api_key', None)
         data.pop('vision_api_key', None)
-
-        if len(data.get('characters', [])) > 0:
-            data['characters'][0]['game_events'] = game_events
-
-    if data['config_version'] < 3:
-        data['config_version'] = 3
-
-        if isinstance(data.get('ptt_var'), bool):
-            data['ptt_var'] = 'push_to_talk' if data.get('ptt_var') else 'voice_activation'
-
-        if 'llm_model_name' in data and data['llm_model_name'] == 'gemini-2.5-flash-preview-04-17':
-            data['llm_model_name'] = 'gemini-2.5-flash'
 
 
     return data
@@ -1000,7 +1000,7 @@ class ModelValidationResult(TypedDict):
     message: str|None
 
 
-def check_and_upgrade_model(config: Config) -> ModelValidationResult:
+def check_and_upgrade_model(config: Config, secrets: Secrets) -> ModelValidationResult:
     """
     Checks if the model configuration is valid and upgrades models if possible.
 
@@ -1015,7 +1015,7 @@ def check_and_upgrade_model(config: Config) -> ModelValidationResult:
     
     # Check LLM model
     llm_endpoint = config['llm_endpoint'] if config['llm_endpoint'] else "https://api.openai.com/v1"
-    llm_api_key = config['llm_api_key'] if config['llm_api_key'] else config['api_key']
+    llm_api_key = secrets['current_llm_key'] if secrets['current_llm_key'] else '-'
     llm_model_name = config['llm_model_name']
 
     if llm_endpoint == "https://api.openai.com/v1":
@@ -1107,9 +1107,9 @@ def check_and_upgrade_model(config: Config) -> ModelValidationResult:
     }
 
 
-def validate_config(config: Config) -> Config | None:
+def validate_config(config: Config, secrets: Secrets) -> Config | None:
 
-    validation_result = check_and_upgrade_model({**config})
+    validation_result = check_and_upgrade_model({**config}, secrets)
 
     # Send validation result message
     if not validation_result['skipped']:

@@ -20,6 +20,10 @@ export interface ChangeConfigMessage extends BaseCommand {
     type: "change_config";
     config: Partial<Config>;
 }
+export interface ChangeSecretMessage extends BaseCommand {
+    type: "change_secret";
+    secrets: Partial<Secrets>;
+}
 
 export interface ChangeEventConfigMessage extends BaseCommand {
     type: "change_event_config";
@@ -64,6 +68,10 @@ export interface Secrets {
     stt: ProviderSecrets;
     tts: ProviderSecrets;
     vision: ProviderSecrets;
+    current_llm_key: string;
+    current_stt_key: string;
+    current_tts_key: string;
+    current_vision_key: string;
 }
 
 export interface Config {
@@ -165,12 +173,14 @@ export class ConfigService {
                 message,
             ): message is
                 | ConfigMessage
+                | SecretsMessage
                 | RunningConfigMessage
                 | SystemInfoMessage
                 | ModelValidationMessage
                 | PluginSettingsMessage
                 | StartMessage =>
                 message.type === "config" ||
+                message.type === "secrets" ||
                 message.type === "running_config" ||
                 message.type === "system" ||
                 message.type === "model_validation" ||
@@ -182,6 +192,7 @@ export class ConfigService {
                 this.configSubject.next(message.config);
             } else if (message.type === "secrets") {
                 this.secretsSubject.next(message.secrets);
+                console.log('received secrets message');
             } else if (message.type === "running_config") {
                 this.configSubject.next(message.config);
             } else if (message.type === "system") {
@@ -220,6 +231,21 @@ export class ConfigService {
             type: "change_config",
             timestamp: new Date().toISOString(),
             config: partialConfig,
+        };
+
+        // Send update to backend
+        await this.tauriService.send_command(message);
+    }
+    public async changeSecrets(partialSecrets: Partial<Secrets>): Promise<void> {
+        const currentConfig = this.getCurrentConfig();
+        if (!currentConfig) {
+            throw new Error("Cannot update config before it is initialized");
+        }
+
+        const message: ChangeSecretMessage = {
+            type: "change_secret",
+            timestamp: new Date().toISOString(),
+            secrets: partialSecrets,
         };
 
         // Send update to backend
