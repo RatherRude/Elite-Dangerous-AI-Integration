@@ -7,6 +7,7 @@ import {
     MatLabel,
 } from "@angular/material/form-field";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
+import { MatIcon } from "@angular/material/icon";
 import { MatOptgroup, MatOption, MatSelect } from "@angular/material/select";
 import { Subscription } from "rxjs";
 import {
@@ -16,6 +17,7 @@ import {
 } from "../../services/config.service.js";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { FormsModule } from "@angular/forms";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatDivider } from "@angular/material/divider";
 import { MatInputModule } from "@angular/material/input";
 import { MatButtonModule } from "@angular/material/button";
@@ -32,6 +34,8 @@ import { Character, CharacterService } from "../../services/character.service.js
         MatButtonModule,
         MatFormField,
         MatLabel,
+        MatIcon,
+        MatTooltipModule,
         MatSlideToggle,
         MatSelect,
         MatOption,
@@ -42,6 +46,8 @@ import { Character, CharacterService } from "../../services/character.service.js
     templateUrl: "./advanced-settings.component.html",
     styleUrl: "./advanced-settings.component.css",
 })
+
+
 export class AdvancedSettingsComponent {
     config: Config | null = null;
     system: SystemInfo | null = null;
@@ -88,7 +94,6 @@ export class AdvancedSettingsComponent {
     updateTTSPrompt(prompt: string) {
         this.characterService.setCharacterProperty("tts_prompt", prompt);
     }
-
     parseFloat(value: string): number {
         return parseFloat(value.replaceAll(",", "."));
     }
@@ -107,4 +112,16 @@ export class AdvancedSettingsComponent {
             }
         }
     }
+      async bugReport(): Promise<void> {
+    try {
+      const zipPath = await (window as any).electronAPI.invoke("bug-report");
+      alert(`Bug-Report created:\n${zipPath}`);
+    } catch (e: any) {
+      alert(`Error can't create Bug-Report:\n${e?.message || String(e)}`);
+    }
+  }
 }
+
+
+
+
