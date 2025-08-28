@@ -724,7 +724,7 @@ def getDefaultCharacter(config: Config) -> Character:
 
 def load_config() -> Config:
     defaults: Config = {
-        'config_version': 3,
+        'config_version': 4,
         'commander_name': "",
         'characters': [],
         'active_character_index': 0,  # -1 means using the default legacy character
