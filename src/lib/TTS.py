@@ -17,25 +17,59 @@ from .Logger import log, show_chat_message
 
 @final
 class Mp3Stream(miniaudio.StreamableSource):
-    def __init__(self, gen: Generator, prebuffer_size=4) -> None:
+    def __init__(self, gen: Generator, prebuffer_size=4, initial_timeout: float = 10.0, chunk_timeout: float = 5.0) -> None:
         super().__init__()
         self.gen = gen
-        self.data = b""
-        self.offset = 0
         self.prebuffer_size = prebuffer_size
+        self.initial_timeout = initial_timeout
+        self.chunk_timeout = chunk_timeout
+        self.buffer = bytearray()
+        self._done = False
+        self._closed = False
+        self._first_chunk = False
+        self._last_chunk_time = time()
+        threading.Thread(target=self._produce, daemon=True).start()
+
+    def _produce(self):
+        try:
+            for ev in self.gen:
+                if self._closed:
+                    break
+                if isinstance(ev, dict) and ev.get('type') == 'audio':
+                    self.buffer.extend(ev['data'])
+                    self._first_chunk = True
+                    self._last_chunk_time = time()
+        except Exception as e:
+            log('error', 'Mp3Stream producer exception', e, traceback.format_exc())
+            raise e
+        finally:
+            self._done = True
+
+    def close(self):  # type: ignore[override]
+        self._closed = True
+        return super().close()
 
     def read(self, num_bytes: int) -> bytes:
-        data = b""
-        try:
-            while True:
-                chunk = self.gen.__next__()
-                if isinstance(chunk, dict) and chunk["type"] == "audio":
-                    data += chunk["data"]
-                if len(data) >= self.prebuffer_size*720: # TODO: Find a good value here
-                    return data
-        except StopIteration:
-            self.close()
-        return data
+        if self._closed:
+            return b''
+        out = bytearray()
+        need = max(self.prebuffer_size * 720, num_bytes)
+        while len(out) < need:
+            # timeout checks
+            timeout = self.initial_timeout if not self._first_chunk else self.chunk_timeout
+            if (not self._done) and (time() - self._last_chunk_time > timeout):
+                log('warn', 'TTS Stream timeout (initial)' if not self._first_chunk else 'TTS Stream timeout (gap)')
+                self.close()
+                raise IOError('TTS Stream timeout')
+            if self.buffer:
+                take = min(len(self.buffer), need - len(out))
+                out.extend(self.buffer[:take])
+                del self.buffer[:take]
+            else:
+                if self._done:
+                    break
+                sleep(0.01)
+        return bytes(out)
 
 @final
 class TTS:
