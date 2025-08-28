@@ -117,7 +117,7 @@ export class AdvancedSettingsComponent {
     }
 
     async onSecretChange(partialSecrets: Partial<Secrets>) {
-        if (this.config) {
+        if (this.secrets) {
             console.log("Sending secret update to backend:", partialSecrets);
 
             try {
