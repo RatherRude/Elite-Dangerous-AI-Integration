@@ -236,34 +236,6 @@ class BackendService {
   } 
 }
 
-try { ipcMain.removeHandler('bug-report'); } catch {}
-
-ipcMain.handle('bug-report', async () => {
-  const fs = require('fs');
-  const path = require('path');
-  const { spawn } = require('child_process');
-
-  const PY = process.platform === 'win32' ? 'python' : 'python3';
-  const script = path.resolve(__dirname, '..', 'src', 'lib', 'BugReporter.py');
-  if (!fs.existsSync(script)) throw new Error(`BugReporter.py nicht gefunden: ${script}`);
-
-  return new Promise((resolve, reject) => {
-    const p = spawn(PY, [script], { stdio: ['ignore','pipe','pipe'] });
-
-    let out = '', err = '';
-    p.stdout.on('data', d => out += d.toString());
-    p.stderr.on('data', d => err += d.toString());
-    p.on('close', c => {
-      if (c === 0) {
-        const line = (out.trim().split(/\r?\n/).pop() || '').trim();
-        resolve(line);
-      } else {
-        reject(new Error(err || `exit ${c}`));
-      }
-    });
-  });
-});
-
 function createMainWindow() {
   const mainWindow = new BrowserWindow({
     width: 1024,

@@ -112,14 +112,8 @@ export class AdvancedSettingsComponent {
             }
         }
     }
-      async bugReport(): Promise<void> {
-    try {
-      const zipPath = await (window as any).electronAPI.invoke("bug-report");
-      alert(`Bug-Report created:\n${zipPath}`);
-    } catch (e: any) {
-      alert(`Error can't create Bug-Report:\n${e?.message || String(e)}`);
-    }
-  }
+      async bugReport(): Promise<void> {}
+
 }
 
 
