@@ -107,7 +107,7 @@ LocationState = TypedDict('LocationState', {
     "Docked": NotRequired[Literal[True]],
     "Landed": NotRequired[Literal[True]], # only set when true
     "NearestDestination": NotRequired[str], # only when landed on a planet
-    "FirstPlayerDiscovery": bool,
+    
     "WasPlayerMapped": bool,
 })
 
