@@ -213,14 +213,110 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
             expected_output=SampleResult(answer='18 Camelopardalis C'),
             metadata={},
         ),
-        # Case(
-        #     name='closest guardian relic',
-        #     inputs=Sample(
-        #         query='closest guardian relic', projected_states=dummy_projected_state
-        #     ),
-        #     expected_output=SampleResult(answer='Sol'),
-        #     metadata={},
-        # ),
+
+        # engineer finder
+        Case(
+            name='engineer shields helper',
+            inputs=Sample(
+                query='what engineer can help me with my shields?', projected_states=dummy_projected_state
+            ),
+            expected_output=SampleResult(answer='Didi Vatermann'),
+            metadata={},
+        ),
+        Case(
+            name='engineer unlock felicity',
+            inputs=Sample(
+                query='what do I need to unlock felicity?', projected_states=dummy_projected_state
+            ),
+            expected_output=SampleResult(answer='Meta-Alloys'),
+            metadata={},
+        ),
+
+        # blueprint finder
+        Case(
+            name='blueprint thermal resistant shields',
+            inputs=Sample(
+                query='can I upgrade my shield with thermal resistance?', projected_states=dummy_projected_state
+            ),
+            expected_output=SampleResult(answer='Thermal resistant'),
+            metadata={},
+        ),
+
+        # material finder
+        Case(
+            name='material lead count',
+            inputs=Sample(
+                query='How much lead do I have?', projected_states=dummy_projected_state
+            ),
+            expected_output=SampleResult(answer='Lead'),
+            metadata={},
+        ),
+        Case(
+            name='material refined focus crystals source',
+            inputs=Sample(
+                query='Where do i find refined focus crystals?', projected_states=dummy_projected_state
+            ),
+            expected_output=SampleResult(answer='Mission reward'),
+            metadata={},
+        ),
+
+        # complicated queries
+        Case(
+            name='closest scoopable primary system',
+            inputs=Sample(
+                query='closest system with a scoopable primary star', projected_states=dummy_projected_state
+            ),
+            expected_output=SampleResult(answer='Alpha Centauri'),
+            metadata={},
+        ),
+        Case(
+            name='closest raw material trader near marco',
+            inputs=Sample(
+                query="what's the closest material trader for raw materials close to marco?", projected_states=dummy_projected_state
+            ),
+            expected_output=SampleResult(answer='Magnus Gateway'),
+            metadata={},
+        ),
+        Case(
+            name='closest raw material trader near navroute',
+            inputs=Sample(
+                query="what's the closest material trader for raw materials near my navroute destination?", projected_states=dummy_projected_state
+            ),
+            expected_output=SampleResult(answer='Magnus Gateway'),
+            metadata={},
+        ),
+        Case(
+            name='compound broker fsd booster painite',
+            inputs=Sample(
+                query="what's the closest system that has a material broker where I can buy a guardian frame shift drive booster where I can mine painite", projected_states=dummy_projected_state
+            ),
+            expected_output=SampleResult(answer='Painite'),
+            metadata={},
+        ),
+        Case(
+            name='buy cmm composite',
+            inputs=Sample(
+                query='Where can I buy CMM Composites?', projected_states=dummy_projected_state
+            ),
+            expected_output=SampleResult(answer='CMM Composite'),
+            metadata={},
+        ),
+        Case(
+            name='mine painite',
+            inputs=Sample(
+                query='Where can i mine painite?', projected_states=dummy_projected_state
+            ),
+            expected_output=SampleResult(answer='Painite'),
+            metadata={},
+        ),
+        Case(
+            name='find steel commodity',
+            inputs=Sample(
+                query='where do i find the remaining steel for my construction?', projected_states=dummy_projected_state
+            ),
+            expected_output=SampleResult(answer='Steel'),
+            metadata={},
+        ),
     ],
     evaluators=[
         LLMJudge(
