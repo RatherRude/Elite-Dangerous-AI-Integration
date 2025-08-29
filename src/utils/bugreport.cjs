@@ -58,8 +58,13 @@ async function createBugReport() {
     archive.pipe(output);
 
     archive.append(JSON.stringify(getSystemInfo(), null, 2), { name: 'system_info.json' });
-    archive.append('COVAS:NEXT local bug report\n', { name: 'README.txt' });
-
+    archive.append({ name: 'README.txt' },
+      'COVAS:NEXT bug report\n',
+      'Please send this file to us via: \n',
+      'Discord or Github\n',
+      'This files only has simple Information about COVAS:NEXT\n',
+    
+    );
     for (const candidate of LOG_CANDIDATES) {
       if (fs.existsSync(candidate)) {
         archive.file(candidate, { name: 'com.covas-next.ui.log' });
