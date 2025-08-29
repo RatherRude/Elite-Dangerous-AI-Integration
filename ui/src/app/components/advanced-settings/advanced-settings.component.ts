@@ -112,7 +112,15 @@ export class AdvancedSettingsComponent {
             }
         }
     }
-      async bugReport(): Promise<void> {}
+    async bugReport(): Promise<void> {
+        try {
+        const zipPath = await (window as any).electronAPI.invoke('bug-report');
+        alert(`Bug-Report erstellt:\n${zipPath}`);
+        } catch (e: any) {
+        alert(`Fehler beim Bug-Report:\n${e?.message || String(e)}`);
+        }
+    }
+    
 
 }
 

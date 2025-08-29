@@ -4,6 +4,8 @@ const path = require('path');
 const url = require('node:url')
 const contextMenu = require('electron-context-menu');
 const pino = require('pino')
+const { createBugReport } = require('../src/utils/bugreport.cjs');
+
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 const isLinux = process.platform === 'linux';
@@ -235,6 +237,21 @@ class BackendService {
     }
   } 
 }
+
+
+
+
+ipcMain.handle('bug-report', async () => {
+  try {
+    const zipPath = await createBugReport();
+    const folder = path.dirname(zipPath);
+    shell.openPath(folder);
+    return zipPath;
+  } catch (e) {
+    throw new Error(`Bugreport fehlgeschlagen: ${e.message}`);
+  }
+});
+
 
 function createMainWindow() {
   const mainWindow = new BrowserWindow({
