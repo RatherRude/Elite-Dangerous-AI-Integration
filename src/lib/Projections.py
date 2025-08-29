@@ -742,16 +742,10 @@ class ShipInfo(Projection[ShipInfoState]):
             
             if auto_scan == 'AutoScan' and distancefromarrival < 0.2:  # pyright: ignore[reportOptionalOperand]
                 was_discovered = event.content.get('WasDiscovered') #system mapped
-                log('info',"New DiscoveryTest:  ","Was Discovered ?: ",was_discovered)
                 
-                if was_discovered:
-                    self.state['FirstPlayerDiscovery'] = False
-                    log('info',"New DiscoveryTest:  ","No_Discovered Detected")            
-                    
-                else:
+                if was_discovered == False:
                     self.state['FirstPlayerDiscovery'] = True
-                    log('info',"New DiscoveryTest:  ","WasDiscovered Detected")
-                    projected_events.append(ProjectedEvent({"event": "FirstPlayerSystemDiscovery"}))
+                    projected_events.append(ProjectedEvent({"event": "FirstPlayerSystemDiscovery"}))         
                     
             if auto_scan != 'AutoScan' and distancefromarrival > 0.2: # pyright: ignore[reportOptionalOperand]
                 was_mapped =event.content.get('WasMapped') #player mapped
