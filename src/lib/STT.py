@@ -53,6 +53,7 @@ class STT:
         self.phrase_end_pause = 1.0
 
     def listen_once_start(self):
+        log('debug', 'listen_once_start')
         if self.provider == 'none':
             return
         if self.listening:
@@ -61,6 +62,7 @@ class STT:
         threading.Thread(target=self._listen_once_thread, daemon=True).start()
 
     def listen_once_end(self):
+        log('debug', 'listen_once_end')
         self.listening = False
 
     def _listen_once_thread(self):
@@ -68,25 +70,29 @@ class STT:
         Push to talk like functionality, immediately records audio and sends it to the OpenAI API, bypassing the VAD.
         """
         # print('Running STT in PTT mode')
+        log('debug', 'listen_once_thread start')
         source = self._get_microphone()
         self.recording = True
-        timestamp = time()
-        frames = []
-        while self.listening:
-            buffer = source.read(self.frames_per_buffer)
-            if len(buffer) == 0: break  # reached end of the stream
-            frames.append(buffer)
-        source.close()
+        text = None
+        try:
+            timestamp = time()
+            frames = []
+            while self.listening:
+                buffer = source.read(self.frames_per_buffer)
+                if len(buffer) == 0: break  # reached end of the stream
+                frames.append(buffer)
+            source.close()
 
-        audio_raw = b''.join(frames)
-        audio_data = sr.AudioData(audio_raw, self.rate, pyaudio.get_sample_size(pyaudio.paInt16))
-        text = self._transcribe(audio_data)
-        self.recording = False
+            audio_raw = b''.join(frames)
+            audio_data = sr.AudioData(audio_raw, self.rate, pyaudio.get_sample_size(pyaudio.paInt16))
+            text = self._transcribe(audio_data)
+        finally:
+            self.recording = False
         
-        if not text:
-            return
+        if text:
+            self.resultQueue.put(STTResult(text, audio_data, timestamp))
         
-        self.resultQueue.put(STTResult(text, audio_data, timestamp))
+        log('debug', 'listen_once_thread end')
 
     def listen_continuous(self):
         if self.provider == 'none':
@@ -100,6 +106,7 @@ class STT:
             try: 
                 self._listen_continuous_loop()
             except Exception as e:
+                self.recording = False
                 log('error', 'An error occurred during speech recognition', e, traceback.format_exc())
                 show_chat_message('error', 'Speech recognition error:', e)
                 sleep(backoff)
@@ -114,6 +121,7 @@ class STT:
         while self.listening:
             buffer = source.read(self.frames_per_buffer)
             if self.continuous_listening_paused:
+                self.recording = False
                 continue
             if len(buffer) == 0: break  # reached end of the stream
             frames.append(buffer)
@@ -150,6 +158,7 @@ class STT:
                             self.resultQueue.put(STTResult(text, audio_data, timestamp))
                         self.recording = False
         source.close()
+        self.recording = False
 
     def _get_microphone(self) -> pyaudio.Stream:
         audio = pyaudio.PyAudio()
@@ -185,16 +194,17 @@ class STT:
         return source
 
     def _transcribe(self, audio: sr.AudioData) -> str:
+        log('debug', 'Transcribing audio...')
         if self.openai_client is None:
             raise ValueError('Speech recognition is disabled')
         
         audio_raw = audio.get_raw_data(convert_rate=16000, convert_width=2)
         audio_length = len(audio_raw) / 2 / 16000
         if audio_length < 0.2:
-            # print('skipping short audio')
+            log('debug', 'skipping short audio')
             return ''
         if all([a < self.vad_threshold for a in self.vad.process_chunks(audio_raw)]):
-            # print('skipping audio without voice')
+            log('debug', 'skipping audio without voice')
             return ''
 
 
