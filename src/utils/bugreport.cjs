@@ -33,11 +33,15 @@ function getSystemInfo() {
 function addDirectory(archive, dirPath, prefix = '') {
   if (!fs.existsSync(dirPath)) return;
   for (const entry of fs.readdirSync(dirPath)) {
+    if (!entry) continue;
     const full = path.join(dirPath, entry);
     const rel = path.join(prefix, entry).replace(/\\/g, '/');
-    if (fs.statSync(full).isDirectory()) {
+    if (!rel) continue;
+
+    const stat = fs.statSync(full);
+    if (stat.isDirectory()) {
       addDirectory(archive, full, rel);
-    } else {
+    } else if (stat.isFile()) {
       archive.file(full, { name: rel });
     }
   }
@@ -54,13 +58,7 @@ async function createBugReport() {
     archive.pipe(output);
 
     archive.append(JSON.stringify(getSystemInfo(), null, 2), { name: 'system_info.json' });
-    archive.append({ name: 'README.txt' },
-      'COVAS:NEXT bug report\n',
-      'Please send this file to us via: \n',
-      'Discord or Github\n',
-      'This files only has simple Information about COVAS:NEXT\n',
-    
-    );
+    archive.append('COVAS:NEXT local bug report\n', { name: 'README.txt' });
 
     for (const candidate of LOG_CANDIDATES) {
       if (fs.existsSync(candidate)) {
@@ -73,9 +71,11 @@ async function createBugReport() {
       if (!fs.existsSync(item)) continue;
       const stat = fs.statSync(item);
       if (stat.isFile()) {
-        archive.file(item, { name: path.basename(item) });
+        const name = path.basename(item);
+        if (name) archive.file(item, { name });
       } else if (stat.isDirectory()) {
-        addDirectory(archive, item, path.basename(item));
+        const dirName = path.basename(item);
+        if (dirName) addDirectory(archive, item, dirName);
       }
     }
 

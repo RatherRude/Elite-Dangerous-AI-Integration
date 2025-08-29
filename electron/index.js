@@ -46,11 +46,7 @@ if (process.platform === 'win32') {
   const logsPath = path.join(process.env.LOCALAPPDATA, 'com.covas-next.ui', 'logs');
   require('fs').rmSync(logsPath, { recursive: true, force: true });
   logger.info('Deleted logs directory:', logsPath);
-} else if (isLinux) {
-  const logsPath = path.join(process.env.XDG_DATA_HOME, 'com.covas-next.ui', 'logs');
-  require('fs').rmSync(logsPath, { recursive: true, force: true });
-  logger.info('Deleted logs directory:', logsPath);
-}
+} 
 
 for (const x of ["home","userData","temp","appData","sessionData","exe","module","desktop","documents","downloads","music","pictures","videos","logs","crashDumps"]) {
   logger.info(x, app.getPath(x));
