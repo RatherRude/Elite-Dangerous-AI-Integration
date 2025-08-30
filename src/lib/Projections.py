@@ -1,6 +1,7 @@
 import math
 import re
 import traceback
+from turtle import distance
 from typing import Any, Literal, TypedDict, final, List, cast
 from datetime import datetime, timezone, timedelta
 from webbrowser import get
@@ -106,6 +107,8 @@ LocationState = TypedDict('LocationState', {
     "Docked": NotRequired[Literal[True]],
     "Landed": NotRequired[Literal[True]], # only set when true
     "NearestDestination": NotRequired[str], # only when landed on a planet
+    
+    "WasPlayerMapped": bool,
 })
 
 @final
@@ -168,6 +171,7 @@ class Location(Projection[LocationState]):
             
             if body_type and body_type != 'Null':
                 self.state[body_type] = body
+                
 
         if isinstance(event, GameEvent) and event.content.get('event') == 'Docked':
             self.state['Docked'] = True
@@ -569,6 +573,8 @@ ShipInfoState = TypedDict('ShipInfoState', {
     "IsMiningShip": bool,
     "hasLimpets": bool,
     "Fighters": list[FighterState],
+    "FirstPlayerDiscovery":bool,
+    "WasPlayerMapped":bool,
 })
 
 @final
@@ -729,7 +735,30 @@ class ShipInfo(Projection[ShipInfoState]):
                 self.state['Name'] = event.content.get('UserShipName', 'Unknown')
             if 'UserShipId' in event.content:
                 self.state['ShipIdent'] = event.content.get('UserShipId', 'Unknown')
+        
+        if isinstance(event, GameEvent) and event.content.get('event')== 'Scan':
+            auto_scan = event.content.get('ScanType')
+            distancefromarrival = event.content.get('DistanceFromArrivalLS')
+            
+            if auto_scan == 'AutoScan' and distancefromarrival < 0.2:  # pyright: ignore[reportOptionalOperand]
+                was_discovered = event.content.get('WasDiscovered') #system mapped
+                
+                if was_discovered == False:
+                    self.state['FirstPlayerDiscovery'] = True
+                    projected_events.append(ProjectedEvent({"event": "FirstPlayerSystemDiscovery"}))         
+                    
+            if auto_scan != 'AutoScan' and distancefromarrival > 0.2: # pyright: ignore[reportOptionalOperand]
+                was_mapped =event.content.get('WasMapped') #player mapped
+                if was_mapped:
+                    self.state['WasPlayerMapped'] = True
+                    log('info',"New DiscoveryTest:  ","WasMApped Detected")  
+                else:
+                    self.state['WasPlayerMapped'] = False
+                    log('info',"New DiscoveryTest:  ","No_MApped Detected")  
+                    
+                    
 
+            
         # Fighter events
         # No events for crew fighter destroyed or docked...
         # if isinstance(event, GameEvent) and event.content.get('event') == 'CrewLaunchFighter':
