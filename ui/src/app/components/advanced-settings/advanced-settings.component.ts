@@ -12,6 +12,7 @@ import { Subscription } from "rxjs";
 import {
     Config,
     ConfigService,
+    Secrets,
     SystemInfo,
 } from "../../services/config.service.js";
 import { MatSnackBar } from "@angular/material/snack-bar";
@@ -44,9 +45,11 @@ import { Character, CharacterService } from "../../services/character.service.js
 })
 export class AdvancedSettingsComponent {
     config: Config | null = null;
+    secrets: Secrets | null = null;
     system: SystemInfo | null = null;
     character: Character | null = null;
     configSubscription: Subscription;
+    secretsSubscription: Subscription;
     systemSubscription: Subscription;
     characterSubscription: Subscription;
     voiceInstructionSupportedModels: string[] = this.characterService.voiceInstructionSupportedModels;
@@ -59,6 +62,11 @@ export class AdvancedSettingsComponent {
         this.configSubscription = this.configService.config$.subscribe(
             (config) => {
                 this.config = config;
+            },
+        );
+        this.secretsSubscription = this.configService.secrets$.subscribe(
+            (secrets) => {
+                this.secrets = secrets;
             },
         );
         this.systemSubscription = this.configService.system$.subscribe(
@@ -102,6 +110,21 @@ export class AdvancedSettingsComponent {
             } catch (error) {
                 console.error("Error updating config:", error);
                 this.snackBar.open("Error updating configuration", "OK", {
+                    duration: 5000,
+                });
+            }
+        }
+    }
+
+    async onSecretChange(partialSecrets: Partial<Secrets>) {
+        if (this.secrets) {
+            console.log("Sending secret update to backend:", partialSecrets);
+
+            try {
+                await this.configService.changeSecrets(partialSecrets);
+            } catch (error) {
+                console.error("Error updating secrets:", error);
+                this.snackBar.open("Error updating secrets", "OK", {
                     duration: 5000,
                 });
             }

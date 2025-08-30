@@ -1,6 +1,6 @@
 
 <div class="settings-grid">
-    @if (config) {
+    @if (config && secrets) {
         <p>This section allows you to customize advanced settings. It is recommended to leave these settings
             at their default values unless you know what you are doing.</p>
         <h3>LLM Settings</h3>
@@ -31,8 +31,8 @@
 
             <mat-form-field>
                 <mat-label>Override LLM API Key</mat-label>
-                <input matInput type="password" [(ngModel)]="config.llm_api_key"
-                        (ngModelChange)="onConfigChange({llm_api_key: $event})">
+                <input matInput type="password" [(ngModel)]="secrets.current_llm_key"
+                        (ngModelChange)="onSecretChange({current_llm_key: $event})">
             </mat-form-field>
         }
         @if (config.llm_provider === "openrouter")
@@ -51,8 +51,8 @@
 
             <mat-form-field>
                 <mat-label>Override LLM API Key</mat-label>
-                <input matInput type="password" [(ngModel)]="config.llm_api_key"
-                        (ngModelChange)="onConfigChange({llm_api_key: $event})">
+                <input matInput type="password" [(ngModel)]="secrets.current_llm_key"
+                        (ngModelChange)="onSecretChange({current_llm_key: $event})">
             </mat-form-field>
 
             <label>
@@ -78,8 +78,8 @@
 
             <mat-form-field>
                 <mat-label>Override LLM API Key</mat-label>
-                <input matInput type="password" [(ngModel)]="config.llm_api_key"
-                        (ngModelChange)="onConfigChange({llm_api_key: $event})">
+                <input matInput type="password" [(ngModel)]="secrets.current_llm_key"
+                        (ngModelChange)="onSecretChange({current_llm_key: $event})">
             </mat-form-field>
         }
         @if (config.llm_provider === "local-ai-server")
@@ -126,8 +126,8 @@
 
             <mat-form-field>
                 <mat-label>Override LLM API Key</mat-label>
-                <input matInput type="password" [(ngModel)]="config.llm_api_key"
-                        (ngModelChange)="onConfigChange({llm_api_key: $event})">
+                <input matInput type="password" [(ngModel)]="secrets.current_llm_key"
+                        (ngModelChange)="onSecretChange({current_llm_key: $event})">
             </mat-form-field>
 
 
@@ -167,8 +167,8 @@
             </mat-form-field>
             <mat-form-field>
                 <mat-label>Override STT API Key</mat-label>
-                <input matInput type="password" [(ngModel)]="config.stt_api_key"
-                        (ngModelChange)="onConfigChange({stt_api_key: $event})">
+                <input matInput type="password" [(ngModel)]="secrets.current_stt_key"
+                        (ngModelChange)="onSecretChange({current_stt_key: $event})">
             </mat-form-field>
         }
         @if (config.stt_provider === "google-ai-studio") {
@@ -179,8 +179,8 @@
             </mat-form-field>
             <mat-form-field>
                 <mat-label>Override STT API Key</mat-label>
-                <input matInput type="password" [(ngModel)]="config.stt_api_key"
-                        (ngModelChange)="onConfigChange({stt_api_key: $event})">
+                <input matInput type="password" [(ngModel)]="secrets.current_stt_key"
+                        (ngModelChange)="onSecretChange({current_stt_key: $event})">
             </mat-form-field>
         }
         @if (config.stt_provider === "local-ai-server") {
@@ -213,8 +213,8 @@
             </mat-form-field>
             <mat-form-field>
                 <mat-label>Override STT API Key</mat-label>
-                <input matInput type="password" [(ngModel)]="config.stt_api_key"
-                        (ngModelChange)="onConfigChange({stt_api_key: $event})">
+                <input matInput type="password" [(ngModel)]="secrets.current_stt_key"
+                        (ngModelChange)="onSecretChange({current_stt_key: $event})">
             </mat-form-field>
         }
         @if (config.stt_provider === "custom-multi-modal") {
@@ -230,8 +230,8 @@
             </mat-form-field>
             <mat-form-field>
                 <mat-label>Override STT API Key</mat-label>
-                <input matInput type="password" [(ngModel)]="config.stt_api_key"
-                        (ngModelChange)="onConfigChange({stt_api_key: $event})">
+                <input matInput type="password" [(ngModel)]="secrets.current_stt_key"
+                        (ngModelChange)="onSecretChange({current_stt_key: $event})">
             </mat-form-field>
         }
         @if (config.stt_provider === "none") {
@@ -276,8 +276,8 @@
             </mat-form-field>
             <mat-form-field>
                 <mat-label>Override TTS API Key</mat-label>
-                <input matInput type="password" [(ngModel)]="config.tts_api_key"
-                        (ngModelChange)="onConfigChange({tts_api_key: $event})">
+                <input matInput type="password" [(ngModel)]="secrets.current_tts_key"
+                        (ngModelChange)="onSecretChange({current_tts_key: $event})">
             </mat-form-field>
 
             @if (!voiceInstructionSupportedModels.includes(config.tts_model_name)) {
@@ -351,8 +351,8 @@
             </mat-form-field>
             <mat-form-field>
                 <mat-label>Override TTS API Key</mat-label>
-                <input matInput type="password" [(ngModel)]="config.tts_api_key"
-                        (ngModelChange)="onConfigChange({tts_api_key: $event})">
+                <input matInput type="password" [(ngModel)]="secrets.current_tts_key"
+                        (ngModelChange)="onSecretChange({current_tts_key: $event})">
             </mat-form-field>
         }
         @if (config.tts_provider === "none") {
@@ -381,8 +381,8 @@
                 </mat-form-field>
                 <mat-form-field>
                     <mat-label>Override Vision API Key</mat-label>
-                    <input matInput type="password" [(ngModel)]="config.vision_api_key"
-                            (ngModelChange)="onConfigChange({vision_api_key: $event})">
+                    <input matInput type="password" [(ngModel)]="secrets.current_vision_key"
+                            (ngModelChange)="onSecretChange({current_vision_key: $event})">
                 </mat-form-field>
             }
 
@@ -394,8 +394,8 @@
                 </mat-form-field>
                 <mat-form-field>
                     <mat-label>Override Vision API Key</mat-label>
-                    <input matInput type="password" [(ngModel)]="config.vision_api_key"
-                            (ngModelChange)="onConfigChange({vision_api_key: $event})">
+                    <input matInput type="password" [(ngModel)]="secrets.current_vision_key"
+                            (ngModelChange)="onSecretChange({current_vision_key: $event})">
                 </mat-form-field>
             }
 
@@ -412,15 +412,15 @@
                 </mat-form-field>
                 <mat-form-field>
                     <mat-label>Override Vision API Key</mat-label>
-                    <input matInput type="password" [(ngModel)]="config.vision_api_key"
-                            (ngModelChange)="onConfigChange({vision_api_key: $event})">
+                    <input matInput type="password" [(ngModel)]="secrets.current_vision_key"
+                            (ngModelChange)="onSecretChange({current_vision_key: $event})">
                 </mat-form-field>
             }
         }
         @if (config.vision_provider === "none") {
             <p>Vision is disabled</p>
         }
-        @if (config && (config.commander_name || config.api_key)) {
+        @if (config && (config.commander_name || secrets.current_llm_key)) {
             <h3>Autostart</h3>
             <mat-slide-toggle [(ngModel)]="config.cn_autostart"
                     (ngModelChange)="onConfigChange({cn_autostart: $event})">

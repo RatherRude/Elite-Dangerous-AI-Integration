@@ -471,7 +471,8 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
                                                         lambda s: s.get('NavRoute') and len(s.get('NavRoute', [])) > 0 and s.get('NavRoute')[-1].get('StarSystem').lower() == args['system_name'].lower(), zoom_wait_time)
                 jumpAmount = len(data.get('NavRoute', []))  # amount of jumps to do
 
-                if not current_gui == "GalaxyMap":  # if we are already in the galaxy map we don't want to close it
+                if not current_gui == "GalaxyMap":  # if we were already in the galaxy map when we started the action we don't want to close it
+                    sleep(0.1)
                     keys.send(galaxymap_key)
 
                 return (f"Best location found: {json.dumps(args['details'])}. " if 'details' in args else '') + f"Route to {args['system_name']} successfully plotted ({f"Distance: {distance_ly} LY, " if distance_ly > 0 else ""}Jumps: {jumpAmount})"

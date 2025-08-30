@@ -1,5 +1,5 @@
 <div class="settings-grid">
-    @if (config) {
+    @if (config && secrets) {
         <mat-form-field>
             <mat-label>Commander Name</mat-label>
             <input required matInput [(ngModel)]="config.commander_name"
@@ -13,7 +13,7 @@
             The system will automatically detect the key type and configure settings.</p>
         <mat-form-field>
             <mat-label>Main API Key (OpenAI/Openrouter/Google AI Studio)</mat-label>
-            <input required matInput [type]="hideApiKey ? 'password' : 'text'" [(ngModel)]="config.api_key"
+            <input required matInput [type]="hideApiKey ? 'password' : 'text'" [(ngModel)]="secrets.current_llm_key"
                     (ngModelChange)="onApiKeyChange($event)"
                     pattern="^[A-Za-z0-9_.-]+$"
                     #apiKeyInput="ngModel">

@@ -4,6 +4,7 @@ import { MatTabsModule } from "@angular/material/tabs";
 import {
     Config,
     ConfigService,
+    Secrets,
     SystemInfo,
 } from "../../services/config.service";
 import { Subscription } from "rxjs";
@@ -64,9 +65,11 @@ import { MatButtonModule } from "@angular/material/button";
 })
 export class SettingsMenuComponent implements OnInit, OnDestroy {
     config: Config | null = null;
+    secrets: Secrets | null = null;
     has_plugin_settings: boolean = false;
     system: SystemInfo | null = null;
     private configSubscription?: Subscription;
+    private secretsSubscription?: Subscription;
     private systemSubscription?: Subscription;
     private plugin_settings_message_subscription?: Subscription;
     private validationSubscription?: Subscription;
@@ -107,6 +110,12 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
                 this.config = config;
             },
         );
+        this.secretsSubscription = this.configService.secrets$
+            .subscribe(
+                (secrets) => {
+                    this.secrets = secrets;
+                },
+            );
         this.systemSubscription = this.configService.system$
             .subscribe(
                 (system) => {
@@ -155,6 +164,9 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     ngOnDestroy() {
         if (this.configSubscription) {
             this.configSubscription.unsubscribe();
+        }
+        if (this.secretsSubscription) {
+            this.secretsSubscription.unsubscribe();
         }
         if (this.systemSubscription) {
             this.systemSubscription.unsubscribe();

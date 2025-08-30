@@ -13,6 +13,7 @@ import { MatOption, MatSelect } from "@angular/material/select";
 import {
     Config,
     ConfigService,
+    Secrets,
     SystemInfo,
 } from "../../services/config.service.js";
 import { Subscription } from "rxjs";
@@ -45,9 +46,11 @@ import { ScreenInfo } from "../../models/screen-info";
 })
 export class GeneralSettingsComponent implements OnDestroy {
     config: Config | null = null;
+    secrets: Secrets | null = null;
     system: SystemInfo | null = null;
     screens: ScreenInfo[] = [];
     private configSubscription: Subscription;
+    private secretsSubscription: Subscription;
     private systemSubscription: Subscription;
     private screensSubscription?: Subscription;
     hideApiKey = true;
@@ -64,6 +67,13 @@ export class GeneralSettingsComponent implements OnDestroy {
                 this.isAssigningPTT = false;
             },
         );
+        this.secretsSubscription = this.configService.secrets$.subscribe(
+            (secrets) => {
+                console.log('received secrets message in general settings', secrets);
+                this.secrets = secrets;
+            },
+        );
+
         this.systemSubscription = this.configService.system$.subscribe(
             (system) => {
                 this.system = system;
@@ -81,6 +91,9 @@ export class GeneralSettingsComponent implements OnDestroy {
         if (this.configSubscription) {
             this.configSubscription.unsubscribe();
         }
+        if (this.secretsSubscription) {
+            this.secretsSubscription.unsubscribe();
+        }
         if (this.systemSubscription) {
             this.systemSubscription.unsubscribe();
         }
@@ -93,7 +106,7 @@ export class GeneralSettingsComponent implements OnDestroy {
         if (!this.config) return;
 
         // Update the API key in config first
-        await this.onConfigChange({ api_key: apiKey });
+        await this.onSecretChange({ current_llm_key: apiKey });
 
         // Detect API key type
         let providerChanges: Partial<Config> = {};
@@ -153,6 +166,21 @@ export class GeneralSettingsComponent implements OnDestroy {
             } catch (error) {
                 console.error("Error updating config:", error);
                 this.snackBar.open("Error updating configuration", "OK", {
+                    duration: 5000,
+                });
+            }
+        }
+    }
+
+    async onSecretChange(partialConfig: Partial<Secrets>) {
+        if (this.secrets) {
+            console.log("Sending secrets update to backend:", partialConfig);
+
+            try {
+                await this.configService.changeSecrets(partialConfig);
+            } catch (error) {
+                console.error("Error updating secrets:", error);
+                this.snackBar.open("Error updating secrets", "OK", {
                     duration: 5000,
                 });
             }
