@@ -290,7 +290,7 @@ export const GameEventTooltips: Record<string, string> = {
   "FSSAllBodiesFound": "COVAS:NEXT will react when you’ve discovered every stellar body in a system using the FSS.",
   "FSSBodySignals": "COVAS:NEXT will react when you identify signals on a planet or moon using the FSS.",
   "FSSDiscoveryScan": "COVAS:NEXT will react when you perform a full system scan using the FSS scanner.",
-  "FirstPlayerSystemDiscovery":"COVAS:NEXT will react when you’ve discovered a new system that has no one ever seen",
+  "FirstPlayerSystemDiscovery":"COVAS:NEXT will react when you’ve discover a new system.",
   "FSSSignalDiscovered": "COVAS:NEXT will react when you zoom and discover a specific signal source via the FSS.",
   "MaterialCollected": "COVAS:NEXT will react when you collect a material, either with your ship or SRV.",
   "MaterialDiscarded": "COVAS:NEXT will react when you discard a material from your inventory.",
