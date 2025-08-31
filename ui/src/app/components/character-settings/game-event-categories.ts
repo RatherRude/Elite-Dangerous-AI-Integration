@@ -284,7 +284,7 @@ export const GameEventCategories: Record<string, string[]> = {
         "FSSAllBodiesFound",
         "FSSBodySignals",
         "FSSDiscoveryScan",
-        "FirstPlayerSystemDiscovery",
+        "FirstPlayerSystemDiscovered",
         "FSSSignalDiscovered",
         "MaterialCollected",
         "MaterialDiscarded",
