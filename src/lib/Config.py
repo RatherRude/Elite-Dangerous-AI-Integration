@@ -297,6 +297,7 @@ game_events = {
     'FSSAllBodiesFound': False,
     'FSSBodySignals': False,
     'FSSDiscoveryScan': False,
+    'FirstPlayerSystemDiscovered':False,
     'FSSSignalDiscovered': False,
     'MaterialCollected': False,
     'MaterialDiscarded': False,

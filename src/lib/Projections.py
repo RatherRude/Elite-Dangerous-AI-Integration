@@ -1055,6 +1055,16 @@ class NavInfo(Projection[NavInfoState]):
                 # Fetch system data for the current system asynchronously
                 self.system_db.fetch_system_data_nonblocking(star_system)
 
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Scan':
+            auto_scan = event.content.get('ScanType')
+            distancefromarrival = event.content.get('DistanceFromArrivalLS', 1)
+
+            if auto_scan == 'AutoScan' and distancefromarrival < 0.2:  # pyright: ignore[reportOptionalOperand]
+                was_discovered = event.content.get('WasDiscovered', True)  # system mapped
+
+                if was_discovered == False:
+                    projected_events.append(ProjectedEvent({"event": "FirstPlayerSystemDiscovered"}))
+
         return projected_events
 
 # Define types for Backpack Projection

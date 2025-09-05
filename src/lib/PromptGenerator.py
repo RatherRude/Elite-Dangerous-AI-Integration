@@ -193,7 +193,7 @@ class PromptGenerator:
                     faction_info = f" Controlling faction: {faction_name}"
             
             return f"{self.commander_name} has arrived at {fsd_jump_event.get('StarSystem')}{details_str}{system_details_str}{population}{faction_info}"
-            
+
         if event_name == 'FSDTarget':
             fsd_target_event = cast(FSDTargetEvent, content)
             remaining = ""
@@ -2196,6 +2196,8 @@ class PromptGenerator:
             return f"{self.commander_name} is now in combat."
         if event_name == 'CombatExited':
             return f"{self.commander_name} is no longer in combat."
+        if event_name == 'FirstPlayerSystemDiscovered':
+            return f"{self.commander_name} has a new system discovered"
         # if event_name == 'ExternalDiscordNotification':
         #     twitch_event = cast(Dict[str, Any], content)
         #     return f"Twitch Alert! {twitch_event.get('text','')}",
