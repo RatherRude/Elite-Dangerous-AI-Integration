@@ -2,13 +2,14 @@ import { Component, OnDestroy, OnInit } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatTabsModule } from "@angular/material/tabs";
 import { MatProgressBarModule } from "@angular/material/progress-bar";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { Subscription } from "rxjs";
 import { ProjectionsService } from "../../services/projections.service";
 
 @Component({
   selector: "app-materials-panel",
   standalone: true,
-  imports: [CommonModule, MatTabsModule, MatProgressBarModule],
+  imports: [CommonModule, MatTabsModule, MatProgressBarModule, MatTooltipModule],
   templateUrl: "./materials-panel.component.html",
   styleUrl: "./materials-panel.component.css",
 })
@@ -16,6 +17,7 @@ export class MaterialsPanelComponent implements OnInit, OnDestroy {
   materials: any = null;
 
   private subscriptions: Subscription[] = [];
+  hoveredKey: string | null = null;
 
   private readonly gradeMaxByGrade: { [grade: number]: number } = { 1: 300, 2: 250, 3: 200, 4: 150, 5: 100 };
 
@@ -163,6 +165,140 @@ export class MaterialsPanelComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.subscriptions.forEach(sub => sub.unsubscribe());
   }
+
+  // Hover key helpers
+  private makeKeyRaw(category: number, grade: number, name: string): string { return `raw:${category}:${grade}:${name}`; }
+  private makeKeyManufactured(section: string, grade: number, name: string): string { return `manu:${section}:${grade}:${name}`; }
+  private makeKeyEncoded(section: string, grade: number, name: string): string { return `enc:${section}:${grade}:${name}`; }
+
+  onCellEnterRaw(category: number, grade: number, name: string): void { this.hoveredKey = this.makeKeyRaw(category, grade, name); }
+  onCellEnterManufactured(section: string, grade: number, name: string): void { this.hoveredKey = this.makeKeyManufactured(section, grade, name); }
+  onCellEnterEncoded(section: string, grade: number, name: string): void { this.hoveredKey = this.makeKeyEncoded(section, grade, name); }
+  onCellLeave(): void { this.hoveredKey = null; }
+
+  isHoveredRaw(category: number, grade: number, name: string): boolean { return this.hoveredKey === this.makeKeyRaw(category, grade, name); }
+  isHoveredManufactured(section: string, grade: number, name: string): boolean { return this.hoveredKey === this.makeKeyManufactured(section, grade, name); }
+  isHoveredEncoded(section: string, grade: number, name: string): boolean { return this.hoveredKey === this.makeKeyEncoded(section, grade, name); }
+
+  // Count aggregation helpers
+  private sumCount(list: any[]): number { return (list || []).reduce((t, m) => t + (m?.Count || 0), 0); }
+  private getRawCount(category: number, grade: number): number { return this.sumCount(this.getRawMaterialByGradeAndCategory(grade, category)); }
+  private getManufacturedCount(section: string, grade: number): number { return this.sumCount(this.getManufacturedMaterialByGradeAndSection(section, grade)); }
+  private getEncodedCount(section: string, grade: number): number { return this.sumCount(this.getEncodedMaterialByGradeAndSection(section, grade)); }
+
+  // Trading math per spec
+  private computeUpContribution(count: number, steps: number): number {
+    if (steps <= 0) return count || 0;
+    const denom = Math.pow(6, steps);
+    return Math.floor((count || 0) / denom);
+  }
+
+  private computeDownContribution(count: number, steps: number): number {
+    if (steps <= 0) return count || 0;
+    const factor = Math.pow(3, steps);
+    return (count || 0) * factor;
+  }
+
+  private computeTotals(countsByGrade: { [g: number]: number }, target: number, minGrade: number, maxGrade: number): { current: number, upOnly: number, downOnly: number, finalTotal: number } {
+    let current = countsByGrade[target] || 0;
+    let upOnly = 0;
+    let downOnly = 0;
+    for (let g = minGrade; g <= maxGrade; g++) {
+      if (g === target) continue;
+      const count = countsByGrade[g] || 0;
+      if (g < target) {
+        const steps = target - g;
+        upOnly += this.computeUpContribution(count, steps);
+      } else {
+        const steps = g - target;
+        downOnly += this.computeDownContribution(count, steps);
+      }
+    }
+    const finalTotal = current + upOnly + downOnly;
+    return { current, upOnly, downOnly, finalTotal };
+  }
+
+  // RAW totals and tooltip
+  getRawHoverTotal(category: number, targetGrade: number): number {
+    const counts: { [g: number]: number } = { 1: this.getRawCount(category, 1), 2: this.getRawCount(category, 2), 3: this.getRawCount(category, 3), 4: this.getRawCount(category, 4) };
+    return this.computeTotals(counts, targetGrade, 1, 4).finalTotal;
+  }
+
+  getRawTooltip(category: number, targetGrade: number): string {
+    const counts: { [g: number]: number } = { 1: this.getRawCount(category, 1), 2: this.getRawCount(category, 2), 3: this.getRawCount(category, 3), 4: this.getRawCount(category, 4) };
+    const t = this.computeTotals(counts, targetGrade, 1, 4);
+    const parts: string[] = [];
+    parts.push(`Lower: +${t.upOnly}`);
+    parts.push(`Higher: +${t.downOnly}`);
+    if (targetGrade === 4 && this.ship_raw_materials_map[category]?.source) {
+      parts.push(`Source: ${this.ship_raw_materials_map[category].source}`);
+    }
+    return parts.join('\n');
+  }
+
+  // Manufactured totals and tooltip
+  getManufacturedHoverTotal(section: string, targetGrade: number): number {
+    const counts: { [g: number]: number } = { 1: this.getManufacturedCount(section, 1), 2: this.getManufacturedCount(section, 2), 3: this.getManufacturedCount(section, 3), 4: this.getManufacturedCount(section, 4), 5: this.getManufacturedCount(section, 5) };
+    return this.computeTotals(counts, targetGrade, 1, 5).finalTotal;
+  }
+
+  getManufacturedTooltip(section: string, targetGrade: number): string {
+    const counts: { [g: number]: number } = { 1: this.getManufacturedCount(section, 1), 2: this.getManufacturedCount(section, 2), 3: this.getManufacturedCount(section, 3), 4: this.getManufacturedCount(section, 4), 5: this.getManufacturedCount(section, 5) };
+    const t = this.computeTotals(counts, targetGrade, 1, 5);
+    const parts: string[] = [];
+    parts.push(`Lower: +${t.upOnly}`);
+    parts.push(`Higher: +${t.downOnly}`);
+    if (targetGrade === 5 && this.ship_manufactured_materials_map[section]?.source) {
+      parts.push(`Source: ${this.ship_manufactured_materials_map[section].source}`);
+    }
+    return parts.join('\n');
+  }
+
+  // Encoded totals and tooltip
+  getEncodedHoverTotal(section: string, targetGrade: number): number {
+    const counts: { [g: number]: number } = { 1: this.getEncodedCount(section, 1), 2: this.getEncodedCount(section, 2), 3: this.getEncodedCount(section, 3), 4: this.getEncodedCount(section, 4), 5: this.getEncodedCount(section, 5) };
+    return this.computeTotals(counts, targetGrade, 1, 5).finalTotal;
+  }
+
+  getEncodedTooltip(section: string, targetGrade: number): string {
+    const counts: { [g: number]: number } = { 1: this.getEncodedCount(section, 1), 2: this.getEncodedCount(section, 2), 3: this.getEncodedCount(section, 3), 4: this.getEncodedCount(section, 4), 5: this.getEncodedCount(section, 5) };
+    const t = this.computeTotals(counts, targetGrade, 1, 5);
+    const parts: string[] = [];
+    parts.push(`Lower: +${t.upOnly}`);
+    parts.push(`Higher: +${t.downOnly}`);
+    if (targetGrade === 5 && this.ship_encoded_materials_location) {
+      parts.push(`Source: ${this.ship_encoded_materials_location}`);
+    }
+    return parts.join('\n');
+  }
+
+  // Source info maps
+  ship_raw_materials_map: any = {
+    1: {1: ['carbon'], 2: ['vanadium'], 3: ['niobium'], 4: ['yttrium'], source: 'Yttrium Crystal Shards — Outotz LS-K D8-3 B 5 A'},
+    2: {1: ['phosphorus'], 2: ['chromium'], 3: ['molybdenum'], 4: ['technetium'], source: 'Technetium Crystal Shards — HIP 36601 C 5 A'},
+    3: {1: ['sulphur'], 2: ['manganese'], 3: ['cadmium'], 4: ['ruthenium'], source: 'Ruthenium Crystal Shards — HIP 36601 C 1 D; Outotz LS-K D8-3 B 7 B'},
+    4: {1: ['iron'], 2: ['zinc'], 3: ['tin'], 4: ['selenium'], source: 'Selenium Brain Trees — Kappa-1 Volantis B 3 F A; HR 3230 3 A A'},
+    5: {1: ['nickel'], 2: ['germanium'], 3: ['tungsten'], 4: ['tellurium'], source: 'Tellurium Crystal Shards — HIP 36601 C 3 B'},
+    6: {1: ['rhenium'], 2: ['arsenic'], 3: ['mercury'], 4: ['polonium'], source: 'Polonium Crystal Shards — HIP 36601 C 1 A'},
+    7: {1: ['lead'], 2: ['zirconium'], 3: ['boron'], 4: ['antimony'], source: 'Antimony Crystal Shards — Outotz LS-K D8-3 B 5 C'}
+  };
+
+  ship_manufactured_materials_map: any = {
+    'Chemical': { 1: ['chemicalstorageunits'], 2: ['chemicalprocessors'], 3: ['chemicaldistillery'], 4: ['chemicalmanipulators'], 5: ['pharmaceuticalisolators'], source: 'HGE — Outbreak' },
+    'Thermic': { 1: ['temperedalloys'], 2: ['heatresistantceramics'], 3: ['precipitatedalloys'], 4: ['thermicalloys'], 5: ['militarygradealloys'], source: 'HGE — War/Civil Unrest' },
+    'Heat': { 1: ['heatconductionwiring'], 2: ['heatdispersionplate'], 3: ['heatexchangers'], 4: ['heatvanes'], 5: ['protoheatradiators'], source: 'HGE — Boom' },
+    'Conductive': { 1: ['basicconductors'], 2: ['conductivecomponents'], 3: ['conductiveceramics'], 4: ['conductivepolymers'], 5: ['biotechconductors'], source: 'Missions' },
+    'Mechanical Components': { 1: ['mechanicalscrap'], 2: ['mechanicalequipment'], 3: ['mechanicalcomponents'], 4: ['configurablecomponents'], 5: ['improvisedcomponents'], source: 'HGE — Independent (Civil Unrest)' },
+    'Capacitors': { 1: ['gridresistors'], 2: ['hybridcapacitors'], 3: ['electrochemicalarrays'], 4: ['polymercapacitors'], 5: ['militarysupercapacitors'], source: 'HGE — Independent/Alliance (War/Civil War)' },
+    'Shielding': { 1: ['wornshieldemitters'], 2: ['shieldemitters'], 3: ['shieldingsensors'], 4: ['compoundshielding'], 5: ['imperialshielding'], source: 'HGE — Empire (None/Election); Missions' },
+    'Composite': { 1: ['compactcomposites'], 2: ['filamentcomposites'], 3: ['highdensitycomposites'], 4: ['proprietarycomposites'], 5: ['coredynamicscomposites'], source: 'HGE — Federation' },
+    'Crystals': { 1: ['crystalshards'], 2: ['flawedfocuscrystals'], 3: ['focuscrystals'], 4: ['refinedfocuscrystals'], 5: ['exquisitefocuscrystals'], source: 'Missions' },
+    'Alloys': { 1: ['salvagedalloys'], 2: ['galvanisingalloys'], 3: ['phasealloys'], 4: ['protolightalloys'], 5: ['protoradiolicalloys'], source: 'HGE — Boom' },
+    'Guardian Technology': { 1: ['guardian_sentinel_wreckagecomponents', 'guardianwreckagecomponents'], 2: ['guardian_powercell', 'guardianpowercell'], 3: ['guardian_powerconduit', 'guardianpowerconduit'], 4: ['guardian_sentinel_weaponparts', 'guardiansentinelweaponparts'], 5: ['guardian_techcomponent', 'techcomponent'], source: 'Guardian sites — Synuefe sector' },
+    'Thargoid Technology': { 1: ['tg_wreckagecomponents', 'wreckagecomponents', 'tg_abrasion02', 'tgabrasion02'], 2: ['tg_biomechanicalconduits', 'biomechanicalconduits', 'tg_abrasion03', 'tgabrasion03'], 3: ['tg_weaponparts', 'weaponparts', 'unknowncarapace', 'tg_causticshard', 'tgcausticshard'], 4: ['tg_propulsionelement', 'propulsionelement', 'unknownenergycell', 'unknowncorechip'], 5: ['tg_causticgeneratorparts', 'causticgeneratorparts', 'tg_causticcrystal', 'tgcausticcrystal', 'unknowntechnologycomponents'], source: 'Titan graveyards; NHSS 4–5; Solati Halla' }
+  };
+
+  ship_encoded_materials_location: string = 'HIP 12099 — Jameson Crash Site';
 
   // Raw material methods
   getRawMaterialByGradeAndCategory(grade: number, category: number): any[] {

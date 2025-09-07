@@ -20,10 +20,10 @@
                   <td>
                     @if (getRawMaterialByGradeAndCategory(grade, category).length > 0) {
                       @for (material of getRawMaterialByGradeAndCategory(grade, category); track material.Name) {
-                        <div class="material-cell">
-                          <div class="material-fill" [style.width.%]="getMaterialFillPercent(material.Count, grade)"></div>
+                        <div class="material-cell" [matTooltip]="getRawTooltip(category, grade)" (mouseenter)="onCellEnterRaw(category, grade, material.Name)" (mouseleave)="onCellLeave()">
+                          <div class="material-fill" [style.width.%]="getMaterialFillPercent(isHoveredRaw(category, grade, material.Name) ? getRawHoverTotal(category, grade) : material.Count, grade)"></div>
                           <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
-                          <span class="material-count">{{ material.Count }}</span>
+                          <span class="material-count">{{ isHoveredRaw(category, grade, material.Name) ? getRawHoverTotal(category, grade) : material.Count }}</span>
                         </div>
                       }
                     } @else {
@@ -63,10 +63,10 @@
                   <td>
                     @if (getManufacturedMaterialByGradeAndSection(section, grade).length > 0) {
                       @for (material of getManufacturedMaterialByGradeAndSection(section, grade); track material.Name) {
-                        <div class="material-cell">
-                          <div class="material-fill" [style.width.%]="getMaterialFillPercent(material.Count, grade)"></div>
+                        <div class="material-cell" [matTooltip]="getManufacturedTooltip(section, grade)" (mouseenter)="onCellEnterManufactured(section, grade, material.Name)" (mouseleave)="onCellLeave()">
+                          <div class="material-fill" [style.width.%]="getMaterialFillPercent(isHoveredManufactured(section, grade, material.Name) ? getManufacturedHoverTotal(section, grade) : material.Count, grade)"></div>
                           <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
-                          <span class="material-count">{{ material.Count }}</span>
+                          <span class="material-count">{{ isHoveredManufactured(section, grade, material.Name) ? getManufacturedHoverTotal(section, grade) : material.Count }}</span>
                         </div>
                       }
                     } @else {
@@ -106,10 +106,10 @@
                   <td>
                     @if (getEncodedMaterialByGradeAndSection(section, grade).length > 0) {
                       @for (material of getEncodedMaterialByGradeAndSection(section, grade); track material.Name) {
-                        <div class="material-cell">
-                          <div class="material-fill" [style.width.%]="getMaterialFillPercent(material.Count, grade)"></div>
+                        <div class="material-cell" [matTooltip]="getEncodedTooltip(section, grade)" (mouseenter)="onCellEnterEncoded(section, grade, material.Name)" (mouseleave)="onCellLeave()">
+                          <div class="material-fill" [style.width.%]="getMaterialFillPercent(isHoveredEncoded(section, grade, material.Name) ? getEncodedHoverTotal(section, grade) : material.Count, grade)"></div>
                           <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
-                          <span class="material-count">{{ material.Count }}</span>
+                          <span class="material-count">{{ isHoveredEncoded(section, grade, material.Name) ? getEncodedHoverTotal(section, grade) : material.Count }}</span>
                         </div>
                       }
                     } @else {
