@@ -155,7 +155,7 @@ class Assistant:
         try:
             events = self.event_manager.get_short_term_memory()
             events = list(reversed(events))
-            new_events = [event for event in events if event.responded_at]
+            new_events = [event for event in events if not event.responded_at]
             self.pending = []
             
             log('debug', 'Starting reply...')
