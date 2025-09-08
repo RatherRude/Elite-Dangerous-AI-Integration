@@ -232,7 +232,7 @@ class VectorStore():
         results = cursor.fetchall()
 
         # Convert results to the expected format
-        return [(row[0], json.loads(row[1]), 1.0 - row[2]) for row in results]
+        return [(row[0], json.loads(row[2]), 1.0 - row[3]) for row in results]
 
     def delete(self, id: str) -> None:
         """Delete an embedding by id"""
