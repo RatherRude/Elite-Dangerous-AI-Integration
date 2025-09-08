@@ -1,6 +1,9 @@
 config.json
 *.config.json
 config*.json
+secrets.json
+*.secrets.json
+secrets*.json
 covas*.db
 covas*.db*
 EDAI.log

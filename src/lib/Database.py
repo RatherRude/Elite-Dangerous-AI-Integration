@@ -44,7 +44,7 @@ class EventStore():
         
         conn = get_connection()
         cursor = conn.cursor()
-        cursor.execute(f'''                
+        cursor.execute(f'''
             CREATE TABLE IF NOT EXISTS {self.table_name} (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 class TEXT,
@@ -53,6 +53,23 @@ class EventStore():
                 inserted_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+        
+        """Alter table to add deleted column if it doesn't exist yet"""
+        cursor.execute(f'''
+            PRAGMA table_info({self.table_name})
+        ''')
+        columns = cursor.fetchall()
+        if not any(col[1] == 'responded_at' for col in columns):
+            cursor.execute(f'''
+                ALTER TABLE {self.table_name}
+                ADD COLUMN responded_at FLOAT DEFAULT 0.0
+            ''')
+        if not any(col[1] == 'memorized_at' for col in columns):
+            cursor.execute(f'''
+                ALTER TABLE {self.table_name}
+                ADD COLUMN memorized_at FLOAT DEFAULT null
+            ''')
+            
         conn.commit()
         
     def commit(self) -> None:
@@ -64,18 +81,19 @@ class EventStore():
         event_data = json.dumps(event.__dict__)
         event_class = event.__class__.__name__
         _ = cursor.execute(f'''
-            INSERT INTO {self.table_name} (class, data, processed_at)
-            VALUES (?, ?, ?)
-        ''', (event_class, event_data, processed_at))
+            INSERT INTO {self.table_name} (class, data, processed_at, memorized_at, responded_at)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (event_class, event_data, processed_at, None, None))
         if commit:
             conn.commit()
-    
+
     def get_latest(self, limit: int = 100) -> list[Any]:
         conn = get_connection()
         cursor = conn.cursor()
         cursor.execute(f'''
-            SELECT class, data, processed_at
+            SELECT class, data, processed_at, memorized_at, responded_at
             FROM {self.table_name}
+            WHERE memorized_at is NULL
             ORDER BY processed_at DESC
             LIMIT (?)
         ''', (limit,))
@@ -85,7 +103,29 @@ class EventStore():
             instance = instantiate_class_by_name(self.event_classes, row[0], json.loads(row[1]))
             events.append(instance)
         return events
-    
+
+    def replied_before(self, processed_at: float) -> None:
+        """Mark events as responded before a certain processed_at timestamp"""
+        conn = get_connection()
+        cursor = conn.cursor()
+        _ = cursor.execute(f'''
+            UPDATE {self.table_name}
+            SET responded_at = ?
+            WHERE processed_at <= ? and responded_at is NULL
+        ''', (processed_at,processed_at,))
+        conn.commit()
+
+    def memorize_before(self, processed_at: float) -> None:
+        """Mark events as memorized before a certain processed_at timestamp"""
+        conn = get_connection()
+        cursor = conn.cursor()
+        _ = cursor.execute(f'''
+            UPDATE {self.table_name}
+            SET memorized_at = ?
+            WHERE processed_at <= ? and memorized_at is NULL
+        ''', (processed_at,processed_at,))
+        conn.commit()
+
     def delete_all(self) -> None:
         conn = get_connection()
         cursor = conn.cursor()
@@ -93,8 +133,139 @@ class EventStore():
             DELETE FROM {self.table_name}
         ''')
         conn.commit()
-    
-    
+
+@final
+class VectorStore():
+    def __init__(self, store_name: str, embedding_dim: int = 384):
+        conn = get_connection()
+        cursor = conn.cursor()
+        self.store_name = store_name
+        self.table_name = f'{store_name}_v1'
+        self.vector_table = f'{store_name}_vec_v1'
+
+        # Create table for metadata
+        cursor.execute(f'''
+            CREATE TABLE IF NOT EXISTS {self.table_name} (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                content TEXT,
+                metadata TEXT,
+                inserted_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+
+        # Create virtual table for vector storage using sqlite-vec
+        cursor.execute(f'''
+            CREATE VIRTUAL TABLE IF NOT EXISTS {self.vector_table} USING vec0(
+                embedding FLOAT[{embedding_dim}],
+            )
+        ''')
+
+
+    def store(self, content: str, embedding: list[float], metadata: dict[str, Any]) -> None:
+        """
+        Store an embedding vector with associated metadata. The AUTOINCREMENT id
+        generated for the metadata/content row is reused as the rowid of the
+        vector in the virtual table so both can be joined later.
+        
+        Args:
+            content: Raw text/content tied to the embedding
+            embedding: List of floats representing the embedding vector
+            metadata: Dictionary of metadata to store with the embedding
+        """
+        conn = get_connection()
+        cursor = conn.cursor()
+        # Store metadata in the main table
+        cursor.execute(f'''
+            INSERT OR REPLACE INTO {self.table_name} (content, metadata)
+            VALUES (?, ?)
+        ''', (content, json.dumps(metadata)))
+
+        # Get the AUTOINCREMENT primary key for the just inserted row
+        row_id = cursor.lastrowid
+
+        # Convert embedding to JSON format for the vec table
+        embedding_json = json.dumps(embedding)
+
+        # Store the embedding in the vector table, using the id as rowid
+        cursor.execute(f'''
+            INSERT OR REPLACE INTO {self.vector_table} (rowid, embedding)
+            VALUES (?, ?)
+        ''', (row_id, embedding_json))
+
+        conn.commit()
+
+    def search(self, query_embedding: list[float], n: int = 5) -> list[tuple[int, dict[str, Any], float]]:
+        """
+        Search for similar embeddings
+        
+        Args:
+            query_embedding: The embedding vector to search for
+            n: Number of results to return
+            
+        Returns:
+            List of tuples containing (id, metadata, similarity_score)
+        """
+        conn = get_connection()
+        cursor = conn.cursor()
+        # Convert query embedding to JSON for the match query
+        query_json = json.dumps(query_embedding)
+
+        # Query for nearest neighbors using vector similarity
+        cursor.execute(f'''
+            with knn_matches as (
+                select
+                    rowid,
+                    distance
+                from {self.vector_table}
+                where embedding match :query
+                    and k = :n
+            )
+            select
+            d.id,
+            d.content,
+            d.metadata,
+            knn_matches.distance
+            from knn_matches
+            left join {self.table_name} d on d.id = knn_matches.rowid
+        ''', {"query": query_json, "n": n})
+
+        results = cursor.fetchall()
+
+        # Convert results to the expected format
+        return [(row[0], json.loads(row[1]), 1.0 - row[2]) for row in results]
+
+    def delete(self, id: str) -> None:
+        """Delete an embedding by id"""
+        conn = get_connection()
+        cursor = conn.cursor()
+        # Delete from metadata table
+        cursor.execute(f'''
+            DELETE FROM {self.table_name}
+            WHERE id = ?
+        ''', (id,))
+
+        # Delete from vector table
+        cursor.execute(f'''
+            DELETE FROM {self.vector_table}
+            WHERE rowid = ?
+        ''', (id,))
+
+        conn.commit()
+
+    def delete_all(self) -> None:
+        """Delete all embeddings"""
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(f'''
+            DELETE FROM {self.table_name}
+        ''')
+
+        cursor.execute(f'''
+            DELETE FROM {self.vector_table}
+        ''')
+
+        conn.commit()
+
 @final
 class KeyValueStore():
     def __init__(self, store_name: str):
