@@ -170,15 +170,31 @@ export class MaterialsPanelComponent implements OnInit, OnDestroy {
   private makeKeyRaw(category: number, grade: number, name: string): string { return `raw:${category}:${grade}:${name}`; }
   private makeKeyManufactured(section: string, grade: number, name: string): string { return `manu:${section}:${grade}:${name}`; }
   private makeKeyEncoded(section: string, grade: number, name: string): string { return `enc:${section}:${grade}:${name}`; }
+  private makeKeyRawCell(category: number, grade: number): string { return `rawcell:${category}:${grade}`; }
+  private makeKeyManufacturedCell(section: string, grade: number): string { return `manucell:${section}:${grade}`; }
+  private makeKeyEncodedCell(section: string, grade: number): string { return `enccell:${section}:${grade}`; }
 
   onCellEnterRaw(category: number, grade: number, name: string): void { this.hoveredKey = this.makeKeyRaw(category, grade, name); }
   onCellEnterManufactured(section: string, grade: number, name: string): void { this.hoveredKey = this.makeKeyManufactured(section, grade, name); }
   onCellEnterEncoded(section: string, grade: number, name: string): void { this.hoveredKey = this.makeKeyEncoded(section, grade, name); }
+  onCellEnterRawCell(category: number, grade: number): void { this.hoveredKey = this.makeKeyRawCell(category, grade); }
+  onCellEnterManufacturedCell(section: string, grade: number): void { this.hoveredKey = this.makeKeyManufacturedCell(section, grade); }
+  onCellEnterEncodedCell(section: string, grade: number): void { this.hoveredKey = this.makeKeyEncodedCell(section, grade); }
   onCellLeave(): void { this.hoveredKey = null; }
 
-  isHoveredRaw(category: number, grade: number, name: string): boolean { return this.hoveredKey === this.makeKeyRaw(category, grade, name); }
-  isHoveredManufactured(section: string, grade: number, name: string): boolean { return this.hoveredKey === this.makeKeyManufactured(section, grade, name); }
-  isHoveredEncoded(section: string, grade: number, name: string): boolean { return this.hoveredKey === this.makeKeyEncoded(section, grade, name); }
+  isHoveredRaw(category: number, grade: number, name: string): boolean {
+    return this.hoveredKey === this.makeKeyRaw(category, grade, name) || this.hoveredKey === this.makeKeyRawCell(category, grade);
+  }
+  isHoveredManufactured(section: string, grade: number, name: string): boolean {
+    return this.hoveredKey === this.makeKeyManufactured(section, grade, name) || this.hoveredKey === this.makeKeyManufacturedCell(section, grade);
+  }
+  isHoveredEncoded(section: string, grade: number, name: string): boolean {
+    return this.hoveredKey === this.makeKeyEncoded(section, grade, name) || this.hoveredKey === this.makeKeyEncodedCell(section, grade);
+  }
+
+  isHoveredRawCell(category: number, grade: number): boolean { return this.hoveredKey === this.makeKeyRawCell(category, grade); }
+  isHoveredManufacturedCell(section: string, grade: number): boolean { return this.hoveredKey === this.makeKeyManufacturedCell(section, grade); }
+  isHoveredEncodedCell(section: string, grade: number): boolean { return this.hoveredKey === this.makeKeyEncodedCell(section, grade); }
 
   // Count aggregation helpers
   private sumCount(list: any[]): number { return (list || []).reduce((t, m) => t + (m?.Count || 0), 0); }
@@ -200,20 +216,26 @@ export class MaterialsPanelComponent implements OnInit, OnDestroy {
   }
 
   private computeTotals(countsByGrade: { [g: number]: number }, target: number, minGrade: number, maxGrade: number): { current: number, upOnly: number, downOnly: number, finalTotal: number } {
-    let current = countsByGrade[target] || 0;
-    let upOnly = 0;
-    let downOnly = 0;
-    for (let g = minGrade; g <= maxGrade; g++) {
-      if (g === target) continue;
-      const count = countsByGrade[g] || 0;
-      if (g < target) {
-        const steps = target - g;
-        upOnly += this.computeUpContribution(count, steps);
-      } else {
-        const steps = g - target;
-        downOnly += this.computeDownContribution(count, steps);
-      }
+    const current = countsByGrade[target] || 0;
+
+    // Up-only cascade from lower grades into target (do not touch current or higher grades)
+    const countsUp: { [g: number]: number } = {};
+    for (let g = minGrade; g <= target; g++) countsUp[g] = countsByGrade[g] || 0;
+    countsUp[target] = 0; // measure only contribution from lower
+    for (let g = minGrade; g < target; g++) {
+      const promote = Math.floor((countsUp[g] || 0) / 6);
+      countsUp[g] = (countsUp[g] || 0) % 6;
+      countsUp[g + 1] = (countsUp[g + 1] || 0) + promote;
     }
+    const upOnly = countsUp[target] || 0;
+
+    // Down-only: direct conversion from higher grades into target
+    let downOnly = 0;
+    for (let g = target + 1; g <= maxGrade; g++) {
+      const steps = g - target;
+      downOnly += this.computeDownContribution(countsByGrade[g] || 0, steps);
+    }
+
     const finalTotal = current + upOnly + downOnly;
     return { current, upOnly, downOnly, finalTotal };
   }

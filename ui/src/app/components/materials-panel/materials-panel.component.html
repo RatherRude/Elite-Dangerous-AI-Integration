@@ -17,7 +17,7 @@
               <tr>
                 <td>{{ getRawMaterialCategoryName(category) }}</td>
                 @for (grade of [1, 2, 3, 4]; track grade) {
-                  <td>
+                  <td (mouseenter)="onCellEnterRawCell(category, grade)" (mouseleave)="onCellLeave()">
                     @if (getRawMaterialByGradeAndCategory(grade, category).length > 0) {
                       @for (material of getRawMaterialByGradeAndCategory(grade, category); track material.Name) {
                         <div class="material-cell" [matTooltip]="getRawTooltip(category, grade)" (mouseenter)="onCellEnterRaw(category, grade, material.Name)" (mouseleave)="onCellLeave()">
@@ -60,7 +60,7 @@
               <tr>
                 <td>{{ section }}</td>
                 @for (grade of [1, 2, 3, 4, 5]; track grade) {
-                  <td>
+                  <td (mouseenter)="onCellEnterManufacturedCell(section, grade)" (mouseleave)="onCellLeave()">
                     @if (getManufacturedMaterialByGradeAndSection(section, grade).length > 0) {
                       @for (material of getManufacturedMaterialByGradeAndSection(section, grade); track material.Name) {
                         <div class="material-cell" [matTooltip]="getManufacturedTooltip(section, grade)" (mouseenter)="onCellEnterManufactured(section, grade, material.Name)" (mouseleave)="onCellLeave()">
@@ -103,7 +103,7 @@
               <tr>
                 <td>{{ section }}</td>
                 @for (grade of [1, 2, 3, 4, 5]; track grade) {
-                  <td>
+                  <td (mouseenter)="onCellEnterEncodedCell(section, grade)" (mouseleave)="onCellLeave()">
                     @if (getEncodedMaterialByGradeAndSection(section, grade).length > 0) {
                       @for (material of getEncodedMaterialByGradeAndSection(section, grade); track material.Name) {
                         <div class="material-cell" [matTooltip]="getEncodedTooltip(section, grade)" (mouseenter)="onCellEnterEncoded(section, grade, material.Name)" (mouseleave)="onCellLeave()">
