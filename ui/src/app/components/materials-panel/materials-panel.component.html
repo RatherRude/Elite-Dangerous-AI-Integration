@@ -27,10 +27,10 @@
                         </div>
                       }
                     } @else {
-                      <div class="material-cell empty">
-                        <div class="material-fill" [style.width.%]="0"></div>
+                      <div class="material-cell empty" [matTooltip]="getRawTooltip(category, grade)">
+                        <div class="material-fill" [style.width.%]="getMaterialFillPercent(isHoveredRawCell(category, grade) ? getRawHoverTotal(category, grade) : 0, grade)"></div>
                         <span class="material-name">{{ getEmptyRawMaterialName(grade, category) }}</span>
-                        <span class="material-count">0</span>
+                        <span class="material-count">{{ isHoveredRawCell(category, grade) ? getRawHoverTotal(category, grade) : 0 }}</span>
                       </div>
                     }
                   </td>
@@ -70,10 +70,10 @@
                         </div>
                       }
                     } @else {
-                      <div class="material-cell empty">
-                        <div class="material-fill" [style.width.%]="0"></div>
+                      <div class="material-cell empty" [matTooltip]="getManufacturedTooltip(section, grade)">
+                        <div class="material-fill" [style.width.%]="getMaterialFillPercent(isHoveredManufacturedCell(section, grade) ? getManufacturedHoverTotal(section, grade) : 0, grade)"></div>
                         <span class="material-name">{{ getEmptyManufacturedMaterialName(section, grade) }}</span>
-                        <span class="material-count">0</span>
+                        <span class="material-count">{{ isHoveredManufacturedCell(section, grade) ? getManufacturedHoverTotal(section, grade) : 0 }}</span>
                       </div>
                     }
                   </td>
@@ -113,10 +113,10 @@
                         </div>
                       }
                     } @else {
-                      <div class="material-cell empty">
-                        <div class="material-fill" [style.width.%]="0"></div>
+                      <div class="material-cell empty" [matTooltip]="getEncodedTooltip(section, grade)">
+                        <div class="material-fill" [style.width.%]="getMaterialFillPercent(isHoveredEncodedCell(section, grade) ? getEncodedHoverTotal(section, grade) : 0, grade)"></div>
                         <span class="material-name">{{ getEmptyEncodedMaterialName(section, grade) }}</span>
-                        <span class="material-count">0</span>
+                        <span class="material-count">{{ isHoveredEncodedCell(section, grade) ? getEncodedHoverTotal(section, grade) : 0 }}</span>
                       </div>
                     }
                   </td>
