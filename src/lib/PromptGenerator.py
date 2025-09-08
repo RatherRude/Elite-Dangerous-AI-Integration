@@ -2594,6 +2594,7 @@ class PromptGenerator:
         ship_display.pop('DriveMaxFuel', None)
         ship_display.pop('DrivePowerConst', None)
         ship_display.pop('GuardianfsdBooster', None)
+        ship_display.pop('FSDSynthesis', None)
         ship_display.pop('DriveLinearConst', None)
         ship_display.pop('DriveOptimalMass', None)
         ship_display.pop('ReportedMaximumJumpRange', None)
