@@ -715,20 +715,20 @@ class ShipInfo(Projection[ShipInfoState]):
         
         if isinstance(event, GameEvent) and event.content.get('event') == 'Synthesis':
             fsd_inject_boost_name = event.content.get('Name', "")
-            
+
             if fsd_inject_boost_name == "FSD Basic":
                 self.state['FSDSynthesis'] = 0.25
-                
+
             elif fsd_inject_boost_name == "FSD Standard":
                 self.state['FSDSynthesis'] = 0.5
-                
+
             elif fsd_inject_boost_name == "FSD Premium":
                 self.state['FSDSynthesis'] = 1
-                  
+
         if isinstance(event,GameEvent) and event.content.get('event') == 'FSDJump':
             self.state['JetConeBoost'] = 1
             self.state['FSDSynthesis'] = 0
-        
+
         
         if isinstance(event, GameEvent) and event.content.get('event') == 'Cargo':
             self.state['Cargo'] = event.content.get('Count', 0)
@@ -878,11 +878,6 @@ class ShipInfo(Projection[ShipInfoState]):
         current_cargo = self.state.get("ShipCargo")
         current_fuel  = self.state.get("FuelMain")
         current_fuel_reservoir = self.state.get("FuelReservoir")
-        
-        if drive_max_fuel > current_fuel:
-            math_fuel = current_fuel
-        else:
-            math_fuel = drive_max_fuel
 
         minimal_mass = unladen_mass + drive_max_fuel  #max jump with just right anmount
         current_mass = unladen_mass + current_cargo + current_fuel + current_fuel_reservoir  #current mass
@@ -894,7 +889,7 @@ class ShipInfo(Projection[ShipInfoState]):
         base = lambda M, F: (drive_optimal_mass / M) * ((10**3 * F) / drive_linear_const )**(1/drive_power_const)
         # adding stuff here for more future fsd boost stuff 
         min_ly = (base(maximal_mass, drive_max_fuel) + fsd_boost) * (fsd_star_boost +fsd_inject)
-        cur_ly = (base(current_mass, math_fuel)       + fsd_boost) * (fsd_star_boost +fsd_inject)
+        cur_ly = (base(current_mass, min(drive_max_fuel,current_fuel)) + fsd_boost) * (fsd_star_boost +fsd_inject)
         max_ly = (base(minimal_mass, drive_max_fuel) + fsd_boost) * (fsd_star_boost +fsd_inject)
         
         return min_ly, cur_ly, max_ly
