@@ -35,7 +35,7 @@ def get_install_path() -> (str | None):
 
 @final
 class EDCoPilot:
-    def __init__(self, is_enabled: bool, is_edcopilot_dominant: bool=False, enabled_game_events: list[str]=[], action_manager: Optional[ActionManager]=None):
+    def __init__(self, is_enabled: bool, is_edcopilot_dominant: bool=False, enabled_game_events: list[str]=[], action_manager: Optional[ActionManager]=None, has_actions: bool=False):
         self.install_path = get_install_path()
         self.proc_id = self.get_process_id()
         self.is_enabled = is_enabled and self.is_installed()
@@ -43,6 +43,7 @@ class EDCoPilot:
         self.provider = None
         self.is_edcopilot_dominant = is_edcopilot_dominant
         self.enabled_game_events = enabled_game_events
+        self.has_actions = has_actions
         self.action_manager = action_manager
         self.event_publication_queue: queue.Queue[ExternalChatNotification|ExternalBackgroundChatNotification] = queue.Queue()
 
@@ -61,7 +62,7 @@ class EDCoPilot:
             thread.start()
 
             # Register EDCoPilot-specific actions if action_manager is provided
-        if self.action_manager:
+        if self.has_actions and self.action_manager:
             self.register_actions()
 
 

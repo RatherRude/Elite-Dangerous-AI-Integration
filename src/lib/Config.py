@@ -393,6 +393,7 @@ class Config(TypedDict):
     use_action_cache_var: bool
     edcopilot: bool
     edcopilot_dominant: bool
+    edcopilot_actions: bool
     ptt_key: str
     input_device_name: str
     output_device_name: str
@@ -683,6 +684,7 @@ def load_config() -> Config:
         'cn_autostart': False,
         'edcopilot': True,
         'edcopilot_dominant': False,
+        'edcopilot_actions': False,
         'input_device_name': get_default_input_device_name(),
         'output_device_name': get_default_output_device_name(),
         'llm_provider': "openai",
