@@ -116,6 +116,11 @@
                                         <li>COVAS:NEXT Text-to-Speech is disabled</li>
                                     </ul>
 
+                                    <mat-slide-toggle [(ngModel)]="config.edcopilot_actions"
+                                                    (ngModelChange)="onConfigChange({edcopilot_actions: $event})">
+                                        Enable EDCoPilot UI Actions
+                                    </mat-slide-toggle>
+
                                     <mat-form-field>
                                         <mat-label>Speech Output Application</mat-label>
                                         <mat-select [value]="config.edcopilot_dominant ? 'edcopilot' : 'covas'"

@@ -62,7 +62,7 @@ class EDCoPilot:
             thread.start()
 
             # Register EDCoPilot-specific actions if action_manager is provided
-        if self.has_actions and self.action_manager:
+        if self.is_enabled and self.has_actions and self.action_manager:
             self.register_actions()
 
 
