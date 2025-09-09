@@ -27,27 +27,36 @@
             </mat-error>
         </mat-form-field>
 
-        <p>This setting allows you choose when the AI will listen to you. We recommend using Push-to-Talk to
-            avoid accidental activation. Voice activation should only be used when wearing headphones.</p>
+        <h3>Audio</h3>
+        <p>Choose when the AI listens. We recommend using Push-to-Talk to avoid accidental activation.
+            Voice activation should only be used wearing headphones.</p>
         <div class="ptt-container">
             <mat-form-field>
-                <mat-label>Voice Activation Mode</mat-label>
-                <mat-select [value]="config.ptt_var ? 'ptt' : 'continuous'"
-                            (selectionChange)="onConfigChange({ptt_var: $event.value === 'ptt'})">
-                    <mat-option value="continuous">Voice Activation</mat-option>
-                    <mat-option value="ptt">Push-to-Talk</mat-option>
+                <mat-label>Microphone Mode</mat-label>
+                <mat-select [value]="config.ptt_var"
+                            (selectionChange)="onConfigChange({ptt_var: $event.value})">
+                    <mat-option value="voice_activation">Voice Detection (Use Headphones)</mat-option>
+                    <mat-option value="push_to_talk">Push-to-Talk (Recommended)</mat-option>
+                    <mat-option value="push_to_mute">Push-to-Mute</mat-option>
+                    <mat-option value="toggle">Toggle Mic On/Off</mat-option>
                 </mat-select>
             </mat-form-field>
-            @if (config.ptt_var) {
+            @if (config.ptt_var !== 'voice_activation') {
                 <mat-form-field (click)="onAssignPTT($event)">
-                    <mat-label>Push-to-Talk Key</mat-label>
+                    <mat-label>Hotkey</mat-label>
                     <input required matInput [value]="isAssigningPTT ? 'Press any key...' : config.ptt_key" readonly>
                     <button matSuffix mat-icon-button>
                         <mat-icon>keyboard</mat-icon>
                     </button>
                 </mat-form-field>
             }
-            @if (!config.ptt_var) {
+            @if (config.ptt_var === 'toggle') {
+                <mat-slide-toggle [(ngModel)]="config.ptt_inverted_var"
+                                  (ngModelChange)="onConfigChange({ptt_inverted_var: $event})">
+                    Start with Mic Muted
+                </mat-slide-toggle>
+            }
+            @if (config.ptt_var !== 'push_to_talk') {
                 <mat-slide-toggle [(ngModel)]="config.mute_during_response_var"
                                     (ngModelChange)="onConfigChange({mute_during_response_var: $event})">
                     Mute microphone during response
@@ -74,6 +83,42 @@
                     }
                 </mat-select>
             </mat-form-field>
+        </div>
+        <div class="overlay-settings">
+            <h3>Overlay</h3>
+            <div class="overlay-controls">
+                <mat-slide-toggle
+                    [(ngModel)]="config.overlay_show_avatar"
+                    (ngModelChange)="onConfigChange({overlay_show_avatar: $event})">
+                    Show Avatar
+                </mat-slide-toggle>
+
+                <mat-slide-toggle
+                    [(ngModel)]="config.overlay_show_chat"
+                    (ngModelChange)="onConfigChange({overlay_show_chat: $event})">
+                    Show Chat
+                </mat-slide-toggle>
+
+                <mat-form-field>
+                    <mat-label>Position</mat-label>
+                    <mat-select [(ngModel)]="config.overlay_position"
+                                (ngModelChange)="onConfigChange({overlay_position: $event})">
+                        <mat-option value="left">Left</mat-option>
+                        <mat-option value="right">Right</mat-option>
+                    </mat-select>
+                </mat-form-field>
+                
+                <mat-form-field>
+                    <mat-label>Screen Selection</mat-label>
+                    <mat-select [(ngModel)]="config.overlay_screen_id"
+                                (ngModelChange)="onConfigChange({overlay_screen_id: $event})">
+                        <mat-option [value]="-1">Primary Screen</mat-option>
+                        @for (screen of screens; track screen.id) {
+                            <mat-option [value]="screen.id">{{ screen.label }}</mat-option>
+                        }
+                    </mat-select>
+                </mat-form-field>
+            </div>
         </div>
     }
 </div>

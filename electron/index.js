@@ -23,17 +23,16 @@ const transport = {
     options: { destination: 1 } // use 2 for stderr
   }]
 }
-if (!isDevelopment) {
-  transport.targets.push({
-    target: 'pino-roll',
-    options: { 
-      file: path.join(app.getPath('logs'), 'com.covas-next.ui.log'), 
-      size: '50m', 
-      mkdir: true, 
-      limit: { removeOtherLogFiles: true, count: 1 } 
-    }
-  });
-}
+transport.targets.push({
+  target: 'pino-roll',
+  options: { 
+    file: isDevelopment ? '../logs/com.covas-next.ui.log' : path.join(app.getPath('logs'), 'com.covas-next.ui.log'), 
+    size: '50m', 
+    mkdir: true, 
+    limit: { removeOtherLogFiles: true, count: 1 } 
+  }
+});
+
 const logger = pino({
   level: 'debug',
   transport: transport,
@@ -73,8 +72,15 @@ const config = isDevelopment ? {
 }
 
 // list files in the backend directory
-const files = require('fs').readdirSync(config.backend_cwd);
-logger.info('Backend files:', files);
+try {
+  // create backend_cwd if it doesn't exist
+  require('fs').mkdirSync(config.backend_cwd, { recursive: true });
+  
+  const files = require('fs').readdirSync(config.backend_cwd);
+  logger.info('Backend files:', files);
+} catch (error) {
+  logger.error('Error reading backend directory:', error);
+}
 
 contextMenu.default({
   showSpellCheck: false,
@@ -176,7 +182,7 @@ class BackendService {
       for (const line of lines) {
         if (line.trim()) {
           //logger.info('Sending stdout to', this.#windows.length, 'windows');
-          if (!line.includes('"type": "config"')) {
+          if (!line.includes('"type": "config"') && !line.includes('"type": "running_config"')) {
             logger.info('[stdout]', line);
           } else {
             logger.info('[stdout]', "[config redacted]");
@@ -202,7 +208,7 @@ class BackendService {
       for (const line of lines) {
         if (line.trim()) {
           //logger.error('Sending stderr to', this.#windows.length, 'windows');
-          if (!line.includes('"type": "config"')) {
+          if (!line.includes('"type": "config"') && !line.includes('"type": "running_config"')) {
             logger.info('[stderr]', line);
           } else {
             logger.info('[stderr]', "[config redacted]");
@@ -212,6 +218,12 @@ class BackendService {
           }
         }
       }
+    });
+    mainWindow.on('close', () => {
+      this.stopProcess(mainWindow);
+      // remove all stdin and stdout listeners
+      this.#currentProcess.stdout.removeAllListeners('data');
+      this.#currentProcess.stderr.removeAllListeners('data');
     });
   }
   stopProcess(mainWindow) {
@@ -289,34 +301,48 @@ function createMainWindow() {
 /**
  * 
  * @param {Object} opts - Options for the overlay window
- * @param {boolean} opts.fullscreen - Whether the overlay should be fullscreen
- * @param {boolean} opts.maximized - Whether the overlay should be maximized
- * @param {boolean} opts.alwaysOnTop - Whether the overlay should always be on
+ * @param {boolean} opts.alwaysOnTop - Whether the overlay should always be on top
+ * @param {number} opts.screenId - ID of the screen to display on (-1 for primary)
  */
 function createOverlayWindow(opts) {
+  // Find the target display first
+  let targetDisplay;
+  const displays = screen.getAllDisplays();
+  
+  if (opts.screenId && opts.screenId !== -1) {
+    targetDisplay = displays.find(display => display.id === opts.screenId);
+    if (!targetDisplay) {
+      targetDisplay = screen.getPrimaryDisplay();
+    }
+  } else {
+    targetDisplay = screen.getPrimaryDisplay();
+  }
+  
+  // Start with work area to position on correct screen
+  const { x, y } = targetDisplay.workArea;
+  
+  // Create window positioned on the target screen
   const overlayWindow = new BrowserWindow({
+    x: x,
+    y: y,
     width: 800,
     height: 600,
     title: 'COVAS:NEXT Overlay',
-    frame: false, // No frame for the overlay
-    transparent: true, // Make it transparent
+    frame: false,
+    transparent: true,
+    show: false, // Don't show until positioned and maximized
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     }
   });
+  
+  // Now maximize it - should maximize on the screen it's positioned on
+  overlayWindow.maximize();
+  overlayWindow.show();
+  
   overlayWindow.loadURL(config.overlay);
   overlayWindow.setIgnoreMouseEvents(true);
   
-  if (opts.fullscreen) {
-    overlayWindow.setFullScreen(true);
-  }
-  if (opts.maximized) {
-    overlayWindow.maximize();
-  } else {
-    const primaryDisplay = screen.getPrimaryDisplay()
-    const { width, height } = primaryDisplay.workAreaSize
-    overlayWindow.setBounds({ x: 0, y: 0, width, height });
-  }
   if (opts.alwaysOnTop) {
     overlayWindow.setAlwaysOnTop(true, 'screen-saver', 2);
   }
@@ -343,7 +369,12 @@ app.whenReady().then(async ()=>{
   ipcMain.handle('start_process', (...args)=>backend.startProcess(mainWindow, ...args));
   ipcMain.handle('stop_process', (...args)=>backend.stopProcess(mainWindow, ...args));
   ipcMain.handle('create_floating_overlay', async (event, opts) => {
-    if (floatingOverlay) return true;
+    if (floatingOverlay) {
+      // Always destroy existing overlay to apply new settings
+      backend.detachWindow(floatingOverlay);
+      floatingOverlay.close();
+      floatingOverlay = null;
+    }
     floatingOverlay = createOverlayWindow(opts);
     backend.attachWindow(floatingOverlay);
     floatingOverlay.on('closed', () => {
@@ -357,6 +388,16 @@ app.whenReady().then(async ()=>{
       floatingOverlay.close();
       floatingOverlay = null;
     }
+  });
+  ipcMain.handle('get_available_screens', async (event) => {
+    const displays = screen.getAllDisplays();
+    const result = displays.map((display, index) => ({
+      id: display.id,
+      label: `Screen ${index + 1} (${display.bounds.width}x${display.bounds.height})${display.primary ? ' - Primary' : ''}`,
+      bounds: display.bounds,
+      primary: display.primary
+    }));
+    return result;
   });
 
   mainWindow.on('closed', () => {

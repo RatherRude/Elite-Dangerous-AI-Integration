@@ -274,3 +274,17 @@ ul {
 .character-selector ::ng-deep .mat-mdc-form-field-subscript-wrapper {
   display: none !important;
 }
+
+/* Temporary highlight effect for the welcome/disclaimer card */
+.welcome-message.highlight {
+  animation: pulse-highlight 1.5s ease-in-out 1;
+  box-shadow: 0 0 0 2px rgba(63,81,181, 0.8), 0 0 16px rgba(63,81,181, 0.5);
+}
+
+@keyframes pulse-highlight {
+  0% { box-shadow: 0 0 0 0 rgba(63,81,181, 0.0); }
+  25% { box-shadow: 0 0 0 3px rgba(63,81,181, 0.8), 0 0 12px rgba(63,81,181, 0.4); }
+  50% { box-shadow: 0 0 0 2px rgba(63,81,181, 0.6), 0 0 18px rgba(63,81,181, 0.6); }
+  75% { box-shadow: 0 0 0 3px rgba(63,81,181, 0.8), 0 0 12px rgba(63,81,181, 0.4); }
+  100% { box-shadow: 0 0 0 0 rgba(63,81,181, 0.0); }
+}

@@ -1,15 +1,12 @@
 from hashlib import md5
-from hmac import new
 import json
-from openai.resources import Chat
-from openai.types.chat.chat_completion_message_tool_call import ChatCompletionMessageToolCall
 import random
-from typing import Any, Callable, Literal
+from typing import Callable, Literal
 
-from openai.types.chat import ChatCompletionMessageToolCall
+from openai.types.chat import ChatCompletionMessageFunctionToolCall
 
-from lib.Database import KeyValueStore
 
+from .Database import KeyValueStore
 from .Logger import log
 import traceback
 
@@ -26,7 +23,7 @@ class ActionManager:
     def __init__(self):
         self.action_cache = KeyValueStore("action_cache")
 
-    def getToolsList(self, active_mode: str, uses_actions:bool, uses_web_actions: bool):
+    def getToolsList(self, active_mode: str, uses_actions: bool, uses_web_actions: bool, uses_ui_actions: bool):
         """return list of functions as passed to gpt"""
 
         actions = self.actions.values()
@@ -48,9 +45,13 @@ class ActionManager:
                 if action.get("type") == 'web':
                     valid_actions.append(action.get("tool"))
 
+            if uses_ui_actions:
+                if action.get("type") == 'ui':
+                    valid_actions.append(action.get("tool"))
+
         return valid_actions
     
-    def getActionDesc(self, tool_call: ChatCompletionMessageToolCall, projected_states: dict[str, dict]):
+    def getActionDesc(self, tool_call: ChatCompletionMessageFunctionToolCall, projected_states: dict[str, dict]):
         """ summarize functions input as text """
         if tool_call.function.name in self.actions:
             action_descriptor = self.actions.get(tool_call.function.name)
@@ -64,7 +65,7 @@ class ActionManager:
         return None
     
 
-    def runAction(self, tool_call: ChatCompletionMessageToolCall, projected_states: dict[str, dict]):
+    def runAction(self, tool_call: ChatCompletionMessageFunctionToolCall, projected_states: dict[str, dict]):
         """get function response and fetch matching python function, then call function using arguments provided"""
         function_result = None
 
@@ -117,8 +118,8 @@ class ActionManager:
         }
         if cache_prefill is not None:
             for user_input, arguments in cache_prefill.items():
-                log('debug', 'Cache: prefilling', name, user_input, arguments)
-                self.prefill_action_in_cache(user_input, ChatCompletionMessageToolCall(
+                #log('debug', 'Cache: prefilling', name, user_input, arguments)
+                self.prefill_action_in_cache(user_input, ChatCompletionMessageFunctionToolCall(
                     type="function",
                     id=str(random.randint(100000, 999999)),
                     function={  # pyright: ignore[reportArgumentType]
@@ -143,7 +144,7 @@ class ActionManager:
         user_input = self.clean_user_input(user_input)
         return md5(json.dumps([user_input, tool]).encode()).hexdigest()
 
-    def predict_action(self, user_input: str, tool_list) -> list[ChatCompletionMessageToolCall] | None:
+    def predict_action(self, user_input: str, tool_list) -> list[ChatCompletionMessageFunctionToolCall] | None:
         """
             predict action based on user input and available tools
         """
@@ -155,7 +156,7 @@ class ActionManager:
             if prediction is not None and prediction.get("status") == "confirmed":
                 # if prediction is confirmed, return the tool call
                 new_id = str(random.randint(100000, 999999))
-                tool_call = ChatCompletionMessageToolCall(
+                tool_call = ChatCompletionMessageFunctionToolCall(
                     type="function",
                     id=new_id,
                     function=prediction.get("function")
@@ -165,7 +166,7 @@ class ActionManager:
                 
         return None
 
-    def suggest_action_for_cache(self, user_input: str, action: ChatCompletionMessageToolCall, tool_list):
+    def suggest_action_for_cache(self, user_input: str, action: ChatCompletionMessageFunctionToolCall, tool_list):
         """
             suggest action for cache
         """
@@ -182,7 +183,7 @@ class ActionManager:
         # check if action is already in cache
         input_hash = self.hash_action_input(user_input, tool)
         if self.action_cache.get(input_hash) is not None:
-            log("debug", "Cache: Action already in cache")
+            #log("debug", "Cache: Action already in cache")
             return
         
         # add action to cache
@@ -196,7 +197,7 @@ class ActionManager:
         })
         log("info", f"Cache: Action {action.function.name} suggested for cache with hash {input_hash}")
     
-    def confirm_action_in_cache(self, user_input: str, action: ChatCompletionMessageToolCall, tool_list):
+    def confirm_action_in_cache(self, user_input: str, action: ChatCompletionMessageFunctionToolCall, tool_list):
         """
             confirm action in cache
         """
@@ -234,13 +235,13 @@ class ActionManager:
         })
         log("info", f"Cache: Action {action.function.name} confirmed in cache with hash {input_hash}")
 
-    def prefill_action_in_cache(self, user_input: str, action: ChatCompletionMessageToolCall, tool):
+    def prefill_action_in_cache(self, user_input: str, action: ChatCompletionMessageFunctionToolCall, tool):
         """
             prefill action cache with user input and action
         """
         input_hash = self.hash_action_input(user_input, tool)
         if self.action_cache.get(input_hash) is not None:
-            log("debug", "Cache: Action already in cache, skipping prefill")
+            #log("debug", "Cache: Action already in cache, skipping prefill")
             return
         
         # add action to cache
@@ -254,7 +255,7 @@ class ActionManager:
         })
         log("info", f"Cache: Action {action.function.name} prefilled in cache with hash {input_hash}")
 
-    def has_action_in_cache(self, user_input: str, action: ChatCompletionMessageToolCall, tool_list) -> Literal["suggested", "confirmed", False]:
+    def has_action_in_cache(self, user_input: str, action: ChatCompletionMessageFunctionToolCall, tool_list) -> Literal["suggested", "confirmed", False]:
         """
             check if there is a suggested action in cache
         """

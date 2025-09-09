@@ -121,6 +121,8 @@ class PromptGenerator:
         event_name = content.get('event')
         
         # System events
+        if event_name == 'Materials':
+            return None
         if event_name == 'LoadGame':
             load_game_event = cast(LoadGameEvent, content)
             return f"{self.commander_name} is logging into the game in {load_game_event.get('GameMode', 'unknown')} mode."
@@ -191,7 +193,7 @@ class PromptGenerator:
                     faction_info = f" Controlling faction: {faction_name}"
             
             return f"{self.commander_name} has arrived at {fsd_jump_event.get('StarSystem')}{details_str}{system_details_str}{population}{faction_info}"
-            
+
         if event_name == 'FSDTarget':
             fsd_target_event = cast(FSDTargetEvent, content)
             remaining = ""
@@ -223,6 +225,10 @@ class PromptGenerator:
         
         # Station events
 
+        if event_name == "StoredModules":
+            return None
+        if event_name == "StoredShips":
+            return None
         if event_name == "ColonisationConstructionDepot":
             return None
 
@@ -2184,10 +2190,14 @@ class PromptGenerator:
             return f"{self.commander_name}'s fuel is insufficient to reach the destination and there are not enough scoopable stars on the route. Alternative route required."
         if event_name == 'RememberLimpets':
             return f"{self.commander_name} has cargo capacity available to buy limpets. Remember to buy more."
+        if event_name == 'BountyScanned':
+            return f"{self.commander_name} has scanned a wanted ship with a bounty."
         if event_name == 'CombatEntered':
             return f"{self.commander_name} is now in combat."
         if event_name == 'CombatExited':
             return f"{self.commander_name} is no longer in combat."
+        if event_name == 'FirstPlayerSystemDiscovered':
+            return f"{self.commander_name} has a new system discovered"
         # if event_name == 'ExternalDiscordNotification':
         #     twitch_event = cast(Dict[str, Any], content)
         #     return f"Twitch Alert! {twitch_event.get('text','')}",
@@ -2288,6 +2298,8 @@ class PromptGenerator:
             return 'Fuel levels restored to acceptable levels'
         if event_name == 'LowFuelWarning':
             return 'Warning: Fuel reserves critically low, refueling recommended'
+        if event_name == 'HighGravityWarning':
+            return 'Warning: High gravity environment detected, gravity exceeds 2G'
         if event_name == 'FsdCharging':
             return 'Frame Shift Drive charging, preparing for jump'
         if event_name == "BeingInterdicted":
@@ -2556,6 +2568,10 @@ class PromptGenerator:
     def generate_status_message(self, projected_states: dict[str, dict]):
         status_entries: list[tuple[str, Any]] = []
 
+        gravity = projected_states.get('CurrentStatus', {}).get('Gravity', None)
+        if gravity:
+            status_entries.append(("Gravity", gravity))
+
         active_mode, vehicle_status = self.generate_vehicle_status(projected_states.get('CurrentStatus', {}), projected_states.get('InCombat', {}))
         status_entries.append((active_mode+" status", vehicle_status))
 
@@ -2574,6 +2590,16 @@ class PromptGenerator:
         
         # Create a copy of ship_info so we don't modify the original
         ship_display = dict(ship_info)
+        ship_display.pop('JetConeBoost', None)
+        ship_display.pop('DriveMaxFuel', None)
+        ship_display.pop('DrivePowerConst', None)
+        ship_display.pop('GuardianfsdBooster', None)
+        ship_display.pop('DriveLinearConst', None)
+        ship_display.pop('DriveOptimalMass', None)
+        ship_display.pop('ReportedMaximumJumpRange', None)
+        ship_display.pop('FuelReservoirCapacity', None)
+        ship_display.pop('FuelReservoir', None)
+        ship_display.pop('UnladenMass', None)
         ship_display.pop('IsMiningShip', None)
         ship_display.pop('hasLimpets', None)
         if len(fighters) == 0:
@@ -2780,7 +2806,7 @@ class PromptGenerator:
                 ship_display['Loadout'] = loadout_display
 
         status_entries.append(("Main Ship", ship_display))
-        
+
         # Get location info
         location_info: LocationState = projected_states.get('Location', {})  # pyright: ignore[reportAssignmentType]
         
@@ -2806,7 +2832,7 @@ class PromptGenerator:
                 if not location_info.get('Docked'):
                     location_info["Station"] = f"Outside {location_info['Station']}"
 
-            altitude = projected_states.get('CurrentStatus', {}).get('Altitude') or None
+            altitude = projected_states.get('CurrentStatus', {}).get('Altitude', None)
             if altitude:
                 location_info["Altitude"] = f"{altitude} km"
 

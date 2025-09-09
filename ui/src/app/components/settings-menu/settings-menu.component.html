@@ -1,4 +1,4 @@
-<mat-tab-group mat-stretch-tabs="false" mat-align-tabs="start">
+<mat-tab-group mat-stretch-tabs="false" mat-align-tabs="start" [(selectedIndex)]="selectedIndex">
     <mat-tab>
         <ng-template mat-tab-label>
             <mat-icon class="tab-icon">settings</mat-icon>
@@ -6,7 +6,7 @@
         </ng-template>
         <div class="tab-content">
             @if (config && (!config.commander_name || !config.api_key || !usageDisclaimerAccepted) ) {
-                <mat-card appearance="outlined" class="welcome-message" style="margin-bottom: 20px;">
+                <mat-card appearance="outlined" class="welcome-message" [class.highlight]="highlightDisclaimerCard" style="margin-bottom: 20px;">
                     <mat-card-header>
                         <mat-icon mat-card-avatar color="primary">info</mat-icon>
                         <mat-card-title>Welcome to COVAS:NEXT!</mat-card-title>

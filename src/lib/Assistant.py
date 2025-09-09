@@ -101,8 +101,8 @@ class Assistant:
             prompt = self.prompt_generator.generate_prompt(events=events, projected_states=projected_states, pending_events=new_events)
 
             user_input: list[str] = [event.content for event in new_events if event.kind == 'user']
-            use_tools = self.config["tools_var"] and len(user_input)
             reasons = [event.content.get('event', event.kind) if event.kind=='game' else event.kind for event in new_events if event.kind in ['user', 'game', 'tool', 'status']]
+            use_tools = self.config["tools_var"] and ('user' in reasons or 'tool' in reasons)
 
             current_status = projected_states.get("CurrentStatus")
             flags = current_status["flags"]
@@ -122,7 +122,8 @@ class Assistant:
 
             uses_actions = self.config["game_actions_var"]
             uses_web_actions = self.config["web_search_actions_var"]
-            tool_list = self.action_manager.getToolsList(active_mode, uses_actions, uses_web_actions) if use_tools else None
+            uses_ui_actions = self.config["ui_actions_var"]
+            tool_list = self.action_manager.getToolsList(active_mode, uses_actions, uses_web_actions, uses_ui_actions) if use_tools else None
             predicted_actions = None
             if tool_list and user_input:
                 predicted_actions = self.action_manager.predict_action(user_input[-1], tool_list)
@@ -133,12 +134,18 @@ class Assistant:
                 response_actions = predicted_actions
             else:
                 start_time = time()
+                llm_params: dict[str, str] = {}
+                if self.config["llm_model_name"] in ['gpt-5', 'gpt-5-mini', 'gpt-5-nano']:
+                    llm_params["verbosity"] = "low"
+                    llm_params["reasoning_effort"] = "minimal"
+                    
                 try:
-                    response = self.llmClient.chat.completions.with_raw_response.create(
+                    response = self.llmClient.chat.completions.with_raw_response.create(  # pyright: ignore[reportCallIssue]
                         model=self.config["llm_model_name"],
                         messages=prompt,
                         temperature=self.config["llm_temperature"],
-                        tools=tool_list
+                        tools=tool_list,  # pyright: ignore[reportArgumentType]
+                        **llm_params,  # pyright: ignore[reportArgumentType]
                     )
                     end_time = time()
                     log('debug', 'Response time LLM', end_time - start_time)

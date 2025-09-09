@@ -53,7 +53,8 @@ game_events = {
     'HullDamage': False,
     'PVPKill': True,
     'ShieldState': True,
-    'ShipTargetted': False,
+    'ShipTargeted': False,
+    'BountyScanned': False,
     'UnderAttack': False,
     'CockpitBreached': True,
     'CrimeVictim': True,
@@ -127,6 +128,7 @@ game_events = {
     'FsdMassLocked': False,
     'LowFuelWarningCleared': True,
     'LowFuelWarning': True,
+    'HighGravityWarning': True,
     'NoScoopableStars': True,
     'NightVisionOff': False,
     'NightVisionOn': False,
@@ -295,6 +297,7 @@ game_events = {
     'FSSAllBodiesFound': False,
     'FSSBodySignals': False,
     'FSSDiscoveryScan': False,
+    'FirstPlayerSystemDiscovered':False,
     'FSSSignalDiscovered': False,
     'MaterialCollected': False,
     'MaterialDiscarded': False,
@@ -340,9 +343,6 @@ class Character(TypedDict, total=False):
     tts_speed: str
     tts_prompt: str
     avatar: str  # IndexedDB key for the avatar image
-    avatar_show: bool  # Show Avatar: boolean (disabled and false if edcopilot_dominant equals true)
-    avatar_position: str  # Position: Left or Right as dropdown (hidden if not showing avatar)
-    avatar_flip: bool  # Flip: boolean (hidden if not showing avatar)
     game_events: dict[str, bool]
     event_reaction_enabled_var: bool
     react_to_text_local_var: bool
@@ -371,7 +371,7 @@ class Config(TypedDict):
     vision_model_name: str
     vision_endpoint: str
     vision_api_key: str
-    stt_provider: Literal['openai', 'custom', 'custom-multi-modal', 'google-ai-studio', 'none']
+    stt_provider: Literal['openai', 'custom', 'custom-multi-modal', 'google-ai-studio', 'none', 'local-ai-server']
     stt_model_name: str
     stt_api_key: str
     stt_endpoint: str
@@ -384,10 +384,12 @@ class Config(TypedDict):
     tts_endpoint: str
     tools_var: bool
     vision_var: bool
-    ptt_var: bool
+    ptt_var: Literal['voice_activation', 'push_to_talk', 'push_to_mute', 'toggle']
+    ptt_inverted_var: bool
     mute_during_response_var: bool
     game_actions_var: bool
     web_search_actions_var: bool
+    ui_actions_var: bool
     use_action_cache_var: bool
     edcopilot: bool
     edcopilot_dominant: bool
@@ -399,6 +401,12 @@ class Config(TypedDict):
     ed_appdata_path: str
     qol_autobrake: bool  # Quality of life: Auto brake when approaching stations
     qol_autoscan: bool  # Quality of life: Auto scan when entering new systems
+    
+    # Overlay settings
+    overlay_show_avatar: bool
+    overlay_show_chat: bool
+    overlay_position: Literal['left', 'right']
+    overlay_screen_id: int
 
     plugin_settings: dict[str, Any]
     pngtuber: bool
@@ -542,12 +550,23 @@ def migrate(data: dict) -> dict:
 
     if data['config_version'] == 1:
         data['config_version'] = 2
+
         if 'llm_provider' in data and data['llm_provider'] == 'google-ai-studio':
             if 'llm_model_name' in data and data['llm_model_name'] == 'gemini-2.5-flash-preview-04-17':
                 data['llm_model_name'] = 'gemini-2.5-flash-preview-05-20'
 
-    if len(data.get('characters', [])) > 0:
-        data['characters'][0]['game_events'] = game_events
+        if len(data.get('characters', [])) > 0:
+            data['characters'][0]['game_events'] = game_events
+
+    if data['config_version'] < 3:
+        data['config_version'] = 3
+
+        if isinstance(data.get('ptt_var'), bool):
+            data['ptt_var'] = 'push_to_talk' if data.get('ptt_var') else 'voice_activation'
+
+        if 'llm_model_name' in data and data['llm_model_name'] == 'gemini-2.5-flash-preview-04-17':
+            data['llm_model_name'] = 'gemini-2.5-flash'
+
 
     return data
 
@@ -631,9 +650,6 @@ def getDefaultCharacter(config: Config) -> Character:
         "tts_speed": '1.2',
         "tts_prompt": '',
         "avatar": '',  # No avatar by default
-        "avatar_show": True,
-        "avatar_position": "right",
-        "avatar_flip": False,
         "game_events": game_events,
         "event_reaction_enabled_var": True,
         "react_to_text_local_var": True,
@@ -656,11 +672,13 @@ def load_config() -> Config:
         'api_key': "",
         'tools_var': True,
         'vision_var': False,
-        'ptt_var': False,
+        'ptt_var': 'voice_activation',
+        'ptt_inverted_var': False,
         'mute_during_response_var': False,
         'event_reaction_enabled_var': True,
         'game_actions_var': True,
         'web_search_actions_var': True,
+        'ui_actions_var': True,
         'use_action_cache_var': True,
         'cn_autostart': False,
         'edcopilot': True,
@@ -691,7 +709,13 @@ def load_config() -> Config:
         "ed_journal_path": "",
         "ed_appdata_path": "",
         "qol_autobrake": False,  # Quality of life: Auto brake when approaching stations
-        "qol_autoscan": False,   # Quality of life: Auto scan when entering new systems
+        "qol_autoscan": False,  # Quality of life: Auto scan when entering new systems
+        
+        # Overlay settings - defaults
+        "overlay_show_avatar": True,
+        "overlay_show_chat": True,
+        "overlay_position": "right",
+        "overlay_screen_id": -1,  # -1 means primary screen
         "plugin_settings": {},
         "pngtuber": False
     }

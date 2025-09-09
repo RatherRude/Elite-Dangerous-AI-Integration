@@ -31,6 +31,7 @@ import {
 import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { FormsModule } from "@angular/forms";
 import { MatInputModule } from "@angular/material/input";
+import { MatButtonModule } from "@angular/material/button";
 
 @Component({
     selector: "app-settings-menu",
@@ -56,6 +57,7 @@ import { MatInputModule } from "@angular/material/input";
         BehaviorSettingsComponent,
         CharacterSettingsComponent,
         GeneralSettingsComponent,
+        MatButtonModule,
     ],
     templateUrl: "./settings-menu.component.html",
     styleUrls: ["./settings-menu.component.scss"],
@@ -69,6 +71,10 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
     private plugin_settings_message_subscription?: Subscription;
     private validationSubscription?: Subscription;
     public usageDisclaimerAccepted = false;
+
+    // Track current tab and temporary highlight state
+    public selectedIndex = 0;
+    public highlightDisclaimerCard = false;
 
     constructor(
         private configService: ConfigService,
@@ -84,6 +90,15 @@ export class SettingsMenuComponent implements OnInit, OnDestroy {
 
     acceptUsageDisclaimer() {
         this.policyService.acceptUsageDisclaimer();
+    }
+
+    // Exposed so parent can focus the disclaimer area
+    public focusDisclaimer(): void {
+        this.selectedIndex = 0;
+        this.highlightDisclaimerCard = true;
+        window.setTimeout(() => {
+            this.highlightDisclaimerCard = false;
+        }, 1500);
     }
 
     ngOnInit() {

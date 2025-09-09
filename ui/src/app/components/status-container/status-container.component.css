@@ -1,0 +1,1875 @@
+/* CSS Custom Properties */
+:root {
+  --color-primary-blue: #64b5f6;
+  --color-success-green: #4caf50;
+  --color-warning-orange: #ff9800;
+  --color-error-red: #f44336;
+  --color-text-primary: #e0e0e0;
+  --color-text-secondary: #bbb;
+  --color-text-muted: #666;
+  --color-background-dark: rgba(0, 0, 0, 0.3);
+  --color-border: #333;
+}
+
+/* Main container */
+.status-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.info-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: transparent;
+  color: #e0e0e0;
+  font-family: 'Roboto', sans-serif;
+  position: relative;
+  padding: 10px;
+}
+
+/* Expandable panels */
+.expandable-panel {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  right: 16px;
+  background: rgba(0, 0, 0, 0.9);
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 20px;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.expandable-panel button>mat-icon {
+    top: 3px;
+    left: 3px;
+    position: absolute;
+}
+
+.panel-content {
+  cursor: default;
+  padding: 4px;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.panel-header h3 {
+  margin: 0;
+  color: var(--color-primary-blue);
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.panel-close-btn {
+  min-width: 32px;
+  width: 32px;
+  height: 32px;
+  line-height: 32px;
+  color: #999;
+  background: transparent;
+  border: 1px solid #444;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.panel-close-btn:hover {
+  color: #ff5722;
+  border-color: #ff5722;
+  background: rgba(255, 87, 34, 0.1);
+}
+
+/* Fighters container */
+.fighters-container {
+  min-height: 60px;
+  text-align: left;
+}
+
+.fighters-display {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.fighters-display.fighters-count-1 {
+  justify-content: center;
+}
+
+.fighters-display.fighters-count-2 {
+  justify-content: space-between;
+}
+
+.fighter-box {
+  flex: 1;
+  max-width: 120px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid #444;
+  border-radius: 4px;
+  text-align: center;
+}
+
+.fighter-pilot {
+  font-size: 10px;
+  color: #ccc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fighter-pilot-placeholder {
+  font-size: 10px;
+  color: #666;
+  font-style: italic;
+}
+
+/* Rebuilt countdown centering */
+.fighter-rebuilt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  text-align: center;
+  color: var(--color-warning-orange);
+}
+
+/* Smaller in compact fighter boxes */
+.fighters-display .fighter-box .fighter-rebuilt {
+  margin-top: 4px;
+  font-size: 10px;
+}
+
+/* Slightly larger in detailed fighters panel */
+.fighters-panel .fighter-rebuilt {
+  font-size: 12px;
+}
+
+/* Status icons new layout */
+.status-indicators-header {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.status-icons-top-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.status-icons-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  max-width: 220px;
+  justify-items: center;
+}
+
+/* Adjust character header items */
+.character-name {
+  flex: 0 0 auto;
+}
+
+.location-nav-container-header {
+  flex: 1;
+  min-width: 0;
+}
+
+.target-info {
+  flex: 0 0 auto;
+}
+
+/* Modules layout improvements */
+.modules-container {
+  display: flex;
+  gap: 20px;
+}
+
+.core-section,
+.optional-section {
+  flex: 1;
+  min-width: 0;
+}
+
+.module-slot {
+  width: 160px;
+}
+
+.module-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 8px 0;
+  border-bottom: 1px solid #333;
+}
+
+.module-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.module-name {
+  font-weight: 500;
+  color: #e0e0e0;
+  word-wrap: break-word;
+}
+
+.module-engineering {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #888;
+}
+
+.engineering-icon {
+  font-size: 14px !important;
+  width: 14px;
+  height: 14px;
+  color: #ff9800;
+}
+
+/* Cargo container improvements */
+.cargo-box {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.cargo-manifest {
+  margin: 8px 0;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.cargo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cargo-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 0;
+  font-size: 11px;
+}
+
+.cargo-item-name {
+  color: #e0e0e0;
+  flex: 1;
+}
+
+.cargo-item-count {
+  color: #999;
+  font-weight: 500;
+}
+
+.expanded-summary {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #444;
+}
+
+/* Suit class icon */
+.suit-class-icon {
+  font-size: 24px !important;
+  width: 24px;
+  height: 24px;
+  color: #64b5f6;
+}
+
+.friend-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #333;
+}
+
+.friend-item mat-icon {
+  margin-right: 8px;
+  color: #4caf50;
+}
+
+.friend-name {
+  color: #e0e0e0;
+  font-weight: 500;
+}
+
+/* Wing panel styles */
+.wing-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #333;
+}
+
+.wing-item mat-icon {
+  margin-right: 8px;
+  color: #ff9800;
+}
+
+.wing-member-name {
+  color: #e0e0e0;
+  font-weight: 500;
+  flex: 1;
+}
+
+.wing-member-details {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.wing-ship {
+  color: #bbb;
+  font-size: 12px;
+}
+
+/* Fighter panel styles */
+.fighter-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 12px 0;
+  border-bottom: 1px solid #333;
+}
+
+.fighter-item mat-icon {
+  margin-right: 8px;
+  color: #2196f3;
+  margin-top: 2px;
+}
+
+.fighter-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fighter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fighter-id {
+  color: #e0e0e0;
+  font-weight: 500;
+}
+
+.fighter-status {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.fighter-pilot,
+.fighter-rebuilt {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #bbb;
+  font-size: 12px;
+  text-align: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.pilot-icon,
+.rebuilt-icon {
+  font-size: 14px !important;
+  width: 14px;
+  height: 14px;
+}
+
+.colony-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.colony-header h4 {
+  margin: 0;
+  color: #e0e0e0;
+  font-size: 18px;
+}
+
+.colony-status {
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.status-active { background: rgba(76, 175, 80, 0.2); color: #4caf50; }
+.status-pending { background: rgba(255, 152, 0, 0.2); color: #ff9800; }
+.status-complete { background: rgba(33, 150, 243, 0.2); color: #2196f3; }
+.status-unknown { background: rgba(158, 158, 158, 0.2); color: #9e9e9e; }
+
+.progress-container h4 {
+  margin: 0 0 8px 0;
+  color: #e0e0e0;
+  font-size: 14px;
+}
+
+.stat-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stat-bar mat-progress-bar {
+  flex: 1;
+  height: 8px;
+}
+
+.resources-needed h4 {
+  margin: 16px 0 8px 0;
+  color: #e0e0e0;
+  font-size: 14px;
+}
+
+.resource-item {
+  padding: 8px 0;
+  border-bottom: 1px solid #333;
+}
+
+.resource-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.resource-name {
+  color: #e0e0e0;
+  font-weight: 500;
+}
+
+.resource-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.resource-count {
+  font-size: 12px;
+  color: #bbb;
+  min-width: 60px;
+}
+
+.empty-message {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  padding: 16px;
+}
+
+/* Status indicators (top right) */
+.status-indicators-fixed {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 90;
+}
+
+.active-status-icons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.status-icon,
+.friends-counter,
+.wing-counter,
+.fighters-counter,
+.colonisation-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid #333;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.status-icon:hover,
+.friends-counter:hover,
+.wing-counter:hover,
+.fighters-counter:hover,
+.colonisation-indicator:hover {
+  background: rgba(0, 0, 0, 0.9);
+  border-color: #555;
+  transform: scale(1.05);
+}
+
+/* Status icon states */
+.status-icon.status-active {
+  color: #4caf50;
+  border-color: #4caf50;
+}
+
+.status-icon.status-inactive {
+  color: #f44336;
+  border-color: #f44336;
+  opacity: 0.7;
+}
+
+.status-icon.status-warning {
+  color: #f44336;
+  border-color: #f44336;
+}
+
+.status-icon.status-active mat-icon {
+  color: #4caf50;
+}
+
+.status-icon.status-inactive mat-icon {
+  color: #f44336;
+}
+
+.status-icon.status-warning mat-icon {
+  color: #f44336;
+}
+
+.friends-counter,
+.wing-counter,
+.fighters-counter,
+.colonisation-indicator {
+  position: relative;
+  min-width: 32px;
+  width: auto;
+  padding: 0 8px;
+}
+
+.colonisation-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 60px;
+}
+
+.progress-text {
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #f44336;
+  color: white;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+
+
+/* Location and Navigation */
+.location-nav-container {
+  margin-top: 80px; /* Account for fixed status icons */
+  padding: 16px;
+  border-bottom: 1px solid #333;
+}
+
+.location-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.location-details {
+  flex: 1;
+}
+
+.system-name {
+  font-size: 20px;
+  font-weight: 500;
+  color: #e0e0e0;
+  margin-bottom: 4px;
+}
+
+.location-detail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #bbb;
+}
+
+.small-icon {
+  font-size: 16px !important;
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.status-clean { color: #4caf50; }
+.status-wanted { color: #f44336; }
+.status-hostile { color: #ff5722; }
+
+.nav-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+.nav-info:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.expander {
+  margin-left: auto;
+}
+
+/* Navigation route details */
+.nav-details {
+  margin: 20px 16px 16px 16px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid #444;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.nav-route-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.nav-route-item {
+  display: grid;
+  grid-template-columns: 30px 1fr auto auto auto;
+  gap: 12px;
+  padding: 12px;
+  border-bottom: 1px solid #333;
+  align-items: center;
+}
+
+.nav-route-item:last-child {
+  border-bottom: none;
+}
+
+.nav-index {
+  font-size: 12px;
+  color: #666;
+  text-align: center;
+}
+
+.nav-system {
+  font-weight: 500;
+  color: #e0e0e0;
+}
+
+.nav-star-info {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.star-icon {
+  font-size: 14px !important;
+  width: 14px !important;
+  height: 14px !important;
+}
+
+/* Star class colors */
+.star-o { color: #64b5f6; }
+.star-b { color: #42a5f5; }
+.star-a { color: #fff; }
+.star-f { color: #ffeb3b; }
+.star-g { color: #ffcc02; }
+.star-k { color: #ff9800; }
+.star-m { color: #f44336; }
+.star-l { color: #8d6e63; }
+.star-t { color: #795548; }
+.star-y { color: #5d4037; }
+.star-default { color: #9e9e9e; }
+
+.nav-distance {
+  font-size: 12px;
+  color: #bbb;
+  text-align: right;
+}
+
+.star-scoopable {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+}
+
+.fuel-icon {
+  font-size: 12px !important;
+  width: 12px !important;
+  height: 12px !important;
+}
+
+.scoopable { color: #4caf50; }
+.not-scoopable { color: #f44336; }
+
+.small-text {
+  color: #666;
+}
+
+/* Context content */
+.context-content {
+  flex: 1;
+  padding: 20px;
+  margin-top: 8px;
+}
+
+/* Character sheet layout */
+.character-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.character-header {
+  display: flex;
+  align-items: flex-start;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid #333;
+  border-radius: 8px;
+  gap: 12px;
+}
+
+/* Nav details within character sheet */
+.nav-details-header {
+  /*margin: 16px 0;*/
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid #444;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.character-name h2 {
+  margin: 0;
+  font-size: 24px;
+  color: #e0e0e0;
+  font-weight: 600;
+}
+
+.character-subtitle {
+  margin-top: 4px;
+  font-size: 14px;
+  color: #bbb;
+}
+
+.character-class {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.class-circle {
+  width: 50px;
+  height: 50px;
+  border: 2px solid #64b5f6;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(100, 181, 246, 0.1);
+}
+
+.circle-value {
+  font-size: 20px;
+  font-weight: bold;
+  color: #64b5f6;
+}
+
+.class-label {
+  font-size: 10px;
+  color: #666;
+  font-weight: 500;
+  letter-spacing: 1px;
+}
+
+/* Bio scan info */
+.bio-scan-mini {
+  background: rgba(76, 175, 80, 0.1);
+  border: 1px solid #4caf50;
+  border-radius: 8px;
+  padding: 12px;
+  max-width: 300px;
+}
+
+.bio-scan-header {
+  font-size: 14px;
+  font-weight: 500;
+  color: #4caf50;
+  margin-bottom: 8px;
+}
+
+.bio-scan-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bio-scan-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+}
+
+.scan-status {
+  color: #e0e0e0;
+}
+
+.scan-radius {
+  color: #bbb;
+}
+
+.scan-good { color: #4caf50; }
+.scan-bad { color: #f44336; }
+
+/* Target info */
+.target-info {
+  background: rgba(255, 152, 0, 0.1);
+  border: 1px solid #ff9800;
+  border-radius: 8px;
+  padding: 12px;
+  max-width: 300px;
+}
+
+.target-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.target-ship {
+  font-size: 16px;
+  font-weight: 500;
+  color: #ff9800;
+}
+
+.target-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-size: 12px;
+}
+
+.target-pilot {
+  color: #e0e0e0;
+  font-weight: 500;
+}
+
+.target-rank {
+  color: #bbb;
+}
+
+.target-legal {
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.target-faction {
+  color: #bbb;
+}
+
+.target-scanned {
+  color: #4caf50;
+  font-weight: 500;
+}
+
+/* Character sheet body */
+.character-sheet-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 24px;
+}
+
+.sheet-column {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+/* Combat stats */
+.combat-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.combat-stat-item {
+  text-align: center;
+}
+
+.combat-stat-circle {
+  width: 60px;
+  height: 60px;
+  border: 2px solid #333;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 8px;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.combat-stat-value {
+  font-size: 12px;
+  font-weight: bold;
+  color: #e0e0e0;
+}
+
+.combat-stat-label {
+  font-size: 10px;
+  color: #666;
+  font-weight: 500;
+  letter-spacing: 1px;
+}
+
+.temperature-indicator {
+  margin-bottom: 20px;
+}
+
+.temp-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #bbb;
+}
+
+/* Suit modifications */
+.suit-mods {
+  margin-top: 20px;
+}
+
+.mod-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mod-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.mod-icon mat-icon {
+  font-size: 16px !important;
+  width: 16px !important;
+  height: 16px !important;
+  color: #64b5f6;
+}
+
+.mod-name {
+  font-size: 12px;
+  color: #e0e0e0;
+}
+
+/* Consumables and backpack */
+.consumables-list,
+.backpack-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.backpack-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.item-name {
+  font-size: 12px;
+  color: #e0e0e0;
+}
+
+.item-count {
+  font-size: 11px;
+  color: #666;
+  font-weight: 500;
+}
+
+/* Weapons */
+.weapons-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.weapon-card {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.weapon-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.weapon-name {
+  font-size: 13px;
+  color: #e0e0e0;
+  font-weight: 500;
+}
+
+.class-bubble {
+  width: 24px;
+  height: 24px;
+  border: 1px solid #666;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: #666;
+}
+
+.weapon-type {
+  font-size: 11px;
+  color: #bbb;
+  margin-bottom: 4px;
+}
+
+.weapon-slot {
+  font-size: 10px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.weapon-mods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.weapon-mod-tag {
+  background: rgba(100, 181, 246, 0.2);
+  border: 1px solid #64b5f6;
+  border-radius: 3px;
+  padding: 2px 6px;
+  font-size: 9px;
+  color: #64b5f6;
+}
+
+/* Ship defense stats */
+.ship-defense-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.defense-stat-item {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  padding: 12px;
+  text-align: center;
+}
+
+.defense-stat-item.cargo-box {
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.defense-stat-item.cargo-box:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.stat-label {
+  font-size: 10px;
+  color: #666;
+  font-weight: 500;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tiny-icon {
+  font-size: 14px !important;
+  width: 14px !important;
+  height: 14px !important;
+}
+
+.stat-value-with-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stat-value {
+  font-size: 14px;
+  color: #e0e0e0;
+  font-weight: 500;
+  min-width: 80px;
+}
+
+.stat-bar {
+  flex: 1;
+  height: 6px;
+}
+
+.stat-value-large {
+  font-size: 20px;
+  color: #e0e0e0;
+  font-weight: bold;
+}
+
+.stat-suffix {
+  font-size: 12px;
+  color: #666;
+  margin-top: 4px;
+}
+
+.credit-balance {
+  font-size: 10px;
+  color: #666;
+  margin-top: 4px;
+}
+
+.cr {
+  color: #ffcc02 !important;
+}
+
+/* Ship jump stats */
+.jump-range-values {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+.jump-range-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.jump-range-label {
+  font-size: 9px;
+  color: #aaa;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+
+/* Utility and hardpoints */
+.utility-list,
+.hardpoints-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.utility-item,
+.hardpoint-item {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.utility-name,
+.hardpoint-name {
+  font-size: 12px;
+  color: #e0e0e0;
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.utility-engineering,
+.hardpoint-engineering,
+.module-engineering {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: #bbb;
+}
+
+.engineering-text {
+  font-size: 0.9em;
+  color: #bbb;
+}
+
+/* Footer sections */
+.character-sheet-footer {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.section-header, .stat-header {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  color: #d0a85c;
+  font-weight: 500;
+  letter-spacing: 1px;
+  border-bottom: 1px solid #333;
+  padding-bottom: 8px;
+}
+
+.backpack-block {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.backpack-summary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.backpack-summary:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.backpack-category {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.category-name {
+  color: #bbb;
+}
+
+.category-count {
+  color: #64b5f6;
+  font-weight: 500;
+}
+
+.backpack-details {
+  padding: 12px;
+  border-top: 1px solid #333;
+}
+
+.backpack-category-section {
+  margin-bottom: 16px;
+}
+
+.backpack-category-section h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  color: #e0e0e0;
+}
+
+/* Cargo details */
+.cargo-details {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.cargo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cargo-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.cargo-item-name {
+  font-size: 12px;
+  color: #e0e0e0;
+}
+
+.cargo-item-count {
+  font-size: 11px;
+  color: #666;
+  font-weight: 500;
+}
+
+/* Modules */
+.modules-section {
+  margin-bottom: 24px;
+}
+
+.module-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+
+
+.show-more,
+.show-less {
+  text-align: center;
+  padding: 12px;
+  color: #64b5f6;
+  cursor: pointer;
+  font-size: 12px;
+  border-top: 1px solid #333;
+  transition: background 0.3s ease;
+}
+
+.show-more:hover,
+.show-less:hover {
+  background: rgba(100, 181, 246, 0.1);
+}
+
+/* Empty states */
+.empty-state {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  font-size: 12px;
+  padding: 12px;
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+  .character-sheet-body {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .character-sheet-body {
+    grid-template-columns: 1fr;
+  }
+  
+  .character-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .combat-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .status-indicators-fixed {
+    position: static;
+    margin-bottom: 16px;
+  }
+  
+  .location-nav-container {
+    margin-top: 0;
+  }
+}
+
+/* Character Sheet Styles (D&D 5E Inspired) */
+.character-sheet {
+  /*background-color: rgba(245, 240, 230, 0.05);*/
+  border-radius: 8px;
+  padding: 0;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  flex-shrink: 0;
+  min-height: 0;
+}
+
+.character-class {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.class-circle {
+  width: 50px;
+  height: 50px;
+  border: 2px solid #d0a85c;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(208, 168, 92, 0.1);
+}
+
+.circle-value {
+  font-size: 20px;
+  font-weight: bold;
+  color: #d0a85c;
+}
+
+.class-label {
+  margin-top: 5px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 1px;
+}
+
+.cargo-box:hover {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #d0a85c;
+  margin-top: 5px;
+  letter-spacing: 1px;
+}
+
+/* Ship Modules styles */
+.modules-block {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 20px;
+}
+
+.module-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.module-class {
+  font-size: 14px;
+  color: #d0a85c;
+  font-weight: 500;
+}
+
+.show-more, .show-less {
+  text-align: center;
+  padding: 8px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  margin-top: 5px;
+  cursor: pointer;
+  color: #d0a85c;
+}
+
+.show-more:hover, .show-less:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Weapons style for suit */
+.weapon-card {
+  flex: 1;
+  min-width: 250px;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 15px;
+  border: 1px solid rgba(208, 168, 92, 0.3);
+}
+
+.weapon-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.weapon-name {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.class-bubble {
+  width: 30px;
+  height: 30px;
+  background-color: rgba(208, 168, 92, 0.2);
+  color: #d0a85c;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.weapon-type {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  margin-bottom: 15px;
+}
+
+.weapon-mods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.weapon-mod-tag {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Character Sheet Layout Styles */
+.character-sheet-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.sheet-column {
+  display: flex;
+  flex-direction: column;
+  /*gap: 15px;*/
+}
+
+.attributes-column {
+  border-right: 1px solid rgba(208, 168, 92, 0.2);
+  padding-right: 15px;
+}
+
+.weapons-column {
+  border-left: 1px solid rgba(208, 168, 92, 0.2);
+  padding-left: 15px;
+}
+
+.character-sheet-footer {
+  border-top: 1px solid rgba(208, 168, 92, 0.3);
+  padding-top: 20px;
+  margin-top: 10px;
+}
+
+/* Ship Stats Styles */
+.ship-core-stats, .ship-defense-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.ship-stat-item, .defense-stat-item {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 10px;
+  border: 1px solid rgba(208, 168, 92, 0.3);
+}
+
+/* Combat Stats for Suit */
+.combat-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.combat-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.combat-stat-circle {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 2px solid #d0a85c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(208, 168, 92, 0.1);
+  margin-bottom: 5px;
+}
+
+.combat-stat-label {
+  font-size: 12px;
+  color: #d0a85c;
+  letter-spacing: 1px;
+}
+
+/* Modules Lists */
+.modules-section {
+  margin-bottom: 25px;
+}
+
+.hardpoints-list, .utility-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+  width: 100%;
+}
+
+.hardpoint-item, .utility-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.hardpoint-details, .utility-details {
+  flex: 1;
+}
+
+.weapon-display {
+  display: flex;
+  flex-direction: column;
+  padding: 2px 0;
+}
+
+.utility-engineering, .hardpoint-engineering {
+  display: flex;
+  align-items: center;
+  margin-top: 2px;
+}
+
+.engineering-text {
+  font-size: 0.9em;
+  margin-left: 4px;
+  color: #aaddff;
+}
+
+.star-scoopable {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.fuel-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+.scoopable {
+  color: #4caf50;
+}
+
+.not-scoopable {
+  color: #f44336;
+}
+
+
+.credit-balance {
+  text-align: center;
+  font-size: 0.8em;
+  color: #4caf50;
+  margin-top: 2px;
+}
+
+.balance-value {
+  font-weight: 500;
+}
+
+/* Target Info Styles */
+.target-info {
+  display: flex;
+  flex-direction: column;
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+  margin: 0 0.5rem;
+  min-width: 160px;
+  max-width: 200px;
+}
+
+.target-info .target-header {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.target-info .target-header mat-icon {
+  font-size: 16px;
+  height: 16px;
+  width: 16px;
+}
+
+.target-info .target-ship {
+  font-weight: 500;
+}
+
+.target-info .target-scanned {
+  font-size: 0.7rem;
+  background-color: #3d7e9a;
+  padding: 0.1rem 0.3rem;
+  border-radius: 2px;
+  margin-left: auto;
+}
+
+.target-info .target-details {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.75rem;
+  margin-top: 0.2rem;
+  gap: 0.2rem;
+}
+
+.target-info .target-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.3rem;
+}
+
+.target-info .target-pilot {
+  font-weight: 500;
+}
+
+.target-info .target-rank {
+  color: #aaa;
+  font-size: 0.7rem;
+  margin-left: auto;
+  margin-right: 0.3rem;
+}
+
+.target-info .target-faction {
+  font-size: 0.7rem;
+  color: #aaa;
+}
+
+.target-info .target-legal {
+  font-size: 0.7rem;
+  padding: 0.1rem 0.3rem;
+  border-radius: 2px;
+}
+
+/* Exobiology Scan Mini Display */
+.bio-scan-mini {
+  display: flex;
+  flex-direction: column;
+  background-color: rgba(0, 0, 0, 0.2);
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+  margin: 0 0.5rem;
+  min-width: 160px;
+}
+
+.bio-scan-header {
+  font-size: 0.7rem;
+  font-weight: bold;
+  color: #aaa;
+  margin-bottom: 0.2rem;
+  text-align: center;
+}
+
+.bio-scan-content {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.bio-scan-details {
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+  gap: 0.3rem;
+}
+
+.scan-count {
+  font-weight: 500;
+}
+
+.scan-status {
+  font-size: 0.7rem;
+  margin-right: 0.5rem;
+}
+
+.scan-radius {
+  font-size: 0.7rem;
+  color: #aaa;
+}
+
+.bio-scan-mini mat-icon {
+  font-size: 16px;
+  height: 16px;
+  width: 16px;
+}
+
+.scan-good {
+  color: #4caf50;
+}
+
+.scan-bad {
+  color: #f44336;
+}
+
+/* Scrollbar Styling */
+.info-tab::-webkit-scrollbar {
+  width: 8px;
+}
+
+.info-tab::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.info-tab::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
+
+.info-tab::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+} 

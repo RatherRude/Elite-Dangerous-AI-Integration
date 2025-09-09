@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from "@angular/core";
+import { Component, OnDestroy, OnInit, ViewChild } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
@@ -14,9 +14,14 @@ import { Subscription } from "rxjs";
 import { ChatService } from "../services/chat.service.js";
 import { MatTabsModule } from "@angular/material/tabs";
 import { ChatContainerComponent } from "../components/chat-container/chat-container.component.js";
+import { StatusContainerComponent } from "../components/status-container/status-container.component";
+import { StorageContainerComponent } from "../components/storage-container/storage-container.component";
+import { StationContainerComponent } from "../components/station-container/station-container.component";
+import { TasksContainerComponent } from "../components/tasks-container/tasks-container.component";
 import { ProjectionsService } from "../services/projections.service";
 import { MetricsService } from "../services/metrics.service.js";
 import { PolicyService } from "../services/policy.service.js";
+import {UIService} from "../services/ui.service";
 
 @Component({
     selector: "app-main-view",
@@ -32,17 +37,29 @@ import { PolicyService } from "../services/policy.service.js";
         InputContainerComponent,
         MatTabsModule,
         ChatContainerComponent,
+        StatusContainerComponent,
+        StorageContainerComponent,
+        StationContainerComponent,
+        TasksContainerComponent,
     ],
     templateUrl: "./main-view.component.html",
     styleUrl: "./main-view.component.css",
 })
 export class MainViewComponent implements OnInit, OnDestroy {
+    @ViewChild(SettingsMenuComponent) private settingsMenu?: SettingsMenuComponent;
+
     isLoading = true;
     isRunning = false;
-    isInDanger = false;
+    isInCombat = false;
+    isDockedAtStation = false;
+    isShipIdentUnknown = false;
+    selectedTabIndex: number = 0;
     config: any;
+    private uiChangeSubscription?: Subscription;
     private configSubscription!: Subscription;
-    private inDangerSubscription!: Subscription;
+    private inCombatSubscription!: Subscription;
+    private currentStatusSubscription!: Subscription;
+    private shipInfoSubscription!: Subscription;
     private hasAutoStarted = false;
     public usageDisclaimerAccepted = false;
 
@@ -54,6 +71,7 @@ export class MainViewComponent implements OnInit, OnDestroy {
         private projectionsService: ProjectionsService,
         private metricsService: MetricsService,
         private policyService: PolicyService,
+        private uiService: UIService
     ) {
         this.policyService.usageDisclaimerAccepted$.subscribe(
             (accepted) => {
@@ -85,15 +103,48 @@ export class MainViewComponent implements OnInit, OnDestroy {
             },
         );
 
-        // Subscribe to CurrentStatus projection and check for InDanger
-        this.inDangerSubscription = this.projectionsService
-            .getProjection("CurrentStatus")
-            .subscribe((currentStatus) => {
-                if (currentStatus && currentStatus.flags) {
-                    this.isInDanger = Boolean(currentStatus.flags.InDanger);
-                } else {
-                    this.isInDanger = false;
+
+        this.uiChangeSubscription = this.uiService.changeUI$.subscribe(
+            (tabName) => {
+                if (tabName === null) return;
+                const desiredIndex = {
+                    chat: 0,
+                    status: 1,
+                    storage: 2,
+                    tasks: 3,
+                    station: 4,
+                }[tabName];
+                if (desiredIndex !== undefined) {
+                    this.selectedTabIndex = desiredIndex;
                 }
+            }
+        )
+
+        // Subscribe to InCombat projection
+        this.inCombatSubscription = this.projectionsService.inCombat$
+            .subscribe((inCombatData) => {
+                // InCombat projection might be a boolean or an object
+                if (typeof inCombatData === 'boolean') {
+                    this.isInCombat = inCombatData;
+                } else if (inCombatData && typeof inCombatData === 'object') {
+                    // If it's an object, check for a combat flag or status
+                    this.isInCombat = Boolean(inCombatData.InCombat || inCombatData.combat || inCombatData.active);
+                } else {
+                    this.isInCombat = false;
+                }
+            });
+
+        // Subscribe to CurrentStatus projection to track station docking
+        this.currentStatusSubscription = this.projectionsService.currentStatus$
+            .subscribe((currentStatusData) => {
+                this.isDockedAtStation = Boolean(currentStatusData?.flags?.Docked === true);
+            });
+
+        // Subscribe to ShipInfo projection to track unknown ship ident
+        this.shipInfoSubscription = this.projectionsService.shipInfo$
+            .subscribe((shipInfo) => {
+                const shipIdent = shipInfo?.ShipIdent ?? 'Unknown';
+                this.isShipIdentUnknown = shipIdent === 'Unknown';
             });
 
         // Initialize the main view
@@ -105,9 +156,24 @@ export class MainViewComponent implements OnInit, OnDestroy {
         if (this.configSubscription) {
             this.configSubscription.unsubscribe();
         }
-        if (this.inDangerSubscription) {
-            this.inDangerSubscription.unsubscribe();
+        if (this.uiChangeSubscription) {
+            this.uiChangeSubscription.unsubscribe();
         }
+        if (this.inCombatSubscription) {
+            this.inCombatSubscription.unsubscribe();
+        }
+        if (this.currentStatusSubscription) {
+            this.currentStatusSubscription.unsubscribe();
+        }
+        if (this.shipInfoSubscription) {
+            this.shipInfoSubscription.unsubscribe();
+        }
+    }
+
+    // Called by the floating FAB when the policy is not yet accepted
+    focusPolicy(): void {
+        // Ensure the settings menu is visible (only visible when not running)
+        this.settingsMenu?.focusDisclaimer();
     }
 
     acceptUsageDisclaimer() {
@@ -116,7 +182,7 @@ export class MainViewComponent implements OnInit, OnDestroy {
 
     async start(): Promise<void> {
         try {
-            if(this.config && this.config.characters[this.config.active_character_index] && this.config.characters[this.config.active_character_index]['avatar_show']) {
+            if(this.config && (this.config.overlay_show_avatar || this.config.overlay_show_chat)) {
                 await this.createOverlay();
             }
 
@@ -142,14 +208,11 @@ export class MainViewComponent implements OnInit, OnDestroy {
     async createOverlay(): Promise<void> {
         try {
             const isLinux = this.configService.systemInfo?.os === "Linux";
-            await this.tauri.createOverlay(isLinux ? {
-                fullscreen: false,
-                maximized: true,
-                alwaysOnTop: true
-            } : {
-                fullscreen: false,
-                maximized: true,
-                alwaysOnTop: true
+            const screenId = this.config?.overlay_screen_id ?? -1; // -1 for primary screen
+            
+            await this.tauri.createOverlay({
+                alwaysOnTop: true,
+                screenId: screenId
             });
         } catch (error) {
             console.error("Failed to create overlay:", error);
