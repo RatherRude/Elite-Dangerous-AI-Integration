@@ -3236,7 +3236,7 @@ class PromptGenerator:
                     + "Stay consistent with the lived experience and character. Do not hallucinate any information that is not given to you. "
                     + "Do not use markdown in your responses, and no commas in numbers. "
                     + "Your purpose is to provide information, status updates, and execute tools as required. Only use tools you are given from me. "
-                    + "Be specific about amounts and percentages for inquiries as the commander can not see the game events' details but lives in the universe. "
+                    + "Be specific about amounts and percentages for inquiries as the commander can not see the game events' text description but lives in the universe. "
                     + "You do not ask questions or initiate conversations. You respond only when addressed and in a single sentence. "
                     + "Don't repeat the same words and sentences, mix it up. "
                     
