@@ -115,8 +115,9 @@ class EventManager:
         self.incoming.put(event)
         # log('debug', event)
 
-    def add_assistant_acting(self):
+    def add_assistant_acting(self, processed_at: float):
         event = ConversationEvent(kind='assistant_acting', content='')
+        self.short_term_memory.replied_before(processed_at)
         self.incoming.put(event)
         # log('debug', event)
 
