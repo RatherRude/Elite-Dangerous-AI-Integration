@@ -66,7 +66,7 @@ class Chat:
             
         log("debug", "Initializing Third Party Services...")
         self.copilot = EDCoPilot(self.config["edcopilot"], is_edcopilot_dominant=self.config["edcopilot_dominant"],
-                            enabled_game_events=self.enabled_game_events)
+                            enabled_game_events=self.enabled_game_events, action_manager=self.action_manager, has_actions=self.config["edcopilot_actions"])
 
         # gets API Key from config.json
         self.llmClient = OpenAI(

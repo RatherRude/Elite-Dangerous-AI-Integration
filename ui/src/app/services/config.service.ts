@@ -94,6 +94,7 @@ export interface Config {
     ui_actions_var: boolean;
     use_action_cache_var: boolean;
     edcopilot: boolean;
+    edcopilot_actions: boolean;
     edcopilot_dominant: boolean;
     ptt_key: string;
     input_device_name: string;

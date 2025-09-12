@@ -22,6 +22,7 @@ default_config = {
     'web_search_actions_var': True,
     'edcopilot': True,
     'edcopilot_dominant': False,
+    'edcopilot_actions': False,
     'input_device_name': 'default',
     'output_device_name': 'default',
     'llm_model_name': "gpt-4o-mini",
