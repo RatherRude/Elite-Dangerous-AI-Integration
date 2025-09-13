@@ -1,0 +1,21 @@
+<div class="memories-log">
+  <mat-card>
+    <mat-card-title>Memories</mat-card-title>
+    <mat-card-content>
+      @if (memories.length === 0) {
+        <div class="empty">No memories recorded yet.</div>
+      } @else {
+        <div class="entries">
+          @for (m of memories; track m.timestamp) {
+            <div class="entry">
+              <span class="timestamp">{{ m.timestamp | date:'HH:mm:ss' }}</span>
+              <span class="message">{{ m.content }}</span>
+            </div>
+          }
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+</div>
+
+

@@ -19,7 +19,7 @@ from lib.actions.Actions import register_actions
 from lib.ControllerManager import ControllerManager
 from lib.EDCoPilot import EDCoPilot
 from lib.EDKeys import EDKeys
-from lib.Event import ConversationEvent, Event, ExternalEvent, GameEvent, ProjectedEvent, StatusEvent, ToolEvent
+from lib.Event import ConversationEvent, Event, ExternalEvent, GameEvent, MemoryEvent, ProjectedEvent, StatusEvent, ToolEvent
 from lib.Logger import show_chat_message
 from lib.Projections import registerProjections
 from lib.PromptGenerator import PromptGenerator
@@ -157,7 +157,7 @@ class Chat:
         self.plugin_manager.register_status_generators(self.plugin_helper)
 
         self.previous_states = {}
-
+       
     def on_event(self, event: Event, projected_states: dict[str, Any]):
         for key, value in projected_states.items():
             if self.previous_states.get(key, None) != value:
@@ -192,6 +192,9 @@ class Chat:
         if event.kind=='projected':
             event = cast(ProjectedEvent, event)
             show_chat_message('event', event.content.get('event', 'Unknown'))
+        if event.kind=='memory':
+            event = cast(MemoryEvent, event)
+            show_chat_message('memory', event.content)
 
     def submit_input(self, input: str):
         self.event_manager.add_conversation_event('user', input)
