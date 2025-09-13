@@ -1,17 +1,20 @@
 <div class="settings-grid">
     @if (config) {
         <h2>Actions</h2>
-        <mat-slide-toggle [ngModel]="config.tools_var && config.game_actions_var"
-                            (ngModelChange)="onConfigChange({game_actions_var: $event})"
-                            [disabled]="!config.tools_var">
-            Enable Game Actions
-        </mat-slide-toggle>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <mat-slide-toggle [ngModel]="config.tools_var && config.game_actions_var"
+                              (ngModelChange)="onConfigChange({game_actions_var: $event})"
+                              [disabled]="!config.tools_var">
+                Enable Game Actions
+            </mat-slide-toggle>
+            <button mat-stroked-button color="primary" (click)="showGameDetails = !showGameDetails">{{ showGameDetails ? 'Hide' : 'Show' }} Details</button>
+        </div>
         <p>Game actions are performed by the AI on your behalf, like deploying the landing gear or opening
             the galaxy map.</p>
         @if (config.tools_var && config.game_actions_var) {
             <div>
-                <button mat-button (click)="showGameDetails = !showGameDetails">{{ showGameDetails ? 'Hide' : 'Show' }} Game Action Details</button>
                 @if (showGameDetails) {
+                    <h3 style="margin: 6px 0;">Available game actions</h3>
                     <div class="permission-list">
                         <div class="permission-item" *ngFor="let perm of gamePermissions">
                             <mat-slide-toggle [ngModel]="isPermissionEnabled(perm)"
@@ -47,17 +50,20 @@
                 }
             </div>
         }
-        <mat-slide-toggle [ngModel]="config.tools_var && config.web_search_actions_var"
-                            (ngModelChange)="onConfigChange({web_search_actions_var: $event})"
-                            [disabled]="!config.tools_var">
-            Enable Web Actions
-        </mat-slide-toggle>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <mat-slide-toggle [ngModel]="config.tools_var && config.web_search_actions_var"
+                              (ngModelChange)="onConfigChange({web_search_actions_var: $event})"
+                              [disabled]="!config.tools_var">
+                Enable Web Actions
+            </mat-slide-toggle>
+            <button mat-stroked-button color="primary" (click)="showWebDetails = !showWebDetails">{{ showWebDetails ? 'Hide' : 'Show' }} Details</button>
+        </div>
         <p>Web actions are performed by the AI on your behalf and allow you to search the web for
             information, like searching for stations selling a specific commodity or material.</p>
         @if (config.tools_var && config.web_search_actions_var) {
             <div>
-                <button mat-button (click)="showWebDetails = !showWebDetails">{{ showWebDetails ? 'Hide' : 'Show' }} Web Action Details</button>
                 @if (showWebDetails) {
+                    <h3 style="margin: 6px 0;">Available web actions</h3>
                     <div class="permission-list">
                         <div class="permission-item" *ngFor="let perm of webPermissions">
                             <mat-slide-toggle [ngModel]="isPermissionEnabled(perm)"
@@ -67,16 +73,19 @@
                 }
             </div>
         }
-        <mat-slide-toggle [ngModel]="config.tools_var && config.ui_actions_var"
-                            (ngModelChange)="onConfigChange({ui_actions_var: $event})"
-                            [disabled]="!config.tools_var">
-            Enable UI Actions
-        </mat-slide-toggle>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <mat-slide-toggle [ngModel]="config.tools_var && config.ui_actions_var"
+                              (ngModelChange)="onConfigChange({ui_actions_var: $event})"
+                              [disabled]="!config.tools_var">
+                Enable UI Actions
+            </mat-slide-toggle>
+            <button mat-stroked-button color="primary" (click)="showUIDetails = !showUIDetails">{{ showUIDetails ? 'Hide' : 'Show' }} Details</button>
+        </div>
         <p>UI actions let the AI switch tabs and control the app interface when needed.</p>
         @if (config.tools_var && config.ui_actions_var) {
             <div>
-                <button mat-button (click)="showUIDetails = !showUIDetails">{{ showUIDetails ? 'Hide' : 'Show' }} UI Action Details</button>
                 @if (showUIDetails) {
+                    <h3 style="margin: 6px 0;">Available UI actions</h3>
                     <div class="permission-list">
                         <div class="permission-item" *ngFor="let perm of uiPermissions">
                             <mat-slide-toggle [ngModel]="isPermissionEnabled(perm)"
@@ -98,7 +107,7 @@
                             (ngModelChange)="onConfigChange({qol_autobrake: $event})">
             Auto Brake
         </mat-slide-toggle>
-        <p>Automatically brake when when entering a new star system.</p>
+        <p>Automatically brake when entering a new star system.</p>
         <div style="display: flex; gap: 8px; align-items: center;">
 
             <span>
