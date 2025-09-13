@@ -40,7 +40,7 @@ class Assistant:
         if isinstance(event, MemoryEvent):
             self.short_term_memories.append(event)
             self.short_term_memories = self.short_term_memories[-5:]
-        
+
         if isinstance(event, ConversationEvent) and event.kind == 'assistant':
             short_term = self.event_manager.get_short_term_memory()
             #if len(short_term) < 2:
@@ -55,8 +55,7 @@ class Assistant:
         memory_until = memory[0].processed_at
         
         chat = []
-        for mem in self.short_term_memories:
-            chat.append(mem.timestamp +' [Previous Memory]: '+ mem.content)
+
         for i,event in enumerate(memory):
             if isinstance(event, GameEvent):
                 chat.append(event.content.get('timestamp') +': '+ event.content.get('event'))
@@ -70,6 +69,8 @@ class Assistant:
                 if event.kind not in ['user', 'assistant']:
                     continue
                 chat.append(event.timestamp +' '+ event.kind +': '+ event.content)
+        for mem in self.short_term_memories:
+            chat.append(mem.timestamp +' [Previous Memory]: '+ mem.content)
 
         chat_text = '\n'.join(reversed(chat))
 
