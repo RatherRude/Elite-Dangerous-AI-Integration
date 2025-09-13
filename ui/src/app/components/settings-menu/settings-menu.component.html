@@ -5,7 +5,7 @@
             General
         </ng-template>
         <div class="tab-content">
-            @if (config && (!config.commander_name || !config.api_key || !usageDisclaimerAccepted) ) {
+            @if (config && secrets && (!config.commander_name || !secrets.current_llm_key || !usageDisclaimerAccepted) ) {
                 <mat-card appearance="outlined" class="welcome-message" [class.highlight]="highlightDisclaimerCard" style="margin-bottom: 20px;">
                     <mat-card-header>
                         <mat-icon mat-card-avatar color="primary">info</mat-icon>

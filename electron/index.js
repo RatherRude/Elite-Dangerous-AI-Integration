@@ -182,10 +182,10 @@ class BackendService {
       for (const line of lines) {
         if (line.trim()) {
           //logger.info('Sending stdout to', this.#windows.length, 'windows');
-          if (!line.includes('"type": "config"') && !line.includes('"type": "running_config"')) {
+          if (!line.includes('"secrets"')) {
             logger.info('[stdout]', line);
           } else {
-            logger.info('[stdout]', "[config redacted]");
+            logger.info('[stdout]', "[secrets redacted]");
           }
           for (const window of this.#windows) {
             window.webContents.send('stdout', { payload: line });

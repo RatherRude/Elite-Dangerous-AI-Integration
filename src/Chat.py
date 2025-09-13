@@ -12,7 +12,7 @@ from EDMesg.CovasNext import ExternalChatNotification, ExternalBackgroundChatNot
 from openai import OpenAI
 
 from lib.PluginHelper import PluginHelper
-from lib.Config import Config, assign_ptt, get_ed_appdata_path, get_ed_journals_path, get_system_info, load_config, save_config, update_config, update_event_config, validate_config, update_character, reset_game_events
+from lib.Config import Config, Secrets, assign_ptt, get_ed_appdata_path, get_ed_journals_path, get_system_info, load_config, load_secrets, save_config, save_secrets, update_config, update_event_config, validate_config, update_character, reset_game_events
 from lib.PluginManager import PluginManager
 from lib.ActionManager import ActionManager
 from lib.actions.Actions import register_actions
@@ -38,11 +38,11 @@ sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8', write_through=T
 
 @final
 class Chat:
-    def __init__(self, config: Config, plugin_manager: PluginManager):
-        self.config = config # todo: remove
+    def __init__(self, config: Config, secrets: Secrets, plugin_manager: PluginManager):
+        self.config = config
+        self.secrets = secrets
         self.plugin_manager = plugin_manager
-        if self.config["api_key"] == '':
-            self.config["api_key"] = '-'
+
         self.character = self.config['characters'][self.config['active_character_index']]
 
         self.voice_instructions = self.character["tts_prompt"]
@@ -71,7 +71,7 @@ class Chat:
         # gets API Key from config.json
         self.llmClient = OpenAI(
             base_url="https://api.openai.com/v1" if self.config["llm_endpoint"] == '' else self.config["llm_endpoint"],
-            api_key=self.config["api_key"] if self.config["llm_api_key"] == '' else self.config["llm_api_key"],
+            api_key=self.secrets["current_llm_key"]
         )
         
         # vision
@@ -79,7 +79,7 @@ class Chat:
         if self.config["vision_var"]:
             self.visionClient = OpenAI(
                 base_url="https://api.openai.com/v1" if self.config["vision_endpoint"] == '' else self.config["vision_endpoint"],
-                api_key=self.config["api_key"] if self.config["vision_api_key"] == '' else self.config["vision_api_key"],
+                api_key=self.secrets["current_vision_key"]
             )
             
 
@@ -88,14 +88,14 @@ class Chat:
         if self.config["stt_provider"] in ['openai', 'custom', 'custom-multi-modal', 'google-ai-studio', 'local-ai-server']:
             self.sttClient = OpenAI(
                 base_url=self.config["stt_endpoint"],
-                api_key=self.config["api_key"] if self.config["stt_api_key"] == '' else self.config["stt_api_key"],
+                api_key=self.secrets["current_stt_key"],
             )
 
         self.ttsClient: OpenAI | None = None
         if self.config["tts_provider"] in ['openai', 'custom', 'local-ai-server']:
             self.ttsClient = OpenAI(
                 base_url=self.config["tts_endpoint"],
-                api_key=self.config["api_key"] if self.config["tts_api_key"] == '' else self.config["tts_api_key"],
+                api_key=self.secrets["current_tts_key"],
             )
             
         tts_provider = 'none' if self.config["edcopilot"] and self.config["edcopilot_dominant"] else self.config["tts_provider"]
@@ -368,6 +368,8 @@ if __name__ == "__main__":
         log('debug', "Registering plugin settings for the UI...")
         plugin_manager.register_settings()
         # Wait for start signal on stdin
+        secrets = load_secrets()
+        print(json.dumps({"type": "secrets", "secrets": secrets})+'\n', flush=True)
         config = load_config()
         print(json.dumps({"type": "config", "config": config})+'\n', flush=True)
         system = get_system_info()
@@ -384,9 +386,10 @@ if __name__ == "__main__":
                 if data.get("type") == "start":
                     if data.get('oldUi'):
                         config = load_config()
+                        secrets = load_secrets()
                         break
                     else: 
-                        new_config = validate_config(config)
+                        new_config = validate_config(config, secrets)
                         if new_config:
                             config = new_config
                             break
@@ -411,9 +414,10 @@ if __name__ == "__main__":
         
         # Once start signal received, initialize and run chat
         save_config(config)
+        save_secrets(secrets)
         print(json.dumps({"type": "start"})+'\n', flush=True)
         
-        chat = Chat(config, plugin_manager)
+        chat = Chat(config, secrets, plugin_manager)
         # run chat in a thread
         stdin_thread = threading.Thread(target=read_stdin, args=(chat,), daemon=True)
         stdin_thread.start()
