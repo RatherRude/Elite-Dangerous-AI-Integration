@@ -44,12 +44,12 @@ class Assistant:
                 request, results, descriptions, labels = [], [], [], []
 
                 if self.config.get("qol_autobrake"):
-                    speed_args = {"speed": "0"}
+                    speed_args = {"speed": "Zero"}
                     speed_result = set_speed(speed_args, projected_states)
                     request.append({"id": "auto-fsd-1", "type": "function", "function": {"name": "setSpeed", "arguments": json.dumps(speed_args)}})
                     results.append({"tool_call_id": "auto-fsd-1", "role": "tool", "name": "setSpeed", "content": speed_result})
                     descriptions.append("Reducing speed to 0")
-                    labels.append("SetSpeed0")
+                    labels.append("SetSpeedZero")
 
                 if self.config.get("qol_autoscan"):
                     fire_args = {"weaponType": "discovery_scanner", "action": "fire"}
