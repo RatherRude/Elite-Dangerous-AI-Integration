@@ -117,7 +117,6 @@ export const GameEventTooltips: Record<string, string> = {
   "LowFuelWarningCleared": "COVAS:NEXT will react when a low fuel warning is cleared.",
   "LowFuelWarning": "COVAS:NEXT will react when your fuel level is critically low.",
   "HighGravityWarning": "COVAS:NEXT will react when you enter a high gravity environment (above 2G).",
-  "NoScoopableStars": "COVAS:NEXT will react when no scoopable stars are within your jump range.",
   "NightVisionOff": "COVAS:NEXT will react when night vision is turned off.",
   "NightVisionOn": "COVAS:NEXT will react when night vision is activated.",
   "SupercruiseDestinationDrop": "COVAS:NEXT will react when you drop out of supercruise at a targeted destination, logging threat level and type.",
@@ -311,6 +310,9 @@ export const GameEventTooltips: Record<string, string> = {
   "DatalinkVoucher": "COVAS:NEXT will react when a data link scan yields a voucher for credits.",
   "DataScanned": "COVAS:NEXT will react when you scan data points like listening posts or signal relays.",
   "Scanned": "COVAS:NEXT will react when your ship is scanned to completion by another ship or faction.",
-  "USSDrop": "COVAS:NEXT will react when you drop into a USS and log its type and threat level."
+  "USSDrop": "COVAS:NEXT will react when you drop into a USS and log its type and threat level.",
+  "NoScoopableStars": "COVAS:NEXT will react when no scoopable stars are within your jump range.",
+  "AutoAfterJumpActions": "COVAS:NEXT will react to the automatic actions called after a jump.",
+
 
 };

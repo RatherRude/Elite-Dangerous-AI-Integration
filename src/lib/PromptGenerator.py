@@ -140,6 +140,10 @@ class PromptGenerator:
         # Message events
         if event_name == 'ReceiveText':
             receive_text_event = cast(ReceiveTextEvent, content)
+            # Ignore system-entered channel messages
+            if (receive_text_event.get('Channel', '') == 'npc' and receive_text_event.get('From', '') == ''
+                and receive_text_event.get('Message', '').startswith('$COMMS_entered:#name=')):
+                return None
             return f'Message received from {receive_text_event.get("From_Localised", receive_text_event.get("From"))} on channel {receive_text_event.get("Channel")}: "{receive_text_event.get("Message_Localised", receive_text_event.get("Message"))}"'
         if event_name == 'SendText':
             send_text_event = cast(SendTextEvent, content)
@@ -2198,6 +2202,8 @@ class PromptGenerator:
             return f"{self.commander_name} is no longer in combat."
         if event_name == 'FirstPlayerSystemDiscovered':
             return f"{self.commander_name} has a new system discovered"
+        if event_name == 'AutoAfterJumpActions':
+            return f"{self.commander_name}'s ship has performed an automated discovery scan."
         # if event_name == 'ExternalDiscordNotification':
         #     twitch_event = cast(Dict[str, Any], content)
         #     return f"Twitch Alert! {twitch_event.get('text','')}",

@@ -12,3 +12,15 @@ mat-form-field {
 mat-slide-toggle {
   margin: 10px 0;
 }
+
+.permission-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0 12px 16px;
+}
+
+.permission-item {
+  display: flex;
+  align-items: center;
+}

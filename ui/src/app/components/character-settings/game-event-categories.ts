@@ -115,7 +115,6 @@ export const GameEventCategories: Record<string, string[]> = {
         "LowFuelWarningCleared",
         "LowFuelWarning",
         "HighGravityWarning",
-        "NoScoopableStars",
         "NightVisionOff",
         "NightVisionOn",
         "SupercruiseDestinationDrop",
@@ -306,5 +305,7 @@ export const GameEventCategories: Record<string, string[]> = {
         "DataScanned",
         "Scanned",
         "USSDrop",
+        "NoScoopableStars",
+        "AutoAfterJumpActions",
     ],
 };
