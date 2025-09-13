@@ -14,6 +14,7 @@ from .EDCoPilot import EDCoPilot
 from openai import APIStatusError, BadRequestError, OpenAI, RateLimitError
 from typing import Any,  Callable, final
 from threading import Thread
+from .actions.Actions import set_speed, fire_weapons
 
 @final
 class Assistant:
@@ -34,6 +35,36 @@ class Assistant:
     def on_event(self, event: Event, projected_states: dict[str, Any]):
         self.pending.append(event)
         self.reply_pending = self.should_reply(projected_states)
+
+        # Auto actions after a hyperspace jump: optional autobrake and/or autoscan
+        try:
+            if (isinstance(event, GameEvent) and event.content.get('event') == 'FSDJump' and
+                    (self.config.get("qol_autoscan", False) or self.config.get("qol_autobrake", False))):
+                # Build actions according to QoL flags
+                request, results, descriptions, labels = [], [], [], []
+
+                if self.config.get("qol_autobrake"):
+                    speed_args = {"speed": "0"}
+                    speed_result = set_speed(speed_args, projected_states)
+                    request.append({"id": "auto-fsd-1", "type": "function", "function": {"name": "setSpeed", "arguments": json.dumps(speed_args)}})
+                    results.append({"tool_call_id": "auto-fsd-1", "role": "tool", "name": "setSpeed", "content": speed_result})
+                    descriptions.append("Reducing speed to 0")
+                    labels.append("SetSpeed0")
+
+                if self.config.get("qol_autoscan"):
+                    fire_args = {"weaponType": "discovery_scanner", "action": "fire"}
+                    fire_result = fire_weapons(fire_args, projected_states)
+                    request.append({"id": "auto-fsd-2", "type": "function", "function": {"name": "fireWeapons", "arguments": json.dumps(fire_args)}})
+                    results.append({"tool_call_id": "auto-fsd-2", "role": "tool", "name": "fireWeapons", "content": fire_result})
+                    descriptions.append("Performing discovery scan")
+                    labels.append("DiscoveryScan")
+
+                if request:
+                    self.event_manager.add_assistant_acting(processed_at=event.processed_at)
+                    self.event_manager.add_tool_call(request, results, descriptions)
+                    self.event_manager.add_projected_event(ProjectedEvent({"event": "AutoAfterJumpActions", "Actions": labels}), event)
+        except Exception as e:
+            log('error', 'Auto actions on FSDJump failed', e, traceback.format_exc())
 
     def execute_actions(self, actions: list[dict[str, Any]], projected_states: dict[str, dict]):
         action_descriptions: list[str | None] = []
