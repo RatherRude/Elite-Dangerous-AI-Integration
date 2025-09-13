@@ -58,6 +58,7 @@ def register_ui_actions(actionManager: ActionManager, eventManager: EventManager
         },
         show_ui,
         'ui',
+        permission='showUI',
         cache_prefill={
             "show chat": {"tab": "chat"},
             "show status": {"tab": "status"},

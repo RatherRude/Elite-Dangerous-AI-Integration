@@ -391,6 +391,9 @@ class Config(TypedDict):
     web_search_actions_var: bool
     ui_actions_var: bool
     use_action_cache_var: bool
+    allowed_actions: list[str]
+    discovery_primary_var: bool
+    discovery_firegroup_var: int
     edcopilot: bool
     edcopilot_dominant: bool
     edcopilot_actions: bool
@@ -678,6 +681,9 @@ def load_config() -> Config:
         'web_search_actions_var': True,
         'ui_actions_var': True,
         'use_action_cache_var': True,
+        'allowed_actions': [],
+        'discovery_primary_var': True,
+        'discovery_firegroup_var': 1,
         'cn_autostart': False,
         'edcopilot': True,
         'edcopilot_dominant': False,

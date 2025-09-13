@@ -8,6 +8,45 @@
         </mat-slide-toggle>
         <p>Game actions are performed by the AI on your behalf, like deploying the landing gear or opening
             the galaxy map.</p>
+        @if (config.tools_var && config.game_actions_var) {
+            <div>
+                <button mat-button (click)="showGameDetails = !showGameDetails">{{ showGameDetails ? 'Hide' : 'Show' }} Game Action Details</button>
+                @if (showGameDetails) {
+                    <div class="permission-list">
+                        <div class="permission-item" *ngFor="let perm of gamePermissions">
+                            <mat-slide-toggle [ngModel]="isPermissionEnabled(perm)"
+                                              (ngModelChange)="onTogglePermission(perm, $event)">{{ perm }}</mat-slide-toggle>
+                            @if (perm === 'fireWeapons') {
+                                <div style="display:flex; gap: 8px; align-items:center; margin-left:12px;">
+                                    <mat-form-field appearance="fill" style="min-width: 220px;">
+                                        <mat-label>Discovery Scan: {{ (config.discovery_primary_var ? 'Primary' : 'Secondary') }}</mat-label>
+                                        <mat-select [ngModel]="config.discovery_primary_var ? 'primary' : 'secondary'"
+                                                   (ngModelChange)="onConfigChange({discovery_primary_var: $event === 'primary'})">
+                                            <mat-option value="primary">Primary</mat-option>
+                                            <mat-option value="secondary">Secondary</mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                    <mat-form-field appearance="fill" style="min-width: 180px;">
+                                        <mat-label>Discovery Firegroup: {{ config.discovery_firegroup_var }}</mat-label>
+                                        <mat-select [ngModel]="config.discovery_firegroup_var"
+                                                   (ngModelChange)="onConfigChange({discovery_firegroup_var: $event})">
+                                            <mat-option [value]="1">1</mat-option>
+                                            <mat-option [value]="2">2</mat-option>
+                                            <mat-option [value]="3">3</mat-option>
+                                            <mat-option [value]="4">4</mat-option>
+                                            <mat-option [value]="5">5</mat-option>
+                                            <mat-option [value]="6">6</mat-option>
+                                            <mat-option [value]="7">7</mat-option>
+                                            <mat-option [value]="8">8</mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
         <mat-slide-toggle [ngModel]="config.tools_var && config.web_search_actions_var"
                             (ngModelChange)="onConfigChange({web_search_actions_var: $event})"
                             [disabled]="!config.tools_var">
@@ -15,12 +54,38 @@
         </mat-slide-toggle>
         <p>Web actions are performed by the AI on your behalf and allow you to search the web for
             information, like searching for stations selling a specific commodity or material.</p>
+        @if (config.tools_var && config.web_search_actions_var) {
+            <div>
+                <button mat-button (click)="showWebDetails = !showWebDetails">{{ showWebDetails ? 'Hide' : 'Show' }} Web Action Details</button>
+                @if (showWebDetails) {
+                    <div class="permission-list">
+                        <div class="permission-item" *ngFor="let perm of webPermissions">
+                            <mat-slide-toggle [ngModel]="isPermissionEnabled(perm)"
+                                              (ngModelChange)="onTogglePermission(perm, $event)">{{ perm }}</mat-slide-toggle>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
         <mat-slide-toggle [ngModel]="config.tools_var && config.ui_actions_var"
                             (ngModelChange)="onConfigChange({ui_actions_var: $event})"
                             [disabled]="!config.tools_var">
             Enable UI Actions
         </mat-slide-toggle>
         <p>UI actions let the AI switch tabs and control the app interface when needed.</p>
+        @if (config.tools_var && config.ui_actions_var) {
+            <div>
+                <button mat-button (click)="showUIDetails = !showUIDetails">{{ showUIDetails ? 'Hide' : 'Show' }} UI Action Details</button>
+                @if (showUIDetails) {
+                    <div class="permission-list">
+                        <div class="permission-item" *ngFor="let perm of uiPermissions">
+                            <mat-slide-toggle [ngModel]="isPermissionEnabled(perm)"
+                                              (ngModelChange)="onTogglePermission(perm, $event)">{{ perm }}</mat-slide-toggle>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
         <mat-slide-toggle [ngModel]="config.tools_var && config.use_action_cache_var"
                             (ngModelChange)="onConfigChange({use_action_cache_var: $event})"
                             [disabled]="!config.tools_var">
@@ -34,10 +99,38 @@
             Auto Brake
         </mat-slide-toggle>
         <p>Automatically brake when when entering a new star system.</p>
-        <mat-slide-toggle [ngModel]="config.qol_autoscan"
-                            (ngModelChange)="onConfigChange({qol_autoscan: $event})">
-            Auto Scan
-        </mat-slide-toggle>
-        <p>Automatically perform a system scan when entering a new star system.</p>
+        <div style="display: flex; gap: 8px; align-items: center;">
+
+            <span>
+                <mat-slide-toggle [ngModel]="config.qol_autoscan"
+                                (ngModelChange)="onConfigChange({qol_autoscan: $event})" style="display:flex; flex-direction: row; gap: 12px;">
+                    Auto Scan
+                </mat-slide-toggle>
+                <p>Automatically perform a system scan when entering a new star system.</p>
+            </span>
+            <mat-form-field appearance="fill" style="width: 200px; margin-left: 8px;">
+                <mat-label>Discovery Scan</mat-label>
+                <mat-select [ngModel]="config.discovery_primary_var ? 'primary' : 'secondary'"
+                        (ngModelChange)="onConfigChange({discovery_primary_var: $event === 'primary'})">
+                    <mat-option value="primary">Primary</mat-option>
+                    <mat-option value="secondary">Secondary</mat-option>
+                </mat-select>
+            </mat-form-field>
+            <mat-form-field appearance="fill" style="width: 200px; margin-left: 8px;">
+                <mat-label>Discovery Firegroup</mat-label>
+                <mat-select [ngModel]="config.discovery_firegroup_var"
+                        (ngModelChange)="onConfigChange({discovery_firegroup_var: $event})">
+                    <mat-option [value]="1">1</mat-option>
+                    <mat-option [value]="2">2</mat-option>
+                    <mat-option [value]="3">3</mat-option>
+                    <mat-option [value]="4">4</mat-option>
+                    <mat-option [value]="5">5</mat-option>
+                    <mat-option [value]="6">6</mat-option>
+                    <mat-option [value]="7">7</mat-option>
+                    <mat-option [value]="8">8</mat-option>
+                </mat-select>
+            </mat-form-field>
+        </div>
+        
     }
 </div>
