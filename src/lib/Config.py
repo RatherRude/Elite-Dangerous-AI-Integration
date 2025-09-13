@@ -532,12 +532,6 @@ def migrate(data: dict) -> dict:
         if 'commander_name' not in data or data['commander_name'] is None:
             data['commander_name'] = ""
 
-        if 'llm_provider' in data and data['llm_provider'] == 'google-ai-studio':
-            if 'llm_model_name' in data and data['llm_model_name'] == 'gemini-2.0-flash':
-                data['llm_model_name'] = 'gemini-2.5-flash-preview-05-20'
-            if 'llm_model_name' in data and data['llm_model_name'] == 'gemini-2.5-flash-preview-04-17':
-                data['llm_model_name'] = 'gemini-2.5-flash-preview-05-20'
-                
         if 'llm_provider' in data and data['llm_provider'] == 'openai':
             if 'llm_model_name' in data and data['llm_model_name'] == 'gpt-4o-mini':
                 data['llm_model_name'] = 'gpt-4.1-mini'
@@ -552,10 +546,6 @@ def migrate(data: dict) -> dict:
     if data['config_version'] == 1:
         data['config_version'] = 2
 
-        if 'llm_provider' in data and data['llm_provider'] == 'google-ai-studio':
-            if 'llm_model_name' in data and data['llm_model_name'] == 'gemini-2.5-flash-preview-04-17':
-                data['llm_model_name'] = 'gemini-2.5-flash-preview-05-20'
-
         if len(data.get('characters', [])) > 0:
             data['characters'][0]['game_events'] = game_events
 
@@ -565,9 +555,16 @@ def migrate(data: dict) -> dict:
         if isinstance(data.get('ptt_var'), bool):
             data['ptt_var'] = 'push_to_talk' if data.get('ptt_var') else 'voice_activation'
 
-        if 'llm_model_name' in data and data['llm_model_name'] == 'gemini-2.5-flash-preview-04-17':
-            data['llm_model_name'] = 'gemini-2.5-flash'
+    if data['config_version'] == 3:
+        data['config_version'] = 4
 
+        if 'llm_provider' in data and data['llm_provider'] == 'google-ai-studio':
+            if 'llm_model_name' in data and (
+                    data['llm_model_name'] == 'gemini-2.5-flash-preview-05-20'
+                or data['llm_model_name'] == 'gemini-2.5-flash-preview-04-17'
+                or data['llm_model_name'] == 'gemini-2.0-flash'
+            ):
+                data['llm_model_name'] = 'gemini-2.5-flash'
 
     return data
 
