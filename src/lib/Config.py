@@ -1115,7 +1115,7 @@ def update_config(config: Config, data: dict) -> Config:
     if data.get("llm_provider"):
         if data["llm_provider"] == "openai":
             data["llm_endpoint"] = "https://api.openai.com/v1"
-            data["llm_model_name"] = "gpt-4o-mini"
+            data["llm_model_name"] = "gpt-4.1-mini"
             data["llm_api_key"] = ""
             data["tools_var"] = True
 
@@ -1127,26 +1127,26 @@ def update_config(config: Config, data: dict) -> Config:
 
         elif data["llm_provider"] == "google-ai-studio":
             data["llm_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
-            data["llm_model_name"] = "gemini-2.5-flash-preview-05-20"
+            data["llm_model_name"] = "gemini-2.5-flash"
             data["llm_api_key"] = ""
             data["tools_var"] = True
 
         elif data["llm_provider"] == "local-ai-server":
             data["llm_endpoint"] = "http://localhost:8080"
-            data["llm_model_name"] = "gpt-4o-mini"
+            data["llm_model_name"] = "gpt-4.1-mini"
             data["llm_api_key"] = ""
             data["tools_var"] = True
 
         elif data["llm_provider"] == "custom":
             data["llm_endpoint"] = "https://api.openai.com/v1"
-            data["llm_model_name"] = "gpt-4o-mini"
+            data["llm_model_name"] = "gpt-4.1-mini"
             data["llm_api_key"] = ""
             data["tools_var"] = False
 
     if data.get("vision_provider"):
         if data["vision_provider"] == "openai":
             data["vision_endpoint"] = "https://api.openai.com/v1"
-            data["vision_model_name"] = "gpt-4o-mini"
+            data["vision_model_name"] = "gpt-4.1-mini"
             data["vision_api_key"] = ""
             data["vision_var"] = True
 

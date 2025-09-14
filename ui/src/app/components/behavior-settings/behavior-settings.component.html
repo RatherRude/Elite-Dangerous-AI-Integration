@@ -22,7 +22,7 @@
                             @if (perm === 'fireWeapons') {
                                 <div style="display:flex; gap: 8px; align-items:center; margin-left:12px;">
                                     <mat-form-field appearance="fill" style="min-width: 220px;">
-                                        <mat-label>Discovery Scan: {{ (config.discovery_primary_var ? 'Primary' : 'Secondary') }}</mat-label>
+                                        <mat-label>Discovery Scan</mat-label>
                                         <mat-select [ngModel]="config.discovery_primary_var ? 'primary' : 'secondary'"
                                                    (ngModelChange)="onConfigChange({discovery_primary_var: $event === 'primary'})">
                                             <mat-option value="primary">Primary</mat-option>
@@ -30,7 +30,7 @@
                                         </mat-select>
                                     </mat-form-field>
                                     <mat-form-field appearance="fill" style="min-width: 180px;">
-                                        <mat-label>Discovery Firegroup: {{ config.discovery_firegroup_var }}</mat-label>
+                                        <mat-label>Discovery Firegroup</mat-label>
                                         <mat-select [ngModel]="config.discovery_firegroup_var"
                                                    (ngModelChange)="onConfigChange({discovery_firegroup_var: $event})">
                                             <mat-option [value]="1">1</mat-option>
@@ -102,7 +102,7 @@
         </mat-slide-toggle>
         <p>The action cache allows the AI to learn from previous interactions and reuse actions for similar
             inputs, making responses faster and more consistent.</p>
-        <h2>Quality of Life</h2>
+        <h2>Quality of Life Actions</h2>
         <mat-slide-toggle [ngModel]="config.qol_autobrake"
                             (ngModelChange)="onConfigChange({qol_autobrake: $event})">
             Auto Brake
