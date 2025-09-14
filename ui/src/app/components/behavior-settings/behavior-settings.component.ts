@@ -54,13 +54,54 @@ export class BehaviorSettingsComponent {
         'textMessage', 'getVisuals'
     ];
 
-    readonly webPermissions: string[] = [
-        'getGalnetNews', 'system_finder', 'station_finder', 'body_finder', 'engineer_finder', 'blueprint_finder', 'material_finder'
+    readonly gamePermissionsGrouped: { type: string; actions: string[] }[] = [
+        {
+            type: 'ship',
+            actions: [
+                'fireWeapons', 'setSpeed', 'deployHeatSink', 'deployHardpointToggle',
+                'managePowerDistribution', 'galaxyMapOpen', 'galaxyMapClose', 'systemMapOpenOrClose',
+                'targetShip', 'toggleWingNavLock', 'cycle_fire_group', 'shipSpotLightToggle',
+                'fireChaffLauncher', 'nightVisionToggle', 'targetSubmodule', 'chargeECM', 'npcOrder'
+            ],
+        },
+        {
+            type: 'mainship',
+            actions: [
+                'Change_ship_HUD_mode', 'FsdJump', 'target_next_system_in_route', 'toggleCargoScoop',
+                'ejectAllCargo', 'landingGearToggle', 'useShieldCell', 'requestDocking', 'undockShip'
+            ],
+        },
+        { type: 'fighter', actions: ['fighterRequestDock'] },
+        {
+            type: 'buggy',
+            actions: [
+                'toggleDriveAssist', 'fireWeaponsBuggy', 'autoBreak', 'headlights', 'nightVisionToggleBuggy',
+                'toggleTurret', 'selectTargetBuggy', 'managePowerDistributionBuggy', 'toggleCargoScoopBuggy',
+                'ejectAllCargoBuggy', 'recallDismissShipBuggy', 'galaxyMapOpenOrCloseBuggy', 'systemMapOpenOrCloseBuggy'
+            ],
+        },
+        {
+            type: 'humanoid',
+            actions: [
+                'primaryInteractHumanoid', 'secondaryInteractHumanoid', 'equipGearHumanoid',
+                'toggleFlashlightHumanoid', 'toggleNightVisionHumanoid', 'toggleShieldsHumanoid',
+                'clearAuthorityLevelHumanoid', 'healthPackHumanoid', 'batteryHumanoid',
+                'galaxyMapOpenOrCloseHumanoid', 'systemMapOpenOrCloseHumanoid', 'recallDismissShipHumanoid'
+            ],
+        },
+        { type: 'global', actions: ['textMessage', 'getVisuals'] },
     ];
 
-    readonly uiPermissions: string[] = [
-        'showUI'
-    ];
+    readonly groupTypeLabels: Record<string, string> = {
+        ship: 'Ship',
+        mainship: 'Main ship',
+        fighter: 'Flighter',
+        buggy: 'SRV',
+        humanoid: 'Suit',
+        global: 'Global',
+    };
+
+    // Web/UI permissions removed; only game permissions are managed here.
     constructor(
         private configService: ConfigService,
         private snackBar: MatSnackBar,
@@ -101,7 +142,7 @@ export class BehaviorSettingsComponent {
 
     async onTogglePermission(permission: string, enabled: boolean) {
         if (!this.config) return;
-        const all = new Set<string>([...this.gamePermissions, ...this.webPermissions, ...this.uiPermissions]);
+        const all = new Set<string>([...this.gamePermissions]);
         const current = (this.config as any).allowed_actions as string[] | undefined;
         let next: string[];
 

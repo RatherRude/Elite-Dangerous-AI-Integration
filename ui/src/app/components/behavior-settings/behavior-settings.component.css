@@ -24,3 +24,15 @@ mat-slide-toggle {
   display: flex;
   align-items: center;
 }
+
+.perm-type {
+  width: 100px;
+  /*color: rgba(0,0,0,0.75);*/
+  font-weight: 600;
+}
+
+.perm-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
