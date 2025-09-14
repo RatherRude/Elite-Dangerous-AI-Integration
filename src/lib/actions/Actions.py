@@ -53,14 +53,17 @@ def fire_weapons(args, projected_states):
     # Determine key mapping
     if weapon_type == 'discovery_scanner':
         change_hud_mode({'hud mode': 'analysis'}, projected_states)
+        # Allow per-call overrides, fallback to configured globals
+        fg_value = args.get('discoveryFiregroup', discovery_firegroup_var)
+        primary_flag = args.get('discoveryPrimary', discovery_primary_var)
         # Set desired firegroup (1..8 => index 0..7)
         try:
-            fg_index = max(0, min(7, int(discovery_firegroup_var) - 1))
+            fg_index = max(0, min(7, int(fg_value) - 1))
         except Exception:
             fg_index = 0
         cycle_fire_group({'fire_group': fg_index}, projected_states)
-        # Use primary or secondary based on config flag (default: primary)
-        keys.send('PrimaryFire' if discovery_primary_var else 'SecondaryFire', hold=6)
+        # Use primary or secondary based on flag
+        keys.send('PrimaryFire' if bool(primary_flag) else 'SecondaryFire', hold=6)
         return 'Discovery scan has been performed.'
 
     change_hud_mode({'hud mode': 'combat'}, projected_states)
