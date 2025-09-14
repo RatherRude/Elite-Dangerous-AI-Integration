@@ -1,9 +1,14 @@
 # EDCoPilot Integration
-
 We are excited to work with Razzafrag on integrating **COVAS:NEXT** with **EDCoPilot**!
-This currently has two benefits:
-1) You can see the COVAS:NEXT dialogue in EDCoPilot Voice Activity
+
+EDCoPilot does not share the contents of its UI, nor any other data. You can use it for its UI, but **it adds zero functionality or knowledge to the AI**.
+
+This currently has three benefits:
+1) You can see the COVAS:NEXT dialogue in EDCoPilot's "Voice Activity" panel
+
 2) You can prevent both applications from talking over each other
+
+3) You can control EDCoPilot's UI via COVAS:NEXT's tools
 
 ## Show dialogue in EDCoPilot
 With EDCoPilot installed, COVAS:NEXT will automatically add a new configuration option to enable EDCoPilot.
@@ -18,7 +23,7 @@ We provide two different solutions:
 2) Let EDCoPilot decide what, where and how to comment **(EDCoPilot Dominant Mode)**
 
 ### 1. COVAS:NEXT Dominant Mode 
-This mode lets you talk to COVAS:NEXT as usual, while COVAS:NEXT use EDCoPilot event commentary is muted. This is the default mode and ensures that COVAS:NEXT comments are low-latency and not delayed by EDCoPilot commentary.
+This mode lets you talk to COVAS:NEXT as usual, while EDCoPilot's event commentary is muted. This is the default mode and ensures that COVAS:NEXT comments are low-latency and not delayed by EDCoPilot commentary.
 
 In order to mute EDCoPilot game commentary, you should open EDCoPilot Settings -> Ship AI Personality -> Disable "EDCoPilot Dominant"
 
@@ -28,12 +33,14 @@ This mode also lets you talk to COVAS:NEXT, while EDCoPilot also generates its o
    
 In order enable both applications commentary, you need to enable the `EDCoPilot-Dominant` setting inside of COVAS:NEXT.
 
-This setting will mute COVAS:NEXT and instead send all text over to EDCoPilot, where it will be read out, but might be delayed by ongoing EDCoPilot commentary and generally higher latency.
+This setting will mute COVAS:NEXT's Text-to-Speech and instead sends all text over to EDCoPilot, where it will be read out, but might be delayed by ongoing EDCoPilot commentary and generally higher latency.
+
+## Control EDCoPilot's UI via COVAS:NEXT
+By default EDCoPilot's UI actions are disabled. We strongly recommend to only activate one set of UI actions, either COVAS:NEXT's or EDCoPilot's.
 
 ## Future Plans
 We aim to expand this functionality in the future.
 
-- Add functionality to control the EDCoPilot UI using COVAS:NEXT commands.
 - Let COVAS:NEXT access EDCoPilot UI contents.
 - Add support for time sensitive messages (like Time Trails) to COVAS:NEXT.
 - Make the integration more seamless.
