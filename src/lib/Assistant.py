@@ -65,9 +65,8 @@ class Assistant:
                     labels.append("DiscoveryScan")
 
                 if request:
-                    self.event_manager.add_assistant_acting(processed_at=event.processed_at)
+                    self.event_manager.add_assistant_acting()
                     self.event_manager.add_tool_call(request, results, descriptions)
-                    self.event_manager.add_projected_event(ProjectedEvent({"event": "AutoAfterJumpActions", "Actions": labels}), event)
         except Exception as e:
             log('error', 'Auto actions on FSDJump failed', e, traceback.format_exc())
 

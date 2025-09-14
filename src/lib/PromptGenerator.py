@@ -2202,8 +2202,6 @@ class PromptGenerator:
             return f"{self.commander_name} is no longer in combat."
         if event_name == 'FirstPlayerSystemDiscovered':
             return f"{self.commander_name} has a new system discovered"
-        if event_name == 'AutoAfterJumpActions':
-            return f"{self.commander_name}'s ship has performed an automated discovery scan."
         # if event_name == 'ExternalDiscordNotification':
         #     twitch_event = cast(Dict[str, Any], content)
         #     return f"Twitch Alert! {twitch_event.get('text','')}",

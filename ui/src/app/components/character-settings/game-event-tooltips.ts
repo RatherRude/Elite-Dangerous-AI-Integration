@@ -312,7 +312,6 @@ export const GameEventTooltips: Record<string, string> = {
   "Scanned": "COVAS:NEXT will react when your ship is scanned to completion by another ship or faction.",
   "USSDrop": "COVAS:NEXT will react when you drop into a USS and log its type and threat level.",
   "NoScoopableStars": "COVAS:NEXT will react when no scoopable stars are within your jump range.",
-  "AutoAfterJumpActions": "COVAS:NEXT will react to the automatic actions called after a jump.",
 
 
 };

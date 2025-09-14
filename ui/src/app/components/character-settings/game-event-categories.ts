@@ -306,6 +306,5 @@ export const GameEventCategories: Record<string, string[]> = {
         "Scanned",
         "USSDrop",
         "NoScoopableStars",
-        "AutoAfterJumpActions",
     ],
 };
