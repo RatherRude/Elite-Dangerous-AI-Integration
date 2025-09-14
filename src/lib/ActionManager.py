@@ -22,13 +22,23 @@ class ActionManager:
 
     def __init__(self):
         self.action_cache = KeyValueStore("action_cache")
+        self.allowed_actions: list[str] | None = None
 
-    def getToolsList(self, active_mode: str, uses_actions: bool, uses_web_actions: bool, uses_ui_actions: bool):
+    def set_allowed_actions(self, allowed_actions: list[str] | None):
+        """Set the list of allowed permission keys. Empty list or None means allow all."""
+        self.allowed_actions = allowed_actions or []
+
+    def getToolsList(self, active_mode: str, uses_actions: bool, uses_web_actions: bool, uses_ui_actions: bool, allowed_actions: list[str] | None = None):
         """return list of functions as passed to gpt"""
 
         actions = self.actions.values()
         valid_actions = []
         for action in actions:
+            # Permission filter: if a permission is set and we have an allowed list, skip when not allowed
+            permission_key = action.get("permission")
+            if permission_key and allowed_actions is not None and len(allowed_actions) > 0:
+                if permission_key not in allowed_actions:
+                    continue
             if uses_actions:
                 # enable correct actions for game mode
                 if action.get("type") == active_mode:
@@ -95,6 +105,7 @@ class ActionManager:
         self, name, description, parameters, 
         method: Callable[[dict, dict], str], 
         action_type="ship", 
+        permission: str | None = None,
         input_template: Callable[[dict, dict], str] | None = None, 
         cache_prefill: dict[str, dict] | None = None
     ):
@@ -103,9 +114,16 @@ class ActionManager:
             input_template is a function that takes the function arguments and projected states and returns a string
             cache_prefill is a dictionary of user input and arguments to prefill the cache with
         """
+        # Respect permission at registration time if allowed_actions is configured
+        if permission and self.allowed_actions is not None and len(self.allowed_actions) > 0:
+            if permission not in self.allowed_actions:
+                log("debug", f"Action '{name}' skipped registration due to missing permission '{permission}'")
+                return
+
         self.actions[name] = {
             "method": method,
             "type": action_type,
+            "permission": permission,
             "input_template": input_template,
             "tool": {
                 "type": "function",

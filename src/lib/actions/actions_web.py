@@ -1750,6 +1750,7 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
         },
         get_galnet_news,
         'web',
+        permission='getGalnetNews',
         input_template=lambda i, s: f"""Fetching GalNet articles
             {'regarding: ' + i.get('query', '') if i.get('query', '') else ''}
         """,
@@ -1866,7 +1867,8 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
             "required": ["reference_system"]
         },
         method=system_finder,
-        action_type='web'
+        action_type='web',
+        permission='system_finder'
     )
     actionManager.registerAction(
         'station_finder',
@@ -2030,7 +2032,8 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
             ]
         },
         method=station_finder,
-        action_type='web'
+        action_type='web',
+        permission='station_finder'
     )
     actionManager.registerAction(
         'body_finder',
@@ -2095,7 +2098,8 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
             ]
         },
         method=body_finder,
-        action_type='web'
+        action_type='web',
+        permission='body_finder'
     )
 
     actionManager.registerAction(
@@ -2122,7 +2126,8 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
             }
         },
         engineer_finder,
-        'web'
+        'web',
+        permission='engineer_finder'
     )
 
     # Register AI action for blueprint finder
@@ -2150,7 +2155,8 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
             }
         },
         blueprint_finder,
-        'web'
+        'web',
+        permission='blueprint_finder'
     )
 
     actionManager.registerAction(
@@ -2178,7 +2184,8 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
             }
         },
         material_finder,
-        'web'
+        'web',
+        permission='material_finder'
     )
 
 if __name__ == "__main__":

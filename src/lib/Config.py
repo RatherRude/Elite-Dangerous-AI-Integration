@@ -391,6 +391,9 @@ class Config(TypedDict):
     web_search_actions_var: bool
     ui_actions_var: bool
     use_action_cache_var: bool
+    allowed_actions: list[str]
+    discovery_primary_var: bool
+    discovery_firegroup_var: int
     edcopilot: bool
     edcopilot_dominant: bool
     edcopilot_actions: bool
@@ -532,12 +535,6 @@ def migrate(data: dict) -> dict:
         if 'commander_name' not in data or data['commander_name'] is None:
             data['commander_name'] = ""
 
-        if 'llm_provider' in data and data['llm_provider'] == 'google-ai-studio':
-            if 'llm_model_name' in data and data['llm_model_name'] == 'gemini-2.0-flash':
-                data['llm_model_name'] = 'gemini-2.5-flash-preview-05-20'
-            if 'llm_model_name' in data and data['llm_model_name'] == 'gemini-2.5-flash-preview-04-17':
-                data['llm_model_name'] = 'gemini-2.5-flash-preview-05-20'
-                
         if 'llm_provider' in data and data['llm_provider'] == 'openai':
             if 'llm_model_name' in data and data['llm_model_name'] == 'gpt-4o-mini':
                 data['llm_model_name'] = 'gpt-4.1-mini'
@@ -552,10 +549,6 @@ def migrate(data: dict) -> dict:
     if data['config_version'] == 1:
         data['config_version'] = 2
 
-        if 'llm_provider' in data and data['llm_provider'] == 'google-ai-studio':
-            if 'llm_model_name' in data and data['llm_model_name'] == 'gemini-2.5-flash-preview-04-17':
-                data['llm_model_name'] = 'gemini-2.5-flash-preview-05-20'
-
         if len(data.get('characters', [])) > 0:
             data['characters'][0]['game_events'] = game_events
 
@@ -565,9 +558,16 @@ def migrate(data: dict) -> dict:
         if isinstance(data.get('ptt_var'), bool):
             data['ptt_var'] = 'push_to_talk' if data.get('ptt_var') else 'voice_activation'
 
-        if 'llm_model_name' in data and data['llm_model_name'] == 'gemini-2.5-flash-preview-04-17':
-            data['llm_model_name'] = 'gemini-2.5-flash'
+    if data['config_version'] == 3:
+        data['config_version'] = 4
 
+        if 'llm_provider' in data and data['llm_provider'] == 'google-ai-studio':
+            if 'llm_model_name' in data and (
+                    data['llm_model_name'] == 'gemini-2.5-flash-preview-05-20'
+                or data['llm_model_name'] == 'gemini-2.5-flash-preview-04-17'
+                or data['llm_model_name'] == 'gemini-2.0-flash'
+            ):
+                data['llm_model_name'] = 'gemini-2.5-flash'
 
     return data
 
@@ -681,6 +681,9 @@ def load_config() -> Config:
         'web_search_actions_var': True,
         'ui_actions_var': True,
         'use_action_cache_var': True,
+        'allowed_actions': [],
+        'discovery_primary_var': True,
+        'discovery_firegroup_var': 1,
         'cn_autostart': False,
         'edcopilot': True,
         'edcopilot_dominant': False,
@@ -1112,7 +1115,7 @@ def update_config(config: Config, data: dict) -> Config:
     if data.get("llm_provider"):
         if data["llm_provider"] == "openai":
             data["llm_endpoint"] = "https://api.openai.com/v1"
-            data["llm_model_name"] = "gpt-4o-mini"
+            data["llm_model_name"] = "gpt-4.1-mini"
             data["llm_api_key"] = ""
             data["tools_var"] = True
 
@@ -1124,26 +1127,26 @@ def update_config(config: Config, data: dict) -> Config:
 
         elif data["llm_provider"] == "google-ai-studio":
             data["llm_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
-            data["llm_model_name"] = "gemini-2.5-flash-preview-05-20"
+            data["llm_model_name"] = "gemini-2.5-flash"
             data["llm_api_key"] = ""
             data["tools_var"] = True
 
         elif data["llm_provider"] == "local-ai-server":
             data["llm_endpoint"] = "http://localhost:8080"
-            data["llm_model_name"] = "gpt-4o-mini"
+            data["llm_model_name"] = "gpt-4.1-mini"
             data["llm_api_key"] = ""
             data["tools_var"] = True
 
         elif data["llm_provider"] == "custom":
             data["llm_endpoint"] = "https://api.openai.com/v1"
-            data["llm_model_name"] = "gpt-4o-mini"
+            data["llm_model_name"] = "gpt-4.1-mini"
             data["llm_api_key"] = ""
             data["tools_var"] = False
 
     if data.get("vision_provider"):
         if data["vision_provider"] == "openai":
             data["vision_endpoint"] = "https://api.openai.com/v1"
-            data["vision_model_name"] = "gpt-4o-mini"
+            data["vision_model_name"] = "gpt-4.1-mini"
             data["vision_api_key"] = ""
             data["vision_var"] = True
 
