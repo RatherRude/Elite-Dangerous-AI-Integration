@@ -1,9 +1,10 @@
 # EDCoPilot Integration
 We are excited to work with Razzafrag on integrating **COVAS:NEXT** with **EDCoPilot**!
 
-EDCoPilot does not share the contents of its UI, nor any other data. You can use it for its UI, but **it adds zero functionality or knowledge to the AI**.
+**Disclaimer:** EDCoPilot does not share the contents of its UI, nor any other data. You can use it for its UI, but **it adds zero functionality or knowledge to the AI**.
 
 This currently has three benefits:
+
 1) You can see the COVAS:NEXT dialogue in EDCoPilot's "Voice Activity" panel
 
 2) You can prevent both applications from talking over each other
@@ -18,6 +19,7 @@ This option is enabled by default, so it should work without further modificatio
 By default, both EDCoPilot and COVAS:NEXT will react to certain events inside your game. 
 
 We provide two different solutions:
+
 1) Let COVAS:NEXT decide what, where and how to comment **(COVAS:NEXT Dominant Mode)**
   
 2) Let EDCoPilot decide what, where and how to comment **(EDCoPilot Dominant Mode)**
