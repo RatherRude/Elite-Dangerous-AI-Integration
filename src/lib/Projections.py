@@ -644,7 +644,11 @@ class ShipInfo(Projection[ShipInfoState]):
                 else:
                     self.state['IsMiningShip'] = False
 
-                has_limpets = any(module["Item"].startswith("int_dronecontrol") for module in event.content["Modules"])
+                has_limpets = any(
+                    module.get("Item", "").startswith("int_dronecontrol")
+                    or module.get("Item", "").startswith("int_multidronecontrol_")
+                    for module in event.content["Modules"]
+                )
                 if has_limpets:
                     self.state['hasLimpets'] = True
                 else:
