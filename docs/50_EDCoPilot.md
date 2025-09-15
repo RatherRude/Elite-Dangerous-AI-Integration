@@ -33,16 +33,9 @@ In order to mute EDCoPilot game commentary, you should open EDCoPilot Settings -
 
 This mode also lets you talk to COVAS:NEXT, while EDCoPilot also generates its own commentary. In order to avoid excessive and redundant commentary, you should configure the behaviour of COVAS:NEXT to only respond to those events that EDCoPilot does not already comment on in the Behaviour tab.
    
-In order enable both applications commentary, you need to enable the `EDCoPilot-Dominant` setting inside of COVAS:NEXT.
+In order to enable both applications' commentary, you need to enable the `EDCoPilot-Dominant` setting inside of COVAS:NEXT.
 
 This setting will mute COVAS:NEXT's Text-to-Speech and instead sends all text over to EDCoPilot, where it will be read out, but might be delayed by ongoing EDCoPilot commentary and generally higher latency.
 
 ## Control EDCoPilot's UI via COVAS:NEXT
 By default EDCoPilot's UI actions are disabled. We strongly recommend to only activate one set of UI actions, either COVAS:NEXT's or EDCoPilot's.
-
-## Future Plans
-We aim to expand this functionality in the future.
-
-- Let COVAS:NEXT access EDCoPilot UI contents.
-- Add support for time sensitive messages (like Time Trails) to COVAS:NEXT.
-- Make the integration more seamless.
