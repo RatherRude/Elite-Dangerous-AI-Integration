@@ -52,6 +52,78 @@
   opacity: 0;
 }
 
+.no-ships, .no-data-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px 20px;
+  color: #888;
+  font-style: italic;
+}
+
+.no-data-message mat-icon {
+  color: #888;
+  font-size: 20px;
+}
+
+/* Stored Ships grid & cards */
+.ships-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.ship-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid #444;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ship-card-header {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.ship-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: rgba(64, 181, 246, 0.2);
+  border-radius: 50%;
+}
+
+.ship-icon mat-icon { color: #40b5f6; font-size: 20px; }
+
+.ship-title { display: flex; flex-direction: column; gap: 2px; }
+.ship-name { font-size: 16px; font-weight: 600; color: #e0e0e0; }
+.ship-type { font-size: 13px; color: #bbb; }
+.ship-location { font-size: 13px; color: #64b5f6; font-weight: 500; }
+
+.ship-hot {
+  display: inline-block;
+  padding: 2px 6px;
+  background: rgba(244, 67, 54, 0.2);
+  color: #f44336;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.ship-card-body { display: flex; flex-direction: column; gap: 6px; }
+.ship-value { font-size: 14px; color: #4caf50; font-weight: 500; }
+.ship-transfer { font-size: 12px; color: #ff9800; }
+
 .storage-content {
   flex: 1;
   display: flex;
@@ -66,119 +138,7 @@
 }
 
 /* Materials Table Styles from provided CSS */
-.materials-container {
-  width: 100%;
-}
-
-.materials-table {
-  padding: 15px 0;
-  overflow-x: auto;
-  width: 100%;
-}
-
-.material-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  border-radius: 8px;
-  overflow: hidden;
-  background: rgba(0, 0, 0, 0.2);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.material-table thead th {
-  background-color: rgba(208, 168, 92, 0.2);
-  color: #d0a85c;
-  font-weight: 500;
-  text-align: center;
-  padding: 12px 10px;
-  font-size: 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  position: sticky;
-  top: 0;
-  z-index: 1;
-}
-
-.material-table tbody td {
-  padding: 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  vertical-align: top;
-}
-
-.material-table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.material-table tbody tr:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-.material-table tbody td:first-child {
-  color: #d0a85c;
-  font-weight: 500;
-  white-space: nowrap;
-  background-color: rgba(0, 0, 0, 0.1);
-}
-
-.material-cell {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 5px 8px;
-  margin-bottom: 5px;
-  background-color: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
-  min-height: 32px;
-}
-
-.material-cell:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-.material-cell.empty {
-  opacity: 0.6;
-  background-color: rgba(255, 255, 255, 0.02);
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.material-name {
-  flex: 1;
-  font-size: 13px;
-  word-break: break-word;
-}
-
-.material-count {
-  font-weight: 600;
-  color: #d0a85c;
-  padding: 2px 6px;
-  border-radius: 10px;
-  background-color: rgba(208, 168, 92, 0.1);
-  min-width: 24px;
-  text-align: center;
-}
-
-/* Material fill indicator */
-.material-cell {
-  position: relative;
-  overflow: hidden;
-}
-
-.material-fill {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 0%;
-  background: linear-gradient(to right, rgba(208, 168, 92, 0.25), rgba(208, 168, 92, 0.12));
-  border-radius: 4px;
-  z-index: 0;
-}
-
-.material-cell .material-name,
-.material-cell .material-count {
-  position: relative;
-  z-index: 1;
-}
+/* (materials styles moved to materials-panel component) */
 
 /* Ship Locker Styles from provided CSS */
 .locker-container {

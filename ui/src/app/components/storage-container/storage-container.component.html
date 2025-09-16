@@ -90,140 +90,7 @@
         <mat-icon class="collapse-icon">{{ sectionsCollapsed.materials ? 'expand_more' : 'expand_less' }}</mat-icon>
       </div>
       <div class="section-content" [class.collapsed]="sectionsCollapsed.materials">
-        <div class="materials-container">
-          <mat-tab-group>
-            <!-- Raw Materials -->
-            <mat-tab label="Raw">
-              <div class="materials-table">
-                <table class="material-table">
-                  <thead>
-                    <tr>
-                      <th>Category</th>
-                      <th>Grade 1</th>
-                      <th>Grade 2</th>
-                      <th>Grade 3</th>
-                      <th>Grade 4</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (category of [1, 2, 3, 4, 5, 6, 7]; track category) {
-                      <tr>
-                        <td>{{ getRawMaterialCategoryName(category) }}</td>
-                        @for (grade of [1, 2, 3, 4]; track grade) {
-                          <td>
-                            @if (getRawMaterialByGradeAndCategory(grade, category).length > 0) {
-                              @for (material of getRawMaterialByGradeAndCategory(grade, category); track material.Name) {
-                                <div class="material-cell">
-                                  <div class="material-fill" [style.width.%]="getMaterialFillPercent(material.Count, grade)"></div>
-                                  <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
-                                  <span class="material-count">{{ material.Count }}</span>
-                                </div>
-                              }
-                            } @else {
-                              <div class="material-cell empty">
-                                <div class="material-fill" [style.width.%]="0"></div>
-                                <span class="material-name">{{ getEmptyRawMaterialName(grade, category) }}</span>
-                                <span class="material-count">0</span>
-                              </div>
-                            }
-                          </td>
-                        }
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            </mat-tab>
-
-            <!-- Manufactured Materials -->
-            <mat-tab label="Manufactured">
-              <div class="materials-table">
-                <table class="material-table">
-                  <thead>
-                    <tr>
-                      <th>Category</th>
-                      <th>Grade 1</th>
-                      <th>Grade 2</th>
-                      <th>Grade 3</th>
-                      <th>Grade 4</th>
-                      <th>Grade 5</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (section of getManufacturedSections(); track section) {
-                      <tr>
-                        <td>{{ section }}</td>
-                        @for (grade of [1, 2, 3, 4, 5]; track grade) {
-                          <td>
-                            @if (getManufacturedMaterialByGradeAndSection(section, grade).length > 0) {
-                              @for (material of getManufacturedMaterialByGradeAndSection(section, grade); track material.Name) {
-                                <div class="material-cell">
-                                  <div class="material-fill" [style.width.%]="getMaterialFillPercent(material.Count, grade)"></div>
-                                  <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
-                                  <span class="material-count">{{ material.Count }}</span>
-                                </div>
-                              }
-                            } @else {
-                              <div class="material-cell empty">
-                                <div class="material-fill" [style.width.%]="0"></div>
-                                <span class="material-name">{{ getEmptyManufacturedMaterialName(section, grade) }}</span>
-                                <span class="material-count">0</span>
-                              </div>
-                            }
-                          </td>
-                        }
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            </mat-tab>
-
-            <!-- Encoded Materials -->
-            <mat-tab label="Encoded">
-              <div class="materials-table">
-                <table class="material-table">
-                  <thead>
-                    <tr>
-                      <th>Category</th>
-                      <th>Grade 1</th>
-                      <th>Grade 2</th>
-                      <th>Grade 3</th>
-                      <th>Grade 4</th>
-                      <th>Grade 5</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (section of getEncodedSections(); track section) {
-                      <tr>
-                        <td>{{ section }}</td>
-                        @for (grade of [1, 2, 3, 4, 5]; track grade) {
-                          <td>
-                            @if (getEncodedMaterialByGradeAndSection(section, grade).length > 0) {
-                              @for (material of getEncodedMaterialByGradeAndSection(section, grade); track material.Name) {
-                                <div class="material-cell">
-                                  <div class="material-fill" [style.width.%]="getMaterialFillPercent(material.Count, grade)"></div>
-                                  <span class="material-name">{{ formatMaterialName(material.Name_Localised || material.Name) }}</span>
-                                  <span class="material-count">{{ material.Count }}</span>
-                                </div>
-                              }
-                            } @else {
-                              <div class="material-cell empty">
-                                <div class="material-fill" [style.width.%]="0"></div>
-                                <span class="material-name">{{ getEmptyEncodedMaterialName(section, grade) }}</span>
-                                <span class="material-count">0</span>
-                              </div>
-                            }
-                          </td>
-                        }
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            </mat-tab>
-          </mat-tab-group>
-        </div>
+        <app-materials-panel></app-materials-panel>
       </div>
     </div>
 
@@ -334,258 +201,105 @@
         <mat-icon class="collapse-icon">{{ sectionsCollapsed.engineers ? 'expand_more' : 'expand_less' }}</mat-icon>
       </div>
       <div class="section-content" [class.collapsed]="sectionsCollapsed.engineers">
-        <div class="engineers-container">
-          <mat-tab-group>
-            <!-- Ship Engineers -->
-            <mat-tab label="Ship">
-              <div class="engineers-filters">
-                <mat-button-toggle-group [(ngModel)]="engineerFilter" aria-label="Engineer Status">
-                  <mat-button-toggle value="all">All</mat-button-toggle>
-                  <mat-button-toggle value="unlocked">Unlocked</mat-button-toggle>
-                  <mat-button-toggle value="invited">Invited</mat-button-toggle>
-                  <mat-button-toggle value="known">Known</mat-button-toggle>
-                  <mat-button-toggle value="locked">Locked</mat-button-toggle>
-                </mat-button-toggle-group>
-              </div>
-              
-              <div class="engineers-table-container">
-                <table class="engineers-table">
-                  <thead>
-                    <tr>
-                      <th>Engineer</th>
-                      <th>Rank</th>
-                      <th>Modifies</th>
-                      <th>Location</th>
-                      @if (engineerFilter === 'all') {
-                        <th>How to Find</th>
-                        <th>How to Get Invite</th>
-                        <th>How to Unlock</th>
-                        <th>How to Gain Rep</th>
-                      }
-                      @if (engineerFilter === 'unlocked') {
-                        <th>How to Gain Rep</th>
-                      }
-                      @if (engineerFilter === 'invited') {
-                        <th>How to Unlock</th>
-                      }
-                      @if (engineerFilter === 'known') {
-                        <th>How to Get Invite</th>
-                      }
-                      @if (engineerFilter === 'locked') {
-                        <th>How to Find</th>
-                      }
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (engineer of getFilteredShipEngineers(); track engineer.Engineer) {
-                      <tr [ngClass]="{
-                        'engineer-unlocked': engineer.Progress === 'Unlocked', 
-                        'engineer-invited': engineer.Progress === 'Invited', 
-                        'engineer-known': engineer.Progress === 'Known', 
-                        'engineer-locked': !engineer.Progress
-                      }">
-                        <td>
-                          <div class="engineer-name">{{ engineer.Engineer }}
-                            <span [ngClass]="'status-badge ' + (engineer.Progress?.toLowerCase() || 'locked')">
-                              {{ engineer.Progress || 'Locked' }}
-                            </span></div>
-                        </td>
-                        <td>
-                          @if (engineer.Rank !== undefined) {
-                            <div class="engineer-rank">
-                              <div class="rank-stars">
-                                @for (i of getArray(engineer.Rank); track i) {
-                                  <span class="star filled">★</span>
-                                }
-                                @for (i of getArray(5-engineer.Rank); track i) {
-                                  <span class="star empty">☆</span>
-                                }
-                              </div>
-                              @if (engineer.Rank < 5) {
-                                <div class="rank-progress">
-                                  <div class="progress-bar" [style.width.%]="engineer.RankProgress"></div>
-                                </div>
-                              }
-                            </div>
-                          } @else {
-                            <div>-</div>
-                          }
-                        </td>
-                        <td>
-                          <div class="engineer-mods">{{ getEngineerModules(engineer.Engineer) }}</div>
-                        </td>
-                        <td>
-                          <div class="engineer-location">{{ getEngineerLocation(engineer.Engineer) }}</div>
-                        </td>
-                        @if (engineerFilter === 'all') {
-                          <td>
-                            <div class="engineer-find">{{ engineer.HowToFind }}</div>
-                          </td>
-                          <td>
-                            <div class="engineer-invite">{{ engineer.HowToGetInvite }}</div>
-                          </td>
-                          <td>
-                            <div class="engineer-unlock">{{ engineer.HowToUnlock }}</div>
-                          </td>
-                          <td>
-                            <div class="engineer-rep">{{ engineer.HowToGainRep }}</div>
-                          </td>
-                        }
-                        @if (engineerFilter === 'unlocked') {
-                          <td>
-                            <div class="engineer-rep">{{ engineer.HowToGainRep }}</div>
-                          </td>
-                        }
-                        @if (engineerFilter === 'invited') {
-                          <td>
-                            <div class="engineer-unlock">{{ engineer.HowToUnlock }}</div>
-                          </td>
-                        }
-                        @if (engineerFilter === 'known') {
-                          <td>
-                            <div class="engineer-invite">{{ engineer.HowToGetInvite }}</div>
-                          </td>
-                        }
-                        @if (engineerFilter === 'locked') {
-                          <td>
-                            <div class="engineer-find">{{ engineer.HowToFind }}</div>
-                          </td>
-                        }
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            </mat-tab>
+        <app-engineers-panel></app-engineers-panel>
+      </div>
+    </div>
 
-            <!-- On-Foot Equipment Engineers -->
-            <mat-tab label="On-Foot">
-              <div class="engineers-filters">
-                <mat-button-toggle-group [(ngModel)]="onFootEngineerFilter" aria-label="Engineer Status">
-                  <mat-button-toggle value="all">All</mat-button-toggle>
-                  <mat-button-toggle value="unlocked">Unlocked</mat-button-toggle>
-                  <mat-button-toggle value="invited">Invited</mat-button-toggle>
-                  <mat-button-toggle value="known">Known</mat-button-toggle>
-                  <mat-button-toggle value="locked">Locked</mat-button-toggle>
-                </mat-button-toggle-group>
-              </div>
-              
-              <div class="engineers-table-container">
-                <table class="engineers-table">
-                  <thead>
-                    <tr>
-                      <th>Engineer</th>
-                      <th>Status</th>
-                      <th>Rank</th>
-                      <th>Modifies</th>
-                      <th>Location</th>
-                      @if (onFootEngineerFilter === 'all') {
-                        <th>How to Find</th>
-                        <th>How to Get Invite</th>
-                        <th>How to Unlock</th>
-                        <th>Referral</th>
-                      }
-                      @if (onFootEngineerFilter === 'unlocked') {
-                        <th>Referral</th>
-                      }
-                      @if (onFootEngineerFilter === 'invited') {
-                        <th>How to Unlock</th>
-                      }
-                      @if (onFootEngineerFilter === 'known') {
-                        <th>How to Get Invite</th>
-                      }
-                      @if (onFootEngineerFilter === 'locked') {
-                        <th>How to Find</th>
-                      }
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (engineer of getFilteredOnFootEngineers(); track engineer.Engineer) {
-                      <tr [ngClass]="{
-                        'engineer-unlocked': engineer.Progress === 'Unlocked', 
-                        'engineer-invited': engineer.Progress === 'Invited', 
-                        'engineer-known': engineer.Progress === 'Known', 
-                        'engineer-locked': !engineer.Progress
-                      }">
-                        <td>
-                          <div class="engineer-name">{{ engineer.Engineer }}</div>
-                        </td>
-                        <td>
-                          <div class="engineer-status-cell">
-                            <span [ngClass]="'status-badge ' + (engineer.Progress?.toLowerCase() || 'locked')">
-                              {{ engineer.Progress || 'Locked' }}
-                            </span>
-                          </div>
-                        </td>
-                        <td>
-                          @if (engineer.Rank !== undefined) {
-                            <div class="engineer-rank">
-                              <div class="rank-stars">
-                                @for (i of getArray(engineer.Rank); track i) {
-                                  <span class="star filled">★</span>
-                                }
-                                @for (i of getArray(5-engineer.Rank); track i) {
-                                  <span class="star empty">☆</span>
-                                }
-                              </div>
-                              @if (engineer.RankProgress > 0) {
-                                <div class="rank-progress">
-                                  <div class="progress-bar" [style.width.%]="engineer.RankProgress"></div>
-                                </div>
-                              }
-                            </div>
-                          } @else {
-                            <div>-</div>
-                          }
-                        </td>
-                        <td>
-                          <div class="engineer-mods">{{ getOnFootEngineerModules(engineer.Engineer) }}</div>
-                        </td>
-                        <td>
-                          <div class="engineer-location">{{ getEngineerLocation(engineer.Engineer) }}</div>
-                        </td>
-                        @if (onFootEngineerFilter === 'all') {
-                          <td>
-                            <div class="engineer-find">{{ engineer.HowToFind }}</div>
-                          </td>
-                          <td>
-                            <div class="engineer-invite">{{ engineer.HowToGetInvite }}</div>
-                          </td>
-                          <td>
-                            <div class="engineer-unlock">{{ engineer.HowToUnlock }}</div>
-                          </td>
-                          <td>
-                            <div class="engineer-rep">{{ engineer.HowToReferral }}</div>
-                          </td>
-                        }
-                        @if (onFootEngineerFilter === 'unlocked') {
-                          <td>
-                            <div class="engineer-rep">{{ engineer.HowToReferral }}</div>
-                          </td>
-                        }
-                        @if (onFootEngineerFilter === 'invited') {
-                          <td>
-                            <div class="engineer-unlock">{{ engineer.HowToUnlock }}</div>
-                          </td>
-                        }
-                        @if (onFootEngineerFilter === 'known') {
-                          <td>
-                            <div class="engineer-invite">{{ engineer.HowToGetInvite }}</div>
-                          </td>
-                        }
-                        @if (onFootEngineerFilter === 'locked') {
-                          <td>
-                            <div class="engineer-find">{{ engineer.HowToFind }}</div>
-                          </td>
-                        }
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            </mat-tab>
-          </mat-tab-group>
+    <!-- Engineering Blueprints Section -->
+    <div class="storage-section">
+      <div class="section-header" (click)="toggleSection('engineeringBlueprints')">
+        <h3>Blueprints</h3>
+        <mat-icon class="collapse-icon">{{ sectionsCollapsed.engineeringBlueprints ? 'expand_more' : 'expand_less' }}</mat-icon>
+      </div>
+      <div class="section-content" [class.collapsed]="sectionsCollapsed.engineeringBlueprints">
+        <app-engineering-blueprints></app-engineering-blueprints>
+      </div>
+    </div>
+
+    <!-- Stored Modules Section (before Stored Ships) -->
+    <div class="storage-section">
+      <div class="section-header" (click)="toggleSection('storedModules')">
+        <h3>Stored Modules</h3>
+        <mat-icon class="collapse-icon">{{ sectionsCollapsed.storedModules ? 'expand_more' : 'expand_less' }}</mat-icon>
+      </div>
+      <div class="section-content" [class.collapsed]="sectionsCollapsed.storedModules">
+        <app-stored-modules></app-stored-modules>
+      </div>
+    </div>
+
+    <!-- Stored Ships Section (moved to bottom) -->
+    <div class="storage-section">
+      <div class="section-header" (click)="toggleSection('storedShips')">
+        <h3>Stored Ships</h3>
+        <div class="section-subtitle" *ngIf="storedShips?.StationName || storedShips?.StarSystem">
+          Recorded at {{ storedShips?.StationName || 'Unknown Station' }}, {{ storedShips?.StarSystem || 'Unknown System' }}
         </div>
+        <mat-icon class="collapse-icon">{{ sectionsCollapsed.storedShips ? 'expand_more' : 'expand_less' }}</mat-icon>
+      </div>
+      <div class="section-content" [class.collapsed]="sectionsCollapsed.storedShips">
+        <mat-tab-group>
+          <mat-tab label="Ships Here">
+            @if (getShipsHere().length > 0) {
+              <div class="ships-grid">
+                @for (ship of getShipsHere(); track ship.ShipID) {
+                  <div class="ship-card">
+                    <div class="ship-card-header">
+                      <div class="ship-icon"><mat-icon>directions_boat</mat-icon></div>
+                      <div class="ship-title">
+                        <div class="ship-name">{{ ship.Name || ship.ShipType_Localised || ship.ShipType }}</div>
+                        @if (ship.Name) {
+                          <div class="ship-type">{{ ship.ShipType_Localised || ship.ShipType }}</div>
+                        }
+                      </div>
+                      @if (ship.Hot) { <div class="ship-hot">HOT</div> }
+                    </div>
+                    <div class="ship-card-body">
+                      <div class="ship-value">{{ formatNumber(ship.Value) }} Cr</div>
+                    </div>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="no-ships">
+                <mat-icon>directions_boat</mat-icon>
+                No ships stored at this location in the recorded data.
+              </div>
+            }
+          </mat-tab>
+          <mat-tab label="Remote Ships">
+            @if (getShipsRemote().length > 0) {
+              <div class="ships-grid">
+                @for (ship of getShipsRemote(); track ship.ShipID) {
+                  <div class="ship-card">
+                    <div class="ship-card-header">
+                      <div class="ship-icon"><mat-icon>directions_boat</mat-icon></div>
+                      <div class="ship-title">
+                        <div class="ship-name">{{ ship.Name || ship.ShipType_Localised || ship.ShipType }}</div>
+                        @if (ship.Name) {
+                          <div class="ship-type">{{ ship.ShipType_Localised || ship.ShipType }}</div>
+                        }
+                        <div class="ship-location">{{ ship.StarSystem }}</div>
+                      </div>
+                      @if (ship.Hot) { <div class="ship-hot">HOT</div> }
+                    </div>
+                    <div class="ship-card-body">
+                      <div class="ship-value">{{ formatNumber(ship.Value) }} Cr</div>
+                      <div class="ship-transfer">
+                        <div>Transfer: {{ formatNumber(ship.TransferPrice) }} Cr</div>
+                        <div>Time: {{ formatTransferTime(ship.TransferTime) }}</div>
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="no-ships">
+                <mat-icon>directions_boat</mat-icon>
+                No ships stored remotely in the recorded data.
+              </div>
+            }
+          </mat-tab>
+        </mat-tab-group>
       </div>
     </div>
 

@@ -12,3 +12,27 @@ mat-form-field {
 mat-slide-toggle {
   margin: 10px 0;
 }
+
+.permission-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0 12px 16px;
+}
+
+.permission-item {
+  display: flex;
+  align-items: center;
+}
+
+.perm-type {
+  width: 100px;
+  /*color: rgba(0,0,0,0.75);*/
+  font-weight: 600;
+}
+
+.perm-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

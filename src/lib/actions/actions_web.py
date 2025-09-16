@@ -995,25 +995,51 @@ def material_finder(obj, projected_states):
         elif result['type'] == 'Encoded' and result['section'] in ship_encoded_materials_map:
             source_info = ship_encoded_materials_map[result['section']].get('source', '')
 
+        trading_lines = []
+        higher_convertible_total = 0
+
+        # Higher grade trade-down list with convertible amounts
         if result.get('tradeable_higher_grades'):
-            trading_lines = ["Tradeable, higher grades:"]
+            trading_lines.append("Higher grades trade-in:")
+            target_grade = int(result.get('grade', 0) or 0)
             for higher_mat in result['tradeable_higher_grades']:
-                if higher_mat['count'] > 0:
-                    trading_lines.append(f"- {higher_mat['count']}x {higher_mat['name']} (Grade {higher_mat['grade']})")
+                count_h = int(higher_mat.get('count', 0) or 0)
+                grade_h = int(higher_mat.get('grade', 0) or 0)
+                if grade_h > target_grade and count_h > 0:
+                    steps = grade_h - target_grade
+                    convertible_h = count_h * (3 ** steps)
+                    if convertible_h > 0:
+                        trading_lines.append(f"- {count_h}x {higher_mat.get('name', '')} (Grade {grade_h}) => +{convertible_h}")
+                        higher_convertible_total += convertible_h
 
-            if source_info:
-                trading_lines.append(f"Source: {source_info}")
+        # Lower grade trade-up list and new total
+        lower_list = result.get('tradeable_lower_grades') or []
+        lower_lines = []
+        lower_convertible_total = 0
+        if lower_list:
+            lower_lines.append("Lower grades trade-in:")
+            target_grade = int(result.get('grade', 0) or 0)
+            for low in lower_list:
+                low_count = int(low.get('count', 0) or 0)
+                low_grade = int(low.get('grade', 0) or 0)
+                if target_grade > low_grade and low_count > 0:
+                    steps = target_grade - low_grade
+                    convertible = low_count // (6 ** steps)
+                    if convertible > 0:
+                        lower_lines.append(f"- {low_count}x {low.get('name', '')} (Grade {low_grade}) => +{convertible}")
+                        lower_convertible_total += convertible
 
-            if len(trading_lines) > 1:  # Only add if there are actual tradeable materials
-                formatted_results.append(material_line)
-                formatted_results.extend(trading_lines)
-            else:
-                formatted_results.append(material_line)
-        else:
-            # No higher grades available, but still show source if available
-            formatted_results.append(material_line)
-            if source_info:
-                formatted_results.append(f"Source: {source_info}")
+        # Append lines to output
+        formatted_results.append(material_line)
+        if lower_lines:
+            formatted_results.extend(lower_lines)
+        if trading_lines:
+            formatted_results.extend(trading_lines)
+        if lower_lines or trading_lines:
+            total_all = int(result.get('count', 0) or 0) + lower_convertible_total + higher_convertible_total
+            formatted_results.append(f"Total if all traded in: {total_all}")
+        if source_info:
+            formatted_results.append(f"Source location for the highest grade: {source_info}")
 
     # Sort results while preserving trading info structure
     def sort_key(item):

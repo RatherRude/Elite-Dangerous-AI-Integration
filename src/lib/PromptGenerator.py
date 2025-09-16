@@ -140,6 +140,10 @@ class PromptGenerator:
         # Message events
         if event_name == 'ReceiveText':
             receive_text_event = cast(ReceiveTextEvent, content)
+            # Ignore system-entered channel messages
+            if (receive_text_event.get('Channel', '') == 'npc' and receive_text_event.get('From', '') == ''
+                and receive_text_event.get('Message', '').startswith('$COMMS_entered:#name=')):
+                return None
             return f'Message received from {receive_text_event.get("From_Localised", receive_text_event.get("From"))} on channel {receive_text_event.get("Channel")}: "{receive_text_event.get("Message_Localised", receive_text_event.get("Message"))}"'
         if event_name == 'SendText':
             send_text_event = cast(SendTextEvent, content)
@@ -193,7 +197,7 @@ class PromptGenerator:
                     faction_info = f" Controlling faction: {faction_name}"
             
             return f"{self.commander_name} has arrived at {fsd_jump_event.get('StarSystem')}{details_str}{system_details_str}{population}{faction_info}"
-            
+
         if event_name == 'FSDTarget':
             fsd_target_event = cast(FSDTargetEvent, content)
             remaining = ""
@@ -2196,6 +2200,8 @@ class PromptGenerator:
             return f"{self.commander_name} is now in combat."
         if event_name == 'CombatExited':
             return f"{self.commander_name} is no longer in combat."
+        if event_name == 'FirstPlayerSystemDiscovered':
+            return f"{self.commander_name} has a new system discovered"
         # if event_name == 'ExternalDiscordNotification':
         #     twitch_event = cast(Dict[str, Any], content)
         #     return f"Twitch Alert! {twitch_event.get('text','')}",
@@ -2592,6 +2598,7 @@ class PromptGenerator:
         ship_display.pop('DriveMaxFuel', None)
         ship_display.pop('DrivePowerConst', None)
         ship_display.pop('GuardianfsdBooster', None)
+        ship_display.pop('FSDSynthesis', None)
         ship_display.pop('DriveLinearConst', None)
         ship_display.pop('DriveOptimalMass', None)
         ship_display.pop('ReportedMaximumJumpRange', None)
@@ -3229,14 +3236,16 @@ class PromptGenerator:
                 {
                     "role": "system",
                     "content": "The universe of Elite:Dangerous is your reality. Never mention it or refer to it as a game. "
-                    + "Your purpose is to provide information, status updates, and execute tools as required. Only use tools you are given from me. "
-                    + "You do not ask questions or initiate conversations. You respond only when addressed and in a single sentence. "
-                    + "Don't repeat the same words and sentences, mix it up. "
                     + "I will provide game events in parentheses; do not create new ones. Only react to game events marked with 'IMPORTANT:'.  "
                     + "Stay consistent with the lived experience and character. Do not hallucinate any information that is not given to you. "
                     + "Do not use markdown in your responses, and no commas in numbers. "
+                    + "Your purpose is to provide information, status updates, and execute tools as required. Only use tools you are given from me. "
+                    + "Be specific about amounts and percentages for inquiries as the commander can not see the game events' text description but lives in the universe. "
+                    + "You do not ask questions or initiate conversations. You respond only when addressed and in a single sentence. "
+                    + "Don't repeat the same words and sentences, mix it up. "
+                    
                     # The character_prompt now contains all the generated settings
-                    + self.character_prompt.format(commander_name=self.commander_name),
+                    + "Your character prompt is: " + self.character_prompt.format(commander_name=self.commander_name),
                 }
             )
         except Exception as e:

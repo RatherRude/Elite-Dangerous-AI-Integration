@@ -35,6 +35,14 @@
                         </div>
                         <app-chat-container [limit]="2"></app-chat-container>
                     </mat-tab>
+                    <mat-tab label="Tasks">
+                        <div class="tab-content-container">
+                            <div class="tasks-container-tab">
+                                <app-tasks-container></app-tasks-container>
+                            </div>
+                        </div>
+                        <app-chat-container [limit]="2"></app-chat-container>
+                    </mat-tab>
                     @if (isDockedAtStation) {
                         <mat-tab label="Station">
                             <div class="tab-content-container">
