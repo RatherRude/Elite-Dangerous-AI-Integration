@@ -4,6 +4,8 @@ const path = require('path');
 const url = require('node:url')
 const contextMenu = require('electron-context-menu');
 const pino = require('pino')
+const { createBugReport } = require('../src/utils/bugreport.cjs');
+
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 const isLinux = process.platform === 'linux';
@@ -44,11 +46,7 @@ if (process.platform === 'win32') {
   const logsPath = path.join(process.env.LOCALAPPDATA, 'com.covas-next.ui', 'logs');
   require('fs').rmSync(logsPath, { recursive: true, force: true });
   logger.info('Deleted logs directory:', logsPath);
-} else if (isLinux) {
-  const logsPath = path.join(process.env.XDG_DATA_HOME, 'com.covas-next.ui', 'logs');
-  require('fs').rmSync(logsPath, { recursive: true, force: true });
-  logger.info('Deleted logs directory:', logsPath);
-}
+} 
 
 for (const x of ["home","userData","temp","appData","sessionData","exe","module","desktop","documents","downloads","music","pictures","videos","logs","crashDumps"]) {
   logger.info(x, app.getPath(x));
@@ -235,6 +233,20 @@ class BackendService {
     }
   } 
 }
+
+
+
+
+ipcMain.handle('bug-report', async () => {
+  try {
+    const zipPath = await createBugReport();
+    const folder = path.dirname(zipPath);
+    shell.openPath(folder);
+    return zipPath;
+  } catch (e) {
+    throw new Error(`Bugreport fehlgeschlagen: ${e.message}`);
+  }
+});
 
 
 function createMainWindow() {

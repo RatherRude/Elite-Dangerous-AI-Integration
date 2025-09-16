@@ -12,3 +12,10 @@ mat-form-field {
 mat-slide-toggle {
   margin: 10px 0;
 }
+.character-buttons {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+}
