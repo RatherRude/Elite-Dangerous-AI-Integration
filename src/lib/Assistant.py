@@ -47,9 +47,11 @@ class Assistant:
             #    return
             #memory_range = short_term[-1].processed_at - short_term[0].processed_at # TODO use time range instead of event count
             log('info', f'Short-term memory length: {len(short_term)} events')
-            if len(short_term) > 50 and not self.is_summarizing:
+            # Rate-limit by wall-clock time since the last MemoryEvent summary
+            last_memory_time = self.short_term_memories[-1].processed_at if len(self.short_term_memories) else 0.0
+            if len(short_term) > 60 and not self.is_summarizing and (time() - last_memory_time >= 60):
                 self.is_summarizing = True
-                Thread(target=self.summarize_memory, args=(short_term[5:],), daemon=True).start()
+                Thread(target=self.summarize_memory, args=(short_term[30:],), daemon=True).start()
 
     def summarize_memory(self, memory: list[Event]):
         memory_until = memory[0].processed_at
