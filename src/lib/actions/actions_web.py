@@ -1,17 +1,15 @@
-import json
-import traceback
 import math
-import yaml
+import traceback
 
 import openai
 import requests
-
+import yaml
 
 from .data import *
-from ..Logger import log
+from ..ActionManager import ActionManager
 from ..EDKeys import EDKeys
 from ..EventManager import EventManager
-from ..ActionManager import ActionManager
+from ..Logger import log
 
 llm_client: openai.OpenAI = None
 llm_model_name: str = None
@@ -1127,6 +1125,45 @@ def educated_guesses_message(search_query, valid_list):
         )
 
     return message
+# Retrieve relevant long-term memory notes by semantic search
+def retrieve_memories(obj, projected_states):
+    try:
+        query = (obj or {}).get('query', '').strip()
+        top_k = (obj or {}).get('top_k', 5)
+        if not query:
+            return "Please provide a 'query' string to search memories."
+
+        try:
+            k = int(top_k)
+        except Exception:
+            k = 5
+        k = max(1, min(k, 20))
+
+        # Create embedding for the query and search the vector store
+        embedding = llm_client.embeddings.create(
+            model="text-embedding-3-small",
+            input=query
+        ).data[0].embedding
+
+        results = event_manager.long_term_memory.search(embedding, n=k)
+
+        if not results:
+            return f"No relevant memories found for '{query}'."
+
+        formatted = []
+        for _id, content, metadata, score in results:
+            item = {
+                'score': round(score, 3),
+                'summary': content
+            }
+            formatted.append(item)
+
+        yaml_output = yaml.dump(formatted, default_flow_style=False, sort_keys=False)
+        return f"Top {len(formatted)} memory matches for '{query}':\n\n```yaml\n{yaml_output}```"
+    except Exception as e:
+        log('error', e, traceback.format_exc())
+        return 'An error occurred while retrieving memories.'
+
 
 # Helper function
 def find_best_match(search_term, known_list):
@@ -2153,6 +2190,35 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
         },
         material_finder,
         'web'
+    )
+
+    # Retrieve memories via semantic search
+    actionManager.registerAction(
+        'retrieve_memories',
+        "Retrieve relevant long-term memory notes by semantic search.",
+        parameters={
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Semantic search query for memory retrieval"
+                },
+                "top_k": {
+                    "type": "integer",
+                    "description": "Number of memory notes to return (1-20)",
+                    "minimum": 1,
+                    "maximum": 20,
+                    "default": 5
+                }
+            },
+            "required": ["query"]
+        },
+        input_template=lambda i, s: f"""Retrieving memories
+            about '{i.get('query', '')}'
+            top {i.get('top_k', 5)}
+        """,
+        method=retrieve_memories,
+        action_type='web'
     )
 
 if __name__ == "__main__":

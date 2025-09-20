@@ -194,7 +194,7 @@ class VectorStore():
 
         conn.commit()
 
-    def search(self, query_embedding: list[float], n: int = 5) -> list[tuple[int, dict[str, Any], float]]:
+    def search(self, query_embedding: list[float], n: int = 5) -> list[tuple[int, str, dict[str, Any], float]]:
         """
         Search for similar embeddings
         
@@ -232,7 +232,7 @@ class VectorStore():
         results = cursor.fetchall()
 
         # Convert results to the expected format
-        return [(row[0], json.loads(row[2]), 1.0 - row[3]) for row in results]
+        return [(row[0], row[1], json.loads(row[2]), 1.0 - row[3]) for row in results]
 
     def delete(self, id: str) -> None:
         """Delete an embedding by id"""
