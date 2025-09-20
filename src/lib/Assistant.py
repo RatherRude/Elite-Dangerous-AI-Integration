@@ -5,7 +5,7 @@ from time import time
 
 from .Logger import log, show_chat_message
 from .Config import Config
-from .Event import ConversationEvent, Event, GameEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent, ArchiveEvent
+from .Event import ConversationEvent, Event, GameEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent, MemoryEvent
 from .EventManager import EventManager
 from .ActionManager import ActionManager
 from .PromptGenerator import PromptGenerator
@@ -31,10 +31,72 @@ class Assistant:
         self.reply_pending = False
         self.pending: list[Event] = []
         self.registered_should_reply_handlers: list[Callable[[Event, dict[str, Any]], bool | None]] = []
+        self.is_summarizing = False
+        self.short_term_memories = []
     
     def on_event(self, event: Event, projected_states: dict[str, Any]):
         self.pending.append(event)
         self.reply_pending = self.should_reply(projected_states)
+        
+        if isinstance(event, MemoryEvent):
+            self.short_term_memories.append(event)
+            self.short_term_memories = self.short_term_memories[-5:]
+
+        if isinstance(event, ConversationEvent) and event.kind == 'assistant':
+            short_term = self.event_manager.get_short_term_memory()
+            #if len(short_term) < 2:
+            #    return
+            #memory_range = short_term[-1].processed_at - short_term[0].processed_at # TODO use time range instead of event count
+            log('info', f'Short-term memory length: {len(short_term)} events')
+            # Rate-limit by wall-clock time since the last MemoryEvent summary
+            last_memory_time = self.short_term_memories[-1].processed_at if len(self.short_term_memories) else 0.0
+            if len(short_term) > 60 and not self.is_summarizing and (time() - last_memory_time >= 60):
+                self.is_summarizing = True
+                Thread(target=self.summarize_memory, args=(short_term[30:],), daemon=True).start()
+
+    def summarize_memory(self, memory: list[Event]):
+        memory_until = memory[0].processed_at
+        
+        chat = []
+
+        for i,event in enumerate(memory):
+            if isinstance(event, GameEvent):
+                chat.append(event.content.get('timestamp') +': '+ event.content.get('event'))
+            if isinstance(event, ProjectedEvent):
+                chat.append(event.content.get('timestamp','') +': '+ event.content.get('event'))
+            if isinstance(event, StatusEvent):
+                if event.status.get('event','').lower() == 'status':
+                    continue
+                chat.append(event.status.get('timestamp', '') +': '+ event.status.get('event'))
+            if isinstance(event, ConversationEvent):
+                if event.kind not in ['user', 'assistant']:
+                    continue
+                chat.append(event.timestamp +' '+ event.kind +': '+ event.content)
+        for mem in self.short_term_memories:
+            chat.append(mem.timestamp +' [Previous Memory]: '+ mem.content)
+
+        chat_text = '\n'.join(reversed(chat))
+
+        response = self.llmClient.chat.completions.create(  # pyright: ignore[reportCallIssue]
+            model=self.config["llm_model_name"],
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant in Elite Dangerous that summarizes events and conversation into short concise notes for long-term memory storage. Only include important information that is not already stored in long-term memory. Do not include unimportant information, irrelevant details or repeated information. Do not include any timestamps in the summary.\nKeep it short to about 5 sentences."},
+                {"role": "user", "content": "Summarize the following events into short concise notes for long-term memory storage:\n<conversation>\n"+(chat_text)+'\n</conversation>'}],
+            temperature=self.config["llm_temperature"],
+        )
+        embedding = self.llmClient.embeddings.create(
+            model="text-embedding-3-small",
+            input=response.choices[0].message.content or 'Error'
+        ).data[0].embedding
+        
+        self.event_manager.add_memory_event(
+            last_processed_at=memory_until,
+            content=response.choices[0].message.content or 'Error',
+            metadata={"original_text": chat_text, "content": response.choices[0].message.content},
+            embedding=embedding
+        )
+        log('info', f'Summarized {len(memory)} events into long-term memory up to {memory_until}')
+        self.is_summarizing = False
 
         # Auto actions after a hyperspace jump: optional autobrake and/or autoscan
         try:
@@ -129,10 +191,13 @@ class Assistant:
         self.reply_pending = False
         self.is_replying = True
         try:
-            new_events = self.pending.copy()
+            events = self.event_manager.get_short_term_memory()
+            events = list(reversed(events))
+            new_events = [event for event in events if not event.responded_at]
             self.pending = []
             
             log('debug', 'Starting reply...')
+            max_conversation_processed = max([event.processed_at for event in events]+[0.0])
             prompt = self.prompt_generator.generate_prompt(events=events, projected_states=projected_states, pending_events=new_events)
 
             user_input: list[str] = [event.content for event in new_events if event.kind == 'user']
@@ -234,13 +299,13 @@ class Assistant:
 
             if response_text and not response_actions:
                 self.tts.say(response_text)
-                self.event_manager.add_conversation_event('assistant', completion.choices[0].message.content)
+                self.event_manager.add_conversation_event('assistant', completion.choices[0].message.content, max_conversation_processed)
                 self.copilot.output_covas(response_text, reasons)
                 self.tts.wait_for_completion()
                 self.event_manager.add_assistant_complete_event()
 
             if response_actions:
-                self.event_manager.add_assistant_acting()
+                self.event_manager.add_assistant_acting(processed_at=max_conversation_processed)
                 self.execute_actions(response_actions, projected_states)
 
                 if not predicted_actions and self.config["use_action_cache_var"]:

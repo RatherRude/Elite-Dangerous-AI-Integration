@@ -19,6 +19,7 @@ import { StorageContainerComponent } from "../components/storage-container/stora
 import { StationContainerComponent } from "../components/station-container/station-container.component";
 import { TasksContainerComponent } from "../components/tasks-container/tasks-container.component";
 import { ProjectionsService } from "../services/projections.service";
+import { MemoriesContainerComponent } from "../components/memories-container/memories-container.component";
 import { MetricsService } from "../services/metrics.service.js";
 import { PolicyService } from "../services/policy.service.js";
 import {UIService} from "../services/ui.service";
@@ -41,6 +42,7 @@ import {UIService} from "../services/ui.service";
         StorageContainerComponent,
         StationContainerComponent,
         TasksContainerComponent,
+        MemoriesContainerComponent,
     ],
     templateUrl: "./main-view.component.html",
     styleUrl: "./main-view.component.css",
@@ -109,10 +111,11 @@ export class MainViewComponent implements OnInit, OnDestroy {
                 if (tabName === null) return;
                 const desiredIndex = {
                     chat: 0,
-                    status: 1,
-                    storage: 2,
-                    tasks: 3,
-                    station: 4,
+                    memories: 1,
+                    status: 2,
+                    storage: 3,
+                    tasks: 4,
+                    station: 5,
                 }[tabName];
                 if (desiredIndex !== undefined) {
                     this.selectedTabIndex = desiredIndex;

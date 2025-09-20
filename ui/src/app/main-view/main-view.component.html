@@ -18,6 +18,12 @@
                     </div>
                     <!--          <app-input-container class="input-container"></app-input-container>-->
                 </mat-tab>
+                <mat-tab label="Memories">
+                    <div class="tab-content-container">
+                        <app-memories-container></app-memories-container>
+                    </div>
+                    <app-chat-container [limit]="2"></app-chat-container>
+                </mat-tab>
                 @if (!isShipIdentUnknown) {
                     <mat-tab label="Status">
                         <div class="tab-content-container">

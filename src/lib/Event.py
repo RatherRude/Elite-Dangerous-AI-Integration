@@ -2,11 +2,15 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Dict, List, Literal, TypedDict
 
+from openai.types import embedding
+
 
 class Event:
-    kind: Literal['game', 'user', 'user_speaking', 'assistant', 'assistant_acting', 'assistant_completed', 'tool', 'status', 'projected', 'external', 'archive']
+    kind: Literal['game', 'user', 'user_speaking', 'assistant', 'assistant_acting', 'assistant_completed', 'tool', 'status', 'projected', 'external', 'memory']
     timestamp: str
     processed_at: float
+    memorized_at: float = 0
+    responded_at: float = 0
 
 class GameEventContent(TypedDict):
     event: str
@@ -61,9 +65,10 @@ class ToolEvent(Event):
 
 
 @dataclass
-class ArchiveEvent(Event):
-    content: Dict
-    archive_until: float
+class MemoryEvent(Event):
+    content: str
+    metadata: dict
+    embedding: list[float]
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    kind: Literal['archive'] = field(default='archive')
+    kind: Literal['memory'] = field(default='memory')
     processed_at: float = field(default=0.0)

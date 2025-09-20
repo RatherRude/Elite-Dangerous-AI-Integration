@@ -1,0 +1,33 @@
+
+.memories-log {
+  padding: 12px;
+}
+
+.entries {
+  margin-top: 8px;
+}
+
+.entry {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.timestamp {
+  color: #888;
+  margin-right: 8px;
+  font-family: 'Roboto Mono', monospace;
+}
+
+.message {
+  color: #e0e0e0;
+  white-space: pre-wrap;
+}
+
+.empty {
+  color: #888;
+  font-style: italic;
+}
+
+
