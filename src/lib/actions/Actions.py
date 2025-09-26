@@ -1282,7 +1282,7 @@ def target_subsystem(args, projected_states):
 
 def register_actions(actionManager: ActionManager, eventManager: EventManager, llmClient: openai.OpenAI,
                      llmModelName: str, visionClient: openai.OpenAI | None, visionModelName: str | None,
-                     embeddingClient: openai.OpenAI | None, embeddingModelName: str | None):
+                     embeddingClient: openai.OpenAI | None, embeddingModelName: str | None,
                      edKeys: EDKeys, discovery_primary_var_flag: bool = True, discovery_firegroup_var_flag: int = 1):
     global event_manager, vision_client, llm_client, llm_model_name, vision_model_name, keys
     keys = edKeys
