@@ -10,9 +10,12 @@ from ..ActionManager import ActionManager
 from ..EDKeys import EDKeys
 from ..EventManager import EventManager
 from ..Logger import log
+from ..Config import Config
 
 llm_client: openai.OpenAI = None
 llm_model_name: str = None
+embedding_client: openai.OpenAI | None = None
+embedding_model_name: str | None = None
 event_manager: EventManager = None
 
 
@@ -1127,42 +1130,38 @@ def educated_guesses_message(search_query, valid_list):
     return message
 # Retrieve relevant long-term memory notes by semantic search
 def retrieve_memories(obj, projected_states):
+    query = (obj or {}).get('query', '').strip()
+    top_k = (obj or {}).get('top_k', 5)
+    if not query:
+        return "Please provide a 'query' string to search memories."
+
     try:
-        query = (obj or {}).get('query', '').strip()
-        top_k = (obj or {}).get('top_k', 5)
-        if not query:
-            return "Please provide a 'query' string to search memories."
+        k = int(top_k)
+    except Exception:
+        k = 5
+    k = max(1, min(k, 20))
 
-        try:
-            k = int(top_k)
-        except Exception:
-            k = 5
-        k = max(1, min(k, 20))
+    # Create embedding for the query and search the vector store
+    embedding = embedding_client.embeddings.create(
+        model=embedding_model_name or "text-embedding-3-small",
+        input=query
+    ).data[0].embedding
 
-        # Create embedding for the query and search the vector store
-        embedding = llm_client.embeddings.create(
-            model="text-embedding-3-small",
-            input=query
-        ).data[0].embedding
+    results = event_manager.long_term_memory.search(embedding, n=k)
 
-        results = event_manager.long_term_memory.search(embedding, n=k)
+    if not results:
+        return f"No relevant memories found for '{query}'."
 
-        if not results:
-            return f"No relevant memories found for '{query}'."
+    formatted = []
+    for _id, content, metadata, score in results:
+        item = {
+            'score': round(score, 3),
+            'summary': content
+        }
+        formatted.append(item)
 
-        formatted = []
-        for _id, content, metadata, score in results:
-            item = {
-                'score': round(score, 3),
-                'summary': content
-            }
-            formatted.append(item)
-
-        yaml_output = yaml.dump(formatted, default_flow_style=False, sort_keys=False)
-        return f"Top {len(formatted)} memory matches for '{query}':\n\n```yaml\n{yaml_output}```"
-    except Exception as e:
-        log('error', e, traceback.format_exc())
-        return 'An error occurred while retrieving memories.'
+    yaml_output = yaml.dump(formatted, default_flow_style=False, sort_keys=False)
+    return f"Top {len(formatted)} memory matches for '{query}':\n\n```yaml\n{yaml_output}```"
 
 
 # Helper function
@@ -1738,12 +1737,14 @@ def body_finder(obj, projected_states):
 
 
 def register_web_actions(actionManager: ActionManager, eventManager: EventManager, 
-                         llmClient: openai.OpenAI, llmModelName: str, edKeys: EDKeys):
-    global event_manager, llm_client, llm_model_name, keys
+                         llmClient: openai.OpenAI, llmModelName: str, edKeys: EDKeys, embeddingModelName: str | None = None, embeddingClient: openai.OpenAI | None = None):
+    global event_manager, llm_client, llm_model_name, keys, embedding_model_name, embedding_client
     keys = edKeys
     event_manager = eventManager
     llm_client = llmClient
     llm_model_name = llmModelName
+    embedding_model_name = embeddingModelName
+    embedding_client = embeddingClient
 
     # Register actions - Web Tools
     actionManager.registerAction(

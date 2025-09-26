@@ -17,7 +17,7 @@ from threading import Thread
 
 @final
 class Assistant:
-    def __init__(self, config: Config, enabled_game_events: list[str], event_manager: EventManager, action_manager: ActionManager, llmClient: OpenAI, tts: TTS, prompt_generator: PromptGenerator, copilot: EDCoPilot):
+    def __init__(self, config: Config, enabled_game_events: list[str], event_manager: EventManager, action_manager: ActionManager, llmClient: OpenAI, tts: TTS, prompt_generator: PromptGenerator, copilot: EDCoPilot, embeddingClient: OpenAI | None = None):
         self.config = config
         self.enabled_game_events = enabled_game_events
         self.event_manager = event_manager
@@ -26,6 +26,7 @@ class Assistant:
         self.tts = tts
         self.prompt_generator = prompt_generator
         self.copilot = copilot
+        self.embeddingClient = embeddingClient
         self.is_replying = False
         self.reply_pending = False
         self.pending: list[Event] = []
@@ -43,9 +44,6 @@ class Assistant:
 
         if isinstance(event, ConversationEvent) and event.kind == 'assistant':
             short_term = self.event_manager.get_short_term_memory()
-            #if len(short_term) < 2:
-            #    return
-            #memory_range = short_term[-1].processed_at - short_term[0].processed_at # TODO use time range instead of event count
             log('info', f'Short-term memory length: {len(short_term)} events')
             # Rate-limit by wall-clock time since the last MemoryEvent summary
             last_memory_time = self.short_term_memories[-1].processed_at if len(self.short_term_memories) else 0.0
@@ -83,9 +81,9 @@ class Assistant:
                 {"role": "user", "content": "Summarize the following events into short concise notes for long-term memory storage:\n<conversation>\n"+(chat_text)+'\n</conversation>'}],
             temperature=self.config["llm_temperature"],
         )
-        embedding = self.llmClient.embeddings.create(
-            model="text-embedding-3-small",
-            input=response.choices[0].message.content or 'Error'
+        embedding = self.embeddingClient.embeddings.create(
+            model=self.config["embedding_model_name"],
+            input=response.choices[0].message.content
         ).data[0].embedding
         
         self.event_manager.add_memory_event(

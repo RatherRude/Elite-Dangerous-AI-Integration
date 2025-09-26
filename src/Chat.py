@@ -73,6 +73,13 @@ class Chat:
             base_url="https://api.openai.com/v1" if self.config["llm_endpoint"] == '' else self.config["llm_endpoint"],
             api_key=self.config["api_key"] if self.config["llm_api_key"] == '' else self.config["llm_api_key"],
         )
+        # embeddings
+        self.embeddingClient: OpenAI | None = None
+        if self.config.get("embedding_provider") in ['openai', 'custom', 'google-ai-studio', 'local-ai-server']:
+            self.embeddingClient = OpenAI(
+                base_url=self.config["embedding_endpoint"],
+                api_key=self.config["api_key"] if self.config["embedding_api_key"] == '' else self.config["embedding_api_key"],
+            )
         
         # vision
         self.visionClient: OpenAI | None = None
@@ -130,6 +137,7 @@ class Chat:
             tts=self.tts,
             prompt_generator=self.prompt_generator,
             copilot=self.copilot,
+            embeddingClient=self.embeddingClient,
         )
         self.is_replying = False
         self.listening = False
@@ -260,7 +268,7 @@ class Chat:
 
         if self.config['tools_var']:
             log('info', "Register actions...")
-            register_actions(self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.ed_keys)
+            register_actions(self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.ed_keys, self.config["embedding_model_name"], self.embeddingClient)
 
             log('info', "Built-in Actions ready.")
             self.plugin_manager.register_actions(self.plugin_helper)

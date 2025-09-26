@@ -13,6 +13,7 @@ from .actions_web import register_web_actions
 from .actions_ui import register_ui_actions
 
 from ..Logger import log, show_chat_message
+from ..Config import Config
 from ..EDKeys import EDKeys
 from ..EventManager import EventManager
 from ..ActionManager import ActionManager
@@ -1265,7 +1266,7 @@ def target_subsystem(args, projected_states):
 
 def register_actions(actionManager: ActionManager, eventManager: EventManager, llmClient: openai.OpenAI,
                      llmModelName: str, visionClient: openai.OpenAI | None, visionModelName: str | None,
-                     edKeys: EDKeys):
+                     edKeys: EDKeys, embeddingClient: openai.OpenAI | None, embeddingModelName: str | None):
     global event_manager, vision_client, llm_client, llm_model_name, vision_model_name, keys
     keys = edKeys
     event_manager = eventManager
@@ -2317,7 +2318,8 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     
     register_web_actions(
         actionManager, eventManager, 
-        llmClient, llmModelName, edKeys
+        llmClient, llmModelName, edKeys,
+        embeddingClient, embeddingModelName
     )
 
     register_ui_actions(
