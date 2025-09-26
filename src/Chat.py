@@ -60,13 +60,18 @@ class Chat:
 
         log("debug", "Initializing Action Manager...")
         self.action_manager = ActionManager()
+        # Set allowed actions permissions from config (empty means allow all)
+        try:
+            self.action_manager.set_allowed_actions(self.config.get("allowed_actions", []))
+        except Exception:
+            self.action_manager.set_allowed_actions([])
 
         log("debug", "Initializing EDJournal...")
         self.jn = EDJournal(get_ed_journals_path(config))
             
         log("debug", "Initializing Third Party Services...")
         self.copilot = EDCoPilot(self.config["edcopilot"], is_edcopilot_dominant=self.config["edcopilot_dominant"],
-                            enabled_game_events=self.enabled_game_events)
+                            enabled_game_events=self.enabled_game_events, action_manager=self.action_manager, has_actions=self.config["edcopilot_actions"])
 
         # gets API Key from config.json
         self.llmClient = OpenAI(
@@ -268,7 +273,20 @@ class Chat:
 
         if self.config['tools_var']:
             log('info', "Register actions...")
-            register_actions(self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.ed_keys, self.config["embedding_model_name"], self.embeddingClient)
+
+            register_actions(
+                self.action_manager,
+                self.event_manager,
+                self.llmClient,
+                self.config["llm_model_name"],
+                self.visionClient,
+                self.config["vision_model_name"],
+                self.embeddingClient,
+                self.config["embedding_model_name"], 
+                self.ed_keys,
+                self.config.get("discovery_primary_var", True),
+                int(self.config.get("discovery_firegroup_var", 1) or 1)
+            )
 
             log('info', "Built-in Actions ready.")
             self.plugin_manager.register_actions(self.plugin_helper)

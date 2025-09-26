@@ -98,7 +98,11 @@ export interface Config {
     web_search_actions_var: boolean;
     ui_actions_var: boolean;
     use_action_cache_var: boolean;
+    allowed_actions?: string[];
+    discovery_primary_var: boolean;
+    discovery_firegroup_var: number;
     edcopilot: boolean;
+    edcopilot_actions: boolean;
     edcopilot_dominant: boolean;
     ptt_key: string;
     input_device_name: string;
