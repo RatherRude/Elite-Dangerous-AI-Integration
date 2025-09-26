@@ -125,7 +125,6 @@ class Assistant:
                     labels.append("DiscoveryScan")
 
                 if request:
-                    self.event_manager.add_assistant_acting()
                     self.event_manager.add_tool_call(request, results, descriptions)
         except Exception as e:
             log('error', 'Auto actions on FSDJump failed', e, traceback.format_exc())
