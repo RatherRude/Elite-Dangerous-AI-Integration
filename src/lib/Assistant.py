@@ -164,6 +164,7 @@ class Assistant:
             prompt = self.prompt_generator.generate_prompt(events=events, projected_states=projected_states, pending_events=new_events)
 
             user_input: list[str] = [event.content for event in new_events if event.kind == 'user']
+            tool_input: list[str] = [event.content for event in new_events if event.kind == 'tool']
             reasons = [event.content.get('event', event.kind) if event.kind=='game' else event.kind for event in new_events if event.kind in ['user', 'game', 'tool', 'status']]
             use_tools = self.config["tools_var"] and ('user' in reasons or 'tool' in reasons)
 
@@ -188,7 +189,7 @@ class Assistant:
             uses_ui_actions = self.config["ui_actions_var"]
             tool_list = self.action_manager.getToolsList(active_mode, uses_actions, uses_web_actions, uses_ui_actions) if use_tools else None
             predicted_actions = None
-            if tool_list and user_input:
+            if tool_list and user_input and not tool_input and self.config["use_action_cache_var"]:
                 predicted_actions = self.action_manager.predict_action(user_input[-1], tool_list)
                 
             if predicted_actions:
