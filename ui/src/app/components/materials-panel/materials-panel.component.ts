@@ -296,13 +296,13 @@ export class MaterialsPanelComponent implements OnInit, OnDestroy {
 
   // Source info maps
   ship_raw_materials_map: any = {
-    1: {1: ['carbon'], 2: ['vanadium'], 3: ['niobium'], 4: ['yttrium'], source: 'Yttrium Crystal Shards — Outotz LS-K D8-3 B 5 A'},
-    2: {1: ['phosphorus'], 2: ['chromium'], 3: ['molybdenum'], 4: ['technetium'], source: 'Technetium Crystal Shards — HIP 36601 C 5 A'},
-    3: {1: ['sulphur'], 2: ['manganese'], 3: ['cadmium'], 4: ['ruthenium'], source: 'Ruthenium Crystal Shards — HIP 36601 C 1 D; Outotz LS-K D8-3 B 7 B'},
-    4: {1: ['iron'], 2: ['zinc'], 3: ['tin'], 4: ['selenium'], source: 'Selenium Brain Trees — Kappa-1 Volantis B 3 F A; HR 3230 3 A A'},
-    5: {1: ['nickel'], 2: ['germanium'], 3: ['tungsten'], 4: ['tellurium'], source: 'Tellurium Crystal Shards — HIP 36601 C 3 B'},
-    6: {1: ['rhenium'], 2: ['arsenic'], 3: ['mercury'], 4: ['polonium'], source: 'Polonium Crystal Shards — HIP 36601 C 1 A'},
-    7: {1: ['lead'], 2: ['zirconium'], 3: ['boron'], 4: ['antimony'], source: 'Antimony Crystal Shards — Outotz LS-K D8-3 B 5 C'}
+    1: {1: ['carbon'], 2: ['vanadium'], 3: ['niobium'], 4: ['yttrium'], source: 'Crystal Shards — Outotz LS-K D8-3 B 5 A; Brain Trees — 35 G. Carinae 2 D'},
+    2: {1: ['phosphorus'], 2: ['chromium'], 3: ['molybdenum'], 4: ['technetium'], source: 'Crystal Shards — HIP 36601 C 5 A; Brain Trees — 35 G. Carinae 2 A; HR 3230 3 A A'},
+    3: {1: ['sulphur'], 2: ['manganese'], 3: ['cadmium'], 4: ['ruthenium'], source: 'Crystal Shards — HIP 36601 C 1 D; Outotz LS-K D8-3 B 7 B; Brain Trees — 35 G. Carinae 2 C'},
+    4: {1: ['iron'], 2: ['zinc'], 3: ['tin'], 4: ['selenium'], source: 'Brain Trees — Kappa-1 Volantis B 3 F A; HR 3230 3 A A'},
+    5: {1: ['nickel'], 2: ['germanium'], 3: ['tungsten'], 4: ['tellurium'], source: 'Crystal Shards — HIP 36601 C 3 B; Brain Trees — Synuefe SE-V B49-4 B 3 A'},
+    6: {1: ['rhenium'], 2: ['arsenic'], 3: ['mercury'], 4: ['polonium'], source: 'Crystal Shards — HIP 36601 C 1 A; Brain Trees — Synuefe AA-P C22-7 5 C'},
+    7: {1: ['lead'], 2: ['zirconium'], 3: ['boron'], 4: ['antimony'], source: 'Crystal Shards — Outotz LS-K D8-3 B 5 C; Brain Trees — 35 G. Carinae 1 E'}
   };
 
   ship_manufactured_materials_map: any = {

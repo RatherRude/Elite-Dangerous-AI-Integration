@@ -48,6 +48,31 @@
                                             </mat-form-field>
                                         </div>
                                     }
+                                    @if (perm === 'textMessage') {
+                                        <div style="display:flex; gap: 8px; align-items:center; margin-left:12px; flex-wrap: wrap;">
+                                            <span style="font-weight: 500; opacity: .8;">Tabbed:</span>
+                                            <mat-slide-toggle [ngModel]="config.chat_local_tabbed_var"
+                                                              (ngModelChange)="onConfigChange({chat_local_tabbed_var: $event})">
+                                                Local
+                                            </mat-slide-toggle>
+                                            <mat-slide-toggle [ngModel]="config.chat_system_tabbed_var"
+                                                              (ngModelChange)="onConfigChange({chat_system_tabbed_var: $event})">
+                                                System
+                                            </mat-slide-toggle>
+                                            <mat-slide-toggle [ngModel]="config.chat_wing_tabbed_var"
+                                                              (ngModelChange)="onConfigChange({chat_wing_tabbed_var: $event})">
+                                                Wing
+                                            </mat-slide-toggle>
+                                            <mat-slide-toggle [ngModel]="config.chat_squadron_tabbed_var"
+                                                              (ngModelChange)="onConfigChange({chat_squadron_tabbed_var: $event})">
+                                                Squadron
+                                            </mat-slide-toggle>
+                                            <mat-slide-toggle [ngModel]="config.chat_direct_tabbed_var"
+                                                              (ngModelChange)="onConfigChange({chat_direct_tabbed_var: $event})">
+                                                Direct
+                                            </mat-slide-toggle>
+                                        </div>
+                                    }
                                 </div>
                             </div>
                         </ng-container>
