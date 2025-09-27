@@ -1197,31 +1197,31 @@ def send_message(obj, projected_states):
             if not obj.get("channel") or obj.get("channel").lower() == "local":
                 typewrite("/l ", interval=0.02)
                 if chat_local_tabbed:
-                    keys.send('UI_Down', repeat=2)
+                    sleep(0.25)
                     keys.send('UI_Select')
                 return_message += " to local chat"
             elif obj.get("channel").lower() == "wing":
                 typewrite("/w ", interval=0.02)
                 if chat_wing_tabbed:
-                    keys.send('UI_Down', repeat=2)
+                    sleep(0.25)
                     keys.send('UI_Select')
                 return_message += " to wing chat"
             elif obj.get("channel").lower() == "system":
                 typewrite("/sy ", interval=0.02)
                 if chat_system_tabbed:
-                    keys.send('UI_Down', repeat=2)
+                    sleep(0.25)
                     keys.send('UI_Select')
                 return_message += " to system chat"
             elif obj.get("channel").lower() == "squadron":
                 typewrite("/s ", interval=0.02)
                 if chat_squadron_tabbed:
-                    keys.send('UI_Down', repeat=2)
+                    sleep(0.25)
                     keys.send('UI_Select')
                 return_message += " to squadron chat"
             elif obj.get("channel").lower() == "commander":
                 typewrite(f"/d {obj.get('recipient')} ", interval=0.02)
                 if chat_direct_tabbed:
-                    keys.send('UI_Down', repeat=2)
+                    sleep(0.25)
                     keys.send('UI_Select')
                 return_message += f" to {obj.get('recipient')}"
             else:
@@ -2368,9 +2368,10 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     }, send_message, 'global', permission='textMessage')
     
     register_web_actions(
-        actionManager, eventManager, 
-        llmClient, llmModelName, edKeys,
-        embeddingClient, embeddingModelName
+        actionManager, eventManager,
+        llmClient, llmModelName,
+        embeddingClient, embeddingModelName,
+        edKeys
     )
 
     register_ui_actions(

@@ -1767,7 +1767,11 @@ def body_finder(obj, projected_states):
 
 
 def register_web_actions(actionManager: ActionManager, eventManager: EventManager, 
-                         llmClient: openai.OpenAI, llmModelName: str, edKeys: EDKeys, embeddingModelName: str | None = None, embeddingClient: openai.OpenAI | None = None):
+                         llmClient: openai.OpenAI,
+                         llmModelName: str,
+                         embeddingClient: openai.OpenAI | None,
+                         embeddingModelName: str | None,
+                         edKeys: EDKeys):
     global event_manager, llm_client, llm_model_name, keys, embedding_model_name, embedding_client
     keys = edKeys
     event_manager = eventManager
