@@ -26,6 +26,12 @@ llm_model_name: str = None
 vision_model_name: str | None = None
 event_manager: EventManager = None
 
+chat_local_tabbed: bool = False
+chat_wing_tabbed: bool = False
+chat_system_tabbed: bool = True
+chat_squadron_tabbed: bool = False
+chat_direct_tabbed: bool = False
+
 # Checking status projection to exit game actions early if not applicable
 def checkStatus(projected_states: dict[str, dict], blocked_status_dict: dict[str, bool]):
     current_status = projected_states.get("CurrentStatus")
@@ -1190,20 +1196,33 @@ def send_message(obj, projected_states):
 
             if not obj.get("channel") or obj.get("channel").lower() == "local":
                 typewrite("/l ", interval=0.02)
+                if chat_local_tabbed:
+                    keys.send('UI_Down', repeat=2)
+                    keys.send('UI_Select')
                 return_message += " to local chat"
             elif obj.get("channel").lower() == "wing":
                 typewrite("/w ", interval=0.02)
+                if chat_wing_tabbed:
+                    keys.send('UI_Down', repeat=2)
+                    keys.send('UI_Select')
                 return_message += " to wing chat"
             elif obj.get("channel").lower() == "system":
                 typewrite("/sy ", interval=0.02)
-                keys.send('UI_Down', repeat=2)
-                keys.send('UI_Select')
+                if chat_system_tabbed:
+                    keys.send('UI_Down', repeat=2)
+                    keys.send('UI_Select')
                 return_message += " to system chat"
             elif obj.get("channel").lower() == "squadron":
                 typewrite("/s ", interval=0.02)
+                if chat_squadron_tabbed:
+                    keys.send('UI_Down', repeat=2)
+                    keys.send('UI_Select')
                 return_message += " to squadron chat"
             elif obj.get("channel").lower() == "commander":
                 typewrite(f"/d {obj.get('recipient')} ", interval=0.02)
+                if chat_direct_tabbed:
+                    keys.send('UI_Down', repeat=2)
+                    keys.send('UI_Select')
                 return_message += f" to {obj.get('recipient')}"
             else:
                 log('debug', f'invalid channel {obj.get("channel")}')
@@ -1281,7 +1300,14 @@ def target_subsystem(args, projected_states):
 
 def register_actions(actionManager: ActionManager, eventManager: EventManager, llmClient: openai.OpenAI,
                      llmModelName: str, visionClient: openai.OpenAI | None, visionModelName: str | None,
-                     edKeys: EDKeys, discovery_primary_var_flag: bool = True, discovery_firegroup_var_flag: int = 1):
+                     edKeys: EDKeys,
+                     discovery_primary_var_flag: bool = True,
+                     discovery_firegroup_var_flag: int = 1,
+                     chat_local_tabbed_flag: bool = False,
+                     chat_wing_tabbed_flag: bool = False,
+                     chat_system_tabbed_flag: bool = True,
+                     chat_squadron_tabbed_flag: bool = False,
+                     chat_direct_tabbed_flag: bool = False):
     global event_manager, vision_client, llm_client, llm_model_name, vision_model_name, keys
     keys = edKeys
     event_manager = eventManager
@@ -1292,6 +1318,13 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     global discovery_primary_var, discovery_firegroup_var
     discovery_primary_var = discovery_primary_var_flag
     discovery_firegroup_var = discovery_firegroup_var_flag
+    # Chat channel tab settings
+    global chat_local_tabbed, chat_wing_tabbed, chat_system_tabbed, chat_squadron_tabbed, chat_direct_tabbed
+    chat_local_tabbed = chat_local_tabbed_flag
+    chat_wing_tabbed = chat_wing_tabbed_flag
+    chat_system_tabbed = chat_system_tabbed_flag
+    chat_squadron_tabbed = chat_squadron_tabbed_flag
+    chat_direct_tabbed = chat_direct_tabbed_flag
 
     setGameWindowActive()
 

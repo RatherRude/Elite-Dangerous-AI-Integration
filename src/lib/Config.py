@@ -394,6 +394,12 @@ class Config(TypedDict):
     allowed_actions: list[str]
     discovery_primary_var: bool
     discovery_firegroup_var: int
+    # Chat channel tab settings (whether channel has its own tab in-game)
+    chat_local_tabbed_var: bool
+    chat_wing_tabbed_var: bool
+    chat_system_tabbed_var: bool
+    chat_squadron_tabbed_var: bool
+    chat_direct_tabbed_var: bool
     edcopilot: bool
     edcopilot_dominant: bool
     edcopilot_actions: bool
@@ -684,6 +690,12 @@ def load_config() -> Config:
         'allowed_actions': [],
         'discovery_primary_var': True,
         'discovery_firegroup_var': 1,
+        # Chat channel tab defaults
+        'chat_local_tabbed_var': False,
+        'chat_wing_tabbed_var': False,
+        'chat_system_tabbed_var': True,
+        'chat_squadron_tabbed_var': False,
+        'chat_direct_tabbed_var': False,
         'cn_autostart': False,
         'edcopilot': True,
         'edcopilot_dominant': False,

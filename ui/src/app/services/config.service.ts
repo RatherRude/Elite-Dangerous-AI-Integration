@@ -96,6 +96,12 @@ export interface Config {
     allowed_actions?: string[];
     discovery_primary_var: boolean;
     discovery_firegroup_var: number;
+    // Chat channel tab settings
+    chat_local_tabbed_var: boolean;
+    chat_wing_tabbed_var: boolean;
+    chat_system_tabbed_var: boolean;
+    chat_squadron_tabbed_var: boolean;
+    chat_direct_tabbed_var: boolean;
     edcopilot: boolean;
     edcopilot_actions: boolean;
     edcopilot_dominant: boolean;

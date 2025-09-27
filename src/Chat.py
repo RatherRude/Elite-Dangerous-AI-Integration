@@ -271,7 +271,12 @@ class Chat:
                 self.config["vision_model_name"],
                 self.ed_keys,
                 self.config.get("discovery_primary_var", True),
-                int(self.config.get("discovery_firegroup_var", 1) or 1)
+                int(self.config.get("discovery_firegroup_var", 1) or 1),
+                self.config.get("chat_local_tabbed_var", False),
+                self.config.get("chat_wing_tabbed_var", False),
+                self.config.get("chat_system_tabbed_var", True),
+                self.config.get("chat_squadron_tabbed_var", False),
+                self.config.get("chat_direct_tabbed_var", False)
             )
 
             log('info', "Built-in Actions ready.")
