@@ -42,12 +42,45 @@ class Assistant:
         if isinstance(event, MemoryEvent):
             self.short_term_memories.append(event)
             self.short_term_memories = self.short_term_memories[-5:]
+        
+        # Auto actions after a hyperspace jump: optional autobrake and/or autoscan
+        try:
+            if (isinstance(event, GameEvent) and event.content.get('event') == 'FSDJump' and
+                    (self.config.get("qol_autoscan", False) or self.config.get("qol_autobrake", False))):
+                # Build actions according to QoL flags
+                request, results, descriptions, labels = [], [], [], []
+
+                if self.config.get("qol_autobrake"):
+                    speed_args = {"speed": "Zero"}
+                    speed_result = set_speed(speed_args, projected_states)
+                    request.append({"id": "auto-fsd-1", "type": "function", "function": {"name": "setSpeed", "arguments": json.dumps(speed_args)}})
+                    results.append({"tool_call_id": "auto-fsd-1", "role": "tool", "name": "setSpeed", "content": speed_result})
+                    descriptions.append("Reducing speed to 0")
+                    labels.append("SetSpeedZero")
+
+                if self.config.get("qol_autoscan"):
+                    fire_args = {
+                        "weaponType": "discovery_scanner",
+                        "action": "fire",
+                        "discoveryPrimary": bool(self.config.get("discovery_primary_var", True)),
+                        "discoveryFiregroup": int(self.config.get("discovery_firegroup_var", 1) or 1),
+                    }
+                    fire_result = fire_weapons(fire_args, projected_states)
+                    request.append({"id": "auto-fsd-2", "type": "function", "function": {"name": "fireWeapons", "arguments": json.dumps(fire_args)}})
+                    results.append({"tool_call_id": "auto-fsd-2", "role": "tool", "name": "fireWeapons", "content": fire_result})
+                    descriptions.append("Performing discovery scan")
+                    labels.append("DiscoveryScan")
+
+                if request:
+                    self.event_manager.add_tool_call(request, results, descriptions)
+        except Exception as e:
+            log('error', 'Auto actions on FSDJump failed', e, traceback.format_exc())
 
         if isinstance(event, ConversationEvent) and event.kind == 'assistant':
             short_term = self.event_manager.get_short_term_memory()
-            log('info', f'Short-term memory length: {len(short_term)} events')
             # Rate-limit by wall-clock time since the last MemoryEvent summary
             last_memory_time = self.short_term_memories[-1].processed_at if len(self.short_term_memories) else 0.0
+            log('info', f'Short-term memory length: {len(short_term)} events since {last_memory_time}')
             if len(short_term) > 60 and not self.is_summarizing and (time() - last_memory_time >= 60):
                 self.is_summarizing = True
                 Thread(target=self.summarize_memory, args=(short_term[30:],), daemon=True).start()
@@ -88,6 +121,7 @@ class Assistant:
         ).data[0].embedding
         
         self.event_manager.add_memory_event(
+            self.config["embedding_model_name"],
             last_processed_at=memory_until,
             content=response.choices[0].message.content or 'Error',
             metadata={"original_text": chat_text, "content": response.choices[0].message.content},
@@ -96,38 +130,6 @@ class Assistant:
         log('info', f'Summarized {len(memory)} events into long-term memory up to {memory_until}')
         self.is_summarizing = False
 
-        # Auto actions after a hyperspace jump: optional autobrake and/or autoscan
-        try:
-            if (isinstance(event, GameEvent) and event.content.get('event') == 'FSDJump' and
-                    (self.config.get("qol_autoscan", False) or self.config.get("qol_autobrake", False))):
-                # Build actions according to QoL flags
-                request, results, descriptions, labels = [], [], [], []
-
-                if self.config.get("qol_autobrake"):
-                    speed_args = {"speed": "Zero"}
-                    speed_result = set_speed(speed_args, projected_states)
-                    request.append({"id": "auto-fsd-1", "type": "function", "function": {"name": "setSpeed", "arguments": json.dumps(speed_args)}})
-                    results.append({"tool_call_id": "auto-fsd-1", "role": "tool", "name": "setSpeed", "content": speed_result})
-                    descriptions.append("Reducing speed to 0")
-                    labels.append("SetSpeedZero")
-
-                if self.config.get("qol_autoscan"):
-                    fire_args = {
-                        "weaponType": "discovery_scanner",
-                        "action": "fire",
-                        "discoveryPrimary": bool(self.config.get("discovery_primary_var", True)),
-                        "discoveryFiregroup": int(self.config.get("discovery_firegroup_var", 1) or 1),
-                    }
-                    fire_result = fire_weapons(fire_args, projected_states)
-                    request.append({"id": "auto-fsd-2", "type": "function", "function": {"name": "fireWeapons", "arguments": json.dumps(fire_args)}})
-                    results.append({"tool_call_id": "auto-fsd-2", "role": "tool", "name": "fireWeapons", "content": fire_result})
-                    descriptions.append("Performing discovery scan")
-                    labels.append("DiscoveryScan")
-
-                if request:
-                    self.event_manager.add_tool_call(request, results, descriptions)
-        except Exception as e:
-            log('error', 'Auto actions on FSDJump failed', e, traceback.format_exc())
 
     def execute_actions(self, actions: list[dict[str, Any]], projected_states: dict[str, dict]):
         action_descriptions: list[str | None] = []

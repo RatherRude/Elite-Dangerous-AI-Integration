@@ -5,6 +5,7 @@ from typing import Any, final
 import sqlite_vec
 import threading
 
+from .Logger import log
 from .Config import get_cn_appdata_path
 
 def get_db_path() -> str:
@@ -136,14 +137,76 @@ class EventStore():
 
 @final
 class VectorStore():
-    def __init__(self, store_name: str, embedding_dim: int = 384):
-        conn = get_connection()
-        cursor = conn.cursor()
+    def __init__(self, store_name: str):
         self.store_name = store_name
         self.table_name = f'{store_name}_v1'
         self.vector_table = f'{store_name}_vec_v1'
+        self.meta_table = f'{store_name}_vec_meta_v1'
+        self.initialized = False
+    
+    def get_current_embedding_dim(self) -> int | None:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(f'''
+            PRAGMA table_info({self.vector_table})
+        ''')
+        columns = cursor.fetchall()
+        if columns:
+            # Table exists, check embedding dimension
+            cursor.execute(f'''
+                SELECT sql
+                FROM sqlite_master
+                WHERE type='table' AND name=?
+            ''', (self.vector_table,))
+            row = cursor.fetchone()
+            if row:
+                create_sql = row[0]
+                start = create_sql.find('FLOAT[') + len('FLOAT[')
+                end = create_sql.find(']', start)
+                if start != -1 and end != -1:
+                    try:
+                        return int(create_sql[start:end])
+                    except ValueError:
+                        return None
+        return None
+    
+    def initialize(self, model_name: str, embedding_dim: int) -> None:
+        # check if vector table exists and has correct dimension and model name
+        current_dim = self.get_current_embedding_dim()
+        conn = get_connection()
+        cursor = conn.cursor()
 
-        # Create table for metadata
+        # Attempt to read existing model name metadata
+        stored_model_name: str | None = None
+        cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+            (self.meta_table,),
+        )
+        if cursor.fetchone():
+            cursor.execute(
+                f"SELECT value FROM {self.meta_table} WHERE key='model_name'"
+            )
+            row = cursor.fetchone()
+            if row:
+                stored_model_name = row[0]
+
+        # Determine mismatch conditions
+        mismatches: list[str] = []
+        if current_dim is not None and current_dim != embedding_dim:
+            mismatches.append(f"dimension {current_dim} (expected {embedding_dim})")
+        if stored_model_name is not None and stored_model_name != model_name:
+            mismatches.append(f"model '{stored_model_name}' (expected '{model_name}')")
+
+        # On any mismatch, drop existing tables to recreate them fresh
+        if mismatches:
+            log('warn', f"VectorStore '{self.store_name}' already initialized with {' and '.join(mismatches)}, dropping existing data.")
+            cursor.execute(f'DROP TABLE IF EXISTS {self.vector_table}')
+            cursor.execute(f'DROP TABLE IF EXISTS {self.table_name}')
+            cursor.execute(f'DROP TABLE IF EXISTS {self.meta_table}')
+            
+
+        # Always ensure required tables exist (recreate after drop or create if missing)
+        # Create table for metadata/content
         cursor.execute(f'''
             CREATE TABLE IF NOT EXISTS {self.table_name} (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -159,9 +222,30 @@ class VectorStore():
                 embedding FLOAT[{embedding_dim}],
             )
         ''')
+        
+        # Create table for store-level metadata and persist parameters
+        cursor.execute(f'''
+            CREATE TABLE IF NOT EXISTS {self.meta_table} (
+                key TEXT PRIMARY KEY,
+                value TEXT
+            )
+        ''')
+        cursor.execute(f'''
+            INSERT INTO {self.meta_table} (key, value)
+            VALUES ('model_name', ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value
+        ''', (model_name,))
+        cursor.execute(f'''
+            INSERT INTO {self.meta_table} (key, value)
+            VALUES ('embedding_dim', ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value
+        ''', (str(embedding_dim),))
+        conn.commit()
+        
+        self.initialized = True
 
 
-    def store(self, content: str, embedding: list[float], metadata: dict[str, Any]) -> None:
+    def store(self, model_name: str, content: str, embedding: list[float], metadata: dict[str, Any]) -> None:
         """
         Store an embedding vector with associated metadata. The AUTOINCREMENT id
         generated for the metadata/content row is reused as the rowid of the
@@ -172,6 +256,8 @@ class VectorStore():
             embedding: List of floats representing the embedding vector
             metadata: Dictionary of metadata to store with the embedding
         """
+        if not self.initialized:
+            self.initialize(model_name, len(embedding))
         conn = get_connection()
         cursor = conn.cursor()
         # Store metadata in the main table
@@ -194,7 +280,7 @@ class VectorStore():
 
         conn.commit()
 
-    def search(self, query_embedding: list[float], n: int = 5) -> list[tuple[int, str, dict[str, Any], float]]:
+    def search(self, model_name: str, query_embedding: list[float], n: int = 5) -> list[tuple[int, str, dict[str, Any], float]]:
         """
         Search for similar embeddings
         
@@ -205,6 +291,9 @@ class VectorStore():
         Returns:
             List of tuples containing (id, metadata, similarity_score)
         """
+        if not self.initialized:
+            self.initialize(model_name, len(query_embedding))
+            return []
         conn = get_connection()
         cursor = conn.cursor()
         # Convert query embedding to JSON for the match query
@@ -236,6 +325,9 @@ class VectorStore():
 
     def delete(self, id: str) -> None:
         """Delete an embedding by id"""
+        if not self.initialized:
+            log('error', f"VectorStore '{self.store_name}' not initialized. Call 'initialize' first.")
+            return
         conn = get_connection()
         cursor = conn.cursor()
         # Delete from metadata table
@@ -254,6 +346,9 @@ class VectorStore():
 
     def delete_all(self) -> None:
         """Delete all embeddings"""
+        if not self.initialized:
+            log('error', f"VectorStore '{self.store_name}' not initialized. Call 'initialize' first.")
+            return
         conn = get_connection()
         cursor = conn.cursor()
         cursor.execute(f'''

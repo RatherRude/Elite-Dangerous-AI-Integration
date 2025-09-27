@@ -36,7 +36,7 @@ class EventManager:
         event_store.delete_all()
         projection_store = KeyValueStore('projections')
         projection_store.delete_all()
-        vector_store = VectorStore('memory', embedding_dim=1536)
+        vector_store = VectorStore('memory')
         vector_store.delete_all()
     
     def __init__(
@@ -59,7 +59,7 @@ class EventManager:
         
         self.short_term_memory = EventStore('events', self.event_classes)
         self.projection_store = KeyValueStore('projections')
-        self.long_term_memory = VectorStore('memory', embedding_dim=1536)
+        self.long_term_memory = VectorStore('memory')
         
         min_history_id, max_history_id = self.load_history()
         self.min_history_id = min_history_id
@@ -130,11 +130,11 @@ class EventManager:
         event = ToolEvent(request=request, results=results, text=text)
         self.incoming.put(event)
 
-    def add_memory_event(self, last_processed_at: float, content: str, metadata: dict, embedding: list[float]):
+    def add_memory_event(self, model_name: str, last_processed_at: float, content: str, metadata: dict, embedding: list[float]):
         event = MemoryEvent(content=content, metadata=metadata, embedding=embedding)
         event.processed_at = last_processed_at
         self.short_term_memory.memorize_before(event.processed_at)
-        self.long_term_memory.store(event.content, event.embedding, event.metadata)
+        self.long_term_memory.store(model_name, event.content, event.embedding, event.metadata)
         self.incoming.put(event)
         
     def get_short_term_memory(self) -> list[Event]:

@@ -1273,7 +1273,7 @@ def update_config(config: Config, data: dict) -> Config:
 
         elif data["embedding_provider"] == "google-ai-studio":
             data["embedding_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
-            data["embedding_model_name"] = "gemini-embedding"
+            data["embedding_model_name"] = "gemini-embedding-001"
             data["embedding_api_key"] = ""
 
         elif data["embedding_provider"] == "custom":

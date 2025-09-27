@@ -1168,12 +1168,16 @@ def retrieve_memories(obj, projected_states):
     k = max(1, min(k, 20))
 
     # Create embedding for the query and search the vector store
+    if not embedding_client or not embedding_model_name:
+        log('warn', 'Embeddings model not configured, cannot search memories.')
+        return 'Unable to search memories, please configure the embedding model.'
+    
     embedding = embedding_client.embeddings.create(
-        model=embedding_model_name or "text-embedding-3-small",
+        model=embedding_model_name,
         input=query
     ).data[0].embedding
 
-    results = event_manager.long_term_memory.search(embedding, n=k)
+    results = event_manager.long_term_memory.search(embedding_model_name, embedding, n=k)
 
     if not results:
         return f"No relevant memories found for '{query}'."
@@ -1187,7 +1191,7 @@ def retrieve_memories(obj, projected_states):
         formatted.append(item)
 
     yaml_output = yaml.dump(formatted, default_flow_style=False, sort_keys=False)
-    return f"Top {len(formatted)} memory matches for '{query}':\n\n```yaml\n{yaml_output}```"
+    return f"Top {len(formatted)} memory matches for '{query}':\n\n```yaml\n{yaml_output}\n```"
 
 
 # Helper function
