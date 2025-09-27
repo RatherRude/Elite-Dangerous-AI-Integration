@@ -285,7 +285,7 @@ class Chat:
                 self.config["embedding_model_name"], 
                 self.ed_keys,
                 self.config.get("discovery_primary_var", True),
-                int(self.config.get("discovery_firegroup_var", 1) or 1),
+                self.config.get("discovery_firegroup_var", 1),
                 self.config.get("chat_local_tabbed_var", False),
                 self.config.get("chat_wing_tabbed_var", False),
                 self.config.get("chat_system_tabbed_var", True),
