@@ -115,13 +115,15 @@ class Assistant:
                 {"role": "user", "content": "Summarize the following events into short concise notes for long-term memory storage:\n<conversation>\n"+(chat_text)+'\n</conversation>'}],
             temperature=self.config["llm_temperature"],
         )
-        embedding = self.embeddingClient.embeddings.create(
+        
+        embedding_response = self.embeddingClient.embeddings.create(
             model=self.config["embedding_model_name"],
             input=response.choices[0].message.content
-        ).data[0].embedding
+        )
+        embedding = embedding_response.data[0].embedding
         
         self.event_manager.add_memory_event(
-            self.config["embedding_model_name"],
+            embedding_response.model,
             last_processed_at=memory_until,
             content=response.choices[0].message.content or 'Error',
             metadata={"original_text": chat_text, "content": response.choices[0].message.content},

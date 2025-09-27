@@ -1172,12 +1172,13 @@ def retrieve_memories(obj, projected_states):
         log('warn', 'Embeddings model not configured, cannot search memories.')
         return 'Unable to search memories, please configure the embedding model.'
     
-    embedding = embedding_client.embeddings.create(
+    embedding_response = embedding_client.embeddings.create(
         model=embedding_model_name,
         input=query
-    ).data[0].embedding
+    )
+    embedding = embedding_response.data[0].embedding
 
-    results = event_manager.long_term_memory.search(embedding_model_name, embedding, n=k)
+    results = event_manager.long_term_memory.search(embedding_response.model, embedding, n=k)
 
     if not results:
         return f"No relevant memories found for '{query}'."
