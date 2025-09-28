@@ -102,6 +102,8 @@ class EventStore():
         events = []
         for row in rows:
             instance = instantiate_class_by_name(self.event_classes, row[0], json.loads(row[1]))
+            instance.memorized_at = row[3]
+            instance.responded_at = row[4]
             events.append(instance)
         return events
 

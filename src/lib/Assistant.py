@@ -80,57 +80,62 @@ class Assistant:
             short_term = self.event_manager.get_short_term_memory()
             # Rate-limit by wall-clock time since the last MemoryEvent summary
             last_memory_time = self.short_term_memories[-1].processed_at if len(self.short_term_memories) else 0.0
-            log('info', f'Short-term memory length: {len(short_term)} events since {last_memory_time}')
-            if len(short_term) > 60 and not self.is_summarizing and (time() - last_memory_time >= 60):
+            log('info', f'Short-term memory length: {len(short_term)} events since {last_memory_time}, already summarizing: {self.is_summarizing}')
+            if len(short_term) > 60 and not self.is_summarizing and (time() - last_memory_time) >= 60:
+                log('info', f'Starting summarization of {len(short_term[30:])} events into long-term memory')
                 self.is_summarizing = True
                 Thread(target=self.summarize_memory, args=(short_term[30:],), daemon=True).start()
 
     def summarize_memory(self, memory: list[Event]):
-        memory_until = memory[0].processed_at
-        
-        chat = []
+        try:
+            memory_until = memory[0].processed_at
+            
+            chat = []
 
-        for i,event in enumerate(memory):
-            if isinstance(event, GameEvent):
-                chat.append(event.content.get('timestamp') +': '+ event.content.get('event'))
-            if isinstance(event, ProjectedEvent):
-                chat.append(event.content.get('timestamp','') +': '+ event.content.get('event'))
-            if isinstance(event, StatusEvent):
-                if event.status.get('event','').lower() == 'status':
-                    continue
-                chat.append(event.status.get('timestamp', '') +': '+ event.status.get('event'))
-            if isinstance(event, ConversationEvent):
-                if event.kind not in ['user', 'assistant']:
-                    continue
-                chat.append(event.timestamp +' '+ event.kind +': '+ event.content)
-        for mem in self.short_term_memories:
-            chat.append(mem.timestamp +' [Previous Memory]: '+ mem.content)
+            for i,event in enumerate(memory):
+                if isinstance(event, GameEvent):
+                    chat.append(event.content.get('timestamp') +': '+ event.content.get('event'))
+                if isinstance(event, ProjectedEvent):
+                    chat.append(event.content.get('timestamp','') +': '+ event.content.get('event'))
+                if isinstance(event, StatusEvent):
+                    if event.status.get('event','').lower() == 'status':
+                        continue
+                    chat.append(event.status.get('timestamp', '') +': '+ event.status.get('event'))
+                if isinstance(event, ConversationEvent):
+                    if event.kind not in ['user', 'assistant']:
+                        continue
+                    chat.append(event.timestamp +' '+ event.kind +': '+ event.content)
+            for mem in self.short_term_memories:
+                chat.append(mem.timestamp +' [Previous Memory]: '+ mem.content)
 
-        chat_text = '\n'.join(reversed(chat))
+            chat_text = '\n'.join(reversed(chat))
 
-        response = self.llmClient.chat.completions.create(  # pyright: ignore[reportCallIssue]
-            model=self.config["llm_model_name"],
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant in Elite Dangerous that summarizes events and conversation into short concise notes for long-term memory storage. Only include important information that is not already stored in long-term memory. Do not include unimportant information, irrelevant details or repeated information. Do not include any timestamps in the summary.\nKeep it short to about 5 sentences."},
-                {"role": "user", "content": "Summarize the following events into short concise notes for long-term memory storage:\n<conversation>\n"+(chat_text)+'\n</conversation>'}],
-            temperature=self.config["llm_temperature"],
-        )
-        
-        embedding_response = self.embeddingClient.embeddings.create(
-            model=self.config["embedding_model_name"],
-            input=response.choices[0].message.content
-        )
-        embedding = embedding_response.data[0].embedding
-        
-        self.event_manager.add_memory_event(
-            embedding_response.model,
-            last_processed_at=memory_until,
-            content=response.choices[0].message.content or 'Error',
-            metadata={"original_text": chat_text, "content": response.choices[0].message.content},
-            embedding=embedding
-        )
-        log('info', f'Summarized {len(memory)} events into long-term memory up to {memory_until}')
-        self.is_summarizing = False
+            response = self.llmClient.chat.completions.create(  # pyright: ignore[reportCallIssue]
+                model=self.config["llm_model_name"],
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant in Elite Dangerous that summarizes events and conversation into short concise notes for long-term memory storage. Only include important information that is not already stored in long-term memory. Do not include unimportant information, irrelevant details or repeated information. Do not include any timestamps in the summary.\nKeep it short to about 5 sentences."},
+                    {"role": "user", "content": "Summarize the following events into short concise notes for long-term memory storage:\n<conversation>\n"+(chat_text)+'\n</conversation>'}],
+                temperature=self.config["llm_temperature"],
+            )
+            
+            embedding_response = self.embeddingClient.embeddings.create(
+                model=self.config["embedding_model_name"],
+                input=response.choices[0].message.content
+            )
+            embedding = embedding_response.data[0].embedding
+            
+            self.event_manager.add_memory_event(
+                embedding_response.model,
+                last_processed_at=memory_until,
+                content=response.choices[0].message.content or 'Error',
+                metadata={"original_text": chat_text, "content": response.choices[0].message.content},
+                embedding=embedding
+            )
+            log('info', f'Summarized {len(memory)} events into long-term memory up to {memory_until}')
+        except Exception as e:
+            log("debug", "Error during memory summarization:", e, traceback.format_exc())
+        finally:
+            self.is_summarizing = False
 
 
     def execute_actions(self, actions: list[dict[str, Any]], projected_states: dict[str, dict]):
@@ -194,8 +199,9 @@ class Assistant:
         try:
             events = self.event_manager.get_short_term_memory()
             events = list(reversed(events))
-            new_events = [event for event in events if not event.responded_at]
+            new_events = [event for event in events if event.responded_at == None]
             self.pending = []
+
             
             log('debug', 'Starting reply...')
             max_conversation_processed = max([event.processed_at for event in events]+[0.0])
