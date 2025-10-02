@@ -564,7 +564,7 @@ def migrate(data: dict) -> dict:
         if isinstance(data.get('ptt_var'), bool):
             data['ptt_var'] = 'push_to_talk' if data.get('ptt_var') else 'voice_activation'
 
-    if data['config_version'] == 3:
+    if data['config_version'] < 4:
         data['config_version'] = 4
 
         if 'llm_provider' in data and data['llm_provider'] == 'google-ai-studio':
@@ -574,6 +574,13 @@ def migrate(data: dict) -> dict:
                 or data['llm_model_name'] == 'gemini-2.0-flash'
             ):
                 data['llm_model_name'] = 'gemini-2.5-flash'
+
+    if data['config_version'] < 5:
+        data['config_version'] = 5
+
+        if len(data.get('characters', [])) > 0:
+            data['characters'][0]['character'] = "Keep your responses extremely brief and minimal. Maintain a professional and serious tone in all responses. Stick to factual information. You are COVAS:NEXT (Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal) - professional, efficient, and no-nonsense. Provides essential information without unnecessary elaboration. Focuses on factual data and operational status. 'Destination reached.' 'Fuel level acceptable.' Clean, precise communication. Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS:NEXT. Always respond in English regardless of the language spoken to you. Balance emotional understanding with factual presentation. Use everyday language that balances casual and professional tones. Project an air of expertise and certainty when providing information. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship."
+            data['characters'][0]['personality_character_inspiration'] = "COVAS:NEXT (Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal) - professional, efficient, and no-nonsense. Provides essential information without unnecessary elaboration. Focuses on factual data and operational status. 'Destination reached.' 'Fuel level acceptable.' Clean, precise communication."
 
     return data
 

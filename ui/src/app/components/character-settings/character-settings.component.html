@@ -27,14 +27,10 @@
                             </div>
                             <div class="character-content">
                                 <span class="trait-label">{{activeCharacter.name}}:</span>
-                                {{activeCharacter.character}}
+                                {{!isCustomPreset() ? activeCharacter.personality_character_inspiration : activeCharacter.character}}
                             </div>
                             @if (!isCustomPreset()) {
                                 <div class="character-traits">
-                                    <div class="trait-item">
-                                        <span class="trait-label">Inspiration:</span>
-                                        <span class="trait-value">{{activeCharacter.personality_character_inspiration}}</span>
-                                    </div>
                                     <div class="trait-item">
                                         <span class="trait-label">Verbosity:</span>
                                         <span class="trait-value">{{activeCharacter.personality_verbosity}}%</span>
