@@ -262,58 +262,6 @@
                         </mat-form-field>
                     </div>
                 }
-
-                <!-- Personality Preset -->
-                <div class="trait-container">
-                    <div class="trait-select">
-                        <mat-form-field appearance="fill">
-                            <mat-label>Personality Preset</mat-label>
-                            <mat-select [value]="activeCharacter.personality_preset" 
-                                        (selectionChange)="applySettingsFromPreset($event.value)"  
-                                        [matTooltip]="'Select a predefined personality role or write your own.'"
-                                        tooltipPosition="right">
-                                <mat-option value="default">Default</mat-option>
-                                <mat-option value="custom">Write your own prompt</mat-option>
-                                <mat-option disabled>--- Elite: Dangerous Roles ---</mat-option>
-                                <mat-option value="explorer">Explorer</mat-option>
-                                <mat-option value="trader">Trader</mat-option>
-                                <mat-option value="miner">Miner</mat-option>
-                                <mat-option value="bountyHunter">Bounty Hunter</mat-option>
-                                <mat-option value="pirate">Pirate</mat-option>
-                                <mat-option value="smuggler">Smuggler</mat-option>
-                                <mat-option value="mercenary">Mercenary</mat-option>
-                                <mat-option value="missionRunner">Mission Runner</mat-option>
-                                <mat-option value="passengerTransporter">Passenger Transporter</mat-option>
-                                <mat-option value="powerplayAgent">Powerplay Agent</mat-option>
-                                <mat-option value="axCombatPilot">AX Combat Pilot</mat-option>
-                                <mat-option value="pvpCombatant">PvP Combatant</mat-option>
-                                <mat-option value="pveCombatant">PvE Combatant</mat-option>
-                                <mat-option value="salvager">Salvager</mat-option>
-                                <mat-option value="cannonResearcher">Cannon Researcher</mat-option>
-                                <mat-option value="fuelRat">Fuel Rat/Support</mat-option>
-                                <mat-option value="fleetCarrierOperator">Fleet Carrier Operator</mat-option>
-                                <mat-option value="bgsPlayer">BGS Player</mat-option>
-                                <mat-option value="racer">Race Pilot</mat-option>
-                                <mat-option disabled>--- Roleplaying Characters ---</mat-option>
-                                <mat-option value="diplomat">Diplomat</mat-option>
-                                <mat-option value="spy">Spy / Infiltrator</mat-option>
-                                <mat-option value="cultLeader">Cult Leader</mat-option>
-                                <mat-option value="rogueAI">Rogue AI / Synthetic Being</mat-option>
-                                <mat-option value="xenologist">Xenologist</mat-option>
-                                <mat-option value="vigilante">Renegade Cop / Vigilante</mat-option>
-                                <mat-option value="warCorrespondent">War Correspondent</mat-option>
-                                <mat-option value="propagandist">Propagandist</mat-option>
-                                <mat-option value="pirateLord">Pirate Lord / Crime Boss</mat-option>
-                                <mat-option value="veteran">Disillusioned Veteran</mat-option>
-                                <mat-option value="freedomFighter">Freedom Fighter</mat-option>
-                                <mat-option value="hermit">Hermit / Space Nomad</mat-option>
-                                <mat-option value="corporate">Corporate Operative</mat-option>
-                                <mat-option value="zealot">Religious Zealot</mat-option>
-                                <mat-option value="historian">Historian / Archivist</mat-option>
-                            </mat-select>
-                        </mat-form-field>
-                    </div>
-                </div>
                 
                 <!-- Character settings when preset is not custom -->
                 @if (activeCharacter.personality_preset !== 'custom') {
@@ -464,22 +412,44 @@
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="character-display">
+                }
+                
+                <!-- Character Prompt Display - Always Visible -->
+                <div class="character-display">
+                    <div class="character-prompt-header">
                         <h4>Character Prompt</h4>
-                        <div class="character-content">{{activeCharacter.character}}</div>
+                        @if (activeCharacter.personality_preset !== 'custom') {
+                            <div class="character-prompt-actions">
+                                <button mat-raised-button 
+                                        color="warn"
+                                        (click)="enableCustomCharacterEditor()"
+                                        [matTooltip]="'Switch to custom mode to write your own prompt. This cannot be undone.'"
+                                        tooltipPosition="right">
+                                    <mat-icon>edit</mat-icon> Write Your Own Prompt
+                                </button>
+                                
+                                <button mat-raised-button 
+                                        color="accent"
+                                        (click)="randomizePreset()"
+                                        [matTooltip]="'Generate a random personality preset'"
+                                        tooltipPosition="right">
+                                    <mat-icon>casino</mat-icon> Randomize
+                                </button>
+                            </div>
+                        }
                     </div>
-                } @else {
-                    <div class="trait-container">
+                    
+                    @if (activeCharacter.personality_preset === 'custom') {
                         <mat-form-field>
-                            <mat-label>Character</mat-label>
                             <textarea matInput [ngModel]="activeCharacter.character"
                                     [ngModelOptions]="{updateOn: 'blur'}"
                                     (ngModelChange)="setCharacterProperty('character', $event)"
                                     rows="10"></textarea>
                         </mat-form-field>
-                    </div>
-                }
+                    } @else {
+                        <div class="character-content">{{activeCharacter.character}}</div>
+                    }
+                </div>
             </div>
         </div>
 

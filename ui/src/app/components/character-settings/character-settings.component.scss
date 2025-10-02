@@ -418,3 +418,29 @@ ul {
     height: 18px;
   }
 }
+
+// Character prompt header with action buttons
+.character-prompt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  
+  h4 {
+    margin: 0;
+    flex: 0 0 auto;
+  }
+  
+  .character-prompt-actions {
+    display: flex;
+    gap: 12px;
+    flex: 0 0 auto;
+    
+    button {
+      mat-icon {
+        margin-right: 8px;
+      }
+    }
+  }
+}
