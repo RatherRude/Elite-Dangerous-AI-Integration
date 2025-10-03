@@ -1461,4 +1461,11 @@ export class CharacterSettingsComponent {
             duration: 2000,
         });
     }
+
+    // Handle character inspiration contenteditable change
+    onCharacterInspirationChange(event: Event) {
+        const target = event.target as HTMLElement;
+        const newValue = target.textContent || '';
+        this.setCharacterPropertyAndUpdatePrompt('personality_character_inspiration', newValue);
+    }
 }

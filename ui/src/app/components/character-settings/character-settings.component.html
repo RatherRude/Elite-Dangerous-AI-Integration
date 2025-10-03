@@ -265,13 +265,16 @@
                         <div class="trait-container">
                             <!-- Character Inspiration -->
                             <div class="trait-select">
-                                <mat-form-field appearance="outline">
-                                    <mat-label>Character Inspiration</mat-label>
-                                    <input matInput
-                                        [ngModel]="activeCharacter.personality_character_inspiration"
-                                        [ngModelOptions]="{updateOn: 'blur'}"
-                                        (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_character_inspiration', $event)">
-                                </mat-form-field>
+                                <div class="character-inspiration-wrapper">
+                                    <label class="character-inspiration-label">Character Inspiration</label>
+                                    <div class="character-inspiration-editable"
+                                         contenteditable="true"
+                                         [textContent]="activeCharacter.personality_character_inspiration"
+                                         (blur)="onCharacterInspirationChange($event)"
+                                         role="textbox"
+                                         aria-multiline="true">
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
