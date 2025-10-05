@@ -38,6 +38,8 @@ export class BehaviorSettingsComponent {
     showWebDetails = false;
     showUIDetails = false;
     showWeaponTypes = false;
+    // Track which weapons are in edit mode (by index)
+    weaponEditMode: Set<number> = new Set();
 
     // Permission keys by category (must match backend registrations)
     readonly gamePermissions: string[] = [
@@ -169,7 +171,7 @@ export class BehaviorSettingsComponent {
         await this.onConfigChange({ ...( { allowed_actions: next } as any) });
     }
 
-    addWeapon() {
+    async addWeapon() {
         if (!this.config) return;
         
         const newWeapon: WeaponType = {
@@ -183,21 +185,42 @@ export class BehaviorSettingsComponent {
         };
         
         const updatedWeapons = [...this.config.weapon_types, newWeapon];
-        this.onConfigChange({ weapon_types: updatedWeapons });
+        const newIndex = updatedWeapons.length - 1;
+        
+        await this.onConfigChange({ weapon_types: updatedWeapons });
+        
+        // Automatically open new weapon in edit mode after config is saved
+        this.weaponEditMode.add(newIndex);
     }
 
-    removeWeapon(index: number) {
+    async removeWeapon(index: number) {
         if (!this.config) return;
         
         const updatedWeapons = this.config.weapon_types.filter((_, i) => i !== index);
-        this.onConfigChange({ weapon_types: updatedWeapons });
+        
+        await this.onConfigChange({ weapon_types: updatedWeapons });
+        
+        // Clean up edit mode set after removal
+        // Remove from edit mode set
+        this.weaponEditMode.delete(index);
+        
+        // Adjust indices in edit mode set for weapons after the deleted one
+        const newEditMode = new Set<number>();
+        this.weaponEditMode.forEach(idx => {
+            if (idx > index) {
+                newEditMode.add(idx - 1);
+            } else if (idx < index) {
+                newEditMode.add(idx);
+            }
+        });
+        this.weaponEditMode = newEditMode;
     }
 
     updateWeaponName(index: number, name: string) {
         if (!this.config) return;
         
-        // Remove empty/whitespace-only characters and limit to 20 chars
-        const cleanedName = name.replace(/\s+/g, ' ').trim().substring(0, 20);
+        // Remove extra whitespace and limit to 20 chars
+        const cleanedName = name.replace(/\s+/g, ' ').substring(0, 20);
         
         const updatedWeapons = [...this.config.weapon_types];
         updatedWeapons[index] = { ...updatedWeapons[index], name: cleanedName };
@@ -271,19 +294,43 @@ export class BehaviorSettingsComponent {
         
         const parts: string[] = [];
         
+        // Add fire group and fire type
+        parts.push(`FG${weapon.fire_group}`);
+        parts.push(weapon.is_primary ? 'Primary' : 'Secondary');
+        parts.push(weapon.is_combat ? 'Combat' : 'Analysis');
+        
+        // Add action details
         if (weapon.action === 'start') {
             parts.push('Start continuous');
         } else if (weapon.action === 'stop') {
             parts.push('Stop firing');
         } else {
+            const actionParts: string[] = [];
             if (weapon.repetitions > 0) {
-                parts.push(`${weapon.repetitions + 1}x`);
+                actionParts.push(`${weapon.repetitions + 1}x`);
             }
             if (weapon.duration > 0) {
-                parts.push(`${weapon.duration}s hold`);
+                actionParts.push(`${weapon.duration}s`);
+            }
+            if (actionParts.length > 0) {
+                parts.push(actionParts.join(' '));
+            } else {
+                parts.push('Single shot');
             }
         }
         
-        return parts.length > 0 ? parts.join(', ') : 'Single shot';
+        return parts.join(' • ');
+    }
+
+    toggleWeaponEdit(index: number) {
+        if (this.weaponEditMode.has(index)) {
+            this.weaponEditMode.delete(index);
+        } else {
+            this.weaponEditMode.add(index);
+        }
+    }
+
+    isWeaponInEditMode(index: number): boolean {
+        return this.weaponEditMode.has(index);
     }
 }
