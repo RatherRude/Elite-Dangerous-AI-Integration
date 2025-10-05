@@ -3,13 +3,14 @@ import { CommonModule } from "@angular/common";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { MatSelectModule } from "@angular/material/select";
-import { Config, ConfigService } from "../../services/config.service.js";
+import { Config, ConfigService, WeaponType } from "../../services/config.service.js";
 import { Subscription } from "rxjs";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { FormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatButtonModule } from "@angular/material/button";
+import { MatIconModule } from "@angular/material/icon";
 
 @Component({
     selector: "app-behavior-settings",
@@ -23,6 +24,7 @@ import { MatButtonModule } from "@angular/material/button";
         MatSlideToggle,
         MatButtonToggleModule,
         MatSelectModule,
+        MatIconModule,
     ],
     templateUrl: "./behavior-settings.component.html",
     styleUrl: "./behavior-settings.component.css",
@@ -35,6 +37,7 @@ export class BehaviorSettingsComponent {
     showGameDetails = false;
     showWebDetails = false;
     showUIDetails = false;
+    showWeaponTypes = false;
 
     // Permission keys by category (must match backend registrations)
     readonly gamePermissions: string[] = [
@@ -164,5 +167,123 @@ export class BehaviorSettingsComponent {
         }
 
         await this.onConfigChange({ ...( { allowed_actions: next } as any) });
+    }
+
+    addWeapon() {
+        if (!this.config) return;
+        
+        const newWeapon: WeaponType = {
+            name: '',
+            fire_group: 1,
+            is_primary: true,
+            is_combat: true,
+            action: 'fire',
+            duration: 0,
+            repetitions: 0
+        };
+        
+        const updatedWeapons = [...this.config.weapon_types, newWeapon];
+        this.onConfigChange({ weapon_types: updatedWeapons });
+    }
+
+    removeWeapon(index: number) {
+        if (!this.config) return;
+        
+        const updatedWeapons = this.config.weapon_types.filter((_, i) => i !== index);
+        this.onConfigChange({ weapon_types: updatedWeapons });
+    }
+
+    updateWeaponName(index: number, name: string) {
+        if (!this.config) return;
+        
+        // Remove empty/whitespace-only characters and limit to 20 chars
+        const cleanedName = name.replace(/\s+/g, ' ').trim().substring(0, 20);
+        
+        const updatedWeapons = [...this.config.weapon_types];
+        updatedWeapons[index] = { ...updatedWeapons[index], name: cleanedName };
+        this.onConfigChange({ weapon_types: updatedWeapons });
+    }
+
+    updateWeaponFireGroup(index: number, fireGroup: number) {
+        if (!this.config) return;
+        
+        const updatedWeapons = [...this.config.weapon_types];
+        updatedWeapons[index] = { ...updatedWeapons[index], fire_group: fireGroup };
+        this.onConfigChange({ weapon_types: updatedWeapons });
+    }
+
+    updateWeaponPrimary(index: number, isPrimary: boolean) {
+        if (!this.config) return;
+        
+        const updatedWeapons = [...this.config.weapon_types];
+        updatedWeapons[index] = { ...updatedWeapons[index], is_primary: isPrimary };
+        this.onConfigChange({ weapon_types: updatedWeapons });
+    }
+
+    updateWeaponMode(index: number, isCombat: boolean) {
+        if (!this.config) return;
+        
+        const updatedWeapons = [...this.config.weapon_types];
+        updatedWeapons[index] = { ...updatedWeapons[index], is_combat: isCombat };
+        this.onConfigChange({ weapon_types: updatedWeapons });
+    }
+
+    updateWeaponAction(index: number, action: string) {
+        if (!this.config) return;
+        
+        const updatedWeapons = [...this.config.weapon_types];
+        const updatedWeapon = { ...updatedWeapons[index], action };
+        
+        // Clear duration and repetitions when switching to start or stop
+        if (action === 'start' || action === 'stop') {
+            updatedWeapon.duration = 0;
+            updatedWeapon.repetitions = 0;
+        }
+        
+        updatedWeapons[index] = updatedWeapon;
+        this.onConfigChange({ weapon_types: updatedWeapons });
+    }
+
+    updateWeaponDuration(index: number, duration: number) {
+        if (!this.config) return;
+        
+        // Ensure duration is within bounds
+        const clampedDuration = Math.max(0, Math.min(30, duration || 0));
+        
+        const updatedWeapons = [...this.config.weapon_types];
+        updatedWeapons[index] = { ...updatedWeapons[index], duration: clampedDuration };
+        this.onConfigChange({ weapon_types: updatedWeapons });
+    }
+
+    updateWeaponRepetitions(index: number, repetitions: number) {
+        if (!this.config) return;
+        
+        // Ensure repetitions is within bounds
+        const clampedReps = Math.max(0, Math.min(10, Math.floor(repetitions || 0)));
+        
+        const updatedWeapons = [...this.config.weapon_types];
+        updatedWeapons[index] = { ...updatedWeapons[index], repetitions: clampedReps };
+        this.onConfigChange({ weapon_types: updatedWeapons });
+    }
+
+    getWeaponDescription(weapon: WeaponType): string {
+        if (!weapon.name) return '';
+        
+        const parts: string[] = [];
+        
+        if (weapon.action === 'start') {
+            parts.push('Start continuous');
+        } else if (weapon.action === 'stop') {
+            parts.push('Stop firing');
+        } else {
+            if (weapon.repetitions > 0) {
+                parts.push(`${weapon.repetitions + 1}x`);
+            }
+            if (weapon.duration > 0) {
+                parts.push(`${weapon.duration}s hold`);
+            }
+        }
+        
+        return parts.length > 0 ? parts.join(', ') : 'Single shot';
     }
 }

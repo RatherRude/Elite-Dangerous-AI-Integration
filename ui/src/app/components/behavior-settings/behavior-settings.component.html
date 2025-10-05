@@ -23,29 +23,141 @@
                                     <mat-slide-toggle [ngModel]="isPermissionEnabled(perm)"
                                                       (ngModelChange)="onTogglePermission(perm, $event)">{{ perm }}</mat-slide-toggle>
                                     @if (perm === 'fireWeapons') {
-                                        <div style="display:flex; gap: 8px; align-items:center; margin-left:12px;">
-                                            <mat-form-field appearance="fill" style="min-width: 220px;">
-                                                <mat-label>Discovery Scan</mat-label>
-                                                <mat-select [ngModel]="config.discovery_primary_var ? 'primary' : 'secondary'"
-                                                           (ngModelChange)="onConfigChange({discovery_primary_var: $event === 'primary'})">
-                                                    <mat-option value="primary">Primary</mat-option>
-                                                    <mat-option value="secondary">Secondary</mat-option>
-                                                </mat-select>
-                                            </mat-form-field>
-                                            <mat-form-field appearance="fill" style="min-width: 180px;">
-                                                <mat-label>Discovery Firegroup</mat-label>
-                                                <mat-select [ngModel]="config.discovery_firegroup_var"
-                                                           (ngModelChange)="onConfigChange({discovery_firegroup_var: $event})">
-                                                    <mat-option [value]="1">1</mat-option>
-                                                    <mat-option [value]="2">2</mat-option>
-                                                    <mat-option [value]="3">3</mat-option>
-                                                    <mat-option [value]="4">4</mat-option>
-                                                    <mat-option [value]="5">5</mat-option>
-                                                    <mat-option [value]="6">6</mat-option>
-                                                    <mat-option [value]="7">7</mat-option>
-                                                    <mat-option [value]="8">8</mat-option>
-                                                </mat-select>
-                                            </mat-form-field>
+                                        <div style="display:flex; flex-direction: column; gap: 12px; margin-left:12px; margin-top: 8px;">
+                                            <div style="display:flex; gap: 8px; align-items:center;">
+                                                <mat-form-field appearance="fill" style="min-width: 220px;">
+                                                    <mat-label>Discovery Scan</mat-label>
+                                                    <mat-select [ngModel]="config.discovery_primary_var ? 'primary' : 'secondary'"
+                                                               (ngModelChange)="onConfigChange({discovery_primary_var: $event === 'primary'})">
+                                                        <mat-option value="primary">Primary</mat-option>
+                                                        <mat-option value="secondary">Secondary</mat-option>
+                                                    </mat-select>
+                                                </mat-form-field>
+                                                <mat-form-field appearance="fill" style="min-width: 180px;">
+                                                    <mat-label>Discovery Firegroup</mat-label>
+                                                    <mat-select [ngModel]="config.discovery_firegroup_var"
+                                                               (ngModelChange)="onConfigChange({discovery_firegroup_var: $event})">
+                                                        <mat-option [value]="1">1</mat-option>
+                                                        <mat-option [value]="2">2</mat-option>
+                                                        <mat-option [value]="3">3</mat-option>
+                                                        <mat-option [value]="4">4</mat-option>
+                                                        <mat-option [value]="5">5</mat-option>
+                                                        <mat-option [value]="6">6</mat-option>
+                                                        <mat-option [value]="7">7</mat-option>
+                                                        <mat-option [value]="8">8</mat-option>
+                                                    </mat-select>
+                                                </mat-form-field>
+                                            </div>
+                                            
+                                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                                <div style="display: flex; align-items: center; gap: 8px;">
+                                                    <span style="font-weight: 500; opacity: .8; font-size: 14px;">Custom Weapon Types:</span>
+                                                    <button mat-stroked-button (click)="showWeaponTypes = !showWeaponTypes" style="height: 32px; line-height: 32px;">
+                                                        {{ showWeaponTypes ? 'Hide' : 'Show' }} ({{ config.weapon_types.length }})
+                                                    </button>
+                                                    <button mat-stroked-button color="primary" (click)="addWeapon()" style="height: 32px; line-height: 32px;">
+                                                        + Add
+                                                    </button>
+                                                </div>
+                                                
+                                                @if (showWeaponTypes && config.weapon_types.length > 0) {
+                                                    <div style="display: flex; flex-direction: column; gap: 8px; padding: 8px; background: rgba(0,0,0,0.2); border-radius: 4px;">
+                                                        @for (weapon of config.weapon_types; track $index) {
+                                                            <div style="display: flex; flex-direction: column; gap: 8px; padding: 8px; background: rgba(0,0,0,0.15); border-radius: 4px;">
+                                                                <div style="display: flex; gap: 8px; align-items: center;">
+                                                                    <mat-form-field appearance="fill" style="flex: 1; max-width: 200px;">
+                                                                        <mat-label>Name</mat-label>
+                                                                        <input matInput 
+                                                                               [ngModel]="weapon.name"
+                                                                               (ngModelChange)="updateWeaponName($index, $event)"
+                                                                               maxlength="20"
+                                                                               placeholder="Weapon name">
+                                                                    </mat-form-field>
+                                                                    
+                                                                    <mat-form-field appearance="fill" style="width: 100px;">
+                                                                        <mat-label>Group</mat-label>
+                                                                        <mat-select [ngModel]="weapon.fire_group"
+                                                                                   (ngModelChange)="updateWeaponFireGroup($index, $event)">
+                                                                            <mat-option [value]="1">1</mat-option>
+                                                                            <mat-option [value]="2">2</mat-option>
+                                                                            <mat-option [value]="3">3</mat-option>
+                                                                            <mat-option [value]="4">4</mat-option>
+                                                                            <mat-option [value]="5">5</mat-option>
+                                                                            <mat-option [value]="6">6</mat-option>
+                                                                            <mat-option [value]="7">7</mat-option>
+                                                                            <mat-option [value]="8">8</mat-option>
+                                                                        </mat-select>
+                                                                    </mat-form-field>
+                                                                    
+                                                                    <mat-form-field appearance="fill" style="width: 110px;">
+                                                                        <mat-label>Fire</mat-label>
+                                                                        <mat-select [ngModel]="weapon.is_primary ? 'primary' : 'secondary'"
+                                                                                   (ngModelChange)="updateWeaponPrimary($index, $event === 'primary')">
+                                                                            <mat-option value="primary">Primary</mat-option>
+                                                                            <mat-option value="secondary">Secondary</mat-option>
+                                                                        </mat-select>
+                                                                    </mat-form-field>
+                                                                    
+                                                                    <mat-form-field appearance="fill" style="width: 110px;">
+                                                                        <mat-label>Mode</mat-label>
+                                                                        <mat-select [ngModel]="weapon.is_combat ? 'combat' : 'analysis'"
+                                                                                   (ngModelChange)="updateWeaponMode($index, $event === 'combat')">
+                                                                            <mat-option value="combat">Combat</mat-option>
+                                                                            <mat-option value="analysis">Analysis</mat-option>
+                                                                        </mat-select>
+                                                                    </mat-form-field>
+                                                                    
+                                                                    <button mat-icon-button color="warn" (click)="removeWeapon($index)" style="width: 32px; height: 32px;">
+                                                                        <span style="font-size: 18px;">✕</span>
+                                                                    </button>
+                                                                </div>
+                                                                
+                                                                <div style="display: flex; gap: 8px; align-items: center; margin-left: 8px;">
+                                                                    <mat-form-field appearance="fill" style="width: 110px;">
+                                                                        <mat-label>Action</mat-label>
+                                                                        <mat-select [ngModel]="weapon.action"
+                                                                                   (ngModelChange)="updateWeaponAction($index, $event)">
+                                                                            <mat-option value="fire">Fire</mat-option>
+                                                                            <mat-option value="start">Start</mat-option>
+                                                                            <mat-option value="stop">Stop</mat-option>
+                                                                        </mat-select>
+                                                                    </mat-form-field>
+                                                                    
+                                                                    @if (weapon.action === 'fire') {
+                                                                        <mat-form-field appearance="fill" style="width: 110px;">
+                                                                            <mat-label>Duration</mat-label>
+                                                                            <input matInput 
+                                                                                   type="number"
+                                                                                   [ngModel]="weapon.duration"
+                                                                                   (ngModelChange)="updateWeaponDuration($index, $event)"
+                                                                                   min="0"
+                                                                                   max="30"
+                                                                                   step="0.1"
+                                                                                   placeholder="0">
+                                                                            <span matSuffix>s</span>
+                                                                        </mat-form-field>
+                                                                        
+                                                                        <mat-form-field appearance="fill" style="width: 110px;">
+                                                                            <mat-label>Reps</mat-label>
+                                                                            <input matInput 
+                                                                                   type="number"
+                                                                                   [ngModel]="weapon.repetitions"
+                                                                                   (ngModelChange)="updateWeaponRepetitions($index, $event)"
+                                                                                   min="0"
+                                                                                   max="10"
+                                                                                   placeholder="0">
+                                                                        </mat-form-field>
+                                                                    }
+                                                                    
+                                                                    <span style="font-size: 12px; opacity: 0.6; margin-left: 8px;">
+                                                                        {{ getWeaponDescription(weapon) }}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                }
+                                            </div>
                                         </div>
                                     }
                                     @if (perm === 'textMessage') {

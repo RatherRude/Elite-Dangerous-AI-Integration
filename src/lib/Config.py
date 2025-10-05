@@ -322,6 +322,16 @@ game_events = {
 }
 
 
+class WeaponType(TypedDict):
+    name: str
+    fire_group: int
+    is_primary: bool  # primary or secondary fire
+    is_combat: bool  # combat or analysis mode
+    action: str  # 'fire', 'start', or 'stop'
+    duration: float  # Duration to hold fire button in seconds (for fire action only)
+    repetitions: int  # Number of additional repetitions (0 = single action)
+
+
 class Character(TypedDict, total=False):
     name: str
     character: str
@@ -394,6 +404,7 @@ class Config(TypedDict):
     allowed_actions: list[str]
     discovery_primary_var: bool
     discovery_firegroup_var: int
+    weapon_types: list[WeaponType]
     # Chat channel tab settings (whether channel has its own tab in-game)
     chat_local_tabbed_var: bool
     chat_wing_tabbed_var: bool
@@ -697,6 +708,7 @@ def load_config() -> Config:
         'allowed_actions': [],
         'discovery_primary_var': True,
         'discovery_firegroup_var': 1,
+        'weapon_types': [],
         # Chat channel tab defaults
         'chat_local_tabbed_var': False,
         'chat_wing_tabbed_var': False,
