@@ -1415,4 +1415,57 @@ export class CharacterSettingsComponent {
             }
         });
     }
+
+    // Enable custom character editor with confirmation
+    enableCustomCharacterEditor() {
+        if (!this.activeCharacter) return;
+
+        const dialogRef = this.confirmationDialog.openConfirmationDialog({
+            title: "Enable Custom Prompt",
+            message: "This will allow you to write your own character prompt. This action cannot be undone - you will need to create a new character to use presets again. Are you sure you want to continue?",
+            confirmButtonText: "Understood",
+            cancelButtonText: "Cancel",
+        });
+
+        dialogRef.subscribe((result: boolean) => {
+            if (result) {
+                // Enable custom character editor mode
+                this.applySettingsFromPreset('custom');
+                this.snackBar.open('Custom character editor enabled', 'OK', {
+                    duration: 3000,
+                });
+            }
+        });
+    }
+
+    // Randomize character preset
+    randomizePreset() {
+        if (!this.activeCharacter) return;
+
+        // Get all available presets except 'custom'
+        const availablePresets = Object.keys(CharacterPresets).filter(
+            preset => preset !== 'custom'
+        );
+
+        if (availablePresets.length === 0) return;
+
+        // Pick a random preset
+        const randomIndex = Math.floor(Math.random() * availablePresets.length);
+        const randomPreset = availablePresets[randomIndex];
+
+        // Apply the random preset
+        this.applySettingsFromPreset(randomPreset);
+
+        // Show notification to user
+        this.snackBar.open('Random personality preset applied!', 'OK', {
+            duration: 2000,
+        });
+    }
+
+    // Handle character inspiration contenteditable change
+    onCharacterInspirationChange(event: Event) {
+        const target = event.target as HTMLElement;
+        const newValue = target.textContent || '';
+        this.setCharacterPropertyAndUpdatePrompt('personality_character_inspiration', newValue);
+    }
 }
