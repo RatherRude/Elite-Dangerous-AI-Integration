@@ -128,11 +128,12 @@ mat-slide-toggle {
 .weapon-icon {
   font-size: 18px;
   line-height: 18px;
+  overflow: visible;
 }
 
 /* Weapon field widths */
 .field-group {
-  width: 55px;
+  width: 60px;
 }
 
 .field-fire {
@@ -148,9 +149,9 @@ mat-slide-toggle {
 }
 
 .field-duration {
-  width: 55px;
+  width: 60px;
 }
 
 .field-reps {
-  width: 55px;
+  width: 60px;
 }
