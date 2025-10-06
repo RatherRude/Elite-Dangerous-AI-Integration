@@ -276,7 +276,8 @@ class Chat:
                 self.config.get("chat_wing_tabbed_var", False),
                 self.config.get("chat_system_tabbed_var", True),
                 self.config.get("chat_squadron_tabbed_var", False),
-                self.config.get("chat_direct_tabbed_var", False)
+                self.config.get("chat_direct_tabbed_var", False),
+                self.config.get("weapon_types", [])
             )
 
             log('info', "Built-in Actions ready.")
