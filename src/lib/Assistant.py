@@ -99,16 +99,18 @@ class Assistant:
 
             chat = []
 
-            for i,event in enumerate(memory):
-                if isinstance(event, GameEvent):
-                    chat.append(event.content.get('timestamp') +': '+ event.content.get('event'))
-                if isinstance(event, ProjectedEvent):
-                    chat.append(event.content.get('timestamp','') +': '+ event.content.get('event'))
-                if isinstance(event, StatusEvent):
+            for event in memory:
+                if isinstance(event, GameEvent) or isinstance(event, ProjectedEvent):
+                    event_description = self.prompt_generator.get_event_template(event)
+                    if event_description:
+                        chat.append(f"{event.content.get('timestamp', '')}: {event_description}")
+                elif isinstance(event, StatusEvent):
                     if event.status.get('event','').lower() == 'status':
                         continue
-                    chat.append(event.status.get('timestamp', '') +': '+ event.status.get('event'))
-                if isinstance(event, ConversationEvent):
+                    event_description = self.prompt_generator.get_status_event_template(event)
+                    if event_description:
+                        chat.append(f"{event.status.get('timestamp', '')}: {event_description}")
+                elif isinstance(event, ConversationEvent):
                     if event.kind not in ['user', 'assistant']:
                         continue
                     chat.append(event.timestamp +' '+ event.kind +': '+ event.content)
