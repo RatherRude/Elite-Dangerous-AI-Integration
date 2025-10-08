@@ -15,6 +15,7 @@ export class ChatContainerComponent implements AfterViewChecked, OnChanges {
 
   chat: ChatMessage[] = [];
   private fullChat: ChatMessage[] = [];
+  private shouldScroll: boolean = false;
 
   private element!: ElementRef<HTMLElement>;
 
@@ -23,21 +24,32 @@ export class ChatContainerComponent implements AfterViewChecked, OnChanges {
     this.chatService.chatHistory$.subscribe((chat) => {
       console.log("chat received", chat);
       this.fullChat = chat;
+      const previousLength = this.chat.length;
       this.applyLimit();
-      setTimeout(() => {
-        this.scrollToBottom();
-      }, 0);
+      // Only scroll if new displayable messages were added
+      if (this.chat.length > previousLength) {
+        this.shouldScroll = true;
+      }
     });
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if ("limit" in changes) {
+      const previousLength = this.chat.length;
       this.applyLimit();
+      // Scroll if limit change affects displayed messages
+      if (this.chat.length !== previousLength) {
+        this.shouldScroll = true;
+      }
     }
   }
 
   ngAfterViewChecked() {
-    this.scrollToBottom();
+    // Only scroll when explicitly triggered by new displayable messages
+    if (this.shouldScroll) {
+      this.scrollToBottom();
+      this.shouldScroll = false;
+    }
   }
 
   private applyLimit(): void {
