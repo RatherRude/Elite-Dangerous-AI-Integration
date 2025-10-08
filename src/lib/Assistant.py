@@ -18,9 +18,10 @@ from .actions.Actions import set_speed, fire_weapons
 
 @final
 class Assistant:
-    def __init__(self, config: Config, enabled_game_events: list[str], event_manager: EventManager, action_manager: ActionManager, llmClient: OpenAI, tts: TTS, prompt_generator: PromptGenerator, copilot: EDCoPilot):
+    def __init__(self, config: Config, enabled_game_events: list[str], event_manager: EventManager, action_manager: ActionManager, llmClient: OpenAI, tts: TTS, prompt_generator: PromptGenerator, copilot: EDCoPilot, disabled_game_events: list[str] | None = None):
         self.config = config
         self.enabled_game_events = enabled_game_events
+        self.disabled_game_events = disabled_game_events if disabled_game_events is not None else []
         self.event_manager = event_manager
         self.action_manager = action_manager
         self.llmClient = llmClient
@@ -33,6 +34,12 @@ class Assistant:
         self.registered_should_reply_handlers: list[Callable[[Event, dict[str, Any]], bool | None]] = []
     
     def on_event(self, event: Event, projected_states: dict[str, Any]):
+        # Skip disabled game events from entering the pending state
+        if isinstance(event, GameEvent) or isinstance(event, StatusEvent):
+            event_type = event.content.get('event') if isinstance(event, GameEvent) else event.status.get('event')
+            if event_type in self.disabled_game_events:
+                return
+        
         self.pending.append(event)
         self.reply_pending = self.should_reply(projected_states)
 

@@ -136,6 +136,7 @@ class Chat:
             tts=self.tts,
             prompt_generator=self.prompt_generator,
             copilot=self.copilot,
+            disabled_game_events=disabled_events
         )
         self.is_replying = False
         self.listening = False
