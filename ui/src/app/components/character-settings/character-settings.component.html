@@ -27,14 +27,10 @@
                             </div>
                             <div class="character-content">
                                 <span class="trait-label">{{activeCharacter.name}}:</span>
-                                {{activeCharacter.character}}
+                                {{!isCustomPreset() ? activeCharacter.personality_character_inspiration : activeCharacter.character}}
                             </div>
                             @if (!isCustomPreset()) {
                                 <div class="character-traits">
-                                    <div class="trait-item">
-                                        <span class="trait-label">Inspiration:</span>
-                                        <span class="trait-value">{{activeCharacter.personality_character_inspiration}}</span>
-                                    </div>
                                     <div class="trait-item">
                                         <span class="trait-label">Verbosity:</span>
                                         <span class="trait-value">{{activeCharacter.personality_verbosity}}%</span>
@@ -85,27 +81,27 @@
                         @if (!editMode) {
                             <button mat-raised-button color="primary"
                                     [disabled]="selectedCharacterIndex === 0"
-                                    [matTooltip]="'Edit the selected character and event reactions.'"
+                                    [matTooltip]="'Enter edit mode to modify character name, personality traits, and event reactions'"
                                     (click)="toggleEditMode()">
                                 <mat-icon>edit</mat-icon> Edit
                             </button>
 
                             <button mat-raised-button color="accent" (click)="addNewCharacter()"
-                                    [matTooltip]="selectedCharacterIndex === 0 ? 'Create a new character to allow editing of character traits and prompt' : 'Create new character.'">
+                                    [matTooltip]="selectedCharacterIndex === 0 ? 'Create a new character with customizable traits and personality prompt' : 'Create a new character based on the current one'">
                                 <mat-icon>add</mat-icon> New
 
                             </button>
 
                             <button mat-raised-button color="accent" 
                                     (click)="duplicateSelectedCharacter()"
-                                    [matTooltip]="selectedCharacterIndex === 0 ? 'Duplicate this character. You can edit character traits after duplicating.': 'Duplicate this character.'">
+                                    [matTooltip]="selectedCharacterIndex === 0 ? 'Create a copy of this character that you can customize with different traits and settings' : 'Create a copy of this character with all current settings'">
                                 <mat-icon>content_copy</mat-icon> Duplicate
                             </button>
 
                             <button mat-raised-button color="warn"
                                     [disabled]="selectedCharacterIndex === 0"
                                     (click)="deleteSelectedCharacter()"
-                                    [matTooltip]="'Delete current character.'">
+                                    [matTooltip]="'Permanently delete the currently selected character'">
                                 <mat-icon>delete</mat-icon> Delete
                             </button>
                         }
@@ -113,12 +109,12 @@
                         <!-- When in edit mode, show Save and Cancel buttons -->
                         @if (editMode) {
                             <button mat-raised-button color="primary" (click)="saveCharacters()"
-                                    [matTooltip]="'Save character.'" >
+                                    [matTooltip]="'Save all changes made to this character'" >
                                 <mat-icon>save</mat-icon> Save
                             </button>
 
                             <button mat-raised-button (click)="cancelEditMode()"
-                                    [matTooltip]="'Cancel current edit.'" >
+                                    [matTooltip]="'Discard all unsaved changes and exit edit mode'" >
 
                                 <mat-icon>cancel</mat-icon> Cancel
                             </button>
@@ -262,58 +258,6 @@
                         </mat-form-field>
                     </div>
                 }
-
-                <!-- Personality Preset -->
-                <div class="trait-container">
-                    <div class="trait-select">
-                        <mat-form-field appearance="fill">
-                            <mat-label>Personality Preset</mat-label>
-                            <mat-select [value]="activeCharacter.personality_preset" 
-                                        (selectionChange)="applySettingsFromPreset($event.value)"  
-                                        [matTooltip]="'Select a predefined personality role or write your own.'"
-                                        tooltipPosition="right">
-                                <mat-option value="default">Default</mat-option>
-                                <mat-option value="custom">Write your own prompt</mat-option>
-                                <mat-option disabled>--- Elite: Dangerous Roles ---</mat-option>
-                                <mat-option value="explorer">Explorer</mat-option>
-                                <mat-option value="trader">Trader</mat-option>
-                                <mat-option value="miner">Miner</mat-option>
-                                <mat-option value="bountyHunter">Bounty Hunter</mat-option>
-                                <mat-option value="pirate">Pirate</mat-option>
-                                <mat-option value="smuggler">Smuggler</mat-option>
-                                <mat-option value="mercenary">Mercenary</mat-option>
-                                <mat-option value="missionRunner">Mission Runner</mat-option>
-                                <mat-option value="passengerTransporter">Passenger Transporter</mat-option>
-                                <mat-option value="powerplayAgent">Powerplay Agent</mat-option>
-                                <mat-option value="axCombatPilot">AX Combat Pilot</mat-option>
-                                <mat-option value="pvpCombatant">PvP Combatant</mat-option>
-                                <mat-option value="pveCombatant">PvE Combatant</mat-option>
-                                <mat-option value="salvager">Salvager</mat-option>
-                                <mat-option value="cannonResearcher">Cannon Researcher</mat-option>
-                                <mat-option value="fuelRat">Fuel Rat/Support</mat-option>
-                                <mat-option value="fleetCarrierOperator">Fleet Carrier Operator</mat-option>
-                                <mat-option value="bgsPlayer">BGS Player</mat-option>
-                                <mat-option value="racer">Race Pilot</mat-option>
-                                <mat-option disabled>--- Roleplaying Characters ---</mat-option>
-                                <mat-option value="diplomat">Diplomat</mat-option>
-                                <mat-option value="spy">Spy / Infiltrator</mat-option>
-                                <mat-option value="cultLeader">Cult Leader</mat-option>
-                                <mat-option value="rogueAI">Rogue AI / Synthetic Being</mat-option>
-                                <mat-option value="xenologist">Xenologist</mat-option>
-                                <mat-option value="vigilante">Renegade Cop / Vigilante</mat-option>
-                                <mat-option value="warCorrespondent">War Correspondent</mat-option>
-                                <mat-option value="propagandist">Propagandist</mat-option>
-                                <mat-option value="pirateLord">Pirate Lord / Crime Boss</mat-option>
-                                <mat-option value="veteran">Disillusioned Veteran</mat-option>
-                                <mat-option value="freedomFighter">Freedom Fighter</mat-option>
-                                <mat-option value="hermit">Hermit / Space Nomad</mat-option>
-                                <mat-option value="corporate">Corporate Operative</mat-option>
-                                <mat-option value="zealot">Religious Zealot</mat-option>
-                                <mat-option value="historian">Historian / Archivist</mat-option>
-                            </mat-select>
-                        </mat-form-field>
-                    </div>
-                </div>
                 
                 <!-- Character settings when preset is not custom -->
                 @if (activeCharacter.personality_preset !== 'custom') {
@@ -321,13 +265,16 @@
                         <div class="trait-container">
                             <!-- Character Inspiration -->
                             <div class="trait-select">
-                                <mat-form-field appearance="outline">
-                                    <mat-label>Character Inspiration</mat-label>
-                                    <input matInput
-                                        [ngModel]="activeCharacter.personality_character_inspiration"
-                                        [ngModelOptions]="{updateOn: 'blur'}"
-                                        (ngModelChange)="setCharacterPropertyAndUpdatePrompt('personality_character_inspiration', $event)">
-                                </mat-form-field>
+                                <div class="character-inspiration-wrapper">
+                                    <label class="character-inspiration-label">Character Inspiration</label>
+                                    <div class="character-inspiration-editable"
+                                         contenteditable="true"
+                                         [textContent]="activeCharacter.personality_character_inspiration"
+                                         (blur)="onCharacterInspirationChange($event)"
+                                         role="textbox"
+                                         aria-multiline="true">
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -464,22 +411,44 @@
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="character-display">
+                }
+                
+                <!-- Character Prompt Display - Always Visible -->
+                <div class="character-display">
+                    <div class="character-prompt-header">
                         <h4>Character Prompt</h4>
-                        <div class="character-content">{{activeCharacter.character}}</div>
+                        @if (activeCharacter.personality_preset !== 'custom') {
+                            <div class="character-prompt-actions">
+                                    <button mat-raised-button
+                                        color="warn"
+                                        (click)="enableCustomCharacterEditor()"
+                                        [matTooltip]="'Switch to custom mode to write your own character prompt. Warning: This action cannot be undone'"
+                                        tooltipPosition="right">
+                                    <mat-icon>edit</mat-icon> Write Your Own Prompt
+                                </button>
+
+                                <button mat-raised-button
+                                        color="accent"
+                                        (click)="randomizePreset()"
+                                        [matTooltip]="'Generate a random personality preset'"
+                                        tooltipPosition="right">
+                                    <mat-icon>casino</mat-icon> Randomize
+                                </button>
+                            </div>
+                        }
                     </div>
-                } @else {
-                    <div class="trait-container">
+                    
+                    @if (activeCharacter.personality_preset === 'custom') {
                         <mat-form-field>
-                            <mat-label>Character</mat-label>
                             <textarea matInput [ngModel]="activeCharacter.character"
                                     [ngModelOptions]="{updateOn: 'blur'}"
                                     (ngModelChange)="setCharacterProperty('character', $event)"
                                     rows="10"></textarea>
                         </mat-form-field>
-                    </div>
-                }
+                    } @else {
+                        <div class="character-content">{{activeCharacter.character}}</div>
+                    }
+                </div>
             </div>
         </div>
 
@@ -512,7 +481,7 @@
                     </mat-form-field>
 
                     <button mat-raised-button color="warn" (click)="resetGameEvents()"
-                            [matTooltip]="'Reset the event reactions to the default set.'">
+                            [matTooltip]="'Reset all event reaction settings to their default values'">
                         <mat-icon>restart_alt</mat-icon> Reset to Defaults
 
                     </button>
@@ -531,21 +500,31 @@
                                     <button mat-icon-button
                                             color="warn"
                                             (click)="muteAllEventsInCategory(section.key); $event.stopPropagation()"
-                                            [matTooltip]="'Mute all events in ' + section.key+' category'"
+                                            [matTooltip]="'Disable all event reactions in the ' + section.key + ' category'"
                                             class="mute-category-button">
                                         <mat-icon>volume_off</mat-icon>
                                     </button>
                                 </mat-panel-description>
                             </mat-expansion-panel-header>
                             @for (e of section.value | keyvalue:orderByKey; track e.key) {
-                                <mat-slide-toggle
-                                        [(ngModel)]="activeCharacter.game_events[e.key]"
-                                        (ngModelChange)="onEventConfigChange(section.key, e.key, $event)"
-                                        [appTooltip]="GameEventTooltips[e.key]"
-                                        tooltipPosition="right"
-                                    >
-                                        {{ e.key }}
-                                </mat-slide-toggle>
+                                <div class="event-row">
+                                    <mat-slide-toggle
+                                            [(ngModel)]="activeCharacter.game_events[e.key]"
+                                            (ngModelChange)="onEventConfigChange(section.key, e.key, $event)"
+                                            [matTooltip]="GameEventTooltips[e.key]"
+                                            matTooltipPosition="below"
+                                            [disabled]="isEventDisabled(e.key)"
+                                        >
+                                            {{ e.key }}
+                                    </mat-slide-toggle>
+                                    <button mat-icon-button
+                                            [color]="isEventDisabled(e.key) ? 'warn' : ''"
+                                            (click)="toggleEventDisabled(e.key, $event)"
+                                            [matTooltip]="isEventDisabled(e.key) ? 'This event is hidden from the LLM. Click to show.' : 'Hide this event from the LLM'"
+                                            class="disable-event-button">
+                                        <mat-icon>{{ isEventDisabled(e.key) ? 'visibility_off' : 'visibility' }}</mat-icon>
+                                    </button>
+                                </div>
                                 @if (e.key === "ProspectedAsteroid") {
                                     <mat-form-field>
                                         <mat-label>React to material</mat-label>
@@ -573,8 +552,8 @@
                                     <mat-slide-toggle
                                         [ngModel]="getCharacterProperty('react_to_danger_mining_var', false)"
                                         (ngModelChange)="setCharacterProperty('react_to_danger_mining_var', $event)"
-                                        [appTooltip]="'React to in danger whilst mining or not.'"
-                                        tooltipPosition="right"
+                                        [matTooltip]="'Enable or disable reactions to danger events while mining asteroids'"
+                                        matTooltipPosition="right"
                                     >
                                         React while mining
                                     </mat-slide-toggle>
@@ -584,8 +563,8 @@
                                     <mat-slide-toggle
                                         [ngModel]="getCharacterProperty('react_to_danger_onfoot_var', false)"
                                         (ngModelChange)="setCharacterProperty('react_to_danger_onfoot_var', $event)"
-                                        [appTooltip]="'React to in danger whilst on foot or not.'"
-                                        tooltipPosition="right"
+                                        [matTooltip]="'Enable or disable reactions to danger events while on foot in settlements or stations'"
+                                        matTooltipPosition="right"
                                     >
                                         React while on-foot
                                     </mat-slide-toggle>
@@ -595,8 +574,8 @@
                                     <mat-slide-toggle
                                         [ngModel]="getCharacterProperty('react_to_danger_supercruise_var', false)"
                                         (ngModelChange)="setCharacterProperty('react_to_danger_supercruise_var', $event)"
-                                        [appTooltip]="'React to in danger whilst in supercruise or not.'"
-                                        tooltipPosition="right"
+                                        [matTooltip]="'Enable or disable reactions to danger events while in supercruise'"
+                                        matTooltipPosition="right"
                                     >
                                         React while in supercruise
                                     </mat-slide-toggle>
@@ -608,8 +587,8 @@
                                     <mat-slide-toggle
                                         [ngModel]="getCharacterProperty('react_to_text_local_var', false)"
                                         (ngModelChange)="setCharacterProperty('react_to_text_local_var', $event)"
-                                        [appTooltip]="'React to local text or not'"
-                                        tooltipPosition="right"
+                                        [matTooltip]="'Enable or disable reactions to messages received in local chat'"
+                                        matTooltipPosition="right"
                                     >
                                     React to local text
                                     </mat-slide-toggle>
@@ -619,8 +598,8 @@
                                     <mat-slide-toggle
                                         [ngModel]="getCharacterProperty('react_to_text_starsystem_var', false)"
                                         (ngModelChange)="setCharacterProperty('react_to_text_starsystem_var', $event)"
-                                        [appTooltip]="'React to starsystem text or not'"
-                                        tooltipPosition="right"
+                                        [matTooltip]="'Enable or disable reactions to messages received in system chat'"
+                                        matTooltipPosition="right"
                                     >
                                         React to starsystem text
                                     </mat-slide-toggle>
@@ -630,8 +609,8 @@
                                     <mat-slide-toggle
                                         [ngModel]="getCharacterProperty('react_to_text_squadron_var', false)"
                                         (ngModelChange)="setCharacterProperty('react_to_text_squadron_var', $event)"
-                                        [appTooltip]="'React to squadron text or not'"
-                                        tooltipPosition="right"
+                                        [matTooltip]="'Enable or disable reactions to messages received in squadron chat'"
+                                        matTooltipPosition="right"
                                     >
                                         React to squadron text
                                     </mat-slide-toggle>
@@ -641,8 +620,8 @@
                                     <mat-slide-toggle
                                         [ngModel]="getCharacterProperty('react_to_text_npc_var', false)"
                                         (ngModelChange)="setCharacterProperty('react_to_text_npc_var', $event)"
-                                        [appTooltip]="'React to npc text or not'"
-                                        tooltipPosition="right"
+                                        [matTooltip]="'Enable or disable reactions to messages received from NPCs'"
+                                        matTooltipPosition="right"
                                     >
                                         React to NPC text
                                     </mat-slide-toggle>

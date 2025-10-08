@@ -17,3 +17,30 @@
 .message {
   color: #e0e0e0;
 }
+
+/* Event status styling */
+.event-disabled {
+  /*opacity: 0.4;*/
+}
+
+.event-disabled .message {
+  color: #999999;
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+
+.event-not-enabled {
+  /*opacity: 0.6;*/
+}
+
+.event-not-enabled .message {
+  color: #999999;
+}
+
+.event-enabled {
+  /* Default styling - no changes needed */
+}
+
+.event-enabled .message {
+  /*text-decoration: underline;*/
+}

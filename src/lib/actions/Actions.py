@@ -20,6 +20,7 @@ from ..ActionManager import ActionManager
 keys: EDKeys = None
 discovery_primary_var: bool = True
 discovery_firegroup_var: int = 1
+weapon_types: list = []
 vision_client: openai.OpenAI | None = None
 llm_client: openai.OpenAI = None
 llm_model_name: str = None
@@ -56,8 +57,46 @@ def fire_weapons(args, projected_states):
     duration = args.get('duration', None)  # Duration to hold fire button
     repetitions = args.get('repetitions', 0)  # 0 = one action, 1+ = repeat
 
-    # Determine key mapping
-    if weapon_type == 'discovery_scanner':
+    # Check if this is a custom weapon type
+    custom_weapon = None
+    for weapon in weapon_types:
+        weapon_key = weapon.get('name', '').lower().replace(' ', '_')
+        if weapon_key == weapon_type:
+            custom_weapon = weapon
+            break
+
+    # Handle custom weapon types
+    if custom_weapon:
+        # Use weapon's configured settings
+        weapon_name = custom_weapon.get('name', 'custom weapon')
+        fire_group = custom_weapon.get('fire_group', 1)
+        is_primary = custom_weapon.get('is_primary', True)
+        is_combat = custom_weapon.get('is_combat', True)
+        
+        # Use weapon's default action settings if not overridden in args
+        if 'action' not in args:
+            action = custom_weapon.get('action', 'fire').lower()
+        if duration is None and custom_weapon.get('duration', 0) > 0:
+            duration = custom_weapon.get('duration')
+        if repetitions == 0 and custom_weapon.get('repetitions', 0) > 0:
+            repetitions = custom_weapon.get('repetitions')
+        
+        # Set HUD mode
+        change_hud_mode({'hud mode': 'combat' if is_combat else 'analysis'}, projected_states)
+        
+        # Set fire group
+        try:
+            fg_index = max(0, min(7, int(fire_group) - 1))
+        except Exception:
+            fg_index = 0
+        cycle_fire_group({'fire_group': fg_index}, projected_states)
+        
+        # Determine key
+        key_name = 'PrimaryFire' if is_primary else 'SecondaryFire'
+        weapon_desc = weapon_name
+        
+    # Handle discovery scanner
+    elif weapon_type == 'discovery_scanner':
         change_hud_mode({'hud mode': 'analysis'}, projected_states)
         # Allow per-call overrides, fallback to configured globals
         fg_value = args.get('discoveryFiregroup', discovery_firegroup_var)
@@ -71,14 +110,16 @@ def fire_weapons(args, projected_states):
         # Use primary or secondary based on flag
         keys.send('PrimaryFire' if bool(primary_flag) else 'SecondaryFire', hold=6)
         return 'Discovery scan has been performed.'
-
-    change_hud_mode({'hud mode': 'combat'}, projected_states)
-    if weapon_type == 'secondary':
-        key_name = 'SecondaryFire'
-        weapon_desc = 'secondary weapons'
-    else:  # default to primary
-        key_name = 'PrimaryFire'
-        weapon_desc = 'primary weapons'
+    
+    # Handle standard primary/secondary
+    else:
+        change_hud_mode({'hud mode': 'combat'}, projected_states)
+        if weapon_type == 'secondary':
+            key_name = 'SecondaryFire'
+            weapon_desc = 'secondary weapons'
+        else:  # default to primary
+            key_name = 'PrimaryFire'
+            weapon_desc = 'primary weapons'
 
     # Handle different actions
     if action == 'fire':
@@ -672,9 +713,12 @@ def request_docking(args, projected_states):
     try:
         old_timestamp = projected_states.get('DockingEvents').get('Timestamp', "1970-01-01T00:00:01Z")
         # Wait for a docking event with a timestamp newer than when we started
-        event_manager.wait_for_condition('DockingEvents',
-                                         lambda s: ((s.get('LastEventType') in ['DockingGranted', 'DockingRequested', 'DockingCanceled', 'DockingDenied', 'DockingTimeout'])
+        docking_events = event_manager.wait_for_condition('DockingEvents',
+                                         lambda s: ((s.get('LastEventType') in ['DockingGranted', 'DockingCanceled', 'DockingDenied', 'DockingTimeout'])
                                                     and (s.get('Timestamp', "1970-01-01T00:00:02Z") != old_timestamp)), 10)
+        if docking_events.get('LastEventType') == 'DockingGranted' and projected_states.get('ShipInfo').get('hasDockingComputer', False):
+            keys.send('SetSpeedZero')
+            sleep(0.2)
         msg = ""
     except:
         msg = "Failed to request docking via menu"
@@ -1306,14 +1350,16 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                      chat_wing_tabbed_flag: bool = False,
                      chat_system_tabbed_flag: bool = True,
                      chat_squadron_tabbed_flag: bool = False,
-                     chat_direct_tabbed_flag: bool = False):
-    global event_manager, vision_client, llm_client, llm_model_name, vision_model_name, keys
+                     chat_direct_tabbed_flag: bool = False,
+                     weapon_types_list: list = []):
+    global event_manager, vision_client, llm_client, llm_model_name, vision_model_name, keys, weapon_types
     keys = edKeys
     event_manager = eventManager
     llm_client = llmClient
     llm_model_name = llmModelName
     vision_client = visionClient
     vision_model_name = visionModelName
+    weapon_types = weapon_types_list
     global discovery_primary_var, discovery_firegroup_var
     discovery_primary_var = discovery_primary_var_flag
     discovery_firegroup_var = discovery_firegroup_var_flag
@@ -1327,6 +1373,15 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
 
     setGameWindowActive()
 
+    # Build weapon type enum from custom weapons plus defaults
+    weapon_type_enum = ["primary", "secondary", "discovery_scanner"]
+    for weapon in weapon_types:
+        if weapon.get('name'):
+            # Convert name to lowercase and replace spaces with underscores for enum
+            weapon_key = weapon['name'].lower().replace(' ', '_')
+            if weapon_key and weapon_key not in weapon_type_enum:
+                weapon_type_enum.append(weapon_key)
+
     # Register actions - General Ship Actions
     actionManager.registerAction('fireWeapons', "Fire weapons with simple controls: single shot, start continuous, or stop", {
         "type": "object",
@@ -1334,11 +1389,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             "weaponType": {
                 "type": "string",
                 "description": "Type of weapons to fire",
-                "enum": [
-                    "primary",
-                    "secondary",
-                    "discovery_scanner"
-                ],
+                "enum": weapon_type_enum,
                 "default": "primary"
             },
             "action": {

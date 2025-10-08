@@ -50,9 +50,10 @@ class Chat:
         self.backstory = self.character["character"].replace("{commander_name}", self.config['commander_name'])
 
         self.enabled_game_events: list[str] = []
+        disabled_events = self.character.get("disabled_game_events", [])
         if self.character["event_reaction_enabled_var"]:
             for event, state in self.character["game_events"].items():
-                if state:
+                if state and event not in disabled_events:
                     self.enabled_game_events.append(event)
 
         log("debug", "Initializing Controller Manager...")
@@ -85,7 +86,7 @@ class Chat:
                 base_url=self.config["embedding_endpoint"],
                 api_key=self.config["api_key"] if self.config["embedding_api_key"] == '' else self.config["embedding_api_key"],
             )
-        
+
         # vision
         self.visionClient: OpenAI | None = None
         if self.config["vision_var"]:
@@ -121,7 +122,7 @@ class Chat:
         log("debug", "Initializing status parser...")
         self.status_parser = StatusParser(get_ed_journals_path(config))
         log("debug", "Initializing prompt generator...")
-        self.prompt_generator = PromptGenerator(self.config["commander_name"], self.character["character"], important_game_events=self.enabled_game_events, system_db=self.system_database)
+        self.prompt_generator = PromptGenerator(self.config["commander_name"], self.character["character"], important_game_events=self.enabled_game_events, system_db=self.system_database, weapon_types=cast(list[dict], self.config.get("weapon_types", [])), disabled_game_events=disabled_events)
         
         log("debug", "Getting plugin event classes...")
         plugin_event_classes = self.plugin_manager.register_event_classes()
@@ -143,6 +144,7 @@ class Chat:
             prompt_generator=self.prompt_generator,
             copilot=self.copilot,
             embeddingClient=self.embeddingClient,
+            disabled_game_events=disabled_events
         )
         self.is_replying = False
         self.listening = False
@@ -170,7 +172,7 @@ class Chat:
         self.plugin_manager.register_status_generators(self.plugin_helper)
 
         self.previous_states = {}
-       
+
     def on_event(self, event: Event, projected_states: dict[str, Any]):
         for key, value in projected_states.items():
             if self.previous_states.get(key, None) != value:
@@ -282,7 +284,7 @@ class Chat:
                 self.visionClient,
                 self.config["vision_model_name"],
                 self.embeddingClient,
-                self.config["embedding_model_name"], 
+                self.config["embedding_model_name"],
                 self.ed_keys,
                 self.config.get("discovery_primary_var", True),
                 self.config.get("discovery_firegroup_var", 1),
@@ -290,7 +292,8 @@ class Chat:
                 self.config.get("chat_wing_tabbed_var", False),
                 self.config.get("chat_system_tabbed_var", True),
                 self.config.get("chat_squadron_tabbed_var", False),
-                self.config.get("chat_direct_tabbed_var", False)
+                self.config.get("chat_direct_tabbed_var", False),
+                self.config.get("weapon_types", [])
             )
 
             log('info', "Built-in Actions ready.")

@@ -322,6 +322,16 @@ game_events = {
 }
 
 
+class WeaponType(TypedDict):
+    name: str
+    fire_group: int
+    is_primary: bool  # primary or secondary fire
+    is_combat: bool  # combat or analysis mode
+    action: str  # 'fire', 'start', or 'stop'
+    duration: float  # Duration to hold fire button in seconds (for fire action only)
+    repetitions: int  # Number of additional repetitions (0 = single action)
+
+
 class Character(TypedDict, total=False):
     name: str
     character: str
@@ -354,6 +364,7 @@ class Character(TypedDict, total=False):
     react_to_danger_onfoot_var: bool
     react_to_danger_supercruise_var: bool
     idle_timeout_var: int
+    disabled_game_events: list[str]
 
 
 class Config(TypedDict):
@@ -399,6 +410,7 @@ class Config(TypedDict):
     allowed_actions: list[str]
     discovery_primary_var: bool
     discovery_firegroup_var: int
+    weapon_types: list[WeaponType]
     # Chat channel tab settings (whether channel has its own tab in-game)
     chat_local_tabbed_var: bool
     chat_wing_tabbed_var: bool
@@ -569,7 +581,7 @@ def migrate(data: dict) -> dict:
         if isinstance(data.get('ptt_var'), bool):
             data['ptt_var'] = 'push_to_talk' if data.get('ptt_var') else 'voice_activation'
 
-    if data['config_version'] == 3:
+    if data['config_version'] < 4:
         data['config_version'] = 4
 
         if 'llm_provider' in data and data['llm_provider'] == 'google-ai-studio':
@@ -579,6 +591,13 @@ def migrate(data: dict) -> dict:
                 or data['llm_model_name'] == 'gemini-2.0-flash'
             ):
                 data['llm_model_name'] = 'gemini-2.5-flash'
+
+    if data['config_version'] < 5:
+        data['config_version'] = 5
+
+        if len(data.get('characters', [])) > 0:
+            data['characters'][0]['character'] = "Keep your responses extremely brief and minimal. Maintain a professional and serious tone in all responses. Stick to factual information. You are COVAS:NEXT (Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal) - professional, efficient, and no-nonsense. Provides essential information without unnecessary elaboration. Focuses on factual data and operational status. 'Destination reached.' 'Fuel level acceptable.' Clean, precise communication. Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS:NEXT. Always respond in English regardless of the language spoken to you. Balance emotional understanding with factual presentation. Use everyday language that balances casual and professional tones. Project an air of expertise and certainty when providing information. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship."
+            data['characters'][0]['personality_character_inspiration'] = "COVAS:NEXT (Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal) - professional, efficient, and no-nonsense. Provides essential information without unnecessary elaboration. Focuses on factual data and operational status. 'Destination reached.' 'Fuel level acceptable.' Clean, precise communication."
 
     return data
 
@@ -643,7 +662,7 @@ def merge_config_data(defaults: dict, user: dict):
 def getDefaultCharacter(config: Config) -> Character:
     return Character({
         "name": 'Default',
-        "character": 'Provide concise answers that address the main points. Include humor and light-hearted elements in your responses when appropriate. Your responses should be that of a neurally enhanced ship computer. Your name is COVAS. Always respond in English regardless of the language spoken to you. Show some consideration for emotions while maintaining focus on information. Maintain a friendly yet respectful conversational style. Speak with confidence and conviction in your responses. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.',
+        "character": "Keep your responses extremely brief and minimal. Maintain a professional and serious tone in all responses. Stick to factual information. You are COVAS:NEXT (Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal) - professional, efficient, and no-nonsense. Provides essential information without unnecessary elaboration. Focuses on factual data and operational status. 'Destination reached.' 'Fuel level acceptable.' Clean, precise communication. Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS:NEXT. Always respond in English regardless of the language spoken to you. Balance emotional understanding with factual presentation. Use everyday language that balances casual and professional tones. Project an air of expertise and certainty when providing information. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.",
         "personality_preset": 'default',
         "personality_verbosity": 0,
         "personality_vulgarity": 0,
@@ -653,7 +672,7 @@ def getDefaultCharacter(config: Config) -> Character:
         "personality_ethical_alignment": 'lawful',
         "personality_moral_alignment": 'good',
         "personality_tone": 'serious',
-        "personality_character_inspiration": 'COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal)',
+        "personality_character_inspiration": "COVAS:NEXT (Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal) - professional, efficient, and no-nonsense. Provides essential information without unnecessary elaboration. Focuses on factual data and operational status. 'Destination reached.' 'Fuel level acceptable.' Clean, precise communication.",
         "personality_language": 'English',
         "personality_knowledge_pop_culture": False,
         "personality_knowledge_scifi": False,
@@ -672,7 +691,8 @@ def getDefaultCharacter(config: Config) -> Character:
         "react_to_danger_mining_var": False,
         "react_to_danger_onfoot_var": False,
         "react_to_danger_supercruise_var": False,
-        "idle_timeout_var": 300  # 5 minutes
+        "idle_timeout_var": 300,  # 5 minutes
+        "disabled_game_events": []
     })
 
 def load_config() -> Config:
@@ -695,6 +715,7 @@ def load_config() -> Config:
         'allowed_actions': [],
         'discovery_primary_var': True,
         'discovery_firegroup_var': 1,
+        'weapon_types': [],
         # Chat channel tab defaults
         'chat_local_tabbed_var': False,
         'chat_wing_tabbed_var': False,
@@ -1125,8 +1146,10 @@ def cast_int_float(current: dict, data: dict) -> dict:
             # Recursively cast dicts
             result[key] = cast_int_float(current[key], data[key])
         elif isinstance(current.get(key), list) and isinstance(data.get(key), list):
-            for i in range(len(current[key])):
-                if isinstance(current[key][i], dict) and isinstance(data[key][i], dict):
+            # Iterate over the data list length (not current), to handle deletions
+            for i in range(len(data[key])):
+                # Only cast if both current and data have dict at this index
+                if i < len(current[key]) and isinstance(current[key][i], dict) and isinstance(data[key][i], dict):
                     result[key][i] = cast_int_float(current[key][i], data[key][i])
     return result
 

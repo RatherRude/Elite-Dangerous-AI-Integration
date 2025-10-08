@@ -34,6 +34,16 @@ export interface StartMessage extends BaseMessage {
     type: "start";
 }
 
+export interface WeaponType {
+    name: string;
+    fire_group: number;
+    is_primary: boolean; // primary or secondary fire
+    is_combat: boolean; // combat or analysis mode
+    action: string; // 'fire', 'start', or 'stop'
+    duration: number; // Duration to hold fire button in seconds (for fire action only)
+    repetitions: number; // Number of additional repetitions (0 = single action)
+}
+
 export interface SystemInfo {
     os: string;
     input_device_names: string[];
@@ -101,6 +111,7 @@ export interface Config {
     allowed_actions?: string[];
     discovery_primary_var: boolean;
     discovery_firegroup_var: number;
+    weapon_types: WeaponType[];
     // Chat channel tab settings
     chat_local_tabbed_var: boolean;
     chat_wing_tabbed_var: boolean;
