@@ -49,12 +49,13 @@ LocationEvent = dict
 NavRouteEvent = dict
 
 class PromptGenerator:
-    def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str], system_db: SystemDatabase, weapon_types: list[dict] | None = None):
+    def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str], system_db: SystemDatabase, weapon_types: list[dict] | None = None, disabled_game_events: list[str] | None = None):
         self.registered_prompt_event_handlers: list[Callable[[Event], list[ChatCompletionMessageParam]]] = []
         self.registered_status_generators: list[Callable[[dict[str, dict]], list[tuple[str, Any]]]] = []
         self.commander_name = commander_name
         self.character_prompt = character_prompt
         self.important_game_events = important_game_events
+        self.disabled_game_events = disabled_game_events if disabled_game_events is not None else []
         self.system_db = system_db
         self.weapon_types: list[dict] = weapon_types if weapon_types is not None else []
         
@@ -3261,18 +3262,28 @@ class PromptGenerator:
             time_offset = humanize.naturaltime(reference_time - event_time)
 
             if isinstance(event, GameEvent) or isinstance(event, ProjectedEvent) or isinstance(event, ExternalEvent):
+                # Skip disabled events
+                event_type = event.content.get('event')
+                if event_type in self.disabled_game_events:
+                    continue
+                    
                 if len(conversational_pieces) < 20:
-                    is_important = is_pending and event.content.get('event') in self.important_game_events
+                    is_important = is_pending and event_type in self.important_game_events
                     message = self.event_message(event, time_offset, is_important)
                     if message:
                         conversational_pieces.append(message)
 
             if isinstance(event, StatusEvent):
+                # Skip disabled events
+                event_type = event.status.get('event')
+                if event_type in self.disabled_game_events:
+                    continue
+                    
                 if (
                     len(conversational_pieces) < 20
-                    and event.status.get("event") != "Status"
+                    and event_type != "Status"
                 ):
-                    is_important = is_pending and event.status.get('event') in self.important_game_events
+                    is_important = is_pending and event_type in self.important_game_events
                     message = self.status_messages(event, time_offset, is_important)
                     if message:
                         conversational_pieces.append(message)
