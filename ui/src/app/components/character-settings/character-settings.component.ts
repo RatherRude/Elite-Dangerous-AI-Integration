@@ -1433,15 +1433,15 @@ export class CharacterSettingsComponent {
             // Remove from disabled list
             disabledEvents = disabledEvents.filter(e => e !== eventName);
             await this.configService.changeConfig({ disabled_game_events: disabledEvents });
-            this.snackBar.open(`Event "${eventName}" enabled`, "OK", {
+            this.snackBar.open(`Event "${eventName}" now visible to LLM`, "OK", {
                 duration: 2000,
             });
         } else {
             // Add to disabled list
             const dialogRef = this.confirmationDialog.openConfirmationDialog({
-                title: "Disable Event",
-                message: `Are you sure you want to disable "${eventName}"? This will prevent this event from triggering reactions for ALL characters and will disable it in the current character's settings.`,
-                confirmButtonText: "Disable",
+                title: "Hide Event from LLM",
+                message: `Are you sure you want to hide "${eventName}" from the LLM? This will not just prevent any reactions but ultimately reduce your AI's situational awareness.`,
+                confirmButtonText: "Hide Event",
                 cancelButtonText: "Cancel",
             });
 
@@ -1455,7 +1455,7 @@ export class CharacterSettingsComponent {
                     }
                     
                     await this.configService.changeConfig({ disabled_game_events: disabledEvents });
-                    this.snackBar.open(`Event "${eventName}" disabled globally`, "OK", {
+                    this.snackBar.open(`Event "${eventName}" hidden from LLM`, "OK", {
                         duration: 2000,
                     });
                 }

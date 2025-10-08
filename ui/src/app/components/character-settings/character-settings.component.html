@@ -512,7 +512,7 @@
                                             [(ngModel)]="activeCharacter.game_events[e.key]"
                                             (ngModelChange)="onEventConfigChange(section.key, e.key, $event)"
                                             [matTooltip]="GameEventTooltips[e.key]"
-                                            matTooltipPosition="after"
+                                            matTooltipPosition="below"
                                             [disabled]="isEventDisabled(e.key)"
                                         >
                                             {{ e.key }}
@@ -520,9 +520,9 @@
                                     <button mat-icon-button
                                             [color]="isEventDisabled(e.key) ? 'warn' : ''"
                                             (click)="toggleEventDisabled(e.key, $event)"
-                                            [matTooltip]="isEventDisabled(e.key) ? 'This event is globally disabled for ALL characters. Click to enable.' : 'Disable this event globally for ALL characters'"
+                                            [matTooltip]="isEventDisabled(e.key) ? 'This event is hidden from the LLM. Click to show.' : 'Hide this event from the LLM'"
                                             class="disable-event-button">
-                                        <mat-icon>{{ isEventDisabled(e.key) ? 'block' : 'do_not_disturb_on' }}</mat-icon>
+                                        <mat-icon>{{ isEventDisabled(e.key) ? 'visibility_off' : 'visibility' }}</mat-icon>
                                     </button>
                                 </div>
                                 @if (e.key === "ProspectedAsteroid") {
