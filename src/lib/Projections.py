@@ -569,6 +569,7 @@ ShipInfoState = TypedDict('ShipInfoState', {
     "LandingPadSize": Literal['S', 'M', 'L', 'Unknown'],
     "IsMiningShip": bool,
     "hasLimpets": bool,
+    "hasDockingComputer": bool,
     "Fighters": list[FighterState],
 })
 
@@ -598,6 +599,7 @@ class ShipInfo(Projection[ShipInfoState]):
             "JetConeBoost":1,
             "IsMiningShip": False,
             "hasLimpets": False,
+            "hasDockingComputer": False,
             "Fighters": [],
             "MinimumJumpRange":0,
             "CurrentJumpRange":0,
@@ -653,6 +655,15 @@ class ShipInfo(Projection[ShipInfoState]):
                     self.state['hasLimpets'] = True
                 else:
                     self.state['hasLimpets'] = False
+
+                has_docking_computer = any(
+                    module.get("Item", "").startswith("int_dockingcomputer")
+                    for module in event.content["Modules"]
+                )
+                if has_docking_computer:
+                    self.state['hasDockingComputer'] = True
+                else:
+                    self.state['hasDockingComputer'] = False
 
                 # Check for fighter bay modules
                 fighter_count = 0

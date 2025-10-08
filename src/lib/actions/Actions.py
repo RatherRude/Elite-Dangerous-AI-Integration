@@ -716,11 +716,14 @@ def request_docking(args, projected_states):
         event_manager.wait_for_condition('DockingEvents',
                                          lambda s: ((s.get('LastEventType') in ['DockingGranted', 'DockingRequested', 'DockingCanceled', 'DockingDenied', 'DockingTimeout'])
                                                     and (s.get('Timestamp', "1970-01-01T00:00:02Z") != old_timestamp)), 10)
-        msg = ""
+        msg = "Docking request successful"
+        if projected_states.get('ShipInfo').get('hasDockingComputer', False):
+            keys.send('SetSpeedZero')
     except:
         msg = "Failed to request docking via menu"
 
     stop_event.set()  # stop the keypress thread
+
 
     keys.send('UIFocus')
     return msg
