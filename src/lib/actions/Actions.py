@@ -713,17 +713,17 @@ def request_docking(args, projected_states):
     try:
         old_timestamp = projected_states.get('DockingEvents').get('Timestamp', "1970-01-01T00:00:01Z")
         # Wait for a docking event with a timestamp newer than when we started
-        event_manager.wait_for_condition('DockingEvents',
-                                         lambda s: ((s.get('LastEventType') in ['DockingGranted', 'DockingRequested', 'DockingCanceled', 'DockingDenied', 'DockingTimeout'])
+        docking_events = event_manager.wait_for_condition('DockingEvents',
+                                         lambda s: ((s.get('LastEventType') in ['DockingGranted', 'DockingCanceled', 'DockingDenied', 'DockingTimeout'])
                                                     and (s.get('Timestamp', "1970-01-01T00:00:02Z") != old_timestamp)), 10)
-        msg = "Docking request successful"
-        if projected_states.get('ShipInfo').get('hasDockingComputer', False):
+        if docking_events.get('LastEventType') == 'DockingGranted' and projected_states.get('ShipInfo').get('hasDockingComputer', False):
             keys.send('SetSpeedZero')
+            sleep(0.2)
+        msg = ""
     except:
         msg = "Failed to request docking via menu"
 
     stop_event.set()  # stop the keypress thread
-
 
     keys.send('UIFocus')
     return msg

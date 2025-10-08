@@ -62,7 +62,7 @@
                                                 
                                                 @if (showWeaponTypes && config.weapon_types.length > 0) {
                                                     <div class="weapon-types-container">
-                                                        @for (weapon of config.weapon_types; track $index) {
+                                                        @for (weapon of config.weapon_types; track i; let i = $index) {
                                                             <div class="weapon-card">
                                                                 <div class="weapon-content">
                                                                     <div class="weapon-header">
@@ -70,24 +70,24 @@
                                                                             <mat-label>Name</mat-label>
                                                                             <input matInput 
                                                                                    [ngModel]="weapon.name"
-                                                                                   (ngModelChange)="updateWeaponName($index, $event)"
+                                                                                   (ngModelChange)="updateWeaponName(i, $event)"
                                                                                    maxlength="20"
                                                                                    placeholder="Weapon name">
                                                                         </mat-form-field>
                                                                         
-                                                                        @if (!isWeaponInEditMode($index)) {
+                                                                        @if (!isWeaponInEditMode(i)) {
                                                                             <span class="weapon-description">
                                                                                 {{ getWeaponDescription(weapon) }}
                                                                             </span>
                                                                         }
                                                                     </div>
                                                                     
-                                                                    @if (isWeaponInEditMode($index)) {
+                                                                    @if (isWeaponInEditMode(i)) {
                                                                         <div class="weapon-fields">
                                                                             <mat-form-field appearance="fill" class="field-group">
                                                                                 <mat-label>Group</mat-label>
                                                                                 <mat-select [ngModel]="weapon.fire_group"
-                                                                                           (ngModelChange)="updateWeaponFireGroup($index, $event)">
+                                                                                           (ngModelChange)="updateWeaponFireGroup(i, $event)">
                                                                                     <mat-option [value]="1">1</mat-option>
                                                                                     <mat-option [value]="2">2</mat-option>
                                                                                     <mat-option [value]="3">3</mat-option>
@@ -102,7 +102,7 @@
                                                                             <mat-form-field appearance="fill" class="field-fire">
                                                                                 <mat-label>Fire</mat-label>
                                                                                 <mat-select [ngModel]="weapon.is_primary ? 'primary' : 'secondary'"
-                                                                                           (ngModelChange)="updateWeaponPrimary($index, $event === 'primary')">
+                                                                                           (ngModelChange)="updateWeaponPrimary(i, $event === 'primary')">
                                                                                     <mat-option value="primary">Primary</mat-option>
                                                                                     <mat-option value="secondary">Secondary</mat-option>
                                                                                 </mat-select>
@@ -111,7 +111,7 @@
                                                                             <mat-form-field appearance="fill" class="field-mode">
                                                                                 <mat-label>Mode</mat-label>
                                                                                 <mat-select [ngModel]="weapon.is_combat ? 'combat' : 'analysis'"
-                                                                                           (ngModelChange)="updateWeaponMode($index, $event === 'combat')">
+                                                                                           (ngModelChange)="updateWeaponMode(i, $event === 'combat')">
                                                                                     <mat-option value="combat">Combat</mat-option>
                                                                                     <mat-option value="analysis">Analysis</mat-option>
                                                                                 </mat-select>
@@ -120,7 +120,7 @@
                                                                             <mat-form-field appearance="fill" class="field-action">
                                                                                 <mat-label>Action</mat-label>
                                                                                 <mat-select [ngModel]="weapon.action"
-                                                                                           (ngModelChange)="updateWeaponAction($index, $event)">
+                                                                                           (ngModelChange)="updateWeaponAction(i, $event)">
                                                                                     <mat-option value="fire">Fire</mat-option>
                                                                                     <mat-option value="start">Start</mat-option>
                                                                                     <mat-option value="stop">Stop</mat-option>
@@ -133,7 +133,7 @@
                                                                                     <input matInput 
                                                                                            type="number"
                                                                                            [ngModel]="weapon.duration"
-                                                                                           (ngModelChange)="updateWeaponDuration($index, $event)"
+                                                                                           (ngModelChange)="updateWeaponDuration(i, $event)"
                                                                                            min="0"
                                                                                            max="30"
                                                                                            step="0.1"
@@ -146,7 +146,7 @@
                                                                                     <input matInput 
                                                                                            type="number"
                                                                                            [ngModel]="weapon.repetitions"
-                                                                                           (ngModelChange)="updateWeaponRepetitions($index, $event)"
+                                                                                           (ngModelChange)="updateWeaponRepetitions(i, $event)"
                                                                                            min="0"
                                                                                            max="10"
                                                                                            placeholder="0">
@@ -157,15 +157,15 @@
                                                                 </div>
                                                                 
                                                                 <div class="weapon-buttons">
-                                                                    <button mat-icon-button (click)="toggleWeaponEdit($index)" class="weapon-icon-btn" [color]="isWeaponInEditMode($index) ? 'accent' : 'primary'">
-                                                                        @if (isWeaponInEditMode($index)) {
+                                                                    <button mat-icon-button (click)="toggleWeaponEdit(i)" class="weapon-icon-btn" [color]="isWeaponInEditMode(i) ? 'accent' : 'primary'">
+                                                                        @if (isWeaponInEditMode(i)) {
                                                                             <mat-icon class="weapon-icon">save</mat-icon>
                                                                         } @else {
                                                                             <mat-icon class="weapon-icon">edit</mat-icon>
                                                                         }
                                                                     </button>
                                                                     
-                                                                    <button mat-icon-button color="warn" (click)="removeWeapon($index)" class="weapon-icon-btn">
+                                                                    <button mat-icon-button color="warn" (click)="removeWeapon(i)" class="weapon-icon-btn">
                                                                         <mat-icon class="weapon-icon">delete</mat-icon>
                                                                     </button>
                                                                 </div>
