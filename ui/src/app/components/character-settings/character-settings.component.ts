@@ -1414,25 +1414,25 @@ export class CharacterSettingsComponent {
         });
     }
 
-    // Check if an event is globally disabled
+    // Check if an event is disabled for this character
     isEventDisabled(eventName: string): boolean {
-        if (!this.config) return false;
-        return this.config.disabled_game_events?.includes(eventName) || false;
+        if (!this.activeCharacter) return false;
+        return this.activeCharacter.disabled_game_events?.includes(eventName) || false;
     }
 
     // Toggle disabled state for an event
     async toggleEventDisabled(eventName: string, event: Event) {
         event.stopPropagation(); // Prevent expansion panel toggle
         
-        if (!this.config || !this.activeCharacter) return;
+        if (!this.activeCharacter) return;
 
         const isCurrentlyDisabled = this.isEventDisabled(eventName);
-        let disabledEvents = [...(this.config.disabled_game_events || [])];
+        let disabledEvents = [...(this.activeCharacter.disabled_game_events || [])];
 
         if (isCurrentlyDisabled) {
             // Remove from disabled list
             disabledEvents = disabledEvents.filter(e => e !== eventName);
-            await this.configService.changeConfig({ disabled_game_events: disabledEvents });
+            await this.characterService.setCharacterProperty('disabled_game_events', disabledEvents);
             this.snackBar.open(`Event "${eventName}" now visible to LLM`, "OK", {
                 duration: 2000,
             });
@@ -1446,7 +1446,7 @@ export class CharacterSettingsComponent {
             });
 
             dialogRef.subscribe(async (result: boolean) => {
-                if (result && this.config && this.activeCharacter) {
+                if (result && this.activeCharacter) {
                     disabledEvents.push(eventName);
                     
                     // Also disable the event in the current character's game_events
@@ -1454,7 +1454,7 @@ export class CharacterSettingsComponent {
                         await this.characterService.setCharacterEventProperty(eventName, false);
                     }
                     
-                    await this.configService.changeConfig({ disabled_game_events: disabledEvents });
+                    await this.characterService.setCharacterProperty('disabled_game_events', disabledEvents);
                     this.snackBar.open(`Event "${eventName}" hidden from LLM`, "OK", {
                         duration: 2000,
                     });

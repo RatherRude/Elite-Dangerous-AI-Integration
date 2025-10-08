@@ -364,6 +364,7 @@ class Character(TypedDict, total=False):
     react_to_danger_onfoot_var: bool
     react_to_danger_supercruise_var: bool
     idle_timeout_var: int
+    disabled_game_events: list[str]
 
 
 class Config(TypedDict):
@@ -431,7 +432,6 @@ class Config(TypedDict):
 
     plugin_settings: dict[str, Any]
     pngtuber: bool
-    disabled_game_events: list[str]
 
 
 def get_cn_appdata_path() -> str:
@@ -686,7 +686,8 @@ def getDefaultCharacter(config: Config) -> Character:
         "react_to_danger_mining_var": False,
         "react_to_danger_onfoot_var": False,
         "react_to_danger_supercruise_var": False,
-        "idle_timeout_var": 300  # 5 minutes
+        "idle_timeout_var": 300,  # 5 minutes
+        "disabled_game_events": []
     })
 
 def load_config() -> Config:
@@ -754,8 +755,7 @@ def load_config() -> Config:
         "overlay_position": "right",
         "overlay_screen_id": -1,  # -1 means primary screen
         "plugin_settings": {},
-        "pngtuber": False,
-        "disabled_game_events": []
+        "pngtuber": False
     }
     defaults['characters'].append(getDefaultCharacter(defaults))
     
