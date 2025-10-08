@@ -31,7 +31,6 @@ import {
     MatExpansionPanelDescription,
 } from "@angular/material/expansion";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { TooltipDirective } from "./tooltip.directive.js";
 import { MatDivider } from "@angular/material/divider";
 import { MatInputModule } from "@angular/material/input";
 import { MatButtonModule } from "@angular/material/button";
@@ -85,7 +84,6 @@ interface PromptSettings {
         MatExpansionPanelHeader,
         MatExpansionPanelDescription,
         MatTooltipModule,
-        TooltipDirective,
     ],
     templateUrl: "./character-settings.component.html",
     styleUrl: "./character-settings.component.scss",
