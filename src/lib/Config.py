@@ -431,6 +431,7 @@ class Config(TypedDict):
 
     plugin_settings: dict[str, Any]
     pngtuber: bool
+    disabled_game_events: list[str]
 
 
 def get_cn_appdata_path() -> str:
@@ -753,7 +754,8 @@ def load_config() -> Config:
         "overlay_position": "right",
         "overlay_screen_id": -1,  # -1 means primary screen
         "plugin_settings": {},
-        "pngtuber": False
+        "pngtuber": False,
+        "disabled_game_events": []
     }
     defaults['characters'].append(getDefaultCharacter(defaults))
     

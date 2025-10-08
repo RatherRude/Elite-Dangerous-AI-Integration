@@ -507,14 +507,24 @@
                                 </mat-panel-description>
                             </mat-expansion-panel-header>
                             @for (e of section.value | keyvalue:orderByKey; track e.key) {
-                                <mat-slide-toggle
-                                        [(ngModel)]="activeCharacter.game_events[e.key]"
-                                        (ngModelChange)="onEventConfigChange(section.key, e.key, $event)"
-                                        [appTooltip]="GameEventTooltips[e.key]"
-                                        tooltipPosition="right"
-                                    >
-                                        {{ e.key }}
-                                </mat-slide-toggle>
+                                <div class="event-row">
+                                    <mat-slide-toggle
+                                            [(ngModel)]="activeCharacter.game_events[e.key]"
+                                            (ngModelChange)="onEventConfigChange(section.key, e.key, $event)"
+                                            [appTooltip]="GameEventTooltips[e.key]"
+                                            tooltipPosition="right"
+                                            [disabled]="isEventDisabled(e.key)"
+                                        >
+                                            {{ e.key }}
+                                    </mat-slide-toggle>
+                                    <button mat-icon-button
+                                            [color]="isEventDisabled(e.key) ? 'warn' : ''"
+                                            (click)="toggleEventDisabled(e.key, $event)"
+                                            [matTooltip]="isEventDisabled(e.key) ? 'This event is globally disabled for ALL characters. Click to enable.' : 'Disable this event globally for ALL characters'"
+                                            class="disable-event-button">
+                                        <mat-icon>{{ isEventDisabled(e.key) ? 'block' : 'do_not_disturb_on' }}</mat-icon>
+                                    </button>
+                                </div>
                                 @if (e.key === "ProspectedAsteroid") {
                                     <mat-form-field>
                                         <mat-label>React to material</mat-label>

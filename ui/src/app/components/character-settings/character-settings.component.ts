@@ -1416,6 +1416,55 @@ export class CharacterSettingsComponent {
         });
     }
 
+    // Check if an event is globally disabled
+    isEventDisabled(eventName: string): boolean {
+        if (!this.config) return false;
+        return this.config.disabled_game_events?.includes(eventName) || false;
+    }
+
+    // Toggle disabled state for an event
+    async toggleEventDisabled(eventName: string, event: Event) {
+        event.stopPropagation(); // Prevent expansion panel toggle
+        
+        if (!this.config || !this.activeCharacter) return;
+
+        const isCurrentlyDisabled = this.isEventDisabled(eventName);
+        let disabledEvents = [...(this.config.disabled_game_events || [])];
+
+        if (isCurrentlyDisabled) {
+            // Remove from disabled list
+            disabledEvents = disabledEvents.filter(e => e !== eventName);
+            await this.configService.changeConfig({ disabled_game_events: disabledEvents });
+            this.snackBar.open(`Event "${eventName}" enabled`, "OK", {
+                duration: 2000,
+            });
+        } else {
+            // Add to disabled list
+            const dialogRef = this.confirmationDialog.openConfirmationDialog({
+                title: "Disable Event",
+                message: `Are you sure you want to disable "${eventName}"? This will prevent this event from triggering reactions for ALL characters and will disable it in the current character's settings.`,
+                confirmButtonText: "Disable",
+                cancelButtonText: "Cancel",
+            });
+
+            dialogRef.subscribe(async (result: boolean) => {
+                if (result && this.config && this.activeCharacter) {
+                    disabledEvents.push(eventName);
+                    
+                    // Also disable the event in the current character's game_events
+                    if (this.activeCharacter.game_events && this.activeCharacter.game_events[eventName]) {
+                        await this.characterService.setCharacterEventProperty(eventName, false);
+                    }
+                    
+                    await this.configService.changeConfig({ disabled_game_events: disabledEvents });
+                    this.snackBar.open(`Event "${eventName}" disabled globally`, "OK", {
+                        duration: 2000,
+                    });
+                }
+            });
+        }
+    }
+
     // Enable custom character editor with confirmation
     enableCustomCharacterEditor() {
         if (!this.activeCharacter) return;

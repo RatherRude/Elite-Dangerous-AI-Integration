@@ -50,9 +50,10 @@ class Chat:
         self.backstory = self.character["character"].replace("{commander_name}", self.config['commander_name'])
 
         self.enabled_game_events: list[str] = []
+        disabled_events = self.config.get("disabled_game_events", [])
         if self.character["event_reaction_enabled_var"]:
             for event, state in self.character["game_events"].items():
-                if state:
+                if state and event not in disabled_events:
                     self.enabled_game_events.append(event)
 
         log("debug", "Initializing Controller Manager...")

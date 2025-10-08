@@ -495,3 +495,31 @@ ul {
     }
   }
 }
+
+// Event row styling to display toggle and disable button side-by-side
+.event-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  mat-slide-toggle {
+    flex: 1;
+    margin: 10px 0;
+  }
+  
+  .disable-event-button {
+    flex-shrink: 0;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+    
+    &:hover {
+      opacity: 1;
+    }
+    
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+  }
+}

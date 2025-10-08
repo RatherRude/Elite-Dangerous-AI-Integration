@@ -133,6 +133,7 @@ export interface Config {
     overlay_screen_id: number;
 
     plugin_settings: { [key: string]: any };
+    disabled_game_events: string[];
 }
 
 @Injectable({
