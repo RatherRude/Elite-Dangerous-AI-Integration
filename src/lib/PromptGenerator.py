@@ -49,13 +49,14 @@ LocationEvent = dict
 NavRouteEvent = dict
 
 class PromptGenerator:
-    def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str], system_db: SystemDatabase):
+    def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str], system_db: SystemDatabase, weapon_types: list[dict] | None = None):
         self.registered_prompt_event_handlers: list[Callable[[Event], list[ChatCompletionMessageParam]]] = []
         self.registered_status_generators: list[Callable[[dict[str, dict]], list[tuple[str, Any]]]] = []
         self.commander_name = commander_name
         self.character_prompt = character_prompt
         self.important_game_events = important_game_events
         self.system_db = system_db
+        self.weapon_types: list[dict] = weapon_types if weapon_types is not None else []
         
         # Pad map for station docking positions
         self.pad_map = {
@@ -2534,13 +2535,76 @@ class PromptGenerator:
         if in_combat.get("InCombat", False):
             flags.append("InCombat")
 
-        firegroup = "Unknown"
-        if current_status.get("FireGroup") is not None:
-            firegroup = chr(65 + current_status.get("FireGroup"))
+        # Build firegroup descriptions from weapon_types
+        # Maps fire_group number to dict with 'primary' and 'secondary' weapon names (just one each)
+        firegroup_map = {}
+        
+        if self.weapon_types:
+            for weapon in self.weapon_types:
+                fg_num = weapon.get("fire_group")
+                is_primary = weapon.get("is_primary")
+                weapon_name = weapon.get("name")
+                
+                if fg_num is not None and is_primary is not None and weapon_name:
+                    if fg_num not in firegroup_map:
+                        firegroup_map[fg_num] = {"primary": None, "secondary": None}
+                    
+                    # Store just one weapon name per type (will use last one encountered)
+                    if is_primary:
+                        firegroup_map[fg_num]["primary"] = weapon_name
+                    else:
+                        firegroup_map[fg_num]["secondary"] = weapon_name
+        
+        # Get current active firegroup
+        active_firegroup_num = current_status.get("FireGroup")
+        
+        # Build firegroup descriptions as simple strings
+        firegroup_descriptions = {}
+        
+        # If we have weapon_types data, build descriptions from that
+        if firegroup_map:
+            for fg_num, weapons in firegroup_map.items():
+                # weapon_types uses 1-based indexing: 1->A, 2->B, etc.
+                fg_letter = chr(64 + fg_num)
+                
+                # Check if this is the active firegroup
+                # Note: active_firegroup_num from status is 0-based, so we need to add 1 to compare
+                is_active = active_firegroup_num is not None and fg_num == active_firegroup_num + 1
+                
+                # Build the string: combine primary and secondary with " | "
+                parts = []
+                if weapons["primary"]:
+                    parts.append(weapons["primary"])
+                if weapons["secondary"]:
+                    parts.append(weapons["secondary"])
+                
+                if parts:
+                    description = " | ".join(parts)
+                    if is_active:
+                        description += " (Active)"
+                    firegroup_descriptions[fg_letter] = description
+                else:
+                    firegroup_descriptions[fg_letter] = "unknown (Active)" if is_active else "unknown"
+        
+        # If current firegroup is not in our map, add it as unknown
+        if active_firegroup_num is not None:
+            active_fg_letter = chr(65 + active_firegroup_num)
+            if active_fg_letter not in firegroup_descriptions:
+                firegroup_descriptions[active_fg_letter] = "unknown (Active)"
+        
+        # Use the dict structure, or fallback to old behavior if no data
+        if firegroup_descriptions:
+            firegroups_info = firegroup_descriptions
+        else:
+            # Fallback to old behavior if no data
+            if active_firegroup_num is not None:
+                firegroups_info = chr(65 + active_firegroup_num)
+            else:
+                firegroups_info = "Unknown"
 
         status_info = {
             "status": flags,
-            "current fire_group": firegroup,
+            "firegroups": firegroups_info,
             "balance": current_status.get("Balance", None),
             "pips": current_status.get("Pips", None),
             "cargo": current_status.get("Cargo", None),
