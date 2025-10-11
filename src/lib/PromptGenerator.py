@@ -406,7 +406,7 @@ class PromptGenerator:
             return f"{self.commander_name} has abandoned mission: {mission_abandoned_event.get('LocalisedName')}."
         if event_name == 'MissionRedirected':
             mission_redirected_event = cast(MissionRedirectedEvent, content)
-            return f"{self.commander_name}'s mission '{mission_redirected_event.get('LocalisedName')}' has been redirected to {mission_redirected_event.get('NewDestinationSystem')} - {mission_redirected_event.get('NewDestinationStation')}."
+            return f"{self.commander_name}'s mission '{mission_redirected_event.get('LocalisedName')}' has completed at least one target and been redirected to {mission_redirected_event.get('NewDestinationSystem')} - {mission_redirected_event.get('NewDestinationStation')}, check active mission states for details."
         
         # Financial events
         if event_name == 'RedeemVoucher':
