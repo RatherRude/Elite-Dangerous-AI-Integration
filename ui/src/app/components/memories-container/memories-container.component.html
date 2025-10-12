@@ -27,10 +27,6 @@
         </svg>
       </button>
     </div>
-    
-    <button class="load-entries-btn" (click)="loadOldEntries()">
-      Load Old Entries
-    </button>
   </div>
 
   <!-- Search Results Section -->
@@ -72,36 +68,19 @@
     </div>
   }
 
-  <!-- Loaded Old Entries Section -->
+  <!-- Entries Display -->
   @if (isLoadingEntries) {
     <div class="loading-entries">Loading entries...</div>
   }
   
-  @if (filteredEntries.length > 0) {
-    <div class="old-entries-container">
-      <div class="old-entries-header">
-        <h3>Entries for {{ selectedDate | date:'yyyy-MM-dd' }} ({{ filteredEntries.length }})</h3>
-      </div>
-      <div class="old-entries">
-        @for (entry of filteredEntries; track entry.id) {
-          <div class="old-entry">
-            <span class="entry-time">{{ entry.inserted_at | date:'HH:mm:ss' }}</span>
-            <span class="entry-content">{{ entry.content }}</span>
-          </div>
-        }
-      </div>
-    </div>
-  }
-
-  <!-- Entries Display -->
-  @if (memories.length === 0) {
+  @if (displayedEntries.length === 0 && !isLoadingEntries) {
     <div class="empty">No logbook entries recorded yet.</div>
   } @else {
     <div class="entries">
-      @for (m of memories; track m.timestamp) {
+      @for (entry of displayedEntries; track entry.timestamp) {
         <div class="entry">
-          <span class="timestamp">{{ m.timestamp | date:'HH:mm:ss' }}</span>
-          <span class="message">{{ m.content }}</span>
+          <span class="timestamp">{{ entry.timestamp | date:'HH:mm:ss' }}</span>
+          <span class="message">{{ entry.content }}</span>
         </div>
       }
     </div>

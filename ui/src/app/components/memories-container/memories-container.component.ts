@@ -35,8 +35,8 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
   public showSearchResults: boolean = false;
   public isSearching: boolean = false;
   public loadedEntries: MemoryEntry[] = [];
-  public filteredEntries: MemoryEntry[] = [];
   public isLoadingEntries: boolean = false;
+  public displayedEntries: { timestamp: string; content: string }[] = [];
 
   constructor(
     private events: EventService,
@@ -50,6 +50,7 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
         .filter((e): e is MemoryEvent => (e as any)?.kind === "memory")
         .map((e) => ({ timestamp: (e as MemoryEvent).timestamp, content: (e as MemoryEvent).content }));
       this.memories = mems;
+      this.updateDisplayedEntries();
     });
 
     // Listen for memory query responses from the backend
@@ -61,6 +62,9 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
         this.handleMemoriesByDate(message['data']);
       }
     });
+    
+    // Load entries for current date on init
+    this.loadEntriesForDate(this.selectedDate);
   }
 
   ngOnDestroy(): void {
@@ -68,12 +72,20 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
     this.outputSub?.unsubscribe();
   }
 
-  loadOldEntries(): void {
-    console.log('Load old entries clicked', this.selectedDate);
+  onDateChange(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    this.selectedDate = new Date(input.value);
+    console.log('Date changed to:', this.selectedDate);
+    
+    // Load entries for the new date
+    this.loadEntriesForDate(this.selectedDate);
+  }
+  
+  private loadEntriesForDate(date: Date): void {
     this.isLoadingEntries = true;
     
     // Format date as YYYY-MM-DD
-    const dateStr = this.formatDateForBackend(this.selectedDate);
+    const dateStr = this.formatDateForBackend(date);
     
     const message: GetMemoriesByDateMessage = {
       type: 'get_memories_by_date',
@@ -83,17 +95,6 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
     
     this.tauri.send_command(message);
   }
-
-  onDateChange(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    this.selectedDate = new Date(input.value);
-    console.log('Date changed to:', this.selectedDate);
-    
-    // If entries are already loaded, filter them by the new date
-    if (this.loadedEntries.length > 0) {
-      this.filterEntriesByDate();
-    }
-  }
   
   private formatDateForBackend(date: Date): string {
     const year = date.getFullYear();
@@ -102,16 +103,32 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
     return `${year}-${month}-${day}`;
   }
   
-  private filterEntriesByDate(): void {
-    const targetDateStr = this.formatDateForBackend(this.selectedDate);
-    
-    this.filteredEntries = this.loadedEntries.filter(entry => {
-      if (!entry.inserted_at) return false;
-      const entryDate = entry.inserted_at.split('T')[0]; // Extract YYYY-MM-DD
-      return entryDate === targetDateStr;
-    });
-    
-    console.log(`Filtered to ${this.filteredEntries.length} entries for ${targetDateStr}`);
+  private isCurrentDate(): boolean {
+    const today = new Date();
+    return this.formatDateForBackend(this.selectedDate) === this.formatDateForBackend(today);
+  }
+  
+  private updateDisplayedEntries(): void {
+    if (this.isCurrentDate()) {
+      // Current date: merge loaded entries + live memories
+      // Convert loaded entries to display format
+      const loadedAsDisplay = this.loadedEntries.map(entry => ({
+        timestamp: entry.inserted_at,
+        content: entry.content
+      }));
+      
+      // Merge and sort by timestamp
+      const combined = [...loadedAsDisplay, ...this.memories];
+      this.displayedEntries = combined.sort((a, b) => 
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      );
+    } else {
+      // Past date: only show loaded entries
+      this.displayedEntries = this.loadedEntries.map(entry => ({
+        timestamp: entry.inserted_at,
+        content: entry.content
+      }));
+    }
   }
 
   openCalendar(): void {
@@ -178,22 +195,22 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
       if (response.error) {
         console.error('Error fetching memories by date:', response.error);
         this.loadedEntries = [];
-        this.filteredEntries = [];
+        this.updateDisplayedEntries();
         return;
       }
       
       if (response.entries && Array.isArray(response.entries)) {
         this.loadedEntries = response.entries;
-        this.filteredEntries = response.entries; // Initially show all loaded entries
         console.log(`Loaded ${this.loadedEntries.length} entries for date ${response.date}`);
+        this.updateDisplayedEntries();
       } else {
         this.loadedEntries = [];
-        this.filteredEntries = [];
+        this.updateDisplayedEntries();
       }
     } catch (error) {
       console.error('Error handling memories by date:', error);
       this.loadedEntries = [];
-      this.filteredEntries = [];
+      this.updateDisplayedEntries();
     }
   }
 }
