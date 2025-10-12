@@ -242,13 +242,28 @@ class Chat:
             if not results:
                 return {"results": []}
             
+            # Fetch timestamps for the results
+            from lib.Database import get_connection
+            conn = get_connection()
+            cursor = conn.cursor()
+            
             # Format results
             formatted = []
             for _id, content, metadata, score in results:
+                # Fetch inserted_at timestamp for this entry
+                cursor.execute(f'''
+                    SELECT inserted_at
+                    FROM {self.event_manager.long_term_memory.table_name}
+                    WHERE id = ?
+                ''', (_id,))
+                timestamp_row = cursor.fetchone()
+                inserted_at = timestamp_row[0] if timestamp_row else None
+                
                 formatted.append({
                     'score': round(score, 3),
                     'summary': content,
-                    'metadata': metadata
+                    'metadata': metadata,
+                    'inserted_at': inserted_at
                 })
             
             return {"results": formatted}

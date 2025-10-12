@@ -255,11 +255,24 @@
   margin-bottom: 0;
 }
 
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  gap: 8px;
+}
+
 .result-score {
   font-size: 12px;
   color: #1976d2;
   font-weight: 600;
-  margin-bottom: 6px;
+}
+
+.result-timestamp {
+  font-size: 11px;
+  color: #888;
+  font-family: 'Roboto Mono', monospace;
 }
 
 .result-summary {

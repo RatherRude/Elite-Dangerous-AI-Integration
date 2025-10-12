@@ -58,7 +58,12 @@
         <div class="search-results">
           @for (result of searchResults; track result.summary) {
             <div class="search-result">
-              <div class="result-score">Score: {{ result.score }}</div>
+              <div class="result-header">
+                <span class="result-score">Score: {{ result.score }}</span>
+                @if (result.inserted_at) {
+                  <span class="result-timestamp">{{ result.inserted_at | date:'MMM d, y HH:mm:ss' }}</span>
+                }
+              </div>
               <div class="result-summary">{{ result.summary }}</div>
             </div>
           }

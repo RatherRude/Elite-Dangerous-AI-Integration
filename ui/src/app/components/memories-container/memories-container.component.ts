@@ -13,6 +13,7 @@ import { Subscription } from "rxjs";
 interface MemorySearchResult {
   score: number;
   summary: string;
+  inserted_at?: string;
 }
 
 interface MemoryEntry {
@@ -196,7 +197,8 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
       if (response.results && Array.isArray(response.results)) {
         this.searchResults = response.results.map((result: any) => ({
           score: result.score,
-          summary: result.summary
+          summary: result.summary,
+          inserted_at: result.inserted_at
         }));
         this.showSearchResults = true; // Ensure results are visible
         console.log('Received memory search results:', this.searchResults);
