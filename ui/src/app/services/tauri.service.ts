@@ -39,6 +39,12 @@ export interface SubmitInputMessage extends BaseCommand {
     input: string;
 }
 
+export interface QueryMemoriesMessage extends BaseCommand {
+    type: "query_memories";
+    query: string;
+    top_k?: number;
+}
+
 export interface UnknownMessage extends BaseMessage {
     type: "unknown";
     message: string;

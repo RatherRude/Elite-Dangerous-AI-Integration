@@ -7,6 +7,7 @@ import threading
 import json
 import io
 import traceback
+from datetime import datetime
 
 from EDMesg.CovasNext import ExternalChatNotification, ExternalBackgroundChatNotification
 from openai import OpenAI
@@ -213,6 +214,50 @@ class Chat:
 
     def submit_input(self, input: str):
         self.event_manager.add_conversation_event('user', input)
+    
+    def query_memories(self, query: str, top_k: int = 5):
+        """Query long-term memories without triggering LLM interaction"""
+        if not self.embeddingClient:
+            return {"error": "Embeddings model not configured"}
+        
+        embedding_model = self.config.get("embedding_model_name")
+        if not embedding_model:
+            return {"error": "Embedding model name not configured"}
+        
+        try:
+            # Create embedding for the query
+            embedding_response = self.embeddingClient.embeddings.create(
+                model=embedding_model,
+                input=query
+            )
+            embedding = embedding_response.data[0].embedding
+            
+            # Search the vector store
+            results = self.event_manager.long_term_memory.search(
+                embedding_response.model, 
+                embedding, 
+                n=min(max(1, top_k), 20)
+            )
+            
+            if not results:
+                return {"results": []}
+            
+            # Format results
+            formatted = []
+            for _id, content, metadata, score in results:
+                formatted.append({
+                    'score': round(score, 3),
+                    'summary': content,
+                    'metadata': metadata
+                })
+            
+            return {"results": formatted}
+            
+        except Exception as e:
+            log('error', f'Error querying memories: {e}')
+            import traceback
+            log('error', traceback.format_exc())
+            return {"error": str(e)}
         
     def run(self):
         show_chat_message('info', f"Initializing CMDR {self.config['commander_name']}'s personal AI...\n")
@@ -382,6 +427,16 @@ def read_stdin(chat: Chat):
             data = json.loads(line)
             if data.get("type") == "submit_input":
                 chat.submit_input(data["input"])
+            if data.get("type") == "query_memories":
+                query = data.get("query", "")
+                top_k = data.get("top_k", 5)
+                if query:
+                    results = chat.query_memories(query, top_k)
+                    print(json.dumps({
+                        "type": "memory_results",
+                        "timestamp": datetime.now().isoformat(),
+                        "results": results
+                    }) + '\n', flush=True)
             if data.get("type") == "init_overlay":
                 print(json.dumps({"type": "running_config", "config": config})+'\n', flush=True)
 
