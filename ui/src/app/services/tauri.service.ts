@@ -45,6 +45,11 @@ export interface QueryMemoriesMessage extends BaseCommand {
     top_k?: number;
 }
 
+export interface GetMemoriesByDateMessage extends BaseCommand {
+    type: "get_memories_by_date";
+    date: string; // YYYY-MM-DD format
+}
+
 export interface UnknownMessage extends BaseMessage {
     type: "unknown";
     message: string;

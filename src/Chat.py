@@ -258,6 +258,46 @@ class Chat:
             import traceback
             log('error', traceback.format_exc())
             return {"error": str(e)}
+    
+    def get_memories_by_date(self, date_str: str):
+        """Fetch all memory entries for a specific date"""
+        try:
+            from lib.Database import get_connection
+            
+            # Parse the date string (format: YYYY-MM-DD)
+            target_date = datetime.fromisoformat(date_str).date()
+            
+            # Get connection and query the memory table
+            conn = get_connection()
+            cursor = conn.cursor()
+            
+            # Query for entries on the specified date
+            cursor.execute(f'''
+                SELECT id, content, metadata, inserted_at
+                FROM {self.event_manager.long_term_memory.table_name}
+                WHERE DATE(inserted_at) = ?
+                ORDER BY inserted_at ASC
+            ''', (target_date.isoformat(),))
+            
+            results = cursor.fetchall()
+            
+            # Format results
+            formatted = []
+            for row in results:
+                formatted.append({
+                    'id': row[0],
+                    'content': row[1],
+                    'metadata': json.loads(row[2]) if row[2] else {},
+                    'inserted_at': row[3]
+                })
+            
+            return {"entries": formatted, "date": date_str}
+            
+        except Exception as e:
+            log('error', f'Error fetching memories by date: {e}')
+            import traceback
+            log('error', traceback.format_exc())
+            return {"error": str(e)}
         
     def run(self):
         show_chat_message('info', f"Initializing CMDR {self.config['commander_name']}'s personal AI...\n")
@@ -436,6 +476,15 @@ def read_stdin(chat: Chat):
                         "type": "memory_results",
                         "timestamp": datetime.now().isoformat(),
                         "results": results
+                    }) + '\n', flush=True)
+            if data.get("type") == "get_memories_by_date":
+                date_str = data.get("date", "")
+                if date_str:
+                    results = chat.get_memories_by_date(date_str)
+                    print(json.dumps({
+                        "type": "memories_by_date",
+                        "timestamp": datetime.now().isoformat(),
+                        "data": results
                     }) + '\n', flush=True)
             if data.get("type") == "init_overlay":
                 print(json.dumps({"type": "running_config", "config": config})+'\n', flush=True)

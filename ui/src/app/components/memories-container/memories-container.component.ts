@@ -3,12 +3,19 @@ import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { MatCardModule } from "@angular/material/card";
 import { EventService, MemoryEvent } from "../../services/event.service";
-import { TauriService, QueryMemoriesMessage } from "../../services/tauri.service";
+import { TauriService, QueryMemoriesMessage, GetMemoriesByDateMessage } from "../../services/tauri.service";
 import { Subscription } from "rxjs";
 
 interface MemorySearchResult {
   score: number;
   summary: string;
+}
+
+interface MemoryEntry {
+  id: number;
+  content: string;
+  inserted_at: string;
+  metadata: Record<string, any>;
 }
 
 @Component({
@@ -27,6 +34,9 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
   public searchResults: MemorySearchResult[] = [];
   public showSearchResults: boolean = false;
   public isSearching: boolean = false;
+  public loadedEntries: MemoryEntry[] = [];
+  public filteredEntries: MemoryEntry[] = [];
+  public isLoadingEntries: boolean = false;
 
   constructor(
     private events: EventService,
@@ -47,6 +57,9 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
       if (message.type === 'memory_results') {
         this.handleMemoryResults(message['results']);
       }
+      if (message.type === 'memories_by_date') {
+        this.handleMemoriesByDate(message['data']);
+      }
     });
   }
 
@@ -57,14 +70,48 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
 
   loadOldEntries(): void {
     console.log('Load old entries clicked', this.selectedDate);
-    // TODO: Implement loading old entries from backend
+    this.isLoadingEntries = true;
+    
+    // Format date as YYYY-MM-DD
+    const dateStr = this.formatDateForBackend(this.selectedDate);
+    
+    const message: GetMemoriesByDateMessage = {
+      type: 'get_memories_by_date',
+      date: dateStr,
+      timestamp: new Date().toISOString()
+    };
+    
+    this.tauri.send_command(message);
   }
 
   onDateChange(event: Event): void {
     const input = event.target as HTMLInputElement;
     this.selectedDate = new Date(input.value);
     console.log('Date changed to:', this.selectedDate);
-    // TODO: Load entries for the selected date
+    
+    // If entries are already loaded, filter them by the new date
+    if (this.loadedEntries.length > 0) {
+      this.filterEntriesByDate();
+    }
+  }
+  
+  private formatDateForBackend(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+  
+  private filterEntriesByDate(): void {
+    const targetDateStr = this.formatDateForBackend(this.selectedDate);
+    
+    this.filteredEntries = this.loadedEntries.filter(entry => {
+      if (!entry.inserted_at) return false;
+      const entryDate = entry.inserted_at.split('T')[0]; // Extract YYYY-MM-DD
+      return entryDate === targetDateStr;
+    });
+    
+    console.log(`Filtered to ${this.filteredEntries.length} entries for ${targetDateStr}`);
   }
 
   openCalendar(): void {
@@ -121,6 +168,32 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
     } catch (error) {
       console.error('Error handling memory results:', error);
       this.searchResults = [];
+    }
+  }
+  
+  private handleMemoriesByDate(response: any): void {
+    this.isLoadingEntries = false;
+    
+    try {
+      if (response.error) {
+        console.error('Error fetching memories by date:', response.error);
+        this.loadedEntries = [];
+        this.filteredEntries = [];
+        return;
+      }
+      
+      if (response.entries && Array.isArray(response.entries)) {
+        this.loadedEntries = response.entries;
+        this.filteredEntries = response.entries; // Initially show all loaded entries
+        console.log(`Loaded ${this.loadedEntries.length} entries for date ${response.date}`);
+      } else {
+        this.loadedEntries = [];
+        this.filteredEntries = [];
+      }
+    } catch (error) {
+      console.error('Error handling memories by date:', error);
+      this.loadedEntries = [];
+      this.filteredEntries = [];
     }
   }
 }
