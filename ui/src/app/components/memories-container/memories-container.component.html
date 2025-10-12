@@ -1,57 +1,60 @@
 <div class="memories-log">
   <!-- Logbook Controls -->
   <div class="logbook-controls">
-    <div class="date-picker-container">
-      <input type="date" class="date-input" [value]="selectedDate | date:'yyyy-MM-dd'" (change)="onDateChange($event)">
-      <button class="calendar-icon-btn" (click)="openCalendar()" title="Select date">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-          <line x1="16" y1="2" x2="16" y2="6"></line>
-          <line x1="8" y1="2" x2="8" y2="6"></line>
-          <line x1="3" y1="10" x2="21" y2="10"></line>
-        </svg>
-      </button>
-    </div>
+    <mat-form-field class="date-picker-field" appearance="outline">
+      <input 
+        matInput 
+        [matDatepicker]="picker" 
+        [value]="selectedDate"
+        (dateChange)="onDateSelected($event.value)"
+        readonly>
+      <mat-datepicker #picker [dateClass]="dateClass"></mat-datepicker>
+      <mat-datepicker-toggle matIconSuffix [for]="$any(picker)"></mat-datepicker-toggle>
+    </mat-form-field>
     
     <div class="logbook-search">
-      <input 
-        type="text" 
-        class="question-input" 
-        placeholder="Ask a question about the logbook..." 
-        [(ngModel)]="logbookQuestion"
-        (keyup.enter)="askLogbookQuestion()">
-      <button class="search-btn" (click)="askLogbookQuestion()" title="Search logbook">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"></circle>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-        </svg>
-      </button>
+      <div class="search-input-wrapper">
+        <span class="search-icon-inside">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </span>
+        <input 
+          type="text" 
+          class="question-input" 
+          placeholder="Ask a question about the logbook..." 
+          [(ngModel)]="logbookQuestion"
+          (keyup.enter)="askLogbookQuestion()">
+      </div>
+      @if (hasPerformedSearch) {
+        <button 
+          class="toggle-results-btn" 
+          [class.active]="showSearchResults"
+          (click)="toggleSearchResults()" 
+          [title]="showSearchResults ? 'Hide results' : 'Show results'">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            @if (showSearchResults) {
+              <polyline points="18 15 12 9 6 15"></polyline>
+            } @else {
+              <polyline points="6 9 12 15 18 9"></polyline>
+            }
+          </svg>
+        </button>
+      }
     </div>
   </div>
 
   <!-- Search Results Section -->
-  @if (isSearching || searchResults.length > 0) {
+  @if (showSearchResults && hasPerformedSearch) {
     <div class="search-results-container">
       <div class="search-results-header">
         <h3>Search Results ({{ searchResults.length }})</h3>
-        <button class="toggle-btn" (click)="toggleSearchResults()" [title]="showSearchResults ? 'Hide results' : 'Show results'">
-          @if (showSearchResults) {
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="18 15 12 9 6 15"></polyline>
-            </svg>
-          } @else {
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          }
-        </button>
       </div>
       
       @if (isSearching) {
         <div class="searching">Searching memories...</div>
-      }
-      
-      @if (showSearchResults && searchResults.length > 0) {
+      } @else if (searchResults.length > 0) {
         <div class="search-results">
           @for (result of searchResults; track result.summary) {
             <div class="search-result">
@@ -60,9 +63,7 @@
             </div>
           }
         </div>
-      }
-      
-      @if (!isSearching && searchResults.length === 0) {
+      } @else {
         <div class="no-results">No results found.</div>
       }
     </div>

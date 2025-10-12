@@ -50,6 +50,10 @@ export interface GetMemoriesByDateMessage extends BaseCommand {
     date: string; // YYYY-MM-DD format
 }
 
+export interface GetAvailableDatesMessage extends BaseCommand {
+    type: "get_available_dates";
+}
+
 export interface UnknownMessage extends BaseMessage {
     type: "unknown";
     message: string;

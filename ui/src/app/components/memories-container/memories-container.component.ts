@@ -2,8 +2,12 @@ import { Component, OnDestroy, OnInit } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { MatCardModule } from "@angular/material/card";
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatInputModule } from '@angular/material/input';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatNativeDateModule } from '@angular/material/core';
 import { EventService, MemoryEvent } from "../../services/event.service";
-import { TauriService, QueryMemoriesMessage, GetMemoriesByDateMessage } from "../../services/tauri.service";
+import { TauriService, QueryMemoriesMessage, GetMemoriesByDateMessage, GetAvailableDatesMessage } from "../../services/tauri.service";
 import { Subscription } from "rxjs";
 
 interface MemorySearchResult {
@@ -18,10 +22,23 @@ interface MemoryEntry {
   metadata: Record<string, any>;
 }
 
+interface DateInfo {
+  date: string;
+  count: number;
+}
+
 @Component({
   selector: "app-memories-container",
   standalone: true,
-  imports: [CommonModule, MatCardModule, FormsModule],
+  imports: [
+    CommonModule, 
+    MatCardModule, 
+    FormsModule,
+    MatDatepickerModule,
+    MatInputModule,
+    MatFormFieldModule,
+    MatNativeDateModule
+  ],
   templateUrl: "./memories-container.component.html",
   styleUrls: ["./memories-container.component.css"],
 })
@@ -34,9 +51,12 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
   public searchResults: MemorySearchResult[] = [];
   public showSearchResults: boolean = false;
   public isSearching: boolean = false;
+  public hasPerformedSearch: boolean = false;
   public loadedEntries: MemoryEntry[] = [];
   public isLoadingEntries: boolean = false;
   public displayedEntries: { timestamp: string; content: string }[] = [];
+  public availableDates: DateInfo[] = [];
+  private availableDatesSet: Set<string> = new Set();
 
   constructor(
     private events: EventService,
@@ -61,7 +81,13 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
       if (message.type === 'memories_by_date') {
         this.handleMemoriesByDate(message['data']);
       }
+      if (message.type === 'available_dates') {
+        this.handleAvailableDates(message['data']);
+      }
     });
+    
+    // Fetch available dates for calendar highlighting
+    this.fetchAvailableDates();
     
     // Load entries for current date on init
     this.loadEntriesForDate(this.selectedDate);
@@ -72,13 +98,14 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
     this.outputSub?.unsubscribe();
   }
 
-  onDateChange(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    this.selectedDate = new Date(input.value);
-    console.log('Date changed to:', this.selectedDate);
-    
-    // Load entries for the new date
-    this.loadEntriesForDate(this.selectedDate);
+  onDateSelected(date: Date | null): void {
+    if (date) {
+      this.selectedDate = date;
+      console.log('Date selected:', this.selectedDate);
+      
+      // Load entries for the new date
+      this.loadEntriesForDate(this.selectedDate);
+    }
   }
   
   private loadEntriesForDate(date: Date): void {
@@ -131,20 +158,13 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
     }
   }
 
-  openCalendar(): void {
-    console.log('Open calendar clicked');
-    // The native date input will handle the calendar display
-    const dateInput = document.querySelector('.date-input') as HTMLInputElement;
-    if (dateInput) {
-      dateInput.showPicker();
-    }
-  }
-
   askLogbookQuestion(): void {
     if (this.logbookQuestion.trim()) {
       console.log('Asking logbook question:', this.logbookQuestion);
       this.isSearching = true;
       this.searchResults = [];
+      this.showSearchResults = true; // Auto-show results when searching
+      this.hasPerformedSearch = true; // Mark that a search has been performed
       
       // Send command to query memories directly (no LLM interaction)
       const message: QueryMemoriesMessage = {
@@ -169,6 +189,7 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
       if (response.error) {
         console.error('Error fetching memories:', response.error);
         this.searchResults = [];
+        this.showSearchResults = true; // Still show to display error/no results
         return;
       }
       
@@ -177,14 +198,16 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
           score: result.score,
           summary: result.summary
         }));
-        this.showSearchResults = true;
+        this.showSearchResults = true; // Ensure results are visible
         console.log('Received memory search results:', this.searchResults);
       } else {
         this.searchResults = [];
+        this.showSearchResults = true; // Show to display no results message
       }
     } catch (error) {
       console.error('Error handling memory results:', error);
       this.searchResults = [];
+      this.showSearchResults = true;
     }
   }
   
@@ -212,6 +235,47 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
       this.loadedEntries = [];
       this.updateDisplayedEntries();
     }
+  }
+  
+  private fetchAvailableDates(): void {
+    const message: GetAvailableDatesMessage = {
+      type: 'get_available_dates',
+      timestamp: new Date().toISOString()
+    };
+    
+    this.tauri.send_command(message);
+  }
+  
+  private handleAvailableDates(response: any): void {
+    try {
+      if (response.error) {
+        console.error('Error fetching available dates:', response.error);
+        this.availableDates = [];
+        this.availableDatesSet.clear();
+        return;
+      }
+      
+      if (response.dates && Array.isArray(response.dates)) {
+        this.availableDates = response.dates;
+        // Create a Set for O(1) lookup
+        this.availableDatesSet = new Set(response.dates.map((d: DateInfo) => d.date));
+        console.log(`Found ${this.availableDates.length} dates with entries`);
+      } else {
+        this.availableDates = [];
+        this.availableDatesSet.clear();
+      }
+    } catch (error) {
+      console.error('Error handling available dates:', error);
+      this.availableDates = [];
+      this.availableDatesSet.clear();
+    }
+  }
+  
+  // Custom date class function for the datepicker
+  dateClass = (date: Date | null): string => {
+    if (!date) return '';
+    const dateStr = this.formatDateForBackend(date);
+    return this.availableDatesSet.has(dateStr) ? 'has-entries' : '';
   }
 }
 

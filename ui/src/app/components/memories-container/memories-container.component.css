@@ -6,56 +6,119 @@
 .logbook-controls {
   display: flex;
   gap: 12px;
-  align-items: center;
-  margin-bottom: 16px;
+  align-items: flex-start;
   flex-wrap: wrap;
 }
 
-.date-picker-container {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+.date-picker-field {
+  min-width: 200px;
+  max-width: 250px;
 }
 
-.date-input {
-  padding: 6px 10px;
-  border: 1px solid #444;
-  border-radius: 4px;
-  background-color: #2a2a2a;
+/* Reduce height of date picker to match search input */
+::ng-deep .date-picker-field .mat-mdc-text-field-wrapper {
+  height: 42px;
+}
+
+::ng-deep .date-picker-field .mat-mdc-form-field-infix {
+  padding-top: 8px;
+  padding-bottom: 8px;
+  min-height: 42px;
+}
+
+::ng-deep .date-picker-field .mat-mdc-floating-label {
+  top: 21px;
+}
+
+::ng-deep .date-picker-field.mat-focused .mat-mdc-floating-label,
+::ng-deep .date-picker-field .mat-mdc-floating-label.mdc-floating-label--float-above {
+  top: 14px;
+}
+
+/* Material datepicker dark theme customization */
+::ng-deep .mat-datepicker-content {
+  background-color: #1a1a1a;
   color: #e0e0e0;
-  font-size: 14px;
-  cursor: pointer;
 }
 
-.date-input:hover {
-  border-color: #666;
+::ng-deep .mat-calendar {
+  background-color: #1a1a1a;
 }
 
-.date-input:focus {
-  outline: none;
+::ng-deep .mat-calendar-body-label,
+::ng-deep .mat-calendar-period-button {
+  color: #e0e0e0;
+}
+
+::ng-deep .mat-calendar-table-header th {
+  color: #888;
+}
+
+::ng-deep .mat-calendar-body-cell-content {
+  color: #e0e0e0;
+  border-radius: 4px;
+}
+
+::ng-deep .mat-calendar-body-cell:not(.mat-calendar-body-disabled):hover .mat-calendar-body-cell-content:not(.mat-calendar-body-selected) {
+  background-color: #333;
+}
+
+::ng-deep .mat-calendar-body-selected {
+  background-color: #1976d2 !important;
+  color: #fff !important;
+}
+
+::ng-deep .mat-calendar-body-today:not(.mat-calendar-body-selected) {
   border-color: #1976d2;
 }
 
-.calendar-icon-btn {
-  padding: 6px;
-  border: 1px solid #444;
-  border-radius: 4px;
+/* Highlight dates with entries */
+::ng-deep .mat-calendar-body-cell.has-entries .mat-calendar-body-cell-content {
+  position: relative;
+}
+
+::ng-deep .mat-calendar-body-cell.has-entries .mat-calendar-body-cell-content::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: #4CAF50;
+}
+
+::ng-deep .mat-calendar-body-cell.has-entries.mat-calendar-body-selected .mat-calendar-body-cell-content::after {
+  background-color: #fff;
+}
+
+::ng-deep .mat-form-field {
+  font-size: 14px;
+}
+
+::ng-deep .mat-mdc-text-field-wrapper {
   background-color: #2a2a2a;
+}
+
+::ng-deep .mat-mdc-form-field-focus-overlay {
+  background-color: transparent;
+}
+
+::ng-deep .mat-mdc-form-field.mat-focused .mat-mdc-form-field-focus-overlay {
+  opacity: 0;
+}
+
+::ng-deep .mdc-text-field--filled:not(.mdc-text-field--disabled) {
+  background-color: #2a2a2a;
+}
+
+::ng-deep .mat-mdc-form-field-error {
+  color: #f44336;
+}
+
+::ng-deep .mat-datepicker-toggle {
   color: #e0e0e0;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.calendar-icon-btn:hover {
-  background-color: #333;
-  border-color: #666;
-}
-
-.calendar-icon-btn:active {
-  transform: scale(0.95);
 }
 
 .logbook-search {
@@ -64,16 +127,36 @@
   gap: 4px;
   flex: 1;
   min-width: 200px;
+  position: relative;
+}
+
+.search-input-wrapper {
+  position: relative;
+  flex: 1;
+}
+
+.search-icon-inside {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #888;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
 }
 
 .question-input {
   flex: 1;
-  padding: 6px 10px;
+  width: 100%;
+  padding: 6px 10px 6px 36px;
   border: 1px solid #444;
   border-radius: 4px;
   background-color: #2a2a2a;
   color: #e0e0e0;
   font-size: 14px;
+  height: 42px;
+  box-sizing: border-box;
 }
 
 .question-input:hover {
@@ -89,7 +172,7 @@
   color: #888;
 }
 
-.search-btn {
+.toggle-results-btn {
   padding: 6px;
   border: 1px solid #444;
   border-radius: 4px;
@@ -100,15 +183,22 @@
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
+  min-width: 42px;
+  height: 42px;
 }
 
-.search-btn:hover {
+.toggle-results-btn:hover {
   background-color: #333;
   border-color: #666;
 }
 
-.search-btn:active {
+.toggle-results-btn:active {
   transform: scale(0.95);
+}
+
+.toggle-results-btn.active {
+  background-color: #1976d2;
+  border-color: #1976d2;
 }
 
 .search-results-container {
@@ -117,15 +207,14 @@
   border-radius: 4px;
   background-color: #1a1a1a;
   overflow: hidden;
+  padding: 12px;
 }
 
 .search-results-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
-  background-color: #252525;
-  border-bottom: 1px solid #444;
+  margin-bottom: 12px;
 }
 
 .search-results-header h3 {
@@ -133,23 +222,6 @@
   font-size: 14px;
   font-weight: 600;
   color: #e0e0e0;
-}
-
-.toggle-btn {
-  padding: 4px;
-  border: none;
-  background: transparent;
-  color: #e0e0e0;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-}
-
-.toggle-btn:hover {
-  background-color: #333;
 }
 
 .searching {
@@ -167,7 +239,6 @@
 }
 
 .search-results {
-  padding: 8px;
   max-height: 400px;
   overflow-y: auto;
 }

@@ -298,6 +298,43 @@ class Chat:
             import traceback
             log('error', traceback.format_exc())
             return {"error": str(e)}
+    
+    def get_available_dates(self):
+        """Fetch all dates that have memory entries"""
+        try:
+            from lib.Database import get_connection
+            
+            # Get connection and query for distinct dates
+            conn = get_connection()
+            cursor = conn.cursor()
+            
+            # Query for distinct dates with entry counts
+            cursor.execute(f'''
+                SELECT DATE(inserted_at) as date, COUNT(*) as count
+                FROM {self.event_manager.long_term_memory.table_name}
+                WHERE inserted_at IS NOT NULL
+                GROUP BY DATE(inserted_at)
+                ORDER BY date DESC
+                LIMIT 365
+            ''')
+            
+            results = cursor.fetchall()
+            
+            # Format results
+            dates = []
+            for row in results:
+                dates.append({
+                    'date': row[0],
+                    'count': row[1]
+                })
+            
+            return {"dates": dates}
+            
+        except Exception as e:
+            log('error', f'Error fetching available dates: {e}')
+            import traceback
+            log('error', traceback.format_exc())
+            return {"error": str(e)}
         
     def run(self):
         show_chat_message('info', f"Initializing CMDR {self.config['commander_name']}'s personal AI...\n")
@@ -486,6 +523,13 @@ def read_stdin(chat: Chat):
                         "timestamp": datetime.now().isoformat(),
                         "data": results
                     }) + '\n', flush=True)
+            if data.get("type") == "get_available_dates":
+                results = chat.get_available_dates()
+                print(json.dumps({
+                    "type": "available_dates",
+                    "timestamp": datetime.now().isoformat(),
+                    "data": results
+                }) + '\n', flush=True)
             if data.get("type") == "init_overlay":
                 print(json.dumps({"type": "running_config", "config": config})+'\n', flush=True)
 
