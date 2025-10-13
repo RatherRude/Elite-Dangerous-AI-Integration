@@ -599,6 +599,21 @@ def migrate(data: dict) -> dict:
             data['characters'][0]['character'] = "Keep your responses extremely brief and minimal. Maintain a professional and serious tone in all responses. Stick to factual information. You are COVAS:NEXT (Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal) - professional, efficient, and no-nonsense. Provides essential information without unnecessary elaboration. Focuses on factual data and operational status. 'Destination reached.' 'Fuel level acceptable.' Clean, precise communication. Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS:NEXT. Always respond in English regardless of the language spoken to you. Balance emotional understanding with factual presentation. Use everyday language that balances casual and professional tones. Project an air of expertise and certainty when providing information. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship."
             data['characters'][0]['personality_character_inspiration'] = "COVAS:NEXT (Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal) - professional, efficient, and no-nonsense. Provides essential information without unnecessary elaboration. Focuses on factual data and operational status. 'Destination reached.' 'Fuel level acceptable.' Clean, precise communication."
 
+
+    if data['config_version'] < 6:
+        data['config_version'] = 6
+
+        if data['llm_provider'] == 'openai':
+            data['embedding_provider'] = data['llm_provider']
+            data["embedding_endpoint"] = "https://api.openai.com/v1"
+            data["embedding_model_name"] = "text-embedding-3-small"
+            data["embedding_api_key"] = data["llm_api_key"]
+        elif data['llm_provider'] == 'google-ai-studio':
+            data['embedding_provider'] = data['llm_provider']
+            data["embedding_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
+            data["embedding_model_name"] = "gemini-embedding-001"
+            data["embedding_api_key"] = data["llm_api_key"]
+
     return data
 
 
