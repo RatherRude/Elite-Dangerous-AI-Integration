@@ -42,6 +42,7 @@ export interface WeaponType {
     action: string; // 'fire', 'start', or 'stop'
     duration: number; // Duration to hold fire button in seconds (for fire action only)
     repetitions: number; // Number of additional repetitions (0 = single action)
+    target_submodule: string; // Target submodule (empty string for None)
 }
 
 export interface SystemInfo {

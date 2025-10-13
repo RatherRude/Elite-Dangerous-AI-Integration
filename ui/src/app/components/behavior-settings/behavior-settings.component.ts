@@ -181,7 +181,8 @@ export class BehaviorSettingsComponent {
             is_combat: true,
             action: 'fire',
             duration: 0,
-            repetitions: 0
+            repetitions: 0,
+            target_submodule: ''
         };
         
         const updatedWeapons = [...this.config.weapon_types, newWeapon];
@@ -289,6 +290,14 @@ export class BehaviorSettingsComponent {
         this.onConfigChange({ weapon_types: updatedWeapons });
     }
 
+    updateWeaponTargetSubmodule(index: number, targetSubmodule: string) {
+        if (!this.config) return;
+        
+        const updatedWeapons = [...this.config.weapon_types];
+        updatedWeapons[index] = { ...updatedWeapons[index], target_submodule: targetSubmodule };
+        this.onConfigChange({ weapon_types: updatedWeapons });
+    }
+
     getWeaponDescription(weapon: WeaponType): string {
         if (!weapon.name) return '';
         
@@ -298,6 +307,11 @@ export class BehaviorSettingsComponent {
         parts.push(`FG${weapon.fire_group}`);
         parts.push(weapon.is_primary ? 'Primary' : 'Secondary');
         parts.push(weapon.is_combat ? 'Combat' : 'Analysis');
+        
+        // Add target submodule if specified
+        if (weapon.target_submodule && weapon.target_submodule.trim()) {
+            parts.push(`→ ${weapon.target_submodule}`);
+        }
         
         // Add action details
         if (weapon.action === 'start') {
