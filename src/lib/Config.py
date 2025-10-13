@@ -330,6 +330,7 @@ class WeaponType(TypedDict):
     action: str  # 'fire', 'start', or 'stop'
     duration: float  # Duration to hold fire button in seconds (for fire action only)
     repetitions: int  # Number of additional repetitions (0 = single action)
+    target_submodule: str  # Target submodule (empty string for None)
 
 
 class Character(TypedDict, total=False):

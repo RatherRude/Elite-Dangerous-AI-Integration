@@ -72,7 +72,15 @@ def fire_weapons(args, projected_states):
         fire_group = custom_weapon.get('fire_group', 1)
         is_primary = custom_weapon.get('is_primary', True)
         is_combat = custom_weapon.get('is_combat', True)
-        
+        target_submodule = custom_weapon.get('target_submodule', '')
+
+        # Target submodule if specified
+        if target_submodule != '':
+            try:
+                target_subsystem({'subsystem': target_submodule}, projected_states)
+            except Exception as e:
+                log('warn', f'Failed to target submodule {target_submodule}: {str(e)}')
+
         # Use weapon's default action settings if not overridden in args
         if 'action' not in args:
             action = custom_weapon.get('action', 'fire').lower()
@@ -90,6 +98,7 @@ def fire_weapons(args, projected_states):
         except Exception:
             fg_index = 0
         cycle_fire_group({'fire_group': fg_index}, projected_states)
+
         
         # Determine key
         key_name = 'PrimaryFire' if is_primary else 'SecondaryFire'

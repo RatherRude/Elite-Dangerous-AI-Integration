@@ -133,25 +133,29 @@ mat-slide-toggle {
 
 /* Weapon field widths */
 .field-group {
-  width: 60px;
+  width: 85px;
 }
 
 .field-fire {
-  width: 85px;
+  width: 105px;
 }
 
 .field-mode {
-  width: 95px;
+  width: 105px;
 }
 
 .field-action {
-  width: 85px;
+  width: 95px;
 }
 
 .field-duration {
-  width: 60px;
+  width: 75px;
 }
 
 .field-reps {
   width: 60px;
+}
+
+.field-submodule {
+  width: 155px;
 }
