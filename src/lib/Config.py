@@ -614,6 +614,13 @@ def migrate(data: dict) -> dict:
             data["embedding_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
             data["embedding_model_name"] = "gemini-embedding-001"
             data["embedding_api_key"] = data["llm_api_key"]
+        elif data['llm_provider'] == 'local-ai-server':
+            data['embedding_provider'] = data['llm_provider']
+            data["embedding_endpoint"] = "http://127.0.01:8080"
+            data["embedding_model_name"] = "text-embedding-3-small"
+            data["embedding_api_key"] = ''
+        else:
+            data['embedding_provider'] = 'none'
 
     return data
 
@@ -1193,7 +1200,7 @@ def update_config(config: Config, data: dict) -> Config:
             data["tools_var"] = True
 
         elif data["llm_provider"] == "local-ai-server":
-            data["llm_endpoint"] = "http://localhost:8080"
+            data["llm_endpoint"] = "http://127.0.01:8080"
             data["llm_model_name"] = "gpt-4.1-mini"
             data["llm_api_key"] = ""
             data["tools_var"] = True
@@ -1224,7 +1231,7 @@ def update_config(config: Config, data: dict) -> Config:
             data["vision_var"] = True
 
         elif data["vision_provider"] == "local-ai-server":
-            data["vision_endpoint"] = "http://localhost:8080"
+            data["vision_endpoint"] = "http://127.0.01:8080"
             if not data.get("vision_model_name"):
                 data["vision_model_name"] = "gpt-4o-mini"
             data["vision_api_key"] = ""
@@ -1243,7 +1250,7 @@ def update_config(config: Config, data: dict) -> Config:
             data["stt_api_key"] = ""
 
         if data["stt_provider"] == "local-ai-server":
-            data["stt_endpoint"] = "http://localhost:8080"
+            data["stt_endpoint"] = "http://127.0.01:8080"
             data["stt_model_name"] = "whisper-1"
             data["stt_api_key"] = ""
 
@@ -1276,7 +1283,7 @@ def update_config(config: Config, data: dict) -> Config:
             data["tts_api_key"] = ""
 
         if data["tts_provider"] == "local-ai-server":
-            data["tts_endpoint"] = "http://localhost:8080"
+            data["tts_endpoint"] = "http://127.0.01:8080"
             data["tts_model_name"] = "tts-1"
             for character in config["characters"]:
                 character["tts_voice"] = "nova"
@@ -1325,7 +1332,7 @@ def update_config(config: Config, data: dict) -> Config:
                 data["embedding_api_key"] = ""
 
         elif data["embedding_provider"] == "local-ai-server":
-            data["embedding_endpoint"] = "http://localhost:8080"
+            data["embedding_endpoint"] = "http://127.0.01:8080"
             data["embedding_model_name"] = "text-embedding-3-small"
             data["embedding_api_key"] = ""
 
