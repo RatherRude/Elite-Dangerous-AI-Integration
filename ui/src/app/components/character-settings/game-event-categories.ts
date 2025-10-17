@@ -118,6 +118,7 @@ export const GameEventCategories: Record<string, string[]> = {
         "NightVisionOff",
         "NightVisionOn",
         "SupercruiseDestinationDrop",
+        "ReservoirReplenished",
     ],
 
     "SRV Updates": [
