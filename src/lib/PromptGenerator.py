@@ -35,6 +35,7 @@ from .Event import (
     GameEvent,
     Event,
     ConversationEvent,
+    MemoryEvent,
     StatusEvent,
     ToolEvent,
     ExternalEvent,
@@ -3239,6 +3240,7 @@ class PromptGenerator:
         # Format and return the final status message
         return "\n\n".join(['# '+entry[0]+'\n' + yaml.dump(entry[1], sort_keys=False) for entry in status_entries])
 
+    # TODO use events as passed from db, not in mem copy, pending (new not yet reated to), short_term (reacted to but not yet part of summary memory), memories (historc summaries of events)
     def generate_prompt(self, events: list[Event], projected_states: dict[str, dict], pending_events: list[Event]):
         # Fine the most recent event
         last_event = events[-1]
@@ -3293,6 +3295,9 @@ class PromptGenerator:
 
             if isinstance(event, ToolEvent):
                 conversational_pieces += self.tool_messages(event)
+            
+            if isinstance(event, MemoryEvent):
+                conversational_pieces.append({"role": "user", "content": '<memory>' + event.content + '</memory>'})
 
             for handler in self.registered_prompt_event_handlers:
                 try:

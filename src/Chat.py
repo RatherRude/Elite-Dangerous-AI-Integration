@@ -7,6 +7,7 @@ import threading
 import json
 import io
 import traceback
+from datetime import datetime
 
 from EDMesg.CovasNext import ExternalChatNotification, ExternalBackgroundChatNotification
 from openai import OpenAI
@@ -19,7 +20,7 @@ from lib.actions.Actions import register_actions
 from lib.ControllerManager import ControllerManager
 from lib.EDCoPilot import EDCoPilot
 from lib.EDKeys import EDKeys
-from lib.Event import ConversationEvent, Event, ExternalEvent, GameEvent, ProjectedEvent, StatusEvent, ToolEvent
+from lib.Event import ConversationEvent, Event, ExternalEvent, GameEvent, MemoryEvent, ProjectedEvent, StatusEvent, ToolEvent
 from lib.Logger import show_chat_message
 from lib.Projections import registerProjections
 from lib.PromptGenerator import PromptGenerator
@@ -79,7 +80,14 @@ class Chat:
             base_url="https://api.openai.com/v1" if self.config["llm_endpoint"] == '' else self.config["llm_endpoint"],
             api_key=self.config["api_key"] if self.config["llm_api_key"] == '' else self.config["llm_api_key"],
         )
-        
+        # embeddings
+        self.embeddingClient: OpenAI | None = None
+        if self.config.get("embedding_provider") in ['openai', 'custom', 'google-ai-studio', 'local-ai-server']:
+            self.embeddingClient = OpenAI(
+                base_url=self.config["embedding_endpoint"],
+                api_key=self.config["api_key"] if self.config["embedding_api_key"] == '' else self.config["embedding_api_key"],
+            )
+
         # vision
         self.visionClient: OpenAI | None = None
         if self.config["vision_var"]:
@@ -136,6 +144,7 @@ class Chat:
             tts=self.tts,
             prompt_generator=self.prompt_generator,
             copilot=self.copilot,
+            embeddingClient=self.embeddingClient,
             disabled_game_events=disabled_events
         )
         self.is_replying = False
@@ -199,9 +208,148 @@ class Chat:
         if event.kind=='projected':
             event = cast(ProjectedEvent, event)
             show_chat_message('event', event.content.get('event', 'Unknown'))
+        if event.kind=='memory':
+            event = cast(MemoryEvent, event)
+            show_chat_message('memory', event.content)
 
     def submit_input(self, input: str):
         self.event_manager.add_conversation_event('user', input)
+    
+    def query_memories(self, query: str, top_k: int = 5):
+        """Query long-term memories without triggering LLM interaction"""
+        if not self.embeddingClient:
+            return {"error": "Embeddings model not configured"}
+        
+        embedding_model = self.config.get("embedding_model_name")
+        if not embedding_model:
+            return {"error": "Embedding model name not configured"}
+        
+        try:
+            # Create embedding for the query
+            embedding_response = self.embeddingClient.embeddings.create(
+                model=embedding_model,
+                input=query
+            )
+            embedding = embedding_response.data[0].embedding
+            
+            # Search the vector store
+            results = self.event_manager.long_term_memory.search(
+                embedding_response.model, 
+                embedding, 
+                n=min(max(1, top_k), 20)
+            )
+            
+            if not results:
+                return {"results": []}
+            
+            # Fetch timestamps for the results
+            from lib.Database import get_connection
+            conn = get_connection()
+            cursor = conn.cursor()
+            
+            # Format results
+            formatted = []
+            for _id, content, metadata, score in results:
+                # Fetch inserted_at timestamp for this entry
+                cursor.execute(f'''
+                    SELECT inserted_at
+                    FROM {self.event_manager.long_term_memory.table_name}
+                    WHERE id = ?
+                ''', (_id,))
+                timestamp_row = cursor.fetchone()
+                inserted_at = timestamp_row[0] if timestamp_row else None
+                
+                formatted.append({
+                    'score': round(score, 3),
+                    'summary': content,
+                    'metadata': metadata,
+                    'inserted_at': inserted_at
+                })
+            
+            return {"results": formatted}
+            
+        except Exception as e:
+            log('error', f'Error querying memories: {e}')
+            import traceback
+            log('error', traceback.format_exc())
+            return {"error": str(e)}
+    
+    def get_memories_by_date(self, date_str: str):
+        """Fetch all memory entries for a specific date"""
+        try:
+            from lib.Database import get_connection
+            
+            # Parse the date string (format: YYYY-MM-DD)
+            target_date = datetime.fromisoformat(date_str).date()
+            
+            # Get connection and query the memory table
+            conn = get_connection()
+            cursor = conn.cursor()
+            
+            # Query for entries on the specified date
+            cursor.execute(f'''
+                SELECT id, content, metadata, inserted_at
+                FROM {self.event_manager.long_term_memory.table_name}
+                WHERE DATE(inserted_at) = ?
+                ORDER BY inserted_at ASC
+            ''', (target_date.isoformat(),))
+            
+            results = cursor.fetchall()
+            
+            # Format results
+            formatted = []
+            for row in results:
+                formatted.append({
+                    'id': row[0],
+                    'content': row[1],
+                    'metadata': json.loads(row[2]) if row[2] else {},
+                    'inserted_at': row[3]
+                })
+            
+            return {"entries": formatted, "date": date_str}
+            
+        except Exception as e:
+            log('error', f'Error fetching memories by date: {e}')
+            import traceback
+            log('error', traceback.format_exc())
+            return {"error": str(e)}
+    
+    def get_available_dates(self):
+        """Fetch all dates that have memory entries"""
+        try:
+            from lib.Database import get_connection
+            
+            # Get connection and query for distinct dates
+            conn = get_connection()
+            cursor = conn.cursor()
+            
+            # Query for distinct dates with entry counts
+            cursor.execute(f'''
+                SELECT DATE(inserted_at) as date, COUNT(*) as count
+                FROM {self.event_manager.long_term_memory.table_name}
+                WHERE inserted_at IS NOT NULL
+                GROUP BY DATE(inserted_at)
+                ORDER BY date DESC
+                LIMIT 365
+            ''')
+            
+            results = cursor.fetchall()
+            
+            # Format results
+            dates = []
+            for row in results:
+                dates.append({
+                    'date': row[0],
+                    'count': row[1]
+                })
+            
+            return {"dates": dates}
+            
+        except Exception as e:
+            log('error', f'Error fetching available dates: {e}')
+            import traceback
+            log('error', traceback.format_exc())
+            return {"error": str(e)}
         
     def run(self):
         show_chat_message('info', f"Initializing CMDR {self.config['commander_name']}'s personal AI...\n")
@@ -264,6 +412,7 @@ class Chat:
 
         if self.config['tools_var']:
             log('info', "Register actions...")
+
             register_actions(
                 self.action_manager,
                 self.event_manager,
@@ -271,9 +420,11 @@ class Chat:
                 self.config["llm_model_name"],
                 self.visionClient,
                 self.config["vision_model_name"],
+                self.embeddingClient,
+                self.config["embedding_model_name"],
                 self.ed_keys,
                 self.config.get("discovery_primary_var", True),
-                int(self.config.get("discovery_firegroup_var", 1) or 1),
+                self.config.get("discovery_firegroup_var", 1),
                 self.config.get("chat_local_tabbed_var", False),
                 self.config.get("chat_wing_tabbed_var", False),
                 self.config.get("chat_system_tabbed_var", True),
@@ -368,6 +519,32 @@ def read_stdin(chat: Chat):
             data = json.loads(line)
             if data.get("type") == "submit_input":
                 chat.submit_input(data["input"])
+            if data.get("type") == "query_memories":
+                query = data.get("query", "")
+                top_k = data.get("top_k", 5)
+                if query:
+                    results = chat.query_memories(query, top_k)
+                    print(json.dumps({
+                        "type": "memory_results",
+                        "timestamp": datetime.now().isoformat(),
+                        "results": results
+                    }) + '\n', flush=True)
+            if data.get("type") == "get_memories_by_date":
+                date_str = data.get("date", "")
+                if date_str:
+                    results = chat.get_memories_by_date(date_str)
+                    print(json.dumps({
+                        "type": "memories_by_date",
+                        "timestamp": datetime.now().isoformat(),
+                        "data": results
+                    }) + '\n', flush=True)
+            if data.get("type") == "get_available_dates":
+                results = chat.get_available_dates()
+                print(json.dumps({
+                    "type": "available_dates",
+                    "timestamp": datetime.now().isoformat(),
+                    "data": results
+                }) + '\n', flush=True)
             if data.get("type") == "init_overlay":
                 print(json.dumps({"type": "running_config", "config": config})+'\n', flush=True)
 

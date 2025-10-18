@@ -9,7 +9,8 @@ export interface EventMessage extends BaseMessage {
         | ToolEvent
         | StatusEvent
         | ConversationEvent
-        | ExternalEvent;
+        | ExternalEvent
+        | MemoryEvent;
 }
 
 export interface GameEvent {
@@ -58,6 +59,15 @@ export interface ExternalEvent {
     content: any;
     timestamp: string;
     kind: "external";
+    processed_at: number;
+}
+
+export interface MemoryEvent {
+    content: string;
+    metadata: any;
+    embedding: number[];
+    timestamp: string;
+    kind: "memory";
     processed_at: number;
 }
 
