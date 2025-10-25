@@ -604,21 +604,24 @@ def migrate(data: dict) -> dict:
     if data['config_version'] < 6:
         data['config_version'] = 6
 
-        if data['llm_provider'] == 'openai':
-            data['embedding_provider'] = data['llm_provider']
-            data["embedding_endpoint"] = "https://api.openai.com/v1"
-            data["embedding_model_name"] = "text-embedding-3-small"
-            data["embedding_api_key"] = data["llm_api_key"]
-        elif data['llm_provider'] == 'google-ai-studio':
-            data['embedding_provider'] = data['llm_provider']
-            data["embedding_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
-            data["embedding_model_name"] = "gemini-embedding-001"
-            data["embedding_api_key"] = data["llm_api_key"]
-        elif data['llm_provider'] == 'local-ai-server':
-            data['embedding_provider'] = data['llm_provider']
-            data["embedding_endpoint"] = "http://127.0.0.1:8080"
-            data["embedding_model_name"] = "text-embedding-3-small"
-            data["embedding_api_key"] = ''
+        if data.get("llm_provider"):
+            if data['llm_provider'] == 'openai':
+                data['embedding_provider'] = data['llm_provider']
+                data["embedding_endpoint"] = "https://api.openai.com/v1"
+                data["embedding_model_name"] = "text-embedding-3-small"
+                data["embedding_api_key"] = data["llm_api_key"]
+            elif data['llm_provider'] == 'google-ai-studio':
+                data['embedding_provider'] = data['llm_provider']
+                data["embedding_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
+                data["embedding_model_name"] = "gemini-embedding-001"
+                data["embedding_api_key"] = data["llm_api_key"]
+            elif data['llm_provider'] == 'local-ai-server':
+                data['embedding_provider'] = data['llm_provider']
+                data["embedding_endpoint"] = "http://127.0.0.1:8080"
+                data["embedding_model_name"] = "text-embedding-3-small"
+                data["embedding_api_key"] = ''
+            else:
+                data['embedding_provider'] = 'none'
         else:
             data['embedding_provider'] = 'none'
 
