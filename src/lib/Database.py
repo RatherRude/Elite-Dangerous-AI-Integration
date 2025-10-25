@@ -511,7 +511,7 @@ class VectorStore():
             )
 
         ranked.sort(key=lambda item: item['score'], reverse=True)
-        log('info', 'vectorstore search result', ranked)
+        log('info', 'vectorstore search result', json.dumps(ranked))
         return ranked[:n]
 
     def delete(self, id: str) -> None:
