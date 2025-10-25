@@ -6,7 +6,7 @@ from openai.types import embedding
 
 
 class Event:
-    kind: Literal['game', 'user', 'user_speaking', 'assistant', 'assistant_acting', 'assistant_completed', 'tool', 'status', 'projected', 'external', 'memory']
+    kind: Literal['game', 'user', 'user_speaking', 'assistant', 'assistant_acting', 'assistant_completed', 'tool', 'status', 'projected', 'external', 'memory', 'plugin']
     timestamp: str
     processed_at: float
     memorized_at: float | None
@@ -49,6 +49,16 @@ class ExternalEvent(Event):
     content: Dict
     timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     kind: Literal['external'] = field(default='external')
+    processed_at: float = field(default=0.0)
+    memorized_at: float | None = field(default=0.0)
+    responded_at: float | None = field(default=0.0)
+    
+@dataclass
+class PluginEvent(Event):
+    content: Dict
+    plugin_name: str
+    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    kind: Literal['plugin'] = field(default='plugin')
     processed_at: float = field(default=0.0)
     memorized_at: float | None = field(default=0.0)
     responded_at: float | None = field(default=0.0)

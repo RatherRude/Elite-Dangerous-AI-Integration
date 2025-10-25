@@ -897,9 +897,9 @@ class ShipInfo(Projection[ShipInfoState]):
         minimal_mass = unladen_mass + drive_max_fuel  #max jump with just right anmount
         current_mass = unladen_mass + current_cargo + current_fuel + current_fuel_reservoir  #current mass
         maximal_mass = unladen_mass + cargo_capacity + fuel_capacity  # minimal jump with min mass
-        log('info', 'minimal_mass', minimal_mass)
-        log('info', 'current_mass', current_mass)
-        log('info', 'maximal_mass', maximal_mass)
+        #log('info', 'minimal_mass', minimal_mass)
+        #log('info', 'current_mass', current_mass)
+        #log('info', 'maximal_mass', maximal_mass)
         
         base = lambda M, F: (drive_optimal_mass / M) * ((10**3 * F) / drive_linear_const )**(1/drive_power_const)
         # adding stuff here for more future fsd boost stuff 
