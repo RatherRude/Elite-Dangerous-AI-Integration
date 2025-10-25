@@ -1178,7 +1178,7 @@ def retrieve_memories(obj, projected_states):
     )
     embedding = embedding_response.data[0].embedding
 
-    results = event_manager.long_term_memory.search(embedding_response.model, embedding, n=k)
+    results = event_manager.long_term_memory.search(query, embedding_response.model, embedding, n=k)
 
     if not results:
         return f"No relevant memories found for '{query}'."

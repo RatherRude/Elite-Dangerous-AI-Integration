@@ -282,7 +282,7 @@ class VectorStore():
 
         conn.commit()
 
-    def search(self, model_name: str, query_embedding: list[float], n: int = 5) -> list[tuple[int, str, dict[str, Any], float]]:
+    def search(self, query: str, model_name: str, query_embedding: list[float], n: int = 5) -> list[tuple[int, str, dict[str, Any], float]]:
         """
         Search for similar embeddings
         

@@ -234,6 +234,7 @@ class Chat:
             
             # Search the vector store
             results = self.event_manager.long_term_memory.search(
+                query,
                 embedding_response.model, 
                 embedding, 
                 n=min(max(1, top_k), 20)
