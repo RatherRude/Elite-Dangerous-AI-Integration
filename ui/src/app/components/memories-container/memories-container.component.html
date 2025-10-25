@@ -86,10 +86,10 @@
     <div class="empty">No logbook entries recorded yet.</div>
   } @else {
     <div class="entries">
-      @for (entry of displayedEntries; track entry.timestamp) {
+      @for (entry of displayedEntries; track entry.time_since) {
         <div class="entry">
           <div class="entry-header">
-            <span class="timestamp">{{ entry.timestamp | date:'HH:mm:ss' }}</span>
+            <span class="timestamp">{{ entry.time_since | date:'HH:mm:ss' }}</span>
             @if (entry.time_since || entry.time_until) {
               <div class="entry-context">
                 @if (entry.time_since) {

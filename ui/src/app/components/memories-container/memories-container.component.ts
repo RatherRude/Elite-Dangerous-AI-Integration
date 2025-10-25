@@ -30,7 +30,6 @@ interface DateInfo {
 }
 
 type DisplayEntry = {
-  timestamp: string;
   content: string;
   time_since?: string;
   time_until?: string;
@@ -152,7 +151,6 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
       // Current date: merge loaded entries + live memories
       // Convert loaded entries to display format
       const loadedAsDisplay: DisplayEntry[] = this.loadedEntries.map(entry => ({
-        timestamp: entry.inserted_at,
         content: entry.content,
         time_since: entry.time_since,
         time_until: entry.time_until,
@@ -161,12 +159,11 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
       // Merge and sort by timestamp
       const combined = [...loadedAsDisplay, ...this.memories];
       this.displayedEntries = combined.sort((a, b) => 
-        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        new Date(a.time_since ?? 0).getTime() - new Date(b.time_since ?? 0).getTime()
       );
     } else {
       // Past date: only show loaded entries
       this.displayedEntries = this.loadedEntries.map(entry => ({
-        timestamp: entry.inserted_at,
         content: entry.content,
         time_since: entry.time_since,
         time_until: entry.time_until,
