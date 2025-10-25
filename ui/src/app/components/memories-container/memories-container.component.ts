@@ -13,20 +13,28 @@ import { Subscription } from "rxjs";
 interface MemorySearchResult {
   score: number;
   summary: string;
-  inserted_at?: string;
+  time_until?: string;
+  time_since?: string;
 }
 
 interface MemoryEntry {
   id: number;
   content: string;
-  inserted_at: string;
-  metadata: Record<string, any>;
+  time_until?: string;
+  time_since?: string;
 }
 
 interface DateInfo {
   date: string;
   count: number;
 }
+
+type DisplayEntry = {
+  timestamp: string;
+  content: string;
+  time_since?: string;
+  time_until?: string;
+};
 
 @Component({
   selector: "app-memories-container",
@@ -46,7 +54,7 @@ interface DateInfo {
 export class MemoriesContainerComponent implements OnInit, OnDestroy {
   private sub?: Subscription;
   private outputSub?: Subscription;
-  public memories: { timestamp: string; content: string }[] = [];
+  public memories: DisplayEntry[] = [];
   public selectedDate: Date = new Date();
   public logbookQuestion: string = '';
   public searchResults: MemorySearchResult[] = [];
@@ -55,7 +63,7 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
   public hasPerformedSearch: boolean = false;
   public loadedEntries: MemoryEntry[] = [];
   public isLoadingEntries: boolean = false;
-  public displayedEntries: { timestamp: string; content: string }[] = [];
+  public displayedEntries: DisplayEntry[] = [];
   public availableDates: DateInfo[] = [];
   private availableDatesSet: Set<string> = new Set();
 
@@ -69,7 +77,10 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
       const mems = all
         .map((m) => m.event)
         .filter((e): e is MemoryEvent => (e as any)?.kind === "memory")
-        .map((e) => ({ timestamp: (e as MemoryEvent).timestamp, content: (e as MemoryEvent).content }));
+        .map((e) => ({
+          timestamp: (e as MemoryEvent).timestamp,
+          content: (e as MemoryEvent).content,
+        } as DisplayEntry));
       this.memories = mems;
       this.updateDisplayedEntries();
     });
@@ -140,9 +151,11 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
     if (this.isCurrentDate()) {
       // Current date: merge loaded entries + live memories
       // Convert loaded entries to display format
-      const loadedAsDisplay = this.loadedEntries.map(entry => ({
+      const loadedAsDisplay: DisplayEntry[] = this.loadedEntries.map(entry => ({
         timestamp: entry.inserted_at,
-        content: entry.content
+        content: entry.content,
+        time_since: entry.time_since,
+        time_until: entry.time_until,
       }));
       
       // Merge and sort by timestamp
@@ -154,7 +167,9 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
       // Past date: only show loaded entries
       this.displayedEntries = this.loadedEntries.map(entry => ({
         timestamp: entry.inserted_at,
-        content: entry.content
+        content: entry.content,
+        time_since: entry.time_since,
+        time_until: entry.time_until,
       }));
     }
   }
@@ -198,7 +213,9 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
         this.searchResults = response.results.map((result: any) => ({
           score: result.score,
           summary: result.summary,
-          inserted_at: result.inserted_at
+          inserted_at: result.inserted_at,
+          time_since: result.time_since,
+          time_until: result.time_until,
         }));
         this.showSearchResults = true; // Ensure results are visible
         console.log('Received memory search results:', this.searchResults);
@@ -225,7 +242,14 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
       }
       
       if (response.entries && Array.isArray(response.entries)) {
-        this.loadedEntries = response.entries;
+        this.loadedEntries = response.entries.map((entry: any) => ({
+          id: Number(entry.id ?? 0),
+          content: entry.content ?? '',
+          inserted_at: entry.inserted_at ?? entry.timestamp ?? new Date().toISOString(),
+          time_since: entry.time_since ?? entry.relative_time_since ?? undefined,
+          time_until: entry.time_until ?? entry.relative_time_until ?? undefined,
+          metadata: (entry.metadata && typeof entry.metadata === 'object') ? entry.metadata : {},
+        }));
         console.log(`Loaded ${this.loadedEntries.length} entries for date ${response.date}`);
         this.updateDisplayedEntries();
       } else {

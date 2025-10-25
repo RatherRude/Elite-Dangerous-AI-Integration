@@ -263,6 +263,23 @@
   gap: 8px;
 }
 
+.result-context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 11px;
+  color: #aaa;
+  margin-bottom: 6px;
+}
+
+.result-time-since {
+  color: #66bb6a;
+}
+
+.result-time-until {
+  color: #ffa726;
+}
+
 .result-score {
   font-size: 12px;
   color: #1976d2;
@@ -296,9 +313,32 @@
 
 .entry {
   display: flex;
-  align-items: baseline;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 0;
+}
+
+.entry-header {
+  display: flex;
+  align-items: center;
   gap: 8px;
-  padding: 4px 0;
+  flex-wrap: wrap;
+}
+
+.entry-context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 11px;
+  color: #aaa;
+}
+
+.entry-time-since {
+  color: #66bb6a;
+}
+
+.entry-time-until {
+  color: #ffa726;
 }
 
 .timestamp {

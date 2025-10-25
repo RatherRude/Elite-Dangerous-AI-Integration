@@ -60,8 +60,11 @@
             <div class="search-result">
               <div class="result-header">
                 <span class="result-score">Score: {{ result.score }}</span>
-                @if (result.inserted_at) {
-                  <span class="result-timestamp">{{ result.inserted_at | date:'MMM d, y HH:mm:ss' }}</span>
+                @if (result.time_since) {
+                  <span class="result-time-since">Since: {{ result.time_since }}</span>
+                }
+                @if (result.time_until) {
+                  <span class="result-time-until">Until: {{ result.time_until }}</span>
                 }
               </div>
               <div class="result-summary">{{ result.summary }}</div>
@@ -85,7 +88,19 @@
     <div class="entries">
       @for (entry of displayedEntries; track entry.timestamp) {
         <div class="entry">
-          <span class="timestamp">{{ entry.timestamp | date:'HH:mm:ss' }}</span>
+          <div class="entry-header">
+            <span class="timestamp">{{ entry.timestamp | date:'HH:mm:ss' }}</span>
+            @if (entry.time_since || entry.time_until) {
+              <div class="entry-context">
+                @if (entry.time_since) {
+                  <span class="entry-time-since">Seen: {{ entry.time_since }}</span>
+                }
+                @if (entry.time_until) {
+                  <span class="entry-time-until">Upcoming: {{ entry.time_until }}</span>
+                }
+              </div>
+            }
+          </div>
           <span class="message">{{ entry.content }}</span>
         </div>
       }

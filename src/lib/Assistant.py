@@ -96,6 +96,7 @@ class Assistant:
     def summarize_memory(self, memory: list[Event]):
         try:
             memory_until = memory[0].processed_at
+            memory_since = memory[-1].processed_at if memory else 0.0
 
             chat = []
 
@@ -137,7 +138,7 @@ class Assistant:
                 embedding_response.model,
                 last_processed_at=memory_until,
                 content=response.choices[0].message.content or 'Error',
-                metadata={"original_text": chat_text, "content": response.choices[0].message.content},
+                metadata={"original_text": chat_text, "event_count": len(memory), "time_until": memory_until, "time_since": memory_since},
                 embedding=embedding
             )
             log('info', f'Summarized {len(memory)} events into long-term memory up to {memory_until}')

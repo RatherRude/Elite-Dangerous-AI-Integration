@@ -1,7 +1,9 @@
 import json
 import os
 import sqlean as sqlite3
-from typing import Any, final
+from dataclasses import dataclass
+from datetime import date
+from typing import Any, Mapping, TypedDict, final
 import sqlite_vec
 import threading
 
@@ -35,6 +37,35 @@ def instantiate_class_by_name(classes: list[Any], class_name: str, data: dict[st
 # For testing purposes only
 def set_connection_for_testing(conn):
     _thread_local.conn = conn
+
+
+@dataclass
+class _HybridEntry:
+    content: str
+    metadata: dict[str, object]
+    vector_score: float | None = None
+    keyword_score: float | None = None
+
+
+class VectorSearchResult(TypedDict):
+    id: int
+    content: str
+    metadata: dict[str, object]
+    score: float
+    vector_score: float | None
+    keyword_score: float | None
+
+
+class VectorStoreEntry(TypedDict):
+    id: int
+    content: str
+    metadata: dict[str, object]
+    inserted_at: str | None
+
+
+class VectorStoreDateSummary(TypedDict):
+    date: str
+    count: int
 
 @final
 class EventStore():
@@ -139,13 +170,36 @@ class EventStore():
 
 @final
 class VectorStore():
+    VECTOR_WEIGHT = 0.7
+    KEYWORD_WEIGHT = 0.3
+
     def __init__(self, store_name: str):
         self.store_name = store_name
         self.table_name = f'{store_name}_v1'
         self.vector_table = f'{store_name}_vec_v1'
         self.meta_table = f'{store_name}_vec_meta_v1'
+        self.keyword_table = f'{store_name}_vec_keywords_v1'
         self.initialized = False
+        self.keywords_enabled = False
     
+    @staticmethod
+    def _load_metadata(raw: str | None) -> dict[str, object]:
+        if raw is None:
+            return {}
+        loaded: object = json.loads(raw)
+        if isinstance(loaded, dict):
+            return {str(key): value for key, value in loaded.items()}
+        return {}
+
+    def _table_exists(self, table_name: str) -> bool:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+            (table_name,),
+        )
+        return cursor.fetchone() is not None
+
     def get_current_embedding_dim(self) -> int | None:
         conn = get_connection()
         cursor = conn.cursor()
@@ -205,6 +259,7 @@ class VectorStore():
             cursor.execute(f'DROP TABLE IF EXISTS {self.vector_table}')
             cursor.execute(f'DROP TABLE IF EXISTS {self.table_name}')
             cursor.execute(f'DROP TABLE IF EXISTS {self.meta_table}')
+            cursor.execute(f'DROP TABLE IF EXISTS {self.keyword_table}')
             
 
         # Always ensure required tables exist (recreate after drop or create if missing)
@@ -232,6 +287,18 @@ class VectorStore():
                 value TEXT
             )
         ''')
+        self.keywords_enabled = False
+        try:
+            cursor.execute(f'''
+                CREATE VIRTUAL TABLE IF NOT EXISTS {self.keyword_table} USING fts5(
+                    content,
+                    tokenize='porter'
+                )
+            ''')
+            self.keywords_enabled = True
+        except Exception as exc:
+            self.keywords_enabled = False
+            log('warn', f"VectorStore '{self.store_name}' keyword index unavailable: {exc}")
         cursor.execute(f'''
             INSERT INTO {self.meta_table} (key, value)
             VALUES ('model_name', ?)
@@ -247,7 +314,7 @@ class VectorStore():
         self.initialized = True
 
 
-    def store(self, model_name: str, content: str, embedding: list[float], metadata: dict[str, Any]) -> None:
+    def store(self, model_name: str, content: str, embedding: list[float], metadata: Mapping[str, object]) -> None:
         """
         Store an embedding vector with associated metadata. The AUTOINCREMENT id
         generated for the metadata/content row is reused as the rowid of the
@@ -263,10 +330,11 @@ class VectorStore():
         conn = get_connection()
         cursor = conn.cursor()
         # Store metadata in the main table
+        metadata_payload = dict(metadata)
         cursor.execute(f'''
             INSERT OR REPLACE INTO {self.table_name} (content, metadata)
             VALUES (?, ?)
-        ''', (content, json.dumps(metadata)))
+        ''', (content, json.dumps(metadata_payload)))
 
         # Get the AUTOINCREMENT primary key for the just inserted row
         row_id = cursor.lastrowid
@@ -280,9 +348,15 @@ class VectorStore():
             VALUES (?, ?)
         ''', (row_id, embedding_json))
 
+        if self.keywords_enabled:
+            cursor.execute(f'''
+                INSERT OR REPLACE INTO {self.keyword_table} (rowid, content)
+                VALUES (?, ?)
+            ''', (row_id, content))
+
         conn.commit()
 
-    def search(self, query: str, model_name: str, query_embedding: list[float], n: int = 5) -> list[tuple[int, str, dict[str, Any], float]]:
+    def search(self, query: str, model_name: str, query_embedding: list[float], n: int = 5) -> list[VectorSearchResult]:
         """
         Search for similar embeddings
         
@@ -322,8 +396,74 @@ class VectorStore():
 
         results = cursor.fetchall()
 
-        # Convert results to the expected format
-        return [(row[0], row[1], json.loads(row[2]) if row[2] is not None else {}, 1.0 - row[3]) for row in results]
+        combined: dict[int, _HybridEntry] = {}
+        for row in results:
+            record_id = row[0]
+            content = row[1]
+            metadata = self._load_metadata(row[2])
+            distance = float(row[3]) if row[3] is not None else 0.0
+            vector_score = max(0.0, 1.0 - distance)
+            combined[record_id] = _HybridEntry(
+                content=content,
+                metadata=metadata,
+                vector_score=vector_score,
+            )
+
+        keyword_rows: list[tuple[int, str, str, float]] = []
+        if self.keywords_enabled and query.strip():
+            cursor.execute(f'''
+                SELECT d.id, d.content, d.metadata, bm25({self.keyword_table}) as score
+                FROM {self.keyword_table}
+                JOIN {self.table_name} d ON d.id = {self.keyword_table}.rowid
+                WHERE {self.keyword_table} MATCH ?
+                ORDER BY score
+                LIMIT ?
+            ''', (query, max(n * 2, n)))
+            keyword_rows = cursor.fetchall()
+
+        for row in keyword_rows:
+            record_id = row[0]
+            content = row[1]
+            metadata = self._load_metadata(row[2])
+            keyword_score = 1.0 / (1.0 + float(row[3])) if row[3] is not None else 0.0
+            entry = combined.get(record_id)
+            if entry is None:
+                combined[record_id] = _HybridEntry(
+                    content=content,
+                    metadata=metadata,
+                    keyword_score=keyword_score,
+                )
+            else:
+                entry.content = content
+                entry.metadata = metadata
+                entry.keyword_score = keyword_score
+
+        ranked: list[VectorSearchResult] = []
+        for record_id, entry in combined.items():
+            vector_score = entry.vector_score
+            keyword_score = entry.keyword_score
+            if vector_score is not None and keyword_score is not None:
+                final_score = (self.VECTOR_WEIGHT * vector_score) + (self.KEYWORD_WEIGHT * keyword_score)
+            elif vector_score is not None:
+                final_score = vector_score
+            elif keyword_score is not None:
+                final_score = keyword_score
+            else:
+                continue
+            ranked.append(
+                VectorSearchResult(
+                    id=record_id,
+                    content=entry.content,
+                    metadata=entry.metadata,
+                    score=final_score,
+                    vector_score=vector_score,
+                    keyword_score=keyword_score,
+                )
+            )
+
+        ranked.sort(key=lambda item: item['score'], reverse=True)
+        log('info', 'vectorstore search result', ranked)
+        return ranked[:n]
 
     def delete(self, id: str) -> None:
         """Delete an embedding by id"""
@@ -344,6 +484,12 @@ class VectorStore():
             WHERE rowid = ?
         ''', (id,))
 
+        if self.keywords_enabled:
+            cursor.execute(f'''
+                DELETE FROM {self.keyword_table}
+                WHERE rowid = ?
+            ''', (id,))
+
         conn.commit()
 
     def delete_all(self) -> None:
@@ -361,7 +507,69 @@ class VectorStore():
             DELETE FROM {self.vector_table}
         ''')
 
+        if self.keywords_enabled:
+            cursor.execute(f'''
+                DELETE FROM {self.keyword_table}
+            ''')
+
         conn.commit()
+
+    def get_entries_by_date(self, target_date: date | str) -> list[VectorStoreEntry]:
+        """Return stored entries for a given calendar date."""
+        date_value = target_date.isoformat() if isinstance(target_date, date) else target_date
+        if not self._table_exists(self.table_name):
+            return []
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            f'''
+                SELECT id, content, metadata, inserted_at
+                FROM {self.table_name}
+                WHERE DATE(inserted_at) = ?
+                ORDER BY inserted_at ASC
+            ''',
+            (date_value,),
+        )
+        rows = cursor.fetchall()
+        entries: list[VectorStoreEntry] = []
+        for row in rows:
+            entries.append(
+                VectorStoreEntry(
+                    id=row[0],
+                    content=row[1],
+                    metadata=self._load_metadata(row[2]),
+                    inserted_at=row[3],
+                )
+            )
+        return entries
+
+    def get_available_dates(self, limit: int = 365) -> list[VectorStoreDateSummary]:
+        """Return the most recent dates that contain stored entries."""
+        if not self._table_exists(self.table_name):
+            return []
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            f'''
+                SELECT DATE(inserted_at) as date, COUNT(*) as count
+                FROM {self.table_name}
+                WHERE inserted_at IS NOT NULL
+                GROUP BY DATE(inserted_at)
+                ORDER BY date DESC
+                LIMIT ?
+            ''',
+            (limit,),
+        )
+        rows = cursor.fetchall()
+        summaries: list[VectorStoreDateSummary] = []
+        for row in rows:
+            summaries.append(
+                VectorStoreDateSummary(
+                    date=row[0],
+                    count=int(row[1]) if row[1] is not None else 0,
+                )
+            )
+        return summaries
 
 @final
 class KeyValueStore():

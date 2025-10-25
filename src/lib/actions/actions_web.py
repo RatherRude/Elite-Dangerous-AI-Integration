@@ -1,3 +1,4 @@
+import datetime
 import math
 import traceback
 
@@ -1184,10 +1185,14 @@ def retrieve_memories(obj, projected_states):
         return f"No relevant memories found for '{query}'."
 
     formatted = []
-    for _id, content, metadata, score in results:
+    for result in results:
+        time_until: float = result["metadata"].get('time_until', 0.0)
+        time_since: float = result["metadata"].get('time_since', 0.0)
         item = {
-            'score': round(score, 3),
-            'summary': content
+            'score': round(result["score"], 3),
+            'summary': result["content"],
+            'time_until': datetime.datetime.fromtimestamp(time_until).strftime('%Y-%m-%d %H:%M:%S') if time_until else 'Unknown',
+            'time_since': datetime.datetime.fromtimestamp(time_since).strftime('%Y-%m-%d %H:%M:%S') if time_since else 'Unknown',
         }
         formatted.append(item)
 

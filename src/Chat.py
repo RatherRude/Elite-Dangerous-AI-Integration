@@ -243,29 +243,19 @@ class Chat:
             if not results:
                 return {"results": []}
             
-            # Fetch timestamps for the results
-            from lib.Database import get_connection
-            conn = get_connection()
-            cursor = conn.cursor()
-            
-            # Format results
             formatted = []
-            for _id, content, metadata, score in results:
+            for result in results:
                 # Fetch inserted_at timestamp for this entry
-                cursor.execute(f'''
-                    SELECT inserted_at
-                    FROM {self.event_manager.long_term_memory.table_name}
-                    WHERE id = ?
-                ''', (_id,))
-                timestamp_row = cursor.fetchone()
-                inserted_at = timestamp_row[0] if timestamp_row else None
+                time_until: float = result["metadata"].get('time_until', 0.0)
+                time_since: float = result["metadata"].get('time_since', 0.0)
+                item = {
+                    'score': round(result["score"], 3),
+                    'summary': result["content"],
+                    'time_until': datetime.fromtimestamp(time_until).strftime('%Y-%m-%d %H:%M:%S') if time_until else 'Unknown',
+                    'time_since': datetime.fromtimestamp(time_since).strftime('%Y-%m-%d %H:%M:%S') if time_since else 'Unknown',
+                }
                 
-                formatted.append({
-                    'score': round(score, 3),
-                    'summary': content,
-                    'metadata': metadata,
-                    'inserted_at': inserted_at
-                })
+                formatted.append(item)
             
             return {"results": formatted}
             
@@ -278,37 +268,12 @@ class Chat:
     def get_memories_by_date(self, date_str: str):
         """Fetch all memory entries for a specific date"""
         try:
-            from lib.Database import get_connection
-            
             # Parse the date string (format: YYYY-MM-DD)
             target_date = datetime.fromisoformat(date_str).date()
-            
-            # Get connection and query the memory table
-            conn = get_connection()
-            cursor = conn.cursor()
-            
-            # Query for entries on the specified date
-            cursor.execute(f'''
-                SELECT id, content, metadata, inserted_at
-                FROM {self.event_manager.long_term_memory.table_name}
-                WHERE DATE(inserted_at) = ?
-                ORDER BY inserted_at ASC
-            ''', (target_date.isoformat(),))
-            
-            results = cursor.fetchall()
-            
-            # Format results
-            formatted = []
-            for row in results:
-                formatted.append({
-                    'id': row[0],
-                    'content': row[1],
-                    'metadata': json.loads(row[2]) if row[2] else {},
-                    'inserted_at': row[3]
-                })
-            
-            return {"entries": formatted, "date": date_str}
-            
+            entries = self.event_manager.long_term_memory.get_entries_by_date(target_date)
+            return {"entries": entries, "date": date_str}
+        except ValueError:
+            return {"error": "Invalid date format. Use YYYY-MM-DD."}
         except Exception as e:
             log('error', f'Error fetching memories by date: {e}')
             import traceback
@@ -318,34 +283,8 @@ class Chat:
     def get_available_dates(self):
         """Fetch all dates that have memory entries"""
         try:
-            from lib.Database import get_connection
-            
-            # Get connection and query for distinct dates
-            conn = get_connection()
-            cursor = conn.cursor()
-            
-            # Query for distinct dates with entry counts
-            cursor.execute(f'''
-                SELECT DATE(inserted_at) as date, COUNT(*) as count
-                FROM {self.event_manager.long_term_memory.table_name}
-                WHERE inserted_at IS NOT NULL
-                GROUP BY DATE(inserted_at)
-                ORDER BY date DESC
-                LIMIT 365
-            ''')
-            
-            results = cursor.fetchall()
-            
-            # Format results
-            dates = []
-            for row in results:
-                dates.append({
-                    'date': row[0],
-                    'count': row[1]
-                })
-            
+            dates = self.event_manager.long_term_memory.get_available_dates()
             return {"dates": dates}
-            
         except Exception as e:
             log('error', f'Error fetching available dates: {e}')
             import traceback
