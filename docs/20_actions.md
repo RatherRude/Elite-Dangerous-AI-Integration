@@ -54,6 +54,12 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - SecondaryFire
     </details>
 
+    #### Custom Weapon Types
+
+    You can define custom weapon types for more precise control over your hardpoints. Since Elite: Dangerous doesn't expose detailed weapon data, **you must manually configure these in the UI**.
+
+    ![Custom Weapon Types](screen/firegroups.png)
+
 2. **Set flight thrust speed**
 
     - `speed`: String (options: "Minus100", "Minus75", "Minus50", "Minus25", "Zero", "25", "50", "75", "100")
@@ -1357,4 +1363,10 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - UI_Select
     - Key_Enter
     </details>
+
+    #### Tabbed Chat Channels
+
+    In Elite: Dangerous, you can configure certain chat channels to be **tabbed** instead of appearing in the main chat flow. When a channel is set to tabbed mode, the keyboard macro required to send messages changes.
+
+    ![Tabbed Chat Configuration](screen/tabbed_chat.png)
 
