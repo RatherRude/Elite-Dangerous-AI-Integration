@@ -1,4 +1,5 @@
 import json
+import math
 import os
 import sqlean as sqlite3
 from dataclasses import dataclass
@@ -55,6 +56,8 @@ class _HybridEntry:
     metadata: dict[str, object]
     vector_score: float | None = None
     keyword_score: float | None = None
+    vector_rank: int | None = None
+    keyword_rank: int | None = None
 
 
 class VectorSearchResult(TypedDict):
@@ -180,8 +183,7 @@ class EventStore():
 
 @final
 class VectorStore():
-    VECTOR_WEIGHT = 0.7
-    KEYWORD_WEIGHT = 0.3
+    RRF_K = 0
 
     def __init__(self, store_name: str):
         self.store_name = store_name
@@ -407,17 +409,30 @@ class VectorStore():
         results = cursor.fetchall()
 
         combined: dict[int, _HybridEntry] = {}
+        vector_entries: list[tuple[int, str, dict[str, object], float]] = []
         for row in results:
             record_id = row[0]
             content = row[1]
             metadata = self._load_metadata(row[2])
             distance = float(row[3]) if row[3] is not None else 0.0
             vector_score = max(0.0, 1.0 - distance)
-            combined[record_id] = _HybridEntry(
-                content=content,
-                metadata=metadata,
-                vector_score=vector_score,
-            )
+            vector_entries.append((record_id, content, metadata, vector_score))
+
+        vector_entries.sort(key=lambda item: item[3], reverse=True)
+        for rank, (record_id, content, metadata, vector_score) in enumerate(vector_entries, start=1):
+            entry = combined.get(record_id)
+            if entry is None:
+                combined[record_id] = _HybridEntry(
+                    content=content,
+                    metadata=metadata,
+                    vector_score=vector_score,
+                    vector_rank=rank,
+                )
+            else:
+                entry.content = content
+                entry.metadata = metadata
+                entry.vector_score = vector_score
+                entry.vector_rank = rank
 
         keyword_rows: list[tuple[int, str, str, float]] = []
         if self.keywords_enabled and query.strip():
@@ -432,34 +447,57 @@ class VectorStore():
             ''', (sanitized_query, max(n * 2, n)))
             keyword_rows = cursor.fetchall()
 
+        keyword_entries: list[tuple[int, str, dict[str, object], float]] = []
         for row in keyword_rows:
             record_id = row[0]
             content = row[1]
             metadata = self._load_metadata(row[2])
-            keyword_score = 1.0 / (1.0 + float(row[3])) if row[3] is not None else 0.0
+            raw_keyword_distance = float(row[3]) if row[3] is not None else None
+            if raw_keyword_distance is None:
+                continue
+            if not math.isfinite(raw_keyword_distance):
+                log('warn', "VectorStore keyword search returned non-finite bm25 distance", {
+                    'store': self.store_name,
+                    'record_id': record_id,
+                    'bm25': raw_keyword_distance,
+                })
+                continue
+            if raw_keyword_distance < 0.0:
+                log('warn', "VectorStore keyword search returned negative bm25 distance", {
+                    'store': self.store_name,
+                    'record_id': record_id,
+                    'bm25': raw_keyword_distance,
+                })
+                raw_keyword_distance = 0.0
+            keyword_score = 1.0 / (1.0 + raw_keyword_distance)
+            keyword_entries.append((record_id, content, metadata, keyword_score))
+
+        keyword_entries.sort(key=lambda item: item[3], reverse=True)
+        for rank, (record_id, content, metadata, keyword_score) in enumerate(keyword_entries, start=1):
             entry = combined.get(record_id)
             if entry is None:
                 combined[record_id] = _HybridEntry(
                     content=content,
                     metadata=metadata,
                     keyword_score=keyword_score,
+                    keyword_rank=rank,
                 )
             else:
                 entry.content = content
                 entry.metadata = metadata
                 entry.keyword_score = keyword_score
+                entry.keyword_rank = rank
 
         ranked: list[VectorSearchResult] = []
         for record_id, entry in combined.items():
             vector_score = entry.vector_score
             keyword_score = entry.keyword_score
-            if vector_score is not None and keyword_score is not None:
-                final_score = (self.VECTOR_WEIGHT * vector_score) + (self.KEYWORD_WEIGHT * keyword_score)
-            elif vector_score is not None:
-                final_score = vector_score
-            elif keyword_score is not None:
-                final_score = keyword_score
-            else:
+            final_score = 0.0
+            if entry.vector_rank is not None:
+                final_score += 1.0 / (self.RRF_K + entry.vector_rank)
+            if entry.keyword_rank is not None:
+                final_score += 1.0 / (self.RRF_K + entry.keyword_rank)
+            if final_score == 0.0:
                 continue
             ranked.append(
                 VectorSearchResult(
