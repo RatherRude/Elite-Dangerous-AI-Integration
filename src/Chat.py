@@ -271,7 +271,12 @@ class Chat:
             # Parse the date string (format: YYYY-MM-DD)
             target_date = datetime.fromisoformat(date_str).date()
             entries = self.event_manager.long_term_memory.get_entries_by_date(target_date)
-            return {"entries": entries, "date": date_str}
+            return {"entries": [{
+                "id": e["id"],
+                "content": e["content"],
+                "time_since": datetime.fromtimestamp(e["metadata"].get('time_since', 0.0)).strftime('%Y-%m-%d %H:%M:%S') if e["metadata"].get('time_since', 0.0) else 'Unknown',
+                "time_until": datetime.fromtimestamp(e["metadata"].get('time_until', 0.0)).strftime('%Y-%m-%d %H:%M:%S') if e["metadata"].get('time_until', 0.0) else 'Unknown',
+            } for e in entries], "date": date_str}
         except ValueError:
             return {"error": "Invalid date format. Use YYYY-MM-DD."}
         except Exception as e:

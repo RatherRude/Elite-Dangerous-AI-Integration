@@ -86,20 +86,10 @@
     <div class="empty">No logbook entries recorded yet.</div>
   } @else {
     <div class="entries">
-      @for (entry of displayedEntries; track entry.time_since) {
+      @for (entry of displayedEntries; track entry.time_until) {
         <div class="entry">
           <div class="entry-header">
-            <span class="timestamp">{{ entry.time_since | date:'HH:mm:ss' }}</span>
-            @if (entry.time_since || entry.time_until) {
-              <div class="entry-context">
-                @if (entry.time_since) {
-                  <span class="entry-time-since">Seen: {{ entry.time_since }}</span>
-                }
-                @if (entry.time_until) {
-                  <span class="entry-time-until">Upcoming: {{ entry.time_until }}</span>
-                }
-              </div>
-            }
+            <span class="timestamp">{{ entry.time_until | date:'HH:mm:ss' }}</span>
           </div>
           <span class="message">{{ entry.content }}</span>
         </div>

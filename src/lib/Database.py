@@ -13,6 +13,16 @@ from .Config import get_cn_appdata_path
 def get_db_path() -> str:
     return os.path.join(get_cn_appdata_path(), 'covas.db')
 
+def sanitize_fts5_query(query: str) -> str:
+    """
+    Sanitize a query string for FTS5 MATCH by escaping quotes and wrapping in quotes.
+    This prevents syntax errors from special FTS5 characters like '.', ':', '(', ')', etc.
+    """
+    # Escape double quotes by doubling them (FTS5 syntax)
+    escaped = query.replace('"', '""')
+    # Wrap in double quotes to treat as literal phrase
+    return f'"{escaped}"'
+
 # Thread-local storage for connections
 _thread_local = threading.local()
 
@@ -411,6 +421,7 @@ class VectorStore():
 
         keyword_rows: list[tuple[int, str, str, float]] = []
         if self.keywords_enabled and query.strip():
+            sanitized_query = sanitize_fts5_query(query)
             cursor.execute(f'''
                 SELECT d.id, d.content, d.metadata, bm25({self.keyword_table}) as score
                 FROM {self.keyword_table}
@@ -418,7 +429,7 @@ class VectorStore():
                 WHERE {self.keyword_table} MATCH ?
                 ORDER BY score
                 LIMIT ?
-            ''', (query, max(n * 2, n)))
+            ''', (sanitized_query, max(n * 2, n)))
             keyword_rows = cursor.fetchall()
 
         for row in keyword_rows:
