@@ -13,15 +13,15 @@ import { Subscription } from "rxjs";
 interface MemorySearchResult {
   score: number;
   summary: string;
-  time_until?: string;
-  time_since?: string;
+  time_until?: number;
+  time_since?: number;
 }
 
 interface MemoryEntry {
   id: number;
   content: string;
-  time_until?: string;
-  time_since?: string;
+  time_until?: number;
+  time_since?: number;
 }
 
 interface DateInfo {
@@ -31,8 +31,8 @@ interface DateInfo {
 
 type DisplayEntry = {
   content: string;
-  time_since?: string;
-  time_until?: string;
+  time_since?: Date;
+  time_until?: Date;
 };
 
 @Component({
@@ -60,7 +60,7 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
   public showSearchResults: boolean = false;
   public isSearching: boolean = false;
   public hasPerformedSearch: boolean = false;
-  public loadedEntries: MemoryEntry[] = [];
+  public loadedEntries: DisplayEntry[] = [];
   public isLoadingEntries: boolean = false;
   public displayedEntries: DisplayEntry[] = [];
   public availableDates: DateInfo[] = [];
@@ -77,7 +77,8 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
         .map((m) => m.event)
         .filter((e): e is MemoryEvent => (e as any)?.kind === "memory")
         .map((e) => ({
-          timestamp: (e as MemoryEvent).timestamp,
+          time_since: new Date((e as MemoryEvent).metadata.time_since * 1000),
+          time_until: new Date((e as MemoryEvent).metadata.time_until * 1000),
           content: (e as MemoryEvent).content,
         } as DisplayEntry));
       this.memories = mems;
@@ -159,7 +160,7 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
       // Merge and sort by timestamp
       const combined = [...loadedAsDisplay, ...this.memories];
       this.displayedEntries = combined.sort((a, b) => 
-        new Date(a.time_since ?? 0).getTime() - new Date(b.time_since ?? 0).getTime()
+        (a.time_since?.getTime() ?? 0) - (b.time_since?.getTime() ?? 0)
       );
     } else {
       // Past date: only show loaded entries
@@ -211,8 +212,8 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
           score: result.score,
           summary: result.summary,
           inserted_at: result.inserted_at,
-          time_since: result.time_since,
-          time_until: result.time_until,
+          time_since: new Date(result.time_since * 1000),
+          time_until: new Date(result.time_until * 1000),
         }));
         this.showSearchResults = true; // Ensure results are visible
         console.log('Received memory search results:', this.searchResults);
@@ -242,11 +243,10 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
         this.loadedEntries = response.entries.map((entry: any) => ({
           id: Number(entry.id ?? 0),
           content: entry.content ?? '',
-          inserted_at: entry.inserted_at ?? entry.timestamp ?? new Date().toISOString(),
-          time_since: entry.time_since ?? entry.relative_time_since ?? undefined,
-          time_until: entry.time_until ?? entry.relative_time_until ?? undefined,
+          time_since: new Date(entry.time_since ?? 0 * 1000),
+          time_until: new Date(entry.time_until ?? 0 * 1000),
           metadata: (entry.metadata && typeof entry.metadata === 'object') ? entry.metadata : {},
-        }));
+        } as DisplayEntry));
         console.log(`Loaded ${this.loadedEntries.length} entries for date ${response.date}`);
         this.updateDisplayedEntries();
       } else {

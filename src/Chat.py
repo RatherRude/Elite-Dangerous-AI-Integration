@@ -246,13 +246,14 @@ class Chat:
             formatted = []
             for result in results:
                 # Fetch inserted_at timestamp for this entry
-                time_until: float = result["metadata"].get('time_until', 0.0)
-                time_since: float = result["metadata"].get('time_since', 0.0)
+                time_until: float = result["metadata"].get('time_until', result["inserted_at"])
+                time_since: float = result["metadata"].get('time_since', result["inserted_at"])
                 item = {
                     'score': round(result["score"], 3),
                     'summary': result["content"],
-                    'time_until': datetime.fromtimestamp(time_until).strftime('%Y-%m-%d %H:%M:%S') if time_until else 'Unknown',
-                    'time_since': datetime.fromtimestamp(time_since).strftime('%Y-%m-%d %H:%M:%S') if time_since else 'Unknown',
+                    'inserted_at': result["inserted_at"],
+                    'time_until': time_until,
+                    'time_since': time_since
                 }
                 
                 formatted.append(item)
@@ -274,8 +275,9 @@ class Chat:
             return {"entries": [{
                 "id": e["id"],
                 "content": e["content"],
-                "time_since": datetime.fromtimestamp(e["metadata"].get('time_since', e["inserted_at"])).strftime('%Y-%m-%d %H:%M:%S'),
-                "time_until": datetime.fromtimestamp(e["metadata"].get('time_until', e["inserted_at"])).strftime('%Y-%m-%d %H:%M:%S'),
+                "inserted_at": e["inserted_at"],
+                "time_since": e["metadata"].get('time_since', e["inserted_at"]),
+                "time_until": e["metadata"].get('time_until', e["inserted_at"]),
             } for e in entries], "date": date_str}
         except ValueError:
             return {"error": "Invalid date format. Use YYYY-MM-DD."}

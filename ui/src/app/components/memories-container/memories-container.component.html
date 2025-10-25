@@ -61,10 +61,10 @@
               <div class="result-header">
                 <span class="result-score">Score: {{ result.score }}</span>
                 @if (result.time_since) {
-                  <span class="result-time-since">Since: {{ result.time_since }}</span>
+                  <span class="result-time-since">Since: {{ result.time_since | date:'short' }}</span>
                 }
                 @if (result.time_until) {
-                  <span class="result-time-until">Until: {{ result.time_until }}</span>
+                  <span class="result-time-until">Until: {{ result.time_until | date:'short' }}</span>
                 }
               </div>
               <div class="result-summary">{{ result.summary }}</div>
