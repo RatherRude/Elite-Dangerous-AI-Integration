@@ -107,6 +107,7 @@ export class GeneralSettingsComponent implements OnDestroy {
                 vision_provider: "google-ai-studio",
                 tts_provider: "edge-tts",
                 vision_var: true,
+                embedding_provider: "google-ai-studio",
             };
         } else if (apiKey.startsWith("sk-or-v1")) {
             // OpenRouter
@@ -117,6 +118,7 @@ export class GeneralSettingsComponent implements OnDestroy {
                 vision_provider: "none",
                 tts_provider: "edge-tts",
                 vision_var: false,
+                embedding_provider: "none",
             };
         } else if (apiKey.startsWith("sk-")) {
             // OpenAI
@@ -127,6 +129,7 @@ export class GeneralSettingsComponent implements OnDestroy {
                 vision_provider: "openai",
                 tts_provider: "edge-tts",
                 vision_var: true,
+                embedding_provider: "openai",
             };
         } else {
             // Unknown key type

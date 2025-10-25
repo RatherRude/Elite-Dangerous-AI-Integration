@@ -110,6 +110,9 @@ class PluginHelper():
 
     def put_incoming_event(self, event: Event):
         """Put an event into the incoming queue"""
+        event.processed_at = 0.0
+        event.responded_at = 0.0
+        event.memorized_at = 0.0
         self._event_manager.incoming.put(event)
         
     def get_projection(self, projection_type: type) -> Projection[object] | None:

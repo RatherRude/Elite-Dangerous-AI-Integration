@@ -1,0 +1,99 @@
+<div class="memories-log">
+  <!-- Logbook Controls -->
+  <div class="logbook-controls">
+    <mat-form-field class="date-picker-field" appearance="outline">
+      <input 
+        matInput 
+        [matDatepicker]="picker" 
+        [value]="selectedDate"
+        (dateChange)="onDateSelected($event.value)"
+        readonly>
+      <mat-datepicker #picker [dateClass]="dateClass"></mat-datepicker>
+      <mat-datepicker-toggle matIconSuffix [for]="$any(picker)"></mat-datepicker-toggle>
+    </mat-form-field>
+    
+    <div class="logbook-search">
+      <div class="search-input-wrapper">
+        <span class="search-icon-inside">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </span>
+        <input 
+          type="text" 
+          class="question-input" 
+          placeholder="Ask a question about the logbook..." 
+          [(ngModel)]="logbookQuestion"
+          (keyup.enter)="askLogbookQuestion()">
+      </div>
+      @if (hasPerformedSearch) {
+        <button 
+          class="toggle-results-btn" 
+          [class.active]="showSearchResults"
+          (click)="toggleSearchResults()" 
+          [title]="showSearchResults ? 'Hide results' : 'Show results'">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            @if (showSearchResults) {
+              <polyline points="18 15 12 9 6 15"></polyline>
+            } @else {
+              <polyline points="6 9 12 15 18 9"></polyline>
+            }
+          </svg>
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Search Results Section -->
+  @if (showSearchResults && hasPerformedSearch) {
+    <div class="search-results-container">
+      <div class="search-results-header">
+        <h3>Search Results ({{ searchResults.length }})</h3>
+      </div>
+      
+      @if (isSearching) {
+        <div class="searching">Searching memories...</div>
+      } @else if (searchResults.length > 0) {
+        <div class="search-results">
+          @for (result of searchResults; track result.summary) {
+            <div class="search-result">
+              <div class="result-header">
+                <span class="result-score">Score: {{ result.score }}</span>
+                @if (result.time_since) {
+                  <span class="result-time-since">Since: {{ result.time_since | date:'short' }}</span>
+                }
+                @if (result.time_until) {
+                  <span class="result-time-until">Until: {{ result.time_until | date:'short' }}</span>
+                }
+              </div>
+              <div class="result-summary">{{ result.summary }}</div>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="no-results">No results found.</div>
+      }
+    </div>
+  }
+
+  <!-- Entries Display -->
+  @if (isLoadingEntries) {
+    <div class="loading-entries">Loading entries...</div>
+  }
+  
+  @if (displayedEntries.length === 0 && !isLoadingEntries) {
+    <div class="empty">No logbook entries recorded yet.</div>
+  } @else {
+    <div class="entries">
+      @for (entry of displayedEntries; track entry.time_until) {
+        <div class="entry">
+          <span class="timestamp">{{ entry.time_until | date:'HH:mm:ss' }}</span>
+          <span class="message">{{ entry.content }}</span>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+

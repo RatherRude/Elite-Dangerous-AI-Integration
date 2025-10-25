@@ -4,7 +4,7 @@ import {BehaviorSubject} from "rxjs";
 
 interface UIMessage extends BaseMessage {
     type: "ui",
-    show: "chat" | string,
+    show: "chat" | "memories" | string,
 }
 
 @Injectable({

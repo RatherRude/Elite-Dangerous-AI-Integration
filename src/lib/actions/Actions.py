@@ -1353,9 +1353,8 @@ def target_subsystem(args, projected_states):
 
 def register_actions(actionManager: ActionManager, eventManager: EventManager, llmClient: openai.OpenAI,
                      llmModelName: str, visionClient: openai.OpenAI | None, visionModelName: str | None,
-                     edKeys: EDKeys,
-                     discovery_primary_var_flag: bool = True,
-                     discovery_firegroup_var_flag: int = 1,
+                     embeddingClient: openai.OpenAI | None, embeddingModelName: str | None,
+                     edKeys: EDKeys, discovery_primary_var_flag: bool = True, discovery_firegroup_var_flag: int = 1,
                      chat_local_tabbed_flag: bool = False,
                      chat_wing_tabbed_flag: bool = False,
                      chat_system_tabbed_flag: bool = True,
@@ -2429,8 +2428,10 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     }, send_message, 'global', permission='textMessage')
     
     register_web_actions(
-        actionManager, eventManager, 
-        llmClient, llmModelName, edKeys
+        actionManager, eventManager,
+        llmClient, llmModelName,
+        embeddingClient, embeddingModelName,
+        edKeys
     )
 
     register_ui_actions(
