@@ -312,7 +312,6 @@
 }
 
 .entry {
-  display: flex;
   flex-direction: column;
   gap: 4px;
   padding: 8px 0;

@@ -88,9 +88,7 @@
     <div class="entries">
       @for (entry of displayedEntries; track entry.time_until) {
         <div class="entry">
-          <div class="entry-header">
-            <span class="timestamp">{{ entry.time_until | date:'HH:mm:ss' }}</span>
-          </div>
+          <span class="timestamp">{{ entry.time_until | date:'HH:mm:ss' }}</span>
           <span class="message">{{ entry.content }}</span>
         </div>
       }

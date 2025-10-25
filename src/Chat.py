@@ -274,8 +274,8 @@ class Chat:
             return {"entries": [{
                 "id": e["id"],
                 "content": e["content"],
-                "time_since": datetime.fromtimestamp(e["metadata"].get('time_since', 0.0)).strftime('%Y-%m-%d %H:%M:%S') if e["metadata"].get('time_since', 0.0) else 'Unknown',
-                "time_until": datetime.fromtimestamp(e["metadata"].get('time_until', 0.0)).strftime('%Y-%m-%d %H:%M:%S') if e["metadata"].get('time_until', 0.0) else 'Unknown',
+                "time_since": datetime.fromtimestamp(e["metadata"].get('time_since', e["inserted_at"])).strftime('%Y-%m-%d %H:%M:%S'),
+                "time_until": datetime.fromtimestamp(e["metadata"].get('time_until', e["inserted_at"])).strftime('%Y-%m-%d %H:%M:%S'),
             } for e in entries], "date": date_str}
         except ValueError:
             return {"error": "Invalid date format. Use YYYY-MM-DD."}
