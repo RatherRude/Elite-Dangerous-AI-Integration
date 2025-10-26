@@ -5,12 +5,13 @@ import openai
 from openai.types.chat import ChatCompletionMessageParam
 from requests import auth
 
+from .Logger import log
 from .EDKeys import EDKeys
 from .EventManager import EventManager, Projection
 from .ActionManager import ActionManager
 from .SystemDatabase import SystemDatabase
 from .Config import Config, save_config
-from .Event import Event
+from .Event import Event, PluginEvent
 from .PromptGenerator import PromptGenerator
 from .Assistant import Assistant
 
@@ -108,11 +109,10 @@ class PluginHelper():
         """Register a sideeffect"""
         self._event_manager.register_sideeffect(sideeffect)
 
-    def put_incoming_event(self, event: Event):
+    def put_incoming_event(self, event: PluginEvent):
         """Put an event into the incoming queue"""
-        event.processed_at = 0.0
-        event.responded_at = 0.0
-        event.memorized_at = 0.0
+        if not isinstance(event, PluginEvent):
+            log('warn', 'Calling put_incoming_event with non-PluginEvent type is deprecated.')  # pyright: ignore[reportUnreachable]
         self._event_manager.incoming.put(event)
         
     def get_projection(self, projection_type: type) -> Projection[object] | None:

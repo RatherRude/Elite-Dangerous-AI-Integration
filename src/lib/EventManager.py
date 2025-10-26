@@ -3,6 +3,7 @@ import inspect
 from abc import ABC, abstractmethod
 from datetime import timezone, datetime
 from typing import Any, Generic, Literal, Callable, TypeVar, final
+from typing_extensions import deprecated
 
 from .Database import EventStore, KeyValueStore, VectorStore
 from .EDJournal import *
@@ -91,6 +92,7 @@ class EventManager:
         for event in events_after:
             self.incoming.put(event)
         
+    @deprecated("Use plugins instead")
     def add_external_event(self, application: str, content: dict[str, Any]):
         event = ExternalEvent(content={**content, 'event': application})
         self.incoming.put(event)

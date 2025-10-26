@@ -126,15 +126,8 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
   }
   
   private updateAvatarShowStatus(config: any): void {
-    // Hide avatar if EDCP is enabled and dominant
-    const isEDCPDominant = config?.edcopilot === true && config?.edcopilot_dominant === true;
-    
-    if (isEDCPDominant) {
-      this.avatarShow = false;
-    } else {
-      // Use global overlay setting
-      this.avatarShow = config?.overlay_show_avatar !== false;
-    }
+    // Use global overlay setting
+    this.avatarShow = config?.overlay_show_avatar !== false;
   }
 
   private updateChatShowStatus(config: any): void {

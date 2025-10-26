@@ -18,7 +18,6 @@ from lib.PluginManager import PluginManager
 from lib.ActionManager import ActionManager
 from lib.actions.Actions import register_actions
 from lib.ControllerManager import ControllerManager
-from lib.EDCoPilot import EDCoPilot
 from lib.EDKeys import EDKeys
 from lib.Event import ConversationEvent, Event, ExternalEvent, GameEvent, MemoryEvent, ProjectedEvent, StatusEvent, ToolEvent
 from lib.Logger import show_chat_message
@@ -71,10 +70,6 @@ class Chat:
         log("debug", "Initializing EDJournal...")
         self.jn = EDJournal(get_ed_journals_path(config))
             
-        log("debug", "Initializing Third Party Services...")
-        self.copilot = EDCoPilot(self.config["edcopilot"], is_edcopilot_dominant=self.config["edcopilot_dominant"],
-                            enabled_game_events=self.enabled_game_events, action_manager=self.action_manager, has_actions=self.config["edcopilot_actions"])
-
         # gets API Key from config.json
         self.llmClient = OpenAI(
             base_url="https://api.openai.com/v1" if self.config["llm_endpoint"] == '' else self.config["llm_endpoint"],
@@ -112,7 +107,7 @@ class Chat:
                 api_key=self.config["api_key"] if self.config["tts_api_key"] == '' else self.config["tts_api_key"],
             )
             
-        tts_provider = 'none' if self.config["edcopilot"] and self.config["edcopilot_dominant"] else self.config["tts_provider"]
+        tts_provider = self.config["tts_provider"]
         self.tts = TTS(openai_client=self.ttsClient, provider=tts_provider, model=self.config["tts_model_name"], voice=self.character["tts_voice"], voice_instructions=self.character["tts_prompt"], speed=self.character["tts_speed"], output_device=self.config["output_device_name"])
         self.stt = STT(openai_client=self.sttClient, provider=self.config["stt_provider"], input_device_name=self.config["input_device_name"], model=self.config["stt_model_name"], language=self.config["stt_language"], custom_prompt=self.config["stt_custom_prompt"], required_word=self.config["stt_required_word"])
 
@@ -143,7 +138,6 @@ class Chat:
             llmClient=self.llmClient,
             tts=self.tts,
             prompt_generator=self.prompt_generator,
-            copilot=self.copilot,
             embeddingClient=self.embeddingClient,
             disabled_game_events=disabled_events
         )
@@ -311,8 +305,6 @@ class Chat:
         # TTS Setup
         show_chat_message('info', "Basic configuration complete.")
         show_chat_message('info', "Loading voice output...")
-        if self.config["edcopilot"] and self.config["edcopilot_dominant"]:
-            show_chat_message('info', "EDCoPilot is dominant, voice output will be handled by EDCoPilot.")
 
         # Microphone/Listening setup based on mode
         mode = self.config.get('ptt_var', 'voice_activation')
@@ -419,22 +411,12 @@ class Chat:
                 if not self.stt.resultQueue.empty():
                     text = self.stt.resultQueue.get().text
                     self.tts.abort()
-                    self.copilot.output_commander(text)
                     self.event_manager.add_conversation_event('user', text)
 
                 # check EDJournal files for updates
                 while not self.jn.events.empty():
                     event = self.jn.events.get()
                     self.event_manager.add_game_event(event)
-
-                while not self.copilot.event_publication_queue.empty():
-                    event = self.copilot.event_publication_queue.get()
-                    if isinstance(event, ExternalChatNotification):
-                        self.event_manager.add_external_event('External' + event.service.capitalize() + 'Notification',
-                                                              event.model_dump())
-                    if isinstance(event, ExternalBackgroundChatNotification):
-                        self.event_manager.add_external_event('External' + event.service.capitalize() + 'Message',
-                                                          event.model_dump())
 
                 self.event_manager.process()
 

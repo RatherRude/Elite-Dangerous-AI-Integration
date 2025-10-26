@@ -49,7 +49,6 @@ export interface SystemInfo {
     os: string;
     input_device_names: string[];
     output_device_names: string[];
-    edcopilot_installed: boolean;
 }
 
 export interface SystemInfoMessage extends BaseMessage {
@@ -120,9 +119,6 @@ export interface Config {
     chat_system_tabbed_var: boolean;
     chat_squadron_tabbed_var: boolean;
     chat_direct_tabbed_var: boolean;
-    edcopilot: boolean;
-    edcopilot_actions: boolean;
-    edcopilot_dominant: boolean;
     ptt_key: string;
     input_device_name: string;
     output_device_name: string;
