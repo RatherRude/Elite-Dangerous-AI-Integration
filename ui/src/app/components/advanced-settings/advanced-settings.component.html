@@ -427,6 +427,15 @@
                     Autostart assistant on application start
             </mat-slide-toggle>
         }
+        <div class="character-buttons">
+            <button mat-raised-button color="warn"                
+                    (click)="bugReport()"
+                    
+                    [matTooltip]="'Report a Bug directly to covas team.'">
+                <mat-icon>bug_report</mat-icon> Report a bug 
+            </button>
+        </div>
+
         
         @if (system?.os === 'Linux') {
             <h3>Linux Settings</h3>

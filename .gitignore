@@ -27,3 +27,4 @@ plugins/*
 plugin_data/*
 .*
 !.gitignore
+bugreports/*

@@ -64,6 +64,7 @@
     ]
   },
   "dependencies": {
+    "archiver": "^7.0.1",
     "cross-env": "^7.0.3",
     "electron-context-menu": "^4.1.0",
     "pino": "^9.7.0",
