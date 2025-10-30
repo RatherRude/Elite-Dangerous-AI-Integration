@@ -3,7 +3,7 @@ import { ConfigService, Config } from './config.service';
 import { AvatarService, AvatarData } from './avatar.service';
 
 export interface BackupData {
-  version: string;
+  version: number;
   timestamp: string;
   config: Config;
   avatars: Array<{
@@ -55,7 +55,7 @@ export class ConfigBackupService {
 
       // Create backup data
       const backupData: BackupData = {
-        version: '1.0',
+        version: config['config_version'],
         timestamp: new Date().toISOString(),
         config: config,
         avatars: avatarsData
