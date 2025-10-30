@@ -1016,7 +1016,8 @@ class NavInfo(Projection[NavInfoState]):
                         is_first_system = False
                 
                 # Fetch system data for systems in the route asynchronously
-                if systems_to_lookup:
+                if len(systems_to_lookup) > 1:
+                    systems_to_lookup.pop(0)
                     self.system_db.fetch_multiple_systems_nonblocking(systems_to_lookup)
 
         # Process NavRouteClear
