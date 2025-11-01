@@ -147,14 +147,14 @@ export class AdvancedSettingsComponent {
             const result = await this.configBackupService.importConfig(file);
             
             if (result.success) {
-                this.snackBar.open(result.message + " - Reloading in 2 seconds...", "OK", {
-                    duration: 2000,
+                this.snackBar.open(result.message + " - Reloading in 1 second...", "OK", {
+                    duration: 1000,
                 });
                 
                 // Reload the page after 1 second to ensure all components reflect the new config
                 setTimeout(() => {
                     window.location.reload();
-                }, 2000);
+                }, 1000);
             } else {
                 this.snackBar.open(`Import failed: ${result.message}`, "OK", {
                     duration: 5000,
