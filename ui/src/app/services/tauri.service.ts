@@ -39,6 +39,21 @@ export interface SubmitInputMessage extends BaseCommand {
     input: string;
 }
 
+export interface QueryMemoriesMessage extends BaseCommand {
+    type: "query_memories";
+    query: string;
+    top_k?: number;
+}
+
+export interface GetMemoriesByDateMessage extends BaseCommand {
+    type: "get_memories_by_date";
+    date: string; // YYYY-MM-DD format
+}
+
+export interface GetAvailableDatesMessage extends BaseCommand {
+    type: "get_available_dates";
+}
+
 export interface UnknownMessage extends BaseMessage {
     type: "unknown";
     message: string;

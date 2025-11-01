@@ -3,12 +3,12 @@
     @if (config) {
         <p>This section allows you to customize advanced settings. It is recommended to leave these settings
             at their default values unless you know what you are doing.</p>
-        
+
         <mat-accordion multi>
         <mat-expansion-panel>
             <mat-expansion-panel-header>
                 <mat-panel-title>
-                    <mat-icon>smart_toy</mat-icon>
+                    <mat-icon>chat_message</mat-icon>
                     LLM Settings
                 </mat-panel-title>
             </mat-expansion-panel-header>
@@ -443,6 +443,82 @@
         }
         @if (config.vision_provider === "none") {
             <p>Vision is disabled</p>
+        }
+        </mat-expansion-panel>
+
+        <mat-expansion-panel>
+            <mat-expansion-panel-header>
+                <mat-panel-title>
+                    <mat-icon>manage_search</mat-icon>
+                    Embedding Settings
+                </mat-panel-title>
+            </mat-expansion-panel-header>
+        <mat-form-field>
+            <mat-label>Embedding Provider</mat-label>
+            <mat-select [(ngModel)]="config.embedding_provider"
+                        (ngModelChange)="onConfigChange({embedding_provider: $event})">
+                <mat-option value="openai">OpenAI</mat-option>
+                <mat-option value="google-ai-studio">Google AI Studio</mat-option>
+                <mat-option value="local-ai-server">Local AIServer</mat-option>
+                <mat-option value="custom">Custom</mat-option>
+                <mat-option value="none">None</mat-option>
+            </mat-select>
+        </mat-form-field>
+
+        @if (config.embedding_provider && config.embedding_provider !== 'none') {
+            @if (config.embedding_provider === "openai") {
+                <mat-form-field>
+                    <mat-label>Embedding Model Name</mat-label>
+                    <input matInput [(ngModel)]="config.embedding_model_name"
+                            (ngModelChange)="onConfigChange({embedding_model_name: $event})">
+                </mat-form-field>
+                <mat-form-field>
+                    <mat-label>Override Embedding API Key</mat-label>
+                    <input matInput type="password" [(ngModel)]="config.embedding_api_key"
+                            (ngModelChange)="onConfigChange({embedding_api_key: $event})">
+                </mat-form-field>
+            }
+
+            @if (config.embedding_provider === "google-ai-studio") {
+                <mat-form-field>
+                    <mat-label>Embedding Model Name</mat-label>
+                    <input matInput [(ngModel)]="config.embedding_model_name"
+                            (ngModelChange)="onConfigChange({embedding_model_name: $event})">
+                </mat-form-field>
+                <mat-form-field>
+                    <mat-label>Override Embedding API Key</mat-label>
+                    <input matInput type="password" [(ngModel)]="config.embedding_api_key"
+                            (ngModelChange)="onConfigChange({embedding_api_key: $event})">
+                </mat-form-field>
+            }
+
+            @if (config.embedding_provider === "custom") {
+                <mat-form-field>
+                    <mat-label>Embedding Endpoint</mat-label>
+                    <input matInput [(ngModel)]="config.embedding_endpoint"
+                            (ngModelChange)="onConfigChange({embedding_endpoint: $event})">
+                </mat-form-field>
+                <mat-form-field>
+                    <mat-label>Embedding Model Name</mat-label>
+                    <input matInput [(ngModel)]="config.embedding_model_name"
+                            (ngModelChange)="onConfigChange({embedding_model_name: $event})">
+                </mat-form-field>
+                <mat-form-field>
+                    <mat-label>Override Embedding API Key</mat-label>
+                    <input matInput type="password" [(ngModel)]="config.embedding_api_key"
+                            (ngModelChange)="onConfigChange({embedding_api_key: $event})">
+                </mat-form-field>
+            }
+            @if (config.embedding_provider === "local-ai-server") {
+                <mat-form-field>
+                    <mat-label>Embedding Endpoint</mat-label>
+                    <input matInput [(ngModel)]="config.embedding_endpoint"
+                            (ngModelChange)="onConfigChange({embedding_endpoint: $event})">
+                </mat-form-field>
+            }
+        }
+        @if (config.embedding_provider === "none") {
+            <p>Embedding is disabled</p>
         }
         </mat-expansion-panel>
 

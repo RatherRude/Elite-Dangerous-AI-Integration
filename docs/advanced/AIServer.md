@@ -24,17 +24,19 @@ Upon starting the AIServer, need to configure it using the window that pops up. 
 
 1. Select a TTS Model. At the time of writing we recommend using `hexgrad/Kokoro-82M`.
 
-2. Select a STT model. At the time of writing we recommend using `sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8.tar.bz2`
+2. Select a STT model. At the time of writing we recommend using `sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8.tar.bz2`. Note that `sherpa-onnx-nemo-parakeet-tdt-0.6b-v3-int8.tar.bz2` can be better for non-English inputs, but v2 is generally better for English.
 
-3. Select an LLM model. At the time of writing we recommend using `Salesforce/xLAM-2-3b-fc-r-gguf`.
+3. Select an LLM model. For LLM functionality, we recommend using LM Studio instead of the built-in AIServer LLM support, as LM Studio offers a bigger catalogue of models and better support (e.g. multi-GPU). You can select "None" here if using LM Studio.
 
-4. You can choose to enable or disable the LLM Disk Cache. Depending on your system (SSD performance), this my speed up the LLM response time or significantly slow it down. We recommend to disable it, if you are unsure.
+4. Select an embedding model. At the time of writing we recommend using `onnx-community/embeddinggemma-300m-ONNX`.
 
-5. Configure the network access. Confirm the defaults as 127.0.0.0 and port 8080 if you are unsure.
+5. You can choose to enable or disable the LLM Disk Cache. Depending on your system (SSD performance), this my speed up the LLM response time or significantly slow it down. We recommend to disable it, if you are unsure.
+
+6. Configure the network access. Confirm the defaults as 127.0.0.0 and port 8080 if you are unsure.
 
 The AIServer window will then download the selected models and show a message when done: `running on http://127.0.0.1:8080`.
 
-6. Lastly, you will need to configure the COVAS:NEXT itself:
+7. Lastly, you will need to configure the COVAS:NEXT itself:
 
 - Open the COVAS:NEXT "Advances settings"
 
@@ -50,7 +52,7 @@ If you don't want to configure every time you start the AIServer, you can place 
 {
   "host": "127.0.0.1",
   "port": 8080,
-  "embed_model_name": "None",
+  "embed_model_name": "onnx-community/embeddinggemma-300m-ONNX",
   "stt_model_name": "sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8.tar.bz2",
   "tts_model_name": "hexgrad/Kokoro-82M",
   "llm_model_name": "None",

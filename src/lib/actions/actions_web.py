@@ -1,20 +1,22 @@
-import json
-import traceback
+import datetime
 import math
-import yaml
+import traceback
 
 import openai
 import requests
-
+import yaml
 
 from .data import *
-from ..Logger import log
+from ..ActionManager import ActionManager
 from ..EDKeys import EDKeys
 from ..EventManager import EventManager
-from ..ActionManager import ActionManager
+from ..Logger import log
+from ..Config import Config
 
 llm_client: openai.OpenAI = None
 llm_model_name: str = None
+embedding_client: openai.OpenAI | None = None
+embedding_model_name: str | None = None
 event_manager: EventManager = None
 
 
@@ -1153,6 +1155,50 @@ def educated_guesses_message(search_query, valid_list):
         )
 
     return message
+# Retrieve relevant long-term memory notes by semantic search
+def retrieve_memories(obj, projected_states):
+    query = (obj or {}).get('query', '').strip()
+    top_k = (obj or {}).get('top_k', 5)
+    if not query:
+        return "Please provide a 'query' string to search memories."
+
+    try:
+        k = int(top_k)
+    except Exception:
+        k = 5
+    k = max(1, min(k, 20))
+
+    # Create embedding for the query and search the vector store
+    if not embedding_client or not embedding_model_name:
+        log('warn', 'Embeddings model not configured, cannot search memories.')
+        return 'Unable to search memories, please configure the embedding model.'
+    
+    embedding_response = embedding_client.embeddings.create(
+        model=embedding_model_name,
+        input=query
+    )
+    embedding = embedding_response.data[0].embedding
+
+    results = event_manager.long_term_memory.search(query, embedding_response.model, embedding, n=k)
+
+    if not results:
+        return f"No relevant memories found for '{query}'."
+
+    formatted = []
+    for result in results:
+        time_until: float = result["metadata"].get('time_until', 0.0)
+        time_since: float = result["metadata"].get('time_since', 0.0)
+        item = {
+            'score': round(result["score"], 3),
+            'summary': result["content"],
+            'time_until': datetime.datetime.fromtimestamp(time_until).strftime('%Y-%m-%d %H:%M:%S') if time_until else 'Unknown',
+            'time_since': datetime.datetime.fromtimestamp(time_since).strftime('%Y-%m-%d %H:%M:%S') if time_since else 'Unknown',
+        }
+        formatted.append(item)
+
+    yaml_output = yaml.dump(formatted, default_flow_style=False, sort_keys=False)
+    return f"Top {len(formatted)} memory matches for '{query}':\n\n```yaml\n{yaml_output}\n```"
+
 
 # Helper function
 def find_best_match(search_term, known_list):
@@ -1727,12 +1773,18 @@ def body_finder(obj, projected_states):
 
 
 def register_web_actions(actionManager: ActionManager, eventManager: EventManager, 
-                         llmClient: openai.OpenAI, llmModelName: str, edKeys: EDKeys):
-    global event_manager, llm_client, llm_model_name, keys
+                         llmClient: openai.OpenAI,
+                         llmModelName: str,
+                         embeddingClient: openai.OpenAI | None,
+                         embeddingModelName: str | None,
+                         edKeys: EDKeys):
+    global event_manager, llm_client, llm_model_name, keys, embedding_model_name, embedding_client
     keys = edKeys
     event_manager = eventManager
     llm_client = llmClient
     llm_model_name = llmModelName
+    embedding_model_name = embeddingModelName
+    embedding_client = embeddingClient
 
     # Register actions - Web Tools
     actionManager.registerAction(
@@ -2179,6 +2231,35 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
         },
         material_finder,
         'web'
+    )
+
+    # Retrieve memories via semantic search
+    actionManager.registerAction(
+        'retrieve_memories',
+        "Retrieve relevant long-term memory notes by semantic search.",
+        parameters={
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Semantic search query for memory retrieval"
+                },
+                "top_k": {
+                    "type": "integer",
+                    "description": "Number of memory notes to return (1-20)",
+                    "minimum": 1,
+                    "maximum": 20,
+                    "default": 5
+                }
+            },
+            "required": ["query"]
+        },
+        input_template=lambda i, s: f"""Retrieving memories
+            about '{i.get('query', '')}'
+            top {i.get('top_k', 5)}
+        """,
+        method=retrieve_memories,
+        action_type='web'
     )
 
 if __name__ == "__main__":

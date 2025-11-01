@@ -380,7 +380,7 @@ class Config(TypedDict):
     llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom', 'local-ai-server']
     llm_model_name: str
     llm_temperature: float
-    vision_provider: Literal['openai', 'google-ai-studio', 'custom', 'none']
+    vision_provider: Literal['openai', 'google-ai-studio', 'custom', 'none', 'local-ai-server']
     vision_model_name: str
     vision_endpoint: str
     vision_api_key: str
@@ -395,6 +395,11 @@ class Config(TypedDict):
     tts_model_name: str
     tts_api_key: str
     tts_endpoint: str
+    # Embedding settings
+    embedding_provider: Literal['openai', 'google-ai-studio', 'custom', 'none', 'local-ai-server']
+    embedding_model_name: str
+    embedding_endpoint: str
+    embedding_api_key: str
     tools_var: bool
     vision_var: bool
     ptt_var: Literal['voice_activation', 'push_to_talk', 'push_to_mute', 'toggle']
@@ -596,6 +601,31 @@ def migrate(data: dict) -> dict:
             data['characters'][0]['character'] = "Keep your responses extremely brief and minimal. Maintain a professional and serious tone in all responses. Stick to factual information. You are COVAS:NEXT (Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal) - professional, efficient, and no-nonsense. Provides essential information without unnecessary elaboration. Focuses on factual data and operational status. 'Destination reached.' 'Fuel level acceptable.' Clean, precise communication. Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS:NEXT. Always respond in English regardless of the language spoken to you. Balance emotional understanding with factual presentation. Use everyday language that balances casual and professional tones. Project an air of expertise and certainty when providing information. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship."
             data['characters'][0]['personality_character_inspiration'] = "COVAS:NEXT (Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal) - professional, efficient, and no-nonsense. Provides essential information without unnecessary elaboration. Focuses on factual data and operational status. 'Destination reached.' 'Fuel level acceptable.' Clean, precise communication."
 
+
+    if data['config_version'] < 6:
+        data['config_version'] = 6
+
+        if data.get("llm_provider"):
+            if data['llm_provider'] == 'openai':
+                data['embedding_provider'] = data['llm_provider']
+                data["embedding_endpoint"] = "https://api.openai.com/v1"
+                data["embedding_model_name"] = "text-embedding-3-small"
+                data["embedding_api_key"] = data["llm_api_key"]
+            elif data['llm_provider'] == 'google-ai-studio':
+                data['embedding_provider'] = data['llm_provider']
+                data["embedding_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
+                data["embedding_model_name"] = "gemini-embedding-001"
+                data["embedding_api_key"] = data["llm_api_key"]
+            elif data['llm_provider'] == 'local-ai-server':
+                data['embedding_provider'] = data['llm_provider']
+                data["embedding_endpoint"] = "http://127.0.0.1:8080"
+                data["embedding_model_name"] = "text-embedding-3-small"
+                data["embedding_api_key"] = ''
+            else:
+                data['embedding_provider'] = 'none'
+        else:
+            data['embedding_provider'] = 'none'
+
     return data
 
 
@@ -746,6 +776,11 @@ def load_config() -> Config:
         'tts_model_name': "edge-tts",
         'tts_endpoint': "",
         'tts_api_key': "",
+        # Embedding defaults
+        'embedding_provider': 'openai',
+        'embedding_model_name': 'text-embedding-3-small',
+        'embedding_endpoint': 'https://api.openai.com/v1',
+        'embedding_api_key': "",
         "ed_journal_path": "",
         "ed_appdata_path": "",
         "qol_autobrake": False,  # Quality of life: Auto brake when approaching stations
@@ -1169,7 +1204,7 @@ def update_config(config: Config, data: dict) -> Config:
             data["tools_var"] = True
 
         elif data["llm_provider"] == "local-ai-server":
-            data["llm_endpoint"] = "http://localhost:8080"
+            data["llm_endpoint"] = "http://127.0.0.1:8080"
             data["llm_model_name"] = "gpt-4.1-mini"
             data["llm_api_key"] = ""
             data["tools_var"] = True
@@ -1199,6 +1234,13 @@ def update_config(config: Config, data: dict) -> Config:
             data["vision_api_key"] = ""
             data["vision_var"] = True
 
+        elif data["vision_provider"] == "local-ai-server":
+            data["vision_endpoint"] = "http://127.0.0.1:8080"
+            if not data.get("vision_model_name"):
+                data["vision_model_name"] = "gpt-4o-mini"
+            data["vision_api_key"] = ""
+            data["vision_var"] = True
+
         elif data["vision_provider"] == "none":
             data["vision_endpoint"] = ""
             data["vision_model_name"] = ""
@@ -1212,7 +1254,7 @@ def update_config(config: Config, data: dict) -> Config:
             data["stt_api_key"] = ""
 
         if data["stt_provider"] == "local-ai-server":
-            data["stt_endpoint"] = "http://localhost:8080"
+            data["stt_endpoint"] = "http://127.0.0.1:8080"
             data["stt_model_name"] = "whisper-1"
             data["stt_api_key"] = ""
 
@@ -1245,7 +1287,7 @@ def update_config(config: Config, data: dict) -> Config:
             data["tts_api_key"] = ""
 
         if data["tts_provider"] == "local-ai-server":
-            data["tts_endpoint"] = "http://localhost:8080"
+            data["tts_endpoint"] = "http://127.0.0.1:8080"
             data["tts_model_name"] = "tts-1"
             for character in config["characters"]:
                 character["tts_voice"] = "nova"
@@ -1271,6 +1313,37 @@ def update_config(config: Config, data: dict) -> Config:
             for character in config["characters"]:
                 character["tts_voice"] = ""
             data["tts_api_key"] = ""
+
+    # Embedding provider
+    if data.get("embedding_provider"):
+        if data["embedding_provider"] == "openai":
+            data["embedding_endpoint"] = "https://api.openai.com/v1"
+            data["embedding_model_name"] = "text-embedding-3-small"
+            data["embedding_api_key"] = ""
+
+        elif data["embedding_provider"] == "google-ai-studio":
+            data["embedding_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
+            data["embedding_model_name"] = "gemini-embedding-001"
+            data["embedding_api_key"] = ""
+
+        elif data["embedding_provider"] == "custom":
+            # Leave endpoint/model/api_key as provided or default to OpenAI-compatible
+            if not data.get("embedding_endpoint"):
+                data["embedding_endpoint"] = "https://api.openai.com/v1"
+            if not data.get("embedding_model_name"):
+                data["embedding_model_name"] = "text-embedding-3-small"
+            if not data.get("embedding_api_key"):
+                data["embedding_api_key"] = ""
+
+        elif data["embedding_provider"] == "local-ai-server":
+            data["embedding_endpoint"] = "http://127.0.0.1:8080"
+            data["embedding_model_name"] = "text-embedding-3-small"
+            data["embedding_api_key"] = ""
+
+        elif data["embedding_provider"] == "none":
+            data["embedding_endpoint"] = ""
+            data["embedding_model_name"] = ""
+            data["embedding_api_key"] = ""
 
     # Now merge and save as before
     new_config = cast(Config, {**config, **data})

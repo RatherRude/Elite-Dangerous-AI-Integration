@@ -75,7 +75,7 @@ export interface Config {
     llm_api_key: string;
     llm_endpoint: string;
     llm_temperature: number;
-    vision_provider: "openai" | "google-ai-studio" | "custom" | "none";
+    vision_provider: "openai" | "google-ai-studio" | "custom" | "none" | "local-ai-server";
     vision_model_name: string;
     vision_endpoint: string;
     vision_api_key: string;
@@ -96,6 +96,11 @@ export interface Config {
     tts_model_name: string;
     tts_api_key: string;
     tts_endpoint: string;
+    // Embedding settings
+    embedding_provider: "openai" | "google-ai-studio" | "custom" | "none" | "local-ai-server";
+    embedding_model_name: string;
+    embedding_api_key: string;
+    embedding_endpoint: string;
     tools_var: boolean;
     vision_var: boolean;
     ptt_var: "voice_activation" | "push_to_talk" | "push_to_mute" | "toggle";
