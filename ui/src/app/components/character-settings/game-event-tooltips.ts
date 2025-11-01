@@ -120,6 +120,7 @@ export const GameEventTooltips: Record<string, string> = {
   "NightVisionOff": "COVAS:NEXT will react when night vision is turned off.",
   "NightVisionOn": "COVAS:NEXT will react when night vision is activated.",
   "SupercruiseDestinationDrop": "COVAS:NEXT will react when you drop out of supercruise at a targeted destination, logging threat level and type.",
+  "ReservoirReplenished": "COVAS:NEXT will react when your ship's fuel is refilled from reserves.",
 
   // SRV Updates
   "LaunchSRV": "COVAS:NEXT will react when you deploy an SRV onto a planet's surface. Telling you about the SRV type and loadout being launched.",

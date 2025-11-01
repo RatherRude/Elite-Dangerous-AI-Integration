@@ -60,6 +60,7 @@ export interface SystemInfoMessage extends BaseMessage {
 export interface Config {
     api_key: string;
     commander_name: string;
+    config_version: number;
     // Stored characters
     characters: unknown[];
     active_character_index: number;

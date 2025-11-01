@@ -120,5 +120,21 @@
                 </mat-form-field>
             </div>
         </div>
+
+        <div class="backup-restore-section">
+            <h3>Backup & Restore</h3>
+            <p>Export your settings and avatars to a backup file, or restore from a previous backup.</p>
+            <div class="backup-buttons">
+                <button mat-raised-button color="primary" (click)="onExportConfig()">
+                    <mat-icon>download</mat-icon>
+                    Export Settings
+                </button>
+                <button mat-raised-button color="accent" (click)="fileInput.click()">
+                    <mat-icon>upload</mat-icon>
+                    Import Settings
+                </button>
+                <input #fileInput type="file" accept=".json" style="display: none;" (change)="onImportConfig($event)">
+            </div>
+        </div>
     }
 </div>

@@ -133,6 +133,7 @@ game_events = {
     'NightVisionOff': False,
     'NightVisionOn': False,
     'SupercruiseDestinationDrop': False,
+    'ReservoirReplenished': False,
 
     # SRV Updates
     'LaunchSRV': True,
