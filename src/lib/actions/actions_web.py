@@ -1,19 +1,16 @@
 import datetime
 import math
-import traceback
-import yaml
-import sys
 
 import openai
 import requests
 import yaml
+import traceback
+import sys
 
 from .data import *
 from ..ActionManager import ActionManager
-from ..EDKeys import EDKeys
 from ..EventManager import EventManager
 from ..Logger import log
-from ..Config import Config
 
 llm_client: openai.OpenAI = None
 llm_model_name: str = None
@@ -21,13 +18,12 @@ embedding_client: openai.OpenAI | None = None
 embedding_model_name: str | None = None
 event_manager: EventManager = None
 
-def init_llm_client(llmClient: openai.OpenAI = None, llmModelName: str = None):
-    global llm_client, llm_model_name
-
-    llm_client = llmClient
-    llm_model_name = llmModelName
-
-def web_search(obj, projected_states):
+def web_search_agent(
+        obj,
+        projected_states,
+        llm_client: openai.OpenAI = None,
+        llm_model_name: str = None
+     ):
     """
     Uses an agentic loop to answer a web-related query by calling various internal tools.
     """
@@ -220,6 +216,7 @@ def web_search(obj, projected_states):
             completion = llm_client.chat.completions.create(
                 model=llm_model_name,
                 messages=messages,
+                temperature=0,
                 tools=tools,
                 tool_choice="auto",
             )
@@ -263,6 +260,15 @@ def web_search(obj, projected_states):
             return "Sorry, an error occurred while processing your request."
 
     return "The request could not be completed within the allowed number of steps."
+
+def web_search(obj, projected_states):
+    res = web_search_agent(
+        obj,
+        projected_states,
+        llm_client=llm_client,
+        llm_model_name=llm_model_name
+    )
+    return res
 
 # returns summary of galnet news
 def get_galnet_news(obj, projected_states):
@@ -763,7 +769,7 @@ def engineer_finder(obj, projected_states):
         if game_data:
             # Engineer is known in game
             progress = game_data.get('Progress')
-            rank = game_data.get('Rank')
+            rank = game_data.get('Rank', 0)
             rank_progress = game_data.get('RankProgress', 0)
 
             engineer_data['Progress'] = progress
@@ -2079,10 +2085,7 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
 if __name__ == '__main__':
     # This is a simple CLI for testing the web_search agent.
     import os
-    import openai
     import json
-    import traceback
-    import sys
 
     # Initialize the OpenAI client
     # Make sure you have OPENAI_API_KEY set in your environment or a .env file

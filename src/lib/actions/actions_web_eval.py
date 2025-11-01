@@ -12,13 +12,14 @@ from pydantic_ai.settings import ModelSettings
 from pydantic_evals import Case, Dataset
 from pydantic_evals.evaluators import LLMJudge
 
-from .actions_web import web_search, init_llm_client
+from .actions_web import web_search_agent, station_finder, body_finder
 
 model = OpenAIModel(
-    'gpt-4.1-mini',
-    settings=ModelSettings(temperature=0.8, max_tokens=500),
+    'gpt-5-mini',
+    #settings=ModelSettings(max_tokens=500, temperature=0.8),
     provider=OpenAIProvider(openai_client=AsyncOpenAI(api_key=os.environ.get("OPENAI_API_KEY"))),
 )
+
 
 class Sample(BaseModel):
     query: str
@@ -27,7 +28,6 @@ class Sample(BaseModel):
 
 class SampleResult(BaseModel):
     answer: str
-
 
 
 dummy_projected_state = {
@@ -65,9 +65,31 @@ dummy_projected_state = {
         "Consumables": []
     }
 }
+dummy_construction_state = {
+    "ConstructionProgress": 0.034678,
+    "ConstructionComplete": False, "ConstructionFailed": False,
+    "ResourcesRequired": [
+        {"Name": "$cmmcomposite_name;", "Name_Localised": "CMM Composite", "RequiredAmount": 39737, "ProvidedAmount": 0, "Payment": 6788},
+        {"Name": "$powergenerators_name;", "Name_Localised": "Power Generators", "RequiredAmount": 277, "ProvidedAmount": 0, "Payment": 3072},
+        {"Name": "$semiconductors_name;", "Name_Localised": "Semiconductors", "RequiredAmount": 413, "ProvidedAmount": 0, "Payment": 1526},
+        {"Name": "$steel_name;", "Name_Localised": "Steel", "RequiredAmount": 63936, "ProvidedAmount": 7616, "Payment": 5057},
+        {"Name": "$titanium_name;", "Name_Localised": "Titanium", "RequiredAmount": 35165, "ProvidedAmount": 0, "Payment": 5360}
+    ],
+    "MarketID": 4263743747,
+    "StarSystem": "Praea Euq LV-Y b5",
+    "StarSystemRecall": "Praea Euq LV-Y b5"
+}
+
+web_search_agent_llm_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
 
 async def run_sample(sample: Sample) -> SampleResult:
-    res = web_search({"query": sample.query}, {**dummy_projected_state, **sample.projected_states}) or ""
+    res = web_search_agent(
+        {"query": sample.query},
+        {**dummy_projected_state, **sample.projected_states},
+        llm_client=web_search_agent_llm_client,
+        llm_model_name='gpt-4.1-mini',
+    ) or ""
     return SampleResult(answer=res)
 
 
@@ -193,7 +215,12 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
             inputs=Sample(
                 query='where is the closest interstellar factors', projected_states={}
             ),
-            expected_output=SampleResult(answer='Kawle Genetics Complex in Alpha Centauri system'),
+            expected_output=SampleResult(answer=
+                station_finder({
+                    "reference_system": "Sol",
+                    "services": [{"name":"Interstellar Factors Contact"}],
+                }, dummy_projected_state)
+            ),
             metadata={},
         ),
 
@@ -244,60 +271,170 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
             expected_output=SampleResult(answer='Didi Vatermann, but only up to grade 3. Lei Cheung and Mel Brandon can upgrade to grade 5, but still need to be unlocked.'),
             metadata={},
         ),
-        # Case(
-        #     name='engineer unlock felicity',
-        #     inputs=Sample(
-        #         query='what do I need to unlock felicity?', projected_states={}
-        #     ),
-        #     expected_output=SampleResult(answer='Meta-Alloys'),
-        #     metadata={},
-        # ),
-        #
-        # # blueprint finder
-        # Case(
-        #     name='blueprint thermal resistant shields',
-        #     inputs=Sample(
-        #         query='can I upgrade my shield with thermal resistance?', projected_states={}
-        #     ),
-        #     expected_output=SampleResult(answer='Thermal resistant'),
-        #     metadata={},
-        # ),
-        #
-        # # material finder
-        # Case(
-        #     name='material lead count',
-        #     inputs=Sample(
-        #         query='How much lead do I have?', projected_states={}
-        #     ),
-        #     expected_output=SampleResult(answer='Lead'),
-        #     metadata={},
-        # ),
-        # Case(
-        #     name='material refined focus crystals source',
-        #     inputs=Sample(
-        #         query='Where do i find refined focus crystals?', projected_states={}
-        #     ),
-        #     expected_output=SampleResult(answer='Mission reward'),
-        #     metadata={},
-        # ),
-        #
-        # # complicated queries
-        # Case(
-        #     name='closest scoopable primary system',
-        #     inputs=Sample(
-        #         query='closest system with a scoopable primary star', projected_states={}
-        #     ),
-        #     expected_output=SampleResult(answer='Alpha Centauri'),
-        #     metadata={},
-        # ),
-        # Case(
-        #     name='closest raw material trader near marco',
-        #     inputs=Sample(
-        #         query="what's the closest material trader for raw materials close to marco?", projected_states={}
-        #     ),
-        #     expected_output=SampleResult(answer='Magnus Gateway'),
-        #     metadata={},
-        # ),
+        Case(
+            name='unlock felicity',
+            inputs=Sample(
+                query='unlock felicity', projected_states={}
+            ),
+            expected_output=SampleResult(answer='1 unit of Meta Alloys'),
+            metadata={},
+        ),
+        # blueprint finder
+        Case(
+            name='blueprint thermal resistant shields',
+            inputs=Sample(
+                query='can I upgrade my shield with thermal resistance?', projected_states={
+                    "Materials": {
+                        "timestamp": "2025-10-28T19:15:13Z",
+                        "event": "Materials",
+                        "Raw": [
+                            {
+                                "Name": "mercury",
+                                "Count": 3
+                            },
+                            {
+                                "Name": "ruthenium",
+                                "Count": 3
+                            }
+                        ],
+                        "Manufactured": [
+                            {
+                                "Name": "shieldsoakanalysis",
+                                "Name_Localised": "Inconsistent Shield Soak Analysis",
+                                "Count": 4
+                            },
+                            {
+                                "Name": "focuscrystals",
+                                "Name_Localised": "Focus Crystals",
+                                "Count": 4
+                            },
+                        ],
+                        "Encoded": [
+                            {
+                                "Name": "shielddensityreports",
+                                "Name_Localised": "Untypical Shield Scans",
+                                "Count": 110
+                            },
+                        ],
+                        "id": "Journal.2025-10-28T201448.01.log.000004"
+                    },
+                    "Loadout": {
+                        "timestamp": "2025-10-28T19:15:38Z",
+                        "event": "Loadout",
+                        "Ship": "anaconda",
+                        "ShipID": 10,
+                        "ShipName": "Landing party",
+                        "ShipIdent": "P4I27y",
+                        "HullValue": 146969451,
+                        "ModulesValue": 385626720,
+                        "HullHealth": 1.0,
+                        "UnladenMass": 1266.605713,
+                        "CargoCapacity": 32,
+                        "MaxJumpRange": 33.260761,
+                        "FuelCapacity": {
+                          "Main": 32.0,
+                          "Reserve": 1.07
+                        },
+                        "Rebuy": 26629811,
+                        "Modules": [
+                          {
+                            "Slot": "Slot01_Size7",
+                            "Item": "int_shieldgenerator_size7_class3_fast",
+                            "On": True,
+                            "Priority": 0,
+                            "Health": 1.0,
+                            "Value": 8548185,
+                            "Engineering": {
+                              "Engineer": "Lei Cheung",
+                              "EngineerID": 300120,
+                              "BlueprintID": 128673844,
+                              "BlueprintName": "ShieldGenerator_Thermic",
+                              "Level": 3,
+                              "Quality": 1.0,
+                              "ExperimentalEffect": "special_shield_regenerative",
+                              "ExperimentalEffect_Localised": "Fast Charge",
+                              "Modifiers": [
+                                {
+                                  "Label": "Integrity",
+                                  "Value": 183.399994,
+                                  "OriginalValue": 131.0,
+                                  "LessIsGood": 0
+                                },
+                                {
+                                  "Label": "RegenRate",
+                                  "Value": 5.06,
+                                  "OriginalValue": 4.4,
+                                  "LessIsGood": 0
+                                },
+                                {
+                                  "Label": "BrokenRegenRate",
+                                  "Value": 12.65,
+                                  "OriginalValue": 11.0,
+                                  "LessIsGood": 0
+                                },
+                                {
+                                  "Label": "KineticResistance",
+                                  "Value": 26.919996,
+                                  "OriginalValue": 39.999996,
+                                  "LessIsGood": 0
+                                },
+                                {
+                                  "Label": "ThermicResistance",
+                                  "Value": 39.099998,
+                                  "OriginalValue": -20.000004,
+                                  "LessIsGood": 0
+                                },
+                                {
+                                  "Label": "ExplosiveResistance",
+                                  "Value": 49.25,
+                                  "OriginalValue": 50.0,
+                                  "LessIsGood": 0
+                                }
+                              ]
+                            }
+                          }
+                        ],
+                        "id": "Journal.2025-10-28T201448.01.log.000018"
+                      }
+                }
+            ),
+            expected_output=SampleResult(answer='\n'.join([
+                "Current Grade: 3",
+                "Grade 4 requirements: 1 Mercury (4 required, 3 in cargo)",
+                "Grade 5 requirements: Refined Focus Crystal (5 required, 0 in cargo)"
+            ])),
+            metadata={},
+        ),
+        # material finder
+        Case(
+            name='material refined focus crystals source',
+            inputs=Sample(
+                query='refined focus crystals', projected_states={}
+            ),
+            expected_output=SampleResult(answer="Mission reward"),
+            metadata={},
+        ),
+        # complicated queries
+        Case(
+            name='closest scoopable primary system',
+            inputs=Sample(
+                query='closest system with a scoopable primary star', projected_states={}
+            ),
+            expected_output=SampleResult(answer='Alpha Centauri'),
+            metadata={},
+        ),
+        Case(
+            name='closest raw material trader near marco',
+            inputs=Sample(
+                query="closest raw material trader near marco", projected_states={}
+            ),
+            expected_output=SampleResult(answer=
+                station_finder({
+                    "reference_system": "Sirius",
+                    "material_trader": ["Raw"],
+                }, dummy_projected_state)),
+            metadata={},
+        ),
         # Case(
         #     name='closest raw material trader near navroute',
         #     inputs=Sample(
@@ -317,27 +454,40 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
         # Case(
         #     name='buy cmm composite',
         #     inputs=Sample(
-        #         query='Where can I buy CMM Composites?', projected_states={}
+        #         query='buy cmm composite', projected_states={}
         #     ),
         #     expected_output=SampleResult(answer='CMM Composite'),
         #     metadata={},
         # ),
-        # Case(
-        #     name='mine painite',
-        #     inputs=Sample(
-        #         query='Where can i mine painite?', projected_states={}
-        #     ),
-        #     expected_output=SampleResult(answer='Painite'),
-        #     metadata={},
-        # ),
-        # Case(
-        #     name='find steel commodity',
-        #     inputs=Sample(
-        #         query='where do i find the remaining steel for my construction?', projected_states={}
-        #     ),
-        #     expected_output=SampleResult(answer='Steel'),
-        #     metadata={},
-        # ),
+        Case(
+            name='mine painite',
+            inputs=Sample(
+                query='painite', projected_states={}
+            ),
+            expected_output=SampleResult(answer=
+                "Painite can be acquired by mining hotspots. "+
+                body_finder({
+                    "reference_system": "Sol",
+                    "rings": { "material": "Painite", "hotspots": 1 }
+                }, dummy_projected_state)),
+            metadata={},
+        ),
+        Case(
+            name='steel for construction',
+            inputs=Sample(
+                query='where do i find the remaining steel for my construction?', projected_states={
+                    "ColonisationConstruction": dummy_construction_state
+                }
+            ),
+            expected_output=SampleResult(answer=station_finder({
+                "reference_system": "Praea Euq LV-Y b5",
+                "commodities": [{"name": "Steel", "amount": 56.320, "transaction": "Buy"}],
+            }, {
+                **dummy_projected_state,
+                "ColonisationConstruction": dummy_construction_state,
+            })),
+            metadata={},
+        ),
     ],
     evaluators=[
         LLMJudge(
@@ -349,7 +499,5 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
     ],
 )
 
-init_llm_client(OpenAI(api_key=os.environ.get("OPENAI_API_KEY")),'gpt-4.1-mini')
-
 report = web_tool_dataset.evaluate_sync(run_sample)
-report.print(include_input=True, include_output=True, include_expected_output=True, include_durations=True)
+report.print(include_input=True, include_output=True, include_expected_output=True, include_durations=True, include_reasons=True)

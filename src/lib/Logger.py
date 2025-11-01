@@ -1,4 +1,5 @@
 import sys
+import traceback
 from typing import Any, Literal
 import io
 import datetime
@@ -20,7 +21,10 @@ formatter = JsonFormatter(
 )
 logHandler.setFormatter(formatter)
 logger.addHandler(logHandler)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
+
+httpx_logger = logging.getLogger("httpx")
+httpx_logger.setLevel(logging.WARNING)
 
 
 def handle_exception(exc_type, exc_value, exc_traceback):
@@ -30,15 +34,12 @@ def handle_exception(exc_type, exc_value, exc_traceback):
         return
     
     if not sys.stderr.closed and not sys.stdout.closed:
-        output = io.StringIO()
-        print("Uncaught exception", exc_type, exc_value, exc_traceback, file=output)
-        contents = output.getvalue().strip()
-        output.close()
+        contents = traceback.format_exception(exc_type, exc_value, exc_traceback)
         print(json.dumps({
             "type": "log",
             "timestamp": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
             "prefix": "error",
-            "message": contents
+            "message": "Uncaught exception: "+str(contents),
         }), file=sys.stderr)
         print(json.dumps({
             "type": "chat",
