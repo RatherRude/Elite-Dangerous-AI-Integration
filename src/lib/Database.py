@@ -76,7 +76,7 @@ class VectorStoreEntry(TypedDict):
     id: int
     content: str
     metadata: dict[str, object]
-    inserted_at: str | None
+    inserted_at: float | None
 
 
 class VectorStoreDateSummary(TypedDict):
@@ -404,7 +404,7 @@ class VectorStore():
             d.id,
             d.content,
             d.metadata,
-            d.inserted_at,
+            unixepoch(d.inserted_at),
             knn_matches.distance
             from knn_matches
             left join {self.table_name} d on d.id = knn_matches.rowid
@@ -450,7 +450,7 @@ class VectorStore():
         if self.keywords_enabled and query.strip():
             sanitized_query = sanitize_fts5_query(query)
             cursor.execute(f'''
-                SELECT d.id, d.content, d.metadata, d.inserted_at, bm25({self.keyword_table}) as score
+                SELECT d.id, d.content, d.metadata, unixepoch(d.inserted_at), bm25({self.keyword_table}) as score
                 FROM {self.keyword_table}
                 JOIN {self.table_name} d ON d.id = {self.keyword_table}.rowid
                 WHERE {self.keyword_table} MATCH ?
@@ -476,11 +476,12 @@ class VectorStore():
                 })
                 continue
             if raw_keyword_distance < 0.0:
-                log('warn', "VectorStore keyword search returned negative bm25 distance", {
-                    'store': self.store_name,
-                    'record_id': record_id,
-                    'bm25': raw_keyword_distance,
-                })
+                # Clamp to 0, because fts5 bm25 can be negative for very common terms
+                #log('warn', "VectorStore keyword search returned negative bm25 distance", {
+                #    'store': self.store_name,
+                #    'record_id': record_id,
+                #    'bm25': raw_keyword_distance,
+                #})
                 raw_keyword_distance = 0.0
             keyword_score = 1.0 / (1.0 + raw_keyword_distance)
             keyword_entries.append({
@@ -594,9 +595,9 @@ class VectorStore():
         cursor = conn.cursor()
         cursor.execute(
             f'''
-                SELECT id, content, metadata, inserted_at
+                SELECT id, content, metadata, unixepoch(inserted_at)
                 FROM {self.table_name}
-                WHERE DATE(inserted_at) = ?
+                WHERE date(inserted_at) = ?
                 ORDER BY inserted_at ASC
             ''',
             (date_value,),
