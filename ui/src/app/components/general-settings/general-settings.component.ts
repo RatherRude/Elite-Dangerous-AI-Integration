@@ -21,7 +21,6 @@ import { FormsModule } from "@angular/forms";
 import { MatInputModule } from "@angular/material/input";
 import { MatButtonModule } from "@angular/material/button";
 import { ScreenInfo } from "../../models/screen-info";
-import { ConfigBackupService } from "../../services/config-backup.service";
 
 @Component({
     selector: "app-general-settings",
@@ -58,7 +57,6 @@ export class GeneralSettingsComponent implements OnDestroy {
     constructor(
         private configService: ConfigService,
         private snackBar: MatSnackBar,
-        private configBackupService: ConfigBackupService,
     ) {
         this.configSubscription = this.configService.config$.subscribe(
             (config) => {
@@ -161,48 +159,6 @@ export class GeneralSettingsComponent implements OnDestroy {
                     duration: 5000,
                 });
             }
-        }
-    }
-
-    async onExportConfig() {
-        try {
-            await this.configBackupService.exportConfig();
-        } catch (error) {
-            console.error("Error exporting configuration:", error);
-            this.snackBar.open("Failed to export configuration", "OK", {
-                duration: 5000,
-            });
-        }
-    }
-
-    async onImportConfig(event: Event) {
-        const input = event.target as HTMLInputElement;
-        if (!input.files || input.files.length === 0) {
-            return;
-        }
-
-        const file = input.files[0];
-        
-        try {
-            const result = await this.configBackupService.importConfig(file);
-            
-            if (result.success) {
-                this.snackBar.open(result.message, "OK", {
-                    duration: 5000,
-                });
-            } else {
-                this.snackBar.open(`Import failed: ${result.message}`, "OK", {
-                    duration: 5000,
-                });
-            }
-        } catch (error) {
-            console.error("Error importing configuration:", error);
-            this.snackBar.open("Failed to import configuration", "OK", {
-                duration: 5000,
-            });
-        } finally {
-            // Reset the input so the same file can be selected again
-            input.value = '';
         }
     }
 }
