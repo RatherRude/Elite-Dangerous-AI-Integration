@@ -22,6 +22,13 @@ import { MatButtonModule } from "@angular/material/button";
 import { Character, CharacterService } from "../../services/character.service.js";
 import { ConfigBackupService } from "../../services/config-backup.service";
 import { MatIcon } from "@angular/material/icon";
+import {
+    MatAccordion,
+    MatExpansionModule,
+    MatExpansionPanel,
+    MatExpansionPanelHeader,
+    MatExpansionPanelTitle,
+} from "@angular/material/expansion";
 
 @Component({
     selector: "app-advanced-settings",
@@ -41,6 +48,11 @@ import { MatIcon } from "@angular/material/icon";
         MatOptgroup,
         MatDivider,
         MatIcon,
+        MatAccordion,
+        MatExpansionModule,
+        MatExpansionPanel,
+        MatExpansionPanelHeader,
+        MatExpansionPanelTitle,
     ],
     templateUrl: "./advanced-settings.component.html",
     styleUrl: "./advanced-settings.component.css",
