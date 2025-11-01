@@ -166,32 +166,7 @@ def web_search(obj, projected_states):
                     }
                 }
             }
-        },
-        {
-            "type": "function",
-            "function": {
-                "name": "retrieve_memories",
-                "description": "Retrieve relevant long-term memory notes by semantic search.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "query": {
-                            "type": "string",
-                            "description": "Semantic search query for memory retrieval"
-                        },
-                        "top_k": {
-                            "type": "integer",
-                            "description": "Number of memory notes to return (1-20)",
-                            "minimum": 1,
-                            "maximum": 20,
-                            "default": 5
-                        }
-                    },
-                    "required": ["query"]
-                }
-            }
-        },
-
+        }
     ]
 
     # The available_functions dict maps function names to the actual functions
@@ -203,7 +178,6 @@ def web_search(obj, projected_states):
         "engineer_finder": engineer_finder,
         "blueprint_finder": blueprint_finder,
         "material_finder": material_finder,
-        "retrieve_memories": retrieve_memories,
     }
 
     system_prompt = """
@@ -2044,10 +2018,9 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
                          llmClient: openai.OpenAI,
                          llmModelName: str,
                          embeddingClient: openai.OpenAI | None,
-                         embeddingModelName: str | None,
-                         edKeys: EDKeys):
-    global event_manager, llm_client, llm_model_name, keys, embedding_model_name, embedding_client
-    keys = edKeys
+                         embeddingModelName: str | None):
+    global event_manager, llm_client, llm_model_name, embedding_model_name, embedding_client
+    event_manager = eventManager
     llm_client = llmClient
     llm_model_name = llmModelName
     embedding_model_name = embeddingModelName
@@ -2070,6 +2043,37 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
         'web',
         input_template=lambda i, s: f"Searching: {i.get('query', '')}",
     )
+
+    # Retrieve memories via semantic search
+
+    if embeddingClient:
+        actionManager.registerAction(
+            'retrieve_memories',
+            "Retrieve relevant long-term memory notes by semantic search.",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Semantic search query for memory retrieval"
+                    },
+                    "top_k": {
+                        "type": "integer",
+                        "description": "Number of memory notes to return (1-20)",
+                        "minimum": 1,
+                        "maximum": 20,
+                        "default": 5
+                    }
+                },
+                "required": ["query"]
+            },
+            input_template=lambda i, s: f"""Retrieving memories
+                    about '{i.get('query', '')}'
+                    top {i.get('top_k', 5)}
+                """,
+            method=retrieve_memories,
+            action_type='web'
+        )
 
 
 if __name__ == '__main__':

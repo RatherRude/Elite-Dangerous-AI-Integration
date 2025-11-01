@@ -29,9 +29,6 @@ class SampleResult(BaseModel):
     answer: str
 
 
-async def run_sample(sample: Sample) -> SampleResult:
-    res = web_search({"query": sample.query}, sample.projected_states) or ""
-    return SampleResult(answer=res)
 
 dummy_projected_state = {
     "Location": {
@@ -45,7 +42,14 @@ dummy_projected_state = {
                 "EngineerID": 300160,
                 "Engineer": "Marco Qwent",
                 "Progress": "Unlocked"
-            }
+            },
+            {
+                "Engineer": "Didi Vatermann",
+                "EngineerID": 300000,
+                "Progress": "Unlocked",
+                "RankProgress": 0,
+                "Rank": 5
+            },
         ]
     },
     "Materials": {
@@ -62,13 +66,18 @@ dummy_projected_state = {
     }
 }
 
+async def run_sample(sample: Sample) -> SampleResult:
+    res = web_search({"query": sample.query}, {**dummy_projected_state, **sample.projected_states}) or ""
+    return SampleResult(answer=res)
+
+
 web_tool_dataset = Dataset[Sample, SampleResult, Any](
     cases=[
         # system finder
         Case(
             name='system name sirius',
             inputs=Sample(
-                query='find system named Sirius', projected_states=dummy_projected_state
+                query='find system named Sirius', projected_states={}
             ),
             expected_output=SampleResult(answer='Sirius'),
             metadata={},
@@ -76,7 +85,7 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
         Case(
             name='system allied empire',
             inputs=Sample(
-                query='find systems allied to the Empire', projected_states=dummy_projected_state
+                query='find systems allied to the Empire', projected_states={}
             ),
             expected_output=SampleResult(answer='Toolfa'),
             metadata={},
@@ -84,7 +93,7 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
         Case(
             name='system government anarchy',
             inputs=Sample(
-                query='find systems with an anarchy government', projected_states=dummy_projected_state
+                query='find systems with an anarchy government', projected_states={}
             ),
             expected_output=SampleResult(answer='WISE 0410+1502'),
             metadata={},
@@ -92,7 +101,7 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
         Case(
             name='system power li yong-rui',
             inputs=Sample(
-                query='find systems controlled by Li Yong-Rui', projected_states=dummy_projected_state
+                query='find systems controlled by Li Yong-Rui', projected_states={}
             ),
             expected_output=SampleResult(answer='Sirius'),
             metadata={},
@@ -100,7 +109,7 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
         Case(
             name='system economy agriculture',
             inputs=Sample(
-                query='find systems with an agriculture economy', projected_states=dummy_projected_state
+                query='find systems with an agriculture economy', projected_states={}
             ),
             expected_output=SampleResult(answer='Epsilon Eridani'),
             metadata={},
@@ -108,7 +117,7 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
         Case(
             name='system low security',
             inputs=Sample(
-                query='find low security systems', projected_states=dummy_projected_state
+                query='find low security systems', projected_states={}
             ),
             expected_output=SampleResult(answer='Alpha Centauri'),
             metadata={},
@@ -116,7 +125,7 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
         Case(
             name='system population over 1m',
             inputs=Sample(
-                query='find systems with at least 1 million population', projected_states=dummy_projected_state
+                query='find systems with at least 1 million population', projected_states={}
             ),
             expected_output=SampleResult(answer='Barnard\'s Star'),
             metadata={},
@@ -124,7 +133,7 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
         Case(
             name='distance to maia',
             inputs=Sample(
-                query='give me the distance to Maia', projected_states=dummy_projected_state
+                query='give me the distance to Maia', projected_states={}
             ),
             expected_output=SampleResult(answer='383'),
             metadata={},
@@ -134,7 +143,7 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
         Case(
             name='station name solaris',
             inputs=Sample(
-                query='find a station named Solaris', projected_states=dummy_projected_state
+                query='find a station named Solaris', projected_states={}
             ),
             expected_output=SampleResult(answer='Vox Solaris in Col 285 Sector XA-N d7-51'),
             metadata={},
@@ -142,7 +151,7 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
         Case(
             name='closest encoded material trader',
             inputs=Sample(
-                query='find me the closest material trader for encoded materials', projected_states=dummy_projected_state
+                query='find me the closest material trader for encoded materials', projected_states={}
             ),
             expected_output=SampleResult(answer='Magnus Gateway in the EZ Aquarii system'),
             metadata={},
@@ -150,7 +159,7 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
         Case(
             name='closest guardian technology broker',
             inputs=Sample(
-                query='find the closest technology broker for guardian technology', projected_states=dummy_projected_state
+                query='find the closest technology broker for guardian technology', projected_states={}
             ),
             expected_output=SampleResult(answer='Magnus Gateway in the EZ Aquarii system'),
             metadata={},
@@ -158,7 +167,7 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
         Case(
             name='buy guardian fsd booster',
             inputs=Sample(
-                query='where can I buy a Guardian frame shift drive booster', projected_states=dummy_projected_state
+                query='where can I buy a Guardian frame shift drive booster', projected_states={}
             ),
             expected_output=SampleResult(answer='Magnus Gateway in EZ Aquarii system'),
             metadata={},
@@ -166,7 +175,7 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
         Case(
             name='buy meta-alloys',
             inputs=Sample(
-                query='where can I buy meta-alloys', projected_states=dummy_projected_state
+                query='where can I buy meta-alloys', projected_states={}
             ),
             expected_output=SampleResult(answer='Darnielle\'s Progress in the Maia system'),
             metadata={},
@@ -174,7 +183,7 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
         Case(
             name='buy imperial courier',
             inputs=Sample(
-                query='where to buy imperial courier', projected_states=dummy_projected_state
+                query='where to buy imperial courier', projected_states={}
             ),
             expected_output=SampleResult(answer='Cayley Enterprise in the Wolf 359 system'),
             metadata={},
@@ -182,7 +191,7 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
         Case(
             name='closest interstellar factors',
             inputs=Sample(
-                query='where is the closest interstellar factors', projected_states=dummy_projected_state
+                query='where is the closest interstellar factors', projected_states={}
             ),
             expected_output=SampleResult(answer='Kawle Genetics Complex in Alpha Centauri system'),
             metadata={},
@@ -192,7 +201,7 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
         Case(
             name='body named earth',
             inputs=Sample(
-                query='find a body named Earth', projected_states=dummy_projected_state
+                query='find a body named Earth', projected_states={}
             ),
             expected_output=SampleResult(answer='Earth in Sol'),
             metadata={},
@@ -200,7 +209,7 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
         Case(
             name='next fuelable star',
             inputs=Sample(
-                query='next fuelable star', projected_states=dummy_projected_state
+                query='next fuelable star', projected_states={}
             ),
             expected_output=SampleResult(answer='Alpha Centauri'),
             metadata={},
@@ -208,25 +217,37 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
         Case(
             name='closest neutron star',
             inputs=Sample(
-                query='closest neutron star', projected_states=dummy_projected_state
+                query='closest neutron star', projected_states={}
             ),
             expected_output=SampleResult(answer='18 Camelopardalis C'),
             metadata={},
         ),
         #   Need Expected results and populated projections
-        # # engineer finder
-        # Case(
-        #     name='engineer shields helper',
-        #     inputs=Sample(
-        #         query='what engineer can help me with my shields?', projected_states=dummy_projected_state
-        #     ),
-        #     expected_output=SampleResult(answer='Didi Vatermann'),
-        #     metadata={},
-        # ),
+        # engineer finder
+        Case(
+            name='engineer shields helper',
+            inputs=Sample(
+                query='what engineer can help me with my shields?', projected_states={
+                    "EngineerProgress": {
+                        "Engineers": [
+                            {
+                                "Engineer": "Didi Vatermann",
+                                "EngineerID": 300000,
+                                "Progress": "Unlocked",
+                                "RankProgress": 0,
+                                "Rank": 5
+                            },
+                        ]
+                    },
+                }
+            ),
+            expected_output=SampleResult(answer='Didi Vatermann, but only up to grade 3. Lei Cheung and Mel Brandon can upgrade to grade 5, but still need to be unlocked.'),
+            metadata={},
+        ),
         # Case(
         #     name='engineer unlock felicity',
         #     inputs=Sample(
-        #         query='what do I need to unlock felicity?', projected_states=dummy_projected_state
+        #         query='what do I need to unlock felicity?', projected_states={}
         #     ),
         #     expected_output=SampleResult(answer='Meta-Alloys'),
         #     metadata={},
@@ -236,7 +257,7 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
         # Case(
         #     name='blueprint thermal resistant shields',
         #     inputs=Sample(
-        #         query='can I upgrade my shield with thermal resistance?', projected_states=dummy_projected_state
+        #         query='can I upgrade my shield with thermal resistance?', projected_states={}
         #     ),
         #     expected_output=SampleResult(answer='Thermal resistant'),
         #     metadata={},
@@ -246,7 +267,7 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
         # Case(
         #     name='material lead count',
         #     inputs=Sample(
-        #         query='How much lead do I have?', projected_states=dummy_projected_state
+        #         query='How much lead do I have?', projected_states={}
         #     ),
         #     expected_output=SampleResult(answer='Lead'),
         #     metadata={},
@@ -254,7 +275,7 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
         # Case(
         #     name='material refined focus crystals source',
         #     inputs=Sample(
-        #         query='Where do i find refined focus crystals?', projected_states=dummy_projected_state
+        #         query='Where do i find refined focus crystals?', projected_states={}
         #     ),
         #     expected_output=SampleResult(answer='Mission reward'),
         #     metadata={},
@@ -264,7 +285,7 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
         # Case(
         #     name='closest scoopable primary system',
         #     inputs=Sample(
-        #         query='closest system with a scoopable primary star', projected_states=dummy_projected_state
+        #         query='closest system with a scoopable primary star', projected_states={}
         #     ),
         #     expected_output=SampleResult(answer='Alpha Centauri'),
         #     metadata={},
@@ -272,7 +293,7 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
         # Case(
         #     name='closest raw material trader near marco',
         #     inputs=Sample(
-        #         query="what's the closest material trader for raw materials close to marco?", projected_states=dummy_projected_state
+        #         query="what's the closest material trader for raw materials close to marco?", projected_states={}
         #     ),
         #     expected_output=SampleResult(answer='Magnus Gateway'),
         #     metadata={},
@@ -280,7 +301,7 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
         # Case(
         #     name='closest raw material trader near navroute',
         #     inputs=Sample(
-        #         query="what's the closest material trader for raw materials near my navroute destination?", projected_states=dummy_projected_state
+        #         query="what's the closest material trader for raw materials near my navroute destination?", projected_states={}
         #     ),
         #     expected_output=SampleResult(answer='Magnus Gateway'),
         #     metadata={},
@@ -288,7 +309,7 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
         # Case(
         #     name='compound broker fsd booster painite',
         #     inputs=Sample(
-        #         query="what's the closest system that has a material broker where I can buy a guardian frame shift drive booster where I can mine painite", projected_states=dummy_projected_state
+        #         query="what's the closest system that has a material broker where I can buy a guardian frame shift drive booster where I can mine painite", projected_states={}
         #     ),
         #     expected_output=SampleResult(answer='Painite'),
         #     metadata={},
@@ -296,7 +317,7 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
         # Case(
         #     name='buy cmm composite',
         #     inputs=Sample(
-        #         query='Where can I buy CMM Composites?', projected_states=dummy_projected_state
+        #         query='Where can I buy CMM Composites?', projected_states={}
         #     ),
         #     expected_output=SampleResult(answer='CMM Composite'),
         #     metadata={},
@@ -304,7 +325,7 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
         # Case(
         #     name='mine painite',
         #     inputs=Sample(
-        #         query='Where can i mine painite?', projected_states=dummy_projected_state
+        #         query='Where can i mine painite?', projected_states={}
         #     ),
         #     expected_output=SampleResult(answer='Painite'),
         #     metadata={},
@@ -312,7 +333,7 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
         # Case(
         #     name='find steel commodity',
         #     inputs=Sample(
-        #         query='where do i find the remaining steel for my construction?', projected_states=dummy_projected_state
+        #         query='where do i find the remaining steel for my construction?', projected_states={}
         #     ),
         #     expected_output=SampleResult(answer='Steel'),
         #     metadata={},
@@ -331,4 +352,4 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
 init_llm_client(OpenAI(api_key=os.environ.get("OPENAI_API_KEY")),'gpt-4.1-mini')
 
 report = web_tool_dataset.evaluate_sync(run_sample)
-report.print(include_input=True, include_output=True, include_durations=True)
+report.print(include_input=True, include_output=True, include_expected_output=True, include_durations=True)

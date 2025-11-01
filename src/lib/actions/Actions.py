@@ -2430,8 +2430,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     register_web_actions(
         actionManager, eventManager,
         llmClient, llmModelName,
-        embeddingClient, embeddingModelName,
-        edKeys
+        embeddingClient, embeddingModelName
     )
 
     register_ui_actions(
