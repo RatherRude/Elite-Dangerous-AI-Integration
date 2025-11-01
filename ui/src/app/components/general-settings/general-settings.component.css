@@ -33,31 +33,3 @@ mat-slide-toggle {
 ul {
   margin-top: 0;
 }
-
-.backup-restore-section {
-  margin-top: 2rem;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.backup-restore-section h3 {
-  margin-bottom: 0.5rem;
-}
-
-.backup-restore-section p {
-  margin-bottom: 1rem;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.backup-buttons {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
-
-.backup-buttons button {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-}
