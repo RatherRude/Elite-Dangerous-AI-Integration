@@ -13,10 +13,6 @@ mat-slide-toggle {
   margin: 10px 0;
 }
 
-/*mat-expansion-panel {*/
-/*  margin-bottom: 1rem;*/
-/*}*/
-
 mat-panel-title {
   display: flex;
   align-items: center;
