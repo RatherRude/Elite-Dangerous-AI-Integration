@@ -31,7 +31,6 @@ import {
     MatExpansionPanelDescription,
 } from "@angular/material/expansion";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { TooltipDirective } from "./tooltip.directive.js";
 import { MatDivider } from "@angular/material/divider";
 import { MatInputModule } from "@angular/material/input";
 import { MatButtonModule } from "@angular/material/button";
@@ -85,7 +84,6 @@ interface PromptSettings {
         MatExpansionPanelHeader,
         MatExpansionPanelDescription,
         MatTooltipModule,
-        TooltipDirective,
     ],
     templateUrl: "./character-settings.component.html",
     styleUrl: "./character-settings.component.scss",
@@ -1414,5 +1412,107 @@ export class CharacterSettingsComponent {
                 });
             }
         });
+    }
+
+    // Check if an event is disabled for this character
+    isEventDisabled(eventName: string): boolean {
+        if (!this.activeCharacter) return false;
+        return this.activeCharacter.disabled_game_events?.includes(eventName) || false;
+    }
+
+    // Toggle disabled state for an event
+    async toggleEventDisabled(eventName: string, event: Event) {
+        event.stopPropagation(); // Prevent expansion panel toggle
+        
+        if (!this.activeCharacter) return;
+
+        const isCurrentlyDisabled = this.isEventDisabled(eventName);
+        let disabledEvents = [...(this.activeCharacter.disabled_game_events || [])];
+
+        if (isCurrentlyDisabled) {
+            // Remove from disabled list
+            disabledEvents = disabledEvents.filter(e => e !== eventName);
+            await this.characterService.setCharacterProperty('disabled_game_events', disabledEvents);
+            this.snackBar.open(`Event "${eventName}" now visible to LLM`, "OK", {
+                duration: 2000,
+            });
+        } else {
+            // Add to disabled list
+            const dialogRef = this.confirmationDialog.openConfirmationDialog({
+                title: "Hide Event from LLM",
+                message: `Are you sure you want to hide "${eventName}" from the LLM? This will not just prevent any reactions but ultimately reduce your AI's situational awareness.`,
+                confirmButtonText: "Hide Event",
+                cancelButtonText: "Cancel",
+            });
+
+            dialogRef.subscribe(async (result: boolean) => {
+                if (result && this.activeCharacter) {
+                    disabledEvents.push(eventName);
+                    
+                    // Also disable the event in the current character's game_events
+                    if (this.activeCharacter.game_events && this.activeCharacter.game_events[eventName]) {
+                        await this.characterService.setCharacterEventProperty(eventName, false);
+                    }
+                    
+                    await this.characterService.setCharacterProperty('disabled_game_events', disabledEvents);
+                    this.snackBar.open(`Event "${eventName}" hidden from LLM`, "OK", {
+                        duration: 2000,
+                    });
+                }
+            });
+        }
+    }
+
+    // Enable custom character editor with confirmation
+    enableCustomCharacterEditor() {
+        if (!this.activeCharacter) return;
+
+        const dialogRef = this.confirmationDialog.openConfirmationDialog({
+            title: "Enable Custom Prompt",
+            message: "This will allow you to write your own character prompt. This action cannot be undone - you will need to create a new character to use presets again. Are you sure you want to continue?",
+            confirmButtonText: "Understood",
+            cancelButtonText: "Cancel",
+        });
+
+        dialogRef.subscribe((result: boolean) => {
+            if (result) {
+                // Enable custom character editor mode
+                this.applySettingsFromPreset('custom');
+                this.snackBar.open('Custom character editor enabled', 'OK', {
+                    duration: 3000,
+                });
+            }
+        });
+    }
+
+    // Randomize character preset
+    randomizePreset() {
+        if (!this.activeCharacter) return;
+
+        // Get all available presets except 'custom'
+        const availablePresets = Object.keys(CharacterPresets).filter(
+            preset => preset !== 'custom'
+        );
+
+        if (availablePresets.length === 0) return;
+
+        // Pick a random preset
+        const randomIndex = Math.floor(Math.random() * availablePresets.length);
+        const randomPreset = availablePresets[randomIndex];
+
+        // Apply the random preset
+        this.applySettingsFromPreset(randomPreset);
+
+        // Show notification to user
+        this.snackBar.open('Random personality preset applied!', 'OK', {
+            duration: 2000,
+        });
+    }
+
+    // Handle character inspiration contenteditable change
+    onCharacterInspirationChange(event: Event) {
+        const target = event.target as HTMLElement;
+        const newValue = target.textContent || '';
+        this.setCharacterPropertyAndUpdatePrompt('personality_character_inspiration', newValue);
     }
 }

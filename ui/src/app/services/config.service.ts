@@ -34,6 +34,17 @@ export interface StartMessage extends BaseMessage {
     type: "start";
 }
 
+export interface WeaponType {
+    name: string;
+    fire_group: number;
+    is_primary: boolean; // primary or secondary fire
+    is_combat: boolean; // combat or analysis mode
+    action: string; // 'fire', 'start', or 'stop'
+    duration: number; // Duration to hold fire button in seconds (for fire action only)
+    repetitions: number; // Number of additional repetitions (0 = single action)
+    target_submodule: string; // Target submodule (empty string for None)
+}
+
 export interface SystemInfo {
     os: string;
     input_device_names: string[];
@@ -49,6 +60,7 @@ export interface SystemInfoMessage extends BaseMessage {
 export interface Config {
     api_key: string;
     commander_name: string;
+    config_version: number;
     // Stored characters
     characters: unknown[];
     active_character_index: number;
@@ -63,7 +75,7 @@ export interface Config {
     llm_api_key: string;
     llm_endpoint: string;
     llm_temperature: number;
-    vision_provider: "openai" | "google-ai-studio" | "custom" | "none";
+    vision_provider: "openai" | "google-ai-studio" | "custom" | "none" | "local-ai-server";
     vision_model_name: string;
     vision_endpoint: string;
     vision_api_key: string;
@@ -84,6 +96,11 @@ export interface Config {
     tts_model_name: string;
     tts_api_key: string;
     tts_endpoint: string;
+    // Embedding settings
+    embedding_provider: "openai" | "google-ai-studio" | "custom" | "none" | "local-ai-server";
+    embedding_model_name: string;
+    embedding_api_key: string;
+    embedding_endpoint: string;
     tools_var: boolean;
     vision_var: boolean;
     ptt_var: "voice_activation" | "push_to_talk" | "push_to_mute" | "toggle";
@@ -93,7 +110,18 @@ export interface Config {
     web_search_actions_var: boolean;
     ui_actions_var: boolean;
     use_action_cache_var: boolean;
+    allowed_actions?: string[];
+    discovery_primary_var: boolean;
+    discovery_firegroup_var: number;
+    weapon_types: WeaponType[];
+    // Chat channel tab settings
+    chat_local_tabbed_var: boolean;
+    chat_wing_tabbed_var: boolean;
+    chat_system_tabbed_var: boolean;
+    chat_squadron_tabbed_var: boolean;
+    chat_direct_tabbed_var: boolean;
     edcopilot: boolean;
+    edcopilot_actions: boolean;
     edcopilot_dominant: boolean;
     ptt_key: string;
     input_device_name: string;

@@ -1,3 +1,4 @@
+import copy
 import sys
 from time import sleep
 from typing import Any, cast, final
@@ -6,6 +7,7 @@ import threading
 import json
 import io
 import traceback
+from datetime import datetime
 
 from EDMesg.CovasNext import ExternalChatNotification, ExternalBackgroundChatNotification
 from openai import OpenAI
@@ -18,7 +20,7 @@ from lib.actions.Actions import register_actions
 from lib.ControllerManager import ControllerManager
 from lib.EDCoPilot import EDCoPilot
 from lib.EDKeys import EDKeys
-from lib.Event import ConversationEvent, Event, ExternalEvent, GameEvent, ProjectedEvent, StatusEvent, ToolEvent
+from lib.Event import ConversationEvent, Event, ExternalEvent, GameEvent, MemoryEvent, ProjectedEvent, StatusEvent, ToolEvent
 from lib.Logger import show_chat_message
 from lib.Projections import registerProjections
 from lib.PromptGenerator import PromptGenerator
@@ -49,9 +51,10 @@ class Chat:
         self.backstory = self.character["character"].replace("{commander_name}", self.config['commander_name'])
 
         self.enabled_game_events: list[str] = []
+        disabled_events = self.character.get("disabled_game_events", [])
         if self.character["event_reaction_enabled_var"]:
             for event, state in self.character["game_events"].items():
-                if state:
+                if state and event not in disabled_events:
                     self.enabled_game_events.append(event)
 
         log("debug", "Initializing Controller Manager...")
@@ -59,20 +62,32 @@ class Chat:
 
         log("debug", "Initializing Action Manager...")
         self.action_manager = ActionManager()
+        # Set allowed actions permissions from config (empty means allow all)
+        try:
+            self.action_manager.set_allowed_actions(self.config.get("allowed_actions", []))
+        except Exception:
+            self.action_manager.set_allowed_actions([])
 
         log("debug", "Initializing EDJournal...")
         self.jn = EDJournal(get_ed_journals_path(config))
             
         log("debug", "Initializing Third Party Services...")
         self.copilot = EDCoPilot(self.config["edcopilot"], is_edcopilot_dominant=self.config["edcopilot_dominant"],
-                            enabled_game_events=self.enabled_game_events)
+                            enabled_game_events=self.enabled_game_events, action_manager=self.action_manager, has_actions=self.config["edcopilot_actions"])
 
         # gets API Key from config.json
         self.llmClient = OpenAI(
             base_url="https://api.openai.com/v1" if self.config["llm_endpoint"] == '' else self.config["llm_endpoint"],
             api_key=self.config["api_key"] if self.config["llm_api_key"] == '' else self.config["llm_api_key"],
         )
-        
+        # embeddings
+        self.embeddingClient: OpenAI | None = None
+        if self.config.get("embedding_provider") in ['openai', 'custom', 'google-ai-studio', 'local-ai-server']:
+            self.embeddingClient = OpenAI(
+                base_url=self.config["embedding_endpoint"],
+                api_key=self.config["api_key"] if self.config["embedding_api_key"] == '' else self.config["embedding_api_key"],
+            )
+
         # vision
         self.visionClient: OpenAI | None = None
         if self.config["vision_var"]:
@@ -108,7 +123,7 @@ class Chat:
         log("debug", "Initializing status parser...")
         self.status_parser = StatusParser(get_ed_journals_path(config))
         log("debug", "Initializing prompt generator...")
-        self.prompt_generator = PromptGenerator(self.config["commander_name"], self.character["character"], important_game_events=self.enabled_game_events, system_db=self.system_database)
+        self.prompt_generator = PromptGenerator(self.config["commander_name"], self.character["character"], important_game_events=self.enabled_game_events, system_db=self.system_database, weapon_types=cast(list[dict], self.config.get("weapon_types", [])), disabled_game_events=disabled_events)
         
         log("debug", "Getting plugin event classes...")
         plugin_event_classes = self.plugin_manager.register_event_classes()
@@ -129,6 +144,8 @@ class Chat:
             tts=self.tts,
             prompt_generator=self.prompt_generator,
             copilot=self.copilot,
+            embeddingClient=self.embeddingClient,
+            disabled_game_events=disabled_events
         )
         self.is_replying = False
         self.listening = False
@@ -164,7 +181,7 @@ class Chat:
                     "type": "states",
                     "states": {key: value},
                 })
-        self.previous_states = projected_states
+        self.previous_states = copy.deepcopy(projected_states)
         send_message({
             "type": "event",
             "event": event,
@@ -191,9 +208,95 @@ class Chat:
         if event.kind=='projected':
             event = cast(ProjectedEvent, event)
             show_chat_message('event', event.content.get('event', 'Unknown'))
+        if event.kind=='memory':
+            event = cast(MemoryEvent, event)
+            show_chat_message('memory', event.content)
 
     def submit_input(self, input: str):
         self.event_manager.add_conversation_event('user', input)
+    
+    def query_memories(self, query: str, top_k: int = 5):
+        """Query long-term memories without triggering LLM interaction"""
+        if not self.embeddingClient:
+            return {"error": "Embeddings model not configured"}
+        
+        embedding_model = self.config.get("embedding_model_name")
+        if not embedding_model:
+            return {"error": "Embedding model name not configured"}
+        
+        try:
+            # Create embedding for the query
+            embedding_response = self.embeddingClient.embeddings.create(
+                model=embedding_model,
+                input=query
+            )
+            embedding = embedding_response.data[0].embedding
+            
+            # Search the vector store
+            results = self.event_manager.long_term_memory.search(
+                query,
+                embedding_response.model, 
+                embedding, 
+                n=min(max(1, top_k), 20)
+            )
+            
+            if not results:
+                return {"results": []}
+            
+            formatted = []
+            for result in results:
+                # Fetch inserted_at timestamp for this entry
+                time_until: float = result["metadata"].get('time_until', result["inserted_at"])
+                time_since: float = result["metadata"].get('time_since', result["inserted_at"])
+                item = {
+                    'score': round(result["score"], 3),
+                    'summary': result["content"],
+                    'inserted_at': result["inserted_at"],
+                    'time_until': time_until,
+                    'time_since': time_since
+                }
+                
+                formatted.append(item)
+            
+            return {"results": formatted}
+            
+        except Exception as e:
+            log('error', f'Error querying memories: {e}')
+            import traceback
+            log('error', traceback.format_exc())
+            return {"error": str(e)}
+    
+    def get_memories_by_date(self, date_str: str):
+        """Fetch all memory entries for a specific date"""
+        try:
+            # Parse the date string (format: YYYY-MM-DD)
+            target_date = datetime.fromisoformat(date_str).date()
+            entries = self.event_manager.long_term_memory.get_entries_by_date(target_date)
+            return {"entries": [{
+                "id": e["id"],
+                "content": e["content"],
+                "inserted_at": e["inserted_at"],
+                "time_since": e["metadata"].get('time_since', e["inserted_at"]),
+                "time_until": e["metadata"].get('time_until', e["inserted_at"]),
+            } for e in entries], "date": date_str}
+        except ValueError:
+            return {"error": "Invalid date format. Use YYYY-MM-DD."}
+        except Exception as e:
+            log('error', f'Error fetching memories by date: {e}')
+            import traceback
+            log('error', traceback.format_exc())
+            return {"error": str(e)}
+    
+    def get_available_dates(self):
+        """Fetch all dates that have memory entries"""
+        try:
+            dates = self.event_manager.long_term_memory.get_available_dates()
+            return {"dates": dates}
+        except Exception as e:
+            log('error', f'Error fetching available dates: {e}')
+            import traceback
+            log('error', traceback.format_exc())
+            return {"error": str(e)}
         
     def run(self):
         show_chat_message('info', f"Initializing CMDR {self.config['commander_name']}'s personal AI...\n")
@@ -256,7 +359,26 @@ class Chat:
 
         if self.config['tools_var']:
             log('info', "Register actions...")
-            register_actions(self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.ed_keys)
+
+            register_actions(
+                self.action_manager,
+                self.event_manager,
+                self.llmClient,
+                self.config["llm_model_name"],
+                self.visionClient,
+                self.config["vision_model_name"],
+                self.embeddingClient,
+                self.config["embedding_model_name"],
+                self.ed_keys,
+                self.config.get("discovery_primary_var", True),
+                self.config.get("discovery_firegroup_var", 1),
+                self.config.get("chat_local_tabbed_var", False),
+                self.config.get("chat_wing_tabbed_var", False),
+                self.config.get("chat_system_tabbed_var", True),
+                self.config.get("chat_squadron_tabbed_var", False),
+                self.config.get("chat_direct_tabbed_var", False),
+                self.config.get("weapon_types", [])
+            )
 
             log('info', "Built-in Actions ready.")
             self.plugin_manager.register_actions(self.plugin_helper)
@@ -344,6 +466,32 @@ def read_stdin(chat: Chat):
             data = json.loads(line)
             if data.get("type") == "submit_input":
                 chat.submit_input(data["input"])
+            if data.get("type") == "query_memories":
+                query = data.get("query", "")
+                top_k = data.get("top_k", 5)
+                if query:
+                    results = chat.query_memories(query, top_k)
+                    print(json.dumps({
+                        "type": "memory_results",
+                        "timestamp": datetime.now().isoformat(),
+                        "results": results
+                    }) + '\n', flush=True)
+            if data.get("type") == "get_memories_by_date":
+                date_str = data.get("date", "")
+                if date_str:
+                    results = chat.get_memories_by_date(date_str)
+                    print(json.dumps({
+                        "type": "memories_by_date",
+                        "timestamp": datetime.now().isoformat(),
+                        "data": results
+                    }) + '\n', flush=True)
+            if data.get("type") == "get_available_dates":
+                results = chat.get_available_dates()
+                print(json.dumps({
+                    "type": "available_dates",
+                    "timestamp": datetime.now().isoformat(),
+                    "data": results
+                }) + '\n', flush=True)
             if data.get("type") == "init_overlay":
                 print(json.dumps({"type": "running_config", "config": config})+'\n', flush=True)
 

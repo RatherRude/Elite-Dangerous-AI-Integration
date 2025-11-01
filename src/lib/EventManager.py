@@ -4,9 +4,9 @@ from abc import ABC, abstractmethod
 from datetime import timezone, datetime
 from typing import Any, Generic, Literal, Callable, TypeVar, final
 
-from .Database import EventStore, KeyValueStore
+from .Database import EventStore, KeyValueStore, VectorStore
 from .EDJournal import *
-from .Event import Event, GameEvent, ConversationEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent
+from .Event import Event, GameEvent, ConversationEvent, MemoryEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent
 from .Logger import log, show_chat_message
 
 import threading
@@ -36,11 +36,14 @@ class EventManager:
         event_store.delete_all()
         projection_store = KeyValueStore('projections')
         projection_store.delete_all()
+        vector_store = VectorStore('memory')
+        vector_store.delete_all()
     
     def __init__(
             self, 
             game_events: list[str],
             plugin_event_classes: list[type[Event]],
+            memory_hook: Callable[[Any, list[Event]], None] = lambda manager, events: None,
         ):
         self.incoming: Queue[Event] = Queue()
         self.pending: list[Event] = []
@@ -49,13 +52,14 @@ class EventManager:
         self._conditions_registry = defaultdict(list)
         self._registry_lock = threading.Lock()
 
-        self.event_classes: list[type[Event]] = [ConversationEvent, ToolEvent, GameEvent, StatusEvent, ExternalEvent]
+        self.event_classes: list[type[Event]] = [ConversationEvent, ToolEvent, GameEvent, StatusEvent, ExternalEvent, MemoryEvent]
         self.event_classes += plugin_event_classes # Adds the plugin provided event classes
         self.projections: list[Projection] = []
         self.sideeffects: list[Callable[[Event, dict[str, Any]], None]] = []
         
-        self.event_store = EventStore('events', self.event_classes)
+        self.short_term_memory = EventStore('events', self.event_classes)
         self.projection_store = KeyValueStore('projections')
+        self.long_term_memory = VectorStore('memory')
         
         min_history_id, max_history_id = self.load_history()
         self.min_history_id = min_history_id
@@ -95,8 +99,10 @@ class EventManager:
         event = StatusEvent(status=status)
         self.incoming.put(event)
 
-    def add_conversation_event(self, role: Literal['user', 'assistant'], content: str):
+    def add_conversation_event(self, role: Literal['user', 'assistant'], content: str, processed_at: float = 0.0):
         event = ConversationEvent(kind=role, content=content)
+        if role == 'assistant':
+            self.short_term_memory.replied_before(processed_at)
         self.incoming.put(event)
 
     def add_user_speaking(self):
@@ -109,8 +115,9 @@ class EventManager:
         self.incoming.put(event)
         # log('debug', event)
 
-    def add_assistant_acting(self):
+    def add_assistant_acting(self, processed_at: float):
         event = ConversationEvent(kind='assistant_acting', content='')
+        self.short_term_memory.replied_before(processed_at)
         self.incoming.put(event)
         # log('debug', event)
 
@@ -123,13 +130,25 @@ class EventManager:
         event = ToolEvent(request=request, results=results, text=text)
         self.incoming.put(event)
 
+    def add_memory_event(self, model_name: str, last_processed_at: float, content: str, metadata: dict, embedding: list[float]):
+        event = MemoryEvent(content=content, metadata=metadata, embedding=embedding)
+        event.processed_at = last_processed_at
+        self.short_term_memory.memorize_before(event.processed_at)
+        self.long_term_memory.store(model_name, event.content, event.embedding, event.metadata)
+        self.incoming.put(event)
+        
+    def get_short_term_memory(self) -> list[Event]:
+        return self.short_term_memory.get_latest()
+
     def process(self):
         projected_states: dict[str, Any] | None = None
         while not self.incoming.empty():
             event = self.incoming.get()
+            
             timestamp = datetime.now(timezone.utc).timestamp()
             event.processed_at = timestamp
-            self.event_store.insert_event(event, timestamp, commit=False)
+            
+            self.short_term_memory.insert_event(event, event.processed_at, commit=False)
             projected_events = self.update_projections(event, save_later=True)
             
             self.pending.append(event)
@@ -146,13 +165,14 @@ class EventManager:
             for projected_event in projected_events:
                 self.trigger_sideeffects(projected_event, projected_states)
 
-        self.event_store.commit()
+        self.short_term_memory.commit()
         self.save_projections()
         self.processed += self.pending
         self.pending = []
         
         return projected_states
     
+
     def trigger_sideeffects(self, event: Event, projected_states: dict[str, Any]):
         for sideeffect in self.sideeffects:
             try:
@@ -188,7 +208,7 @@ class EventManager:
             if projected_events:
                 for e in projected_events:
                     self.add_projected_event(e, event)
-                    self.event_store.insert_event(event, datetime.now(timezone.utc).timestamp())
+                    self.short_term_memory.insert_event(event, datetime.now(timezone.utc).timestamp())
         except Exception as e:
             log('error', 'Error processing event', event, 'with projection', projection, e, traceback.format_exc())
             return []
@@ -295,12 +315,8 @@ class EventManager:
     def get_projection(self, projection_type: type) -> Projection[object] | None:
         return next((proj for proj in self.projections if isinstance(proj, projection_type)), None)
 
-    def save_incoming_history(self, incoming: list[Event]):
-        for event in incoming:
-            self.event_store.insert_event(event, event.processed_at)
-
     def load_history(self):
-        events: list[Event] = self.event_store.get_latest()
+        events: list[Event] = self.short_term_memory.get_latest()
         for event in reversed(events):
             self.processed.append(event)
         min_event_id = min([event.content.get('id') for event in self.processed if isinstance(event, GameEvent)], default='')

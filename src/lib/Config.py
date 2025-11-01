@@ -133,6 +133,7 @@ game_events = {
     'NightVisionOff': False,
     'NightVisionOn': False,
     'SupercruiseDestinationDrop': False,
+    'ReservoirReplenished': False,
 
     # SRV Updates
     'LaunchSRV': True,
@@ -297,6 +298,7 @@ game_events = {
     'FSSAllBodiesFound': False,
     'FSSBodySignals': False,
     'FSSDiscoveryScan': False,
+    'FirstPlayerSystemDiscovered':False,
     'FSSSignalDiscovered': False,
     'MaterialCollected': False,
     'MaterialDiscarded': False,
@@ -319,6 +321,17 @@ game_events = {
     'Scanned': False,
     'USSDrop': False,
 }
+
+
+class WeaponType(TypedDict):
+    name: str
+    fire_group: int
+    is_primary: bool  # primary or secondary fire
+    is_combat: bool  # combat or analysis mode
+    action: str  # 'fire', 'start', or 'stop'
+    duration: float  # Duration to hold fire button in seconds (for fire action only)
+    repetitions: int  # Number of additional repetitions (0 = single action)
+    target_submodule: str  # Target submodule (empty string for None)
 
 
 class Character(TypedDict, total=False):
@@ -353,6 +366,7 @@ class Character(TypedDict, total=False):
     react_to_danger_onfoot_var: bool
     react_to_danger_supercruise_var: bool
     idle_timeout_var: int
+    disabled_game_events: list[str]
 
 
 class Config(TypedDict):
@@ -366,7 +380,7 @@ class Config(TypedDict):
     llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom', 'local-ai-server']
     llm_model_name: str
     llm_temperature: float
-    vision_provider: Literal['openai', 'google-ai-studio', 'custom', 'none']
+    vision_provider: Literal['openai', 'google-ai-studio', 'custom', 'none', 'local-ai-server']
     vision_model_name: str
     vision_endpoint: str
     vision_api_key: str
@@ -381,6 +395,11 @@ class Config(TypedDict):
     tts_model_name: str
     tts_api_key: str
     tts_endpoint: str
+    # Embedding settings
+    embedding_provider: Literal['openai', 'google-ai-studio', 'custom', 'none', 'local-ai-server']
+    embedding_model_name: str
+    embedding_endpoint: str
+    embedding_api_key: str
     tools_var: bool
     vision_var: bool
     ptt_var: Literal['voice_activation', 'push_to_talk', 'push_to_mute', 'toggle']
@@ -390,8 +409,19 @@ class Config(TypedDict):
     web_search_actions_var: bool
     ui_actions_var: bool
     use_action_cache_var: bool
+    allowed_actions: list[str]
+    discovery_primary_var: bool
+    discovery_firegroup_var: int
+    weapon_types: list[WeaponType]
+    # Chat channel tab settings (whether channel has its own tab in-game)
+    chat_local_tabbed_var: bool
+    chat_wing_tabbed_var: bool
+    chat_system_tabbed_var: bool
+    chat_squadron_tabbed_var: bool
+    chat_direct_tabbed_var: bool
     edcopilot: bool
     edcopilot_dominant: bool
+    edcopilot_actions: bool
     ptt_key: str
     input_device_name: str
     output_device_name: str
@@ -530,12 +560,6 @@ def migrate(data: dict) -> dict:
         if 'commander_name' not in data or data['commander_name'] is None:
             data['commander_name'] = ""
 
-        if 'llm_provider' in data and data['llm_provider'] == 'google-ai-studio':
-            if 'llm_model_name' in data and data['llm_model_name'] == 'gemini-2.0-flash':
-                data['llm_model_name'] = 'gemini-2.5-flash-preview-05-20'
-            if 'llm_model_name' in data and data['llm_model_name'] == 'gemini-2.5-flash-preview-04-17':
-                data['llm_model_name'] = 'gemini-2.5-flash-preview-05-20'
-                
         if 'llm_provider' in data and data['llm_provider'] == 'openai':
             if 'llm_model_name' in data and data['llm_model_name'] == 'gpt-4o-mini':
                 data['llm_model_name'] = 'gpt-4.1-mini'
@@ -550,10 +574,6 @@ def migrate(data: dict) -> dict:
     if data['config_version'] == 1:
         data['config_version'] = 2
 
-        if 'llm_provider' in data and data['llm_provider'] == 'google-ai-studio':
-            if 'llm_model_name' in data and data['llm_model_name'] == 'gemini-2.5-flash-preview-04-17':
-                data['llm_model_name'] = 'gemini-2.5-flash-preview-05-20'
-
         if len(data.get('characters', [])) > 0:
             data['characters'][0]['game_events'] = game_events
 
@@ -563,9 +583,48 @@ def migrate(data: dict) -> dict:
         if isinstance(data.get('ptt_var'), bool):
             data['ptt_var'] = 'push_to_talk' if data.get('ptt_var') else 'voice_activation'
 
-        if 'llm_model_name' in data and data['llm_model_name'] == 'gemini-2.5-flash-preview-04-17':
-            data['llm_model_name'] = 'gemini-2.5-flash'
+    if data['config_version'] < 4:
+        data['config_version'] = 4
 
+        if 'llm_provider' in data and data['llm_provider'] == 'google-ai-studio':
+            if 'llm_model_name' in data and (
+                    data['llm_model_name'] == 'gemini-2.5-flash-preview-05-20'
+                or data['llm_model_name'] == 'gemini-2.5-flash-preview-04-17'
+                or data['llm_model_name'] == 'gemini-2.0-flash'
+            ):
+                data['llm_model_name'] = 'gemini-2.5-flash'
+
+    if data['config_version'] < 5:
+        data['config_version'] = 5
+
+        if len(data.get('characters', [])) > 0:
+            data['characters'][0]['character'] = "Keep your responses extremely brief and minimal. Maintain a professional and serious tone in all responses. Stick to factual information. You are COVAS:NEXT (Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal) - professional, efficient, and no-nonsense. Provides essential information without unnecessary elaboration. Focuses on factual data and operational status. 'Destination reached.' 'Fuel level acceptable.' Clean, precise communication. Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS:NEXT. Always respond in English regardless of the language spoken to you. Balance emotional understanding with factual presentation. Use everyday language that balances casual and professional tones. Project an air of expertise and certainty when providing information. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship."
+            data['characters'][0]['personality_character_inspiration'] = "COVAS:NEXT (Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal) - professional, efficient, and no-nonsense. Provides essential information without unnecessary elaboration. Focuses on factual data and operational status. 'Destination reached.' 'Fuel level acceptable.' Clean, precise communication."
+
+
+    if data['config_version'] < 6:
+        data['config_version'] = 6
+
+        if data.get("llm_provider"):
+            if data['llm_provider'] == 'openai':
+                data['embedding_provider'] = data['llm_provider']
+                data["embedding_endpoint"] = "https://api.openai.com/v1"
+                data["embedding_model_name"] = "text-embedding-3-small"
+                data["embedding_api_key"] = data["llm_api_key"]
+            elif data['llm_provider'] == 'google-ai-studio':
+                data['embedding_provider'] = data['llm_provider']
+                data["embedding_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
+                data["embedding_model_name"] = "gemini-embedding-001"
+                data["embedding_api_key"] = data["llm_api_key"]
+            elif data['llm_provider'] == 'local-ai-server':
+                data['embedding_provider'] = data['llm_provider']
+                data["embedding_endpoint"] = "http://127.0.0.1:8080"
+                data["embedding_model_name"] = "text-embedding-3-small"
+                data["embedding_api_key"] = ''
+            else:
+                data['embedding_provider'] = 'none'
+        else:
+            data['embedding_provider'] = 'none'
 
     return data
 
@@ -630,7 +689,7 @@ def merge_config_data(defaults: dict, user: dict):
 def getDefaultCharacter(config: Config) -> Character:
     return Character({
         "name": 'Default',
-        "character": 'Provide concise answers that address the main points. Include humor and light-hearted elements in your responses when appropriate. Your responses should be that of a neurally enhanced ship computer. Your name is COVAS. Always respond in English regardless of the language spoken to you. Show some consideration for emotions while maintaining focus on information. Maintain a friendly yet respectful conversational style. Speak with confidence and conviction in your responses. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.',
+        "character": "Keep your responses extremely brief and minimal. Maintain a professional and serious tone in all responses. Stick to factual information. You are COVAS:NEXT (Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal) - professional, efficient, and no-nonsense. Provides essential information without unnecessary elaboration. Focuses on factual data and operational status. 'Destination reached.' 'Fuel level acceptable.' Clean, precise communication. Adopt their speech patterns, mannerisms, and viewpoints. Your name is COVAS:NEXT. Always respond in English regardless of the language spoken to you. Balance emotional understanding with factual presentation. Use everyday language that balances casual and professional tones. Project an air of expertise and certainty when providing information. Adhere strictly to rules, regulations, and established protocols. Prioritize helping others and promoting positive outcomes in all situations. I am {commander_name}, pilot of this ship.",
         "personality_preset": 'default',
         "personality_verbosity": 0,
         "personality_vulgarity": 0,
@@ -640,7 +699,7 @@ def getDefaultCharacter(config: Config) -> Character:
         "personality_ethical_alignment": 'lawful',
         "personality_moral_alignment": 'good',
         "personality_tone": 'serious',
-        "personality_character_inspiration": 'COVAS:NEXT (short for Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal)',
+        "personality_character_inspiration": "COVAS:NEXT (Cockpit Voice Assistant: Neurally Enhanced eXploration Terminal) - professional, efficient, and no-nonsense. Provides essential information without unnecessary elaboration. Focuses on factual data and operational status. 'Destination reached.' 'Fuel level acceptable.' Clean, precise communication.",
         "personality_language": 'English',
         "personality_knowledge_pop_culture": False,
         "personality_knowledge_scifi": False,
@@ -659,7 +718,8 @@ def getDefaultCharacter(config: Config) -> Character:
         "react_to_danger_mining_var": False,
         "react_to_danger_onfoot_var": False,
         "react_to_danger_supercruise_var": False,
-        "idle_timeout_var": 300  # 5 minutes
+        "idle_timeout_var": 300,  # 5 minutes
+        "disabled_game_events": []
     })
 
 def load_config() -> Config:
@@ -679,9 +739,20 @@ def load_config() -> Config:
         'web_search_actions_var': True,
         'ui_actions_var': True,
         'use_action_cache_var': True,
+        'allowed_actions': [],
+        'discovery_primary_var': True,
+        'discovery_firegroup_var': 1,
+        'weapon_types': [],
+        # Chat channel tab defaults
+        'chat_local_tabbed_var': False,
+        'chat_wing_tabbed_var': False,
+        'chat_system_tabbed_var': True,
+        'chat_squadron_tabbed_var': False,
+        'chat_direct_tabbed_var': False,
         'cn_autostart': False,
         'edcopilot': True,
         'edcopilot_dominant': False,
+        'edcopilot_actions': False,
         'input_device_name': get_default_input_device_name(),
         'output_device_name': get_default_output_device_name(),
         'llm_provider': "openai",
@@ -705,6 +776,11 @@ def load_config() -> Config:
         'tts_model_name': "edge-tts",
         'tts_endpoint': "",
         'tts_api_key': "",
+        # Embedding defaults
+        'embedding_provider': 'openai',
+        'embedding_model_name': 'text-embedding-3-small',
+        'embedding_endpoint': 'https://api.openai.com/v1',
+        'embedding_api_key': "",
         "ed_journal_path": "",
         "ed_appdata_path": "",
         "qol_autobrake": False,  # Quality of life: Auto brake when approaching stations
@@ -1097,8 +1173,10 @@ def cast_int_float(current: dict, data: dict) -> dict:
             # Recursively cast dicts
             result[key] = cast_int_float(current[key], data[key])
         elif isinstance(current.get(key), list) and isinstance(data.get(key), list):
-            for i in range(len(current[key])):
-                if isinstance(current[key][i], dict) and isinstance(data[key][i], dict):
+            # Iterate over the data list length (not current), to handle deletions
+            for i in range(len(data[key])):
+                # Only cast if both current and data have dict at this index
+                if i < len(current[key]) and isinstance(current[key][i], dict) and isinstance(data[key][i], dict):
                     result[key][i] = cast_int_float(current[key][i], data[key][i])
     return result
 
@@ -1109,7 +1187,7 @@ def update_config(config: Config, data: dict) -> Config:
     if data.get("llm_provider"):
         if data["llm_provider"] == "openai":
             data["llm_endpoint"] = "https://api.openai.com/v1"
-            data["llm_model_name"] = "gpt-4o-mini"
+            data["llm_model_name"] = "gpt-4.1-mini"
             data["llm_api_key"] = ""
             data["tools_var"] = True
 
@@ -1121,26 +1199,26 @@ def update_config(config: Config, data: dict) -> Config:
 
         elif data["llm_provider"] == "google-ai-studio":
             data["llm_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
-            data["llm_model_name"] = "gemini-2.5-flash-preview-05-20"
+            data["llm_model_name"] = "gemini-2.5-flash"
             data["llm_api_key"] = ""
             data["tools_var"] = True
 
         elif data["llm_provider"] == "local-ai-server":
-            data["llm_endpoint"] = "http://localhost:8080"
-            data["llm_model_name"] = "gpt-4o-mini"
+            data["llm_endpoint"] = "http://127.0.0.1:8080"
+            data["llm_model_name"] = "gpt-4.1-mini"
             data["llm_api_key"] = ""
             data["tools_var"] = True
 
         elif data["llm_provider"] == "custom":
             data["llm_endpoint"] = "https://api.openai.com/v1"
-            data["llm_model_name"] = "gpt-4o-mini"
+            data["llm_model_name"] = "gpt-4.1-mini"
             data["llm_api_key"] = ""
             data["tools_var"] = False
 
     if data.get("vision_provider"):
         if data["vision_provider"] == "openai":
             data["vision_endpoint"] = "https://api.openai.com/v1"
-            data["vision_model_name"] = "gpt-4o-mini"
+            data["vision_model_name"] = "gpt-4.1-mini"
             data["vision_api_key"] = ""
             data["vision_var"] = True
 
@@ -1153,6 +1231,13 @@ def update_config(config: Config, data: dict) -> Config:
         elif data["vision_provider"] == "custom":
             data["vision_endpoint"] = "https://api.openai.com/v1"
             data["vision_model_name"] = "gpt-4o-mini"
+            data["vision_api_key"] = ""
+            data["vision_var"] = True
+
+        elif data["vision_provider"] == "local-ai-server":
+            data["vision_endpoint"] = "http://127.0.0.1:8080"
+            if not data.get("vision_model_name"):
+                data["vision_model_name"] = "gpt-4o-mini"
             data["vision_api_key"] = ""
             data["vision_var"] = True
 
@@ -1169,7 +1254,7 @@ def update_config(config: Config, data: dict) -> Config:
             data["stt_api_key"] = ""
 
         if data["stt_provider"] == "local-ai-server":
-            data["stt_endpoint"] = "http://localhost:8080"
+            data["stt_endpoint"] = "http://127.0.0.1:8080"
             data["stt_model_name"] = "whisper-1"
             data["stt_api_key"] = ""
 
@@ -1202,7 +1287,7 @@ def update_config(config: Config, data: dict) -> Config:
             data["tts_api_key"] = ""
 
         if data["tts_provider"] == "local-ai-server":
-            data["tts_endpoint"] = "http://localhost:8080"
+            data["tts_endpoint"] = "http://127.0.0.1:8080"
             data["tts_model_name"] = "tts-1"
             for character in config["characters"]:
                 character["tts_voice"] = "nova"
@@ -1228,6 +1313,37 @@ def update_config(config: Config, data: dict) -> Config:
             for character in config["characters"]:
                 character["tts_voice"] = ""
             data["tts_api_key"] = ""
+
+    # Embedding provider
+    if data.get("embedding_provider"):
+        if data["embedding_provider"] == "openai":
+            data["embedding_endpoint"] = "https://api.openai.com/v1"
+            data["embedding_model_name"] = "text-embedding-3-small"
+            data["embedding_api_key"] = ""
+
+        elif data["embedding_provider"] == "google-ai-studio":
+            data["embedding_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
+            data["embedding_model_name"] = "gemini-embedding-001"
+            data["embedding_api_key"] = ""
+
+        elif data["embedding_provider"] == "custom":
+            # Leave endpoint/model/api_key as provided or default to OpenAI-compatible
+            if not data.get("embedding_endpoint"):
+                data["embedding_endpoint"] = "https://api.openai.com/v1"
+            if not data.get("embedding_model_name"):
+                data["embedding_model_name"] = "text-embedding-3-small"
+            if not data.get("embedding_api_key"):
+                data["embedding_api_key"] = ""
+
+        elif data["embedding_provider"] == "local-ai-server":
+            data["embedding_endpoint"] = "http://127.0.0.1:8080"
+            data["embedding_model_name"] = "text-embedding-3-small"
+            data["embedding_api_key"] = ""
+
+        elif data["embedding_provider"] == "none":
+            data["embedding_endpoint"] = ""
+            data["embedding_model_name"] = ""
+            data["embedding_api_key"] = ""
 
     # Now merge and save as before
     new_config = cast(Config, {**config, **data})

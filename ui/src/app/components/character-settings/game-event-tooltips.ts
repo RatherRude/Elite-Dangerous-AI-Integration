@@ -117,10 +117,10 @@ export const GameEventTooltips: Record<string, string> = {
   "LowFuelWarningCleared": "COVAS:NEXT will react when a low fuel warning is cleared.",
   "LowFuelWarning": "COVAS:NEXT will react when your fuel level is critically low.",
   "HighGravityWarning": "COVAS:NEXT will react when you enter a high gravity environment (above 2G).",
-  "NoScoopableStars": "COVAS:NEXT will react when no scoopable stars are within your jump range.",
   "NightVisionOff": "COVAS:NEXT will react when night vision is turned off.",
   "NightVisionOn": "COVAS:NEXT will react when night vision is activated.",
   "SupercruiseDestinationDrop": "COVAS:NEXT will react when you drop out of supercruise at a targeted destination, logging threat level and type.",
+  "ReservoirReplenished": "COVAS:NEXT will react when your ship's fuel is refilled from reserves.",
 
   // SRV Updates
   "LaunchSRV": "COVAS:NEXT will react when you deploy an SRV onto a planet's surface. Telling you about the SRV type and loadout being launched.",
@@ -290,6 +290,7 @@ export const GameEventTooltips: Record<string, string> = {
   "FSSAllBodiesFound": "COVAS:NEXT will react when you’ve discovered every stellar body in a system using the FSS.",
   "FSSBodySignals": "COVAS:NEXT will react when you identify signals on a planet or moon using the FSS.",
   "FSSDiscoveryScan": "COVAS:NEXT will react when you perform a full system scan using the FSS scanner.",
+  "FirstPlayerSystemDiscovered":"COVAS:NEXT will react if you’re the first player to discover a new system.",
   "FSSSignalDiscovered": "COVAS:NEXT will react when you zoom and discover a specific signal source via the FSS.",
   "MaterialCollected": "COVAS:NEXT will react when you collect a material, either with your ship or SRV.",
   "MaterialDiscarded": "COVAS:NEXT will react when you discard a material from your inventory.",
@@ -310,6 +311,8 @@ export const GameEventTooltips: Record<string, string> = {
   "DatalinkVoucher": "COVAS:NEXT will react when a data link scan yields a voucher for credits.",
   "DataScanned": "COVAS:NEXT will react when you scan data points like listening posts or signal relays.",
   "Scanned": "COVAS:NEXT will react when your ship is scanned to completion by another ship or faction.",
-  "USSDrop": "COVAS:NEXT will react when you drop into a USS and log its type and threat level."
+  "USSDrop": "COVAS:NEXT will react when you drop into a USS and log its type and threat level.",
+  "NoScoopableStars": "COVAS:NEXT will react when no scoopable stars are within your jump range.",
+
 
 };

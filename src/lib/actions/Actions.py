@@ -18,11 +18,20 @@ from ..EventManager import EventManager
 from ..ActionManager import ActionManager
 
 keys: EDKeys = None
+discovery_primary_var: bool = True
+discovery_firegroup_var: int = 1
+weapon_types: list = []
 vision_client: openai.OpenAI | None = None
 llm_client: openai.OpenAI = None
 llm_model_name: str = None
 vision_model_name: str | None = None
 event_manager: EventManager = None
+
+chat_local_tabbed: bool = False
+chat_wing_tabbed: bool = False
+chat_system_tabbed: bool = True
+chat_squadron_tabbed: bool = False
+chat_direct_tabbed: bool = False
 
 # Checking status projection to exit game actions early if not applicable
 def checkStatus(projected_states: dict[str, dict], blocked_status_dict: dict[str, bool]):
@@ -48,20 +57,78 @@ def fire_weapons(args, projected_states):
     duration = args.get('duration', None)  # Duration to hold fire button
     repetitions = args.get('repetitions', 0)  # 0 = one action, 1+ = repeat
 
-    # Determine key mapping
-    if weapon_type == 'discovery_scanner':
-        change_hud_mode({'hud mode': 'analysis'}, projected_states)
-        cycle_fire_group({'fire_group': 0}, projected_states)
-        keys.send('PrimaryFire', hold=6)
-        return 'Discovery scan has been performed.'
+    # Check if this is a custom weapon type
+    custom_weapon = None
+    for weapon in weapon_types:
+        weapon_key = weapon.get('name', '').lower().replace(' ', '_')
+        if weapon_key == weapon_type:
+            custom_weapon = weapon
+            break
 
-    change_hud_mode({'hud mode': 'combat'}, projected_states)
-    if weapon_type == 'secondary':
-        key_name = 'SecondaryFire'
-        weapon_desc = 'secondary weapons'
-    else:  # default to primary
-        key_name = 'PrimaryFire'
-        weapon_desc = 'primary weapons'
+    # Handle custom weapon types
+    if custom_weapon:
+        # Use weapon's configured settings
+        weapon_name = custom_weapon.get('name', 'custom weapon')
+        fire_group = custom_weapon.get('fire_group', 1)
+        is_primary = custom_weapon.get('is_primary', True)
+        is_combat = custom_weapon.get('is_combat', True)
+        target_submodule = custom_weapon.get('target_submodule', '')
+
+        # Target submodule if specified
+        if target_submodule != '':
+            try:
+                target_subsystem({'subsystem': target_submodule}, projected_states)
+            except Exception as e:
+                log('warn', f'Failed to target submodule {target_submodule}: {str(e)}')
+
+        # Use weapon's default action settings if not overridden in args
+        if 'action' not in args:
+            action = custom_weapon.get('action', 'fire').lower()
+        if duration is None and custom_weapon.get('duration', 0) > 0:
+            duration = custom_weapon.get('duration')
+        if repetitions == 0 and custom_weapon.get('repetitions', 0) > 0:
+            repetitions = custom_weapon.get('repetitions')
+        
+        # Set HUD mode
+        change_hud_mode({'hud mode': 'combat' if is_combat else 'analysis'}, projected_states)
+        
+        # Set fire group
+        try:
+            fg_index = max(0, min(7, int(fire_group) - 1))
+        except Exception:
+            fg_index = 0
+        cycle_fire_group({'fire_group': fg_index}, projected_states)
+
+        
+        # Determine key
+        key_name = 'PrimaryFire' if is_primary else 'SecondaryFire'
+        weapon_desc = weapon_name
+        
+    # Handle discovery scanner
+    elif weapon_type == 'discovery_scanner':
+        change_hud_mode({'hud mode': 'analysis'}, projected_states)
+        # Allow per-call overrides, fallback to configured globals
+        fg_value = args.get('discoveryFiregroup', discovery_firegroup_var)
+        primary_flag = args.get('discoveryPrimary', discovery_primary_var)
+        # Set desired firegroup (1..8 => index 0..7)
+        try:
+            fg_index = max(0, min(7, int(fg_value) - 1))
+        except Exception:
+            fg_index = 0
+        cycle_fire_group({'fire_group': fg_index}, projected_states)
+        # Use primary or secondary based on flag
+        keys.send('PrimaryFire' if bool(primary_flag) else 'SecondaryFire', hold=6)
+        return 'Discovery scan has been performed.'
+    
+    # Handle standard primary/secondary
+    else:
+        change_hud_mode({'hud mode': 'combat'}, projected_states)
+        if weapon_type == 'secondary':
+            key_name = 'SecondaryFire'
+            weapon_desc = 'secondary weapons'
+        else:  # default to primary
+            key_name = 'PrimaryFire'
+            weapon_desc = 'primary weapons'
 
     # Handle different actions
     if action == 'fire':
@@ -415,12 +482,17 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
     if 'system_name' in args:
 
         # Check if UI keys have a collision with CamTranslate
-        # collisions = keys.get_collisions('UI_Up')
-        #
-        # if 'CamTranslateForward' in collisions:
-        #     raise Exception(
-        #         "Unable to enter system name due to a collision between the 'UI Panel Up' and 'Galaxy Cam Translate Forward' keys. "
-        #         + "Please change the keybinding for 'Galaxy Cam Translate' to Shift + WASD under General Controls > Galaxy Map.")
+        collisions = keys.get_collisions('UI_Up')
+        if 'CamTranslateForward' in collisions:
+            raise Exception(
+                "Unable to enter system name due to a collision between the 'UI Panel Up' and 'Galaxy Cam Translate Forward' keys. "
+                + "Please change the keybinding for 'Galaxy Cam Translate' to Shift + WASD under General Controls > Galaxy Map.")
+
+        collisions = keys.get_collisions('UI_Right')
+        if 'CamTranslateRight' in collisions:
+            raise Exception(
+                "Unable to enter system name due to a collision between the 'UI Panel Right' and 'Galaxy Cam Translate Right' keys. "
+                + "Please change the keybinding for 'Galaxy Cam Translate' to Shift + WASD under General Controls > Galaxy Map.")
 
         keys.send('CamZoomIn')
         sleep(0.05)
@@ -650,9 +722,12 @@ def request_docking(args, projected_states):
     try:
         old_timestamp = projected_states.get('DockingEvents').get('Timestamp', "1970-01-01T00:00:01Z")
         # Wait for a docking event with a timestamp newer than when we started
-        event_manager.wait_for_condition('DockingEvents',
-                                         lambda s: ((s.get('LastEventType') in ['DockingGranted', 'DockingRequested', 'DockingCanceled', 'DockingDenied', 'DockingTimeout'])
+        docking_events = event_manager.wait_for_condition('DockingEvents',
+                                         lambda s: ((s.get('LastEventType') in ['DockingGranted', 'DockingCanceled', 'DockingDenied', 'DockingTimeout'])
                                                     and (s.get('Timestamp', "1970-01-01T00:00:02Z") != old_timestamp)), 10)
+        if docking_events.get('LastEventType') == 'DockingGranted' and projected_states.get('ShipInfo').get('hasDockingComputer', False):
+            keys.send('SetSpeedZero')
+            sleep(0.2)
         msg = ""
     except:
         msg = "Failed to request docking via menu"
@@ -1174,20 +1249,33 @@ def send_message(obj, projected_states):
 
             if not obj.get("channel") or obj.get("channel").lower() == "local":
                 typewrite("/l ", interval=0.02)
+                if chat_local_tabbed:
+                    sleep(0.25)
+                    keys.send('UI_Select')
                 return_message += " to local chat"
             elif obj.get("channel").lower() == "wing":
                 typewrite("/w ", interval=0.02)
+                if chat_wing_tabbed:
+                    sleep(0.25)
+                    keys.send('UI_Select')
                 return_message += " to wing chat"
             elif obj.get("channel").lower() == "system":
                 typewrite("/sy ", interval=0.02)
-                keys.send('UI_Down', repeat=2)
-                keys.send('UI_Select')
-                return_message += " to squadron chat"
+                if chat_system_tabbed:
+                    sleep(0.25)
+                    keys.send('UI_Select')
+                return_message += " to system chat"
             elif obj.get("channel").lower() == "squadron":
                 typewrite("/s ", interval=0.02)
+                if chat_squadron_tabbed:
+                    sleep(0.25)
+                    keys.send('UI_Select')
                 return_message += " to squadron chat"
             elif obj.get("channel").lower() == "commander":
                 typewrite(f"/d {obj.get('recipient')} ", interval=0.02)
+                if chat_direct_tabbed:
+                    sleep(0.25)
+                    keys.send('UI_Select')
                 return_message += f" to {obj.get('recipient')}"
             else:
                 log('debug', f'invalid channel {obj.get("channel")}')
@@ -1265,16 +1353,43 @@ def target_subsystem(args, projected_states):
 
 def register_actions(actionManager: ActionManager, eventManager: EventManager, llmClient: openai.OpenAI,
                      llmModelName: str, visionClient: openai.OpenAI | None, visionModelName: str | None,
-                     edKeys: EDKeys):
-    global event_manager, vision_client, llm_client, llm_model_name, vision_model_name, keys
+                     embeddingClient: openai.OpenAI | None, embeddingModelName: str | None,
+                     edKeys: EDKeys, discovery_primary_var_flag: bool = True, discovery_firegroup_var_flag: int = 1,
+                     chat_local_tabbed_flag: bool = False,
+                     chat_wing_tabbed_flag: bool = False,
+                     chat_system_tabbed_flag: bool = True,
+                     chat_squadron_tabbed_flag: bool = False,
+                     chat_direct_tabbed_flag: bool = False,
+                     weapon_types_list: list = []):
+    global event_manager, vision_client, llm_client, llm_model_name, vision_model_name, keys, weapon_types
     keys = edKeys
     event_manager = eventManager
     llm_client = llmClient
     llm_model_name = llmModelName
     vision_client = visionClient
     vision_model_name = visionModelName
+    weapon_types = weapon_types_list
+    global discovery_primary_var, discovery_firegroup_var
+    discovery_primary_var = discovery_primary_var_flag
+    discovery_firegroup_var = discovery_firegroup_var_flag
+    # Chat channel tab settings
+    global chat_local_tabbed, chat_wing_tabbed, chat_system_tabbed, chat_squadron_tabbed, chat_direct_tabbed
+    chat_local_tabbed = chat_local_tabbed_flag
+    chat_wing_tabbed = chat_wing_tabbed_flag
+    chat_system_tabbed = chat_system_tabbed_flag
+    chat_squadron_tabbed = chat_squadron_tabbed_flag
+    chat_direct_tabbed = chat_direct_tabbed_flag
 
     setGameWindowActive()
+
+    # Build weapon type enum from custom weapons plus defaults
+    weapon_type_enum = ["primary", "secondary", "discovery_scanner"]
+    for weapon in weapon_types:
+        if weapon.get('name'):
+            # Convert name to lowercase and replace spaces with underscores for enum
+            weapon_key = weapon['name'].lower().replace(' ', '_')
+            if weapon_key and weapon_key not in weapon_type_enum:
+                weapon_type_enum.append(weapon_key)
 
     # Register actions - General Ship Actions
     actionManager.registerAction('fireWeapons', "Fire weapons with simple controls: single shot, start continuous, or stop", {
@@ -1283,11 +1398,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             "weaponType": {
                 "type": "string",
                 "description": "Type of weapons to fire",
-                "enum": [
-                    "primary",
-                    "secondary",
-                    "discovery_scanner"
-                ],
+                "enum": weapon_type_enum,
                 "default": "primary"
             },
             "action": {
@@ -1315,7 +1426,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             }
         },
         "required": ["weaponType", "action"]
-    }, fire_weapons, 'ship', cache_prefill={
+    }, fire_weapons, 'ship', permission='fireWeapons', cache_prefill={
         "fire primary weapon": {"weaponType": "primary", "action":"fire"},
         "fire": {"weaponType": "primary", "action":"fire"},
         "fire secondary": {"weaponType": "secondary", "action":"fire"},
@@ -1350,7 +1461,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             }
         },
         "required": ["speed"]
-    }, set_speed, 'ship', cache_prefill={
+    }, set_speed, 'ship', permission='setSpeed', cache_prefill={
         "full stop": {"speed": "Zero"},
         "half speed": {"speed": "50"},
         "full speed": {"speed": "100"},
@@ -1360,7 +1471,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('deployHeatSink', "Deploy heat sink", {
         "type": "object",
         "properties": {}
-    }, deploy_heat_sink, 'ship', cache_prefill={
+    }, deploy_heat_sink, 'ship', permission='deployHeatSink', cache_prefill={
         "heat sink": {},
         "deploy heat sink": {},
         "use heat sink": {},
@@ -1373,7 +1484,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('deployHardpointToggle', "Deploy or retract hardpoints. Do not call this action when asked to switch hud mode", {
         "type": "object",
         "properties": {}
-    }, deploy_hardpoint_toggle, 'ship', cache_prefill={
+    }, deploy_hardpoint_toggle, 'ship', permission='deployHardpointToggle', cache_prefill={
         "hardpoints": {},
         "deploy hardpoints": {},
         "retract hardpoints": {},
@@ -1414,7 +1525,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                                          }
                                      },
                                      "required": ["power_category"]
-                                 }, manage_power_distribution, 'ship', cache_prefill={
+                                 }, manage_power_distribution, 'ship', permission='managePowerDistribution', cache_prefill={
         "balance power": {"power_category": ["Engines", "Weapons", "Systems"], "balance_power": True},
         "reset power": {"power_category": ["Engines", "Weapons", "Systems"], "balance_power": True},
         "four pips to engines": {"power_category": ["Engines"], "pips": [4]},
@@ -1440,7 +1551,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "description": "Start navigation route to the system",
             }
         },
-    }, galaxy_map_open, 'ship', cache_prefill={
+    }, galaxy_map_open, 'ship', permission='galaxyMapOpen', cache_prefill={
         "galaxy map": {},
         "open galaxy map": {},
         "galmap": {},
@@ -1453,7 +1564,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('galaxyMapClose', "Close galaxy map", {
         "type": "object",
         "properties": {},
-    }, galaxy_map_close, 'ship', cache_prefill={
+    }, galaxy_map_close, 'ship', permission='galaxyMapClose', cache_prefill={
         "close galaxy map": {},
     })
 
@@ -1466,7 +1577,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "description": "Desired state for the system map: open or close.",
             },
         },
-    }, system_map_open_or_close, 'ship', cache_prefill={
+    }, system_map_open_or_close, 'ship', permission='systemMapOpenOrClose', cache_prefill={
         "system map": {"desired_state": "open"},
         "open system map": {"desired_state": "open"},
         "close system map": {"desired_state": "close"},
@@ -1486,7 +1597,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "default": "next"
             }
         }
-    }, target_ship, 'ship', cache_prefill={
+    }, target_ship, 'ship', permission='targetShip', cache_prefill={
         "next target": {"mode": "next"},
         "previous target": {"mode": "previous"},
         "highest threat": {"mode": "highest_threat"},
@@ -1542,7 +1653,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('toggleWingNavLock', "Toggle wing nav lock", {
         "type": "object",
         "properties": {}
-    }, toggle_wing_nav_lock, 'ship', cache_prefill={
+    }, toggle_wing_nav_lock, 'ship', permission='toggleWingNavLock', cache_prefill={
         "wing nav lock": {},
         "disable wing nav lock": {},
         "disengage wing nav lock": {},
@@ -1577,6 +1688,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         },
         cycle_fire_group,
         'ship',
+        permission='cycle_fire_group',
         cache_prefill={
             "next fire group": {"direction":"next"},
             "previous fire group": {"direction":"previous"},
@@ -1595,7 +1707,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             }
         },
         "required": ["hud mode"],
-    }, change_hud_mode, 'mainship', cache_prefill={
+    }, change_hud_mode, 'mainship', permission='Change_ship_HUD_mode', cache_prefill={
         "combat mode": {"hud mode": "combat"},
         "analysis mode": {"hud mode": "analysis"},
         "switch to combat": {"hud mode": "combat"},
@@ -1608,7 +1720,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('shipSpotLightToggle', "Toggle ship spotlight", {
         "type": "object",
         "properties": {}
-    }, ship_spot_light_toggle, 'ship', cache_prefill={
+    }, ship_spot_light_toggle, 'ship', permission='shipSpotLightToggle', cache_prefill={
         "ship light": {},
         "lights": {},
         "lights on": {},
@@ -1621,7 +1733,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('fireChaffLauncher', "Fire chaff launcher", {
         "type": "object",
         "properties": {}
-    }, fire_chaff_launcher, 'ship', cache_prefill={
+    }, fire_chaff_launcher, 'ship', permission='fireChaffLauncher', cache_prefill={
         "chaff": {},
         "fire chaff": {},
         "launch chaff": {},
@@ -1633,7 +1745,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('nightVisionToggle', "Toggle night vision", {
         "type": "object",
         "properties": {}
-    }, night_vision_toggle, 'ship', cache_prefill={
+    }, night_vision_toggle, 'ship', permission='nightVisionToggle', cache_prefill={
         "nightvision": {},
         "night vision": {},
         "toggle nightvision": {},
@@ -1662,7 +1774,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             },
         },
         "required": ["subsystem"],
-    }, target_subsystem, 'ship', cache_prefill={
+    }, target_subsystem, 'ship', permission='targetSubmodule', cache_prefill={
         "target drive": {"subsystem":"Drive"},
         "target drives": {"subsystem":"Drive"},
         "target power distributor": {"subsystem":"Power Distributor"},
@@ -1690,7 +1802,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('chargeECM', "Charge ECM", {
         "type": "object",
         "properties": {}
-    }, charge_ecm, 'ship', cache_prefill={
+    }, charge_ecm, 'ship', permission='chargeECM', cache_prefill={
         "ecm": {},
         "charge ecm": {},
         "electronic countermeasures": {},
@@ -1722,7 +1834,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 }
             }
         }
-    }, npc_order, 'ship', cache_prefill={
+    }, npc_order, 'ship', permission='npcOrder', cache_prefill={
         "launch fighter": {"orders": ["LaunchFighter1"]},
         "deploy fighter": {"orders": ["LaunchFighter1"]},
         "recall fighter": {"orders": ["ReturnToShip"]},
@@ -1747,7 +1859,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                                              "enum": ["next_system", "supercruise", "auto"]
                                          }
                                      }
-                                 }, fsd_jump, 'mainship', cache_prefill={
+                                 }, fsd_jump, 'mainship', permission='FsdJump', cache_prefill={
         "jump": {"jump_type": "auto"},
         "engage fsd": {"jump_type": "auto"},
         "frame shift drive": {"jump_type": "auto"},
@@ -1764,7 +1876,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                                  {
                                      "type": "object",
                                      "properties": {}
-                                 }, next_system_in_route, 'mainship', cache_prefill={
+                                 }, next_system_in_route, 'mainship', permission='target_next_system_in_route', cache_prefill={
         "next system": {},
         "target next system": {},
         "next destination": {},
@@ -1776,7 +1888,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('toggleCargoScoop', "Toggles cargo scoop", {
         "type": "object",
         "properties": {}
-    }, toggle_cargo_scoop, 'mainship', cache_prefill={
+    }, toggle_cargo_scoop, 'mainship', permission='toggleCargoScoop', cache_prefill={
         "cargo scoop": {},
         "scoop": {},
         "deploy scoop": {},
@@ -1789,7 +1901,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('ejectAllCargo', "Eject all cargo", {
         "type": "object",
         "properties": {}
-    }, eject_all_cargo, 'mainship', cache_prefill={
+    }, eject_all_cargo, 'mainship', permission='ejectAllCargo', cache_prefill={
         "eject cargo": {},
         "dump cargo": {},
         "jettison cargo": {},
@@ -1801,7 +1913,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('landingGearToggle', "Toggle landing gear", {
         "type": "object",
         "properties": {}
-    }, landing_gear_toggle, 'mainship', cache_prefill={
+    }, landing_gear_toggle, 'mainship', permission='landingGearToggle', cache_prefill={
         "landing gear": {},
         "gear": {},
         "deploy gear": {},
@@ -1815,7 +1927,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('useShieldCell', "Use shield cell", {
         "type": "object",
         "properties": {}
-    }, use_shield_cell, 'mainship', cache_prefill={
+    }, use_shield_cell, 'mainship', permission='useShieldCell', cache_prefill={
         "shield cell": {},
         "use shield cell": {},
         "scb": {},
@@ -1828,7 +1940,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('requestDocking', "Request docking.", {
         "type": "object",
         "properties": {}
-    }, request_docking, 'mainship', cache_prefill={
+    }, request_docking, 'mainship', permission='requestDocking', cache_prefill={
         "request docking": {},
         "dock": {},
         "docking request": {},
@@ -1840,7 +1952,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('undockShip', "", {
         "type": "object",
         "properties": {}
-    }, undock, 'mainship', cache_prefill={
+    }, undock, 'mainship', permission='undockShip', cache_prefill={
         "undock": {},
         "launch": {},
         "depart": {},
@@ -1853,7 +1965,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('fighterRequestDock', "Request docking for Ship Launched Fighter", {
         "type": "object",
         "properties": {}
-    }, fighter_request_dock, 'fighter', cache_prefill={
+    }, fighter_request_dock, 'fighter', permission='fighterRequestDock', cache_prefill={
         "request docking": {},
         "dock": {},
         "docking request": {},
@@ -1866,7 +1978,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('toggleDriveAssist', "Toggle drive assist", {
         "type": "object",
         "properties": {}
-    }, toggle_drive_assist, 'buggy', cache_prefill={
+    }, toggle_drive_assist, 'buggy', permission='toggleDriveAssist', cache_prefill={
         "drive assist": {},
         "toggle drive assist": {},
         "assistance": {},
@@ -1915,7 +2027,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             "weaponType",
             "action"
         ]
-    }, fire_weapons_buggy, 'buggy', cache_prefill={
+    }, fire_weapons_buggy, 'buggy', permission='fireWeaponsBuggy', cache_prefill={
         "fire srv weapons": {"weaponType": "primary", "action": "fire"},
         "shoot": {"weaponType": "primary", "action": "fire"},
         "fire plasma": {"weaponType": "primary", "action": "fire"},
@@ -1927,7 +2039,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('autoBreak', "Toggle auto-brake", {
         "type": "object",
         "properties": {}
-    }, auto_break_buggy, 'buggy', cache_prefill={
+    }, auto_break_buggy, 'buggy', permission='autoBreak', cache_prefill={
         "auto brake": {},
         "toggle brake": {},
         "automatic braking": {},
@@ -1946,7 +2058,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "default": "toggle"
             }
         }
-    }, headlights_buggy, 'buggy', cache_prefill={
+    }, headlights_buggy, 'buggy', permission='headlights', cache_prefill={
         "lights": {"desired_state": "toggle"},
         "headlights": {"desired_state": "toggle"},
         "toggle lights": {"desired_state": "toggle"},
@@ -1960,7 +2072,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('nightVisionToggleBuggy', "Toggle night vision", {
         "type": "object",
         "properties": {}
-    }, night_vision_toggle, 'buggy', cache_prefill={
+    }, night_vision_toggle, 'buggy', permission='nightVisionToggleBuggy', cache_prefill={
         "nightvision": {},
         "night vision": {},
         "toggle nightvision": {},
@@ -1972,7 +2084,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('toggleTurret', "Toggle turret mode", {
         "type": "object",
         "properties": {}
-    }, toggle_buggy_turret, 'buggy', cache_prefill={
+    }, toggle_buggy_turret, 'buggy', permission='toggleTurret', cache_prefill={
         "turret": {},
         "toggle turret": {},
         "turret mode": {},
@@ -1984,7 +2096,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('selectTargetBuggy', "Select target", {
         "type": "object",
         "properties": {}
-    }, select_target_buggy, 'buggy', cache_prefill={
+    }, select_target_buggy, 'buggy', permission='selectTargetBuggy', cache_prefill={
         "target": {},
         "select target": {},
         "lock target": {},
@@ -2023,7 +2135,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                                          }
                                      },
                                      "required": ["power_category"]
-                                 }, manage_power_distribution_buggy, 'buggy', cache_prefill={
+                                 }, manage_power_distribution_buggy, 'buggy', permission='managePowerDistributionBuggy', cache_prefill={
         "balance power": {"power_category": ["Engines", "Weapons", "Systems"], "balance_power": True},
         "reset power": {"power_category": ["Engines", "Weapons", "Systems"], "balance_power": True},
         "four pips to engines": {"power_category": ["Engines"], "pips": [4]},
@@ -2040,7 +2152,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('toggleCargoScoopBuggy', "Toggle cargo scoop", {
         "type": "object",
         "properties": {}
-    }, toggle_cargo_scoop_buggy, 'buggy', cache_prefill={
+    }, toggle_cargo_scoop_buggy, 'buggy', permission='toggleCargoScoopBuggy', cache_prefill={
         "cargo scoop": {},
         "scoop": {},
         "deploy scoop": {},
@@ -2052,7 +2164,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('ejectAllCargoBuggy', "Eject all cargo", {
         "type": "object",
         "properties": {}
-    }, eject_all_cargo_buggy, 'buggy', cache_prefill={
+    }, eject_all_cargo_buggy, 'buggy', permission='ejectAllCargoBuggy', cache_prefill={
         "eject cargo": {},
         "dump cargo": {},
         "jettison cargo": {},
@@ -2064,7 +2176,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('recallDismissShipBuggy', "Recall or dismiss ship", {
         "type": "object",
         "properties": {}
-    }, recall_dismiss_ship_buggy, 'buggy', cache_prefill={
+    }, recall_dismiss_ship_buggy, 'buggy', permission='recallDismissShipBuggy', cache_prefill={
         "recall ship": {},
         "dismiss ship": {},
         "call ship": {},
@@ -2090,7 +2202,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "description": "Start navigation route to the system",
             }
         },
-    }, galaxy_map_open_buggy, 'buggy', cache_prefill={
+    }, galaxy_map_open_buggy, 'buggy', permission='galaxyMapOpenOrCloseBuggy', cache_prefill={
         "galaxy map": {"desired_state": "open"},
         "open galaxy map": {"desired_state": "open"},
         "close galaxy map": {"desired_state": "close"},
@@ -2109,7 +2221,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 "description": "Desired state for the system map: open or close.",
             },
         },
-    }, system_map_open_buggy, 'buggy', cache_prefill={
+    }, system_map_open_buggy, 'buggy', permission='systemMapOpenOrCloseBuggy', cache_prefill={
         "system map": {"desired_state": "open"},
         "open system map": {"desired_state": "open"},
         "close system map": {"desired_state": "close"},
@@ -2123,7 +2235,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('primaryInteractHumanoid', "Primary interact action", {
         "type": "object",
         "properties": {}
-    }, primary_interact_humanoid, 'humanoid', cache_prefill={
+    }, primary_interact_humanoid, 'humanoid', permission='primaryInteractHumanoid', cache_prefill={
         "interact": {},
         "primary interact": {},
         "use": {},
@@ -2135,7 +2247,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('secondaryInteractHumanoid', "Secondary interact action", {
         "type": "object",
         "properties": {}
-    }, secondary_interact_humanoid, 'humanoid', cache_prefill={
+    }, secondary_interact_humanoid, 'humanoid', permission='secondaryInteractHumanoid', cache_prefill={
         "secondary interact": {},
         "alternate use": {},
         "secondary action": {},
@@ -2165,7 +2277,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             }
         },
         "required": ["equipment"]
-    }, equip_humanoid, 'humanoid', cache_prefill={
+    }, equip_humanoid, 'humanoid', permission='equipGearHumanoid', cache_prefill={
         "primary weapon": {"equipment": "HumanoidSelectPrimaryWeaponButton"},
         "secondary weapon": {"equipment": "HumanoidSelectSecondaryWeaponButton"},
         "utility weapon": {"equipment": "HumanoidSelectUtilityWeaponButton"},
@@ -2186,7 +2298,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('toggleFlashlightHumanoid', "Toggle flashlight", {
         "type": "object",
         "properties": {}
-    }, toggle_flashlight_humanoid, 'humanoid', cache_prefill={
+    }, toggle_flashlight_humanoid, 'humanoid', permission='toggleFlashlightHumanoid', cache_prefill={
         "flashlight": {},
         "torch": {},
         "lights": {},
@@ -2198,7 +2310,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('toggleNightVisionHumanoid', "Toggle night vision", {
         "type": "object",
         "properties": {}
-    }, toggle_night_vision_humanoid, 'humanoid', cache_prefill={
+    }, toggle_night_vision_humanoid, 'humanoid', permission='toggleNightVisionHumanoid', cache_prefill={
         "nightvision": {},
         "night vision": {},
         "toggle nightvision": {},
@@ -2210,7 +2322,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('toggleShieldsHumanoid', "Toggle shields", {
         "type": "object",
         "properties": {}
-    }, toggle_shields_humanoid, 'humanoid', cache_prefill={
+    }, toggle_shields_humanoid, 'humanoid', permission='toggleShieldsHumanoid', cache_prefill={
         "suit shields": {},
         "personal shields": {},
         "toggle shields": {},
@@ -2222,7 +2334,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('clearAuthorityLevelHumanoid', "Clear authority level", {
         "type": "object",
         "properties": {}
-    }, clear_authority_level_humanoid, 'humanoid', cache_prefill={
+    }, clear_authority_level_humanoid, 'humanoid', permission='clearAuthorityLevelHumanoid', cache_prefill={
         "clear authority": {},
         "reset authority": {},
         "clear wanted level": {},
@@ -2234,7 +2346,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('healthPackHumanoid', "Use health pack", {
         "type": "object",
         "properties": {}
-    }, health_pack_humanoid, 'humanoid', cache_prefill={
+    }, health_pack_humanoid, 'humanoid', permission='healthPackHumanoid', cache_prefill={
         "health pack": {},
         "medkit": {},
         "heal": {},
@@ -2246,7 +2358,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('batteryHumanoid', "Use battery", {
         "type": "object",
         "properties": {}
-    }, battery_humanoid, 'humanoid', cache_prefill={
+    }, battery_humanoid, 'humanoid', permission='batteryHumanoid', cache_prefill={
         "battery": {},
         "energy cell": {},
         "recharge": {},
@@ -2258,7 +2370,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('galaxyMapOpenOrCloseHumanoid', "Open or Close Galaxy Map", {
         "type": "object",
         "properties": {}
-    }, galaxy_map_open_humanoid, 'humanoid', cache_prefill={
+    }, galaxy_map_open_humanoid, 'humanoid', permission='galaxyMapOpenOrCloseHumanoid', cache_prefill={
         "galaxy map": {},
         "open galaxy map": {},
         "galmap": {},
@@ -2271,7 +2383,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('systemMapOpenOrCloseHumanoid', "Open or Close System Map", {
         "type": "object",
         "properties": {}
-    }, system_map_open_humanoid, 'humanoid', cache_prefill={
+    }, system_map_open_humanoid, 'humanoid', permission='systemMapOpenOrCloseHumanoid', cache_prefill={
         "system map": {},
         "open system map": {},
         "close system map": {},
@@ -2284,7 +2396,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     actionManager.registerAction('recallDismissShipHumanoid', "Recall or dismiss ship", {
         "type": "object",
         "properties": {}
-    }, recall_dismiss_ship_humanoid, 'humanoid', cache_prefill={
+    }, recall_dismiss_ship_humanoid, 'humanoid', permission='recallDismissShipHumanoid', cache_prefill={
         "recall ship": {},
         "dismiss ship": {},
         "call ship": {},
@@ -2313,11 +2425,13 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
             },
         },
         "required": ["message", "channel"]
-    }, send_message, 'global')
+    }, send_message, 'global', permission='textMessage')
     
     register_web_actions(
-        actionManager, eventManager, 
-        llmClient, llmModelName, edKeys
+        actionManager, eventManager,
+        llmClient, llmModelName,
+        embeddingClient, embeddingModelName,
+        edKeys
     )
 
     register_ui_actions(
@@ -2334,5 +2448,5 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                 }
             },
             "required": ["query"]
-        }, get_visuals, 'global')
+        }, get_visuals, 'global', permission='getVisuals')
 

@@ -1,21 +1,25 @@
-import json
-import traceback
+import datetime
 import math
+import traceback
 import yaml
 import sys
 
 import openai
 import requests
-
+import yaml
 
 from .data import *
-from ..Logger import log
+from ..ActionManager import ActionManager
 from ..EDKeys import EDKeys
 from ..EventManager import EventManager
-from ..ActionManager import ActionManager
+from ..Logger import log
+from ..Config import Config
 
 llm_client: openai.OpenAI = None
 llm_model_name: str = None
+embedding_client: openai.OpenAI | None = None
+embedding_model_name: str | None = None
+event_manager: EventManager = None
 
 def init_llm_client(llmClient: openai.OpenAI = None, llmModelName: str = None):
     global llm_client, llm_model_name
@@ -162,7 +166,32 @@ def web_search(obj, projected_states):
                     }
                 }
             }
-        }
+        },
+        {
+            "type": "function",
+            "function": {
+                "name": "retrieve_memories",
+                "description": "Retrieve relevant long-term memory notes by semantic search.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "Semantic search query for memory retrieval"
+                        },
+                        "top_k": {
+                            "type": "integer",
+                            "description": "Number of memory notes to return (1-20)",
+                            "minimum": 1,
+                            "maximum": 20,
+                            "default": 5
+                        }
+                    },
+                    "required": ["query"]
+                }
+            }
+        },
+
     ]
 
     # The available_functions dict maps function names to the actual functions
@@ -174,6 +203,7 @@ def web_search(obj, projected_states):
         "engineer_finder": engineer_finder,
         "blueprint_finder": blueprint_finder,
         "material_finder": material_finder,
+        "retrieve_memories": retrieve_memories,
     }
 
     system_prompt = """
@@ -259,7 +289,6 @@ def web_search(obj, projected_states):
             return "Sorry, an error occurred while processing your request."
 
     return "The request could not be completed within the allowed number of steps."
-
 
 # returns summary of galnet news
 def get_galnet_news(obj, projected_states):
@@ -1238,25 +1267,51 @@ def material_finder(obj, projected_states):
         elif result['type'] == 'Encoded' and result['section'] in ship_encoded_materials_map:
             source_info = ship_encoded_materials_map[result['section']].get('source', '')
 
+        trading_lines = []
+        higher_convertible_total = 0
+
+        # Higher grade trade-down list with convertible amounts
         if result.get('tradeable_higher_grades'):
-            trading_lines = ["Tradeable, higher grades:"]
+            trading_lines.append("Higher grades trade-in:")
+            target_grade = int(result.get('grade', 0) or 0)
             for higher_mat in result['tradeable_higher_grades']:
-                if higher_mat['count'] > 0:
-                    trading_lines.append(f"- {higher_mat['count']}x {higher_mat['name']} (Grade {higher_mat['grade']})")
+                count_h = int(higher_mat.get('count', 0) or 0)
+                grade_h = int(higher_mat.get('grade', 0) or 0)
+                if grade_h > target_grade and count_h > 0:
+                    steps = grade_h - target_grade
+                    convertible_h = count_h * (3 ** steps)
+                    if convertible_h > 0:
+                        trading_lines.append(f"- {count_h}x {higher_mat.get('name', '')} (Grade {grade_h}) => +{convertible_h}")
+                        higher_convertible_total += convertible_h
 
-            if source_info:
-                trading_lines.append(f"Source: {source_info}")
+        # Lower grade trade-up list and new total
+        lower_list = result.get('tradeable_lower_grades') or []
+        lower_lines = []
+        lower_convertible_total = 0
+        if lower_list:
+            lower_lines.append("Lower grades trade-in:")
+            target_grade = int(result.get('grade', 0) or 0)
+            for low in lower_list:
+                low_count = int(low.get('count', 0) or 0)
+                low_grade = int(low.get('grade', 0) or 0)
+                if target_grade > low_grade and low_count > 0:
+                    steps = target_grade - low_grade
+                    convertible = low_count // (6 ** steps)
+                    if convertible > 0:
+                        lower_lines.append(f"- {low_count}x {low.get('name', '')} (Grade {low_grade}) => +{convertible}")
+                        lower_convertible_total += convertible
 
-            if len(trading_lines) > 1:  # Only add if there are actual tradeable materials
-                formatted_results.append(material_line)
-                formatted_results.extend(trading_lines)
-            else:
-                formatted_results.append(material_line)
-        else:
-            # No higher grades available, but still show source if available
-            formatted_results.append(material_line)
-            if source_info:
-                formatted_results.append(f"Source: {source_info}")
+        # Append lines to output
+        formatted_results.append(material_line)
+        if lower_lines:
+            formatted_results.extend(lower_lines)
+        if trading_lines:
+            formatted_results.extend(trading_lines)
+        if lower_lines or trading_lines:
+            total_all = int(result.get('count', 0) or 0) + lower_convertible_total + higher_convertible_total
+            formatted_results.append(f"Total if all traded in: {total_all}")
+        if source_info:
+            formatted_results.append(f"Source location for the highest grade: {source_info}")
 
     # Sort results while preserving trading info structure
     def sort_key(item):
@@ -1370,6 +1425,51 @@ def educated_guesses_message(search_query, valid_list):
         )
 
     return message
+# Retrieve relevant long-term memory notes by semantic search
+def retrieve_memories(obj, projected_states):
+    query = (obj or {}).get('query', '').strip()
+    top_k = (obj or {}).get('top_k', 5)
+    if not query:
+        return "Please provide a 'query' string to search memories."
+
+    try:
+        k = int(top_k)
+    except Exception:
+        k = 5
+    k = max(1, min(k, 20))
+
+    # Create embedding for the query and search the vector store
+    if not embedding_client or not embedding_model_name:
+        log('warn', 'Embeddings model not configured, cannot search memories.')
+        return 'Unable to search memories, please configure the embedding model.'
+
+    embedding_response = embedding_client.embeddings.create(
+        model=embedding_model_name,
+        input=query
+    )
+    embedding = embedding_response.data[0].embedding
+
+    results = event_manager.long_term_memory.search(query, embedding_response.model, embedding, n=k)
+
+    if not results:
+        return f"No relevant memories found for '{query}'."
+
+    formatted = []
+    for result in results:
+        time_until: float = result["metadata"].get('time_until', 0.0)
+        time_since: float = result["metadata"].get('time_since', 0.0)
+        item = {
+            'score': round(result["score"], 3),
+            'summary': result["content"],
+            'time_until': datetime.datetime.fromtimestamp(time_until).strftime('%Y-%m-%d %H:%M:%S') if time_until else 'Unknown',
+            'time_since': datetime.datetime.fromtimestamp(time_since).strftime('%Y-%m-%d %H:%M:%S') if time_since else 'Unknown',
+        }
+        formatted.append(item)
+
+    yaml_output = yaml.dump(formatted, default_flow_style=False, sort_keys=False)
+    return f"Top {len(formatted)} memory matches for '{query}':\n\n```yaml\n{yaml_output}\n```"
+
+
 
 # Helper function
 def find_best_match(search_term, known_list):
@@ -1941,11 +2041,17 @@ def body_finder(obj, projected_states):
 
 
 def register_web_actions(actionManager: ActionManager, eventManager: EventManager, 
-                         llmClient: openai.OpenAI, llmModelName: str, edKeys: EDKeys):
-    global llm_client, llm_model_name, keys
+                         llmClient: openai.OpenAI,
+                         llmModelName: str,
+                         embeddingClient: openai.OpenAI | None,
+                         embeddingModelName: str | None,
+                         edKeys: EDKeys):
+    global event_manager, llm_client, llm_model_name, keys, embedding_model_name, embedding_client
     keys = edKeys
     llm_client = llmClient
     llm_model_name = llmModelName
+    embedding_model_name = embeddingModelName
+    embedding_client = embeddingClient
 
     actionManager.registerAction(
         'web_search',
@@ -2023,7 +2129,7 @@ if __name__ == '__main__':
         user_query = input("You: ")
         if user_query.lower() == 'exit':
             break
-        
+
         if not user_query:
             continue
 

@@ -14,7 +14,7 @@ default_config = {
     'api_key': "sk-DEADBEEF",
     'tools_var': True,
     'vision_var': True,
-    'ptt_var': 'voice_activation',
+    'ptt_var': 'push_to_talk',
     'ptt_inverted_var': False,
     'continue_conversation_var': True,
     'event_reaction_enabled_var': True,
@@ -22,12 +22,13 @@ default_config = {
     'web_search_actions_var': True,
     'edcopilot': True,
     'edcopilot_dominant': False,
+    'edcopilot_actions': False,
     'input_device_name': 'default',
     'output_device_name': 'default',
     'llm_model_name': "gpt-4o-mini",
     'llm_endpoint': "https://api.openai.com/v1",
     'llm_api_key': "",
-    'ptt_key': '+',
+    'ptt_key': "'+'",
     'mute_during_response_var': False,
     'vision_model_name': "gpt-4o-mini",
     'vision_endpoint': "https://api.openai.com/v1",
@@ -379,6 +380,9 @@ def test_chat_executable():
     while proc.stdout:
         line = proc.stdout.readline()
         if not line:
+            while proc.stderr:
+                err = proc.stderr.readline()
+                print(err)
             raise Exception("Chat.exe exited unexpectedly")
         print(line)
         if '{"type": "ready"}' in line:
@@ -396,6 +400,9 @@ def test_chat_executable():
     while proc.stdout:
         line = proc.stdout.readline()
         if not line:
+            while proc.stderr:
+                err = proc.stderr.readline()
+                print(err)
             raise Exception("Chat.exe exited unexpectedly")
         print(line)
         if '"message": "System Ready."' in line:

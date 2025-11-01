@@ -20,6 +20,15 @@ import { MatDivider } from "@angular/material/divider";
 import { MatInputModule } from "@angular/material/input";
 import { MatButtonModule } from "@angular/material/button";
 import { Character, CharacterService } from "../../services/character.service.js";
+import { ConfigBackupService } from "../../services/config-backup.service";
+import { MatIcon } from "@angular/material/icon";
+import {
+    MatAccordion,
+    MatExpansionModule,
+    MatExpansionPanel,
+    MatExpansionPanelHeader,
+    MatExpansionPanelTitle,
+} from "@angular/material/expansion";
 
 @Component({
     selector: "app-advanced-settings",
@@ -38,6 +47,12 @@ import { Character, CharacterService } from "../../services/character.service.js
         MatHint,
         MatOptgroup,
         MatDivider,
+        MatIcon,
+        MatAccordion,
+        MatExpansionModule,
+        MatExpansionPanel,
+        MatExpansionPanelHeader,
+        MatExpansionPanelTitle,
     ],
     templateUrl: "./advanced-settings.component.html",
     styleUrl: "./advanced-settings.component.css",
@@ -55,6 +70,7 @@ export class AdvancedSettingsComponent {
         private configService: ConfigService,
         private characterService: CharacterService,
         private snackBar: MatSnackBar,
+        private configBackupService: ConfigBackupService,
     ) {
         this.configSubscription = this.configService.config$.subscribe(
             (config) => {
@@ -105,6 +121,53 @@ export class AdvancedSettingsComponent {
                     duration: 5000,
                 });
             }
+        }
+    }
+
+    async onExportConfig() {
+        try {
+            await this.configBackupService.exportConfig();
+        } catch (error) {
+            console.error("Error exporting configuration:", error);
+            this.snackBar.open("Failed to export configuration", "OK", {
+                duration: 5000,
+            });
+        }
+    }
+
+    async onImportConfig(event: Event) {
+        const input = event.target as HTMLInputElement;
+        if (!input.files || input.files.length === 0) {
+            return;
+        }
+
+        const file = input.files[0];
+        
+        try {
+            const result = await this.configBackupService.importConfig(file);
+            
+            if (result.success) {
+                this.snackBar.open(result.message + " - Reloading in 1 second...", "OK", {
+                    duration: 1000,
+                });
+                
+                // Reload the page after 1 second to ensure all components reflect the new config
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                this.snackBar.open(`Import failed: ${result.message}`, "OK", {
+                    duration: 5000,
+                });
+            }
+        } catch (error) {
+            console.error("Error importing configuration:", error);
+            this.snackBar.open("Failed to import configuration", "OK", {
+                duration: 5000,
+            });
+        } finally {
+            // Reset the input so the same file can be selected again
+            input.value = '';
         }
     }
 }

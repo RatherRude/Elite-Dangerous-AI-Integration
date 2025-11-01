@@ -115,10 +115,10 @@ export const GameEventCategories: Record<string, string[]> = {
         "LowFuelWarningCleared",
         "LowFuelWarning",
         "HighGravityWarning",
-        "NoScoopableStars",
         "NightVisionOff",
         "NightVisionOn",
         "SupercruiseDestinationDrop",
+        "ReservoirReplenished",
     ],
 
     "SRV Updates": [
@@ -284,6 +284,7 @@ export const GameEventCategories: Record<string, string[]> = {
         "FSSAllBodiesFound",
         "FSSBodySignals",
         "FSSDiscoveryScan",
+        "FirstPlayerSystemDiscovered",
         "FSSSignalDiscovered",
         "MaterialCollected",
         "MaterialDiscarded",
@@ -305,5 +306,6 @@ export const GameEventCategories: Record<string, string[]> = {
         "DataScanned",
         "Scanned",
         "USSDrop",
+        "NoScoopableStars",
     ],
 };

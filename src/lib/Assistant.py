@@ -5,7 +5,7 @@ from time import time
 
 from .Logger import log, show_chat_message
 from .Config import Config
-from .Event import ConversationEvent, Event, GameEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent, ArchiveEvent
+from .Event import ConversationEvent, Event, GameEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent, MemoryEvent
 from .EventManager import EventManager
 from .ActionManager import ActionManager
 from .PromptGenerator import PromptGenerator
@@ -14,26 +14,139 @@ from .EDCoPilot import EDCoPilot
 from openai import APIStatusError, BadRequestError, OpenAI, RateLimitError
 from typing import Any,  Callable, final
 from threading import Thread
+from .actions.Actions import set_speed, fire_weapons
 
 @final
 class Assistant:
-    def __init__(self, config: Config, enabled_game_events: list[str], event_manager: EventManager, action_manager: ActionManager, llmClient: OpenAI, tts: TTS, prompt_generator: PromptGenerator, copilot: EDCoPilot):
+    def __init__(self, config: Config, enabled_game_events: list[str], event_manager: EventManager, action_manager: ActionManager, llmClient: OpenAI, tts: TTS, prompt_generator: PromptGenerator, copilot: EDCoPilot, embeddingClient: OpenAI | None = None, disabled_game_events: list[str] | None = None):
         self.config = config
         self.enabled_game_events = enabled_game_events
+        self.disabled_game_events = disabled_game_events if disabled_game_events is not None else []
         self.event_manager = event_manager
         self.action_manager = action_manager
         self.llmClient = llmClient
         self.tts = tts
         self.prompt_generator = prompt_generator
         self.copilot = copilot
+        self.embeddingClient = embeddingClient
         self.is_replying = False
         self.reply_pending = False
         self.pending: list[Event] = []
         self.registered_should_reply_handlers: list[Callable[[Event, dict[str, Any]], bool | None]] = []
-    
+        self.is_summarizing = False
+        self.short_term_memories = []
+
     def on_event(self, event: Event, projected_states: dict[str, Any]):
+        # Skip disabled game events from entering the pending state
+        if isinstance(event, GameEvent) or isinstance(event, StatusEvent):
+            event_type = event.content.get('event') if isinstance(event, GameEvent) else event.status.get('event')
+            if event_type in self.disabled_game_events:
+                return
+
         self.pending.append(event)
         self.reply_pending = self.should_reply(projected_states)
+
+        if isinstance(event, MemoryEvent):
+            self.short_term_memories.append(event)
+            self.short_term_memories = self.short_term_memories[-5:]
+
+        # Auto actions after a hyperspace jump: optional autobrake and/or autoscan
+        try:
+            if (isinstance(event, GameEvent) and event.content.get('event') == 'FSDJump' and
+                    (self.config.get("qol_autoscan", False) or self.config.get("qol_autobrake", False))):
+                # Build actions according to QoL flags
+                request, results, descriptions, labels = [], [], [], []
+
+                if self.config.get("qol_autobrake"):
+                    speed_args = {"speed": "Zero"}
+                    speed_result = set_speed(speed_args, projected_states)
+                    request.append({"id": "auto-fsd-1", "type": "function", "function": {"name": "setSpeed", "arguments": json.dumps(speed_args)}})
+                    results.append({"tool_call_id": "auto-fsd-1", "role": "tool", "name": "setSpeed", "content": speed_result})
+                    descriptions.append("Reducing speed to 0")
+                    labels.append("SetSpeedZero")
+
+                if self.config.get("qol_autoscan"):
+                    fire_args = {
+                        "weaponType": "discovery_scanner",
+                        "action": "fire",
+                        "discoveryPrimary": self.config.get("discovery_primary_var", True),
+                        "discoveryFiregroup": self.config.get("discovery_firegroup_var", 1),
+                    }
+                    fire_result = fire_weapons(fire_args, projected_states)
+                    request.append({"id": "auto-fsd-2", "type": "function", "function": {"name": "fireWeapons", "arguments": json.dumps(fire_args)}})
+                    results.append({"tool_call_id": "auto-fsd-2", "role": "tool", "name": "fireWeapons", "content": fire_result})
+                    descriptions.append("Performing discovery scan")
+                    labels.append("DiscoveryScan")
+
+                if request:
+                    self.event_manager.add_tool_call(request, results, descriptions)
+        except Exception as e:
+            log('error', 'Auto actions on FSDJump failed', e, traceback.format_exc())
+
+        if isinstance(event, ConversationEvent) and event.kind == 'assistant':
+            short_term = self.event_manager.get_short_term_memory()
+            # Rate-limit by wall-clock time since the last MemoryEvent summary
+            last_memory_time = self.short_term_memories[-1].processed_at if len(self.short_term_memories) else 0.0
+            log('info', f'Short-term memory length: {len(short_term)} events since {last_memory_time}, already summarizing: {self.is_summarizing}')
+            if len(short_term) > 60 and not self.is_summarizing and (time() - last_memory_time) >= 60:
+                log('info', f'Starting summarization of {len(short_term[30:])} events into long-term memory')
+                self.is_summarizing = True
+                Thread(target=self.summarize_memory, args=(short_term[30:],), daemon=True).start()
+
+    def summarize_memory(self, memory: list[Event]):
+        try:
+            memory_until = memory[0].processed_at
+            memory_since = memory[-1].processed_at if memory else 0.0
+
+            chat = []
+
+            for event in memory:
+                if isinstance(event, GameEvent) or isinstance(event, ProjectedEvent):
+                    event_description = self.prompt_generator.get_event_template(event)
+                    if event_description:
+                        chat.append(f"{event.content.get('timestamp', '')}: {event_description}")
+                elif isinstance(event, StatusEvent):
+                    if event.status.get('event','').lower() == 'status':
+                        continue
+                    event_description = self.prompt_generator.get_status_event_template(event)
+                    if event_description:
+                        chat.append(f"{event.status.get('timestamp', '')}: {event_description}")
+                elif isinstance(event, ConversationEvent):
+                    if event.kind not in ['user', 'assistant']:
+                        continue
+                    chat.append(event.timestamp +' '+ event.kind +': '+ event.content)
+            for mem in self.short_term_memories:
+                chat.append(mem.timestamp +' [Previous Memory]: '+ mem.content)
+
+            chat_text = '\n'.join(reversed(chat))
+
+            response = self.llmClient.chat.completions.create(  # pyright: ignore[reportCallIssue]
+                model=self.config["llm_model_name"],
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant in Elite Dangerous that summarizes events and conversation into short concise notes for long-term memory storage. Only include important information that is not already stored in long-term memory. Do not include unimportant information, irrelevant details or repeated information. Do not include any timestamps in the summary.\nKeep it short to about 5 sentences."},
+                    {"role": "user", "content": "Summarize the following events into short concise notes for long-term memory storage:\n<conversation>\n"+(chat_text)+'\n</conversation>'}],
+                temperature=self.config["llm_temperature"],
+            )
+
+            embedding_response = self.embeddingClient.embeddings.create(
+                model=self.config["embedding_model_name"],
+                input=response.choices[0].message.content
+            )
+            embedding = embedding_response.data[0].embedding
+
+            self.event_manager.add_memory_event(
+                embedding_response.model,
+                last_processed_at=memory_until,
+                content=response.choices[0].message.content or 'Error',
+                metadata={"original_text": chat_text, "event_count": len(memory), "time_until": memory_until, "time_since": memory_since},
+                embedding=embedding
+            )
+            log('info', f'Summarized {len(memory)} events into long-term memory up to {memory_until}')
+        except Exception as e:
+            log("debug", "Error during memory summarization:", e, traceback.format_exc())
+        finally:
+            self.is_summarizing = False
+
 
     def execute_actions(self, actions: list[dict[str, Any]], projected_states: dict[str, dict]):
         action_descriptions: list[str | None] = []
@@ -94,13 +207,18 @@ class Assistant:
         self.reply_pending = False
         self.is_replying = True
         try:
-            new_events = self.pending.copy()
+            events = self.event_manager.get_short_term_memory()
+            events = list(reversed(events))
+            new_events = [event for event in events if event.responded_at == None]
             self.pending = []
-            
+
+
             log('debug', 'Starting reply...')
+            max_conversation_processed = max([event.processed_at for event in events]+[0.0])
             prompt = self.prompt_generator.generate_prompt(events=events, projected_states=projected_states, pending_events=new_events)
 
             user_input: list[str] = [event.content for event in new_events if event.kind == 'user']
+            tool_uses: int = len([event for event in new_events if event.kind == 'tool'])
             reasons = [event.content.get('event', event.kind) if event.kind=='game' else event.kind for event in new_events if event.kind in ['user', 'game', 'tool', 'status']]
             use_tools = self.config["tools_var"] and ('user' in reasons or 'tool' in reasons)
 
@@ -123,9 +241,11 @@ class Assistant:
             uses_actions = self.config["game_actions_var"]
             uses_web_actions = self.config["web_search_actions_var"]
             uses_ui_actions = self.config["ui_actions_var"]
-            tool_list = self.action_manager.getToolsList(active_mode, uses_actions, uses_web_actions, uses_ui_actions) if use_tools else None
+            # append allowed actions from config
+            allowed_actions = self.config.get("allowed_actions", [])
+            tool_list = self.action_manager.getToolsList(active_mode, uses_actions, uses_web_actions, uses_ui_actions, allowed_actions) if use_tools else None
             predicted_actions = None
-            if tool_list and user_input:
+            if tool_list and user_input and not tool_uses and self.config["use_action_cache_var"]:
                 predicted_actions = self.action_manager.predict_action(user_input[-1], tool_list)
                 
             if predicted_actions:
@@ -197,13 +317,13 @@ class Assistant:
 
             if response_text and not response_actions:
                 self.tts.say(response_text)
-                self.event_manager.add_conversation_event('assistant', completion.choices[0].message.content)
+                self.event_manager.add_conversation_event('assistant', completion.choices[0].message.content, max_conversation_processed)
                 self.copilot.output_covas(response_text, reasons)
                 self.tts.wait_for_completion()
                 self.event_manager.add_assistant_complete_event()
 
             if response_actions:
-                self.event_manager.add_assistant_acting()
+                self.event_manager.add_assistant_acting(processed_at=max_conversation_processed)
                 self.execute_actions(response_actions, projected_states)
 
                 if not predicted_actions and self.config["use_action_cache_var"]:

@@ -555,19 +555,21 @@ ShipInfoState = TypedDict('ShipInfoState', {
     "FuelMainCapacity": float,
     "FuelReservoir": float,
     "FuelReservoirCapacity": float,
-    "MaximumJumpRange": float,
+    "FSDSynthesis":float,
+    "ReportedMaximumJumpRange": float,
     "DriveOptimalMass":float,
     "DriveLinearConst":float,
     "DrivePowerConst":float,
     "GuardianfsdBooster":float,
     "DriveMaxFuel":float,
     "JetConeBoost":float,
-    "minimum_jump_range":float,
-    "current_jump_range":float,
-    "maximum_jump_range":float,
+    "MinimumJumpRange":float,
+    "CurrentJumpRange":float,
+    "MaximumJumpRange":float,
     "LandingPadSize": Literal['S', 'M', 'L', 'Unknown'],
     "IsMiningShip": bool,
     "hasLimpets": bool,
+    "hasDockingComputer": bool,
     "Fighters": list[FighterState],
 })
 
@@ -587,7 +589,8 @@ class ShipInfo(Projection[ShipInfoState]):
             "FuelMainCapacity": 0,
             "FuelReservoir": 0,
             "FuelReservoirCapacity": 0,
-            "MaximumJumpRange": 0, 
+            "ReportedMaximumJumpRange": 0,
+            "FSDSynthesis":0,
             "DriveOptimalMass": 0,
             "DriveLinearConst":0,
             "GuardianfsdBooster":0,
@@ -596,10 +599,11 @@ class ShipInfo(Projection[ShipInfoState]):
             "JetConeBoost":1,
             "IsMiningShip": False,
             "hasLimpets": False,
+            "hasDockingComputer": False,
             "Fighters": [],
-            "minimum_jump_range":0,
-            "current_jump_range":0,
-            "maximum_jump_range":0,
+            "MinimumJumpRange":0,
+            "CurrentJumpRange":0,
+            "MaximumJumpRange":0,
             "LandingPadSize": 'Unknown',
         }
     
@@ -633,7 +637,7 @@ class ShipInfo(Projection[ShipInfoState]):
                 self.state['FuelReservoirCapacity'] = event.content['FuelCapacity'].get('Reserve', 0)
 
             if 'MaxJumpRange' in event.content:
-                self.state['MaximumJumpRange'] = event.content.get('MaxJumpRange', 0)
+                self.state['ReportedMaximumJumpRange'] = event.content.get('MaxJumpRange', 0)
 
             if 'Modules' in event.content:
                 has_refinery = any(module["Item"].startswith("int_refinery") for module in event.content["Modules"])
@@ -642,11 +646,24 @@ class ShipInfo(Projection[ShipInfoState]):
                 else:
                     self.state['IsMiningShip'] = False
 
-                has_limpets = any(module["Item"].startswith("int_dronecontrol") for module in event.content["Modules"])
+                has_limpets = any(
+                    module.get("Item", "").startswith("int_dronecontrol")
+                    or module.get("Item", "").startswith("int_multidronecontrol_")
+                    for module in event.content["Modules"]
+                )
                 if has_limpets:
                     self.state['hasLimpets'] = True
                 else:
                     self.state['hasLimpets'] = False
+
+                has_docking_computer = any(
+                    module.get("Item", "").startswith("int_dockingcomputer")
+                    for module in event.content["Modules"]
+                )
+                if has_docking_computer:
+                    self.state['hasDockingComputer'] = True
+                else:
+                    self.state['hasDockingComputer'] = False
 
                 # Check for fighter bay modules
                 fighter_count = 0
@@ -711,9 +728,22 @@ class ShipInfo(Projection[ShipInfoState]):
             fsd_star_boost = event.content.get('BoostValue', 1)
             self.state['JetConeBoost'] = fsd_star_boost
         
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Synthesis':
+            fsd_inject_boost_name = event.content.get('Name', "")
+
+            if fsd_inject_boost_name == "FSD Basic":
+                self.state['FSDSynthesis'] = 0.25
+
+            elif fsd_inject_boost_name == "FSD Standard":
+                self.state['FSDSynthesis'] = 0.5
+
+            elif fsd_inject_boost_name == "FSD Premium":
+                self.state['FSDSynthesis'] = 1
+
         if isinstance(event,GameEvent) and event.content.get('event') == 'FSDJump':
             self.state['JetConeBoost'] = 1
-        
+            self.state['FSDSynthesis'] = 0
+
         
         if isinstance(event, GameEvent) and event.content.get('event') == 'Cargo':
             self.state['Cargo'] = event.content.get('Count', 0)
@@ -835,9 +865,9 @@ class ShipInfo(Projection[ShipInfoState]):
         if isinstance(event, StatusEvent) and event.status.get('event') == 'Status':
             try:
                 min_jr,cur_jr,max_jr = self.calculate_jump_range()
-                self.state['minimum_jump_range'] = min_jr
-                self.state['current_jump_range'] = cur_jr
-                self.state['maximum_jump_range'] = max_jr
+                self.state['MinimumJumpRange'] = min_jr
+                self.state['CurrentJumpRange'] = cur_jr
+                self.state['MaximumJumpRange'] = max_jr
             except Exception as e:
                 log('error', 'Error calculating jump ranges:', e, traceback.format_exc())
         
@@ -848,14 +878,14 @@ class ShipInfo(Projection[ShipInfoState]):
         unladen_mass   = self.state.get("UnladenMass")
         cargo_capacity = self.state.get("CargoCapacity")
         fuel_capacity  = self.state.get("FuelMainCapacity")
-        maximum_jump_range     = self.state.get("MaximumJumpRange")
+        maximum_jump_range     = self.state.get("ReportedMaximumJumpRange")
         drive_power_const   = self.state.get("DrivePowerConst")
         drive_optimal_mass = self.state.get("DriveOptimalMass")
         drive_linear_const  = self.state.get("DriveLinearConst") 
         drive_max_fuel  = self.state.get("DriveMaxFuel")
         fsd_star_boost = self.state.get("JetConeBoost")
         fsd_boost = self.state.get("GuardianfsdBooster")
-        fsd_inject = 0 # +inject juice 25% , 50% ,100% but cant be with star_boost
+        fsd_inject = self.state.get("FSDSynthesis") # +inject juice 25% , 50% ,100% but cant be with star_boost
 
         if not (unladen_mass > 0 and fuel_capacity > 0 and maximum_jump_range > 0 and drive_max_fuel):
             return 0, 0, 0
@@ -871,11 +901,11 @@ class ShipInfo(Projection[ShipInfoState]):
         log('info', 'current_mass', current_mass)
         log('info', 'maximal_mass', maximal_mass)
         
-        base = lambda M: (drive_optimal_mass / M) * ( (10**3 * drive_max_fuel) / drive_linear_const )**(1/drive_power_const)
+        base = lambda M, F: (drive_optimal_mass / M) * ((10**3 * F) / drive_linear_const )**(1/drive_power_const)
         # adding stuff here for more future fsd boost stuff 
-        min_ly = (base(maximal_mass) + fsd_boost) * fsd_star_boost
-        cur_ly = (base(current_mass) + fsd_boost) * fsd_star_boost
-        max_ly = (base(minimal_mass) + fsd_boost) * fsd_star_boost
+        min_ly = (base(maximal_mass, drive_max_fuel) + fsd_boost) * (fsd_star_boost +fsd_inject)
+        cur_ly = (base(current_mass, min(drive_max_fuel,current_fuel)) + fsd_boost) * (fsd_star_boost +fsd_inject)
+        max_ly = (base(minimal_mass, drive_max_fuel) + fsd_boost) * (fsd_star_boost +fsd_inject)
         
         return min_ly, cur_ly, max_ly
 
@@ -986,7 +1016,8 @@ class NavInfo(Projection[NavInfoState]):
                         is_first_system = False
                 
                 # Fetch system data for systems in the route asynchronously
-                if systems_to_lookup:
+                if len(systems_to_lookup) > 1:
+                    systems_to_lookup.pop(0)
                     self.system_db.fetch_multiple_systems_nonblocking(systems_to_lookup)
 
         # Process NavRouteClear
@@ -1034,6 +1065,16 @@ class NavInfo(Projection[NavInfoState]):
             if star_system != 'Unknown':
                 # Fetch system data for the current system asynchronously
                 self.system_db.fetch_system_data_nonblocking(star_system)
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Scan':
+            auto_scan = event.content.get('ScanType')
+            distancefromarrival = event.content.get('DistanceFromArrivalLS', 1)
+
+            if auto_scan == 'AutoScan' and distancefromarrival < 0.2:  # pyright: ignore[reportOptionalOperand]
+                was_discovered = event.content.get('WasDiscovered', True)  # system mapped
+
+                if was_discovered == False:
+                    projected_events.append(ProjectedEvent({"event": "FirstPlayerSystemDiscovered"}))
 
         return projected_events
 
@@ -1624,6 +1665,7 @@ def registerProjections(event_manager: EventManager, system_db: SystemDatabase, 
         'Loadout',
         'Shipyard',
         'StoredShips',
+        'StoredModules',
         'Market',
         'Outfitting',
         'Shipyard',

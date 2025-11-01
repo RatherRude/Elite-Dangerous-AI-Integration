@@ -16,50 +16,32 @@ Also, please check our [FAQ](./10_faq.md) for additional information.
 
 [:fontawesome-solid-download: Download from GitHub](https://github.com/RatherRude/Elite-Dangerous-AI-Integration/releases/latest){ .md-button .md-button--primary }
 
-1. Download the zip file containing the application.
-2. Once downloaded, locate the zip file on your computer.
+1. Download the MSI installer.
 
 ??? note "Common Issues"
 
     - **Problem:** A virus was detected during the download.
 
         **Solution:** Some antivirus software may flag the application as a virus due to a false positive. The application is safe to use.
-        Try downloading it again. If the issue persists, you may need to add an exception in your antivirus software or disable it temporarily while downloading.
+        If the issue persists, you may need to add an exception in your antivirus software or disable it temporarily while downloading.
 
 ---
 
-## Step 2: Extract the Zip File
+## Step 2: Install COVAS:NEXT
 
-1. Right-click on the downloaded zip file and choose "Extract All..." or similar based on your operating system.
-2. Choose a folder for extraction and ensure all files are successfully extracted.
-
-??? note "Common Issues"
-
-    - **Problem:** A virus was detected during extraction.
-    
-        **Solution:** Some antivirus software may detect the application as a virus. This is a false positive.  
-        Add an exception for the application in your antivirus software or disable it temporarily while extracting.
+1. Double-click on the downloaded msi file to start the installer. 
 
 ---
 
 ## Step 3: Start the Application
 
-1. Open the extracted folder.
-2. Double-click on the "covas-next-ui.exe" file to launch the application. This should open the configuration UI.
+1. You will find COVAS:NEXT in your windows start menu from where you can start it or create additional shortcuts.
 
 ??? note "Common Issues"
-
-    - **Problem:** I don't know how to start the application.
-    
-        **Solution:** Open the extracted folder and double-click on the "covas-next-ui.exe" file.
 
     - **Problem:** A virus was detected.
     
         **Solution:** Add an exception for the application in your antivirus software or disable it temporarily.
-
-    - **Problem:** An error message about "chat.exe" or "chat.py" appears.
-
-        **Solution:** Re-extract the zip file and add an exception in your antivirus software to prevent files from being quarantined.
 
     - **Problem:** The window closes immediately.
     
@@ -68,7 +50,6 @@ Also, please check our [FAQ](./10_faq.md) for additional information.
     - **Problem:** An error message appears on startup.
     
         **Solution:** Contact support with details from the error message.
-
 
 ---
 
@@ -128,6 +109,8 @@ Also, please check our [FAQ](./10_faq.md) for additional information.
 
 2. Verify that the chat log window appears.
 
+3. Look for any error messages in the log window immediately after starting the application.
+
 ??? note "Common Issues"
 
     - **Problem:** The application is unresponsive or stuck loading.
@@ -136,19 +119,7 @@ Also, please check our [FAQ](./10_faq.md) for additional information.
 
 ---
 
-## Step 6: Check for Errors in the Log Window
-
-1. Look for any error messages in the log window immediately after starting the application.
-
-??? note "Common Issues"
-
-    - **Problem:** Errors related to "chat.exe" appear.
-    
-        **Solution:** Re-extract the zip file and ensure an antivirus exception is set to prevent file deletion.
-
----
-
-## Step 7: Test the Application’s Voice Detection
+## Step 6: Test the Application’s Voice Detection
 
 1. Start speaking into your microphone, either using Push-to-Talk (PTT) or voice detection.
 
@@ -166,7 +137,7 @@ Also, please check our [FAQ](./10_faq.md) for additional information.
 
 ---
 
-## Step 8: Check the Response
+## Step 7: Check the Response
 
 1. After you speak, confirm that the AI generates a response, visible in the log window.
 
@@ -180,7 +151,7 @@ Also, please check our [FAQ](./10_faq.md) for additional information.
 
 ---
 
-## Step 9: Test a Command
+## Step 8: Test a Command
 
 1. Try issuing a command to the AI, such as "Retract landing gear."
 

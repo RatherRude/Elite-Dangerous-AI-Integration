@@ -12,3 +12,150 @@ mat-form-field {
 mat-slide-toggle {
   margin: 10px 0;
 }
+
+.permission-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0 12px 16px;
+}
+
+.permission-item {
+  display: flex;
+  align-items: center;
+}
+
+.perm-type {
+  width: 100px;
+  /*color: rgba(0,0,0,0.75);*/
+  font-weight: 600;
+}
+
+.perm-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Weapon Types Styling */
+.weapon-types-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.weapon-types-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.weapon-types-label {
+  font-weight: 500;
+  opacity: 0.8;
+  font-size: 14px;
+}
+
+.weapon-types-btn {
+  height: 32px;
+  line-height: 32px;
+}
+
+.weapon-types-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.weapon-card {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+}
+
+.weapon-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.weapon-header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.weapon-name-field {
+  flex: 1;
+  max-width: 190px;
+}
+
+.weapon-description {
+  flex: 1;
+  font-size: 13px;
+  opacity: 0.7;
+  margin-left: 8px;
+}
+
+.weapon-fields {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-left: 8px;
+  flex-wrap: wrap;
+}
+
+.weapon-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.weapon-icon-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.weapon-icon {
+  font-size: 18px;
+  line-height: 18px;
+  overflow: visible;
+}
+
+/* Weapon field widths */
+.field-group {
+  width: 85px;
+}
+
+.field-fire {
+  width: 105px;
+}
+
+.field-mode {
+  width: 105px;
+}
+
+.field-action {
+  width: 95px;
+}
+
+.field-duration {
+  width: 75px;
+}
+
+.field-reps {
+  width: 60px;
+}
+
+.field-submodule {
+  width: 155px;
+}

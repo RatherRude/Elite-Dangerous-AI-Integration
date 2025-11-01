@@ -95,7 +95,9 @@
                                 </mat-slide-toggle>
                                 @if (config.edcopilot) {
                                     <p>
-                                        The EDCoPilot integration prevents both applications for talking at the same time.
+                                        EDCoPilot <strong>does not</strong> share the contents of its UI, nor any other data. You can use it for its UI, but <strong>it adds zero functionality or knowledge to the AI.</strong><br />
+
+                                        The EDCoPilot integration prevents both applications for talking at the same time and allows COVAS:NEXT to control EDCoPilot's UI.
                                         There are two modes of operation. <br>
                                         Learn more about this feature <a target="_blank" rel="noopener noreferrer"
                                                                         href="https://ratherrude.github.io/Elite-Dangerous-AI-Integration/50_EDCoPilot/">here.</a>
@@ -112,8 +114,8 @@
                                     </ul>
                                     <p>EDCoPilot Dominant:</p>
                                     <ul>
-                                        <li>EDCoPilot will generate responses</li>
-                                        <li>COVAS:NEXT Text-to-Speech is disabled</li>
+                                        <li>EDCoPilot will generate regular responses</li>
+                                        <li>COVAS:NEXT will generate responses, using EDCoPilot's Text-to-Speech</li>
                                     </ul>
 
                                     <mat-form-field>
@@ -124,6 +126,12 @@
                                             <mat-option value="edcopilot">EDCoPilot Dominant</mat-option>
                                         </mat-select>
                                     </mat-form-field>
+
+                                    <mat-slide-toggle [(ngModel)]="config.edcopilot_actions"
+                                                    (ngModelChange)="onConfigChange({edcopilot_actions: $event})">
+                                        Enable EDCoPilot UI Actions
+                                    </mat-slide-toggle>
+                                    <p>We strongly recommend to activate only one set of UI actions, either COVAS:NEXT's or EDCoPilot's.</p>
                                 }
                             </div>
                         </mat-expansion-panel>

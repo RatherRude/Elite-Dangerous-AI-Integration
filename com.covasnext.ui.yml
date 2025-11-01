@@ -1,7 +1,7 @@
 app-id: com.covasnext.ui
-runtime: org.gnome.Platform
-runtime-version: '48'
-sdk: org.gnome.Sdk
+runtime: org.freedesktop.Platform
+runtime-version: 24.08
+sdk: org.freedesktop.Sdk
 base: org.electronjs.Electron2.BaseApp
 base-version: 24.08
 command: covas-next-ui-wrapper

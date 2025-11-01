@@ -35,6 +35,7 @@ from .Event import (
     GameEvent,
     Event,
     ConversationEvent,
+    MemoryEvent,
     StatusEvent,
     ToolEvent,
     ExternalEvent,
@@ -49,14 +50,16 @@ LocationEvent = dict
 NavRouteEvent = dict
 
 class PromptGenerator:
-    def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str], system_db: SystemDatabase):
+    def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str], system_db: SystemDatabase, weapon_types: list[dict] | None = None, disabled_game_events: list[str] | None = None):
         self.registered_prompt_event_handlers: list[Callable[[Event], list[ChatCompletionMessageParam]]] = []
         self.registered_status_generators: list[Callable[[dict[str, dict]], list[tuple[str, Any]]]] = []
         self.commander_name = commander_name
         self.character_prompt = character_prompt
         self.important_game_events = important_game_events
+        self.disabled_game_events = disabled_game_events if disabled_game_events is not None else []
         self.system_db = system_db
-        
+        self.weapon_types: list[dict] = weapon_types if weapon_types is not None else []
+
         # Pad map for station docking positions
         self.pad_map = {
             "1":  {"clock": 6, "depth": "very front"},
@@ -121,6 +124,8 @@ class PromptGenerator:
         event_name = content.get('event')
         
         # System events
+        if event_name == 'Materials':
+            return None
         if event_name == 'LoadGame':
             load_game_event = cast(LoadGameEvent, content)
             return f"{self.commander_name} is logging into the game in {load_game_event.get('GameMode', 'unknown')} mode."
@@ -138,6 +143,10 @@ class PromptGenerator:
         # Message events
         if event_name == 'ReceiveText':
             receive_text_event = cast(ReceiveTextEvent, content)
+            # Ignore system-entered channel messages
+            if (receive_text_event.get('Channel', '') == 'npc' and receive_text_event.get('From', '') == ''
+                and receive_text_event.get('Message', '').startswith('$COMMS_entered:#name=')):
+                return None
             return f'Message received from {receive_text_event.get("From_Localised", receive_text_event.get("From"))} on channel {receive_text_event.get("Channel")}: "{receive_text_event.get("Message_Localised", receive_text_event.get("Message"))}"'
         if event_name == 'SendText':
             send_text_event = cast(SendTextEvent, content)
@@ -191,7 +200,7 @@ class PromptGenerator:
                     faction_info = f" Controlling faction: {faction_name}"
             
             return f"{self.commander_name} has arrived at {fsd_jump_event.get('StarSystem')}{details_str}{system_details_str}{population}{faction_info}"
-            
+
         if event_name == 'FSDTarget':
             fsd_target_event = cast(FSDTargetEvent, content)
             remaining = ""
@@ -223,6 +232,10 @@ class PromptGenerator:
         
         # Station events
 
+        if event_name == "StoredModules":
+            return None
+        if event_name == "StoredShips":
+            return None
         if event_name == "ColonisationConstructionDepot":
             return None
 
@@ -393,7 +406,7 @@ class PromptGenerator:
             return f"{self.commander_name} has abandoned mission: {mission_abandoned_event.get('LocalisedName')}."
         if event_name == 'MissionRedirected':
             mission_redirected_event = cast(MissionRedirectedEvent, content)
-            return f"{self.commander_name}'s mission '{mission_redirected_event.get('LocalisedName')}' has been redirected to {mission_redirected_event.get('NewDestinationSystem')} - {mission_redirected_event.get('NewDestinationStation')}."
+            return f"{self.commander_name}'s mission '{mission_redirected_event.get('LocalisedName')}' has completed at least one target and been redirected to {mission_redirected_event.get('NewDestinationSystem')} - {mission_redirected_event.get('NewDestinationStation')}, check active mission states for details."
         
         # Financial events
         if event_name == 'RedeemVoucher':
@@ -2190,6 +2203,8 @@ class PromptGenerator:
             return f"{self.commander_name} is now in combat."
         if event_name == 'CombatExited':
             return f"{self.commander_name} is no longer in combat."
+        if event_name == 'FirstPlayerSystemDiscovered':
+            return f"{self.commander_name} has a new system discovered"
         # if event_name == 'ExternalDiscordNotification':
         #     twitch_event = cast(Dict[str, Any], content)
         #     return f"Twitch Alert! {twitch_event.get('text','')}",
@@ -2522,13 +2537,76 @@ class PromptGenerator:
         if in_combat.get("InCombat", False):
             flags.append("InCombat")
 
-        firegroup = "Unknown"
-        if current_status.get("FireGroup") is not None:
-            firegroup = chr(65 + current_status.get("FireGroup"))
+        # Build firegroup descriptions from weapon_types
+        # Maps fire_group number to dict with 'primary' and 'secondary' weapon names (just one each)
+        firegroup_map = {}
+
+        if self.weapon_types:
+            for weapon in self.weapon_types:
+                fg_num = weapon.get("fire_group")
+                is_primary = weapon.get("is_primary")
+                weapon_name = weapon.get("name")
+
+                if fg_num is not None and is_primary is not None and weapon_name:
+                    if fg_num not in firegroup_map:
+                        firegroup_map[fg_num] = {"primary": None, "secondary": None}
+
+                    # Store just one weapon name per type (will use last one encountered)
+                    if is_primary:
+                        firegroup_map[fg_num]["primary"] = weapon_name
+                    else:
+                        firegroup_map[fg_num]["secondary"] = weapon_name
+
+        # Get current active firegroup
+        active_firegroup_num = current_status.get("FireGroup")
+
+        # Build firegroup descriptions as simple strings
+        firegroup_descriptions = {}
+
+        # If we have weapon_types data, build descriptions from that
+        if firegroup_map:
+            for fg_num, weapons in firegroup_map.items():
+                # weapon_types uses 1-based indexing: 1->A, 2->B, etc.
+                fg_letter = chr(64 + fg_num)
+
+                # Check if this is the active firegroup
+                # Note: active_firegroup_num from status is 0-based, so we need to add 1 to compare
+                is_active = active_firegroup_num is not None and fg_num == active_firegroup_num + 1
+
+                # Build the string: combine primary and secondary with " | "
+                parts = []
+                if weapons["primary"]:
+                    parts.append(weapons["primary"])
+                if weapons["secondary"]:
+                    parts.append(weapons["secondary"])
+
+                if parts:
+                    description = " | ".join(parts)
+                    if is_active:
+                        description += " (Active)"
+                    firegroup_descriptions[fg_letter] = description
+                else:
+                    firegroup_descriptions[fg_letter] = "unknown (Active)" if is_active else "unknown"
+
+        # If current firegroup is not in our map, add it as unknown
+        if active_firegroup_num is not None:
+            active_fg_letter = chr(65 + active_firegroup_num)
+            if active_fg_letter not in firegroup_descriptions:
+                firegroup_descriptions[active_fg_letter] = "unknown (Active)"
+
+        # Use the dict structure, or fallback to old behavior if no data
+        if firegroup_descriptions:
+            firegroups_info = firegroup_descriptions
+        else:
+            # Fallback to old behavior if no data
+            if active_firegroup_num is not None:
+                firegroups_info = chr(65 + active_firegroup_num)
+            else:
+                firegroups_info = "Unknown"
 
         status_info = {
             "status": flags,
-            "current fire_group": firegroup,
+            "firegroups": firegroups_info,
             "balance": current_status.get("Balance", None),
             "pips": current_status.get("Pips", None),
             "cargo": current_status.get("Cargo", None),
@@ -2582,8 +2660,20 @@ class PromptGenerator:
         
         # Create a copy of ship_info so we don't modify the original
         ship_display = dict(ship_info)
+        ship_display.pop('JetConeBoost', None)
+        ship_display.pop('DriveMaxFuel', None)
+        ship_display.pop('DrivePowerConst', None)
+        ship_display.pop('GuardianfsdBooster', None)
+        ship_display.pop('FSDSynthesis', None)
+        ship_display.pop('DriveLinearConst', None)
+        ship_display.pop('DriveOptimalMass', None)
+        ship_display.pop('ReportedMaximumJumpRange', None)
+        ship_display.pop('FuelReservoirCapacity', None)
+        ship_display.pop('FuelReservoir', None)
+        ship_display.pop('UnladenMass', None)
         ship_display.pop('IsMiningShip', None)
         ship_display.pop('hasLimpets', None)
+        ship_display.pop('hasDockingComputer', None)
         if len(fighters) == 0:
             ship_display.pop('Fighters', None)
         else:
@@ -3150,6 +3240,7 @@ class PromptGenerator:
         # Format and return the final status message
         return "\n\n".join(['# '+entry[0]+'\n' + yaml.dump(entry[1], sort_keys=False) for entry in status_entries])
 
+    # TODO use events as passed from db, not in mem copy, pending (new not yet reated to), short_term (reacted to but not yet part of summary memory), memories (historc summaries of events)
     def generate_prompt(self, events: list[Event], projected_states: dict[str, dict], pending_events: list[Event]):
         # Fine the most recent event
         last_event = events[-1]
@@ -3173,18 +3264,28 @@ class PromptGenerator:
             time_offset = humanize.naturaltime(reference_time - event_time)
 
             if isinstance(event, GameEvent) or isinstance(event, ProjectedEvent) or isinstance(event, ExternalEvent):
+                # Skip disabled events
+                event_type = event.content.get('event')
+                if event_type in self.disabled_game_events:
+                    continue
+
                 if len(conversational_pieces) < 20:
-                    is_important = is_pending and event.content.get('event') in self.important_game_events
+                    is_important = is_pending and event_type in self.important_game_events
                     message = self.event_message(event, time_offset, is_important)
                     if message:
                         conversational_pieces.append(message)
 
             if isinstance(event, StatusEvent):
+                # Skip disabled events
+                event_type = event.status.get('event')
+                if event_type in self.disabled_game_events:
+                    continue
+
                 if (
                     len(conversational_pieces) < 20
-                    and event.status.get("event") != "Status"
+                    and event_type != "Status"
                 ):
-                    is_important = is_pending and event.status.get('event') in self.important_game_events
+                    is_important = is_pending and event_type in self.important_game_events
                     message = self.status_messages(event, time_offset, is_important)
                     if message:
                         conversational_pieces.append(message)
@@ -3194,6 +3295,9 @@ class PromptGenerator:
 
             if isinstance(event, ToolEvent):
                 conversational_pieces += self.tool_messages(event)
+
+            if isinstance(event, MemoryEvent):
+                conversational_pieces.append({"role": "user", "content": '<memory>' + event.content + '</memory>'})
 
             for handler in self.registered_prompt_event_handlers:
                 try:
@@ -3212,15 +3316,17 @@ class PromptGenerator:
             conversational_pieces.append(
                 {
                     "role": "system",
-                    "content": "You are an AI ship system in the universe of Elite Dangerous."
-                    + "Your purpose is to provide information, status updates, and execute tools upon request. Use the tools you are given when asked to. "
-                    + "You do not ask questions or initiate conversations. "
-                    + "Be creative with your responses, do not repeat sentence sturcture."
-                    + "You will be given game events in parentheses that you can use to understand your surroundings; do not create new ones. Only directly mention events labeled as'IMPORTANT:', all other game events.  "
+                    "content": "The universe of Elite:Dangerous is your reality. Never mention it or refer to it as a game. "
+                    + "I will provide game events in parentheses; do not create new ones. Only react to game events marked with 'IMPORTANT:'.  "
                     + "Stay consistent with the lived experience and character. Do not hallucinate any information that is not given to you. "
                     + "Do not use markdown in your responses, and no commas in numbers. "
+                    + "Your purpose is to provide information, status updates, and execute tools as required. Only use tools you are given from me. "
+                    + "Be specific about amounts and percentages for inquiries as the commander can not see the game events' text description but lives in the universe. "
+                    + "You do not ask questions or initiate conversations. You respond only when addressed and in a single sentence. "
+                    + "Don't repeat the same words and sentences, mix it up. "
+
                     # The character_prompt now contains all the generated settings
-                    + self.character_prompt.format(commander_name=self.commander_name),
+                    + "Your character prompt is: " + self.character_prompt.format(commander_name=self.commander_name),
                 }
             )
         except Exception as e:

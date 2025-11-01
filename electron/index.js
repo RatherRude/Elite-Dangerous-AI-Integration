@@ -72,8 +72,15 @@ const config = isDevelopment ? {
 }
 
 // list files in the backend directory
-const files = require('fs').readdirSync(config.backend_cwd);
-logger.info('Backend files:', files);
+try {
+  // create backend_cwd if it doesn't exist
+  require('fs').mkdirSync(config.backend_cwd, { recursive: true });
+  
+  const files = require('fs').readdirSync(config.backend_cwd);
+  logger.info('Backend files:', files);
+} catch (error) {
+  logger.error('Error reading backend directory:', error);
+}
 
 contextMenu.default({
   showSpellCheck: false,
