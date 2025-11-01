@@ -243,8 +243,8 @@ export class MemoriesContainerComponent implements OnInit, OnDestroy {
         this.loadedEntries = response.entries.map((entry: any) => ({
           id: Number(entry.id ?? 0),
           content: entry.content ?? '',
-          time_since: new Date(entry.time_since ?? 0 * 1000),
-          time_until: new Date(entry.time_until ?? 0 * 1000),
+          time_since: new Date((entry.time_since ?? 0) * 1000),
+          time_until: new Date((entry.time_until ?? 0) * 1000),
           metadata: (entry.metadata && typeof entry.metadata === 'object') ? entry.metadata : {},
         } as DisplayEntry));
         console.log(`Loaded ${this.loadedEntries.length} entries for date ${response.date}`);
