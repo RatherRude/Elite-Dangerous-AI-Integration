@@ -3296,9 +3296,6 @@ class PromptGenerator:
             if isinstance(event, ToolEvent):
                 conversational_pieces += self.tool_messages(event)
 
-            if isinstance(event, MemoryEvent):
-                conversational_pieces.append({"role": "user", "content": '<memory>' + event.content + '</memory>'})
-
             for handler in self.registered_prompt_event_handlers:
                 try:
                     conversational_pieces += handler(event)
