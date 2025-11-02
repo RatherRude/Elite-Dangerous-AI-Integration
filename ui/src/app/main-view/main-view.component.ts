@@ -9,7 +9,7 @@ import { LoggingService } from "../services/logging.service";
 import { LogContainerComponent } from "../components/log-container/log-container.component";
 import { SettingsMenuComponent } from "../components/settings-menu/settings-menu.component";
 import { InputContainerComponent } from "../components/input-container/input-container.component";
-import { ConfigService } from "../services/config.service";
+import {Config, ConfigService} from "../services/config.service";
 import { Subscription } from "rxjs";
 import { ChatService } from "../services/chat.service.js";
 import { MatTabsModule } from "@angular/material/tabs";
@@ -56,7 +56,8 @@ export class MainViewComponent implements OnInit, OnDestroy {
     isDockedAtStation = false;
     isShipIdentUnknown = false;
     selectedTabIndex: number = 0;
-    config: any;
+    config: Config|undefined;
+    hasLogbook = true;
     private uiChangeSubscription?: Subscription;
     private configSubscription!: Subscription;
     private inCombatSubscription!: Subscription;
@@ -85,7 +86,7 @@ export class MainViewComponent implements OnInit, OnDestroy {
     ngOnInit(): void {
         this.configSubscription = this.configService.config$.subscribe(
             (config) => {
-                this.config = config;
+                this.config = config ?? undefined;
                 if (
                     this.config && this.config.cn_autostart &&
                     !this.isRunning && !this.hasAutoStarted
@@ -94,6 +95,8 @@ export class MainViewComponent implements OnInit, OnDestroy {
                     this.start();
                     this.hasAutoStarted = true;
                 }
+
+                this.hasLogbook = this.config?.embedding_provider != 'none';
             },
         );
 
