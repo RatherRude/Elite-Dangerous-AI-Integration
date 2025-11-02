@@ -95,8 +95,14 @@ class Assistant:
 
     def summarize_memory(self, memory: list[Event]):
         try:
-            memory_until = memory[0].processed_at
-            memory_since = memory[-1].processed_at if memory else 0.0
+            memory_until = 0.0
+            memory_since = float("inf")
+            for event in memory:
+                memory_since = min(memory_since, event.processed_at) if event.processed_at > 0 else memory_since
+                memory_until = max(memory_until, event.processed_at)
+
+            if memory_since > memory_until:
+                memory_since = memory_until
 
             chat = []
 
