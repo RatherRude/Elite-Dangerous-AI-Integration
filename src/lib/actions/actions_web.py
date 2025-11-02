@@ -2033,14 +2033,14 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
     embedding_client = embeddingClient
 
     actionManager.registerAction(
-        'web_search',
-        "Find information about Elite: Dangerous from the web, including news, system, station, body, engineer, blueprint, and material lookups.",
+        'web_search_agent',
+        "Generate a detailed report about information from the web, including news, system, station, body, engineer, blueprint, and material lookups. Use this tool whenever the user asks about anything related to external or global information.",
         {
             "type": "object",
             "properties": {
                 "query": {
                     "type": "string",
-                    "description": "The search query. Be as specific as possible. E.g., 'Where can I buy a Fer-de-Lance near Sol?' or 'What do I need to engineer my FSD for increased range?'"
+                    "description": "The search query. Be as specific as possible. E.g., 'buy 10 Fer-de-Lance and Steel for the construction project near Sol' or 'engineer requirements to increase my FSD range'. The query can reference player specific details like 'active construction' or 'active mission'. Multiple questions may be asked in a single query."
                 },
             },
             "required": ["query"]
