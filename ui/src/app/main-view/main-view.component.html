@@ -54,12 +54,14 @@
                         </mat-tab>
                     }
                 }
-                <mat-tab label="Logbook">
-                    <div class="tab-content-container">
-                        <app-memories-container></app-memories-container>
-                    </div>
-                    <app-chat-container [limit]="2"></app-chat-container>
-                </mat-tab>
+                @if (hasLogbook) {
+                    <mat-tab label="Logbook">
+                        <div class="tab-content-container">
+                            <app-memories-container></app-memories-container>
+                        </div>
+                        <app-chat-container [limit]="2"></app-chat-container>
+                    </mat-tab>
+                }
 
                 @if (false) {
                     <mat-tab label="Logs">
