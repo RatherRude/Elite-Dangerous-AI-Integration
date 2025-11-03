@@ -253,7 +253,7 @@ def web_search_agent(
                     )
             else:
                 # No tool call, so this should be the final answer
-                return response_message.content
+                return response_message.content or 'No response content.'
 
         except Exception as e:
             log('error', f"An error occurred in the agentic loop: {e}", traceback.format_exc())
