@@ -137,8 +137,8 @@ class EventManager:
         self.long_term_memory.store(model_name, event.content, event.embedding, event.metadata)
         self.incoming.put(event)
         
-    def get_short_term_memory(self) -> list[Event]:
-        return self.short_term_memory.get_latest()
+    def get_short_term_memory(self, limit: int = 100) -> list[Event]:
+        return self.short_term_memory.get_latest(limit=limit)
 
     def process(self):
         projected_states: dict[str, Any] | None = None
