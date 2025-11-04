@@ -18,9 +18,9 @@ def checkStatus(projected_states: dict[str, dict], blocked_status_dict: dict[str
 
 
 def show_ui(obj, projected_states):
-    """Show a specific UI tab: chat | status | storage | station"""
+    """Show a specific UI tab: chat | status | storage | station | tasks | logbook"""
     tab: str = (obj or {}).get('tab', 'chat')
-    valid_tabs = {"chat", "status", "storage", "station"}
+    valid_tabs = {"chat", "status", "storage", "station", "tasks", "logbook"}
 
     if tab not in valid_tabs:
         raise Exception(f"Unknown tab '{tab}'. Expected one of: {', '.join(sorted(valid_tabs))}.")
@@ -50,8 +50,8 @@ def register_ui_actions(actionManager: ActionManager, eventManager: EventManager
             "properties": {
                 "tab": {
                     "type": "string",
-                    "description": "Chat: current conversation; Status: ship/suit loadout and state; Storage: colony construction, materials and engineers; Station: outfitting and market info of docked station",
-                    "enum": ["chat", "status", "storage", "station"],
+                    "description": "Chat: current conversation; Status: ship/suit loadout and state; Storage: colony construction, materials and engineers; Station: outfitting and market info of docked station; Tasks: active missions and objectives; Logbook: user history and memories",
+                    "enum": ["chat", "status", "storage", "station", "tasks", "logbook"],
                 }
             },
             "required": ["tab"]
@@ -62,6 +62,8 @@ def register_ui_actions(actionManager: ActionManager, eventManager: EventManager
             "show chat": {"tab": "chat"},
             "show status": {"tab": "status"},
             "show storage": {"tab": "storage"},
+            "show tasks": {"tab": "tasks"},
+            "show logbook": {"tab": "logbook"},
         }
     )
 
