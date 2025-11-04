@@ -2236,7 +2236,7 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
     # Retrieve memories via semantic search
     actionManager.registerAction(
         'retrieve_memories',
-        "Retrieve relevant long-term memory notes by semantic search.",
+        "Retrieve relevant long-term memory notes from logbook by semantic search.",
         parameters={
             "type": "object",
             "properties": {
