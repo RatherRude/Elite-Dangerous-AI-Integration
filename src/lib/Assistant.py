@@ -84,11 +84,13 @@ class Assistant:
             log('error', 'Auto actions on FSDJump failed', e, traceback.format_exc())
 
         if isinstance(event, ConversationEvent) and event.kind == 'assistant':
-            short_term = self.event_manager.get_short_term_memory()
+            short_term = self.event_manager.get_short_term_memory(1000)
             # Rate-limit by wall-clock time since the last MemoryEvent summary
             last_memory_time = self.short_term_memories[-1].processed_at if len(self.short_term_memories) else 0.0
-            log('info', f'Short-term memory length: {len(short_term)} events since {last_memory_time}, already summarizing: {self.is_summarizing}')
-            if len(short_term) > 60 and not self.is_summarizing and (time() - last_memory_time) >= 60:
+            conversational_messages = [1 for e in short_term if isinstance(e, ConversationEvent) or isinstance(e, ToolEvent)]
+            
+            log(prefix='info', message=f'Short-term memory length: {len(short_term)} events ({len(conversational_messages)} conversational) since {last_memory_time}, already summarizing: {self.is_summarizing}')
+            if (len(conversational_messages) > 40 or len(short_term) > 120) and not self.is_summarizing and (time() - last_memory_time) >= 60:
                 log('info', f'Starting summarization of {len(short_term[30:])} events into long-term memory')
                 self.is_summarizing = True
                 Thread(target=self.summarize_memory, args=(short_term[30:],), daemon=True).start()
@@ -213,7 +215,7 @@ class Assistant:
         self.reply_pending = False
         self.is_replying = True
         try:
-            events = self.event_manager.get_short_term_memory()
+            events = self.event_manager.get_short_term_memory(150)
             events = list(reversed(events))
             new_events = [event for event in events if event.responded_at == None]
             self.pending = []

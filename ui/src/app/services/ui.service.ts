@@ -3,8 +3,8 @@ import {BaseMessage, TauriService} from "./tauri.service";
 import {BehaviorSubject} from "rxjs";
 
 interface UIMessage extends BaseMessage {
-    type: "ui",
-    show: "chat" | "memories" | string,
+type: "ui",
+    show: "chat" | "logbook" | string,
 }
 
 @Injectable({

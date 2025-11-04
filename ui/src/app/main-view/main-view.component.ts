@@ -114,11 +114,11 @@ export class MainViewComponent implements OnInit, OnDestroy {
                 if (tabName === null) return;
                 const desiredIndex = {
                     chat: 0,
-                    memories: 1,
-                    status: 2,
-                    storage: 3,
-                    tasks: 4,
-                    station: 5,
+                    status: 1,
+                    storage: 2,
+                    tasks: 3,
+                    station: 4,
+                    logbook: 5,
                 }[tabName];
                 if (desiredIndex !== undefined) {
                     this.selectedTabIndex = desiredIndex;
