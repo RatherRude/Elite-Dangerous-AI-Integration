@@ -1,7 +1,5 @@
 <div class="settings-grid">
     @if (config) {
-        <h2>Actions</h2>
-        
         @if (keybindsData && (keybindsData.missing.length > 0 || keybindsData.collisions.length > 0)) {
             <div class="keybind-warning-box">
                 @if (keybindsData.missing.length > 0) {
