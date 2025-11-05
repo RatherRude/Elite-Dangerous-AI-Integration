@@ -519,6 +519,8 @@ if __name__ == "__main__":
         print(json.dumps({"type": "config", "config": config})+'\n', flush=True)
         system = get_system_info()
         print(json.dumps({"type": "system", "system": system})+'\n', flush=True)
+
+        ed_keys = EDKeys(get_ed_appdata_path(config))
         while True:
             # print(f"Waiting for command...")
             line = sys.stdin.readline().strip()

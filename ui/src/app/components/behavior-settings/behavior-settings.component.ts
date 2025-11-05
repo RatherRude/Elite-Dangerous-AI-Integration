@@ -3,7 +3,7 @@ import { CommonModule } from "@angular/common";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { MatSelectModule } from "@angular/material/select";
-import { Config, ConfigService, WeaponType } from "../../services/config.service.js";
+import { Config, ConfigService, WeaponType, KeybindsMessages } from "../../services/config.service.js";
 import { Subscription } from "rxjs";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { FormsModule } from "@angular/forms";
@@ -32,6 +32,8 @@ import { MatIconModule } from "@angular/material/icon";
 export class BehaviorSettingsComponent {
     config: Config | null = null;
     configSubscription: Subscription;
+    keybindsSubscription: Subscription;
+    keybindsData: KeybindsMessages | null = null;
 
     // Collapsible toggles for details
     showGameDetails = false;
@@ -116,11 +118,20 @@ export class BehaviorSettingsComponent {
                 this.config = config;
             },
         );
+        
+        this.keybindsSubscription = this.configService.keybinds$.subscribe(
+            (keybinds) => {
+                this.keybindsData = keybinds;
+            },
+        );
     }
     ngOnDestroy() {
         // Unsubscribe from the config observable to prevent memory leaks
         if (this.configSubscription) {
             this.configSubscription.unsubscribe();
+        }
+        if (this.keybindsSubscription) {
+            this.keybindsSubscription.unsubscribe();
         }
     }
 

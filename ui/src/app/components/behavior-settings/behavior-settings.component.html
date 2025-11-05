@@ -1,6 +1,37 @@
 <div class="settings-grid">
     @if (config) {
         <h2>Actions</h2>
+        
+        @if (keybindsData && (keybindsData.missing.length > 0 || keybindsData.collisions.length > 0)) {
+            <div class="keybind-warning-box">
+                @if (keybindsData.missing.length > 0) {
+                    <div class="keybind-warning-section">
+                        <div class="keybind-warning-header">
+                            <mat-icon style="color: #ff9800;">warning</mat-icon>
+                            <strong style="color: #ff9800;">Missing Keybinds ({{ keybindsData.missing.length }})</strong>
+                        </div>
+                        <div class="keybind-warning-content">
+                            {{ keybindsData.missing.join(', ') }}
+                        </div>
+                    </div>
+                }
+                
+                @if (keybindsData.collisions.length > 0) {
+                    <div class="keybind-warning-section">
+                        <div class="keybind-warning-header">
+                            <mat-icon style="color: #ff9800;">error_outline</mat-icon>
+                            <strong style="color: #ff9800;">Keybind Collisions ({{ keybindsData.collisions.length }})</strong>
+                        </div>
+                        <div class="keybind-warning-content">
+                            @for (collision of keybindsData.collisions; track $index) {
+                                <div class="keybind-collision-item">{{ collision[0] }} ↔ {{ collision[1] }}</div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        
         <div style="display:flex; align-items:center; gap:8px;">
             <mat-slide-toggle [ngModel]="config.tools_var && config.game_actions_var"
                               (ngModelChange)="onConfigChange({game_actions_var: $event})"

@@ -34,6 +34,12 @@ export interface StartMessage extends BaseMessage {
     type: "start";
 }
 
+export interface KeybindsMessages extends BaseMessage {
+    type: "keybinds";
+    missing: string[];
+    collisions: [string,string][];
+}
+
 export interface WeaponType {
     name: string;
     fire_group: number;
@@ -168,6 +174,12 @@ export class ConfigService {
     public plugin_settings_message$ = this.plugin_settings_message_subject
         .asObservable();
 
+    private keybinds_subject = new BehaviorSubject<
+        KeybindsMessages | null
+    >(null);
+    public keybinds$ = this.keybinds_subject
+        .asObservable();
+
     constructor(private tauriService: TauriService) {
         // Subscribe to config messages from the TauriService
         this.tauriService.output$.pipe(
@@ -179,15 +191,17 @@ export class ConfigService {
                 | SystemInfoMessage
                 | ModelValidationMessage
                 | PluginSettingsMessage
-                | StartMessage =>
+                | StartMessage
+                | KeybindsMessages =>
                 message.type === "config" ||
                 message.type === "running_config" ||
                 message.type === "system" ||
                 message.type === "model_validation" ||
                 message.type === "plugin_settings_configs" ||
-                message.type === "start"
+                message.type === "start" ||
+                message.type === "keybinds"
             ),
-        ).subscribe((message: ConfigMessage | RunningConfigMessage | SystemInfoMessage | ModelValidationMessage | PluginSettingsMessage | StartMessage) => {
+        ).subscribe((message: ConfigMessage | RunningConfigMessage | SystemInfoMessage | ModelValidationMessage | PluginSettingsMessage | StartMessage | KeybindsMessages) => {
             if (message.type === "config") {
                 this.configSubject.next(message.config);
             } else if (message.type === "running_config") {
@@ -204,6 +218,8 @@ export class ConfigService {
                 this.plugin_settings_message_subject.next(message);
             } else if (message.type === "start") {
                 this.validationSubject.next(null);
+            } else if (message.type === "keybinds") {
+                this.keybinds_subject.next(message);
             }
         });
     }

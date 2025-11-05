@@ -34,7 +34,7 @@ class EDKeys:
         else:
             self.keymap: dict[str, int] = json.load(open(get_asset_path('keymap_pynput.json')))
         
-        self.keys_to_obtain = [
+        self.required_keys = [
             'PrimaryFire',
             'SecondaryFire',
             'HyperSuperCombination',
@@ -143,20 +143,36 @@ class EDKeys:
             'SystemMapOpen_Humanoid',
             'HumanoidOpenAccessPanelButton',
         ]
+        self.collision_candidates = [
+            'CamTranslateRight',
+            'CamTranslateForward'
+        ]
         
         self.latest_bindings_file = None
         self.latest_bindings_mtime = None
+        self.missing_keys = []
         self.watch_thread = threading.Thread(target=self._watch_bindings_thread, daemon=True)
         self.watch_thread.start()
         
         self.keys = self.get_bindings()
+        self.check_keybind_issues()
         log('debug', 'Keybindings file found, loaded bindings from', self.latest_bindings_file)
-        
+
+    def check_keybind_issues(self):
+        collisions = []
         self.missing_keys = []
-        # dump config to log
-        for key in self.keys_to_obtain:
+
+        for key in self.required_keys :
             if not key in self.keys:
                 self.missing_keys.append(key)
+            else:
+                binding = self.keys[key]
+                for collision_candidate in self.collision_candidates:
+                    candidate_bind = self.keys[collision_candidate]
+                    if collision_candidate != key and binding == candidate_bind:
+                        collisions.append([key, collision_candidate])
+
+        print(json.dumps({"type": "keybinds", "missing": self.missing_keys, "collisions": collisions})+'\n', flush=True)
 
     def get_bindings(self) -> dict[str, Any]:
         """Returns a dict struct with the direct input equivalent of the necessary elite keybindings"""
@@ -168,43 +184,44 @@ class EDKeys:
         bindings_root = bindings_tree.getroot()
 
         for item in bindings_root:
-            if item.tag in self.keys_to_obtain:
-                key = None
+            key = None
+            mods = []
+            hold = None
+            if len(item)!=2:
+                continue
+            # Check primary
+            if item[0].attrib['Device'].strip() == "Keyboard":
+                key = item[0].attrib['Key']
+                for modifier in item[0]:
+                    if modifier.tag == "Modifier":
+                        mods.append(modifier.attrib['Key'])
+                    elif modifier.tag == "Hold":
+                        hold = True
+            # Check secondary (and prefer secondary)
+            if item[1].attrib['Device'].strip() == "Keyboard":
+                key = item[1].attrib['Key']
                 mods = []
                 hold = None
-                # Check primary
-                if item[0].attrib['Device'].strip() == "Keyboard":
-                    key = item[0].attrib['Key']
-                    for modifier in item[0]:
-                        if modifier.tag == "Modifier":
-                            mods.append(modifier.attrib['Key'])
-                        elif modifier.tag == "Hold":
-                            hold = True
-                # Check secondary (and prefer secondary)
-                if item[1].attrib['Device'].strip() == "Keyboard":
-                    key = item[1].attrib['Key']
-                    mods = []
-                    hold = None
-                    for modifier in item[1]:
-                        if modifier.tag == "Modifier":
-                            mods.append(modifier.attrib['Key'])
-                        elif modifier.tag == "Hold":
-                            hold = True
-                # Prepare final binding
-                binding: None | dict[str, Any] = None
-                try:
-                    if key is not None:
-                        binding = {}
-                        binding['key'] = self.keymap[key]
-                        binding['mods'] = []
-                        for mod in mods:
-                            binding['mods'].append(self.keymap[mod])
-                        if hold is not None:
-                            binding['hold'] = True
-                except KeyError:
-                    print("Unrecognised key '" + (json.dumps(binding) if binding else '?')  + "' for bind '" + item.tag + "'")
-                if binding is not None:
-                    direct_input_keys[item.tag] = binding
+                for modifier in item[1]:
+                    if modifier.tag == "Modifier":
+                        mods.append(modifier.attrib['Key'])
+                    elif modifier.tag == "Hold":
+                        hold = True
+            # Prepare final binding
+            binding: None | dict[str, Any] = None
+            try:
+                if key is not None:
+                    binding = {}
+                    binding['key'] = self.keymap[key]
+                    binding['mods'] = []
+                    for mod in mods:
+                        binding['mods'].append(self.keymap[mod])
+                    if hold is not None:
+                        binding['hold'] = True
+            except KeyError:
+                print("Unrecognised key '" + (json.dumps(binding) if binding else '?')  + "' for bind '" + item.tag + "'")
+            if binding is not None:
+                direct_input_keys[item.tag] = binding
 
         if len(list(direct_input_keys.keys())) < 1:
             return {}
@@ -222,6 +239,7 @@ class EDKeys:
         if not list_of_bindings:
             return None, None
         latest_bindings = max(list_of_bindings, key=getmtime)
+
         return latest_bindings, getmtime(latest_bindings)
 
     def send_key(self, type: Literal['Up', 'Down'], key_name:str):
@@ -300,10 +318,6 @@ class EDKeys:
                 self.latest_bindings_file = latest_bindings
                 self.latest_bindings_mtime = mtime
                 self.keys = self.get_bindings()
+                self.check_keybind_issues()
                 log('debug', 'Keybindings file changed, reloaded bindings from', self.latest_bindings_file)
-                # Update missing keys list
-                self.missing_keys = []
-                for key in self.keys_to_obtain:
-                    if not key in self.keys:
-                        self.missing_keys.append(key)
             sleep(1)
