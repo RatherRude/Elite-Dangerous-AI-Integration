@@ -193,3 +193,12 @@ mat-slide-toggle {
 .keybind-collision-item {
   padding: 2px 0;
 }
+
+/* Expansion panel styling */
+mat-expansion-panel {
+  margin: 12px 0;
+}
+
+.tab-icon {
+  margin-right: 8px;
+}

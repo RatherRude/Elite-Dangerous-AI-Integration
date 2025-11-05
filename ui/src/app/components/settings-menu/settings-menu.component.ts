@@ -12,7 +12,7 @@ import { CommonModule } from "@angular/common";
 import { PluginSettingsComponent } from "../plugin-settings/plugin-settings.component";
 import { PolicyService } from "../../services/policy.service.js";
 import { AdvancedSettingsComponent } from "../advanced-settings/advanced-settings.component";
-import { BehaviorSettingsComponent } from "../behavior-settings/behavior-settings.component";
+import { ActionsSettingsComponent } from "../actions-settings/actions-settings.component";
 import { CharacterSettingsComponent } from "../character-settings/character-settings.component";
 import { GeneralSettingsComponent } from "../general-settings/general-settings.component";
 import { MatOption } from "@angular/material/core";
@@ -54,7 +54,7 @@ import { MatButtonModule } from "@angular/material/button";
         MatExpansionPanelTitle,
         PluginSettingsComponent,
         AdvancedSettingsComponent,
-        BehaviorSettingsComponent,
+        ActionsSettingsComponent,
         CharacterSettingsComponent,
         GeneralSettingsComponent,
         MatButtonModule,

@@ -11,9 +11,10 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
+import { MatExpansionModule } from "@angular/material/expansion";
 
 @Component({
-    selector: "app-behavior-settings",
+    selector: "app-actions-settings",
     standalone: true,
     imports: [
         CommonModule,
@@ -25,20 +26,18 @@ import { MatIconModule } from "@angular/material/icon";
         MatButtonToggleModule,
         MatSelectModule,
         MatIconModule,
+        MatExpansionModule,
     ],
-    templateUrl: "./behavior-settings.component.html",
-    styleUrl: "./behavior-settings.component.css",
+    templateUrl: "./actions-settings.component.html",
+    styleUrl: "./actions-settings.component.css",
 })
-export class BehaviorSettingsComponent {
+export class ActionsSettingsComponent {
     config: Config | null = null;
     configSubscription: Subscription;
     keybindsSubscription: Subscription;
     keybindsData: KeybindsMessages | null = null;
 
     // Collapsible toggles for details
-    showGameDetails = false;
-    showWebDetails = false;
-    showUIDetails = false;
     showWeaponTypes = false;
     // Track which weapons are in edit mode (by index)
     weaponEditMode: Set<number> = new Set();
@@ -359,3 +358,4 @@ export class BehaviorSettingsComponent {
         return this.weaponEditMode.has(index);
     }
 }
+

@@ -1,7 +1,7 @@
 # EDCoPilot Integration
 We are excited to work with Razzafrag on integrating **COVAS:NEXT** with **EDCoPilot**!
 
-**Disclaimer:** EDCoPilot does not share the contents of its UI, nor any other data. You can use it for its UI, but **it adds zero functionality or knowledge to the AI**.
+**Disclaimer:** EDCoPilot does not share the contents of its UI, nor any other data. **It adds zero functionality or knowledge to the AI**.
 
 This currently has three benefits:
 

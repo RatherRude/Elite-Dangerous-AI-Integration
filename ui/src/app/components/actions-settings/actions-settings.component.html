@@ -32,21 +32,23 @@
             </div>
         }
         
-        <div style="display:flex; align-items:center; gap:8px;">
-            <mat-slide-toggle [ngModel]="config.tools_var && config.game_actions_var"
-                              (ngModelChange)="onConfigChange({game_actions_var: $event})"
-                              [disabled]="!config.tools_var">
-                Enable Game Actions
-            </mat-slide-toggle>
-            <button mat-stroked-button color="primary" (click)="showGameDetails = !showGameDetails">{{ showGameDetails ? 'Hide' : 'Show' }} Details</button>
-        </div>
+        <mat-slide-toggle [ngModel]="config.tools_var && config.game_actions_var"
+                          (ngModelChange)="onConfigChange({game_actions_var: $event})"
+                          [disabled]="!config.tools_var">
+            Enable Game Actions
+        </mat-slide-toggle>
         <p>Game actions are performed by the AI on your behalf, like deploying the landing gear or opening
             the galaxy map.</p>
         @if (config.tools_var && config.game_actions_var) {
-            <div>
-                @if (showGameDetails) {
-                    <h3 style="margin: 6px 0;">Available game actions</h3>
-                    <div class="permission-list">
+            <mat-expansion-panel>
+                <mat-expansion-panel-header>
+                    <mat-panel-title>
+                        <mat-icon class="tab-icon">tune</mat-icon>
+                        Available Game Actions
+                    </mat-panel-title>
+                </mat-expansion-panel-header>
+                
+                <div class="permission-list">
                         <ng-container *ngFor="let group of gamePermissionsGrouped">
                             <div class="permission-item" *ngFor="let perm of group.actions; let i = index">
                                 <div class="perm-type">{{ i === 0 ? (groupTypeLabels[group.type] || group.type) : '' }}</div>
@@ -251,9 +253,9 @@
                             </div>
                         </ng-container>
                     </div>
-                }
-            </div>
+            </mat-expansion-panel>
         }
+        
         <div style="display:flex; align-items:center; gap:8px;">
             <mat-slide-toggle [ngModel]="config.tools_var && config.web_search_actions_var"
                               (ngModelChange)="onConfigChange({web_search_actions_var: $event})"
