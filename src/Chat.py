@@ -119,14 +119,10 @@ class Chat:
         self.status_parser = StatusParser(get_ed_journals_path(config))
         log("debug", "Initializing prompt generator...")
         self.prompt_generator = PromptGenerator(self.config["commander_name"], self.character["character"], important_game_events=self.enabled_game_events, system_db=self.system_database, weapon_types=cast(list[dict], self.config.get("weapon_types", [])), disabled_game_events=disabled_events)
-        
-        log("debug", "Getting plugin event classes...")
-        plugin_event_classes = self.plugin_manager.register_event_classes()
 
         log("debug", "Initializing event manager...")
         self.event_manager = EventManager(
             game_events=self.enabled_game_events,
-            plugin_event_classes=plugin_event_classes,
         )
 
         log("debug", message="Initializing assistant...")
@@ -152,19 +148,7 @@ class Chat:
         log("debug", "Plugin helper is ready...")
 
         # Execute plugin helper ready hooks
-        self.plugin_manager.on_plugin_helper_ready(self.plugin_helper)
-
-        log("debug", "Registering plugin provided should_reply event handlers...")
-        self.plugin_manager.register_should_reply_handlers(self.plugin_helper)
-        
-        log("debug", "Registering plugin provided side effect...")
-        self.plugin_manager.register_sideeffects(self.plugin_helper)
-        
-        log("debug", "Registering plugin provided prompt event handlers...")
-        self.plugin_manager.register_prompt_event_handlers(self.plugin_helper)
-        
-        log("debug", "Registering plugin provided status generators...")
-        self.plugin_manager.register_status_generators(self.plugin_helper)
+        self.plugin_manager.on_chat_start(self.plugin_helper)
 
         self.previous_states = {}
 

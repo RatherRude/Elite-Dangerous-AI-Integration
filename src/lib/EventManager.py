@@ -43,7 +43,6 @@ class EventManager:
     def __init__(
             self, 
             game_events: list[str],
-            plugin_event_classes: list[type[Event]],
             memory_hook: Callable[[Any, list[Event]], None] = lambda manager, events: None,
         ):
         self.incoming: Queue[Event] = Queue()
@@ -54,7 +53,6 @@ class EventManager:
         self._registry_lock = threading.Lock()
 
         self.event_classes: list[type[Event]] = [ConversationEvent, ToolEvent, GameEvent, StatusEvent, ExternalEvent, MemoryEvent]
-        self.event_classes += plugin_event_classes # Adds the plugin provided event classes
         self.projections: list[Projection] = []
         self.sideeffects: list[Callable[[Event, dict[str, Any]], None]] = []
         
@@ -316,6 +314,16 @@ class EventManager:
 
     def get_projection(self, projection_type: type) -> Projection[object] | None:
         return next((proj for proj in self.projections if isinstance(proj, projection_type)), None)
+
+    def get_projection_state(self, projection_name: str) -> dict:
+        proj = None
+        for p in self.projections:
+            if p.__class__.__name__ == projection_name:
+                proj = p
+                break
+        if proj is None:
+            raise ValueError(f"Projection with name '{projection_name}' not found.")
+        return proj.state
 
     def load_history(self):
         events: list[Event] = self.short_term_memory.get_latest()

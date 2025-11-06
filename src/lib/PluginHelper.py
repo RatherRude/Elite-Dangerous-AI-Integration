@@ -99,46 +99,67 @@ class PluginHelper():
 
     def register_action(self, name, description, parameters, method: Callable[[dict, dict], str], action_type="ship", input_template: Callable[[dict, dict], str]|None=None):
         """Register an action"""
-        self._action_manager.registerAction(name, description, parameters, method, action_type, input_template)
+        self._action_manager.registerAction(name=name, description=description, parameters=parameters, method=method, action_type=action_type, input_template=input_template)
 
     def register_projection(self, projection: Projection):
-        """Register a projection"""
+        """Register a projection to maintain state over time
+        
+        :param projection: The projection to register,
+        """
         self._event_manager.register_projection(projection, raise_error = False)
         
     def register_sideeffect(self, sideeffect: Callable[[Event, dict[str, Any]], None]):
-        """Register a sideeffect"""
+        """Register a sideeffect to react to events programmatically
+        
+        :param sideeffect: A callable that takes any incoming Event and the current projected states dict
+        """
         self._event_manager.register_sideeffect(sideeffect)
 
-    def put_incoming_event(self, event: PluginEvent):
-        """Put an event into the incoming queue"""
+    def dispatch_event(self, event: PluginEvent):
+        """Dispatch an event from an outside source
+        
+        :param event: The event to dispatch
+        """
         if not isinstance(event, PluginEvent):
-            log('warn', 'Calling put_incoming_event with non-PluginEvent type is deprecated.')  # pyright: ignore[reportUnreachable]
+            raise ValueError("Event must be of type PluginEvent")
         self._event_manager.incoming.put(event)
-        
-    def get_projection(self, projection_type: type) -> Projection[object] | None:
-        """Get a projection by type"""
-        return self._event_manager.get_projection(projection_type)
 
-    def register_keybindings(self, keybindings: dict[str, dict[str, int | bool | list[Any]]]):
-        """Register keybindings"""
-        self._keys.keys.update(keybindings)
-
-    def send_key(self, key_name: str):
+    def send_key(self, key_name: str, *args, **kwargs):
         """Send a key"""
-        self._keys.send(key_name)
+        self._keys.send(key_name, *args, **kwargs)
+
+    def register_event(self, name: str, should_reply_check: Callable[[PluginEvent], bool], prompt_generator: Callable[[PluginEvent], str]):
+        """Register an event type
+
+        :param name: The name of the plugin event to register
+        :param should_reply_check: A callable that takes a PluginEvent and returns True if the assistant should reply to it, False otherwise
+        :param prompt_generator: A callable that takes a PluginEvent and returns a string prompt to add to the assistant conversation
+        """
+        def _prompt_handler(event: Event) -> list[ChatCompletionMessageParam]:
+            if not isinstance(event, PluginEvent):
+                return []
+            if event.plugin_event_name != name:
+                return []
+            response = prompt_generator(event)
+            return [{"role": "user", "content": response}]
+        self._prompt_generator.register_prompt_event_handler(_prompt_handler)
         
-    def register_prompt_event_handler(self, prompt_event_handler: Callable[[Event], list[ChatCompletionMessageParam]]):
-        """Register a prompt generator callback, to respond to events"""
-        self._prompt_generator.register_prompt_event_handler(prompt_event_handler)
+        def _should_reply_check(event: Event, context: dict[str, Any]) -> bool | None:
+            if not isinstance(event, PluginEvent):
+                return None
+            if event.plugin_event_name != name:
+                return None
+            return should_reply_check(event)
+        self._assistant.register_should_reply_handler(_should_reply_check)
         
     def register_status_generator(self, status_generator: Callable[[dict[str, dict]], list[tuple[str, Any]]]):
-        """Register a status generator callback, for adding stuff to the models status context (Like ship info)."""
+        """
+        Register a status generator callback, for adding stuff to the models status context (Like ship info).
+            
+        :param status_generator: A callable that takes the current projected states and returns a list of (title, content) tuples.
+        """
         self._prompt_generator.register_status_generator(status_generator)
         
-    def register_should_reply_handler(self, should_reply_handler: Callable[[Event, dict[str, Any]], bool | None]):
-        """Register a handler that will decide wether the assistant should reply to any given event. False means no reply, True means reply, None means no decision, leaving it to the assistant"""
-        self._assistant.register_should_reply_handler(should_reply_handler)
-
     def wait_for_condition(self, projection_name: str, condition_fn, timeout=None):
         """Block until `condition_fn` is satisfied by the current or future
         state of the specified projection.
