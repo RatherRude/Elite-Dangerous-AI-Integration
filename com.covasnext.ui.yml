@@ -35,7 +35,7 @@ modules:
       - type: dir
         path: dist/linux-unpacked
       - type: file
-        path: ui/src-tauri/icons/EDAI_logo_transparent_512.png
+        path: ui/assets/EDAI_logo_transparent_512.png
         dest-filename: EDAI_logo_transparent_512.png
     build-commands:
       # Create directories
