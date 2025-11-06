@@ -3,17 +3,23 @@ import json
 import os
 
 import sys
-from typing import Self
+from typing import Any, Self, cast
 
-from .PluginBase import PluginBase
-from .PluginHelper import PluginHelper, PluginManifest
+from lib.Config import Config
+
 from .PluginSettingDefinitions import PluginSettings
 from .Logger import log
+
+from .PluginBase import PluginBase, PluginManifest
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .PluginHelper import PluginHelper
 
 class PluginManager:
     # Constructor
     def __init__(self):
-        self.plugin_list: dict[str, PluginBase] = {}
+        self.plugin_list: dict[str, 'PluginBase'] = {}
         self.plugin_settings_configs: list[PluginSettings] = []
         self.PLUGIN_FOLDER: str = "plugins"
         self.PLUGIN_DEPENDENCIES_FOLDER: str = "deps"
@@ -24,7 +30,7 @@ class PluginManager:
         log('debug', f"Plugins folder ({plugin_folder}) added to path.")
         sys.path.insert(0, plugin_folder)
 
-    def load_plugin_module(self, manifest: PluginManifest, file_path: str) -> PluginBase:
+    def load_plugin_module(self, manifest: 'PluginManifest', file_path: str) -> 'PluginBase':
         # Get the module name from file name
         module_name = os.path.splitext(os.path.basename(file_path))[0]
         
@@ -43,6 +49,7 @@ class PluginManager:
         module = importlib.import_module(dotted_module)
 
         # Find a subclass of PluginBase
+        from .PluginBase import PluginBase
         for attr in dir(module):
             obj = getattr(module, attr)
             if isinstance(obj, type) and issubclass(obj, PluginBase) and obj is not PluginBase:
@@ -102,8 +109,20 @@ class PluginManager:
                 # Check if the settings config is already registered
                 self.plugin_settings_configs.append(module.settings_config)
         print(json.dumps({"type": "plugin_settings_configs", "plugin_settings_configs": self.plugin_settings_configs, "has_plugin_settings": (len(self.plugin_settings_configs) > 0)})+'\n', flush=True)
+
+    def on_settings_changed(self, new_settings: Config):
+        """
+        Executed when the plugin settings are changed, and will call the on_settings_changed hook for each plugin.
+        """
+        for module in self.plugin_list.values():
+            log('debug', f"Executing on_settings_changed hook for {module.plugin_manifest.name}")
+            try:
+                if module.plugin_manifest.guid in new_settings:
+                    module.on_settings_changed(new_settings.get('plugin_settings', {}).get(module.plugin_manifest.guid) or {}, new_settings)
+            except Exception as e:
+                log('error', f"Failed to execute on_settings_changed hook for {module.plugin_manifest.name}: {e}")
     
-    def on_chat_start(self, helper: PluginHelper):
+    def on_chat_start(self, helper: 'PluginHelper'):
         """
         Executed when the chat is started, and will call the on_chat_start hook for each plugin.
         """
@@ -113,8 +132,8 @@ class PluginManager:
                 module.on_chat_start(helper)
             except Exception as e:
                 log('error', f"Failed to execute on_chat_start hook for {module.plugin_manifest.name}: {e}")
-    
-    def on_chat_stop(self, helper: PluginHelper):
+
+    def on_chat_stop(self, helper: 'PluginHelper'):
         """
         Executed when the chat is stopped, and will call the on_chat_stop hook for each plugin.
         """

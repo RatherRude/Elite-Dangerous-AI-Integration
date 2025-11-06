@@ -1,9 +1,7 @@
-import json
 import os
-from typing import Any, Callable, TypedDict, cast
+from typing import Any, Callable
 import openai
 from openai.types.chat import ChatCompletionMessageParam
-from requests import auth
 
 from .Logger import log
 from .EDKeys import EDKeys
@@ -15,21 +13,15 @@ from .Event import Event, PluginEvent
 from .PromptGenerator import PromptGenerator
 from .Assistant import Assistant
 
-class PluginManifest(object):
-    guid: str = ""
-    name: str = ""
-    author: str = ""
-    version: str = ""
-    repository: str = ""
-    description: str = ""
-    entrypoint: str = ""
-
-    def __init__(self, j: str) -> None:
-        self.__dict__.update(cast(dict[str, str], json.loads(j)))
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .PluginManager import PluginManager
+    from .PluginBase import PluginManifest
 
 class PluginHelper():
     """Contains all built-inservices and managers that can be used by plugins"""
 
+    _plugin_manager: 'PluginManager'
     _assistant: Assistant
     _prompt_generator: PromptGenerator
     _keys: EDKeys
@@ -43,9 +35,10 @@ class PluginHelper():
     _system_db: SystemDatabase
     PLUGIN_DATA_PATH: str = "plugin_data"
 
-    def __init__(self, prompt_generator: PromptGenerator, config: Config, action_manager: ActionManager, event_manager: EventManager, llm_client: openai.OpenAI,
+    def __init__(self, plugin_manager: 'PluginManager', prompt_generator: PromptGenerator, config: Config, action_manager: ActionManager, event_manager: EventManager, llm_client: openai.OpenAI,
                      llm_model_name: str, vision_client: openai.OpenAI | None, vision_model_name: str | None,
                      system_db: SystemDatabase, ed_keys: EDKeys, assistant: Assistant):
+        self._plugin_manager = plugin_manager
         self._prompt_generator = prompt_generator
         self._keys = ed_keys
         self._system_db = system_db
@@ -90,7 +83,7 @@ class PluginHelper():
         cur_setting[key_path[-1]] = value
         save_config(self._config)
 
-    def get_plugin_data_path(self, plugin_manifest: PluginManifest) -> str:
+    def get_plugin_data_path(self, plugin_manifest: 'PluginManifest') -> str:
         """Get a plugin data path, from the plugin data folder"""
         plugin_data_path = os.path.abspath(os.path.join(self.PLUGIN_DATA_PATH, plugin_manifest.guid))
         if not os.path.exists(plugin_data_path):
@@ -113,7 +106,12 @@ class PluginHelper():
         
         :param sideeffect: A callable that takes any incoming Event and the current projected states dict
         """
-        self._event_manager.register_sideeffect(sideeffect)
+        def _sideeffect_wrapper(event: Event, context: dict[str, Any]):
+            try:
+                sideeffect(event, context)
+            except Exception as e:
+                log('error', f"Plugin sideeffect raised an exception: {e}")
+        self._event_manager.register_sideeffect(_sideeffect_wrapper)
 
     def dispatch_event(self, event: PluginEvent):
         """Dispatch an event from an outside source
@@ -140,7 +138,11 @@ class PluginHelper():
                 return []
             if event.plugin_event_name != name:
                 return []
-            response = prompt_generator(event)
+            try:
+                response = prompt_generator(event)
+            except Exception as e:
+                log('error', f"Plugin prompt_generator raised an exception: {e}")
+                return []
             return [{"role": "user", "content": response}]
         self._prompt_generator.register_prompt_event_handler(_prompt_handler)
         
@@ -149,7 +151,11 @@ class PluginHelper():
                 return None
             if event.plugin_event_name != name:
                 return None
-            return should_reply_check(event)
+            try:
+                return should_reply_check(event)
+            except Exception as e:
+                log('error', f"Plugin should_reply_check raised an exception: {e}")
+                return False
         self._assistant.register_should_reply_handler(_should_reply_check)
         
     def register_status_generator(self, status_generator: Callable[[dict[str, dict]], list[tuple[str, Any]]]):
@@ -158,8 +164,14 @@ class PluginHelper():
             
         :param status_generator: A callable that takes the current projected states and returns a list of (title, content) tuples.
         """
-        self._prompt_generator.register_status_generator(status_generator)
-        
+        def _status_generator_wrapper(states: dict[str, dict]) -> list[tuple[str, Any]]:
+            try:
+                return status_generator(states)
+            except Exception as e:
+                log('error', f"Plugin status_generator raised an exception: {e}")
+                return []
+        self._prompt_generator.register_status_generator(_status_generator_wrapper)
+
     def wait_for_condition(self, projection_name: str, condition_fn, timeout=None):
         """Block until `condition_fn` is satisfied by the current or future
         state of the specified projection.
@@ -171,4 +183,10 @@ class PluginHelper():
         :return: The state dict that satisfied the condition.
         :raises TimeoutError: If the condition isn't met within `timeout`.
         """
-        return self._event_manager.wait_for_condition(projection_name, condition_fn, timeout)
+        def _condition_fn_wrapper(state: dict) -> bool:
+            try:
+                return condition_fn(state)
+            except Exception as e:
+                log('error', f"Plugin wait_for_condition condition_fn raised an exception: {e}")
+                return False
+        return self._event_manager.wait_for_condition(projection_name, _condition_fn_wrapper, timeout)

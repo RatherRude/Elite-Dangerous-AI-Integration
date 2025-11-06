@@ -72,5 +72,18 @@
         </div>
     </mat-tab>
     
+    @if (has_plugin_settings) {
+        <mat-tab>
+            <ng-template mat-tab-label>
+                <mat-icon class="tab-icon">extension</mat-icon>
+                Plugins
+            </ng-template>
+            <div class="tab-content">
+                @if (config) {
+                    <app-plugin-settings></app-plugin-settings>
+                }
+            </div>
+        </mat-tab>
+    }
 </mat-tab-group>
 

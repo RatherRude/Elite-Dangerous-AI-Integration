@@ -144,11 +144,8 @@ class Chat:
         self.event_manager.register_sideeffect(self.on_event)
         self.event_manager.register_sideeffect(self.assistant.on_event)
         
-        self.plugin_helper = PluginHelper(self.prompt_generator, config, self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.system_database, self.ed_keys, self.assistant)
+        self.plugin_helper = PluginHelper(self.plugin_manager, self.prompt_generator, config, self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.system_database, self.ed_keys, self.assistant)
         log("debug", "Plugin helper is ready...")
-
-        # Execute plugin helper ready hooks
-        self.plugin_manager.on_chat_start(self.plugin_helper)
 
         self.previous_states = {}
 
@@ -329,7 +326,6 @@ class Chat:
 
         show_chat_message('info', 'Register projections...')
         registerProjections(self.event_manager, self.system_database, self.character.get('idle_timeout_var', 300))
-        self.plugin_manager.register_projections(self.plugin_helper)
 
         self.event_manager.process()
 
@@ -356,12 +352,14 @@ class Chat:
                 self.config.get("weapon_types", [])
             )
 
-            log('info', "Built-in Actions ready.")
-            self.plugin_manager.register_actions(self.plugin_helper)
-            log('info', "Plugin provided Actions ready.")
+            log('info', "Actions ready.")
             show_chat_message('info', "Actions ready.")
 
 
+        # Execute plugin helper ready hooks
+        self.plugin_manager.on_chat_start(self.plugin_helper)
+        show_chat_message('info', "Plugins ready.")
+        
         # Cue the user that we're ready to go.
         show_chat_message('info', "System Ready.")
 
@@ -518,6 +516,7 @@ if __name__ == "__main__":
                     #ActionManager.clear_action_cache()
                 if data.get("type") == "init_overlay":
                     update_config(config, {}) # Ensure that the overlay gets a new config on start
+                plugin_manager.on_settings_changed(config)
                 
             except json.JSONDecodeError:
                 continue

@@ -7,7 +7,7 @@ import {PngTuberService} from "../services/pngtuber.service";
 import {ChatMessage, ChatService} from "../services/chat.service";
 import {AvatarService} from "../services/avatar.service";
 import {CharacterService} from "../services/character.service";
-import {ConfigService} from "../services/config.service";
+import {Config, ConfigService} from "../services/config.service";
 
 @Component({
   selector: "app-overlay-view",
@@ -125,14 +125,14 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
     }
   }
   
-  private updateAvatarShowStatus(config: any): void {
+  private updateAvatarShowStatus(config: Config): void {
     // Use global overlay setting
-    this.avatarShow = config?.overlay_show_avatar !== false;
+    this.avatarShow = config?.overlay_show_avatar !== false && config?.tts_provider !== 'none';
   }
 
-  private updateChatShowStatus(config: any): void {
+  private updateChatShowStatus(config: Config): void {
     // Use global overlay setting for chat
-    this.chatShow = config?.overlay_show_chat !== false;
+    this.chatShow = config?.overlay_show_chat !== false && config?.tts_provider !== 'none';
   }
 
   private applyAvatarBackground() {
