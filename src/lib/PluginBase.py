@@ -4,8 +4,6 @@ from typing import Any, cast
 
 
 from .PluginSettingDefinitions import PluginSettings
-from .Event import Event
-from .Config import Config
 
 
 from typing import TYPE_CHECKING
@@ -40,7 +38,12 @@ class PluginBase(ABC):
     """
     Define the settings for this plugin. This is the settings that will be shown in the UI.
     """
-
+    
+    settings: dict[str, Any] = {}
+    """
+    The current settings for this plugin.
+    """
+    
     @abstractmethod
     def __init__(self, plugin_manifest: 'PluginManifest'):
         """
@@ -53,23 +56,15 @@ class PluginBase(ABC):
 
         self.plugin_manifest = plugin_manifest
         
-    def on_settings_changed(self, plugin_settings: dict[str, Any], global_settings: Config):
-        """
-        Executed when the plugin settings are changed.
-
-        Args:
-            new_settings (dict[str, Any]): The new settings.
-        """
-    
     def on_chat_start(self, helper: 'PluginHelper'):
         """
         Executed when the chat is started
         """
+        pass
 
     def on_chat_stop(self, helper: 'PluginHelper'):
         """
         Executed when the chat is stopped
         """
-
         pass
     

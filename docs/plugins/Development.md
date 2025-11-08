@@ -38,12 +38,10 @@ Create a new class implementing `PluginBase` like this:
 # Main plugin class
 # This is the class that will be loaded by the PluginManager.
 class ExamplePlugin(PluginBase):
-    def __init__(self, plugin_manifest: PluginManifest):
-        super().__init__(plugin_manifest)
 
-        # Define the plugin settings
-        # This is the settings that will be shown in the UI for this plugin.
-        self.settings_config: PluginSettings | None = PluginSettings(
+    # Define the plugin settings
+    # This is the settings that will be shown in the UI for this plugin.
+    settings_config = PluginSettings(
             key="MediaPlayerPlugin",
             label="Example Plugin Settings",
             icon="wrench", # Uses Material Icons, like the built-in settings-tabs.
@@ -53,7 +51,7 @@ class ExamplePlugin(PluginBase):
                     label="General",
                     fields=[
                         ToggleSetting(
-                            key="bool_setting",
+                            key="my_bool_setting",
                             label="Boolean Setting",
                             type="toggle",
                             readonly = False,
@@ -65,11 +63,13 @@ class ExamplePlugin(PluginBase):
             ]
         )
 
-    # The following overrides are optional. Remove them if you don't need them.
-
     @override
     def on_chat_start(self, helper: PluginHelper):
         """Called when chat starts - register all actions, projections, sideeffects, etc. here"""
+
+        # Access plugin settings
+        my_bool_setting = self.settings.get("my_bool_setting", False)
+
         # Register actions
         # helper.register_action(...)
 
@@ -168,13 +168,7 @@ The `PluginHelper` class provides several methods for interacting with the COVAS
 - `helper.send_key(key_name: str, *args, **kwargs)`:  
    Send a key input to the game.
 
-### Settings & Data
-
-- `helper.get_plugin_setting(*key_paths: str) -> Any`:  
-   Get a plugin setting using a series of keys forming a path.
-
-- `helper.set_plugin_setting(*key_path: str, value: Any)`:  
-   Set a plugin setting using a series of keys forming a path.
+### Data & Assets
 
 - `helper.get_plugin_data_path(plugin_manifest: PluginManifest) -> str`:  
    Get the absolute path to your plugin's data directory.
@@ -233,5 +227,6 @@ Remember to clean up references etc. in `on_chat_stop()`.
 | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `__init__`        | The constructor is executed immediately upon loading the entrypoint file. Use this for initialization that doesn't require the `PluginHelper`.                                                                                         |
 | `settings_config` | Settings are defined as a class property and registered right after all plugins have been loaded.                                                                                                                                      |
+| `settings`        | The current settings for the plugin are available as a class property. These are updated when the user changes settings in the UI.                                                                                                     |
 | `on_chat_start()` | This function is executed when the chat assistant is started.<br>**All registration should happen here:** register actions, projections, sideeffects, custom events, and status generators using the provided `PluginHelper` instance. |
 | `on_chat_stop()`  | This function runs when the user stops the chat assistant. Use this for any cleanup between chat sessions.                                                                                                                             |

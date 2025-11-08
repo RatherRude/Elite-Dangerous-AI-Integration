@@ -20,7 +20,7 @@ class PluginManager:
     # Constructor
     def __init__(self):
         self.plugin_list: dict[str, 'PluginBase'] = {}
-        self.plugin_settings_configs: list[PluginSettings] = []
+        self.plugin_settings_configs: dict[str, PluginSettings] = {}
         self.PLUGIN_FOLDER: str = "plugins"
         self.PLUGIN_DEPENDENCIES_FOLDER: str = "deps"
         
@@ -107,7 +107,7 @@ class PluginManager:
             log('debug', f"Registering Settings for {module.plugin_manifest.name}")
             if module.settings_config is not None:
                 # Check if the settings config is already registered
-                self.plugin_settings_configs.append(module.settings_config)
+                self.plugin_settings_configs[module.plugin_manifest.guid] = module.settings_config
         print(json.dumps({"type": "plugin_settings_configs", "plugin_settings_configs": self.plugin_settings_configs, "has_plugin_settings": (len(self.plugin_settings_configs) > 0)})+'\n', flush=True)
 
     def on_settings_changed(self, new_settings: Config):
@@ -118,7 +118,7 @@ class PluginManager:
             log('debug', f"Executing on_settings_changed hook for {module.plugin_manifest.name}")
             try:
                 if module.plugin_manifest.guid in new_settings:
-                    module.on_settings_changed(new_settings.get('plugin_settings', {}).get(module.plugin_manifest.guid) or {}, new_settings)
+                    module.settings = new_settings.get('plugin_settings', {}).get(module.plugin_manifest.guid) or {}
             except Exception as e:
                 log('error', f"Failed to execute on_settings_changed hook for {module.plugin_manifest.name}: {e}")
     
