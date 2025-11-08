@@ -18,12 +18,13 @@ if TYPE_CHECKING:
 
 class PluginManager:
     # Constructor
-    def __init__(self):
+    def __init__(self, config: Config):
         self.plugin_list: dict[str, 'PluginBase'] = {}
         self.plugin_settings_configs: dict[str, PluginSettings] = {}
         self.PLUGIN_FOLDER: str = "plugins"
         self.PLUGIN_DEPENDENCIES_FOLDER: str = "deps"
-        
+        self.config = config
+
         # Add the plugin folder to sys.path
         # This allows us to import plugins as packages.
         plugin_folder = os.path.abspath(os.path.join('.', self.PLUGIN_FOLDER))
@@ -53,7 +54,9 @@ class PluginManager:
         for attr in dir(module):
             obj = getattr(module, attr)
             if isinstance(obj, type) and issubclass(obj, PluginBase) and obj is not PluginBase:
-                return obj(manifest) # Instantiate and return
+                plugin = obj(manifest) # Instantiate and return
+                plugin.settings = self.config.get('plugin_settings', {}).get(manifest.guid, {})
+                return plugin
 
         raise TypeError("No valid PluginBase subclass found.")
 
@@ -117,7 +120,7 @@ class PluginManager:
         for module in self.plugin_list.values():
             log('debug', f"Executing on_settings_changed hook for {module.plugin_manifest.name}")
             try:
-                if module.plugin_manifest.guid in new_settings:
+                if module.plugin_manifest.guid in new_settings.get('plugin_settings', {}):
                     module.settings = new_settings.get('plugin_settings', {}).get(module.plugin_manifest.guid) or {}
             except Exception as e:
                 log('error', f"Failed to execute on_settings_changed hook for {module.plugin_manifest.name}: {e}")
