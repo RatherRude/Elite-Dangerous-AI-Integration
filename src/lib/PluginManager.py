@@ -113,15 +113,16 @@ class PluginManager:
                 self.plugin_settings_configs[module.plugin_manifest.guid] = module.settings_config
         print(json.dumps({"type": "plugin_settings_configs", "plugin_settings_configs": self.plugin_settings_configs, "has_plugin_settings": (len(self.plugin_settings_configs) > 0)})+'\n', flush=True)
 
-    def on_settings_changed(self, new_settings: Config):
+    def on_settings_changed(self, new_config: Config):
         """
         Executed when the plugin settings are changed, and will call the on_settings_changed hook for each plugin.
         """
+        self.config = new_config
         for module in self.plugin_list.values():
             log('debug', f"Executing on_settings_changed hook for {module.plugin_manifest.name}")
             try:
-                if module.plugin_manifest.guid in new_settings.get('plugin_settings', {}):
-                    module.settings = new_settings.get('plugin_settings', {}).get(module.plugin_manifest.guid) or {}
+                if module.plugin_manifest.guid in new_config.get('plugin_settings', {}):
+                    module.settings = new_config.get('plugin_settings', {}).get(module.plugin_manifest.guid) or {}
             except Exception as e:
                 log('error', f"Failed to execute on_settings_changed hook for {module.plugin_manifest.name}: {e}")
     

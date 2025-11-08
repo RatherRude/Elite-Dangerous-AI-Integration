@@ -472,17 +472,17 @@ def check_zombie_status():
 if __name__ == "__main__":
     try:
         print(json.dumps({"type": "ready"})+'\n')
-        # Load plugins.
-        log('debug', "Loading plugins...")
-        plugin_manager = PluginManager()
-        plugin_manager.load_plugins()
-        log('debug', "Registering plugin settings for the UI...")
-        plugin_manager.register_settings()
         # Wait for start signal on stdin
         config = load_config()
         print(json.dumps({"type": "config", "config": config})+'\n', flush=True)
         system = get_system_info()
         print(json.dumps({"type": "system", "system": system})+'\n', flush=True)
+        # Load plugins.
+        log('debug', "Loading plugins...")
+        plugin_manager = PluginManager(config=config)
+        plugin_manager.load_plugins()
+        log('debug', "Registering plugin settings for the UI...")
+        plugin_manager.register_settings()
         while True:
             # print(f"Waiting for command...")
             line = sys.stdin.readline().strip()
