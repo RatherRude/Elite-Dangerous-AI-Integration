@@ -101,17 +101,17 @@ class PluginHelper():
         :param should_reply_check: A callable that takes a PluginEvent and returns True if the assistant should reply to it, False otherwise
         :param prompt_generator: A callable that takes a PluginEvent and returns a string prompt to add to the assistant conversation
         """
-        def _prompt_handler(event: Event) -> list[ChatCompletionMessageParam]:
+        def _prompt_handler(event: Event) -> str| None:
             if not isinstance(event, PluginEvent):
-                return []
+                return None
             if event.plugin_event_name != name:
-                return []
+                return None
             try:
                 response = prompt_generator(event)
             except Exception as e:
                 log('error', f"Plugin prompt_generator raised an exception: {e}")
-                return []
-            return [{"role": "user", "content": response}]
+                return None
+            return response
         self._prompt_generator.register_prompt_event_handler(_prompt_handler)
         
         def _should_reply_check(event: Event, context: dict[str, Any]) -> bool | None:
