@@ -63,7 +63,7 @@ def show_chat_message(role: str, *args: Any):
         'message': contents,
     }
     
-    logger.info(contents)
+    #logger.info(contents)
     
     print(json.dumps(message), flush=True)
 
