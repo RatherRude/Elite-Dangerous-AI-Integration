@@ -87,11 +87,9 @@ class Assistant:
         try:
             if (isinstance(event, GameEvent) and event.content.get('event') == 'Screenshot' and
                     self.config.get("vision_provider", '') != 'none'):
-                log('info', 'Screenshot event received, calling get_visuals')
 
                 visual_args = {"query": "Describe what you see in the game."}
                 visual_result = get_visuals(visual_args, projected_states)
-                log('info', 'visual result' + visual_result)
 
                 request = [{"id": "auto-screenshot-1", "type": "function", "function": {"name": "getVisuals", "arguments": json.dumps(visual_args)}}]
                 results = [{"tool_call_id": "auto-screenshot-1", "role": "tool", "name": "getVisuals", "content": visual_result}]
