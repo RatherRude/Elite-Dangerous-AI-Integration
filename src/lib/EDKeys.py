@@ -188,9 +188,8 @@ class EDKeys:
             hold = None
             if len(item) < 2:
                 continue
-            
             # Check primary
-            if item[0].attrib['Device'].strip() == "Keyboard":
+            if item[0].tag == "Primary" and item[0].attrib['Device'].strip() == "Keyboard":
                 key = item[0].attrib['Key']
                 for modifier in item[0]:
                     if modifier.tag == "Modifier":
@@ -198,7 +197,7 @@ class EDKeys:
                     elif modifier.tag == "Hold":
                         hold = True
             # Check secondary (and prefer secondary)
-            if item[1].attrib['Device'].strip() == "Keyboard":
+            if item[1].tag == "Secondary" and item[1].attrib['Device'].strip() == "Keyboard":
                 key = item[1].attrib['Key']
                 mods = []
                 hold = None
@@ -208,8 +207,9 @@ class EDKeys:
                     elif modifier.tag == "Hold":
                         hold = True
             # Prepare final binding
-            if item[2].tag == "ToggleOn" and item[2].attrib.get('Value') == "0":
-                continue
+            if len(item) > 2:
+                if item[2].tag == "ToggleOn" and item[2].attrib.get('Value') == "0":
+                    continue
             binding: None | dict[str, Any] = None
             try:
                 if key is not None:
