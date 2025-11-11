@@ -98,7 +98,6 @@ class EDKeys:
             'QuickCommsPanel_Buggy',
             'QuickCommsPanel_Humanoid',
             'ToggleDriveAssist',
-            'VerticalThrustersButton',
             'BuggyPrimaryFireButton',
             'BuggySecondaryFireButton',
             'AutoBreakBuggyButton',
@@ -187,8 +186,9 @@ class EDKeys:
             key = None
             mods = []
             hold = None
-            if len(item)!=2:
+            if len(item) < 2:
                 continue
+            
             # Check primary
             if item[0].attrib['Device'].strip() == "Keyboard":
                 key = item[0].attrib['Key']
@@ -208,6 +208,8 @@ class EDKeys:
                     elif modifier.tag == "Hold":
                         hold = True
             # Prepare final binding
+            if item[2].tag == "ToggleOn" and item[2].attrib.get('Value') == "0":
+                continue
             binding: None | dict[str, Any] = None
             try:
                 if key is not None:
