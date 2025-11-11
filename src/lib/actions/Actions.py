@@ -729,6 +729,11 @@ def request_docking(args, projected_states):
             keys.send('SetSpeedZero')
             sleep(0.2)
         msg = ""
+        if docking_events.get('LastEventType') == 'DockingGranted':
+            msg = "Docking request was sent and granted"
+        if docking_events.get('LastEventType') in ['DockingCanceled', 'DockingDenied', 'DockingTimeout']:
+            msg = "Docking request was sent but previous station communication indicates that it has failed"
+
     except:
         msg = "Failed to request docking via menu"
 

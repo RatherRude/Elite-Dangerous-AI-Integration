@@ -21,7 +21,7 @@ formatter = JsonFormatter(
 )
 logHandler.setFormatter(formatter)
 logger.addHandler(logHandler)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 httpx_logger = logging.getLogger("httpx")
 httpx_logger.setLevel(logging.WARNING)
