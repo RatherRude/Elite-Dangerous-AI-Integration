@@ -14,7 +14,7 @@ from .EDCoPilot import EDCoPilot
 from openai import APIStatusError, BadRequestError, OpenAI, RateLimitError
 from typing import Any,  Callable, final
 from threading import Thread
-from .actions.Actions import set_speed, fire_weapons
+from .actions.Actions import set_speed, fire_weapons, get_visuals
 
 @final
 class Assistant:
@@ -82,6 +82,24 @@ class Assistant:
                     self.event_manager.add_tool_call(request, results, descriptions)
         except Exception as e:
             log('error', 'Auto actions on FSDJump failed', e, traceback.format_exc())
+
+        # Auto action on Screenshot: get visual description
+        try:
+            if (isinstance(event, GameEvent) and event.content.get('event') == 'Screenshot' and
+                    self.config.get("vision_provider", '') != 'none'):
+                log('info', 'Screenshot event received, calling get_visuals')
+
+                visual_args = {"query": "Describe what you see in the game."}
+                visual_result = get_visuals(visual_args, projected_states)
+                log('info', 'visual result' + visual_result)
+
+                request = [{"id": "auto-screenshot-1", "type": "function", "function": {"name": "getVisuals", "arguments": json.dumps(visual_args)}}]
+                results = [{"tool_call_id": "auto-screenshot-1", "role": "tool", "name": "getVisuals", "content": visual_result}]
+                descriptions = ["Analyzing screenshot"]
+                
+                self.event_manager.add_tool_call(request, results, descriptions)
+        except Exception as e:
+            log('error', 'Auto action on Screenshot failed', e, traceback.format_exc())
 
         if isinstance(event, ConversationEvent) and event.kind == 'assistant':
             short_term = self.event_manager.get_short_term_memory(1000)
