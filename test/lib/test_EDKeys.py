@@ -60,7 +60,7 @@ def test_get_bindings_loads_valid_keys(mock_directinput, binds_file):
     assert bindings['SecondaryFire']['key'] == 30
     assert bindings['SecondaryFire']['mods'] == [42]
     
-    assert len(keys.missing_keys) == len(keys.keys_to_obtain) - 2
+    assert len(keys.missing_keys) == len(keys.required_keys) - 2
 
 def test_get_bindings_skips_unrecognized(mock_directinput, binds_file):
     """Test that unrecognized keys are skipped"""

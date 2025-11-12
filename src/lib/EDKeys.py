@@ -167,8 +167,8 @@ class EDKeys:
             else:
                 binding = self.keys[key]
                 for collision_candidate in self.collision_candidates:
-                    candidate_bind = self.keys[collision_candidate]
-                    if collision_candidate != key and binding == candidate_bind:
+                    candidate_bind = self.keys.get(collision_candidate, None)
+                    if collision_candidate and collision_candidate != key and binding == candidate_bind:
                         collisions.append([key, collision_candidate])
 
         print(json.dumps({"type": "keybinds", "missing": self.missing_keys, "collisions": collisions})+'\n', flush=True)
