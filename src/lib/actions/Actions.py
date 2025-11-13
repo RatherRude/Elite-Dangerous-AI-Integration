@@ -738,6 +738,7 @@ def request_docking(args, projected_states):
         msg = "Failed to request docking via menu"
 
     stop_event.set()  # stop the keypress thread
+    t.join(1)
 
     keys.send('UIFocus')
     return msg
