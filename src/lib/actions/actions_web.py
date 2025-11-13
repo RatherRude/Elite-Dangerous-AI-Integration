@@ -79,7 +79,7 @@ def web_search_agent(
             "type": "function",
             "function": {
                 "name": "station_finder",
-                "description": "Find a station for commodities, modules and ships.",
+                "description": "Find a station for commodities, modules and ships. Sorted by distance or best price when commodity.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -89,7 +89,7 @@ def web_search_agent(
                         "material_trader": { "type": "array", "items": { "type": "string", "enum": ["Encoded", "Manufactured", "Raw"] } },
                         "technology_broker": { "type": "array", "items": { "type": "string", "enum": ["Guardian", "Human"] } },
                         "modules": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" }, "class": { "type": "array", "items": { "type": "string" } }, "rating": { "type": "array", "items": { "type": "string" } } }, "required": ["name"] } },
-                        "commodities": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" }, "amount": { "type": "integer" }, "transaction": { "type": "string", "enum": ["Buy", "Sell"] } }, "required": ["name", "amount", "transaction"] } },
+                        "commodities": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" }, "amount": { "type": "integer" }, "transaction": { "type": "string", "enum": ["Buy", "Sell"] } }, "required": ["name", "amount", "transaction"]} },
                         "ships": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" } }, "required": ["name"] } },
                         "services": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string", "enum": ["Black Market", "Interstellar Factors Contact"] } }, "required": ["name"] } }
                     },
@@ -182,10 +182,13 @@ def web_search_agent(
     You will be given a user query and a set of tools.
     You can call one or more tools to gather information.
     Once you have enough information, you must generate a concise and helpful final report answering the user's query.
+    The report summarizes the interpretation of the query, the search parameters used to acquire the answer and the answer to the user's query.  
+    
     Do not just regurgitate the tool outputs. Synthesize them into a coherent answer.
+    
     Always use the `reference_system` parameter for finders if you know the user's current location. The current location is provided in the `projected_states`.
     If a tool returns an error or no results, try to call it again with different parameters if it makes sense, or try a different tool.
-    If the user asks a question that cannot be answered with the available tools, just say so.
+    If you can not find an answer to the user's question, do your best to provide related information given your set of tools and mention this limitation in your final output.
 
     Here are some examples of how to use the tools:
 
