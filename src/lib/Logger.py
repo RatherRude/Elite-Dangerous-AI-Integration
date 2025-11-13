@@ -66,7 +66,7 @@ def show_chat_message(role: str, *args: Any):
     
     logger.info(contents)
     
-    print(json.dumps(message), flush=True)
+    print(json.dumps(message) + "\n", flush=True)
 
 def log(prefix: Literal['info', 'debug', 'warn', 'error'], message: Any, *args: Any):
     output = io.StringIO()
