@@ -3228,7 +3228,7 @@ class PromptGenerator:
                         available_engineers[engineer_name] = engineer_systems[engineer_name]
 
             if available_engineers:
-                status_entries.append(("Available Engineers", available_engineers))
+                status_entries.append(("Available Engineers and their home system", available_engineers))
         
         # Process plugin status messages
         for status_generator in self.registered_status_generators:
