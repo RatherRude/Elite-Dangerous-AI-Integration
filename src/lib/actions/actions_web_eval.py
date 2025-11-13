@@ -3,21 +3,27 @@ from __future__ import annotations
 from typing import Any
 import os
 
+from dotenv import load_dotenv
+load_dotenv()
 from pydantic import BaseModel
 
 from openai import AsyncOpenAI, OpenAI
 from pydantic_ai.providers.openai import OpenAIProvider
-from pydantic_ai.models.openai import OpenAIModel
+from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.settings import ModelSettings
 from pydantic_evals import Case, Dataset
 from pydantic_evals.evaluators import LLMJudge
 
+from ..Logger import logger 
+import logging
+logger.setLevel(logging.WARNING)
+
 from .actions_web import web_search_agent, station_finder, body_finder
 
-model = OpenAIModel(
-    'gpt-5-mini',
+model = OpenAIChatModel(
+    os.environ.get("OPENAI_MODEL_NAME_JUDGE", "gpt-4.1"),
     #settings=ModelSettings(max_tokens=500, temperature=0.8),
-    provider=OpenAIProvider(openai_client=AsyncOpenAI(api_key=os.environ.get("OPENAI_API_KEY"))),
+    provider=OpenAIProvider(openai_client=AsyncOpenAI(api_key=os.environ.get("OPENAI_API_KEY_JUDGE"), base_url=os.environ.get("OPENAI_BASE_URL_JUDGE"))),
 )
 
 
@@ -80,7 +86,7 @@ dummy_construction_state = {
     "StarSystemRecall": "Praea Euq LV-Y b5"
 }
 
-web_search_agent_llm_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+web_search_agent_llm_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY_AGENT"), base_url=os.environ.get("OPENAI_BASE_URL_AGENT"))
 
 
 async def run_sample(sample: Sample) -> SampleResult:
@@ -88,7 +94,7 @@ async def run_sample(sample: Sample) -> SampleResult:
         {"query": sample.query},
         {**dummy_projected_state, **sample.projected_states},
         llm_client=web_search_agent_llm_client,
-        llm_model_name='gpt-4.1-mini',
+        llm_model_name=os.environ.get("OPENAI_MODEL_NAME_AGENT", "gpt-4.1")
     ) or ""
     return SampleResult(answer=res)
 
