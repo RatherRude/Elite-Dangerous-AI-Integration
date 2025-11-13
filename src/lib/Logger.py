@@ -1,4 +1,5 @@
 import sys
+import traceback
 from typing import Any, Literal
 import io
 import datetime
@@ -22,6 +23,9 @@ logHandler.setFormatter(formatter)
 logger.addHandler(logHandler)
 logger.setLevel(logging.DEBUG)
 
+httpx_logger = logging.getLogger("httpx")
+httpx_logger.setLevel(logging.WARNING)
+
 
 def handle_exception(exc_type, exc_value, exc_traceback):
     if issubclass(exc_type, KeyboardInterrupt):
@@ -30,15 +34,12 @@ def handle_exception(exc_type, exc_value, exc_traceback):
         return
     
     if not sys.stderr.closed and not sys.stdout.closed:
-        output = io.StringIO()
-        print("Uncaught exception", exc_type, exc_value, exc_traceback, file=output)
-        contents = output.getvalue().strip()
-        output.close()
+        contents = traceback.format_exception(exc_type, exc_value, exc_traceback)
         print(json.dumps({
             "type": "log",
             "timestamp": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
             "prefix": "error",
-            "message": contents
+            "message": "Uncaught exception: "+str(contents),
         }), file=sys.stderr)
         print(json.dumps({
             "type": "chat",
@@ -65,7 +66,7 @@ def show_chat_message(role: str, *args: Any):
     
     logger.info(contents)
     
-    print(json.dumps(message), flush=True)
+    print(json.dumps(message) + "\n", flush=True)
 
 def log(prefix: Literal['info', 'debug', 'warn', 'error'], message: Any, *args: Any):
     output = io.StringIO()

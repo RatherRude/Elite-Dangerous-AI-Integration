@@ -50,12 +50,12 @@
 
     <mat-tab>
         <ng-template mat-tab-label>
-            <mat-icon class="tab-icon">psychology</mat-icon>
-            Behavior
+            <mat-icon class="tab-icon">bolt</mat-icon>
+            Actions
         </ng-template>
         <div class="tab-content">
             @if (config) {
-                <app-behavior-settings></app-behavior-settings>
+                <app-actions-settings></app-actions-settings>
             }
         </div>
     </mat-tab>
@@ -95,7 +95,7 @@
                                 </mat-slide-toggle>
                                 @if (config.edcopilot) {
                                     <p>
-                                        EDCoPilot <strong>does not</strong> share the contents of its UI, nor any other data. You can use it for its UI, but <strong>it adds zero functionality or knowledge to the AI.</strong><br />
+                                        EDCoPilot <strong>does not</strong> share the contents of its UI, nor any other data. <strong>It adds zero functionality or knowledge to the AI.</strong><br />
 
                                         The EDCoPilot integration prevents both applications for talking at the same time and allows COVAS:NEXT to control EDCoPilot's UI.
                                         There are two modes of operation. <br>

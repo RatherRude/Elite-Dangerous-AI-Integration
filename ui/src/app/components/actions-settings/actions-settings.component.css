@@ -159,3 +159,46 @@ mat-slide-toggle {
 .field-submodule {
   width: 155px;
 }
+
+/* Keybind warnings */
+.keybind-warning-box {
+  background-color: rgba(255, 152, 0, 0.1);
+  border-left: 4px solid #ff9800;
+  padding: 12px;
+  margin-bottom: 16px;
+  border-radius: 4px;
+}
+
+.keybind-warning-section {
+  margin-bottom: 8px;
+}
+
+.keybind-warning-section:last-child {
+  margin-bottom: 0;
+}
+
+.keybind-warning-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.keybind-warning-content {
+  margin-left: 32px;
+  font-size: 0.9em;
+  opacity: 0.9;
+}
+
+.keybind-collision-item {
+  padding: 2px 0;
+}
+
+/* Expansion panel styling */
+mat-expansion-panel {
+  margin: 12px 0;
+}
+
+.tab-icon {
+  margin-right: 8px;
+}
