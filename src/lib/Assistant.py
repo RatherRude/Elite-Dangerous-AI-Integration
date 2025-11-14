@@ -93,6 +93,7 @@ class Assistant:
                 self.is_summarizing = True
                 Thread(target=self.summarize_memory, args=(short_term[30:],), daemon=True).start()
 
+    @observe()
     def summarize_memory(self, memory: list[Event]):
         try:
             memory_until = 0.0
