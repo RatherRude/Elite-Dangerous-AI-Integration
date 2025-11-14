@@ -41,7 +41,7 @@ from .Event import (
     ExternalEvent,
     ProjectedEvent,
 )
-from .Logger import log
+from .Logger import log, observe
 
 # Add these new type definitions along with the other existing types
 DockingCancelledEvent = dict
@@ -3241,6 +3241,7 @@ class PromptGenerator:
         return "\n\n".join(['# '+entry[0]+'\n' + yaml.dump(entry[1], sort_keys=False) for entry in status_entries])
 
     # TODO use events as passed from db, not in mem copy, pending (new not yet reated to), short_term (reacted to but not yet part of summary memory), memories (historc summaries of events)
+    @observe()
     def generate_prompt(self, events: list[Event], projected_states: dict[str, dict], pending_events: list[Event]):
         # Fine the most recent event
         last_event = events[-1]

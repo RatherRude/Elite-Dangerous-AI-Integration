@@ -1,3 +1,4 @@
+from gc import enable
 import json
 from pathlib import Path
 import platform
@@ -433,6 +434,8 @@ class Config(TypedDict):
     overlay_show_chat: bool
     overlay_position: Literal['left', 'right']
     overlay_screen_id: int
+    
+    enable_remote_tracing: bool
 
     plugin_settings: dict[str, Any]
     pngtuber: bool
@@ -785,6 +788,9 @@ def load_config() -> Config:
         "overlay_show_chat": True,
         "overlay_position": "right",
         "overlay_screen_id": -1,  # -1 means primary screen
+        
+        "enable_remote_tracing": False,
+        
         "plugin_settings": {},
         "pngtuber": False
     }

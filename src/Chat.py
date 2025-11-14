@@ -505,6 +505,7 @@ if __name__ == "__main__":
                     config = assign_ptt(config, ControllerManager())
                 if data.get("type") == "change_config":
                     config = update_config(config, data["config"])
+                    plugin_manager.on_settings_changed(config)
                 if data.get("type") == "change_event_config":
                     config = update_event_config(config, data["section"], data["event"], data["value"])
                 if data.get("type") == "change_character":
@@ -516,14 +517,18 @@ if __name__ == "__main__":
                     #ActionManager.clear_action_cache()
                 if data.get("type") == "init_overlay":
                     update_config(config, {}) # Ensure that the overlay gets a new config on start
-                plugin_manager.on_settings_changed(config)
+                if data.get("type") == "enable_remote_tracing":
+                    from lib.Logger import enable_remote_tracing
+                    enable_remote_tracing(config['commander_name'], data.get('resourceAttributes', {}))
                 
-            except json.JSONDecodeError:
+            except json.JSONDecodeError:    
                 continue
         
         # Once start signal received, initialize and run chat
         save_config(config)
+        plugin_manager.on_settings_changed(config)
         print(json.dumps({"type": "start"})+'\n', flush=True)
+        
         
         chat = Chat(config, plugin_manager)
         # run chat in a thread

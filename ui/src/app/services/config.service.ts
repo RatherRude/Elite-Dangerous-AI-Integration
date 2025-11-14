@@ -135,6 +135,8 @@ export interface Config {
     overlay_position: "left" | "right";
     overlay_screen_id: number;
 
+    enable_remote_tracing?: boolean;
+
     plugin_settings: { [key: string]: any };
 }
 
@@ -194,6 +196,17 @@ export class ConfigService {
                 this.systemInfo = message.system;
                 // Load screens separately
                 this.loadScreens();
+
+                if (this.getCurrentConfig()?.enable_remote_tracing) {
+                    console.log('Enabling remote tracing from config service');
+                    tauriService.enable_remote_tracing({
+                        "service.name": "com.covaslabs.chat",
+                        "service.version": this.tauriService.commitHash,
+                        "service.namespace": "com.covaslabs",
+                        "service.instance.id": this.tauriService.sessionId,
+                        "service.install.id": this.tauriService.installId,
+                    })
+                };
             } else if (message.type === "model_validation") {
                 this.validationSubject.next(message);
             } else if (message.type === "plugin_settings_configs") {

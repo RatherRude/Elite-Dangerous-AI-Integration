@@ -3,7 +3,7 @@ import traceback
 from openai.types.chat import ChatCompletion, ChatCompletionMessageToolCall
 from time import time
 
-from .Logger import log, show_chat_message
+from .Logger import log, observe, show_chat_message
 from .Config import Config
 from .Event import ConversationEvent, Event, GameEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent, MemoryEvent
 from .EventManager import EventManager
@@ -154,6 +154,7 @@ class Assistant:
             self.is_summarizing = False
 
 
+    @observe()
     def execute_actions(self, actions: list[dict[str, Any]], projected_states: dict[str, dict]):
         action_descriptions: list[str | None] = []
         action_results: list[Any] = []
@@ -208,7 +209,7 @@ class Assistant:
         thread = Thread(target=self.reply_thread, args=(events, projected_states), daemon=True)
         thread.start()
         
-        
+    @observe()
     def reply_thread(self, events: list[Event], projected_states: dict[str, dict]):
         self.reply_pending = False
         self.is_replying = True
