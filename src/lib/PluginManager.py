@@ -3,7 +3,7 @@ import json
 import os
 
 import sys
-from typing import Any, Self, cast
+from typing import Self
 
 from lib.Config import Config
 
@@ -63,6 +63,8 @@ class PluginManager:
     def load_plugins(self) -> Self:
         """Load all .py files in PLUGIN_FOLDER as plugins."""
         
+        self.load_default_plugins()
+        
         # Create PLUGIN_FOLDER if it doesn't exist
         if not os.path.exists(self.PLUGIN_FOLDER):
             os.makedirs(self.PLUGIN_FOLDER)
@@ -103,6 +105,19 @@ class PluginManager:
             except Exception as e:
                 log('error', f"Failed to load plugin {file}: {e}")
         return self
+    
+    def load_default_plugins(self):
+        """Load default built-in plugins."""
+        from plugins.EDCoPilotPlugin import EDCoPilotPlugin
+        log('debug', f"Loading built-in plugin")
+        guid = 'ec3eee66-8c4c-4ede-be36-b8612b14a5c0'
+        self.plugin_list[guid] = EDCoPilotPlugin(PluginManifest(json.dumps({
+            "guid": guid,
+            "name": "EDCoPilot Plugin",
+            "author": "Elite Dangerous AI Integration",
+            "version": "1.0.0",
+            "repository": ""
+        })))
     
     def register_settings(self):
         """Register all settings for each plugin."""
