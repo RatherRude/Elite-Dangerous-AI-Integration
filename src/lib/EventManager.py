@@ -3,6 +3,7 @@ import inspect
 from abc import ABC, abstractmethod
 from datetime import timezone, datetime
 from typing import Any, Generic, Literal, Callable, TypeVar, final
+from typing_extensions import deprecated
 
 from .Database import EventStore, KeyValueStore, VectorStore
 from .EDJournal import *
@@ -42,7 +43,6 @@ class EventManager:
     def __init__(
             self, 
             game_events: list[str],
-            plugin_event_classes: list[type[Event]],
             memory_hook: Callable[[Any, list[Event]], None] = lambda manager, events: None,
         ):
         self.incoming: Queue[Event] = Queue()
@@ -53,7 +53,6 @@ class EventManager:
         self._registry_lock = threading.Lock()
 
         self.event_classes: list[type[Event]] = [ConversationEvent, ToolEvent, GameEvent, StatusEvent, ExternalEvent, MemoryEvent]
-        self.event_classes += plugin_event_classes # Adds the plugin provided event classes
         self.projections: list[Projection] = []
         self.sideeffects: list[Callable[[Event, dict[str, Any]], None]] = []
         
@@ -91,6 +90,7 @@ class EventManager:
         for event in events_after:
             self.incoming.put(event)
         
+    @deprecated("Use plugins instead")
     def add_external_event(self, application: str, content: dict[str, Any]):
         event = ExternalEvent(content={**content, 'event': application})
         self.incoming.put(event)
@@ -99,8 +99,8 @@ class EventManager:
         event = StatusEvent(status=status)
         self.incoming.put(event)
 
-    def add_conversation_event(self, role: Literal['user', 'assistant'], content: str, processed_at: float = 0.0):
-        event = ConversationEvent(kind=role, content=content)
+    def add_conversation_event(self, role: Literal['user', 'assistant'], content: str, processed_at: float = 0.0, reasons: list[str] | None = None):
+        event = ConversationEvent(kind=role, content=content, reasons=reasons)
         if role == 'assistant':
             self.short_term_memory.replied_before(processed_at)
         self.incoming.put(event)
@@ -314,6 +314,16 @@ class EventManager:
 
     def get_projection(self, projection_type: type) -> Projection[object] | None:
         return next((proj for proj in self.projections if isinstance(proj, projection_type)), None)
+
+    def get_projection_state(self, projection_name: str) -> dict:
+        proj = None
+        for p in self.projections:
+            if p.__class__.__name__ == projection_name:
+                proj = p
+                break
+        if proj is None:
+            raise ValueError(f"Projection with name '{projection_name}' not found.")
+        return proj.state
 
     def load_history(self):
         events: list[Event] = self.short_term_memory.get_latest()

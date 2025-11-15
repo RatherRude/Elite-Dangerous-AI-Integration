@@ -752,7 +752,7 @@ class ShipInfo(Projection[ShipInfoState]):
 
         if isinstance(event, GameEvent) and event.content.get('event') in ['RefuelAll','RepairAll','BuyAmmo']:
             if self.state['hasLimpets'] and self.state['Cargo'] < self.state['CargoCapacity']:
-                projected_events.append(ProjectedEvent({"event": "RememberLimpets"}))
+                projected_events.append(ProjectedEvent(content={"event": "RememberLimpets"}))
 
         if isinstance(event, GameEvent) and event.content.get('event') == 'SetUserShipName':
             if 'UserShipName' in event.content:
@@ -897,9 +897,9 @@ class ShipInfo(Projection[ShipInfoState]):
         minimal_mass = unladen_mass + drive_max_fuel  #max jump with just right anmount
         current_mass = unladen_mass + current_cargo + current_fuel + current_fuel_reservoir  #current mass
         maximal_mass = unladen_mass + cargo_capacity + fuel_capacity  # minimal jump with min mass
-        log('info', 'minimal_mass', minimal_mass)
-        log('info', 'current_mass', current_mass)
-        log('info', 'maximal_mass', maximal_mass)
+        #log('info', 'minimal_mass', minimal_mass)
+        #log('info', 'current_mass', current_mass)
+        #log('info', 'maximal_mass', maximal_mass)
         
         base = lambda M, F: (drive_optimal_mass / M) * ((10**3 * F) / drive_linear_const )**(1/drive_power_const)
         # adding stuff here for more future fsd boost stuff 
@@ -954,7 +954,7 @@ class Target(Projection[TargetState]):
                     self.state["Bounty"] = event.content.get('Bounty', 0)
 
                     if (event.content.get('Bounty', 0) > 1 and not event.content.get('Subsystem', False)):
-                        projected_events.append(ProjectedEvent({"event": "BountyScanned"}))
+                        projected_events.append(ProjectedEvent(content={"event": "BountyScanned"}))
                 if event.content.get('Subsystem_Localised', False):
                     self.state["Subsystem"] = event.content.get('Subsystem_Localised', '')
             self.state['EventID'] = event.content.get('id')
@@ -1049,7 +1049,7 @@ class NavInfo(Projection[NavInfoState]):
 
                 # Only warn if we can't reach any scoopable stars
                 if scoopable_stars == 0:
-                    projected_events.append(ProjectedEvent({"event": "NoScoopableStars"}))
+                    projected_events.append(ProjectedEvent(content={"event": "NoScoopableStars"}))
 
         # Process FSDTarget
         if isinstance(event, GameEvent) and event.content.get('event') == 'FSDTarget':
@@ -1074,7 +1074,7 @@ class NavInfo(Projection[NavInfoState]):
                 was_discovered = event.content.get('WasDiscovered', True)  # system mapped
 
                 if was_discovered == False:
-                    projected_events.append(ProjectedEvent({"event": "FirstPlayerSystemDiscovered"}))
+                    projected_events.append(ProjectedEvent(content={"event": "FirstPlayerSystemDiscovered"}))
 
         return projected_events
 
@@ -1253,11 +1253,11 @@ class ExobiologyScan(Projection[ExobiologyScanState]):
                             break
                     if in_scan_radius:
                         if not self.state['within_scan_radius']:
-                            projected_events.append(ProjectedEvent({"event": "ScanOrganicTooClose"}))
+                            projected_events.append(ProjectedEvent(content={"event": "ScanOrganicTooClose"}))
                             self.state['within_scan_radius'] = in_scan_radius
                     else:
                         if self.state['within_scan_radius']:
-                            projected_events.append(ProjectedEvent({"event": "ScanOrganicFarEnough"}))
+                            projected_events.append(ProjectedEvent(content={"event": "ScanOrganicFarEnough"}))
                             self.state['within_scan_radius'] = in_scan_radius
                 else:
                     # log('info', 'status missing')
@@ -1280,20 +1280,20 @@ class ExobiologyScan(Projection[ExobiologyScanState]):
                     life_form = f"{species}"
                 self.state['life_form'] = life_form
                 self.state['within_scan_radius'] = True
-                projected_events.append(ProjectedEvent({**content, "event": "ScanOrganicFirst", "NewSampleDistance":self.state['scan_radius']}))
+                projected_events.append(ProjectedEvent(content={**content, "event": "ScanOrganicFirst", "NewSampleDistance":self.state['scan_radius']}))
 
             elif content["ScanType"] == "Sample":
                 if len(self.state['scans']) == 1:
                     self.state['scans'].append({'lat': self.state.get('lat', 0), 'long': self.state.get('long', 0)})
                     self.state['within_scan_radius'] = True
-                    projected_events.append(ProjectedEvent({**content, "event": "ScanOrganicSecond"}))
+                    projected_events.append(ProjectedEvent(content={**content, "event": "ScanOrganicSecond"}))
                 elif len(self.state['scans']) == 2:
-                    projected_events.append(ProjectedEvent({**content, "event": "ScanOrganicThird"}))
+                    projected_events.append(ProjectedEvent(content={**content, "event": "ScanOrganicThird"}))
                     if self.state['scans']:
                         self.state["scans"].clear()
                         self.state.pop('scan_radius', None)
                 else:
-                    projected_events.append(ProjectedEvent({**content, "event": "ScanOrganic"}))
+                    projected_events.append(ProjectedEvent(content={**content, "event": "ScanOrganic"}))
 
             elif content["ScanType"] == "Analyse":
                 pass
@@ -1500,15 +1500,15 @@ class DockingEvents(Projection[DockingEventsState]):
                 self.state['DockingComputerState'] = 'activated'
                 if self.state['LastEventType'] == "DockingGranted":
                     self.state['DockingComputerState'] = "auto-docking"
-                    projected_events.append(ProjectedEvent({"event": "DockingComputerDocking"}))
+                    projected_events.append(ProjectedEvent(content={"event": "DockingComputerDocking"}))
 
                 elif self.state['LastEventType'] == "Undocked" and self.state['StationType'] in ['Coriolis', 'Orbis', 'Ocellus']:
                     self.state['DockingComputerState'] = "auto-docking"
-                    projected_events.append(ProjectedEvent({"event": "DockingComputerUndocking"}))
+                    projected_events.append(ProjectedEvent(content={"event": "DockingComputerUndocking"}))
 
             elif self.state['DockingComputerState'] == "auto-docking":
                 self.state['DockingComputerState'] = "deactivated"
-                projected_events.append(ProjectedEvent({"event": "DockingComputerDeactivated"}))
+                projected_events.append(ProjectedEvent(content={"event": "DockingComputerDeactivated"}))
 
         return projected_events
 
@@ -1544,12 +1544,12 @@ class InCombat(Projection[InCombatState]):
             # Check for transition from combat to non-combat
             if self.state["InCombat"] and not is_combat_music:
                 # Generate a projected event for leaving combat
-                projected_events.append(ProjectedEvent({"event": "CombatExited"}))
+                projected_events.append(ProjectedEvent(content={"event": "CombatExited"}))
                 self.state["InCombat"] = False
             # Check for transition from non-combat to combat
             elif not self.state["InCombat"] and is_combat_music:
                 # Generate a projected event for entering combat
-                projected_events.append(ProjectedEvent({"event": "CombatEntered"}))
+                projected_events.append(ProjectedEvent(content={"event": "CombatEntered"}))
                 self.state["InCombat"] = True
 
         return projected_events
@@ -1625,7 +1625,7 @@ class Idle(Projection[IdleState]):
             # If more than idle_timeout seconds have passed since last interaction
             if time_delta > self.idle_timeout:
                 self.state["IsIdle"] = True
-                projected_events.append(ProjectedEvent({"event": "Idle"}))
+                projected_events.append(ProjectedEvent(content={"event": "Idle"}))
 
         return projected_events
 

@@ -18,7 +18,6 @@ from lib.PluginManager import PluginManager
 from lib.ActionManager import ActionManager
 from lib.actions.Actions import register_actions
 from lib.ControllerManager import ControllerManager
-from lib.EDCoPilot import EDCoPilot
 from lib.EDKeys import EDKeys
 from lib.Event import ConversationEvent, Event, ExternalEvent, GameEvent, MemoryEvent, ProjectedEvent, StatusEvent, ToolEvent
 from lib.Logger import show_chat_message
@@ -71,10 +70,6 @@ class Chat:
         log("debug", "Initializing EDJournal...")
         self.jn = EDJournal(get_ed_journals_path(config))
             
-        log("debug", "Initializing Third Party Services...")
-        self.copilot = EDCoPilot(self.config["edcopilot"], is_edcopilot_dominant=self.config["edcopilot_dominant"],
-                            enabled_game_events=self.enabled_game_events, action_manager=self.action_manager, has_actions=self.config["edcopilot_actions"])
-
         # gets API Key from config.json
         self.llmClient = OpenAI(
             base_url="https://api.openai.com/v1" if self.config["llm_endpoint"] == '' else self.config["llm_endpoint"],
@@ -112,7 +107,7 @@ class Chat:
                 api_key=self.config["api_key"] if self.config["tts_api_key"] == '' else self.config["tts_api_key"],
             )
             
-        tts_provider = 'none' if self.config["edcopilot"] and self.config["edcopilot_dominant"] else self.config["tts_provider"]
+        tts_provider = self.config["tts_provider"]
         self.tts = TTS(openai_client=self.ttsClient, provider=tts_provider, model=self.config["tts_model_name"], voice=self.character["tts_voice"], voice_instructions=self.character["tts_prompt"], speed=self.character["tts_speed"], output_device=self.config["output_device_name"])
         self.stt = STT(openai_client=self.sttClient, provider=self.config["stt_provider"], input_device_name=self.config["input_device_name"], model=self.config["stt_model_name"], language=self.config["stt_language"], custom_prompt=self.config["stt_custom_prompt"], required_word=self.config["stt_required_word"])
 
@@ -124,14 +119,10 @@ class Chat:
         self.status_parser = StatusParser(get_ed_journals_path(config))
         log("debug", "Initializing prompt generator...")
         self.prompt_generator = PromptGenerator(self.config["commander_name"], self.character["character"], important_game_events=self.enabled_game_events, system_db=self.system_database, weapon_types=cast(list[dict], self.config.get("weapon_types", [])), disabled_game_events=disabled_events)
-        
-        log("debug", "Getting plugin event classes...")
-        plugin_event_classes = self.plugin_manager.register_event_classes()
 
         log("debug", "Initializing event manager...")
         self.event_manager = EventManager(
             game_events=self.enabled_game_events,
-            plugin_event_classes=plugin_event_classes,
         )
 
         log("debug", message="Initializing assistant...")
@@ -143,7 +134,6 @@ class Chat:
             llmClient=self.llmClient,
             tts=self.tts,
             prompt_generator=self.prompt_generator,
-            copilot=self.copilot,
             embeddingClient=self.embeddingClient,
             disabled_game_events=disabled_events
         )
@@ -154,23 +144,8 @@ class Chat:
         self.event_manager.register_sideeffect(self.on_event)
         self.event_manager.register_sideeffect(self.assistant.on_event)
         
-        self.plugin_helper = PluginHelper(self.prompt_generator, config, self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.system_database, self.ed_keys, self.assistant)
+        self.plugin_helper = PluginHelper(self.plugin_manager, self.prompt_generator, config, self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.system_database, self.ed_keys, self.assistant)
         log("debug", "Plugin helper is ready...")
-
-        # Execute plugin helper ready hooks
-        self.plugin_manager.on_plugin_helper_ready(self.plugin_helper)
-
-        log("debug", "Registering plugin provided should_reply event handlers...")
-        self.plugin_manager.register_should_reply_handlers(self.plugin_helper)
-        
-        log("debug", "Registering plugin provided side effect...")
-        self.plugin_manager.register_sideeffects(self.plugin_helper)
-        
-        log("debug", "Registering plugin provided prompt event handlers...")
-        self.plugin_manager.register_prompt_event_handlers(self.plugin_helper)
-        
-        log("debug", "Registering plugin provided status generators...")
-        self.plugin_manager.register_status_generators(self.plugin_helper)
 
         self.previous_states = {}
 
@@ -311,8 +286,6 @@ class Chat:
         # TTS Setup
         show_chat_message('info', "Basic configuration complete.")
         show_chat_message('info', "Loading voice output...")
-        if self.config["edcopilot"] and self.config["edcopilot_dominant"]:
-            show_chat_message('info', "EDCoPilot is dominant, voice output will be handled by EDCoPilot.")
 
         # Microphone/Listening setup based on mode
         mode = self.config.get('ptt_var', 'voice_activation')
@@ -353,7 +326,6 @@ class Chat:
 
         show_chat_message('info', 'Register projections...')
         registerProjections(self.event_manager, self.system_database, self.character.get('idle_timeout_var', 300))
-        self.plugin_manager.register_projections(self.plugin_helper)
 
         self.event_manager.process()
 
@@ -380,12 +352,14 @@ class Chat:
                 self.config.get("weapon_types", [])
             )
 
-            log('info', "Built-in Actions ready.")
-            self.plugin_manager.register_actions(self.plugin_helper)
-            log('info', "Plugin provided Actions ready.")
+            log('info', "Actions ready.")
             show_chat_message('info', "Actions ready.")
 
 
+        # Execute plugin helper ready hooks
+        self.plugin_manager.on_chat_start(self.plugin_helper)
+        show_chat_message('info', "Plugins ready.")
+        
         # Cue the user that we're ready to go.
         show_chat_message('info', "System Ready.")
 
@@ -419,22 +393,12 @@ class Chat:
                 if not self.stt.resultQueue.empty():
                     text = self.stt.resultQueue.get().text
                     self.tts.abort()
-                    self.copilot.output_commander(text)
                     self.event_manager.add_conversation_event('user', text)
 
                 # check EDJournal files for updates
                 while not self.jn.events.empty():
                     event = self.jn.events.get()
                     self.event_manager.add_game_event(event)
-
-                while not self.copilot.event_publication_queue.empty():
-                    event = self.copilot.event_publication_queue.get()
-                    if isinstance(event, ExternalChatNotification):
-                        self.event_manager.add_external_event('External' + event.service.capitalize() + 'Notification',
-                                                              event.model_dump())
-                    if isinstance(event, ExternalBackgroundChatNotification):
-                        self.event_manager.add_external_event('External' + event.service.capitalize() + 'Message',
-                                                          event.model_dump())
 
                 self.event_manager.process()
 
@@ -508,17 +472,17 @@ def check_zombie_status():
 if __name__ == "__main__":
     try:
         print(json.dumps({"type": "ready"})+'\n')
-        # Load plugins.
-        log('debug', "Loading plugins...")
-        plugin_manager = PluginManager()
-        plugin_manager.load_plugins()
-        log('debug', "Registering plugin settings for the UI...")
-        plugin_manager.register_settings()
         # Wait for start signal on stdin
         config = load_config()
         print(json.dumps({"type": "config", "config": config})+'\n', flush=True)
         system = get_system_info()
         print(json.dumps({"type": "system", "system": system})+'\n', flush=True)
+        # Load plugins.
+        log('debug', "Loading plugins...")
+        plugin_manager = PluginManager(config=config)
+        plugin_manager.load_plugins()
+        log('debug', "Registering plugin settings for the UI...")
+        plugin_manager.register_settings()
         while True:
             # print(f"Waiting for command...")
             line = sys.stdin.readline().strip()
@@ -541,6 +505,7 @@ if __name__ == "__main__":
                     config = assign_ptt(config, ControllerManager())
                 if data.get("type") == "change_config":
                     config = update_config(config, data["config"])
+                    plugin_manager.on_settings_changed(config)
                 if data.get("type") == "change_event_config":
                     config = update_event_config(config, data["section"], data["event"], data["value"])
                 if data.get("type") == "change_character":
@@ -552,13 +517,18 @@ if __name__ == "__main__":
                     #ActionManager.clear_action_cache()
                 if data.get("type") == "init_overlay":
                     update_config(config, {}) # Ensure that the overlay gets a new config on start
+                if data.get("type") == "enable_remote_tracing":
+                    from lib.Logger import enable_remote_tracing
+                    enable_remote_tracing(config['commander_name'], data.get('resourceAttributes', {}))
                 
-            except json.JSONDecodeError:
+            except json.JSONDecodeError:    
                 continue
         
         # Once start signal received, initialize and run chat
         save_config(config)
+        plugin_manager.on_settings_changed(config)
         print(json.dumps({"type": "start"})+'\n', flush=True)
+        
         
         chat = Chat(config, plugin_manager)
         # run chat in a thread

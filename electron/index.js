@@ -50,10 +50,13 @@ if (process.platform === 'win32') {
   logger.info('Deleted logs directory:', logsPath);
 }
 
-for (const x of ["home","userData","temp","appData","sessionData","exe","module","desktop","documents","downloads","music","pictures","videos","logs","crashDumps"]) {
-  logger.info(x, app.getPath(x));
+for (const x of ["home","userData","temp","appData","sessionData","exe","module","logs","crashDumps"]) {
+  try {
+    logger.info(x, app.getPath(x));
+  } catch (e) {
+    logger.error('Error getting path for', x, e);
+  }
 }
-
 
 logger.info('isDevelopment:', isDevelopment);
 

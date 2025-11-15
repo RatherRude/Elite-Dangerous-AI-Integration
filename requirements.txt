@@ -84,3 +84,7 @@ wrapt==1.16.0
 zipp==3.19.2
 EDMesg @ git+https://github.com/RatherRude/EDMesg.git@dcb7045
 python-json-logger==3.3.0
+opentelemetry-api==1.38.0 
+opentelemetry-sdk==1.38.0 
+opentelemetry-exporter-otlp==1.38.0
+opentelemetry-instrumentation-openai==0.48.0

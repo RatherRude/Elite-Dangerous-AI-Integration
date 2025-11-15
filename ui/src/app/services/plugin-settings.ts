@@ -69,8 +69,12 @@ export interface SelectOption {
     disabled: boolean;
 }
 
+export interface PluginSettingsMap {
+    [plugin_guid: string]: PluginSettings;
+}
+
 export interface PluginSettingsMessage extends BaseMessage {
     type: "plugin_settings_configs";
-    plugin_settings_configs: PluginSettings[];
+    plugin_settings_configs: PluginSettingsMap;
     has_plugin_settings: boolean;
 }

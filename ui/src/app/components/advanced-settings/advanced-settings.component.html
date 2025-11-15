@@ -551,12 +551,28 @@
             <mat-form-field>
                 <mat-label>ED AppData Path</mat-label>
                 <input matInput [(ngModel)]="config.ed_appdata_path"
-                        (ngModelChange)="onConfigChange({ed_appdata_path: $event})">
+                        (ngModelChange)="onPathChange('ed_appdata_path', $event)"
+                        pattern="^/.*"
+                        #edAppdataInput="ngModel">
+                @if (edAppdataInput.invalid && edAppdataInput.touched) {
+                    <mat-error>Path must start with /</mat-error>
+                }
+                @if (config.ed_appdata_path && isPathOutsideHome(config.ed_appdata_path)) {
+                    <mat-hint>⚠️ Directories outside of /home need to be permitted manually via flatpak override</mat-hint>
+                }
             </mat-form-field>
             <mat-form-field>
                 <mat-label>ED Journal Path</mat-label>
                 <input matInput [(ngModel)]="config.ed_journal_path"
-                        (ngModelChange)="onConfigChange({ed_journal_path: $event})">
+                        (ngModelChange)="onPathChange('ed_journal_path', $event)"
+                        pattern="^/.*"
+                        #edJournalInput="ngModel">
+                @if (edJournalInput.invalid && edJournalInput.touched) {
+                    <mat-error>Path must start with /</mat-error>
+                }
+                @if (config.ed_journal_path && isPathOutsideHome(config.ed_journal_path)) {
+                    <mat-hint>⚠️ Directories outside of /home need to be permitted manually via flatpak override</mat-hint>
+                }
             </mat-form-field>
             </mat-expansion-panel>
         }

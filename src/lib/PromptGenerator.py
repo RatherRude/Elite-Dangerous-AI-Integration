@@ -41,7 +41,7 @@ from .Event import (
     ExternalEvent,
     ProjectedEvent,
 )
-from .Logger import log
+from .Logger import log, observe
 
 # Add these new type definitions along with the other existing types
 DockingCancelledEvent = dict
@@ -51,7 +51,7 @@ NavRouteEvent = dict
 
 class PromptGenerator:
     def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str], system_db: SystemDatabase, weapon_types: list[dict] | None = None, disabled_game_events: list[str] | None = None):
-        self.registered_prompt_event_handlers: list[Callable[[Event], list[ChatCompletionMessageParam]]] = []
+        self.registered_prompt_event_handlers: list[Callable[[Event], str|None]] = []
         self.registered_status_generators: list[Callable[[dict[str, dict]], list[tuple[str, Any]]]] = []
         self.commander_name = commander_name
         self.character_prompt = character_prompt
@@ -3241,6 +3241,7 @@ class PromptGenerator:
         return "\n\n".join(['# '+entry[0]+'\n' + yaml.dump(entry[1], sort_keys=False) for entry in status_entries])
 
     # TODO use events as passed from db, not in mem copy, pending (new not yet reated to), short_term (reacted to but not yet part of summary memory), memories (historc summaries of events)
+    @observe()
     def generate_prompt(self, events: list[Event], projected_states: dict[str, dict], pending_events: list[Event]):
         # Fine the most recent event
         last_event = events[-1]
@@ -3298,7 +3299,12 @@ class PromptGenerator:
             
             for handler in self.registered_prompt_event_handlers:
                 try:
-                    conversational_pieces += handler(event)
+                    res = handler(event)
+                    if res:
+                        conversational_pieces += [{
+                            "role": "user",
+                            "content": f"[External Event, {time_offset}] {res}",
+                        }]
                 except Exception as e:
                     log('error', f"Error executing prompt event handler for {event}: {e}", traceback.format_exc())
 
@@ -3337,7 +3343,7 @@ class PromptGenerator:
 
         return conversational_pieces
     
-    def register_prompt_event_handler(self, prompt_event_handler: Callable[[Event], list[ChatCompletionMessageParam]]):
+    def register_prompt_event_handler(self, prompt_event_handler: Callable[[Event], str|None]):
         self.registered_prompt_event_handlers.append(prompt_event_handler)
     
     def register_status_generator(self, status_generator: Callable[[dict[str, dict]], list[tuple [str, Any]]]):

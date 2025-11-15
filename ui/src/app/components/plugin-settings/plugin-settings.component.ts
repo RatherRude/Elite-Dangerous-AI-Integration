@@ -25,9 +25,6 @@ import {
 import { ConfirmationDialogService } from "../../services/confirmation-dialog.service";
 import {
   PluginSettings,
-  SelectSetting,
-  SettingBase,
-  TextAreaSetting,
 } from "../../services/plugin-settings";
 
 @Component({
@@ -61,7 +58,7 @@ export class PluginSettingsComponent implements OnInit, OnDestroy {
   private plugin_settings_message_subscription?: Subscription;
 
   // Plugin settings
-  plugin_settings_configs: PluginSettings[] = [];
+  plugin_settings_configs: [string, PluginSettings][] = [];
 
   constructor(
     private configService: ConfigService,
@@ -87,8 +84,10 @@ export class PluginSettingsComponent implements OnInit, OnDestroy {
       .plugin_settings_message$
       .subscribe(
         (plugin_settings_message) => {
-          this.plugin_settings_configs =
-            plugin_settings_message?.plugin_settings_configs || [];
+          this.plugin_settings_configs = Object.entries(
+            plugin_settings_message?.plugin_settings_configs || {}
+          );
+
           if (plugin_settings_message?.plugin_settings_configs) {
             console.log("Plugin settings loaded", {
               plugin_settings_configs:
@@ -131,18 +130,16 @@ export class PluginSettingsComponent implements OnInit, OnDestroy {
   }
 
   getPluginSetting(
-    pluginKey: string,
-    gridKey: string,
+    pluginGuid: string,
     fieldKey: string,
     defaultValue: any,
   ): boolean {
-    return this.config?.plugin_settings?.[pluginKey]?.[gridKey]?.[fieldKey] ??
+    return this.config?.plugin_settings?.[pluginGuid]?.[fieldKey] ??
       defaultValue;
   }
 
   setPluginSetting(
-    pluginKey: string,
-    gridKey: string,
+    pluginGuid: string,
     fieldKey: string,
     value: any,
   ): void {
@@ -150,9 +147,8 @@ export class PluginSettingsComponent implements OnInit, OnDestroy {
       return;
     }
     this.config.plugin_settings ??= {};
-    this.config.plugin_settings[pluginKey] ??= {};
-    this.config.plugin_settings[pluginKey][gridKey] ??= {};
-    this.config.plugin_settings[pluginKey][gridKey][fieldKey] = value;
+    this.config.plugin_settings[pluginGuid] ??= {};
+    this.config.plugin_settings[pluginGuid][fieldKey] = value;
     this.onConfigChange({ plugin_settings: this.config.plugin_settings });
   }
 }
