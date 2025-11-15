@@ -87,6 +87,7 @@ class PluginEvent(Event[Literal['plugin']]):
 @dataclass(kw_only=True)
 class ConversationEvent(Event[ConversationEventKind]):
     content: str
+    reasons: list[str] | None = None
     kind: ConversationEventKind
 
 

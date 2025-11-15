@@ -325,7 +325,7 @@ class Assistant:
 
             if response_text and not response_actions:
                 self.tts.say(response_text)
-                self.event_manager.add_conversation_event('assistant', completion.choices[0].message.content, max_conversation_processed)
+                self.event_manager.add_conversation_event('assistant', completion.choices[0].message.content, reasons=reasons, processed_at=max_conversation_processed)
                 self.tts.wait_for_completion()
                 self.event_manager.add_assistant_complete_event()
 
