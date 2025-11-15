@@ -139,30 +139,6 @@ class EDCoPilotPlugin(PluginBase):
                     ),
                 ]
             )
-        else:
-            # Show only a notification message when EDCoPilot is not installed
-            self.settings_config: PluginSettings | None = PluginSettings(
-                key="EDCoPilotPlugin",
-                label="EDCoPilot",
-                icon="smart_toy",
-                grids=[
-                    SettingsGrid(
-                        key="general",
-                        label="General",
-                        fields=[
-                            ParagraphSetting(
-                                key="not_installed",
-                                label=None,
-                                type="paragraph",
-                                readonly=False,
-                                placeholder=None,
-                                
-                                content="EDCoPilot was not detected on this system."
-                            ),
-                        ]
-                    ),
-                ]
-            )
     
     def is_installed(self) -> bool:
         """Check if EDCoPilot is installed"""
