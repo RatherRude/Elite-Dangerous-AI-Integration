@@ -153,7 +153,7 @@ export class TauriService {
                     index: this.currentIndex++,
                 });
             } catch (error) {
-                console.warn("Error parsing message:", error);
+                console.warn("Error parsing message:", error, event);
             }
         });
     }
@@ -215,6 +215,14 @@ export class TauriService {
     public async send_command(message: BaseCommand): Promise<void> {
         await electronAPI.invoke("send_json_line", {
             jsonLine: JSON.stringify(message) + "\n",
+        });
+    }
+    public async enable_remote_tracing(resourceAttributes: Record<string, string>): Promise<void> {
+        this.send_command({
+            type: "enable_remote_tracing",
+            resourceAttributes,
+            timestamp: new Date().toISOString(),
+            index: this.currentIndex++,
         });
     }
 

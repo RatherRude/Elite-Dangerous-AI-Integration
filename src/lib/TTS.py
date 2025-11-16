@@ -12,7 +12,7 @@ import pyaudio
 import strip_markdown
 from num2words import num2words
 
-from .Logger import log, show_chat_message
+from .Logger import log, observe, show_chat_message
 
 
 @final
@@ -132,40 +132,8 @@ class TTS:
                 if not self.read_queue.empty():
                     self._is_playing = True
                     text = self.read_queue.get()
-                    # Fix numberformatting for different providers
-                    text = re.sub(r"\d+(,\d{3})*(\.\d+)?", self._number_to_text, text)
-                    text = strip_markdown.strip_markdown(text)
-                    # print('reading:', text)
                     try:
-                        start_time = time()
-                        end_time = None
-                        first_chunk = True
-                        underflow_count = 0
-                        empty_buffer_available = stream.get_write_available()
-                        for chunk in self._stream_audio(text):
-                            if not end_time:
-                                end_time = time()
-                                log('debug', f'Response time TTS', end_time - start_time)
-                            if self.is_aborted:
-                                break
-                            try:
-                                if not first_chunk:
-                                    available = stream.get_write_available()
-                                    # log('debug', 'tts write available', available)
-                                    if available == empty_buffer_available:
-                                        raise IOError('underflow')
-                                stream.write(chunk, exception_on_underflow=False) # this may throw for various system reasons
-                                first_chunk = False
-                            except IOError as e:
-                                if not first_chunk:
-                                    underflow_count += 1
-                                    # log('debug', 'tts underflow detected', underflow_count)
-                                stream.write(chunk, exception_on_underflow=False)
-                        
-                        if underflow_count > 0:
-                            self.prebuffer_size *= 2
-                            log('debug', 'tts underflow detected, total', underflow_count, 'increasing prebuffer size to', self.prebuffer_size)
-                            
+                        self._playback_one(text, stream)
                     except Exception as e:
                         self.read_queue.put(text)
                         raise e
@@ -176,6 +144,44 @@ class TTS:
             self._is_playing = False
             stream.stop_stream()
 
+    @observe()
+    def _playback_one(self, text: str, stream: pyaudio.Stream):
+        # Fix numberformatting for different providers
+        text = re.sub(r"\d+(,\d{3})*(\.\d+)?", self._number_to_text, text)
+        text = strip_markdown.strip_markdown(text)
+        # print('reading:', text)
+        start_time = time()
+        end_time = None
+        first_chunk = True
+        underflow_count = 0
+        empty_buffer_available = stream.get_write_available()
+        for chunk in self._stream_audio(text):
+            if not end_time:
+                end_time = time()
+                log('debug', f'Response time TTS', end_time - start_time)
+            if self.is_aborted:
+                break
+            try:
+                if not first_chunk:
+                    available = stream.get_write_available()
+                    # log('debug', 'tts write available', available)
+                    if available == empty_buffer_available:
+                        raise IOError('underflow')
+                stream.write(chunk, exception_on_underflow=False) # this may throw for various system reasons
+                first_chunk = False
+            except IOError as e:
+                if not first_chunk:
+                    underflow_count += 1
+                    # log('debug', 'tts underflow detected', underflow_count)
+                stream.write(chunk, exception_on_underflow=False)
+        
+        if underflow_count > 0:
+            self.prebuffer_size *= 2
+            log('debug', 'tts underflow detected, total', underflow_count, 'increasing prebuffer size to', self.prebuffer_size)
+                
+        
+
+    @observe()
     def _stream_audio(self, text):
         if self.provider == 'none':
             word_count = len(text.split())
@@ -247,6 +253,7 @@ class TTS:
     def get_is_playing(self):
         return self._is_playing or not self.read_queue.empty()
 
+    @observe()
     def wait_for_completion(self):
         while self.get_is_playing():
             sleep(0.2)

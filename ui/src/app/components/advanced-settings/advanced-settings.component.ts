@@ -109,6 +109,26 @@ export class AdvancedSettingsComponent {
         return parseFloat(value.replaceAll(",", "."));
     }
 
+    normalizePath(path: string): string {
+        if (!path) return path;
+        // Remove trailing slashes
+        let normalized = path.replace(/\/+$/, '');
+        return normalized;
+    }
+
+    isPathOutsideHome(path: string): boolean {
+        if (!path) return false;
+        const normalizedPath = this.normalizePath(path);
+        return normalizedPath.startsWith('/') && !normalizedPath.startsWith('/home');
+    }
+
+    onPathChange(field: 'ed_appdata_path' | 'ed_journal_path', value: string) {
+        const normalized = this.normalizePath(value);
+        const update: Partial<Config> = {};
+        update[field] = normalized;
+        this.onConfigChange(update);
+    }
+
     async onConfigChange(partialConfig: Partial<Config>) {
         if (this.config) {
             console.log("Sending config update to backend:", partialConfig);
