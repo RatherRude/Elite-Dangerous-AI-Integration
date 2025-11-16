@@ -3317,14 +3317,14 @@ class PromptGenerator:
         
         # Add memories
         memory_pieces_count = 0
-        for event in memories[::-1]:
+        for event in memories:
             if memory_pieces_count > 5:
                 break
             memory_pieces_count += 1
 
             if isinstance(event, MemoryEvent):
-                event_time = datetime.fromisoformat(
-                    event.metadata.get('time_until', event.timestamp)
+                event_time = datetime.fromtimestamp(
+                    event.metadata.get('time_until', 0)
                 )
                 if not event_time.tzinfo:
                     event_time = event_time.astimezone()
@@ -3333,7 +3333,7 @@ class PromptGenerator:
 
                 conversational_pieces.append({
                     "role": "system",
-                    "content": f"[Ship logbook, {time_offset}] {event.content.get('memory')}",
+                    "content": f"[Ship logbook, {time_offset}] {event.content}",
                 })
 
         try:
