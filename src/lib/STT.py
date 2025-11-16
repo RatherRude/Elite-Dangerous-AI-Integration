@@ -13,7 +13,7 @@ import soundfile as sf
 import numpy as np
 from pysilero_vad import SileroVoiceActivityDetector
 
-from .Logger import log, show_chat_message
+from .Logger import log, observe, show_chat_message
 
 
 @final
@@ -193,6 +193,7 @@ class STT:
             )
         return source
 
+    @observe()
     def _transcribe(self, audio: sr.AudioData) -> str:
         log('debug', 'Transcribing audio...')
         if self.openai_client is None:

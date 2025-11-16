@@ -1,3 +1,4 @@
+from gc import enable
 import json
 from pathlib import Path
 import platform
@@ -419,9 +420,6 @@ class Config(TypedDict):
     chat_system_tabbed_var: bool
     chat_squadron_tabbed_var: bool
     chat_direct_tabbed_var: bool
-    edcopilot: bool
-    edcopilot_dominant: bool
-    edcopilot_actions: bool
     ptt_key: str
     input_device_name: str
     output_device_name: str
@@ -436,6 +434,8 @@ class Config(TypedDict):
     overlay_show_chat: bool
     overlay_position: Literal['left', 'right']
     overlay_screen_id: int
+    
+    enable_remote_tracing: bool
 
     plugin_settings: dict[str, Any]
     pngtuber: bool
@@ -750,9 +750,6 @@ def load_config() -> Config:
         'chat_squadron_tabbed_var': False,
         'chat_direct_tabbed_var': False,
         'cn_autostart': False,
-        'edcopilot': True,
-        'edcopilot_dominant': False,
-        'edcopilot_actions': False,
         'input_device_name': get_default_input_device_name(),
         'output_device_name': get_default_output_device_name(),
         'llm_provider': "openai",
@@ -791,6 +788,9 @@ def load_config() -> Config:
         "overlay_show_chat": True,
         "overlay_position": "right",
         "overlay_screen_id": -1,  # -1 means primary screen
+        
+        "enable_remote_tracing": False,
+        
         "plugin_settings": {},
         "pngtuber": False
     }
@@ -923,17 +923,14 @@ class SystemInfo(TypedDict):
     os: str
     input_device_names: list[str]
     output_device_names: list[str]
-    edcopilot_installed: bool
     hud_color_matrix: list[list[float]]
 
 
 def get_system_info() -> SystemInfo:
-    from .EDCoPilot import get_install_path
     return {
         "os": platform.system(),
         "input_device_names": get_input_device_names(),
         "output_device_names": get_output_device_names(),
-        "edcopilot_installed": get_install_path() is not None,
         "hud_color_matrix": [[0.2, 0, 0], [-2, 1, 0], [0, 0, 1]]
     }
 

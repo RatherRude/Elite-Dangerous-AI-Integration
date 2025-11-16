@@ -1,88 +1,119 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Literal, TypedDict
-
-from openai.types import embedding
+from datetime import datetime, timezone
+from typing import Any, Generic, Literal, TypedDict, TypeVar
 
 
-class Event:
-    kind: Literal['game', 'user', 'user_speaking', 'assistant', 'assistant_acting', 'assistant_completed', 'tool', 'status', 'projected', 'external', 'memory']
-    timestamp: str
-    processed_at: float
-    memorized_at: float | None
-    responded_at: float | None
+EventKind = Literal[
+    'game',
+    'user',
+    'user_speaking',
+    'assistant',
+    'assistant_acting',
+    'assistant_completed',
+    'tool',
+    'status',
+    'projected',
+    'external',
+    'memory',
+    'plugin',
+]
+
+ConversationEventKind = Literal[
+    'user_speaking',
+    'user',
+    'assistant',
+    'assistant_acting',
+    'assistant_completed',
+]
+
+
+KindT = TypeVar('KindT', bound=str)
+
+
+def _utc_timestamp() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+@dataclass(kw_only=True)
+class Event(Generic[KindT]):
+    """Base type shared by all persisted events."""
+
+    kind: KindT
+    timestamp: str = field(default_factory=_utc_timestamp)
+    processed_at: float = 0.0
+    memorized_at: float | None = 0.0
+    responded_at: float | None = 0.0
+
 
 class GameEventContent(TypedDict):
     event: str
     timestamp: str
 
-@dataclass
-class GameEvent(Event):
+
+@dataclass(kw_only=True)
+class GameEvent(Event[Literal['game']]):
     content: GameEventContent
     historic: bool
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    kind: Literal['game'] = field(default='game')
-    processed_at: float = field(default=0.0)
-    memorized_at: float | None = field(default=0.0)
-    responded_at: float | None = field(default=0.0)
-
-@dataclass
-class StatusEvent(Event):
-    status: Dict
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    kind: Literal['status'] = field(default='status')
-    processed_at: float = field(default=0.0)
-    memorized_at: float | None = field(default=0.0)
-    responded_at: float | None = field(default=0.0)
-
-@dataclass
-class ProjectedEvent(Event):
-    content: Dict
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    kind: Literal['projected'] = field(default='projected')
-    processed_at: float = field(default=0.0)
-    memorized_at: float | None = field(default=0.0)
-    responded_at: float | None = field(default=0.0)
-
-@dataclass
-class ExternalEvent(Event):
-    content: Dict
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    kind: Literal['external'] = field(default='external')
-    processed_at: float = field(default=0.0)
-    memorized_at: float | None = field(default=0.0)
-    responded_at: float | None = field(default=0.0)
+    kind: Literal['game'] = 'game'
 
 
-@dataclass
-class ConversationEvent(Event):
+@dataclass(kw_only=True)
+class StatusEvent(Event[Literal['status']]):
+    status: dict[str, object]
+    kind: Literal['status'] = 'status'
+
+
+@dataclass(kw_only=True)
+class ProjectedEvent(Event[Literal['projected']]):
+    content: dict[str, object]
+    kind: Literal['projected'] = 'projected'
+
+
+@dataclass(kw_only=True)
+class ExternalEvent(Event[Literal['external']]):
+    content: dict[str, object]
+    kind: Literal['external'] = 'external'
+
+
+@dataclass(kw_only=True)
+class PluginEvent(Event[Literal['plugin']]):
+    plugin_event_content: Any
+    plugin_event_name: str
+    kind: Literal['plugin'] = 'plugin'
+
+
+@dataclass(kw_only=True)
+class ConversationEvent(Event[ConversationEventKind]):
     content: str
-    kind: Literal['user_speaking', 'user', 'assistant', 'assistant_acting', 'assistant_completed']
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    processed_at: float = field(default=0.0)
-    memorized_at: float | None = field(default=0.0)
-    responded_at: float | None = field(default=0.0)
+    reasons: list[str] | None = None
+    kind: ConversationEventKind
 
 
-@dataclass
-class ToolEvent(Event):
-    request: List[Dict]
-    results: List[Dict]
-    text: List[str] | None = None
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    kind: Literal['tool'] = field(default='tool')
-    processed_at: float = field(default=0.0)
-    memorized_at: float | None = field(default=0.0)
-    responded_at: float | None = field(default=0.0)
+@dataclass(kw_only=True)
+class ToolEvent(Event[Literal['tool']]):
+    request: list[dict[str, object]]
+    results: list[dict[str, object]]
+    text: list[str] | None = None
+    kind: Literal['tool'] = 'tool'
 
 
-@dataclass
-class MemoryEvent(Event):
+@dataclass(kw_only=True)
+class MemoryEvent(Event[Literal['memory']]):
     content: str
-    metadata: dict
+    metadata: dict[str, object]
     embedding: list[float]
-    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
-    kind: Literal['memory'] = field(default='memory')
-    processed_at: float = field(default=0.0)
-    memorized_at: float | None = field(default=0.0)
-    responded_at: float | None = field(default=0.0)
+    kind: Literal['memory'] = 'memory'
+
+
+EventLike = (
+    GameEvent
+    | StatusEvent
+    | ProjectedEvent
+    | ExternalEvent
+    | PluginEvent
+    | ConversationEvent
+    | ToolEvent
+    | MemoryEvent
+)
