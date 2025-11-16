@@ -3242,7 +3242,7 @@ class PromptGenerator:
 
     # TODO use events as passed from db, not in mem copy, pending (new not yet reated to), short_term (reacted to but not yet part of summary memory), memories (historc summaries of events)
     @observe()
-    def generate_prompt(self, events: list[Event], projected_states: dict[str, dict], pending_events: list[Event]):
+    def generate_prompt(self, events: list[Event], projected_states: dict[str, dict], pending_events: list[Event], memories: list[MemoryEvent]) -> list[dict[str, str]]:
         # Fine the most recent event
         last_event = events[-1]
         reference_time = datetime.fromisoformat(last_event.content.get('timestamp') if isinstance(last_event, GameEvent) else last_event.timestamp)
@@ -3317,7 +3317,7 @@ class PromptGenerator:
         
         # Add memories
         memory_pieces_count = 0
-        for event in events[::-1]:
+        for event in memories[::-1]:
             if memory_pieces_count > 5:
                 break
             memory_pieces_count += 1

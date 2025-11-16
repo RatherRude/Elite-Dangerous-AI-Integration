@@ -235,11 +235,13 @@ class Assistant:
             events = list(reversed(events))
             new_events = [event for event in events if event.responded_at == None]
             self.pending = []
+            
+            memories = self.event_manager.get_latest_memories(limit=5)
 
 
             log('debug', 'Starting reply...')
             max_conversation_processed = max([event.processed_at for event in events]+[0.0])
-            prompt = self.prompt_generator.generate_prompt(events=events, projected_states=projected_states, pending_events=new_events)
+            prompt = self.prompt_generator.generate_prompt(events=events, projected_states=projected_states, pending_events=new_events, memories=memories)
 
             user_input: list[str] = [event.content for event in new_events if event.kind == 'user']
             tool_uses: int = len([event for event in new_events if event.kind == 'tool'])

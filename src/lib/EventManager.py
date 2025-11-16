@@ -140,6 +140,10 @@ class EventManager:
     def get_short_term_memory(self, limit: int = 100) -> list[Event]:
         return self.short_term_memory.get_latest(limit=limit)
 
+    def get_latest_memories(self, limit: int = 10) -> list[MemoryEvent]:
+        mems = self.long_term_memory.get_most_recent_entries(limit=limit)
+        return [MemoryEvent(content=mem['content'], metadata=mem['metadata'], embedding=[]) for mem in mems]
+
     def process(self):
         projected_states: dict[str, Any] | None = None
         while not self.incoming.empty():
