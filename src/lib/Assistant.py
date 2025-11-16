@@ -285,7 +285,7 @@ class Assistant:
                     llm_params["verbosity"] = "low"
                     llm_params["reasoning_effort"] = "minimal"
                     
-                if self.config["llm_model_name"] in ['gpt-5.1', 'gpt-5.1-chat-latest']:
+                if self.config["llm_model_name"] in ['gpt-5.1']:
                     llm_params["verbosity"] = "low"
                     llm_params["reasoning_effort"] = "none"
                     
