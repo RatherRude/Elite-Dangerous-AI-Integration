@@ -285,6 +285,10 @@ class Assistant:
                     llm_params["verbosity"] = "low"
                     llm_params["reasoning_effort"] = "minimal"
                     
+                if self.config["llm_model_name"] in ['gpt-5.1', 'gpt-5.1-chat-latest']:
+                    llm_params["verbosity"] = "low"
+                    llm_params["reasoning_effort"] = "none"
+                    
                 try:
                     response = self.llmClient.chat.completions.with_raw_response.create(  # pyright: ignore[reportCallIssue]
                         model=self.config["llm_model_name"],
