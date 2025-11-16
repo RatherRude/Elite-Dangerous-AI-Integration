@@ -2328,9 +2328,9 @@ class PromptGenerator:
         if event_name == 'LowOxygenWarning':
             return 'Warning: Life support oxygen reserves critically low'
         if event_name == 'LowHealthWarningCleared':
-            return 'Hull integrity stabilized, critical damage repaired'
+            return 'Health stabilized, medical emergency has been averted'
         if event_name == 'LowHealthWarning':
-            return 'Warning: Hull integrity critical, immediate repairs recommended'
+            return 'Warning: Health is critically low, immediate medical attention required'
         if event_name == 'BreathableAtmosphereExited':
             return 'Exited breathable atmosphere, life support systems active'
         if event_name == 'BreathableAtmosphereEntered':
