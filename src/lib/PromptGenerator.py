@@ -9,7 +9,7 @@ import requests
 import humanize
 import json
 
-from lib.EventModels import (
+from .EventModels import (
     ApproachBodyEvent, ApproachSettlementEvent, BookTaxiEvent, BountyEvent, BuyExplorationDataEvent, CodexEntryEvent, CommanderEvent, CommitCrimeEvent,
     CrewAssignEvent, CrewLaunchFighterEvent, CrewMemberJoinsEvent, CrewMemberQuitsEvent, CrewMemberRoleChangeEvent,
     DataScannedEvent, DatalinkScanEvent, DiedEvent, DisembarkEvent, DiscoveryScanEvent, DockedEvent, DockFighterEvent,

@@ -363,6 +363,7 @@ class Chat:
             register_actions(
                 self.action_manager,
                 self.event_manager,
+                self.prompt_generator,
                 self.llmClient,
                 self.config["llm_model_name"],
                 self.visionClient,

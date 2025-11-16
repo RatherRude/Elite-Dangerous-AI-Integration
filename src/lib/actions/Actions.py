@@ -16,6 +16,7 @@ from ..Logger import log, show_chat_message
 from ..EDKeys import EDKeys
 from ..EventManager import EventManager
 from ..ActionManager import ActionManager
+from ..PromptGenerator import PromptGenerator
 
 keys: EDKeys = None
 discovery_primary_var: bool = True
@@ -1357,7 +1358,7 @@ def target_subsystem(args, projected_states):
     return f"The submodule {args['subsystem']} is being targeted."
 
 
-def register_actions(actionManager: ActionManager, eventManager: EventManager, llmClient: openai.OpenAI,
+def register_actions(actionManager: ActionManager, eventManager: EventManager, promptGenerator: PromptGenerator ,llmClient: openai.OpenAI,
                      llmModelName: str, visionClient: openai.OpenAI | None, visionModelName: str | None,
                      embeddingClient: openai.OpenAI | None, embeddingModelName: str | None,
                      edKeys: EDKeys, discovery_primary_var_flag: bool = True, discovery_firegroup_var_flag: int = 1,
@@ -2435,7 +2436,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     
     register_web_actions(
         actionManager, eventManager,
-        llmClient, llmModelName,
+        promptGenerator, llmClient, llmModelName,
         embeddingClient, embeddingModelName
     )
 

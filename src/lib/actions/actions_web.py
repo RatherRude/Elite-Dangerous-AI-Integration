@@ -7,6 +7,8 @@ import yaml
 import traceback
 import sys
 
+
+from ..PromptGenerator import PromptGenerator
 from .data import *
 from ..ActionManager import ActionManager
 from ..EventManager import EventManager
@@ -17,10 +19,12 @@ llm_model_name: str = None
 embedding_client: openai.OpenAI | None = None
 embedding_model_name: str | None = None
 event_manager: EventManager = None
+prompt_generator: PromptGenerator = None
 
 def web_search_agent(
         obj,
         projected_states,
+        prompt_generator,
         llm_client: openai.OpenAI = None,
         llm_model_name: str = None
      ):
@@ -210,7 +214,7 @@ def web_search_agent(
 
     messages = [
         {"role": "system", "content": system_prompt},
-        {"role": "user", "content": f"Current game state is: {json.dumps(projected_states)}\n\nUser query: {query}"}
+        {"role": "user", "content": f"Current game state is:\n{prompt_generator.generate_status_message(projected_states)}\n\nUser query: {query}"}
     ]
 
     max_loops = 7
@@ -268,6 +272,7 @@ def web_search(obj, projected_states):
     res = web_search_agent(
         obj,
         projected_states,
+        prompt_generator=prompt_generator,
         llm_client=llm_client,
         llm_model_name=llm_model_name
     )
@@ -2024,12 +2029,14 @@ def body_finder(obj, projected_states):
 
 
 def register_web_actions(actionManager: ActionManager, eventManager: EventManager, 
+                        promptGenerator: PromptGenerator,
                          llmClient: openai.OpenAI,
                          llmModelName: str,
                          embeddingClient: openai.OpenAI | None,
                          embeddingModelName: str | None):
-    global event_manager, llm_client, llm_model_name, embedding_model_name, embedding_client
+    global event_manager, llm_client, llm_model_name, embedding_model_name, embedding_client, prompt_generator
     event_manager = eventManager
+    prompt_generator = promptGenerator
     llm_client = llmClient
     llm_model_name = llmModelName
     embedding_model_name = embeddingModelName

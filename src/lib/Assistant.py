@@ -327,7 +327,7 @@ class Assistant:
                 
                 if hasattr(completion.choices[0].message, 'content'):
                     response_text = completion.choices[0].message.content
-                    if completion.choices[0].message.content is None: 
+                    if completion.choices[0].message.content is None or completion.choices[0].message.content == "":
                         log("debug", "LLM completion no content:", completion)
                         show_chat_message("covas", "...")
                 else:
@@ -351,7 +351,7 @@ class Assistant:
                 self.execute_actions(response_actions, projected_states)
 
                 if not predicted_actions and self.config["use_action_cache_var"]:
-                    if len(response_actions) == 1:
+                    if len(response_actions) == 1 and len(user_input):
                         self.verify_action(user_input[-1], response_actions[0], prompt, tool_list)
                     
         except Exception as e:
