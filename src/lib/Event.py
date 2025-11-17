@@ -117,3 +117,14 @@ EventLike = (
     | ToolEvent
     | MemoryEvent
 )
+
+EventClasses: list[type[Event]] = [
+    GameEvent,
+    ConversationEvent,
+    ToolEvent,
+    StatusEvent,
+    ProjectedEvent,
+    ExternalEvent,
+    MemoryEvent,
+    PluginEvent,
+]
