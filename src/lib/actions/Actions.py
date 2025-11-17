@@ -1546,7 +1546,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "pips to systems": {"power_category": ["Systems"], "pips": [2]},
     })
 
-    actionManager.registerAction('galaxyMapOpen', "Open galaxy map. If asked, also focus on a system or start a navigation route", {
+    actionManager.registerAction('galaxyMapOpen', "Open galaxy map. If asked, also focus on a system or start a navigation route. Successful navigation closes map.", {
         "type": "object",
         "properties": {
             "system_name": {

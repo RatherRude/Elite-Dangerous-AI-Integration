@@ -156,7 +156,7 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
             inputs=Sample(
                 query='find low security systems', projected_states={}
             ),
-            expected_output=SampleResult(answer='Alpha Centauri'),
+            expected_output=SampleResult(answer="Barnard's Star"),
             metadata={},
         ),
         Case(
@@ -514,5 +514,5 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
     ],
 )
 
-report = web_tool_dataset.evaluate_sync(run_sample)
+report = web_tool_dataset.evaluate_sync(run_sample, max_concurrency=4)
 report.print(include_input=True, include_output=True, include_expected_output=True, include_durations=True, include_reasons=True)
