@@ -31,6 +31,7 @@ engineering_modifications = json.load(open(get_asset_path('engineering_modificat
 known_station_types = [
     "Asteroid base",
     "Coriolis Starport",
+    "Dodec Starport",
     "Mega ship",
     "Ocellus Starport",
     "Orbis Starport",

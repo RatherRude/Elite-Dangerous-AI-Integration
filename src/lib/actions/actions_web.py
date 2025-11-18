@@ -96,7 +96,8 @@ def web_search_agent(
                         "commodities": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" }, "amount": { "type": "integer" }, "transaction": { "type": "string", "enum": ["Buy", "Sell"] } }, "required": ["name", "amount", "transaction"]} },
                         "ships": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" } }, "required": ["name"] } },
                         "services": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string", "enum": ["Black Market", "Interstellar Factors Contact"] } }, "required": ["name"] } },
-                        "sort_by": { "type": "string", "enum": ["distance", "bestprice"], "description": "Sort stations either by distance or best price when commodities are included. Default: bestprice." }
+                        "sort_by": { "type": "string", "enum": ["distance", "bestprice"], "description": "Sort stations either by distance or best price when commodities are included. Default: bestprice." },
+                        "include_player_fleetcarrier": { "type": "boolean", "description": "Include Drake-Class Carrier (player fleet carriers) in station results." }
                     },
                     "required": ["reference_system"]
                 }
@@ -1484,11 +1485,15 @@ def find_best_match(search_term, known_list):
 
 # Prepare a request for the spansh station finder
 def prepare_station_request(obj, projected_states):# Helper function for fuzzy matching
-    
     log('debug', 'Station Finder Request', obj)
+
+    station_types = known_station_types
+    if obj.get("include_player_fleetcarrier"):
+        station_types.append("Drake-Class Carrier")
+
     filters = {
         "type": {
-            "value": known_station_types
+            "value": station_types
         },
         "distance": {
             "min": "0",
