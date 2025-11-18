@@ -95,7 +95,8 @@ def web_search_agent(
                         "modules": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" }, "class": { "type": "array", "items": { "type": "string" } }, "rating": { "type": "array", "items": { "type": "string" } } }, "required": ["name"] } },
                         "commodities": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" }, "amount": { "type": "integer" }, "transaction": { "type": "string", "enum": ["Buy", "Sell"] } }, "required": ["name", "amount", "transaction"]} },
                         "ships": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" } }, "required": ["name"] } },
-                        "services": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string", "enum": ["Black Market", "Interstellar Factors Contact"] } }, "required": ["name"] } }
+                        "services": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string", "enum": ["Black Market", "Interstellar Factors Contact"] } }, "required": ["name"] } },
+                        "sort_by": { "type": "string", "enum": ["distance", "bestprice"], "description": "Sort stations either by distance or best price when commodities are included. Default: bestprice." }
                     },
                     "required": ["reference_system"]
                 }
@@ -1566,8 +1567,9 @@ def prepare_station_request(obj, projected_states):# Helper function for fuzzy m
             "value": obj["name"]
         }
 
+    sort_preference = obj.get("sort_by", "bestprice")
     sort_object = {"distance": {"direction": "asc"}}
-    if filters.get("market") and len(filters["market"]) > 0:
+    if sort_preference == "bestprice" and filters.get("market") and len(filters["market"]) > 0:
         if filters.get("market")[0].get("demand"):
             sort_object = {"market_sell_price": [{"name": filters["market"][0]["name"], "direction": "desc"}]}
         elif filters["market"][0].get("supply"):
