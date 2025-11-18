@@ -60,6 +60,24 @@ If you don't want to configure every time you start the AIServer, you can place 
 }
 ```
 
+## Docker Setup
+
+You can also run the AIServer using Docker Compose. Here is an example configuration:
+
+```yaml
+services:
+  aiserver:
+    image: ghcr.io/lucaelin/lucaelin/covas-next-aiserver:latest-cpu
+    pull_policy: always
+    environment:
+      - AISERVER_TTS_MODEL_NAME=hexgrad/Kokoro-82M
+      - AISERVER_STT_MODEL_NAME=sherpa-onnx-nemo-parakeet-tdt-0.6b-v2-int8.tar.bz2
+      - AISERVER_EMBED_MODEL_NAME=onnx-community/embeddinggemma-300m-ONNX
+      - AISERVER_LLM_MODEL_NAME=None
+    ports:
+      - "8080:8080/tcp"
+```
+
 ## Troubleshooting
 
 If you encounter any issues, please contact us on Discord or open an issue on GitHub.
