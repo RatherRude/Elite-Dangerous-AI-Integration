@@ -64,6 +64,7 @@ def web_search_agent(
                     "type": "object",
                     "properties": {
                         "reference_system": { "type": "string", "description": "Name of the current system. Example: 'Sol'" },
+                        "reference_route": { "type": "object", "properties": { "source": { "type": "string" }, "destination": { "type": "string" } }, "required": ["source", "destination"], "description": "Search along a route instead of a single reference system." },
                         "name": { "type": "string", "description": "Required string in system name" },
                         "distance": { "type": "number", "description": "The maximum distance to search" },
                         "allegiance": { "type": "array", "items": { "type": "string", "enum": ["Alliance", "Empire", "Federation", "Guardian", "Independent", "Pilots Federation", "Player Pilots", "Thargoid"] } },
@@ -74,8 +75,7 @@ def web_search_agent(
                         "security": { "type": "array", "items": { "type": "string" } },
                         "thargoid_war_state": { "type": "array", "items": { "type": "string" } },
                         "population": { "type": "object", "properties": { "comparison": { "type": "string", "enum": ["<", ">"] }, "value": { "type": "number" } } }
-                    },
-                    "required": ["reference_system"]
+                    }
                 }
             }
         },
@@ -113,13 +113,13 @@ def web_search_agent(
                     "type": "object",
                     "properties": {
                         "reference_system": { "type": "string", "description": "Name of the current system. Example: 'Sol'" },
+                        "reference_route": { "type": "object", "properties": { "source": { "type": "string" }, "destination": { "type": "string" } }, "required": ["source", "destination"], "description": "Search along a route instead of a single reference system." },
                         "name": { "type": "string", "description": "Required string in body name" },
                         "subtype": { "type": "array", "items": { "type": "string" } },
                         "landmark_subtype": { "type": "array", "items": { "type": "string" } },
                         "distance": { "type": "number", "description": "Maximum distance to search" },
                         "rings": { "type": "object", "properties": { "material": { "type": "string" }, "hotspots": { "type": "integer" } }, "required": ["material", "hotspots"] }
-                    },
-                    "required": ["reference_system"]
+                    }
                 }
             }
         },
@@ -1603,6 +1603,7 @@ def prepare_station_request(obj, projected_states):# Helper function for fuzzy m
         }
     else:
         request_body["reference_system"] = obj.get("reference_system", projected_states.get("Location", {}).get("StarSystem", "Sol"))
+
     return request_body
 
 
@@ -1827,9 +1828,22 @@ def prepare_system_request(obj, projected_states):# Helper function for fuzzy ma
             }
         ],
         "size": 3,
-        "page": 0,
-        "reference_system": obj.get("reference_system", "Sol")
+        "page": 0
     }
+
+    reference_route = obj.get("reference_route")
+    if reference_route:
+        source = reference_route.get("source")
+        destination = reference_route.get("destination")
+        if not source or not destination:
+            raise Exception("reference_route must include both 'source' and 'destination'.")
+        request_body["reference_route"] = {
+            "source": source,
+            "destination": destination
+        }
+    else:
+        request_body["reference_system"] = obj.get("reference_system",
+                                                   projected_states.get("Location", {}).get("StarSystem", "Sol"))
 
     return request_body
 
@@ -1982,9 +1996,22 @@ def prepare_body_request(obj, projected_states):
             }
         ],
         "size": 3,
-        "page": 0,
-        "reference_system": obj.get("reference_system", "Sol")
+        "page": 0
     }
+
+    reference_route = obj.get("reference_route")
+    if reference_route:
+        source = reference_route.get("source")
+        destination = reference_route.get("destination")
+        if not source or not destination:
+            raise Exception("reference_route must include both 'source' and 'destination'.")
+        request_body["reference_route"] = {
+            "source": source,
+            "destination": destination
+        }
+    else:
+        request_body["reference_system"] = obj.get("reference_system",
+                                                   projected_states.get("Location", {}).get("StarSystem", "Sol"))
 
     return request_body
 
