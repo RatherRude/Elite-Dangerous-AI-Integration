@@ -88,8 +88,9 @@ def web_search_agent(
                     "type": "object",
                     "properties": {
                         "reference_system": { "type": "string", "description": "Name of the current system. Example: 'Sol'" },
+                        "reference_route": { "type": "object", "properties": { "source": { "type": "string" }, "destination": { "type": "string" } }, "required": ["source", "destination"], "description": "Search along a route instead of a single reference system." },
                         "name": { "type": "string", "description": "Required string in station name" },
-                        "distance": { "type": "number", "description": "The maximum distance to search" },
+                        "distance": { "type": "number", "description": "The maximum distance to search in" },
                         "material_trader": { "type": "array", "items": { "type": "string", "enum": ["Encoded", "Manufactured", "Raw"] } },
                         "technology_broker": { "type": "array", "items": { "type": "string", "enum": ["Guardian", "Human"] } },
                         "modules": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" }, "class": { "type": "array", "items": { "type": "string" } }, "rating": { "type": "array", "items": { "type": "string" } } }, "required": ["name"] } },
@@ -97,9 +98,8 @@ def web_search_agent(
                         "ships": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" } }, "required": ["name"] } },
                         "services": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string", "enum": ["Black Market", "Interstellar Factors Contact"] } }, "required": ["name"] } },
                         "sort_by": { "type": "string", "enum": ["distance", "bestprice"], "description": "Sort stations either by distance or best price when commodities are included. Default: bestprice." },
-                        "include_player_fleetcarrier": { "type": "boolean", "description": "Include Drake-Class Carrier (player fleet carriers) in station results." }
-                    },
-                    "required": ["reference_system"]
+                        "include_player_fleetcarrier": { "type": "boolean", "description": "Include Drake-Class Carrier (player-owned fleet carriers) in searches" }
+                    }
                 }
             }
         },
@@ -1487,7 +1487,7 @@ def find_best_match(search_term, known_list):
 def prepare_station_request(obj, projected_states):# Helper function for fuzzy matching
     log('debug', 'Station Finder Request', obj)
 
-    station_types = known_station_types
+    station_types = list(known_station_types)
     if obj.get("include_player_fleetcarrier"):
         station_types.append("Drake-Class Carrier")
 
@@ -1587,9 +1587,21 @@ def prepare_station_request(obj, projected_states):# Helper function for fuzzy m
             sort_object
         ],
         "size": 3,
-        "page": 0,
-        "reference_system": obj.get("reference_system", "Sol")
+        "page": 0
     }
+
+    reference_route = obj.get("reference_route")
+    if reference_route:
+        source = reference_route.get("source")
+        destination = reference_route.get("destination")
+        if not source or not destination:
+            raise Exception("reference_route must include both 'source' and 'destination'.")
+        request_body["reference_route"] = {
+            "source": source,
+            "destination": destination
+        }
+    else:
+        request_body["reference_system"] = obj.get("reference_system", projected_states.get("Location", {}).get("StarSystem", "Sol"))
     return request_body
 
 
