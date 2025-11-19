@@ -1417,7 +1417,7 @@ def educated_guesses_message(search_query, valid_list):
 
     return message
 # Retrieve relevant long-term memory notes by semantic search
-def retrieve_memories(obj, projected_states):
+def remember_memories(obj, projected_states):
     query = (obj or {}).get('query', '').strip()
     top_k = (obj or {}).get('top_k', 5)
     if not query:
@@ -2127,8 +2127,8 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
 
     if embeddingClient:
         actionManager.registerAction(
-            'retrieve_memories',
-        "Retrieve relevant long-term memory notes from logbook by semantic search.",
+            'remember_memories',
+        "Retrieve relevant long-term memory notes from logbook by semantic search. Use this to remember and recall older logbook entries and memories than currently known to answer questions concerning the past.",
             parameters={
                 "type": "object",
                 "properties": {
@@ -2150,7 +2150,7 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
                     about '{i.get('query', '')}'
                     top {i.get('top_k', 5)}
                 """,
-            method=retrieve_memories,
+            method=remember_memories,
             action_type='web'
         )
 
