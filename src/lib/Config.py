@@ -428,6 +428,7 @@ class Config(TypedDict):
     ed_appdata_path: str
     qol_autobrake: bool  # Quality of life: Auto brake when approaching stations
     qol_autoscan: bool  # Quality of life: Auto scan when entering new systems
+    prefer_primary_bindings: bool  # Prefer primary keybinds over secondary entries
     
     # Overlay settings
     overlay_show_avatar: bool
@@ -743,6 +744,7 @@ def load_config() -> Config:
         'discovery_primary_var': True,
         'discovery_firegroup_var': 1,
         'weapon_types': [],
+        'prefer_primary_bindings': False,
         # Chat channel tab defaults
         'chat_local_tabbed_var': False,
         'chat_wing_tabbed_var': False,

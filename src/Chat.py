@@ -114,7 +114,10 @@ class Chat:
         log("debug", "Initializing SystemDatabase...")
         self.system_database = SystemDatabase()
         log("debug", "Initializing EDKeys...")
-        self.ed_keys = EDKeys(get_ed_appdata_path(config))
+        self.ed_keys = EDKeys(
+            get_ed_appdata_path(config),
+            prefer_primary_bindings=self.config.get("prefer_primary_bindings", False),
+        )
         log("debug", "Initializing status parser...")
         self.status_parser = StatusParser(get_ed_journals_path(config))
         log("debug", "Initializing prompt generator...")
@@ -479,7 +482,10 @@ if __name__ == "__main__":
         system = get_system_info()
         print(json.dumps({"type": "system", "system": system})+'\n', flush=True)
 
-        ed_keys = EDKeys(get_ed_appdata_path(config))
+        ed_keys = EDKeys(
+            get_ed_appdata_path(config),
+            prefer_primary_bindings=config.get("prefer_primary_bindings", False),
+        )
         # Load plugins.
         log('debug', "Loading plugins...")
         plugin_manager = PluginManager(config=config)

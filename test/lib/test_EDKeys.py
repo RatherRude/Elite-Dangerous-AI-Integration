@@ -35,6 +35,10 @@ def binds_file(tmp_path):
             </Primary>
 		    <Secondary Device="{NoDevice}" Key="" />
         </SecondaryFire>
+        <CycleNextTarget>
+            <Primary Device="Keyboard" Key="Key_Q"/>
+            <Secondary Device="Keyboard" Key="Key_E"/>
+        </CycleNextTarget>
         <InvalidBinding>
             <Primary Device="Keyboard" Key="Key_Invalid"/>
         </InvalidBinding>
@@ -105,3 +109,15 @@ def test_send_with_hold(mock_directinput, binds_file):
     
     assert mock_directinput["PressKey"].called
     assert mock_directinput["ReleaseKey"].called
+
+def test_prefer_primary_binding_overrides_secondary(mock_directinput, binds_file):
+    """Ensure prefer_primary_bindings uses primary keyboard input when available"""
+    keys = EDKeys(binds_file, prefer_primary_bindings=True)
+    
+    assert keys.keys['CycleNextTarget']['key'] == 16  # Key_Q
+
+def test_default_prefers_secondary_binding(mock_directinput, binds_file):
+    """Default behavior should stick with secondary binding if available"""
+    keys = EDKeys(binds_file)
+    
+    assert keys.keys['CycleNextTarget']['key'] == 18  # Key_E

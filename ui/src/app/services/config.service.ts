@@ -119,6 +119,7 @@ export interface Config {
     discovery_primary_var: boolean;
     discovery_firegroup_var: number;
     weapon_types: WeaponType[];
+    prefer_primary_bindings: boolean;
     // Chat channel tab settings
     chat_local_tabbed_var: boolean;
     chat_wing_tabbed_var: boolean;

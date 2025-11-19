@@ -23,8 +23,9 @@ Constraints:  This file will use the latest modified *.binds file
 @final
 class EDKeys:
 
-    def __init__(self, appdata_path: str):
+    def __init__(self, appdata_path: str, prefer_primary_bindings: bool = False):
         self.appdata_path = appdata_path
+        self.prefer_primary_bindings = prefer_primary_bindings
         self.key_mod_delay = 0.010
         self.key_default_delay = 0.200
         self.key_repeat_delay = 0.100
@@ -189,6 +190,7 @@ class EDKeys:
             if len(item) < 2:
                 continue
             # Check primary
+            primary_binding_found = False
             if item[0].tag == "Primary" and item[0].attrib['Device'].strip() == "Keyboard":
                 key = item[0].attrib['Key']
                 for modifier in item[0]:
@@ -196,8 +198,10 @@ class EDKeys:
                         mods.append(modifier.attrib['Key'])
                     elif modifier.tag == "Hold":
                         hold = True
+                primary_binding_found = True
             # Check secondary (and prefer secondary)
-            if item[1].tag == "Secondary" and item[1].attrib['Device'].strip() == "Keyboard":
+            prefer_secondary = not self.prefer_primary_bindings or not primary_binding_found
+            if prefer_secondary and item[1].tag == "Secondary" and item[1].attrib['Device'].strip() == "Keyboard":
                 key = item[1].attrib['Key']
                 mods = []
                 hold = None

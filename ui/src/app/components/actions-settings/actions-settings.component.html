@@ -37,6 +37,11 @@
         </mat-slide-toggle>
         <p>Game actions are performed by the AI on your behalf, like deploying the landing gear or opening
             the galaxy map.</p>
+        <mat-slide-toggle [ngModel]="config.prefer_primary_bindings"
+                          (ngModelChange)="onConfigChange({prefer_primary_bindings: $event})">
+            Prefer Primary Keybinds
+        </mat-slide-toggle>
+        <p>When enabled, the AI uses primary keybinds before falling back to secondary bindings.</p>
         @if (config.tools_var && config.game_actions_var) {
             <mat-expansion-panel>
                 <mat-expansion-panel-header>
