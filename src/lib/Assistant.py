@@ -291,6 +291,12 @@ class Assistant:
                     
                 if self.config["llm_model_name"] in ['gemini-3-pro-preview']:
                     llm_params["reasoning_effort"] = "low"
+                    for m in prompt:
+                        if 'tool_calls' in m and m.get('tool_calls', None):
+                            calls = m.get('tool_calls', [{}])
+                            calls[0]['extra_content'] = {"google": {
+                                "thought_signature": "skip_thought_signature_validator"
+                            }}
                     
                 try:
                     response = self.llmClient.chat.completions.with_raw_response.create(  # pyright: ignore[reportCallIssue]
