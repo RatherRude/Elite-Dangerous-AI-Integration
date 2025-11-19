@@ -3332,7 +3332,7 @@ class PromptGenerator:
                 time_offset = humanize.naturaltime(reference_time - event_time)
 
                 conversational_pieces.append({
-                    "role": "system",
+                    "role": "user",
                     "content": f"[Ship logbook, {time_offset}] {event.content}",
                 })
 

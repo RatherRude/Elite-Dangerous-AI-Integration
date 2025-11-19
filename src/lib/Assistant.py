@@ -289,6 +289,9 @@ class Assistant:
                     llm_params["verbosity"] = "low"
                     llm_params["reasoning_effort"] = "none"
                     
+                if self.config["llm_model_name"] in ['gemini-3-pro-preview']:
+                    llm_params["reasoning_effort"] = "low"
+                    
                 try:
                     response = self.llmClient.chat.completions.with_raw_response.create(  # pyright: ignore[reportCallIssue]
                         model=self.config["llm_model_name"],
