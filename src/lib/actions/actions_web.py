@@ -98,7 +98,8 @@ def web_search_agent(
                         "ships": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" } }, "required": ["name"] } },
                         "services": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string", "enum": ["Black Market", "Interstellar Factors Contact"] } }, "required": ["name"] } },
                         "sort_by": { "type": "string", "enum": ["distance", "bestprice"], "description": "Sort stations either by distance or best price when commodities are included. Default: bestprice." },
-                        "include_player_fleetcarrier": { "type": "boolean", "description": "Include Drake-Class Carrier (player-owned fleet carriers) in searches" }
+                        "include_player_fleetcarrier": { "type": "boolean", "description": "Include Drake-Class Carrier (player-owned fleet carriers) in searches" },
+                        "unfiltered_results": { "type": "object", "description": "Set a category to true to include all returned data instead of only the requested items.", "properties": { "commodities": { "type": "boolean" }, "modules": { "type": "boolean" }, "ships": { "type": "boolean" } } }
                     }
                 }
             }
@@ -1606,7 +1607,11 @@ def prepare_station_request(obj, projected_states):# Helper function for fuzzy m
 
 
 # filter a spansh station result set for only relevant information
-def filter_station_response(request, response):
+def filter_station_response(request, response, unfiltered_results=None):
+    unfiltered_results = unfiltered_results or {}
+    unfiltered_markets = unfiltered_results.get("commodities", False)
+    unfiltered_modules = unfiltered_results.get("modules", False)
+    unfiltered_ships = unfiltered_results.get("ships", False)
     # Extract requested commodities and modules
     commodities_requested = {item["name"] for item in request["filters"].get("market", {})}
     modules_requested = {item["name"] for item in request["filters"].get("modules", {})}
@@ -1627,43 +1632,55 @@ def filter_station_response(request, response):
         }
 
         if "market" in result:
-            filtered_market = [
-                commodity for commodity in result["market"]
-                if commodity["commodity"] in commodities_requested
-            ]
-            filtered_result["market"] = filtered_market
+            if unfiltered_markets:
+                filtered_result["market"] = result["market"]
+            else:
+                filtered_market = [
+                    commodity for commodity in result["market"]
+                    if commodity["commodity"] in commodities_requested
+                ]
+                filtered_result["market"] = filtered_market
 
         if "modules" in result:
-            filtered_modules = []
-            for module in result["modules"]:
-                for requested_module in modules_requested:
-                    if requested_module.lower() in module["name"].lower():
-                        filtered_modules.append(
-                            {"name": module["name"], "class": module["class"], "rating": module["rating"],
-                             "price": module["price"]})
+            if unfiltered_modules:
+                filtered_result["modules"] = result["modules"]
+            else:
+                filtered_modules = []
+                for module in result["modules"]:
+                    for requested_module in modules_requested:
+                        if requested_module.lower() in module["name"].lower():
+                            filtered_modules.append(
+                                {"name": module["name"], "class": module["class"], "rating": module["rating"],
+                                 "price": module["price"]})
 
-            if filtered_modules:
-                filtered_result["modules"] = filtered_modules
+                if filtered_modules:
+                    filtered_result["modules"] = filtered_modules
 
         if "ships" in result:
-            filtered_ships = []
-            for ship in result["ships"]:
-                for requested_ship in ships_requested:
-                    if requested_ship.lower() in ship["name"].lower():
-                        filtered_ships.append(ship)
+            if unfiltered_ships:
+                filtered_result["ships"] = result["ships"]
+            else:
+                filtered_ships = []
+                for ship in result["ships"]:
+                    for requested_ship in ships_requested:
+                        if requested_ship.lower() in ship["name"].lower():
+                            filtered_ships.append(ship)
 
-            if filtered_ships:
-                filtered_result["ships"] = filtered_ships
+                if filtered_ships:
+                    filtered_result["ships"] = filtered_ships
 
-        if "services" in result:
-            filtered_services = []
-            for service in result["services"]:
-                for requested_service in services_requested:
-                    if requested_service.lower() in service["name"].lower():
-                        filtered_services.append(service)
-
-            if filtered_services:
-                filtered_result["services"] = filtered_services
+        # if "services" in result:
+        #     if unfiltered_services:
+        filtered_result["services"] = result["services"]
+        # else:
+        #     filtered_services = []
+        #     for service in result["services"]:
+        #         for requested_service in services_requested:
+        #             if requested_service.lower() in service["name"].lower():
+        #                 filtered_services.append(service)
+        #
+        #     if filtered_services:
+        #         filtered_result["services"] = filtered_services
 
         filtered_results.append(filtered_result)
 
@@ -1686,7 +1703,7 @@ def station_finder(obj, projected_states):
 
         data = response.json()
 
-        filtered_data = filter_station_response(request_body, data)
+        filtered_data = filter_station_response(request_body, data, obj.get("unfiltered_results"))
 
         return f'Here is a list of stations: {json.dumps(filtered_data)}'
     except Exception as e:
