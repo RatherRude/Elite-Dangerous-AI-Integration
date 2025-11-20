@@ -85,56 +85,6 @@
             </div>
         </div>
 
-        <div *ngIf="showColonisationPanel" class="expandable-panel colonisation-panel"
-             (click)="onBackgroundClick($event, 'colonisation')">
-            <div class="panel-content" (click)="onPanelClick($event)">
-                <div class="panel-header">
-                    <h3>Colony Construction</h3>
-                    <button class="panel-close-btn" (click)="closeColonisationPanel()" mat-icon-button>
-                        <mat-icon>close</mat-icon>
-                    </button>
-                </div>
-                <div class="colony-header">
-                    <h4>{{ getColonisationSystem() }}</h4>
-                    <div class="colony-status" [ngClass]="getColonisationStatusClass()">
-                        {{ getColonisationStatusText() }}
-                    </div>
-                </div>
-
-                <div class="progress-container">
-                    <h4>Construction Progress</h4>
-                    <div class="stat-bar">
-                        <mat-progress-bar
-                                mode="determinate"
-                                [value]="getColonisationProgressValue()"
-                        ></mat-progress-bar>
-                        <span>{{ formatPercentage(getColonisationProgress()) }}</span>
-                    </div>
-                </div>
-
-                <div *ngIf="getColonisationResources().length > 0" class="resources-needed">
-                    <h4>Resources Needed</h4>
-                    <mat-list>
-                        <mat-list-item *ngFor="let resource of getColonisationResources()" class="resource-item">
-                            <div class="resource-details">
-                                <span class="resource-name">{{ resource.Name_Localised || resource.Name }}</span>
-                                <div class="resource-progress">
-                                    <mat-progress-bar
-                                            mode="determinate"
-                                            [value]="(resource.ProvidedAmount / resource.RequiredAmount) * 100"
-                                    ></mat-progress-bar>
-                                    <span class="resource-count">
-                                    {{ resource.ProvidedAmount }}/{{ resource.RequiredAmount }}
-                                </span>
-                                </div>
-                            </div>
-                        </mat-list-item>
-                    </mat-list>
-                </div>
-            </div>
-        </div>
-
-
         <!-- Context-dependent content based on active mode -->
         <div *ngIf="getActiveMode() === 'humanoid'" class="context-content character-sheet">
             <!-- TOP SECTION - Character Identity -->
@@ -373,14 +323,6 @@
                 <div class="status-indicators-header">
                     <!-- Top row: Construction, Friends, Wing -->
                     <div class="status-icons-top-row">
-                        <!-- Colonisation Construction indicator -->
-                        <div *ngIf="isColonisationActive(colonisationConstruction)"
-                             class="colonisation-indicator"
-                             (click)="toggleColonisationPanel()">
-                            <mat-icon>construction</mat-icon>
-                            <span class="progress-text">{{ formatPercentage(getColonisationProgress()) }}</span>
-                        </div>
-
                         <!-- Friends counter -->
                         <div class="friends-counter" (click)="toggleFriendsPanel()" *ngIf="getFriendsCount() > 0">
                             <mat-icon>people</mat-icon>

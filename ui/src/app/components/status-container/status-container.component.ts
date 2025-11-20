@@ -24,7 +24,6 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
   commander: any = null;
   inCombat: any = null;
   friends: any = null;
-  colonisationConstruction: any = null;
   target: any = null;
   navInfo: any = null;
   exobiologyScan: any = null;
@@ -53,7 +52,6 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
   
   // UI state
   showFriendsPanel = false;
-  showColonisationPanel = false;
   showWingPanel = false;
   showFightersPanel = false;
   showNavDetails = false;
@@ -104,9 +102,6 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
         this.friends = friends;
       }),
       
-      this.projectionsService.colonisationConstruction$.subscribe(colonisation => {
-        this.colonisationConstruction = colonisation;
-      }),
       
       this.projectionsService.target$.subscribe(target => {
         this.target = target;
@@ -185,10 +180,6 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
   }
 
   // Toggle methods
-  toggleColonisationPanel(): void {
-    this.showColonisationPanel = !this.showColonisationPanel;
-  }
-
   toggleFriendsPanel(): void {
     this.showFriendsPanel = !this.showFriendsPanel;
   }
@@ -214,10 +205,6 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
     this.showFightersPanel = false;
   }
 
-  closeColonisationPanel(): void {
-    this.showColonisationPanel = false;
-  }
-
   // Handle background clicks to close panels
   onBackgroundClick(event: Event, panelType: string): void {
     event.stopPropagation();
@@ -230,9 +217,6 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
         break;
       case 'fighters':
         this.closeFightersPanel();
-        break;
-      case 'colonisation':
-        this.closeColonisationPanel();
         break;
     }
   }
@@ -344,39 +328,6 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
     if (Number.isNaN(etaMs)) return 0;
     const remainingSeconds = Math.ceil((etaMs - this.currentTimeMs) / 1000);
     return remainingSeconds > 0 ? remainingSeconds : 0;
-  }
-
-  // Colonisation methods
-  isColonisationActive(colonisation: any): boolean {
-    return colonisation && colonisation.StarSystem && colonisation.StarSystem !== 'Unknown';
-  }
-
-  getColonisationSystem(): string {
-    return this.colonisationConstruction?.StarSystem || 'Unknown System';
-  }
-
-  getColonisationStatusText(): string {
-    if (this.colonisationConstruction?.ConstructionComplete) return 'Complete';
-    if (this.colonisationConstruction?.ConstructionFailed) return 'Failed';
-    return 'In Progress';
-  }
-
-  getColonisationStatusClass(): string {
-    if (this.colonisationConstruction?.ConstructionComplete) return 'status-complete';
-    if (this.colonisationConstruction?.ConstructionFailed) return 'status-failed';
-    return 'status-active';
-  }
-
-  getColonisationProgress(): number {
-    return this.colonisationConstruction?.ConstructionProgress || 0;
-  }
-
-  getColonisationProgressValue(): number {
-    return this.getColonisationProgress() * 100;
-  }
-
-  getColonisationResources(): any[] {
-    return this.colonisationConstruction?.ResourcesRequired || [];
   }
 
   // Status flag methods

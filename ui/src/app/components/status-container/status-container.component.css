@@ -512,8 +512,7 @@
 .status-icon,
 .friends-counter,
 .wing-counter,
-.fighters-counter,
-.colonisation-indicator {
+.fighters-counter {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -529,8 +528,7 @@
 .status-icon:hover,
 .friends-counter:hover,
 .wing-counter:hover,
-.fighters-counter:hover,
-.colonisation-indicator:hover {
+.fighters-counter:hover {
   background: rgba(0, 0, 0, 0.9);
   border-color: #555;
   transform: scale(1.05);
@@ -567,25 +565,11 @@
 
 .friends-counter,
 .wing-counter,
-.fighters-counter,
-.colonisation-indicator {
+.fighters-counter {
   position: relative;
   min-width: 32px;
   width: auto;
   padding: 0 8px;
-}
-
-.colonisation-indicator {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  min-width: 60px;
-}
-
-.progress-text {
-  font-size: 10px;
-  font-weight: 600;
-  white-space: nowrap;
 }
 
 .badge {
