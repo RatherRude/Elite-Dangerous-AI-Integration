@@ -147,6 +147,132 @@
             </label>
         }
         </mat-expansion-panel>
+        <mat-expansion-panel>
+            <mat-expansion-panel-header>
+                <mat-panel-title>
+                    <mat-icon>travel_explore</mat-icon>
+                    Agent LLM Settings
+                </mat-panel-title>
+            </mat-expansion-panel-header>
+        <mat-form-field>
+            <mat-label>Agent LLM Provider</mat-label>
+            <mat-select [(ngModel)]="config.agent_llm_provider"
+                        (ngModelChange)="onConfigChange({agent_llm_provider: $event})">
+                <mat-option value="openai">OpenAI</mat-option>
+                <mat-option value="openrouter">OpenRouter</mat-option>
+                <mat-option value="google-ai-studio">Google AI Studio</mat-option>
+                <mat-option value="local-ai-server">Local AIServer</mat-option>
+                <mat-option value="custom">Custom</mat-option>
+            </mat-select>
+        </mat-form-field>
+        <mat-form-field>
+            <mat-label>Agent LLM Max Tries</mat-label>
+            <input matInput type="number" min="1" step="1"
+                   [(ngModel)]="config.agent_llm_max_tries"
+                   (ngModelChange)="onConfigChange({agent_llm_max_tries: $event})">
+        </mat-form-field>
+        @if (config.agent_llm_provider === "openai")
+        {
+            <mat-form-field>
+                <mat-label>Agent LLM Model Name</mat-label>
+                <input matInput [(ngModel)]="config.agent_llm_model_name"
+                        (ngModelChange)="onConfigChange({agent_llm_model_name: $event})">
+            </mat-form-field>
+
+            <mat-form-field>
+                <mat-label>Agent LLM Temperature</mat-label>
+                <input matInput type="number" [(ngModel)]="config.agent_llm_temperature"
+                        (ngModelChange)="onConfigChange({agent_llm_temperature: $event})" min="0" max="2" step="0.01">
+            </mat-form-field>
+
+            <mat-form-field>
+                <mat-label>Override Agent LLM API Key</mat-label>
+                <input matInput type="password" [(ngModel)]="config.agent_llm_api_key"
+                        (ngModelChange)="onConfigChange({agent_llm_api_key: $event})">
+            </mat-form-field>
+        }
+        @if (config.agent_llm_provider === "openrouter")
+        {
+            <mat-form-field>
+                <mat-label>Agent LLM Model Name</mat-label>
+                <input matInput [(ngModel)]="config.agent_llm_model_name"
+                        (ngModelChange)="onConfigChange({agent_llm_model_name: $event})">
+            </mat-form-field>
+            
+            <mat-form-field>
+                <mat-label>Agent LLM Temperature</mat-label>
+                <input matInput type="number" [(ngModel)]="config.agent_llm_temperature"
+                        (ngModelChange)="onConfigChange({agent_llm_temperature: $event})" min="0" max="2" step="0.01">
+            </mat-form-field>
+
+            <mat-form-field>
+                <mat-label>Override Agent LLM API Key</mat-label>
+                <input matInput type="password" [(ngModel)]="config.agent_llm_api_key"
+                        (ngModelChange)="onConfigChange({agent_llm_api_key: $event})">
+            </mat-form-field>
+        }
+        @if (config.agent_llm_provider === "google-ai-studio")
+        {
+            <mat-form-field>
+                <mat-label>Agent LLM Model Name</mat-label>
+                <input matInput [(ngModel)]="config.agent_llm_model_name"
+                        (ngModelChange)="onConfigChange({agent_llm_model_name: $event})">
+            </mat-form-field>
+            
+            <mat-form-field>
+                <mat-label>Agent LLM Temperature</mat-label>
+                <input matInput type="number" [(ngModel)]="config.agent_llm_temperature"
+                        (ngModelChange)="onConfigChange({agent_llm_temperature: $event})" min="0" max="2" step="0.01">
+            </mat-form-field>
+
+            <mat-form-field>
+                <mat-label>Override Agent LLM API Key</mat-label>
+                <input matInput type="password" [(ngModel)]="config.agent_llm_api_key"
+                        (ngModelChange)="onConfigChange({agent_llm_api_key: $event})">
+            </mat-form-field>
+        }
+        @if (config.agent_llm_provider === "local-ai-server")
+        {
+            <mat-form-field>
+                <mat-label>Agent LLM Endpoint</mat-label>
+                <input matInput [(ngModel)]="config.agent_llm_endpoint"
+                        (ngModelChange)="onConfigChange({agent_llm_endpoint: $event})">
+            </mat-form-field>
+            
+            <mat-form-field>
+                <mat-label>Agent LLM Temperature</mat-label>
+                <input matInput type="number" [(ngModel)]="config.agent_llm_temperature"
+                        (ngModelChange)="onConfigChange({agent_llm_temperature: $event})" min="0" max="2" step="0.01">
+            </mat-form-field>
+        }
+        @if (config.agent_llm_provider === "custom")
+        {
+
+            <mat-form-field>
+                <mat-label>Agent LLM Endpoint</mat-label>
+                <input matInput [(ngModel)]="config.agent_llm_endpoint"
+                        (ngModelChange)="onConfigChange({agent_llm_endpoint: $event})">
+            </mat-form-field>
+
+            <mat-form-field>
+                <mat-label>Agent LLM Model Name</mat-label>
+                <input matInput [(ngModel)]="config.agent_llm_model_name"
+                        (ngModelChange)="onConfigChange({agent_llm_model_name: $event})">
+            </mat-form-field>
+            
+            <mat-form-field>
+                <mat-label>Agent LLM Temperature</mat-label>
+                <input matInput type="number" [(ngModel)]="config.agent_llm_temperature"
+                        (ngModelChange)="onConfigChange({agent_llm_temperature: $event})" min="0" max="2" step="0.01">
+            </mat-form-field>
+
+            <mat-form-field>
+                <mat-label>Override Agent LLM API Key</mat-label>
+                <input matInput type="password" [(ngModel)]="config.agent_llm_api_key"
+                        (ngModelChange)="onConfigChange({agent_llm_api_key: $event})">
+            </mat-form-field>
+        }
+        </mat-expansion-panel>
 
         <mat-expansion-panel>
             <mat-expansion-panel-header>

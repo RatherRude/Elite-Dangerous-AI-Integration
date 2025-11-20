@@ -75,6 +75,10 @@ class Chat:
             base_url="https://api.openai.com/v1" if self.config["llm_endpoint"] == '' else self.config["llm_endpoint"],
             api_key=self.config["api_key"] if self.config["llm_api_key"] == '' else self.config["llm_api_key"],
         )
+        self.agent_llm_client = OpenAI(
+            base_url="https://api.openai.com/v1" if self.config["agent_llm_endpoint"] == '' else self.config["agent_llm_endpoint"],
+            api_key=self.config["api_key"] if self.config["agent_llm_api_key"] == '' else self.config["agent_llm_api_key"],
+        )
         # embeddings
         self.embeddingClient: OpenAI | None = None
         if self.config.get("embedding_provider") in ['openai', 'custom', 'google-ai-studio', 'local-ai-server']:
@@ -336,24 +340,28 @@ class Chat:
             log('info', "Register actions...")
 
             register_actions(
-                self.action_manager,
-                self.event_manager,
-                self.prompt_generator,
-                self.llmClient,
-                self.config["llm_model_name"],
-                self.visionClient,
-                self.config["vision_model_name"],
-                self.embeddingClient,
-                self.config["embedding_model_name"],
-                self.ed_keys,
-                self.config.get("discovery_primary_var", True),
-                self.config.get("discovery_firegroup_var", 1),
-                self.config.get("chat_local_tabbed_var", False),
-                self.config.get("chat_wing_tabbed_var", False),
-                self.config.get("chat_system_tabbed_var", True),
-                self.config.get("chat_squadron_tabbed_var", False),
-                self.config.get("chat_direct_tabbed_var", False),
-                self.config.get("weapon_types", [])
+                actionManager=self.action_manager,
+                eventManager=self.event_manager,
+                promptGenerator=self.prompt_generator,
+                llmClient=self.llmClient,
+                llmModelName=self.config["llm_model_name"],
+                visionClient=self.visionClient,
+                visionModelName=self.config["vision_model_name"],
+                embeddingClient=self.embeddingClient,
+                embeddingModelName=self.config["embedding_model_name"],
+                edKeys=self.ed_keys,
+                discovery_primary_var_flag=self.config.get("discovery_primary_var", True),
+                discovery_firegroup_var_flag=self.config.get("discovery_firegroup_var", 1),
+                chat_local_tabbed_flag=self.config.get("chat_local_tabbed_var", False),
+                chat_wing_tabbed_flag=self.config.get("chat_wing_tabbed_var", False),
+                chat_system_tabbed_flag=self.config.get("chat_system_tabbed_var", True),
+                chat_squadron_tabbed_flag=self.config.get("chat_squadron_tabbed_var", False),
+                chat_direct_tabbed_flag=self.config.get("chat_direct_tabbed_var", False),
+                weapon_types_list=self.config.get("weapon_types", []),
+                agent_llm_client=self.agent_llm_client,
+                agent_llm_model_name=self.config["agent_llm_model_name"],
+                agent_llm_temperature=self.config.get("agent_llm_temperature", 1.0),
+                agent_llm_max_tries=self.config.get("agent_llm_max_tries", 7),
             )
 
             log('info', "Actions ready.")

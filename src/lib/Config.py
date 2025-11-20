@@ -381,6 +381,12 @@ class Config(TypedDict):
     llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom', 'local-ai-server']
     llm_model_name: str
     llm_temperature: float
+    agent_llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom', 'local-ai-server']
+    agent_llm_model_name: str
+    agent_llm_endpoint: str
+    agent_llm_api_key: str
+    agent_llm_temperature: float
+    agent_llm_max_tries: int
     vision_provider: Literal['openai', 'google-ai-studio', 'custom', 'none', 'local-ai-server']
     vision_model_name: str
     vision_endpoint: str
@@ -627,6 +633,16 @@ def migrate(data: dict) -> dict:
         else:
             data['embedding_provider'] = 'none'
 
+    if data['config_version'] < 7:
+        data['config_version'] = 7
+
+        data.setdefault('agent_llm_provider', data.get('llm_provider', 'openai'))
+        data.setdefault('agent_llm_model_name', data.get('llm_model_name', 'gpt-4.1-mini'))
+        data.setdefault('agent_llm_endpoint', data.get('llm_endpoint', "https://api.openai.com/v1"))
+        data.setdefault('agent_llm_api_key', data.get('llm_api_key', ''))
+        data.setdefault('agent_llm_temperature', data.get('llm_temperature', 1.0))
+        data['agent_llm_max_tries'] = 7
+
     return data
 
 
@@ -759,6 +775,12 @@ def load_config() -> Config:
         'llm_endpoint': "https://api.openai.com/v1",
         'llm_api_key': "",
         'llm_temperature': 1.0,
+        'agent_llm_provider': "openai",
+        'agent_llm_model_name': "gpt-4.1-mini",
+        'agent_llm_endpoint': "https://api.openai.com/v1",
+        'agent_llm_api_key': "",
+        'agent_llm_temperature': 1.0,
+        'agent_llm_max_tries': 7,
         'ptt_key': '',
         'vision_provider': "none",
         'vision_model_name': "gpt-4.1-mini",
@@ -1213,6 +1235,41 @@ def update_config(config: Config, data: dict) -> Config:
             data["llm_model_name"] = "gpt-4.1-mini"
             data["llm_api_key"] = ""
             data["tools_var"] = False
+
+    if data.get("agent_llm_provider"):
+        if data["agent_llm_provider"] == "openai":
+            data["agent_llm_endpoint"] = "https://api.openai.com/v1"
+            data["agent_llm_model_name"] = "gpt-4.1-mini"
+            data["agent_llm_api_key"] = ""
+
+        elif data["agent_llm_provider"] == "openrouter":
+            data["agent_llm_endpoint"] = "https://openrouter.ai/api/v1/"
+            data["agent_llm_model_name"] = "llama-3.3-70b-instruct:free"
+            data["agent_llm_api_key"] = ""
+
+        elif data["agent_llm_provider"] == "google-ai-studio":
+            data["agent_llm_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
+            data["agent_llm_model_name"] = "gemini-2.5-flash"
+            data["agent_llm_api_key"] = ""
+
+        elif data["agent_llm_provider"] == "local-ai-server":
+            data["agent_llm_endpoint"] = "http://127.0.0.1:8080"
+            data["agent_llm_model_name"] = "gpt-4.1-mini"
+            data["agent_llm_api_key"] = ""
+
+        elif data["agent_llm_provider"] == "custom":
+            data["agent_llm_endpoint"] = "https://api.openai.com/v1"
+            data["agent_llm_model_name"] = "gpt-4.1-mini"
+            data["agent_llm_api_key"] = ""
+
+    if data.get("agent_llm_max_tries") is not None:
+        try:
+            agent_tries = int(data["agent_llm_max_tries"])
+        except (ValueError, TypeError):
+            agent_tries = int(config.get("agent_llm_max_tries", 7))
+        if agent_tries < 1:
+            agent_tries = 1
+        data["agent_llm_max_tries"] = agent_tries
 
     if data.get("vision_provider"):
         if data["vision_provider"] == "openai":

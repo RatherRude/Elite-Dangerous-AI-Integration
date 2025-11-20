@@ -80,6 +80,17 @@ export interface Config {
     llm_api_key: string;
     llm_endpoint: string;
     llm_temperature: number;
+    agent_llm_provider:
+        | "openai"
+        | "openrouter"
+        | "google-ai-studio"
+        | "custom"
+        | "local-ai-server";
+    agent_llm_model_name: string;
+    agent_llm_api_key: string;
+    agent_llm_endpoint: string;
+    agent_llm_temperature: number;
+    agent_llm_max_tries: number;
     vision_provider: "openai" | "google-ai-studio" | "custom" | "none" | "local-ai-server";
     vision_model_name: string;
     vision_endpoint: string;

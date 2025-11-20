@@ -1367,7 +1367,11 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
                      chat_system_tabbed_flag: bool = True,
                      chat_squadron_tabbed_flag: bool = False,
                      chat_direct_tabbed_flag: bool = False,
-                     weapon_types_list: list = []):
+                     weapon_types_list: list | None = None,
+                     agent_llm_client: openai.OpenAI | None = None,
+                     agent_llm_model_name: str | None = None,
+                     agent_llm_temperature: float | None = None,
+                     agent_llm_max_tries: int = 7):
     global event_manager, vision_client, llm_client, llm_model_name, vision_model_name, keys, weapon_types
     keys = edKeys
     event_manager = eventManager
@@ -1375,7 +1379,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
     llm_model_name = llmModelName
     vision_client = visionClient
     vision_model_name = visionModelName
-    weapon_types = weapon_types_list
+    weapon_types = weapon_types_list or []
     global discovery_primary_var, discovery_firegroup_var
     discovery_primary_var = discovery_primary_var_flag
     discovery_firegroup_var = discovery_firegroup_var_flag
@@ -2433,11 +2437,13 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         },
         "required": ["message", "channel"]
     }, send_message, 'global', permission='textMessage')
-    
+
     register_web_actions(
         actionManager, eventManager,
-        promptGenerator, llmClient, llmModelName,
-        embeddingClient, embeddingModelName
+        promptGenerator, agent_llm_client, agent_llm_model_name,
+        embeddingClient, embeddingModelName,
+        agent_llm_temperature,
+        agent_llm_max_tries
     )
 
     register_ui_actions(

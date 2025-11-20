@@ -14,19 +14,21 @@ from ..ActionManager import ActionManager
 from ..EventManager import EventManager
 from ..Logger import log
 
-llm_client: openai.OpenAI = None
-llm_model_name: str = None
+llm_client: openai.OpenAI | None = None
+llm_model_name: str | None = None
 embedding_client: openai.OpenAI | None = None
 embedding_model_name: str | None = None
-event_manager: EventManager = None
-prompt_generator: PromptGenerator = None
+event_manager: EventManager | None = None
+prompt_generator: PromptGenerator | None = None
 
 def web_search_agent(
         obj,
         projected_states,
         prompt_generator,
-        llm_client: openai.OpenAI = None,
-        llm_model_name: str = None
+        llm_client: openai.OpenAI  | None = None,
+        llm_model_name: str | None = None,
+        temperature: float | None = None,
+        max_loops: int | None = None,
      ):
     """
     Uses an agentic loop to answer a web-related query by calling various internal tools.
@@ -220,7 +222,6 @@ def web_search_agent(
         {"role": "user", "content": f"Current game state is:\n{prompt_generator.generate_status_message(projected_states)}\n\nUser query: {query}"}
     ]
 
-    max_loops = 7
     for _ in range(max_loops):
         try:
             completion = llm_client.chat.completions.create(
@@ -229,6 +230,7 @@ def web_search_agent(
                 seed=42,
                 tools=tools,
                 tool_choice="auto",
+                temperature=temperature,
             )
 
             response_message = completion.choices[0].message
@@ -277,7 +279,9 @@ def web_search(obj, projected_states):
         projected_states,
         prompt_generator=prompt_generator,
         llm_client=llm_client,
-        llm_model_name=llm_model_name
+        llm_model_name=llm_model_name,
+        temperature=llm_temperature,
+        max_loops=agent_max_tries
     )
     return res
 
@@ -310,6 +314,7 @@ def get_galnet_news(obj, projected_states):
                     "role": "user",
                     "content": f"Analyze the following list of news articles, either answer the given inquiry or create a short summary that includes all named entities: {articles}\nInquiry: {obj.get('query')}"
                 }],
+                temperature=llm_temperature,
             )
 
             return completion.choices[0].message.content
@@ -2093,17 +2098,21 @@ def body_finder(obj, projected_states):
 
 def register_web_actions(actionManager: ActionManager, eventManager: EventManager, 
                         promptGenerator: PromptGenerator,
-                         llmClient: openai.OpenAI,
-                         llmModelName: str,
+                         llmClient: openai.OpenAI | None,
+                         llmModelName: str | None,
                          embeddingClient: openai.OpenAI | None,
-                         embeddingModelName: str | None):
-    global event_manager, llm_client, llm_model_name, embedding_model_name, embedding_client, prompt_generator
+                         embeddingModelName: str | None,
+                         llmTemperature: float | None = None,
+                         agentMaxTries: int = 7):
+    global event_manager, llm_client, llm_model_name, embedding_model_name, embedding_client, prompt_generator, llm_temperature, agent_max_tries
     event_manager = eventManager
     prompt_generator = promptGenerator
     llm_client = llmClient
     llm_model_name = llmModelName
     embedding_model_name = embeddingModelName
     embedding_client = embeddingClient
+    llm_temperature = llmTemperature if llmTemperature is not None else 1.0
+    agent_max_tries = agentMaxTries
 
     actionManager.registerAction(
         'web_search_agent',
