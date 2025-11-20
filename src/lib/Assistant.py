@@ -52,16 +52,9 @@ class Assistant:
         try:
             if (isinstance(event, GameEvent) and event.content.get('event') == 'FSDJump' and
                     (self.config.get("qol_autoscan", False) or self.config.get("qol_autobrake", False))):
-                # Build actions according to QoL flags
-                request, results, descriptions, labels = [], [], [], []
-
                 if self.config.get("qol_autobrake"):
                     speed_args = {"speed": "Zero"}
-                    speed_result = set_speed(speed_args, projected_states)
-                    request.append({"id": "auto-fsd-1", "type": "function", "function": {"name": "setSpeed", "arguments": json.dumps(speed_args)}})
-                    results.append({"tool_call_id": "auto-fsd-1", "role": "tool", "name": "setSpeed", "content": speed_result})
-                    descriptions.append("Reducing speed to 0")
-                    labels.append("SetSpeedZero")
+                    set_speed(speed_args, projected_states)
 
                 if self.config.get("qol_autoscan"):
                     fire_args = {
@@ -70,14 +63,7 @@ class Assistant:
                         "discoveryPrimary": self.config.get("discovery_primary_var", True),
                         "discoveryFiregroup": self.config.get("discovery_firegroup_var", 1),
                     }
-                    fire_result = fire_weapons(fire_args, projected_states)
-                    request.append({"id": "auto-fsd-2", "type": "function", "function": {"name": "fireWeapons", "arguments": json.dumps(fire_args)}})
-                    results.append({"tool_call_id": "auto-fsd-2", "role": "tool", "name": "fireWeapons", "content": fire_result})
-                    descriptions.append("Performing discovery scan")
-                    labels.append("DiscoveryScan")
-
-                if request:
-                    self.event_manager.add_tool_call(request, results, descriptions)
+                    fire_weapons(fire_args, projected_states)
         except Exception as e:
             log('error', 'Auto actions on FSDJump failed', e, traceback.format_exc())
 
