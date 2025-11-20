@@ -1722,6 +1722,13 @@
 .target-info .target-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.target-title {
+  display: flex;
+  align-items: center;
   gap: 0.3rem;
 }
 
@@ -1735,12 +1742,15 @@
   font-weight: 500;
 }
 
-.target-info .target-scanned {
+.target-status {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.target-scan-stage {
   font-size: 0.7rem;
-  background-color: #3d7e9a;
-  padding: 0.1rem 0.3rem;
-  border-radius: 2px;
-  margin-left: auto;
+  color: #ccc;
 }
 
 .target-info .target-details {
@@ -1754,8 +1764,9 @@
 .target-info .target-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.3rem;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 0.4rem;
 }
 
 .target-info .target-pilot {
@@ -1774,10 +1785,24 @@
   color: #aaa;
 }
 
+.target-info .target-subsystem {
+  font-size: 0.7rem;
+  color: #d1d1d1;
+  padding: 0.1rem 0.3rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
 .target-info .target-legal {
   font-size: 0.7rem;
   padding: 0.1rem 0.3rem;
   border-radius: 2px;
+}
+
+.target-info .target-bounty {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #f5c16c;
 }
 
 /* Exobiology Scan Mini Display */

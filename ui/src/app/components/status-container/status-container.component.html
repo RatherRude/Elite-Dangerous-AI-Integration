@@ -298,23 +298,37 @@
                 </div>
 
                 <!-- Target info -->
-                <div *ngIf="target?.Ship" class="target-info">
+                <div *ngIf="target?.Ship || target?.Ship_Localised" class="target-info">
                     <div class="target-header">
-                        <mat-icon>track_changes</mat-icon>
-                        <span class="target-ship">{{ target?.Ship }}</span>
+                        <div class="target-title">
+                            <mat-icon>track_changes</mat-icon>
+                            <span class="target-ship">
+                                {{ target?.Ship_Localised || (target?.Ship ? (target?.Ship | titlecase) : '') }}
+                            </span>
+                        </div>
+                        <div class="target-status" *ngIf="target?.ScanStage !== undefined && target?.ScanStage < 3">
+                            <span class="target-scan-stage">
+                                Scan {{ target?.ScanStage }}/3
+                            </span>
+                        </div>
                     </div>
                     <div class="target-details">
-                        <div class="target-row">
+                        <div class="target-row" *ngIf="target?.PilotName || target?.PilotRank || target?.Subsystem">
                             <span class="target-pilot" *ngIf="target?.PilotName">{{ target?.PilotName }}</span>
                             <span class="target-rank" *ngIf="target?.PilotRank">{{ target?.PilotRank }}</span>
-                            <span *ngIf="target?.LegalStatus" class="target-legal"
-                                  [ngClass]="'status-' + target?.LegalStatus?.toLowerCase()">
-                            {{ target?.LegalStatus }}
-                        </span>
+                            <span class="target-subsystem" *ngIf="target?.Subsystem">{{ target?.Subsystem }}</span>
                         </div>
-                        <div class="target-row" *ngIf="target?.Scanned">
+                        <div class="target-row"
+                             *ngIf="target?.Faction || target?.LegalStatus || target?.Bounty !== undefined">
                             <span class="target-faction" *ngIf="target?.Faction">{{ target?.Faction }}</span>
-                            <span class="target-scanned">SCANNED</span>
+                            <span class="target-legal" *ngIf="target?.LegalStatus"
+                                  [ngClass]="'status-' + target?.LegalStatus?.toLowerCase()">
+                                {{ target?.LegalStatus }}
+                            </span>
+                            <span class="target-bounty"
+                                  *ngIf="(target?.Bounty || 0) > 0">
+                                {{ target?.Bounty | number:'1.0-0' }} CR
+                            </span>
                         </div>
                     </div>
                 </div>

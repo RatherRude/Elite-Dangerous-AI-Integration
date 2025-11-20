@@ -911,23 +911,23 @@ class ShipInfo(Projection[ShipInfoState]):
 
 TargetState = TypedDict('TargetState', {
     "EventID": NotRequired[str],
-    "Ship":NotRequired[str],
-    "Scanned":NotRequired[bool],
+    "Ship": NotRequired[str],
+    "ScanStage": NotRequired[int],
 
-    "PilotName":NotRequired[str],
-    "PilotRank":NotRequired[str],
-    "Faction":NotRequired[str],
-    "LegalStatus":NotRequired[str],
+    "PilotName": NotRequired[str],
+    "PilotRank": NotRequired[str],
+    "Faction": NotRequired[str],
+    "LegalStatus": NotRequired[str],
     "Bounty": NotRequired[int],
 
-    "Subsystem":NotRequired[str],
+    "Subsystem": NotRequired[str],
 })
 
 
 @final
 class Target(Projection[TargetState]):
     @override
-    def get_default_state(self) -> TargetState|None:
+    def get_default_state(self) -> TargetState:
         return {}
 
     @override
@@ -942,11 +942,12 @@ class Target(Projection[TargetState]):
                 self.state = self.get_default_state()
             else:
                 # self.state['SubsystemToTarget'] = 'Drive'
-                self.state['Ship'] = event.content.get('Ship', '')
+                self.state['Ship'] = event.content.get('Ship_Localised', event.content.get('Ship', ''))
+                self.state['ScanStage'] = event.content.get('ScanStage', 0)
+
                 if event.content.get('ScanStage', 0) < 3:
-                    self.state['Scanned'] = False
+                    self.state = self.get_default_state()
                 else:
-                    self.state['Scanned'] = True
                     self.state["PilotName"] = event.content.get('PilotName_Localised', '')
                     self.state["PilotRank"] = event.content.get('PilotRank', '')
                     self.state["Faction"] = event.content.get('Faction', '')
@@ -955,8 +956,11 @@ class Target(Projection[TargetState]):
 
                     if (event.content.get('Bounty', 0) > 1 and not event.content.get('Subsystem', False)):
                         projected_events.append(ProjectedEvent(content={"event": "BountyScanned"}))
+
                 if event.content.get('Subsystem_Localised', False):
                     self.state["Subsystem"] = event.content.get('Subsystem_Localised', '')
+                elif event.content.get('Subsystem', False):
+                    self.state["Subsystem"] = event.content.get('Subsystem', '')
             self.state['EventID'] = event.content.get('id')
         return projected_events
 
