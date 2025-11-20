@@ -455,7 +455,7 @@
                                 </div>
                                 <div class="utility-engineering" *ngIf="module.Engineering">
                                     <mat-icon class="engineering-icon">build</mat-icon>
-                                    <span class="engineering-text">{{ module.Engineering.BlueprintName || 'Unknown' }}
+                                    <span class="engineering-text">{{ formatEngineeringName(module.Engineering.BlueprintName) }}
                                         (G{{ module.Engineering.Level || '?' }})
                                     <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
                                         - {{ module.Engineering.ExperimentalEffect_Localised }}
@@ -580,7 +580,7 @@
                                 </div>
                                 <div class="hardpoint-engineering" *ngIf="module.Engineering">
                                     <mat-icon class="engineering-icon">build</mat-icon>
-                                    <span class="engineering-text">{{ module.Engineering.BlueprintName || 'Unknown' }}
+                                    <span class="engineering-text">{{ formatEngineeringName(module.Engineering.BlueprintName) }}
                                         (G{{ module.Engineering.Level || '?' }})
                                     <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
                                         - {{ module.Engineering.ExperimentalEffect_Localised }}
@@ -607,7 +607,7 @@
                                         <div class="module-name">{{ formatModuleName(module.Item) }}</div>
                                         <div class="module-engineering" *ngIf="module.Engineering">
                                             <mat-icon class="engineering-icon">build</mat-icon>
-                                            <span class="engineering-text">{{ module.Engineering.BlueprintName || 'Unknown' }}
+                                            <span class="engineering-text">{{ formatEngineeringName(module.Engineering.BlueprintName) }}
                                                 (G{{ module.Engineering.Level || '?' }})
                                             <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
                                                 - {{ module.Engineering.ExperimentalEffect_Localised }}
@@ -625,12 +625,12 @@
                         <div class="module-list optional-modules">
                             <ng-container *ngFor="let module of getOptionalModules(); let i = index">
                                 <div *ngIf="showAllModules || i < getVisibleModulesCount()" class="module-item">
-                                    <div class="module-slot">{{ formatSlotName(module.Slot) }}</div>
+                                    <div class="module-slot">{{ getModuleClassLabel(module) }}</div>
                                     <div class="module-content">
                                         <div class="module-name">{{ formatModuleName(module.Item) }}</div>
                                         <div class="module-engineering" *ngIf="module.Engineering">
                                             <mat-icon class="engineering-icon">build</mat-icon>
-                                            <span class="engineering-text">{{ module.Engineering.BlueprintName || 'Unknown' }}
+                                            <span class="engineering-text">{{ formatEngineeringName(module.Engineering.BlueprintName) }}
                                                 (G{{ module.Engineering.Level || '?' }})
                                             <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
                                                 - {{ module.Engineering.ExperimentalEffect_Localised }}

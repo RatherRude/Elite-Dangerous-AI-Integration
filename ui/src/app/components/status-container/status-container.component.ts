@@ -800,8 +800,45 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
                .trim() || 'Unknown Module';
   }
 
+  formatEngineeringName(name?: string): string {
+    if (!name) return 'Unknown';
+
+    const underscoreIndex = name.indexOf('_');
+    let trimmed = underscoreIndex >= 0 ? name.slice(underscoreIndex + 1) : name;
+
+    trimmed = trimmed
+      .replace(/_/g, ' ')
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .trim();
+
+    return trimmed || name;
+  }
+
   formatSlotName(slot: string): string {
     return slot?.replace(/([A-Z])/g, ' $1').trim() || 'Unknown Slot';
+  }
+
+  getModuleClassLabel(module: any): string {
+    if (!module) {
+      return 'Class ?';
+    }
+
+    const classValue = module.Class ?? module?.class;
+    if (typeof classValue === 'number' && classValue > 0) {
+      return `Class ${classValue}`;
+    }
+
+    const slotMatch = module.Slot?.match(/Size(\d+)/i);
+    if (slotMatch) {
+      return `Class ${slotMatch[1]}`;
+    }
+
+    const itemMatch = module.Item?.match(/class(\d+)/i);
+    if (itemMatch) {
+      return `Class ${itemMatch[1]}`;
+    }
+
+    return 'Class ?';
   }
 
   // Debug method for troubleshooting
