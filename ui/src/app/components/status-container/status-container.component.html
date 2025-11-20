@@ -298,13 +298,12 @@
                 </div>
 
                 <!-- Target info -->
-                <div *ngIf="target?.Ship || target?.Ship_Localised" class="target-info">
+                <div *ngIf="target?.Ship" class="target-info">
                     <div class="target-header">
                         <div class="target-title">
                             <mat-icon>track_changes</mat-icon>
-                            <span class="target-ship">
-                                {{ target?.Ship_Localised || (target?.Ship ? (target?.Ship | titlecase) : '') }}
-                            </span>
+                            <span class="target-ship">{{ formatTargetShipName(target?.Ship) }}</span>
+                            <span class="target-rank" *ngIf="target?.PilotRank">{{ target?.PilotRank }}</span>
                         </div>
                         <div class="target-status" *ngIf="target?.ScanStage !== undefined && target?.ScanStage < 3">
                             <span class="target-scan-stage">
@@ -312,19 +311,35 @@
                             </span>
                         </div>
                     </div>
+                    <div class="target-inline-health"
+                         *ngIf="target?.ShieldHealth !== undefined || target?.HullHealth !== undefined || target?.Subsystem || target?.SubsystemHealth !== undefined">
+                        <span class="target-health" *ngIf="target?.ShieldHealth !== undefined">
+                            <mat-icon>security</mat-icon>
+                            {{ formatHealth(target?.ShieldHealth) }}
+                        </span>
+                        <span class="target-health" *ngIf="target?.HullHealth !== undefined">
+                            <mat-icon>build</mat-icon>
+                            {{ formatHealth(target?.HullHealth) }}
+                        </span>
+                        <span class="target-subsystem"
+                              *ngIf="target?.Subsystem || target?.SubsystemHealth !== undefined">
+                            {{ target?.Subsystem }}
+                            <span *ngIf="target?.SubsystemHealth !== undefined">
+                                {{ formatHealth(target?.SubsystemHealth) }}
+                            </span>
+                        </span>
+                    </div>
                     <div class="target-details">
-                        <div class="target-row" *ngIf="target?.PilotName || target?.PilotRank || target?.Subsystem">
+                        <div class="target-row target-identity-row" *ngIf="target?.PilotName || target?.LegalStatus">
                             <span class="target-pilot" *ngIf="target?.PilotName">{{ target?.PilotName }}</span>
-                            <span class="target-rank" *ngIf="target?.PilotRank">{{ target?.PilotRank }}</span>
-                            <span class="target-subsystem" *ngIf="target?.Subsystem">{{ target?.Subsystem }}</span>
-                        </div>
-                        <div class="target-row"
-                             *ngIf="target?.Faction || target?.LegalStatus || target?.Bounty !== undefined">
-                            <span class="target-faction" *ngIf="target?.Faction">{{ target?.Faction }}</span>
                             <span class="target-legal" *ngIf="target?.LegalStatus"
                                   [ngClass]="'status-' + target?.LegalStatus?.toLowerCase()">
                                 {{ target?.LegalStatus }}
                             </span>
+                        </div>
+                        <div class="target-row target-affiliation-row"
+                             *ngIf="target?.Faction || (target?.Bounty || 0) > 0">
+                            <span class="target-faction" *ngIf="target?.Faction">{{ target?.Faction }}</span>
                             <span class="target-bounty"
                                   *ngIf="(target?.Bounty || 0) > 0">
                                 {{ target?.Bounty | number:'1.0-0' }} CR

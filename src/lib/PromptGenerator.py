@@ -2988,6 +2988,7 @@ class PromptGenerator:
         # Target
         target_info: TargetState = projected_states.get('Target', {})  # pyright: ignore[reportAssignmentType]
         target_info.pop('EventID', None)
+        target_info.pop('ScanStage', None)
         if target_info.get('Ship', False):
             status_entries.append(("Weapons' target", target_info))
 

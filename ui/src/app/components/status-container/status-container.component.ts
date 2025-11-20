@@ -290,6 +290,31 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
     return this.getOnlineFriends().length;
   }
 
+  formatTargetShipName(rawName?: string | null): string {
+    if (!rawName) {
+      return '';
+    }
+
+    const hasSpace = rawName.includes(' ');
+    const hasUnderscore = rawName.includes('_');
+    const hasUppercase = /[A-Z]/.test(rawName);
+
+    if (hasSpace || (hasUppercase && !hasUnderscore)) {
+      return rawName;
+    }
+
+    const cleaned = rawName.replace(/_/g, ' ');
+    return cleaned.replace(/\b\w/g, (char) => char.toUpperCase());
+  }
+
+  formatHealth(value?: number | null): string {
+    if (value === null || value === undefined) {
+      return '';
+    }
+    const clamped = Math.max(0, Math.min(100, value));
+    return `${Math.round(clamped)}%`;
+  }
+
   // Wing methods
   getWingMembers(): any[] {
     return this.wing?.Others || [];

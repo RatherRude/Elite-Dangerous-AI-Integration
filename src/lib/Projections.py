@@ -919,6 +919,9 @@ TargetState = TypedDict('TargetState', {
     "Faction": NotRequired[str],
     "LegalStatus": NotRequired[str],
     "Bounty": NotRequired[int],
+    "ShieldHealth": NotRequired[float],
+    "HullHealth": NotRequired[float],
+    "SubsystemHealth": NotRequired[float],
 
     "Subsystem": NotRequired[str],
 })
@@ -935,32 +938,46 @@ class Target(Projection[TargetState]):
         projected_events: list[ProjectedEvent] = []
 
         global keys
-        if isinstance(event, GameEvent) and event.content.get('event') == 'LoadGame':
+        if isinstance(event, GameEvent) and event.content.get('event') in ['LoadGame', 'Shutdown']:
             self.state = self.get_default_state()
         if isinstance(event, GameEvent) and event.content.get('event') == 'ShipTargeted':
             if not event.content.get('TargetLocked', False):
                 self.state = self.get_default_state()
             else:
-                # self.state['SubsystemToTarget'] = 'Drive'
+                self.state = self.get_default_state()
                 self.state['Ship'] = event.content.get('Ship_Localised', event.content.get('Ship', ''))
-                self.state['ScanStage'] = event.content.get('ScanStage', 0)
+                self.state['ScanStage'] = int(event.content.get('ScanStage', 0) or 0)
 
-                if event.content.get('ScanStage', 0) < 3:
-                    self.state = self.get_default_state()
-                else:
-                    self.state["PilotName"] = event.content.get('PilotName_Localised', '')
+                pilot_name_value = event.content.get('PilotName_Localised') or event.content.get('PilotName')
+                if pilot_name_value:
+                    self.state["PilotName"] = pilot_name_value
+
+                if 'PilotRank' in event.content:
                     self.state["PilotRank"] = event.content.get('PilotRank', '')
-                    self.state["Faction"] = event.content.get('Faction', '')
-                    self.state["LegalStatus"] = event.content.get('LegalStatus', '')
-                    self.state["Bounty"] = event.content.get('Bounty', 0)
 
-                    if (event.content.get('Bounty', 0) > 1 and not event.content.get('Subsystem', False)):
+                if 'Faction' in event.content:
+                    self.state["Faction"] = event.content.get('Faction', '')
+
+                if 'LegalStatus' in event.content:
+                    self.state["LegalStatus"] = event.content.get('LegalStatus', '')
+
+                if 'Bounty' in event.content:
+                    self.state["Bounty"] = int(event.content.get('Bounty', 0) or 0)
+                    if event.content.get('Bounty', 0) > 1 and not event.content.get('Subsystem', False):
                         projected_events.append(ProjectedEvent(content={"event": "BountyScanned"}))
 
-                if event.content.get('Subsystem_Localised', False):
-                    self.state["Subsystem"] = event.content.get('Subsystem_Localised', '')
-                elif event.content.get('Subsystem', False):
-                    self.state["Subsystem"] = event.content.get('Subsystem', '')
+                if 'ShieldHealth' in event.content:
+                    self.state["ShieldHealth"] = float(event.content.get('ShieldHealth', 0.0) or 0.0)
+
+                if 'HullHealth' in event.content:
+                    self.state["HullHealth"] = float(event.content.get('HullHealth', 0.0) or 0.0)
+
+                if 'SubsystemHealth' in event.content:
+                    self.state["SubsystemHealth"] = float(event.content.get('SubsystemHealth', 0.0) or 0.0)
+
+                subsystem_value = event.content.get('Subsystem_Localised', event.content.get('Subsystem', ''))
+                if subsystem_value:
+                    self.state["Subsystem"] = subsystem_value
             self.state['EventID'] = event.content.get('id')
         return projected_events
 
