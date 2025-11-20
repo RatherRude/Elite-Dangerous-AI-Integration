@@ -6,6 +6,208 @@ import { MatTooltipModule } from "@angular/material/tooltip";
 import { Subscription } from "rxjs";
 import { ProjectionsService } from "../../services/projections.service";
 
+type GradeMapWithSource = {
+  [grade: number]: string[];
+  source?: string;
+};
+
+const RAW_CATEGORY_LABELS: Record<number, string> = {
+  1: "Chemical Elements",
+  2: "Heat Conductors",
+  3: "Catalysts",
+  4: "Crystalline Metals",
+  5: "Thermal Alloys",
+  6: "High-Energy Isotopes",
+  7: "Exotic Elements",
+};
+
+const RAW_MATERIALS: Record<string, GradeMapWithSource> = {
+  "1": { 1: ["carbon"], 2: ["vanadium"], 3: ["niobium"], 4: ["yttrium"], source: "Yttrium Crystal Shards: Outotz LS-K D8-3, planet B 5 A and Brain Trees: 35 G. Carinae, planet 2 D - trade afterwards at material trader" },
+  "2": { 1: ["phosphorus"], 2: ["chromium"], 3: ["molybdenum"], 4: ["technetium"], source: "Technetium Crystal Shards: HIP 36601, planet C 5 A and Brain Trees: 35 G. Carinae, planet 2 A, HR 3230, planet 3 A A - trade afterwards at material trader" },
+  "3": { 1: ["sulphur"], 2: ["manganese"], 3: ["cadmium"], 4: ["ruthenium"], source: "Ruthenium Crystal Shards: HIP 36601, planet C 1 D and Outotz LS-K D8-3, planet B 7 B and Brain Trees: 35 G. Carinae, planet 2 C - trade afterwards at material trader" },
+  "4": { 1: ["iron"], 2: ["zinc"], 3: ["tin"], 4: ["selenium"], source: "Selenium Brain Trees: Kappa-1 Volantis, planet B 3 F A and HR 3230, planet 3 A A - trade afterwards at material trader" },
+  "5": { 1: ["nickel"], 2: ["germanium"], 3: ["tungsten"], 4: ["tellurium"], source: "Tellurium Crystal Shards: HIP 36601, planet C 3 B and Brain Trees: Synuefe SE-V B49-4, planet B 3 A - trade afterwards at material trader" },
+  "6": { 1: ["rhenium"], 2: ["arsenic"], 3: ["mercury"], 4: ["polonium"], source: "Polonium Crystal Shards: HIP 36601, planet C 1 A and Brain Trees: Synuefe AA-P C22-7, planet 5 C - trade afterwards at material trader" },
+  "7": { 1: ["lead"], 2: ["zirconium"], 3: ["boron"], 4: ["antimony"], source: "Antimony Crystal Shards: Outotz LS-K D8-3, planet B 5 C and Brain Trees: 35 G. Carinae, planet 1 E - trade afterwards at material trader" },
+};
+
+const MANUFACTURED_MATERIALS: Record<string, GradeMapWithSource> = {
+  Chemical: {
+    1: ["chemicalstorageunits"],
+    2: ["chemicalprocessors"],
+    3: ["chemicaldistillery"],
+    4: ["chemicalmanipulators"],
+    5: ["pharmaceuticalisolators"],
+    source: "High Grade Emissions (Outbreak) - trade afterwards at material trader, Mission reward",
+  },
+  Thermic: {
+    1: ["temperedalloys"],
+    2: ["heatresistantceramics"],
+    3: ["precipitatedalloys"],
+    4: ["thermicalloys"],
+    5: ["militarygradealloys"],
+    source: "High Grade Emissions (War / Civil War / Civil Unrest) - trade afterwards at material trader, Mission reward",
+  },
+  Heat: {
+    1: ["heatconductionwiring"],
+    2: ["heatdispersionplate"],
+    3: ["heatexchangers"],
+    4: ["heatvanes"],
+    5: ["protoheatradiators"],
+    source: "High Grade Emissions (Boom) - trade afterwards at material trader, Mission reward",
+  },
+  Conductive: {
+    1: ["basicconductors"],
+    2: ["conductivecomponents"],
+    3: ["conductiveceramics"],
+    4: ["conductivepolymers"],
+    5: ["biotechconductors"],
+    source: "Mission Reward",
+  },
+  "Mechanical Components": {
+    1: ["mechanicalscrap"],
+    2: ["mechanicalequipment"],
+    3: ["mechanicalcomponents"],
+    4: ["configurablecomponents"],
+    5: ["improvisedcomponents"],
+    source: "High Grade Emissions (Independent - Civil Unrest) - trade afterwards at material trader",
+  },
+  Capacitors: {
+    1: ["gridresistors"],
+    2: ["hybridcapacitors"],
+    3: ["electrochemicalarrays"],
+    4: ["polymercapacitors"],
+    5: ["militarysupercapacitors"],
+    source: "High Grade Emissions (Independent/Alliance - War / Civil War) - trade afterwards at material trader, Mission reward",
+  },
+  Shielding: {
+    1: ["wornshieldemitters"],
+    2: ["shieldemitters"],
+    3: ["shieldingsensors"],
+    4: ["compoundshielding"],
+    5: ["imperialshielding"],
+    source: "High Grade Emissions (Empire - None / Election) - trade afterwards at material trader, Mission reward",
+  },
+  Composite: {
+    1: ["compactcomposites"],
+    2: ["filamentcomposites"],
+    3: ["highdensitycomposites"],
+    4: ["proprietarycomposites"],
+    5: ["coredynamicscomposites"],
+    source: "High Grade Emissions (Federation) - trade afterwards at material trader",
+  },
+  Crystals: {
+    1: ["crystalshards"],
+    2: ["flawedfocuscrystals"],
+    3: ["focuscrystals"],
+    4: ["refinedfocuscrystals"],
+    5: ["exquisitefocuscrystals"],
+    source: "Mission reward",
+  },
+  Alloys: {
+    1: ["salvagedalloys"],
+    2: ["galvanisingalloys"],
+    3: ["phasealloys"],
+    4: ["protolightalloys"],
+    5: ["protoradiolicalloys"],
+    source: "High Grade Emissions (Boom) - trade afterwards at material trader",
+  },
+  "Guardian Technology": {
+    1: ["guardian_sentinel_wreckagecomponents", "guardianwreckagecomponents"],
+    2: ["guardian_powercell", "guardianpowercell"],
+    3: ["guardian_powerconduit", "guardianpowerconduit"],
+    4: ["guardian_sentinel_weaponparts", "guardiansentinelweaponparts"],
+    5: ["guardian_techcomponent", "techcomponent"],
+    source: "Guardian sites: Synuefe HT-F D12-29 C3, Synuefe LQ-T B50-1 B2, Synuefe GV-T B50-4 B1",
+  },
+  "Thargoid Technology": {
+    1: ["tg_wreckagecomponents", "wreckagecomponents", "tg_abrasion02", "tgabrasion02"],
+    2: ["tg_biomechanicalconduits", "biomechanicalconduits", "tg_abrasion03", "tgabrasion03"],
+    3: ["tg_weaponparts", "weaponparts", "unknowncarapace", "tg_causticshard", "tgcausticshard"],
+    4: ["tg_propulsionelement", "propulsionelement", "unknownenergycell", "unknowncorechip"],
+    5: ["tg_causticgeneratorparts", "causticgeneratorparts", "tg_causticcrystal", "tgcausticcrystal", "unknowntechnologycomponents"],
+    source: "Titan graveyards, NHSS Threat 4-5, Sensor Fragments: Solati Halla",
+  },
+};
+
+const ENCODED_DEFAULT_SOURCE = "HIP 12099 — Jameson Crash Site";
+
+const ENCODED_SECTIONS: Record<string, GradeMapWithSource> = {
+  "Emission Data": {
+    1: ["scrambledemissiondata"],
+    2: ["archivedemissiondata"],
+    3: ["emissiondata"],
+    4: ["decodedemissiondata"],
+    5: ["compactemissionsdata"],
+    source: ENCODED_DEFAULT_SOURCE,
+  },
+  "Wake Scans": {
+    1: ["disruptedwakeechoes"],
+    2: ["fsdtelemetry"],
+    3: ["wakesolutions"],
+    4: ["hyperspacetrajectories"],
+    5: ["dataminedwake"],
+    source: ENCODED_DEFAULT_SOURCE,
+  },
+  "Shield Data": {
+    1: ["shieldcyclerecordings"],
+    2: ["shieldsoakanalysis"],
+    3: ["shielddensityreports"],
+    4: ["shieldpatternanalysis"],
+    5: ["shieldfrequencydata"],
+    source: ENCODED_DEFAULT_SOURCE,
+  },
+  "Encryption Files": {
+    1: ["encryptedfiles"],
+    2: ["encryptioncodes"],
+    3: ["symmetrickeys"],
+    4: ["encryptionarchives"],
+    5: ["adaptiveencryptors"],
+    source: ENCODED_DEFAULT_SOURCE,
+  },
+  "Data Archives": {
+    1: ["bulkscandata"],
+    2: ["scanarchives"],
+    3: ["scandatabanks"],
+    4: ["encodedscandata"],
+    5: ["classifiedscandata"],
+    source: ENCODED_DEFAULT_SOURCE,
+  },
+  "Encoded Firmware": {
+    1: ["legacyfirmware"],
+    2: ["consumerfirmware"],
+    3: ["industrialfirmware"],
+    4: ["securityfirmware"],
+    5: ["embeddedfirmware"],
+    source: ENCODED_DEFAULT_SOURCE,
+  },
+  "Guardian Data": {
+    1: ["ancientbiologicaldata"],
+    2: ["ancientculturaldata"],
+    3: ["ancienthistoricaldata"],
+    4: ["ancienttechnologicaldata"],
+    5: ["guardian_vesselblueprint"],
+    source: "Guardian obelisks: Synuefe XR-H D11-102, planet 1 B",
+  },
+  "Thargoid Data": {
+    1: ["tg_interdictiondata"],
+    2: ["tg_shipflightdata"],
+    3: ["tg_shipsystemsdata"],
+    4: ["tg_shutdowndata"],
+    5: ["unknownshipsignature"],
+    source: "Scanning Thargoid ships and wakes",
+  },
+};
+
+const NON_TRADEABLE_MANUFACTURED_SECTIONS = new Set(["guardian technology", "thargoid technology"]);
+const NON_TRADEABLE_ENCODED_SECTIONS = new Set(["guardian data", "thargoid data"]);
+
+const normalizeSectionName = (section: string) => section?.trim().toLowerCase();
+const isNonTradeableManufactured = (section: string) =>
+  NON_TRADEABLE_MANUFACTURED_SECTIONS.has(normalizeSectionName(section));
+const isNonTradeableEncoded = (section: string) =>
+  NON_TRADEABLE_ENCODED_SECTIONS.has(normalizeSectionName(section));
+
 @Component({
   selector: "app-materials-panel",
   standalone: true,
@@ -20,137 +222,6 @@ export class MaterialsPanelComponent implements OnInit, OnDestroy {
   hoveredKey: string | null = null;
 
   private readonly gradeMaxByGrade: { [grade: number]: number } = { 1: 300, 2: 250, 3: 200, 4: 150, 5: 100 };
-
-  // Raw material mappings by category and grade
-  private rawMaterialsMap: { [category: number]: { [grade: number]: string[] } } = {
-    1: { 1: ['carbon'], 2: ['vanadium'], 3: ['niobium'], 4: ['yttrium'] },
-    2: { 1: ['phosphorus'], 2: ['chromium'], 3: ['molybdenum'], 4: ['technetium'] },
-    3: { 1: ['sulphur'], 2: ['manganese'], 3: ['cadmium'], 4: ['ruthenium'] },
-    4: { 1: ['iron'], 2: ['zinc'], 3: ['tin'], 4: ['selenium'] },
-    5: { 1: ['nickel'], 2: ['germanium'], 3: ['tungsten'], 4: ['tellurium'] },
-    6: { 1: ['rhenium'], 2: ['arsenic'], 3: ['mercury'], 4: ['polonium'] },
-    7: { 1: ['lead'], 2: ['zirconium'], 3: ['boron'], 4: ['antimony'] }
-  };
-
-  // Manufactured material mappings by section and grade
-  private manufacturedMaterialsMap: { [section: string]: { [grade: number]: string[] } } = {
-    'Chemical': {
-      1: ['chemicalstorageunits'],
-      2: ['chemicalprocessors'],
-      3: ['chemicaldistillery'],
-      4: ['chemicalmanipulators'],
-      5: ['pharmaceuticalisolators']
-    },
-    'Thermic': {
-      1: ['temperedalloys'],
-      2: ['heatresistantceramics'],
-      3: ['precipitatedalloys'],
-      4: ['thermicalloys'],
-      5: ['militarygradealloys']
-    },
-    'Heat': {
-      1: ['heatconductionwiring'],
-      2: ['heatdispersionplate'],
-      3: ['heatexchangers'],
-      4: ['heatvanes'],
-      5: ['protoheatradiators']
-    },
-    'Conductive': {
-      1: ['basicconductors'],
-      2: ['conductivecomponents'],
-      3: ['conductiveceramics'],
-      4: ['conductivepolymers'],
-      5: ['biotechconductors']
-    },
-    'Mechanical Components': {
-      1: ['mechanicalscrap'],
-      2: ['mechanicalequipment'],
-      3: ['mechanicalcomponents'],
-      4: ['configurablecomponents'],
-      5: ['improvisedcomponents']
-    },
-    'Capacitors': {
-      1: ['gridresistors'],
-      2: ['hybridcapacitors'],
-      3: ['electrochemicalarrays'],
-      4: ['polymercapacitors'],
-      5: ['militarysupercapacitors']
-    },
-    'Shielding': {
-      1: ['wornshieldemitters'],
-      2: ['shieldemitters'],
-      3: ['shieldingsensors'],
-      4: ['compoundshielding'],
-      5: ['imperialshielding']
-    },
-    'Composite': {
-      1: ['compactcomposites'],
-      2: ['filamentcomposites'],
-      3: ['highdensitycomposites'],
-      4: ['proprietarycomposites'],
-      5: ['coredynamicscomposites']
-    },
-    'Crystals': {
-      1: ['crystalshards'],
-      2: ['flawedfocuscrystals'],
-      3: ['focuscrystals'],
-      4: ['refinedfocuscrystals'],
-      5: ['exquisitefocuscrystals']
-    },
-    'Alloys': {
-      1: ['salvagedalloys'],
-      2: ['galvanisingalloys'],
-      3: ['phasealloys'],
-      4: ['protolightalloys'],
-      5: ['protoradiolicalloys']
-    }
-  };
-
-  // Encoded material mappings by section and grade
-  private encodedMaterialsMap: { [section: string]: { [grade: number]: string[] } } = {
-    'Emission Data': {
-      1: ['exceptionalscrambledemissiondata'],
-      2: ['irregularemissiondata'],
-      3: ['unexpectedemissiondata'],
-      4: ['decodedemissiondata'],
-      5: ['abnormalcompactemissionsdata']
-    },
-    'Wake Scans': {
-      1: ['atypicaldisruptedwakeechoes'],
-      2: ['anomalousfsdtelemetry'],
-      3: ['strangewakesolutions'],
-      4: ['eccentrichyperspace'],
-      5: ['dataminedwakeexceptions']
-    },
-    'Shield Data': {
-      1: ['distortedshieldcyclerecordings'],
-      2: ['inconsistentshieldsoakanalysis'],
-      3: ['untypicalshieldscans'],
-      4: ['aberrantshieldpatternanalysis'],
-      5: ['peculiarshieldfrequencydata']
-    },
-    'Encryption Files': {
-      1: ['unusualencryptedfiles'],
-      2: ['taggedencryptioncodes'],
-      3: ['opensymmetrickeys'],
-      4: ['atypicalencryptionarchives'],
-      5: ['adaptiveencryptorscapture']
-    },
-    'Data Archives': {
-      1: ['anomalousbulkscandata'],
-      2: ['unidentifiedscanarchives'],
-      3: ['classifiedscandatabanks'],
-      4: ['divergentscandata'],
-      5: ['classifiedscanfragment']
-    },
-    'Encoded Firmware': {
-      1: ['specialisedlegacyfirmware'],
-      2: ['modifiedconsumerfirmware'],
-      3: ['crackedindustrialfirmware'],
-      4: ['securityfirmwarepatch'],
-      5: ['modifiedembeddedfirmware']
-    }
-  };
 
   constructor(private projectionsService: ProjectionsService) {}
 
@@ -202,6 +273,38 @@ export class MaterialsPanelComponent implements OnInit, OnDestroy {
   private getManufacturedCount(section: string, grade: number): number { return this.sumCount(this.getManufacturedMaterialByGradeAndSection(section, grade)); }
   private getEncodedCount(section: string, grade: number): number { return this.sumCount(this.getEncodedMaterialByGradeAndSection(section, grade)); }
 
+  private canonicalMaterialName(name?: string): string {
+    return (name || "")
+      .toLowerCase()
+      .replace(/^tg_/, "")
+      .replace(/^guardian_/, "")
+      .replace(/[^a-z0-9]/g, "");
+  }
+
+  private getMaterialCandidates(material: any): string[] {
+    const names = [material?.Name, material?.Name_Localised].filter((value): value is string => !!value);
+    const canonical = names.map(value => this.canonicalMaterialName(value)).filter(Boolean);
+    return Array.from(new Set(canonical));
+  }
+
+  private getMappedMaterials(
+    group: "Raw" | "Manufactured" | "Encoded",
+    map: Record<string, GradeMapWithSource>,
+    key: number | string,
+    grade: number
+  ): any[] {
+    const inventory = this.materials?.[group];
+    const entry = map[String(key)];
+    const targets = entry?.[grade]?.map(name => this.canonicalMaterialName(name)).filter(Boolean);
+    if (!inventory || !targets?.length) {
+      return [];
+    }
+    return inventory.filter((material: any) => {
+      const candidates = this.getMaterialCandidates(material);
+      return candidates.some(candidate => targets.includes(candidate));
+    });
+  }
+
   // Trading math per spec
   private computeUpContribution(count: number, steps: number): number {
     if (steps <= 0) return count || 0;
@@ -252,111 +355,87 @@ export class MaterialsPanelComponent implements OnInit, OnDestroy {
     const parts: string[] = [];
     parts.push(`Lower: +${t.upOnly}`);
     parts.push(`Higher: +${t.downOnly}`);
-    if (targetGrade === 4 && this.ship_raw_materials_map[category]?.source) {
-      parts.push(`Source: ${this.ship_raw_materials_map[category].source}`);
+    const source = RAW_MATERIALS[String(category)]?.source;
+    if (targetGrade === 4 && source) {
+      parts.push(`Source: ${source}`);
     }
     return parts.join('\n');
   }
 
   // Manufactured totals and tooltip
+  isManufacturedTradeable(section: string): boolean {
+    return !isNonTradeableManufactured(section);
+  }
+
   getManufacturedHoverTotal(section: string, targetGrade: number): number {
     const counts: { [g: number]: number } = { 1: this.getManufacturedCount(section, 1), 2: this.getManufacturedCount(section, 2), 3: this.getManufacturedCount(section, 3), 4: this.getManufacturedCount(section, 4), 5: this.getManufacturedCount(section, 5) };
+    if (isNonTradeableManufactured(section)) {
+      return counts[targetGrade] || 0;
+    }
     return this.computeTotals(counts, targetGrade, 1, 5).finalTotal;
   }
 
   getManufacturedTooltip(section: string, targetGrade: number): string {
     const counts: { [g: number]: number } = { 1: this.getManufacturedCount(section, 1), 2: this.getManufacturedCount(section, 2), 3: this.getManufacturedCount(section, 3), 4: this.getManufacturedCount(section, 4), 5: this.getManufacturedCount(section, 5) };
-    const t = this.computeTotals(counts, targetGrade, 1, 5);
     const parts: string[] = [];
-    parts.push(`Lower: +${t.upOnly}`);
-    parts.push(`Higher: +${t.downOnly}`);
-    if (targetGrade === 5 && this.ship_manufactured_materials_map[section]?.source) {
-      parts.push(`Source: ${this.ship_manufactured_materials_map[section].source}`);
+    if (isNonTradeableManufactured(section)) {
+      parts.push(`Count: ${counts[targetGrade] || 0}`);
+      parts.push("Guardian / Thargoid materials cannot be traded");
+    } else {
+      const t = this.computeTotals(counts, targetGrade, 1, 5);
+      parts.push(`Lower: +${t.upOnly}`);
+      parts.push(`Higher: +${t.downOnly}`);
+    }
+    const source = MANUFACTURED_MATERIALS[section]?.source;
+    if (targetGrade === 5 && source) {
+      parts.push(`Source: ${source}`);
     }
     return parts.join('\n');
   }
 
   // Encoded totals and tooltip
+  isEncodedTradeable(section: string): boolean {
+    return !isNonTradeableEncoded(section);
+  }
+
   getEncodedHoverTotal(section: string, targetGrade: number): number {
     const counts: { [g: number]: number } = { 1: this.getEncodedCount(section, 1), 2: this.getEncodedCount(section, 2), 3: this.getEncodedCount(section, 3), 4: this.getEncodedCount(section, 4), 5: this.getEncodedCount(section, 5) };
+    if (isNonTradeableEncoded(section)) {
+      return counts[targetGrade] || 0;
+    }
     return this.computeTotals(counts, targetGrade, 1, 5).finalTotal;
   }
 
   getEncodedTooltip(section: string, targetGrade: number): string {
     const counts: { [g: number]: number } = { 1: this.getEncodedCount(section, 1), 2: this.getEncodedCount(section, 2), 3: this.getEncodedCount(section, 3), 4: this.getEncodedCount(section, 4), 5: this.getEncodedCount(section, 5) };
-    const t = this.computeTotals(counts, targetGrade, 1, 5);
     const parts: string[] = [];
-    parts.push(`Lower: +${t.upOnly}`);
-    parts.push(`Higher: +${t.downOnly}`);
-    if (targetGrade === 5 && this.ship_encoded_materials_location) {
-      parts.push(`Source: ${this.ship_encoded_materials_location}`);
+    if (isNonTradeableEncoded(section)) {
+      parts.push(`Count: ${counts[targetGrade] || 0}`);
+      parts.push("Guardian / Thargoid data cannot be traded");
+    } else {
+      const t = this.computeTotals(counts, targetGrade, 1, 5);
+      parts.push(`Lower: +${t.upOnly}`);
+      parts.push(`Higher: +${t.downOnly}`);
+    }
+    const source = ENCODED_SECTIONS[section]?.source;
+    if (source) {
+      parts.push(`Source: ${source}`);
     }
     return parts.join('\n');
   }
 
   // Source info maps
-  ship_raw_materials_map: any = {
-    1: {1: ['carbon'], 2: ['vanadium'], 3: ['niobium'], 4: ['yttrium'], source: 'Crystal Shards — Outotz LS-K D8-3 B 5 A; Brain Trees — 35 G. Carinae 2 D'},
-    2: {1: ['phosphorus'], 2: ['chromium'], 3: ['molybdenum'], 4: ['technetium'], source: 'Crystal Shards — HIP 36601 C 5 A; Brain Trees — 35 G. Carinae 2 A; HR 3230 3 A A'},
-    3: {1: ['sulphur'], 2: ['manganese'], 3: ['cadmium'], 4: ['ruthenium'], source: 'Crystal Shards — HIP 36601 C 1 D; Outotz LS-K D8-3 B 7 B; Brain Trees — 35 G. Carinae 2 C'},
-    4: {1: ['iron'], 2: ['zinc'], 3: ['tin'], 4: ['selenium'], source: 'Brain Trees — Kappa-1 Volantis B 3 F A; HR 3230 3 A A'},
-    5: {1: ['nickel'], 2: ['germanium'], 3: ['tungsten'], 4: ['tellurium'], source: 'Crystal Shards — HIP 36601 C 3 B; Brain Trees — Synuefe SE-V B49-4 B 3 A'},
-    6: {1: ['rhenium'], 2: ['arsenic'], 3: ['mercury'], 4: ['polonium'], source: 'Crystal Shards — HIP 36601 C 1 A; Brain Trees — Synuefe AA-P C22-7 5 C'},
-    7: {1: ['lead'], 2: ['zirconium'], 3: ['boron'], 4: ['antimony'], source: 'Crystal Shards — Outotz LS-K D8-3 B 5 C; Brain Trees — 35 G. Carinae 1 E'}
-  };
-
-  ship_manufactured_materials_map: any = {
-    'Chemical': { 1: ['chemicalstorageunits'], 2: ['chemicalprocessors'], 3: ['chemicaldistillery'], 4: ['chemicalmanipulators'], 5: ['pharmaceuticalisolators'], source: 'HGE — Outbreak' },
-    'Thermic': { 1: ['temperedalloys'], 2: ['heatresistantceramics'], 3: ['precipitatedalloys'], 4: ['thermicalloys'], 5: ['militarygradealloys'], source: 'HGE — War/Civil Unrest' },
-    'Heat': { 1: ['heatconductionwiring'], 2: ['heatdispersionplate'], 3: ['heatexchangers'], 4: ['heatvanes'], 5: ['protoheatradiators'], source: 'HGE — Boom' },
-    'Conductive': { 1: ['basicconductors'], 2: ['conductivecomponents'], 3: ['conductiveceramics'], 4: ['conductivepolymers'], 5: ['biotechconductors'], source: 'Missions' },
-    'Mechanical Components': { 1: ['mechanicalscrap'], 2: ['mechanicalequipment'], 3: ['mechanicalcomponents'], 4: ['configurablecomponents'], 5: ['improvisedcomponents'], source: 'HGE — Independent (Civil Unrest)' },
-    'Capacitors': { 1: ['gridresistors'], 2: ['hybridcapacitors'], 3: ['electrochemicalarrays'], 4: ['polymercapacitors'], 5: ['militarysupercapacitors'], source: 'HGE — Independent/Alliance (War/Civil War)' },
-    'Shielding': { 1: ['wornshieldemitters'], 2: ['shieldemitters'], 3: ['shieldingsensors'], 4: ['compoundshielding'], 5: ['imperialshielding'], source: 'HGE — Empire (None/Election); Missions' },
-    'Composite': { 1: ['compactcomposites'], 2: ['filamentcomposites'], 3: ['highdensitycomposites'], 4: ['proprietarycomposites'], 5: ['coredynamicscomposites'], source: 'HGE — Federation' },
-    'Crystals': { 1: ['crystalshards'], 2: ['flawedfocuscrystals'], 3: ['focuscrystals'], 4: ['refinedfocuscrystals'], 5: ['exquisitefocuscrystals'], source: 'Missions' },
-    'Alloys': { 1: ['salvagedalloys'], 2: ['galvanisingalloys'], 3: ['phasealloys'], 4: ['protolightalloys'], 5: ['protoradiolicalloys'], source: 'HGE — Boom' },
-    'Guardian Technology': { 1: ['guardian_sentinel_wreckagecomponents', 'guardianwreckagecomponents'], 2: ['guardian_powercell', 'guardianpowercell'], 3: ['guardian_powerconduit', 'guardianpowerconduit'], 4: ['guardian_sentinel_weaponparts', 'guardiansentinelweaponparts'], 5: ['guardian_techcomponent', 'techcomponent'], source: 'Guardian sites — Synuefe sector' },
-    'Thargoid Technology': { 1: ['tg_wreckagecomponents', 'wreckagecomponents', 'tg_abrasion02', 'tgabrasion02'], 2: ['tg_biomechanicalconduits', 'biomechanicalconduits', 'tg_abrasion03', 'tgabrasion03'], 3: ['tg_weaponparts', 'weaponparts', 'unknowncarapace', 'tg_causticshard', 'tgcausticshard'], 4: ['tg_propulsionelement', 'propulsionelement', 'unknownenergycell', 'unknowncorechip'], 5: ['tg_causticgeneratorparts', 'causticgeneratorparts', 'tg_causticcrystal', 'tgcausticcrystal', 'unknowntechnologycomponents'], source: 'Titan graveyards; NHSS 4–5; Solati Halla' }
-  };
-
-  ship_encoded_materials_location: string = 'HIP 12099 — Jameson Crash Site';
-
   // Raw material methods
   getRawMaterialByGradeAndCategory(grade: number, category: number): any[] {
-    if (!this.materials?.Raw || !this.rawMaterialsMap[category] || !this.rawMaterialsMap[category][grade]) {
-      return [];
-    }
-
-    const materialNames = this.rawMaterialsMap[category][grade];
-    return this.materials.Raw.filter((material: any) => {
-      const normalizedName = this.normalizeMaterialName(material.Name_Localised || material.Name);
-      return materialNames.includes(normalizedName);
-    });
+    return this.getMappedMaterials("Raw", RAW_MATERIALS, category, grade);
   }
 
   getManufacturedMaterialByGradeAndSection(section: string, grade: number): any[] {
-    if (!this.materials?.Manufactured || !this.manufacturedMaterialsMap[section] || !this.manufacturedMaterialsMap[section][grade]) {
-      return [];
-    }
-
-    const materialNames = this.manufacturedMaterialsMap[section][grade];
-    return this.materials.Manufactured.filter((material: any) => {
-      const normalizedName = this.normalizeMaterialName(material.Name_Localised || material.Name);
-      return materialNames.includes(normalizedName);
-    });
+    return this.getMappedMaterials("Manufactured", MANUFACTURED_MATERIALS, section, grade);
   }
 
   getEncodedMaterialByGradeAndSection(section: string, grade: number): any[] {
-    if (!this.materials?.Encoded || !this.encodedMaterialsMap[section] || !this.encodedMaterialsMap[section][grade]) {
-      return [];
-    }
-
-    const materialNames = this.encodedMaterialsMap[section][grade];
-    return this.materials.Encoded.filter((material: any) => {
-      const normalizedName = this.normalizeMaterialName(material.Name_Localised || material.Name);
-      return materialNames.includes(normalizedName);
-    });
+    return this.getMappedMaterials("Encoded", ENCODED_SECTIONS, section, grade);
   }
 
   getMaterialFillPercent(count: number, grade: number): number {
@@ -366,51 +445,38 @@ export class MaterialsPanelComponent implements OnInit, OnDestroy {
     return Math.round((clamped / max) * 100);
   }
 
-  private normalizeMaterialName(name: string): string {
-    return name.toLowerCase()
-      .replace(/^tg_/, '')
-      .replace(/^guardian_/, '')
-      .replace(/[^a-z0-9]/g, '');
-  }
-
   getRawMaterialCategoryName(category: number): string {
-    switch (category) {
-      case 1: return "Carbon-based";
-      case 2: return "Metals";
-      case 3: return "Non-Metals";
-      case 4: return "Crystalline Structures";
-      case 5: return "Thermic";
-      case 6: return "Organics";
-      case 7: return "Xenobiologicals";
-      default: return `Category ${category}`;
-    }
+    return RAW_CATEGORY_LABELS[category] ?? `Category ${category}`;
   }
 
   getManufacturedSections(): string[] {
-    return Object.keys(this.manufacturedMaterialsMap);
+    return Object.keys(MANUFACTURED_MATERIALS);
   }
 
   getEncodedSections(): string[] {
-    return Object.keys(this.encodedMaterialsMap);
+    return Object.keys(ENCODED_SECTIONS);
   }
 
   getEmptyRawMaterialName(grade: number, category: number): string {
-    if (this.rawMaterialsMap[category] && this.rawMaterialsMap[category][grade] && this.rawMaterialsMap[category][grade].length > 0) {
-      return this.formatMaterialName(this.rawMaterialsMap[category][grade][0]);
+    const list = RAW_MATERIALS[String(category)]?.[grade];
+    if (list && list.length > 0) {
+      return this.formatMaterialName(list[0]);
     }
     return `Grade ${grade} Material`;
   }
 
   getEmptyManufacturedMaterialName(section: string, grade: number): string {
-    if (this.manufacturedMaterialsMap[section] && this.manufacturedMaterialsMap[section][grade] && this.manufacturedMaterialsMap[section][grade].length > 0) {
-      return this.formatMaterialName(this.manufacturedMaterialsMap[section][grade][0]);
+    const list = MANUFACTURED_MATERIALS[section]?.[grade];
+    if (list && list.length > 0) {
+      return this.formatMaterialName(list[0]);
     }
     return `${section} G${grade}`;
   }
 
   getEmptyEncodedMaterialName(section: string, grade: number): string {
-    if (this.encodedMaterialsMap[section] && this.encodedMaterialsMap[section][grade] && this.encodedMaterialsMap[section][grade].length > 0) {
-      return this.formatMaterialName(this.encodedMaterialsMap[section][grade][0]);
+    const list = ENCODED_SECTIONS[section]?.[grade];
+    if (list && list.length > 0) {
+      return this.formatMaterialName(list[0]);
     }
     return `${section} G${grade}`;
   }
