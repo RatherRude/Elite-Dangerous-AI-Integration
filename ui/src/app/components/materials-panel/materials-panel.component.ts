@@ -222,6 +222,11 @@ export class MaterialsPanelComponent implements OnInit, OnDestroy {
   hoveredKey: string | null = null;
 
   private readonly gradeMaxByGrade: { [grade: number]: number } = { 1: 300, 2: 250, 3: 200, 4: 150, 5: 100 };
+  private materialCache: Record<"Raw" | "Manufactured" | "Encoded", Map<string, any[]>> = {
+    Raw: new Map(),
+    Manufactured: new Map(),
+    Encoded: new Map(),
+  };
 
   constructor(private projectionsService: ProjectionsService) {}
 
@@ -229,6 +234,7 @@ export class MaterialsPanelComponent implements OnInit, OnDestroy {
     this.subscriptions.push(
       this.projectionsService.materials$.subscribe(materials => {
         this.materials = materials;
+        this.clearMaterialCaches();
       })
     );
   }
@@ -293,16 +299,25 @@ export class MaterialsPanelComponent implements OnInit, OnDestroy {
     key: number | string,
     grade: number
   ): any[] {
+    const cacheKey = `${String(key)}:${grade}`;
+    const cacheBucket = this.materialCache[group];
+    if (cacheBucket.has(cacheKey)) {
+      return cacheBucket.get(cacheKey) || [];
+    }
+
     const inventory = this.materials?.[group];
     const entry = map[String(key)];
     const targets = entry?.[grade]?.map(name => this.canonicalMaterialName(name)).filter(Boolean);
     if (!inventory || !targets?.length) {
+      cacheBucket.set(cacheKey, []);
       return [];
     }
-    return inventory.filter((material: any) => {
+    const result = inventory.filter((material: any) => {
       const candidates = this.getMaterialCandidates(material);
       return candidates.some(candidate => targets.includes(candidate));
     });
+    cacheBucket.set(cacheKey, result);
+    return result;
   }
 
   // Trading math per spec
@@ -487,6 +502,10 @@ export class MaterialsPanelComponent implements OnInit, OnDestroy {
       .replace(/_/g, ' ')
       .replace(/([A-Z])/g, ' $1')
       .replace(/\w\S*/g, txt => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+  }
+
+  private clearMaterialCaches(): void {
+    Object.values(this.materialCache).forEach(bucket => bucket.clear());
   }
 }
 
