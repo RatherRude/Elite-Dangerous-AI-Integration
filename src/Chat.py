@@ -112,7 +112,16 @@ class Chat:
             )
             
         tts_provider = self.config["tts_provider"]
-        self.tts = TTS(openai_client=self.ttsClient, provider=tts_provider, model=self.config["tts_model_name"], voice=self.character["tts_voice"], voice_instructions=self.character["tts_prompt"], speed=self.character["tts_speed"], output_device=self.config["output_device_name"])
+        self.tts = TTS(
+            openai_client=self.ttsClient,
+            provider=tts_provider,
+            model=self.config["tts_model_name"],
+            voice=self.character["tts_voice"],
+            voice_instructions=self.character["tts_prompt"],
+            speed=self.character["tts_speed"],
+            output_device=self.config["output_device_name"],
+            character_voices=self._build_voice_overrides(),
+        )
         self.stt = STT(openai_client=self.sttClient, provider=self.config["stt_provider"], input_device_name=self.config["input_device_name"], model=self.config["stt_model_name"], language=self.config["stt_language"], custom_prompt=self.config["stt_custom_prompt"], required_word=self.config["stt_required_word"])
 
         log("debug", "Initializing SystemDatabase...")
@@ -431,6 +440,26 @@ class Chat:
 
         # Execute plugin chat stop hooks
         self.plugin_manager.on_chat_stop(self.plugin_helper)
+
+    def _build_voice_overrides(self) -> dict[str, str]:
+        overrides: dict[str, str] = {}
+        characters = self.config.get('characters', [])
+        if not isinstance(characters, list):
+            return overrides
+
+        active_indexes = self.config.get('active_characters') or []
+        if not active_indexes and isinstance(self.config.get('active_character_index'), int):
+            active_indexes = [self.config['active_character_index']]
+
+        for idx in active_indexes:
+            if isinstance(idx, int) and 0 <= idx < len(characters):
+                character = characters[idx]
+                name = character.get("name")
+                voice = character.get("tts_voice")
+                if name and voice:
+                    overrides[name.lower()] = voice
+
+        return overrides
 
 
 def read_stdin(chat: Chat):

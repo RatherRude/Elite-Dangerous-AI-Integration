@@ -7,6 +7,7 @@ import { AvatarService } from "./avatar.service";
 export interface ConfigWithCharacters extends Config {
     characters: Character[];
     active_character_index: number;
+    active_characters: number[];
 }
 
 export interface Character {
@@ -130,6 +131,25 @@ export class CharacterService {
             this.activeCharacterIndex ?? 0,
             character,
         );
+    }
+
+    public async setActiveRoster(indexes: number[]): Promise<void> {
+        if (!indexes || indexes.length === 0) return;
+        const sanitized: number[] = [];
+        for (const value of indexes) {
+            const idx = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : null;
+            if (idx === null) continue;
+            if (!sanitized.includes(idx)) {
+                sanitized.push(idx);
+            }
+            if (sanitized.length >= 4) {
+                break;
+            }
+        }
+        if (sanitized.length === 0) {
+            return;
+        }
+        await this.configService.changeConfig({ active_characters: sanitized });
     }
 
     public getCharacterEventProperty<T extends keyof Character["game_events"]>(

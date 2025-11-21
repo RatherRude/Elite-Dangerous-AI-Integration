@@ -73,7 +73,7 @@ class Mp3Stream(miniaudio.StreamableSource):
 
 @final
 class TTS:
-    def __init__(self, openai_client: Optional[openai.OpenAI] = None, provider: Literal['openai', 'edge-tts', 'custom', 'none', 'local-ai-server'] | str ='openai', voice="nova", voice_instructions="", model='tts-1',  speed: Union[str,float]=1, output_device: Optional[str] = None):
+    def __init__(self, openai_client: Optional[openai.OpenAI] = None, provider: Literal['openai', 'edge-tts', 'custom', 'none', 'local-ai-server'] | str ='openai', voice="nova", voice_instructions="", model='tts-1',  speed: Union[str,float]=1, output_device: Optional[str] = None, character_voices: Optional[dict[str, str]] = None):
         self.openai_client = openai_client
         self.provider = provider
         self.model = model
@@ -81,9 +81,10 @@ class TTS:
         self.voice_instructions = voice_instructions
 
         self.speed = speed
-        self.voice_overrides = {
-            'bark ai': 'hev',
-            'bad ai': 'computer',
+        self.character_voices = {
+            k.lower(): v
+            for k, v in (character_voices or {}).items()
+            if k and v
         }
         
         self.p = pyaudio.PyAudio()
@@ -291,7 +292,9 @@ class TTS:
 
     def _voice_for_label(self, label: str) -> str:
         key = label.lower()
-        return self.voice_overrides.get(key, self.voice)
+        if key in self.character_voices:
+            return self.character_voices[key]
+        return self.voice
 
     def quit(self):
         pass

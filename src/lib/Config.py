@@ -370,7 +370,6 @@ class Character(TypedDict, total=False):
     idle_timeout_var: int
     disabled_game_events: list[str]
 
-
 class Config(TypedDict):
     config_version: int
     api_key: str
@@ -379,6 +378,7 @@ class Config(TypedDict):
     commander_name: str
     characters: List[Character]
     active_character_index: int
+    active_characters: list[int]
     llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom', 'local-ai-server']
     llm_model_name: str
     llm_temperature: float
@@ -579,11 +579,27 @@ def migrate(data: dict) -> dict:
             # Adjust active character index if it exists
             if 'active_character_index' in data:
                 data['active_character_index'] += 1
+            if 'active_characters' in data and isinstance(data.get('active_characters'), list):
+                shifted = []
+                for idx in data['active_characters']:
+                    if isinstance(idx, int):
+                        shifted.append(idx + 1)
+                data['active_characters'] = shifted
 
     if 'characters' in data:
         for character in data['characters']:
             if not character.get('color'):
                 character['color'] = 'FFFFFF'
+
+    if ('active_characters' not in data or
+            not isinstance(data.get('active_characters'), list)):
+        if len(data.get('characters', [])) > 0:
+            idx = data.get('active_character_index', 0)
+            if not isinstance(idx, int) or not (0 <= idx < len(data['characters'])):
+                idx = 0
+            data['active_characters'] = [idx]
+        else:
+            data['active_characters'] = []
 
     if data['config_version'] == 1:
         data['config_version'] = 2
@@ -753,6 +769,7 @@ def load_config() -> Config:
         'commander_name': "",
         'characters': [],
         'active_character_index': 0,  # -1 means using the default legacy character
+        'active_characters': [],
         'api_key': "",
         'tools_var': True,
         'vision_var': False,
@@ -1169,12 +1186,24 @@ def update_character(config: Config, data: UpdateCharacterRequest) -> Config:
                 config["characters"].pop(index)
                 print(f"Deleted character at index {index}: {deleted_name}")
                 # Adjust active index if needed
-                if config["active_character_index"] == index:
+                if config["characters"]:
+                    if config["active_character_index"] == index:
+                        config["active_character_index"] = min(index, len(config["characters"]) - 1)
+                        print(f"Reassigned active character index to {config['active_character_index']}")
+                    elif config["active_character_index"] > index:
+                        config["active_character_index"] -= 1
+                        print(f"Adjusted active character index to {config['active_character_index']}")
+                else:
                     config["active_character_index"] = -1
-                    print("Reset active character index to -1")
-                elif config["active_character_index"] > index:
-                    config["active_character_index"] -= 1
-                    print(f"Adjusted active character index to {config['active_character_index']}")
+                    print("Reset active character index to -1 (no characters remaining)")
+                if isinstance(config.get("active_characters"), list):
+                    updated_active = []
+                    for idx in config.get("active_characters", []):
+                        if isinstance(idx, int):
+                            if idx == index:
+                                continue
+                            updated_active.append(idx - 1 if idx > index else idx)
+                    config["active_characters"] = updated_active
     
     elif data.get('operation') == "set_active":
         # Set the active character
@@ -1185,6 +1214,7 @@ def update_character(config: Config, data: UpdateCharacterRequest) -> Config:
 
     return update_config(old_config, {
         "active_character_index": config["active_character_index"],
+        "active_characters": config.get("active_characters", []),
         "characters": config["characters"]
     })
 
