@@ -2,6 +2,10 @@
   <div class="chat-entry" [ngClass]="getEventClass(msg.role, msg.message)">
     <span class="timestamp">{{ msg.timestamp | date:'HH:mm:ss' }}</span>
     <span class="prefix" [style.color]="getLogColor(msg.role)">{{ msg.role }}</span>
-    <span class="message">{{ msg.message }}</span>
+    <span class="message">
+      <ng-container *ngFor="let segment of formatMessageSegments(msg.message)">
+        <span [style.color]="segment.color">{{ segment.text }}</span>
+      </ng-container>
+    </span>
   </div>
 }

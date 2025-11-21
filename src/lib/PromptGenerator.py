@@ -50,7 +50,7 @@ LocationEvent = dict
 NavRouteEvent = dict
 
 class PromptGenerator:
-    def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str], system_db: SystemDatabase, weapon_types: list[dict] | None = None, disabled_game_events: list[str] | None = None):
+    def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str], system_db: SystemDatabase, weapon_types: list[dict] | None = None, disabled_game_events: list[str] | None = None, config: dict[str, Any] | None = None):
         self.registered_prompt_event_handlers: list[Callable[[Event], str|None]] = []
         self.registered_status_generators: list[Callable[[dict[str, dict]], list[tuple[str, Any]]]] = []
         self.commander_name = commander_name
@@ -59,6 +59,7 @@ class PromptGenerator:
         self.disabled_game_events = disabled_game_events if disabled_game_events is not None else []
         self.system_db = system_db
         self.weapon_types: list[dict] = weapon_types if weapon_types is not None else []
+        self.config = config or {}
 
         # Pad map for station docking positions
         self.pad_map = {
@@ -3358,17 +3359,14 @@ class PromptGenerator:
                     + "Do not end sentences with questions unless specifically instructed.\n"
                     + "Multi-Character Responses:\n"
                     + "When multiple roles respond, use the format: "
-                    + "(Role-1)Response\n(Role-2)Response\n(Role-1)Response\n"
+                    + "(Role-1)Response(Role-2)Response(Role-1)Response\n"
                     + "Interactions:\n"
                     + "Only respond when prompted or if interaction between characters is specifically requested. "
                     + "Follow any defined behavior.\n"
                     + "Primary Character:\n"
                     + "The primary character issues commands and receives input. All responses are directed here unless stated otherwise.\n"
                     + "Character List:\n"
-                    + "- (Bark AI)\n"
-                    + "  Prompt: Always barks, like 'bark, bark!'\n"
-                    + "- (Bad AI)\n"
-                    + "  Prompt: " + self.character_prompt.format(commander_name=self.commander_name),
+                    + self._format_active_character_list(),
                 }
             )
         except Exception as e:
@@ -3381,6 +3379,29 @@ class PromptGenerator:
         log('debug', 'conversation', json.dumps(conversational_pieces))
 
         return conversational_pieces
+    
+    def _format_active_character_list(self) -> str:
+        characters = self.config.get("characters", [])
+        active_indexes = self.config.get("active_characters") or []
+        if not active_indexes and isinstance(self.config.get("active_character_index"), int):
+            active_indexes = [self.config["active_character_index"]]
+
+        lines: list[str] = []
+        for idx in active_indexes:
+            if not isinstance(idx, int):
+                continue
+            if idx < 0 or idx >= len(characters):
+                continue
+            character = characters[idx]
+            name = character.get("name", f"Character {idx}")
+            prompt = character.get("character", "").strip()
+            formatted_prompt = prompt if prompt else "No additional prompt provided."
+            lines.append(f"- ({name})\n  Prompt: {formatted_prompt}")
+
+        if not lines:
+            lines.append("- (Primary)\n  Prompt: No additional prompt provided.")
+
+        return "\n".join(lines) + "\n"
     
     def register_prompt_event_handler(self, prompt_event_handler: Callable[[Event], str|None]):
         self.registered_prompt_event_handlers.append(prompt_event_handler)

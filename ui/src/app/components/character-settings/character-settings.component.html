@@ -10,7 +10,7 @@
                              *ngFor="let activeIdx of getActiveRoster(); let slot = index"
                              [class.main]="slot === 0"
                              [class.hovered]="hoveredRosterSlot === slot"
-                             [class.no-edit]="slot === 0 || activeRoster.length <= 1"
+                             [class.no-edit]="activeRoster.length <= 1"
                              (mouseenter)="onCrewSlotHover(slot)">
                             @if (isEditingSlot(slot)) {
                                 <mat-form-field appearance="fill" class="crew-select-field">
@@ -59,7 +59,12 @@
                                         </button>
                                     </div>
                                 </div>
-                                <div class="avatar-name">{{ config?.characters?.[activeIdx]?.name }}</div>
+                                <div class="avatar-name">
+                                    {{ config?.characters?.[activeIdx]?.name }}
+                                    <span class="avatar-voice" *ngIf="config?.characters?.[activeIdx]?.tts_voice">
+                                        ({{ config?.characters?.[activeIdx]?.tts_voice }})
+                                    </span>
+                                </div>
                             }
                         </div>
                         <div class="crew-avatar add-slot" *ngIf="canAddCrewSlot()">

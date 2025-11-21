@@ -95,7 +95,15 @@ dummy_construction_state = {
 
 web_search_agent_llm_client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY_AGENT"), base_url=os.environ.get("OPENAI_BASE_URL_AGENT"))
 web_search_system_database = SystemDatabase()
-web_search_prompt_generator = PromptGenerator(commander_name="Joe", character_prompt="", important_game_events=[], system_db=web_search_system_database, weapon_types=None, disabled_game_events = None)
+web_search_prompt_generator = PromptGenerator(
+    commander_name="Joe",
+    character_prompt="",
+    important_game_events=[],
+    system_db=web_search_system_database,
+    weapon_types=None,
+    disabled_game_events=None,
+    config={"characters": []},
+)
 
 async def run_sample(sample: Sample) -> SampleResult:
     res = web_search_agent(

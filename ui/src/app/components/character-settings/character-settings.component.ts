@@ -712,7 +712,6 @@ export class CharacterSettingsComponent {
     }
 
     async editCharacterSlot(slot: number): Promise<void> {
-        if (slot === 0 || this.activeRoster.length <= 1) return;
         const roster = this.getActiveRoster();
         const characterIndex = roster[slot];
         if (characterIndex === undefined) return;

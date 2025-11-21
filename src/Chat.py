@@ -134,7 +134,15 @@ class Chat:
         log("debug", "Initializing status parser...")
         self.status_parser = StatusParser(get_ed_journals_path(config))
         log("debug", "Initializing prompt generator...")
-        self.prompt_generator = PromptGenerator(self.config["commander_name"], self.character["character"], important_game_events=self.enabled_game_events, system_db=self.system_database, weapon_types=cast(list[dict], self.config.get("weapon_types", [])), disabled_game_events=disabled_events)
+        self.prompt_generator = PromptGenerator(
+            self.config["commander_name"],
+            self.character["character"],
+            important_game_events=self.enabled_game_events,
+            system_db=self.system_database,
+            weapon_types=cast(list[dict], self.config.get("weapon_types", [])),
+            disabled_game_events=disabled_events,
+            config=self.config,
+        )
 
         log("debug", "Initializing event manager...")
         self.event_manager = EventManager(

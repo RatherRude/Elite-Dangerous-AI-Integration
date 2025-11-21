@@ -126,6 +126,12 @@ mat-slide-toggle {
     color: #fff;
     border-radius: 50%;
     pointer-events: auto;
+
+    mat-icon {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
   }
 }
 
@@ -140,7 +146,7 @@ mat-slide-toggle {
 
 .avatar-name {
   font-size: 0.85rem;
-  max-width: 90px;
+  max-width: 100%;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
@@ -326,7 +332,7 @@ ul {
     font-size: 18px;
     font-weight: 500;
   }
-  height: 350px;
+  //height: 350px;
 }
 .character-content {
     white-space: pre-wrap;
