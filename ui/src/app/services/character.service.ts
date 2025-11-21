@@ -29,6 +29,7 @@ export interface Character {
     tts_voice: string;
     tts_speed: string;
     tts_prompt: string;
+    color: string;
     avatar?: string; // IndexedDB key for the avatar image
 
     

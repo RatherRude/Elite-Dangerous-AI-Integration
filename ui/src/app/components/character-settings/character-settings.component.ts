@@ -1366,6 +1366,19 @@ export class CharacterSettingsComponent {
         return this.characterService.getAvatarUrl();
     }
 
+    getCharacterColor(includeHash = false): string {
+        const color = this.activeCharacter?.color ?? 'FFFFFF';
+        const normalized = color.startsWith('#') ? color.slice(1) : color;
+        return includeHash ? `#${normalized.toUpperCase()}` : normalized.toUpperCase();
+    }
+
+    onColorPickerChange(value: string): void {
+        const sanitized = (value || '').replace('#', '').toUpperCase();
+        const isValidHex = /^[0-9A-F]{6}$/.test(sanitized);
+        const nextColor = isValidHex ? sanitized : 'FFFFFF';
+        void this.setCharacterProperty('color', nextColor);
+    }
+
     openAvatarCatalog() {
         const dialogRef = this.dialog.open(AvatarCatalogDialogComponent, {
             width: '850px',

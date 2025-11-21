@@ -19,7 +19,8 @@
                     </mat-form-field>
                     @if (!editMode) {
                         <div class="character-display" [class.with-traits]="!isCustomPreset()">
-                            <div class="character-avatar-preview">
+                            <div class="character-avatar-preview"
+                                 [style.border-color]="getCharacterColor(true)">
                                 <img [src]="getAvatarUrl()" 
                                      [alt]="activeCharacter.name + ' avatar'"
                                      class="avatar-preview-image">
@@ -230,13 +231,23 @@
                                     <div class="avatar-full-display">
                                         <img [src]="getAvatarUrl()"
                                              [alt]="activeCharacter.name + ' avatar'"
-                                             class="avatar-full-image">
+                                             class="avatar-full-image"
+                                             [style.border-color]="getCharacterColor(true)">
                                         <button mat-icon-button
                                                 class="avatar-edit-button"
                                                 (click)="openAvatarCatalog()"
                                                 matTooltip="Change avatar">
                                             <mat-icon>edit</mat-icon>
                                         </button>
+                                    </div>
+                                </div>
+                                <div class="avatar-options color-picker-control">
+                                    <label class="color-picker-label">Accent Color</label>
+                                    <div class="color-picker-inputs">
+                                        <input type="color"
+                                               [ngModel]="getCharacterColor(true)"
+                                               (ngModelChange)="onColorPickerChange($event)">
+                                        <span class="color-value">{{ getCharacterColor(true) }}</span>
                                     </div>
                                 </div>
                             </div>

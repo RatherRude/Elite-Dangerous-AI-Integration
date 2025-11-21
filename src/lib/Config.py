@@ -355,6 +355,7 @@ class Character(TypedDict, total=False):
     tts_voice: str
     tts_speed: str
     tts_prompt: str
+    color: str
     avatar: str  # IndexedDB key for the avatar image
     game_events: dict[str, bool]
     event_reaction_enabled_var: bool
@@ -539,6 +540,7 @@ def migrate(data: dict) -> dict:
                 "tts_voice": 'en-US-AvaMultilingualNeural' if data.get('tts_voice', 'en-US-AvaMultilingualNeural') == 'en-GB-SoniaNeural' else data.get('tts_voice', 'en-US-AvaMultilingualNeural'),
                 "tts_speed": data.get('tts_speed', "1.2"),
                 "tts_prompt": data.get('tts_prompt', ""),
+                "color": data.get('color', 'FFFFFF'),
                 "game_events": game_events,
                 "event_reaction_enabled_var": data.get('event_reaction_enabled_var', True),
                 "react_to_text_local_var": data.get('react_to_text_local_var', True),
@@ -577,6 +579,11 @@ def migrate(data: dict) -> dict:
             # Adjust active character index if it exists
             if 'active_character_index' in data:
                 data['active_character_index'] += 1
+
+    if 'characters' in data:
+        for character in data['characters']:
+            if not character.get('color'):
+                character['color'] = 'FFFFFF'
 
     if data['config_version'] == 1:
         data['config_version'] = 2
@@ -724,6 +731,7 @@ def getDefaultCharacter(config: Config) -> Character:
         "tts_voice": 'en-US-AvaMultilingualNeural' if config.get('tts_provider') == 'edge-tts' else 'nova',
         "tts_speed": '1.2',
         "tts_prompt": '',
+        "color": 'FFFFFF',
         "avatar": '',  # No avatar by default
         "game_events": game_events,
         "event_reaction_enabled_var": True,

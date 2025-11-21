@@ -316,6 +316,8 @@ ul {
     border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     width: fit-content;
+    gap: 24px;
+    flex-wrap: wrap;
   }
   
   .avatar-display-container {
@@ -335,10 +337,6 @@ ul {
         border-radius: 12px;
         border: 3px solid rgba(255, 255, 255, 0.2);
         transition: all 0.2s ease;
-        
-        &:hover {
-          border-color: rgba(255, 255, 255, 0.4);
-        }
       }
       
       .avatar-edit-button {
@@ -360,6 +358,36 @@ ul {
           height: 18px;
         }
       }
+    }
+  }
+  .color-picker-control {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .color-picker-label {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .color-picker-inputs {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    input[type="color"] {
+      width: 48px;
+      height: 48px;
+      border: none;
+      padding: 0;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .color-value {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.9rem;
     }
   }
 }

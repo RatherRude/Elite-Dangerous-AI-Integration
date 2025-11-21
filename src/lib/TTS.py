@@ -81,6 +81,10 @@ class TTS:
         self.voice_instructions = voice_instructions
 
         self.speed = speed
+        self.voice_overrides = {
+            'bark ai': 'hev',
+            'bad ai': 'computer',
+        }
         
         self.p = pyaudio.PyAudio()
         self.output_device = output_device
@@ -131,11 +135,11 @@ class TTS:
             while not self.is_aborted:
                 if not self.read_queue.empty():
                     self._is_playing = True
-                    text = self.read_queue.get()
+                    voice, text = self.read_queue.get()
                     try:
-                        self._playback_one(text, stream)
+                        self._playback_one(text, stream, voice)
                     except Exception as e:
-                        self.read_queue.put(text)
+                        self.read_queue.put((voice, text))
                         raise e
 
                 self._is_playing = False
@@ -145,7 +149,7 @@ class TTS:
             stream.stop_stream()
 
     @observe()
-    def _playback_one(self, text: str, stream: pyaudio.Stream):
+    def _playback_one(self, text: str, stream: pyaudio.Stream, voice: Optional[str] = None):
         # Fix numberformatting for different providers
         text = re.sub(r"\d+(,\d{3})*(\.\d+)?", self._number_to_text, text)
         text = strip_markdown.strip_markdown(text)
@@ -155,7 +159,7 @@ class TTS:
         first_chunk = True
         underflow_count = 0
         empty_buffer_available = stream.get_write_available()
-        for chunk in self._stream_audio(text):
+        for chunk in self._stream_audio(text, voice):
             if not end_time:
                 end_time = time()
                 log('debug', f'Response time TTS', end_time - start_time)
@@ -182,7 +186,8 @@ class TTS:
         
 
     @observe()
-    def _stream_audio(self, text):
+    def _stream_audio(self, text: str, voice: Optional[str] = None):
+        selected_voice = voice or self.voice
         if self.provider == 'none':
             word_count = len(text.split())
             words_per_minute = 150 * float(self.speed)
@@ -192,7 +197,7 @@ class TTS:
                 yield b"\x00" * 1024
         elif self.provider == "edge-tts":
             rate = f"+{int((float(self.speed) - 1) * 100)}%" if float(self.speed) > 1 else f"-{int((1 - float(self.speed)) * 100)}%"
-            response = edge_tts.Communicate(text, voice=self.voice, rate=rate)
+            response = edge_tts.Communicate(text, voice=selected_voice, rate=rate)
             pcm_stream = miniaudio.stream_any(
                 source=Mp3Stream(response.stream_sync(), self.prebuffer_size),
                 source_format=miniaudio.FileFormat.MP3,
@@ -208,7 +213,7 @@ class TTS:
             try:
                 with self.openai_client.audio.speech.with_streaming_response.create(
                         model=self.model,
-                        voice=self.voice,
+                        voice=selected_voice,
                         input=text,
                         response_format="pcm",
                         # raw samples in 24kHz (16-bit signed, low-endian), without the header.
@@ -242,7 +247,8 @@ class TTS:
             return match.group()
 
     def say(self, text: str):
-        self.read_queue.put(text)
+        for segment in self._segment_text(text):
+            self.read_queue.put(segment)
 
     def abort(self):
         while not self.read_queue.empty():
@@ -257,6 +263,35 @@ class TTS:
     def wait_for_completion(self):
         while self.get_is_playing():
             sleep(0.2)
+
+    def _strip(self, text: str) -> str:
+        cleaned = re.sub(r"\([^)]*\)", "", text)
+        cleaned = re.sub(r"\s+", " ", cleaned)
+        return cleaned.strip()
+
+    def _segment_text(self, text: str) -> list[tuple[str, str]]:
+        segments: list[tuple[str, str]] = []
+        current_voice = self.voice
+        pattern = re.compile(r"\(([^)]+)\)")
+        last_idx = 0
+        for match in pattern.finditer(text):
+            chunk = text[last_idx:match.start()]
+            cleaned_chunk = self._strip(chunk)
+            if cleaned_chunk:
+                segments.append((current_voice, cleaned_chunk))
+            label = match.group(1).strip()
+            current_voice = self._voice_for_label(label)
+            last_idx = match.end()
+        tail = self._strip(text[last_idx:])
+        if tail:
+            segments.append((current_voice, tail))
+        if not segments:
+            segments.append((self.voice, self._strip(text)))
+        return segments
+
+    def _voice_for_label(self, label: str) -> str:
+        key = label.lower()
+        return self.voice_overrides.get(key, self.voice)
 
     def quit(self):
         pass
