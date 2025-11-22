@@ -69,11 +69,15 @@ class Chat:
 
         log("debug", "Initializing EDJournal...")
         self.jn = EDJournal(get_ed_journals_path(config))
-            
+
         # gets API Key from config.json
         self.llmClient = OpenAI(
             base_url="https://api.openai.com/v1" if self.config["llm_endpoint"] == '' else self.config["llm_endpoint"],
             api_key=self.config["api_key"] if self.config["llm_api_key"] == '' else self.config["llm_api_key"],
+        )
+        self.agent_llm_client = OpenAI(
+            base_url="https://api.openai.com/v1" if self.config["agent_llm_endpoint"] == '' else self.config["agent_llm_endpoint"],
+            api_key=self.config["api_key"] if self.config["agent_llm_api_key"] == '' else self.config["agent_llm_api_key"],
         )
         # embeddings
         self.embeddingClient: OpenAI | None = None
@@ -114,7 +118,10 @@ class Chat:
         log("debug", "Initializing SystemDatabase...")
         self.system_database = SystemDatabase()
         log("debug", "Initializing EDKeys...")
-        self.ed_keys = EDKeys(get_ed_appdata_path(config))
+        self.ed_keys = EDKeys(
+            get_ed_appdata_path(config),
+            prefer_primary_bindings=self.config.get("prefer_primary_bindings", False),
+        )
         log("debug", "Initializing status parser...")
         self.status_parser = StatusParser(get_ed_journals_path(config))
         log("debug", "Initializing prompt generator...")
@@ -333,23 +340,29 @@ class Chat:
             log('info', "Register actions...")
 
             register_actions(
-                self.action_manager,
-                self.event_manager,
-                self.llmClient,
-                self.config["llm_model_name"],
-                self.visionClient,
-                self.config["vision_model_name"],
-                self.embeddingClient,
-                self.config["embedding_model_name"],
-                self.ed_keys,
-                self.config.get("discovery_primary_var", True),
-                self.config.get("discovery_firegroup_var", 1),
-                self.config.get("chat_local_tabbed_var", False),
-                self.config.get("chat_wing_tabbed_var", False),
-                self.config.get("chat_system_tabbed_var", True),
-                self.config.get("chat_squadron_tabbed_var", False),
-                self.config.get("chat_direct_tabbed_var", False),
-                self.config.get("weapon_types", [])
+                actionManager=self.action_manager,
+                eventManager=self.event_manager,
+                promptGenerator=self.prompt_generator,
+                llmClient=self.llmClient,
+                llmModelName=self.config["llm_model_name"],
+                visionClient=self.visionClient,
+                visionModelName=self.config["vision_model_name"],
+                embeddingClient=self.embeddingClient,
+                embeddingModelName=self.config["embedding_model_name"],
+                edKeys=self.ed_keys,
+                discovery_primary_var_flag=self.config.get("discovery_primary_var", True),
+                discovery_firegroup_var_flag=self.config.get("discovery_firegroup_var", 1),
+                chat_local_tabbed_flag=self.config.get("chat_local_tabbed_var", False),
+                chat_wing_tabbed_flag=self.config.get("chat_wing_tabbed_var", False),
+                chat_system_tabbed_flag=self.config.get("chat_system_tabbed_var", True),
+                chat_squadron_tabbed_flag=self.config.get("chat_squadron_tabbed_var", False),
+                chat_direct_tabbed_flag=self.config.get("chat_direct_tabbed_var", False),
+                weapon_types_list=self.config.get("weapon_types", []),
+                agent_llm_client=self.agent_llm_client,
+                agent_llm_model_name=self.config["agent_llm_model_name"],
+                agent_llm_reasoning_effort=self.config.get("agent_llm_reasoning_effort", None),
+                agent_llm_temperature=self.config.get("agent_llm_temperature", 1.0),
+                agent_llm_max_tries=self.config.get("agent_llm_max_tries", 7),
             )
 
             log('info', "Actions ready.")
@@ -359,7 +372,7 @@ class Chat:
         # Execute plugin helper ready hooks
         self.plugin_manager.on_chat_start(self.plugin_helper)
         show_chat_message('info', "Plugins ready.")
-        
+
         # Cue the user that we're ready to go.
         show_chat_message('info', "System Ready.")
 
@@ -477,6 +490,11 @@ if __name__ == "__main__":
         print(json.dumps({"type": "config", "config": config})+'\n', flush=True)
         system = get_system_info()
         print(json.dumps({"type": "system", "system": system})+'\n', flush=True)
+
+        ed_keys = EDKeys(
+            get_ed_appdata_path(config),
+            prefer_primary_bindings=config.get("prefer_primary_bindings", False),
+        )
         # Load plugins.
         log('debug', "Loading plugins...")
         plugin_manager = PluginManager(config=config)
@@ -520,8 +538,8 @@ if __name__ == "__main__":
                 if data.get("type") == "enable_remote_tracing":
                     from lib.Logger import enable_remote_tracing
                     enable_remote_tracing(config['commander_name'], data.get('resourceAttributes', {}))
-                
-            except json.JSONDecodeError:    
+
+            except json.JSONDecodeError:
                 continue
         
         # Once start signal received, initialize and run chat
@@ -529,7 +547,7 @@ if __name__ == "__main__":
         plugin_manager.on_settings_changed(config)
         print(json.dumps({"type": "start"})+'\n', flush=True)
         
-        
+
         chat = Chat(config, plugin_manager)
         # run chat in a thread
         stdin_thread = threading.Thread(target=read_stdin, args=(chat,), daemon=True)

@@ -34,6 +34,12 @@ export interface StartMessage extends BaseMessage {
     type: "start";
 }
 
+export interface KeybindsMessages extends BaseMessage {
+    type: "keybinds";
+    missing: string[];
+    collisions: [string,string][];
+}
+
 export interface WeaponType {
     name: string;
     fire_group: number;
@@ -71,9 +77,22 @@ export interface Config {
         | "custom"
         | "local-ai-server";
     llm_model_name: string;
+    llm_reasoning_effort: 'default' | 'none' | 'minimal' | 'low' | 'medium' | 'high' | null;
     llm_api_key: string;
     llm_endpoint: string;
     llm_temperature: number;
+    agent_llm_provider:
+        | "openai"
+        | "openrouter"
+        | "google-ai-studio"
+        | "custom"
+        | "local-ai-server";
+    agent_llm_model_name: string;
+    agent_llm_reasoning_effort: 'default' | 'none' | 'minimal' | 'low' | 'medium' | 'high' | null;
+    agent_llm_api_key: string;
+    agent_llm_endpoint: string;
+    agent_llm_temperature: number;
+    agent_llm_max_tries: number;
     vision_provider: "openai" | "google-ai-studio" | "custom" | "none" | "local-ai-server";
     vision_model_name: string;
     vision_endpoint: string;
@@ -113,6 +132,7 @@ export interface Config {
     discovery_primary_var: boolean;
     discovery_firegroup_var: number;
     weapon_types: WeaponType[];
+    prefer_primary_bindings: boolean;
     // Chat channel tab settings
     chat_local_tabbed_var: boolean;
     chat_wing_tabbed_var: boolean;
@@ -166,6 +186,12 @@ export class ConfigService {
     public plugin_settings_message$ = this.plugin_settings_message_subject
         .asObservable();
 
+    private keybinds_subject = new BehaviorSubject<
+        KeybindsMessages | null
+    >(null);
+    public keybinds$ = this.keybinds_subject
+        .asObservable();
+
     constructor(private tauriService: TauriService) {
         // Subscribe to config messages from the TauriService
         this.tauriService.output$.pipe(
@@ -177,15 +203,17 @@ export class ConfigService {
                 | SystemInfoMessage
                 | ModelValidationMessage
                 | PluginSettingsMessage
-                | StartMessage =>
+                | StartMessage
+                | KeybindsMessages =>
                 message.type === "config" ||
                 message.type === "running_config" ||
                 message.type === "system" ||
                 message.type === "model_validation" ||
                 message.type === "plugin_settings_configs" ||
-                message.type === "start"
+                message.type === "start" ||
+                message.type === "keybinds"
             ),
-        ).subscribe((message: ConfigMessage | RunningConfigMessage | SystemInfoMessage | ModelValidationMessage | PluginSettingsMessage | StartMessage) => {
+        ).subscribe((message: ConfigMessage | RunningConfigMessage | SystemInfoMessage | ModelValidationMessage | PluginSettingsMessage | StartMessage | KeybindsMessages) => {
             if (message.type === "config") {
                 this.configSubject.next(message.config);
             } else if (message.type === "running_config") {
@@ -213,6 +241,8 @@ export class ConfigService {
                 this.plugin_settings_message_subject.next(message);
             } else if (message.type === "start") {
                 this.validationSubject.next(null);
+            } else if (message.type === "keybinds") {
+                this.keybinds_subject.next(message);
             }
         });
     }

@@ -586,6 +586,34 @@ class VectorStore():
             ''')
 
         conn.commit()
+    
+    def get_most_recent_entries(self, limit: int = 10) -> list[VectorStoreEntry]:
+        """Return the most recently stored entries."""
+        if not self._table_exists(self.table_name):
+            return []
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            f'''
+                SELECT id, content, metadata, unixepoch(inserted_at)
+                FROM {self.table_name}
+                ORDER BY inserted_at DESC
+                LIMIT ?
+            ''',
+            (limit,),
+        )
+        rows = cursor.fetchall()
+        entries: list[VectorStoreEntry] = []
+        for row in rows:
+            entries.append(
+                VectorStoreEntry(
+                    id=row[0],
+                    content=row[1],
+                    metadata=self._load_metadata(row[2]),
+                    inserted_at=row[3],
+                )
+            )
+        return entries
 
     def get_entries_by_date(self, target_date: date | str) -> list[VectorStoreEntry]:
         """Return stored entries for a given calendar date."""

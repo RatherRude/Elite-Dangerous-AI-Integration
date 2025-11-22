@@ -9,7 +9,7 @@ import requests
 import humanize
 import json
 
-from lib.EventModels import (
+from .EventModels import (
     ApproachBodyEvent, ApproachSettlementEvent, BookTaxiEvent, BountyEvent, BuyExplorationDataEvent, CodexEntryEvent, CommanderEvent, CommitCrimeEvent,
     CrewAssignEvent, CrewLaunchFighterEvent, CrewMemberJoinsEvent, CrewMemberQuitsEvent, CrewMemberRoleChangeEvent,
     DataScannedEvent, DatalinkScanEvent, DiedEvent, DisembarkEvent, DiscoveryScanEvent, DockedEvent, DockFighterEvent,
@@ -59,7 +59,7 @@ class PromptGenerator:
         self.disabled_game_events = disabled_game_events if disabled_game_events is not None else []
         self.system_db = system_db
         self.weapon_types: list[dict] = weapon_types if weapon_types is not None else []
-        
+
         # Pad map for station docking positions
         self.pad_map = {
             "1":  {"clock": 6, "depth": "very front"},
@@ -2328,9 +2328,9 @@ class PromptGenerator:
         if event_name == 'LowOxygenWarning':
             return 'Warning: Life support oxygen reserves critically low'
         if event_name == 'LowHealthWarningCleared':
-            return 'Hull integrity stabilized, critical damage repaired'
+            return 'Health stabilized, medical emergency has been averted'
         if event_name == 'LowHealthWarning':
-            return 'Warning: Hull integrity critical, immediate repairs recommended'
+            return 'Warning: Health is critically low, immediate medical attention required'
         if event_name == 'BreathableAtmosphereExited':
             return 'Exited breathable atmosphere, life support systems active'
         if event_name == 'BreathableAtmosphereEntered':
@@ -2540,46 +2540,46 @@ class PromptGenerator:
         # Build firegroup descriptions from weapon_types
         # Maps fire_group number to dict with 'primary' and 'secondary' weapon names (just one each)
         firegroup_map = {}
-        
+
         if self.weapon_types:
             for weapon in self.weapon_types:
                 fg_num = weapon.get("fire_group")
                 is_primary = weapon.get("is_primary")
                 weapon_name = weapon.get("name")
-                
+
                 if fg_num is not None and is_primary is not None and weapon_name:
                     if fg_num not in firegroup_map:
                         firegroup_map[fg_num] = {"primary": None, "secondary": None}
-                    
+
                     # Store just one weapon name per type (will use last one encountered)
                     if is_primary:
                         firegroup_map[fg_num]["primary"] = weapon_name
                     else:
                         firegroup_map[fg_num]["secondary"] = weapon_name
-        
+
         # Get current active firegroup
         active_firegroup_num = current_status.get("FireGroup")
-        
+
         # Build firegroup descriptions as simple strings
         firegroup_descriptions = {}
-        
+
         # If we have weapon_types data, build descriptions from that
         if firegroup_map:
             for fg_num, weapons in firegroup_map.items():
                 # weapon_types uses 1-based indexing: 1->A, 2->B, etc.
                 fg_letter = chr(64 + fg_num)
-                
+
                 # Check if this is the active firegroup
                 # Note: active_firegroup_num from status is 0-based, so we need to add 1 to compare
                 is_active = active_firegroup_num is not None and fg_num == active_firegroup_num + 1
-                
+
                 # Build the string: combine primary and secondary with " | "
                 parts = []
                 if weapons["primary"]:
                     parts.append(weapons["primary"])
                 if weapons["secondary"]:
                     parts.append(weapons["secondary"])
-                
+
                 if parts:
                     description = " | ".join(parts)
                     if is_active:
@@ -2587,13 +2587,13 @@ class PromptGenerator:
                     firegroup_descriptions[fg_letter] = description
                 else:
                     firegroup_descriptions[fg_letter] = "unknown (Active)" if is_active else "unknown"
-        
+
         # If current firegroup is not in our map, add it as unknown
         if active_firegroup_num is not None:
             active_fg_letter = chr(65 + active_firegroup_num)
             if active_fg_letter not in firegroup_descriptions:
                 firegroup_descriptions[active_fg_letter] = "unknown (Active)"
-        
+
         # Use the dict structure, or fallback to old behavior if no data
         if firegroup_descriptions:
             firegroups_info = firegroup_descriptions
@@ -2988,6 +2988,7 @@ class PromptGenerator:
         # Target
         target_info: TargetState = projected_states.get('Target', {})  # pyright: ignore[reportAssignmentType]
         target_info.pop('EventID', None)
+        target_info.pop('ScanStage', None)
         if target_info.get('Ship', False):
             status_entries.append(("Weapons' target", target_info))
 
@@ -3228,7 +3229,7 @@ class PromptGenerator:
                         available_engineers[engineer_name] = engineer_systems[engineer_name]
 
             if available_engineers:
-                status_entries.append(("Available Engineers", available_engineers))
+                status_entries.append(("Available Engineers and their home system", available_engineers))
         
         # Process plugin status messages
         for status_generator in self.registered_status_generators:
@@ -3242,7 +3243,7 @@ class PromptGenerator:
 
     # TODO use events as passed from db, not in mem copy, pending (new not yet reated to), short_term (reacted to but not yet part of summary memory), memories (historc summaries of events)
     @observe()
-    def generate_prompt(self, events: list[Event], projected_states: dict[str, dict], pending_events: list[Event]):
+    def generate_prompt(self, events: list[Event], projected_states: dict[str, dict], pending_events: list[Event], memories: list[MemoryEvent]) -> list[dict[str, str]]:
         # Fine the most recent event
         last_event = events[-1]
         reference_time = datetime.fromisoformat(last_event.content.get('timestamp') if isinstance(last_event, GameEvent) else last_event.timestamp)
@@ -3269,7 +3270,7 @@ class PromptGenerator:
                 event_type = event.content.get('event')
                 if event_type in self.disabled_game_events:
                     continue
-                    
+
                 if len(conversational_pieces) < 20:
                     is_important = is_pending and event_type in self.important_game_events
                     message = self.event_message(event, time_offset, is_important)
@@ -3281,7 +3282,7 @@ class PromptGenerator:
                 event_type = event.status.get('event')
                 if event_type in self.disabled_game_events:
                     continue
-                    
+
                 if (
                     len(conversational_pieces) < 20
                     and event_type != "Status"
@@ -3296,7 +3297,7 @@ class PromptGenerator:
 
             if isinstance(event, ToolEvent):
                 conversational_pieces += self.tool_messages(event)
-            
+
             for handler in self.registered_prompt_event_handlers:
                 try:
                     res = handler(event)
@@ -3314,6 +3315,27 @@ class PromptGenerator:
                 "content": self.generate_status_message(projected_states),
             }
         )
+        
+        # Add memories
+        memory_pieces_count = 0
+        for event in memories:
+            if memory_pieces_count > 5:
+                break
+            memory_pieces_count += 1
+
+            if isinstance(event, MemoryEvent):
+                event_time = datetime.fromtimestamp(
+                    event.metadata.get('time_until', 0)
+                )
+                if not event_time.tzinfo:
+                    event_time = event_time.astimezone()
+
+                time_offset = humanize.naturaltime(reference_time - event_time)
+
+                conversational_pieces.append({
+                    "role": "user",
+                    "content": f"[Ship logbook, {time_offset}] {event.content}",
+                })
 
         try:
             conversational_pieces.append(
@@ -3327,7 +3349,7 @@ class PromptGenerator:
                     + "Be specific about amounts and percentages for inquiries as the commander can not see the game events' text description but lives in the universe. "
                     + "You do not ask questions or initiate conversations. You respond only when addressed and in a single sentence. "
                     + "Don't repeat the same words and sentences, mix it up. "
-                    
+
                     # The character_prompt now contains all the generated settings
                     + "Your character prompt is: " + self.character_prompt.format(commander_name=self.commander_name),
                 }

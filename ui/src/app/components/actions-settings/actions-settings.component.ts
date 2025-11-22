@@ -3,7 +3,7 @@ import { CommonModule } from "@angular/common";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { MatSelectModule } from "@angular/material/select";
-import { Config, ConfigService, WeaponType } from "../../services/config.service.js";
+import { Config, ConfigService, WeaponType, KeybindsMessages } from "../../services/config.service.js";
 import { Subscription } from "rxjs";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { FormsModule } from "@angular/forms";
@@ -11,9 +11,10 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
+import { MatExpansionModule } from "@angular/material/expansion";
 
 @Component({
-    selector: "app-behavior-settings",
+    selector: "app-actions-settings",
     standalone: true,
     imports: [
         CommonModule,
@@ -25,18 +26,18 @@ import { MatIconModule } from "@angular/material/icon";
         MatButtonToggleModule,
         MatSelectModule,
         MatIconModule,
+        MatExpansionModule,
     ],
-    templateUrl: "./behavior-settings.component.html",
-    styleUrl: "./behavior-settings.component.css",
+    templateUrl: "./actions-settings.component.html",
+    styleUrl: "./actions-settings.component.css",
 })
-export class BehaviorSettingsComponent {
+export class ActionsSettingsComponent {
     config: Config | null = null;
     configSubscription: Subscription;
+    keybindsSubscription: Subscription;
+    keybindsData: KeybindsMessages | null = null;
 
     // Collapsible toggles for details
-    showGameDetails = false;
-    showWebDetails = false;
-    showUIDetails = false;
     showWeaponTypes = false;
     // Track which weapons are in edit mode (by index)
     weaponEditMode: Set<number> = new Set();
@@ -116,11 +117,20 @@ export class BehaviorSettingsComponent {
                 this.config = config;
             },
         );
+        
+        this.keybindsSubscription = this.configService.keybinds$.subscribe(
+            (keybinds) => {
+                this.keybindsData = keybinds;
+            },
+        );
     }
     ngOnDestroy() {
         // Unsubscribe from the config observable to prevent memory leaks
         if (this.configSubscription) {
             this.configSubscription.unsubscribe();
+        }
+        if (this.keybindsSubscription) {
+            this.keybindsSubscription.unsubscribe();
         }
     }
 
@@ -348,3 +358,4 @@ export class BehaviorSettingsComponent {
         return this.weaponEditMode.has(index);
     }
 }
+

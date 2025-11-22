@@ -187,7 +187,6 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - UI_Select
     - UI_Back
     - CamZoomOut
-    - Key_Enter
     </details>
 
 7. **Close galaxy map**
@@ -976,7 +975,6 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - UI_Select
     - UI_Back
     - CamZoomOut
-    - Key_Enter
     </details>
 
 13. **Open/Close System Map**
@@ -1361,12 +1359,11 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - QuickCommsPanel_Humanoid (on-foot)
     - UI_Down (for system channel selection)
     - UI_Select
-    - Key_Enter
     </details>
 
-    #### Tabbed Chat Channels
+### Tabbed Chat Channels
 
-    In Elite: Dangerous, you can configure certain chat channels to be **tabbed** instead of appearing in the main chat flow. When a channel is set to tabbed mode, the keyboard macro required to send messages changes.
+In Elite: Dangerous, you can configure certain chat channels to be **tabbed** instead of appearing in the main chat flow. Tabbed channels require different macros to send messages.
 
-    ![Tabbed Chat Configuration](screen/tabbed_chat.png)
+![Tabbed Chat Configuration](screen/tabbed_chat.png)
 

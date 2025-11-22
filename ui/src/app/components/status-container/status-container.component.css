@@ -512,8 +512,7 @@
 .status-icon,
 .friends-counter,
 .wing-counter,
-.fighters-counter,
-.colonisation-indicator {
+.fighters-counter {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -529,8 +528,7 @@
 .status-icon:hover,
 .friends-counter:hover,
 .wing-counter:hover,
-.fighters-counter:hover,
-.colonisation-indicator:hover {
+.fighters-counter:hover {
   background: rgba(0, 0, 0, 0.9);
   border-color: #555;
   transform: scale(1.05);
@@ -567,25 +565,11 @@
 
 .friends-counter,
 .wing-counter,
-.fighters-counter,
-.colonisation-indicator {
+.fighters-counter {
   position: relative;
   min-width: 32px;
   width: auto;
   padding: 0 8px;
-}
-
-.colonisation-indicator {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  min-width: 60px;
-}
-
-.progress-text {
-  font-size: 10px;
-  font-weight: 600;
-  white-space: nowrap;
 }
 
 .badge {
@@ -889,7 +873,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 8px;
 }
 
 .target-ship {
@@ -902,7 +885,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 4px;
   font-size: 12px;
 }
 
@@ -912,7 +894,9 @@
 }
 
 .target-rank {
-  color: #bbb;
+  color: #b0bec5;
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .target-legal {
@@ -1738,6 +1722,13 @@
 .target-info .target-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 0;
+}
+
+.target-title {
+  display: flex;
+  align-items: center;
   gap: 0.3rem;
 }
 
@@ -1751,27 +1742,40 @@
   font-weight: 500;
 }
 
-.target-info .target-scanned {
+.target-status {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.target-scan-stage {
   font-size: 0.7rem;
-  background-color: #3d7e9a;
-  padding: 0.1rem 0.3rem;
-  border-radius: 2px;
-  margin-left: auto;
+  color: #ccc;
 }
 
 .target-info .target-details {
   display: flex;
   flex-direction: column;
   font-size: 0.75rem;
-  margin-top: 0.2rem;
-  gap: 0.2rem;
+  margin-top: 0;
+  gap: 0;
 }
 
 .target-info .target-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.3rem;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.target-inline-health {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-wrap: wrap;
+  font-size: 0.7rem;
+  margin-top: 0;
 }
 
 .target-info .target-pilot {
@@ -1779,10 +1783,9 @@
 }
 
 .target-info .target-rank {
-  color: #aaa;
-  font-size: 0.7rem;
-  margin-left: auto;
-  margin-right: 0.3rem;
+  color: #b0bec5;
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 
 .target-info .target-faction {
@@ -1790,10 +1793,43 @@
   color: #aaa;
 }
 
+.target-info .target-subsystem {
+  font-size: 0.7rem;
+  color: #e0e0e0;
+  font-weight: 500;
+}
+
 .target-info .target-legal {
   font-size: 0.7rem;
   padding: 0.1rem 0.3rem;
   border-radius: 2px;
+}
+
+.target-info .target-bounty {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #f5c16c;
+}
+
+.target-health {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.7rem;
+  color: #cfd8dc;
+}
+
+.target-health mat-icon {
+  font-size: 14px;
+  height: 14px;
+  width: 14px;
+}
+
+.target-identity-row,
+.target-affiliation-row {
+  width: 100%;
+  justify-content: space-between;
+  gap: 0.6rem;
 }
 
 /* Exobiology Scan Mini Display */

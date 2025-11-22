@@ -85,56 +85,6 @@
             </div>
         </div>
 
-        <div *ngIf="showColonisationPanel" class="expandable-panel colonisation-panel"
-             (click)="onBackgroundClick($event, 'colonisation')">
-            <div class="panel-content" (click)="onPanelClick($event)">
-                <div class="panel-header">
-                    <h3>Colony Construction</h3>
-                    <button class="panel-close-btn" (click)="closeColonisationPanel()" mat-icon-button>
-                        <mat-icon>close</mat-icon>
-                    </button>
-                </div>
-                <div class="colony-header">
-                    <h4>{{ getColonisationSystem() }}</h4>
-                    <div class="colony-status" [ngClass]="getColonisationStatusClass()">
-                        {{ getColonisationStatusText() }}
-                    </div>
-                </div>
-
-                <div class="progress-container">
-                    <h4>Construction Progress</h4>
-                    <div class="stat-bar">
-                        <mat-progress-bar
-                                mode="determinate"
-                                [value]="getColonisationProgressValue()"
-                        ></mat-progress-bar>
-                        <span>{{ formatPercentage(getColonisationProgress()) }}</span>
-                    </div>
-                </div>
-
-                <div *ngIf="getColonisationResources().length > 0" class="resources-needed">
-                    <h4>Resources Needed</h4>
-                    <mat-list>
-                        <mat-list-item *ngFor="let resource of getColonisationResources()" class="resource-item">
-                            <div class="resource-details">
-                                <span class="resource-name">{{ resource.Name_Localised || resource.Name }}</span>
-                                <div class="resource-progress">
-                                    <mat-progress-bar
-                                            mode="determinate"
-                                            [value]="(resource.ProvidedAmount / resource.RequiredAmount) * 100"
-                                    ></mat-progress-bar>
-                                    <span class="resource-count">
-                                    {{ resource.ProvidedAmount }}/{{ resource.RequiredAmount }}
-                                </span>
-                                </div>
-                            </div>
-                        </mat-list-item>
-                    </mat-list>
-                </div>
-            </div>
-        </div>
-
-
         <!-- Context-dependent content based on active mode -->
         <div *ngIf="getActiveMode() === 'humanoid'" class="context-content character-sheet">
             <!-- TOP SECTION - Character Identity -->
@@ -350,21 +300,50 @@
                 <!-- Target info -->
                 <div *ngIf="target?.Ship" class="target-info">
                     <div class="target-header">
-                        <mat-icon>track_changes</mat-icon>
-                        <span class="target-ship">{{ target?.Ship }}</span>
+                        <div class="target-title">
+                            <mat-icon>track_changes</mat-icon>
+                            <span class="target-ship">{{ formatTargetShipName(target?.Ship) }}</span>
+                            <span class="target-rank" *ngIf="target?.PilotRank">{{ target?.PilotRank }}</span>
+                        </div>
+                        <div class="target-status" *ngIf="target?.ScanStage !== undefined && target?.ScanStage < 3">
+                            <span class="target-scan-stage">
+                                Scan {{ target?.ScanStage }}/3
+                            </span>
+                        </div>
+                    </div>
+                    <div class="target-inline-health"
+                         *ngIf="target?.ShieldHealth !== undefined || target?.HullHealth !== undefined || target?.Subsystem || target?.SubsystemHealth !== undefined">
+                        <span class="target-health" *ngIf="target?.ShieldHealth !== undefined">
+                            <mat-icon>security</mat-icon>
+                            {{ formatHealth(target?.ShieldHealth) }}
+                        </span>
+                        <span class="target-health" *ngIf="target?.HullHealth !== undefined">
+                            <mat-icon>build</mat-icon>
+                            {{ formatHealth(target?.HullHealth) }}
+                        </span>
+                        <span class="target-subsystem"
+                              *ngIf="target?.Subsystem || target?.SubsystemHealth !== undefined">
+                            {{ target?.Subsystem }}
+                            <span *ngIf="target?.SubsystemHealth !== undefined">
+                                {{ formatHealth(target?.SubsystemHealth) }}
+                            </span>
+                        </span>
                     </div>
                     <div class="target-details">
-                        <div class="target-row">
+                        <div class="target-row target-identity-row" *ngIf="target?.PilotName || target?.LegalStatus">
                             <span class="target-pilot" *ngIf="target?.PilotName">{{ target?.PilotName }}</span>
-                            <span class="target-rank" *ngIf="target?.PilotRank">{{ target?.PilotRank }}</span>
-                            <span *ngIf="target?.LegalStatus" class="target-legal"
+                            <span class="target-legal" *ngIf="target?.LegalStatus"
                                   [ngClass]="'status-' + target?.LegalStatus?.toLowerCase()">
-                            {{ target?.LegalStatus }}
-                        </span>
+                                {{ target?.LegalStatus }}
+                            </span>
                         </div>
-                        <div class="target-row" *ngIf="target?.Scanned">
+                        <div class="target-row target-affiliation-row"
+                             *ngIf="target?.Faction || (target?.Bounty || 0) > 0">
                             <span class="target-faction" *ngIf="target?.Faction">{{ target?.Faction }}</span>
-                            <span class="target-scanned">SCANNED</span>
+                            <span class="target-bounty"
+                                  *ngIf="(target?.Bounty || 0) > 0">
+                                {{ target?.Bounty | number:'1.0-0' }} CR
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -373,14 +352,6 @@
                 <div class="status-indicators-header">
                     <!-- Top row: Construction, Friends, Wing -->
                     <div class="status-icons-top-row">
-                        <!-- Colonisation Construction indicator -->
-                        <div *ngIf="isColonisationActive(colonisationConstruction)"
-                             class="colonisation-indicator"
-                             (click)="toggleColonisationPanel()">
-                            <mat-icon>construction</mat-icon>
-                            <span class="progress-text">{{ formatPercentage(getColonisationProgress()) }}</span>
-                        </div>
-
                         <!-- Friends counter -->
                         <div class="friends-counter" (click)="toggleFriendsPanel()" *ngIf="getFriendsCount() > 0">
                             <mat-icon>people</mat-icon>
@@ -455,7 +426,7 @@
                                 </div>
                                 <div class="utility-engineering" *ngIf="module.Engineering">
                                     <mat-icon class="engineering-icon">build</mat-icon>
-                                    <span class="engineering-text">{{ module.Engineering.BlueprintName || 'Unknown' }}
+                                    <span class="engineering-text">{{ formatEngineeringName(module.Engineering.BlueprintName) }}
                                         (G{{ module.Engineering.Level || '?' }})
                                     <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
                                         - {{ module.Engineering.ExperimentalEffect_Localised }}
@@ -580,7 +551,7 @@
                                 </div>
                                 <div class="hardpoint-engineering" *ngIf="module.Engineering">
                                     <mat-icon class="engineering-icon">build</mat-icon>
-                                    <span class="engineering-text">{{ module.Engineering.BlueprintName || 'Unknown' }}
+                                    <span class="engineering-text">{{ formatEngineeringName(module.Engineering.BlueprintName) }}
                                         (G{{ module.Engineering.Level || '?' }})
                                     <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
                                         - {{ module.Engineering.ExperimentalEffect_Localised }}
@@ -607,7 +578,7 @@
                                         <div class="module-name">{{ formatModuleName(module.Item) }}</div>
                                         <div class="module-engineering" *ngIf="module.Engineering">
                                             <mat-icon class="engineering-icon">build</mat-icon>
-                                            <span class="engineering-text">{{ module.Engineering.BlueprintName || 'Unknown' }}
+                                            <span class="engineering-text">{{ formatEngineeringName(module.Engineering.BlueprintName) }}
                                                 (G{{ module.Engineering.Level || '?' }})
                                             <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
                                                 - {{ module.Engineering.ExperimentalEffect_Localised }}
@@ -625,12 +596,12 @@
                         <div class="module-list optional-modules">
                             <ng-container *ngFor="let module of getOptionalModules(); let i = index">
                                 <div *ngIf="showAllModules || i < getVisibleModulesCount()" class="module-item">
-                                    <div class="module-slot">{{ formatSlotName(module.Slot) }}</div>
+                                    <div class="module-slot">{{ getModuleClassLabel(module) }}</div>
                                     <div class="module-content">
                                         <div class="module-name">{{ formatModuleName(module.Item) }}</div>
                                         <div class="module-engineering" *ngIf="module.Engineering">
                                             <mat-icon class="engineering-icon">build</mat-icon>
-                                            <span class="engineering-text">{{ module.Engineering.BlueprintName || 'Unknown' }}
+                                            <span class="engineering-text">{{ formatEngineeringName(module.Engineering.BlueprintName) }}
                                                 (G{{ module.Engineering.Level || '?' }})
                                             <span *ngIf="module.Engineering.ExperimentalEffect_Localised">
                                                 - {{ module.Engineering.ExperimentalEffect_Localised }}

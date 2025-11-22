@@ -5,13 +5,17 @@ from openai.types.chat import ChatCompletionMessageParam
 
 from .Logger import log
 from .EDKeys import EDKeys
-from .EventManager import EventManager, Projection
+from .EventManager import EventManager, Projection as _Projection
 from .ActionManager import ActionManager
 from .SystemDatabase import SystemDatabase
 from .Config import Config, save_config
-from .Event import Event, PluginEvent
+from .Event import Event, PluginEvent as _PluginEvent
 from .PromptGenerator import PromptGenerator
 from .Assistant import Assistant
+
+# reexport Projection and PluginEvent for plugins
+Projection = _Projection
+PluginEvent = _PluginEvent
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:

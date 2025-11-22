@@ -16,6 +16,7 @@ from ..Logger import log, show_chat_message
 from ..EDKeys import EDKeys
 from ..EventManager import EventManager
 from ..ActionManager import ActionManager
+from ..PromptGenerator import PromptGenerator
 
 keys: EDKeys = None
 discovery_primary_var: bool = True
@@ -729,10 +730,16 @@ def request_docking(args, projected_states):
             keys.send('SetSpeedZero')
             sleep(0.2)
         msg = ""
+        if docking_events.get('LastEventType') == 'DockingGranted':
+            msg = "Docking request was sent and granted"
+        if docking_events.get('LastEventType') in ['DockingCanceled', 'DockingDenied', 'DockingTimeout']:
+            msg = "Docking request was sent but previous station communication indicates that it has failed"
+
     except:
         msg = "Failed to request docking via menu"
 
     stop_event.set()  # stop the keypress thread
+    t.join(1)
 
     keys.send('UIFocus')
     return msg
@@ -1351,7 +1358,7 @@ def target_subsystem(args, projected_states):
     return f"The submodule {args['subsystem']} is being targeted."
 
 
-def register_actions(actionManager: ActionManager, eventManager: EventManager, llmClient: openai.OpenAI,
+def register_actions(actionManager: ActionManager, eventManager: EventManager, promptGenerator: PromptGenerator ,llmClient: openai.OpenAI,
                      llmModelName: str, visionClient: openai.OpenAI | None, visionModelName: str | None,
                      embeddingClient: openai.OpenAI | None, embeddingModelName: str | None,
                      edKeys: EDKeys, discovery_primary_var_flag: bool = True, discovery_firegroup_var_flag: int = 1,
@@ -1360,7 +1367,12 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
                      chat_system_tabbed_flag: bool = True,
                      chat_squadron_tabbed_flag: bool = False,
                      chat_direct_tabbed_flag: bool = False,
-                     weapon_types_list: list = []):
+                     weapon_types_list: list | None = None,
+                     agent_llm_client: openai.OpenAI | None = None,
+                     agent_llm_model_name: str | None = None,
+                     agent_llm_reasoning_effort: str | None = None,
+                     agent_llm_temperature: float | None = None,
+                     agent_llm_max_tries: int = 7):
     global event_manager, vision_client, llm_client, llm_model_name, vision_model_name, keys, weapon_types
     keys = edKeys
     event_manager = eventManager
@@ -1368,7 +1380,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
     llm_model_name = llmModelName
     vision_client = visionClient
     vision_model_name = visionModelName
-    weapon_types = weapon_types_list
+    weapon_types = weapon_types_list or []
     global discovery_primary_var, discovery_firegroup_var
     discovery_primary_var = discovery_primary_var_flag
     discovery_firegroup_var = discovery_firegroup_var_flag
@@ -1539,7 +1551,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         "pips to systems": {"power_category": ["Systems"], "pips": [2]},
     })
 
-    actionManager.registerAction('galaxyMapOpen', "Open galaxy map. If asked, also focus on a system or start a navigation route", {
+    actionManager.registerAction('galaxyMapOpen', "Open galaxy map. If asked, also focus on a system or start a navigation route. Navigation closes map, no futher close required.", {
         "type": "object",
         "properties": {
             "system_name": {
@@ -2426,12 +2438,13 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, l
         },
         "required": ["message", "channel"]
     }, send_message, 'global', permission='textMessage')
-    
+
     register_web_actions(
         actionManager, eventManager,
-        llmClient, llmModelName,
+        promptGenerator, agent_llm_client, agent_llm_model_name, agent_llm_reasoning_effort,
         embeddingClient, embeddingModelName,
-        edKeys
+        agent_llm_temperature,
+        agent_llm_max_tries
     )
 
     register_ui_actions(

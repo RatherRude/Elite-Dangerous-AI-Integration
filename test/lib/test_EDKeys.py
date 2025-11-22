@@ -35,6 +35,10 @@ def binds_file(tmp_path):
             </Primary>
 		    <Secondary Device="{NoDevice}" Key="" />
         </SecondaryFire>
+        <CycleNextTarget>
+            <Primary Device="Keyboard" Key="Key_Q"/>
+            <Secondary Device="Keyboard" Key="Key_E"/>
+        </CycleNextTarget>
         <InvalidBinding>
             <Primary Device="Keyboard" Key="Key_Invalid"/>
         </InvalidBinding>
@@ -51,16 +55,19 @@ def test_get_bindings_loads_valid_keys(mock_directinput, binds_file):
     keys = EDKeys(binds_file)
     bindings = keys.keys
     
-    assert bindings
-    assert 'PrimaryFire' in bindings
-    assert bindings['PrimaryFire']['key'] == 57
-    assert bindings['PrimaryFire']['mods'] == []
+    expected_bindings = {
+        'PrimaryFire': {'key': 57, 'mods': []},
+        'SecondaryFire': {'key': 30, 'mods': [42]},
+        'CycleNextTarget': {'key': 18, 'mods': []},
+    }
+
+    for key_name, expectations in expected_bindings.items():
+        assert key_name in bindings
+        assert bindings[key_name]['key'] == expectations['key']
+        assert bindings[key_name]['mods'] == expectations['mods']
+        assert key_name not in keys.missing_keys
     
-    assert 'SecondaryFire' in bindings
-    assert bindings['SecondaryFire']['key'] == 30
-    assert bindings['SecondaryFire']['mods'] == [42]
-    
-    assert len(keys.missing_keys) == len(keys.keys_to_obtain) - 2
+    assert len(keys.missing_keys) == len(keys.required_keys) - len(expected_bindings)
 
 def test_get_bindings_skips_unrecognized(mock_directinput, binds_file):
     """Test that unrecognized keys are skipped"""
@@ -105,3 +112,18 @@ def test_send_with_hold(mock_directinput, binds_file):
     
     assert mock_directinput["PressKey"].called
     assert mock_directinput["ReleaseKey"].called
+
+@pytest.mark.parametrize(
+    "prefer_primary, expected_key",
+    [
+        (False, 18),  # Secondary binding (Key_E)
+        (True, 16),   # Primary binding (Key_Q)
+    ],
+)
+def test_cycle_next_target_binding_respects_preference(mock_directinput, binds_file, prefer_primary, expected_key):
+    """CycleNextTarget should load from secondary by default and primary when configured."""
+    keys = EDKeys(binds_file, prefer_primary_bindings=prefer_primary)
+    binding = keys.keys['CycleNextTarget']
+
+    assert binding['key'] == expected_key
+    assert binding['mods'] == []

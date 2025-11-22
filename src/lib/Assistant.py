@@ -13,7 +13,7 @@ from .TTS import TTS
 from openai import APIStatusError, BadRequestError, OpenAI, RateLimitError
 from typing import Any,  Callable, final
 from threading import Thread
-from .actions.Actions import set_speed, fire_weapons
+from .actions.Actions import set_speed, fire_weapons, get_visuals
 
 @final
 class Assistant:
@@ -52,16 +52,9 @@ class Assistant:
         try:
             if (isinstance(event, GameEvent) and event.content.get('event') == 'FSDJump' and
                     (self.config.get("qol_autoscan", False) or self.config.get("qol_autobrake", False))):
-                # Build actions according to QoL flags
-                request, results, descriptions, labels = [], [], [], []
-
                 if self.config.get("qol_autobrake"):
                     speed_args = {"speed": "Zero"}
-                    speed_result = set_speed(speed_args, projected_states)
-                    request.append({"id": "auto-fsd-1", "type": "function", "function": {"name": "setSpeed", "arguments": json.dumps(speed_args)}})
-                    results.append({"tool_call_id": "auto-fsd-1", "role": "tool", "name": "setSpeed", "content": speed_result})
-                    descriptions.append("Reducing speed to 0")
-                    labels.append("SetSpeedZero")
+                    set_speed(speed_args, projected_states)
 
                 if self.config.get("qol_autoscan"):
                     fire_args = {
@@ -70,16 +63,25 @@ class Assistant:
                         "discoveryPrimary": self.config.get("discovery_primary_var", True),
                         "discoveryFiregroup": self.config.get("discovery_firegroup_var", 1),
                     }
-                    fire_result = fire_weapons(fire_args, projected_states)
-                    request.append({"id": "auto-fsd-2", "type": "function", "function": {"name": "fireWeapons", "arguments": json.dumps(fire_args)}})
-                    results.append({"tool_call_id": "auto-fsd-2", "role": "tool", "name": "fireWeapons", "content": fire_result})
-                    descriptions.append("Performing discovery scan")
-                    labels.append("DiscoveryScan")
-
-                if request:
-                    self.event_manager.add_tool_call(request, results, descriptions)
+                    fire_weapons(fire_args, projected_states)
         except Exception as e:
             log('error', 'Auto actions on FSDJump failed', e, traceback.format_exc())
+
+        # Auto action on Screenshot: get visual description
+        try:
+            if (isinstance(event, GameEvent) and event.content.get('event') == 'Screenshot' and
+                    self.config.get("vision_provider", '') != 'none'):
+
+                visual_args = {"query": "Describe what you see in the game."}
+                visual_result = get_visuals(visual_args, projected_states)
+
+                request = [{"id": "auto-screenshot-1", "type": "function", "function": {"name": "getVisuals", "arguments": json.dumps(visual_args)}}]
+                results = [{"tool_call_id": "auto-screenshot-1", "role": "tool", "name": "getVisuals", "content": visual_result}]
+                descriptions = ["Analyzing screenshot"]
+                
+                self.event_manager.add_tool_call(request, results, descriptions)
+        except Exception as e:
+            log('error', 'Auto action on Screenshot failed', e, traceback.format_exc())
 
         if isinstance(event, ConversationEvent) and event.kind == 'assistant':
             short_term = self.event_manager.get_short_term_memory(1000)
@@ -219,11 +221,13 @@ class Assistant:
             events = list(reversed(events))
             new_events = [event for event in events if event.responded_at == None]
             self.pending = []
+            
+            memories = self.event_manager.get_latest_memories(limit=5)
 
 
             log('debug', 'Starting reply...')
             max_conversation_processed = max([event.processed_at for event in events]+[0.0])
-            prompt = self.prompt_generator.generate_prompt(events=events, projected_states=projected_states, pending_events=new_events)
+            prompt = self.prompt_generator.generate_prompt(events=events, projected_states=projected_states, pending_events=new_events, memories=memories)
 
             user_input: list[str] = [event.content for event in new_events if event.kind == 'user']
             tool_uses: int = len([event for event in new_events if event.kind == 'tool'])
@@ -263,9 +267,23 @@ class Assistant:
             else:
                 start_time = time()
                 llm_params: dict[str, str] = {}
+                
+                if self.config.get("llm_reasoning_effort") and self.config.get("llm_reasoning_effort") != 'default':
+                    llm_params["reasoning_effort"] = self.config["llm_reasoning_effort"]
+                
                 if self.config["llm_model_name"] in ['gpt-5', 'gpt-5-mini', 'gpt-5-nano']:
                     llm_params["verbosity"] = "low"
-                    llm_params["reasoning_effort"] = "minimal"
+                    
+                if self.config["llm_model_name"] in ['gpt-5.1']:
+                    llm_params["verbosity"] = "low"
+                    
+                if self.config["llm_model_name"] in ['gemini-3-pro-preview']:
+                    for m in prompt:
+                        if 'tool_calls' in m and m.get('tool_calls', None):
+                            calls = m.get('tool_calls', [{}])
+                            calls[0]['extra_content'] = {"google": {
+                                "thought_signature": "skip_thought_signature_validator"
+                            }}
                     
                 try:
                     response = self.llmClient.chat.completions.with_raw_response.create(  # pyright: ignore[reportCallIssue]
@@ -311,7 +329,7 @@ class Assistant:
                 
                 if hasattr(completion.choices[0].message, 'content'):
                     response_text = completion.choices[0].message.content
-                    if completion.choices[0].message.content is None: 
+                    if completion.choices[0].message.content is None or completion.choices[0].message.content == "":
                         log("debug", "LLM completion no content:", completion)
                         show_chat_message("covas", "...")
                 else:
@@ -334,7 +352,7 @@ class Assistant:
                 self.execute_actions(response_actions, projected_states)
 
                 if not predicted_actions and self.config["use_action_cache_var"]:
-                    if len(response_actions) == 1:
+                    if len(response_actions) == 1 and len(user_input):
                         self.verify_action(user_input[-1], response_actions[0], prompt, tool_list)
                     
         except Exception as e:
