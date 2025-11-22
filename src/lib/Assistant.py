@@ -267,16 +267,17 @@ class Assistant:
             else:
                 start_time = time()
                 llm_params: dict[str, str] = {}
+                
+                if self.config.get("llm_reasoning_effort") and self.config.get("llm_reasoning_effort") != 'default':
+                    llm_params["reasoning_effort"] = self.config["llm_reasoning_effort"]
+                
                 if self.config["llm_model_name"] in ['gpt-5', 'gpt-5-mini', 'gpt-5-nano']:
                     llm_params["verbosity"] = "low"
-                    llm_params["reasoning_effort"] = "minimal"
                     
                 if self.config["llm_model_name"] in ['gpt-5.1']:
                     llm_params["verbosity"] = "low"
-                    llm_params["reasoning_effort"] = "none"
                     
                 if self.config["llm_model_name"] in ['gemini-3-pro-preview']:
-                    llm_params["reasoning_effort"] = "low"
                     for m in prompt:
                         if 'tool_calls' in m and m.get('tool_calls', None):
                             calls = m.get('tool_calls', [{}])

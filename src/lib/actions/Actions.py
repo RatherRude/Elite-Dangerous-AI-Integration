@@ -1370,6 +1370,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
                      weapon_types_list: list | None = None,
                      agent_llm_client: openai.OpenAI | None = None,
                      agent_llm_model_name: str | None = None,
+                     agent_llm_reasoning_effort: str | None = None,
                      agent_llm_temperature: float | None = None,
                      agent_llm_max_tries: int = 7):
     global event_manager, vision_client, llm_client, llm_model_name, vision_model_name, keys, weapon_types
@@ -2440,7 +2441,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
 
     register_web_actions(
         actionManager, eventManager,
-        promptGenerator, agent_llm_client, agent_llm_model_name,
+        promptGenerator, agent_llm_client, agent_llm_model_name, agent_llm_reasoning_effort,
         embeddingClient, embeddingModelName,
         agent_llm_temperature,
         agent_llm_max_tries

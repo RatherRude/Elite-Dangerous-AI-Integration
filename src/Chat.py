@@ -360,6 +360,7 @@ class Chat:
                 weapon_types_list=self.config.get("weapon_types", []),
                 agent_llm_client=self.agent_llm_client,
                 agent_llm_model_name=self.config["agent_llm_model_name"],
+                agent_llm_reasoning_effort=self.config.get("agent_llm_reasoning_effort", None),
                 agent_llm_temperature=self.config.get("agent_llm_temperature", 1.0),
                 agent_llm_max_tries=self.config.get("agent_llm_max_tries", 7),
             )

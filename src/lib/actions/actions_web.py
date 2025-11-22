@@ -16,6 +16,7 @@ from ..Logger import log
 
 llm_client: openai.OpenAI | None = None
 llm_model_name: str | None = None
+llm_reasoning_effort: str | None = None
 embedding_client: openai.OpenAI | None = None
 embedding_model_name: str | None = None
 event_manager: EventManager | None = None
@@ -28,11 +29,15 @@ def web_search_agent(
         llm_client: openai.OpenAI  | None = None,
         llm_model_name: str | None = None,
         temperature: float | None = None,
-        max_loops: int | None = None,
+        max_loops: int = 7,
+        reasoning_effort: str | None = None,
      ):
     """
     Uses an agentic loop to answer a web-related query by calling various internal tools.
     """
+    if not llm_client or not llm_model_name:
+        return "LLM client or model name not configured."
+    
     query = obj.get('query')
     if not query:
         return "Please provide a query for the web search."
@@ -224,13 +229,16 @@ def web_search_agent(
 
     for _ in range(max_loops):
         try:
+            add_args = {}
+            if reasoning_effort and reasoning_effort != 'default':
+                add_args['reasoning_effort'] = reasoning_effort
             completion = llm_client.chat.completions.create(
                 model=llm_model_name,
                 messages=messages,
-                seed=42,
                 tools=tools,
                 tool_choice="auto",
                 temperature=temperature,
+                **add_args,
             )
 
             response_message = completion.choices[0].message
@@ -281,7 +289,8 @@ def web_search(obj, projected_states):
         llm_client=llm_client,
         llm_model_name=llm_model_name,
         temperature=llm_temperature,
-        max_loops=agent_max_tries
+        max_loops=agent_max_tries,
+        reasoning_effort=llm_reasoning_effort
     )
     return res
 
@@ -2100,15 +2109,17 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
                         promptGenerator: PromptGenerator,
                          llmClient: openai.OpenAI | None,
                          llmModelName: str | None,
+                         llmReasoningEffort: str | None,
                          embeddingClient: openai.OpenAI | None,
                          embeddingModelName: str | None,
                          llmTemperature: float | None = None,
                          agentMaxTries: int = 7):
-    global event_manager, llm_client, llm_model_name, embedding_model_name, embedding_client, prompt_generator, llm_temperature, agent_max_tries
+    global event_manager, llm_client, llm_model_name, llm_reasoning_effort, embedding_model_name, embedding_client, prompt_generator, llm_temperature, agent_max_tries
     event_manager = eventManager
     prompt_generator = promptGenerator
     llm_client = llmClient
     llm_model_name = llmModelName
+    llm_reasoning_effort = llmReasoningEffort
     embedding_model_name = embeddingModelName
     embedding_client = embeddingClient
     llm_temperature = llmTemperature if llmTemperature is not None else 1.0

@@ -1,4 +1,5 @@
 from __future__ import annotations
+from datetime import datetime
 
 from typing import Any
 import os
@@ -103,7 +104,9 @@ async def run_sample(sample: Sample) -> SampleResult:
         {**dummy_projected_state, **sample.projected_states},
         prompt_generator=web_search_prompt_generator,
         llm_client=web_search_agent_llm_client,
-        llm_model_name=os.environ.get("OPENAI_MODEL_NAME_AGENT", "gpt-4.1")
+        llm_model_name=os.environ.get("OPENAI_MODEL_NAME_AGENT", "gpt-4.1"),
+        max_loops=7,
+        reasoning_effort=os.environ.get("OPENAI_REASONING_AGENT", None) or None,
     ) or ""
     return SampleResult(answer=res)
 
@@ -514,5 +517,20 @@ web_tool_dataset = Dataset[Sample, SampleResult, Any](
     ],
 )
 
+import asyncio
+asyncio.run(run_sample(web_tool_dataset.cases[0].inputs))
 report = web_tool_dataset.evaluate_sync(run_sample, max_concurrency=4)
-report.print(include_input=True, include_output=True, include_expected_output=True, include_durations=True, include_reasons=True)
+report.print(include_input=True, include_output=True, include_expected_output=True, include_durations=True, include_reasons=True, include_error_stacktrace=True)
+result = report.render(include_input=True, include_output=True, include_expected_output=True, include_durations=True, include_reasons=True)
+with open("web_tool_dataset_report.md", "a") as f:
+    ts = datetime.now().isoformat()
+    model_name_agent = os.environ.get("OPENAI_MODEL_NAME_AGENT", "gpt-4.1")
+    reasoning_effort = os.environ.get("OPENAI_REASONING_AGENT", "<unset>") or "<unset>"
+    model_name_judge = os.environ.get("OPENAI_MODEL_NAME_JUDGE", "gpt-4.1")
+    f.write(f"\n\n# New Run {ts}\n\n")
+    f.write(f"**Timestamp:** {ts}\n\n")
+    f.write(f"**Agent Model:** {model_name_agent}\n\n")
+    f.write(f"**Reasoning Effort:** {reasoning_effort}\n\n")
+    f.write(f"**Judge Model:** {model_name_judge}\n\n")
+    f.write(f"## Report {model_name_agent} ({reasoning_effort})\n\n")
+    f.write(result)
