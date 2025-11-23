@@ -522,7 +522,7 @@ asyncio.run(run_sample(web_tool_dataset.cases[0].inputs))
 report = web_tool_dataset.evaluate_sync(run_sample, max_concurrency=4)
 report.print(include_input=True, include_output=True, include_expected_output=True, include_durations=True, include_reasons=True, include_error_stacktrace=True)
 result = report.render(include_input=True, include_output=True, include_expected_output=True, include_durations=True, include_reasons=True)
-with open("web_tool_dataset_report.md", "a") as f:
+with open("web_tool_dataset_report.md", "a", encoding="utf-8") as f:
     ts = datetime.now().isoformat()
     model_name_agent = os.environ.get("OPENAI_MODEL_NAME_AGENT", "gpt-4.1")
     reasoning_effort = os.environ.get("OPENAI_REASONING_AGENT", "<unset>") or "<unset>"
