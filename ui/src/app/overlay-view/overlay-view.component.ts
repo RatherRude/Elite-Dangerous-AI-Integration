@@ -28,6 +28,7 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
   characterColorMap: Record<string, string> = {};
   activeCharacters: {
     name: string;
+    normalizedName: string;
     color: string;
     voice?: string;
     avatarId?: string;
@@ -37,6 +38,8 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
 
   
   private currentAvatarUrl: string | null = null;
+  private primaryAvatarUrl: string | null = null;
+  speakingCharacterName: string | null = null;
   private subscriptions: Subscription[] = [];
 
   // Overlay display settings
@@ -79,8 +82,28 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
     // Subscribe to avatar URL changes from character service
     this.subscriptions.push(
       characterService.avatarUrl$.subscribe(avatarUrl => {
-        this.currentAvatarUrl = avatarUrl;
-        this.applyAvatarBackground();
+        this.primaryAvatarUrl = avatarUrl;
+        if (!this.speakingCharacterName) {
+          this.setCurrentAvatarUrl(avatarUrl);
+        }
+      })
+    );
+
+    // Track which character is currently speaking
+    this.subscriptions.push(
+      pngTuberService.speakingCharacter$.subscribe(activeSpeaker => {
+        if (!activeSpeaker || !activeSpeaker.name) {
+          this.speakingCharacterName = null;
+          this.setCurrentAvatarUrl(this.primaryAvatarUrl);
+          return;
+        }
+        this.speakingCharacterName = activeSpeaker.name;
+        const avatarUrl = this.getAvatarUrlForName(activeSpeaker.name);
+        if (avatarUrl) {
+          this.setCurrentAvatarUrl(avatarUrl);
+        } else {
+          this.setCurrentAvatarUrl(this.primaryAvatarUrl);
+        }
       })
     );
 
@@ -195,7 +218,7 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
     while ((match = regex.exec(message)) !== null) {
       this.appendSegments(segments, message.slice(lastIndex, match.index), currentColor);
 
-      const label = match[1]?.trim().toLowerCase() ?? "";
+      const label = this.normalizeName(match[1]);
       currentColor = label && this.characterColorMap[label] ? this.characterColorMap[label] : defaultColor;
       lastIndex = regex.lastIndex;
     }
@@ -232,8 +255,10 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
     for (const idx of activeIndexes) {
       if (typeof idx !== "number") continue;
       const character = config.characters[idx] as Character | undefined;
-      if (!character || !character.name) continue;
-      map[character.name.toLowerCase()] = this.normalizeColor(character.color);
+      if (!character) continue;
+      const normalizedName = this.normalizeName(character.name ?? `Character ${idx + 1}`);
+      if (!normalizedName) continue;
+      map[normalizedName] = this.normalizeColor(character.color);
     }
 
     return map;
@@ -261,8 +286,10 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
       const character = config.characters[idx] as Character | undefined;
       if (!character) continue;
       const avatarId = character.avatar ?? undefined;
+      const displayName = character.name ?? `Character ${idx + 1}`;
       const info = {
-        name: character.name ?? `Character ${idx + 1}`,
+        name: displayName,
+        normalizedName: this.normalizeName(displayName),
         color: this.normalizeColor(character.color),
         voice: character.tts_voice,
         avatarId,
@@ -274,6 +301,9 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
           if (url) {
             this.avatarUrlCache[avatarId] = url;
             info.avatarUrl = url;
+            if (this.isCharacterSpeaking(info.name)) {
+              this.setCurrentAvatarUrl(url);
+            }
           }
         });
       }
@@ -282,6 +312,14 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
     }
 
     this.activeCharacters = infoList;
+    if (this.speakingCharacterName) {
+      const avatar = this.getAvatarUrlForName(this.speakingCharacterName);
+      if (avatar) {
+        this.setCurrentAvatarUrl(avatar);
+      } else {
+        this.setCurrentAvatarUrl(this.primaryAvatarUrl);
+      }
+    }
   }
 
   private reformatChatMessages(): void {
@@ -289,5 +327,53 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
       ...msg,
       segments: this.formatMessageSegments(msg.message),
     }));
+  }
+
+  private normalizeName(value?: string | null): string {
+    return (value ?? "").trim().toLowerCase();
+  }
+
+  public isCharacterSpeaking(name?: string): boolean {
+    if (!name || !this.speakingCharacterName) {
+      return false;
+    }
+    return this.normalizeName(name) === this.normalizeName(this.speakingCharacterName);
+  }
+
+  public getColorForName(name: string): string {
+    const normalized = this.normalizeName(name);
+    return this.characterColorMap[normalized] ?? "#ffffff";
+  }
+
+  private getAvatarUrlForName(name: string): string | null {
+    const normalized = this.normalizeName(name);
+    if (!normalized) return null;
+    const match = this.activeCharacters.find(char => char.normalizedName === normalized);
+    if (!match) return null;
+    if (match.avatarUrl) {
+      return match.avatarUrl;
+    }
+    if (match.avatarId && this.avatarUrlCache[match.avatarId]) {
+      match.avatarUrl = this.avatarUrlCache[match.avatarId];
+      return match.avatarUrl;
+    }
+    if (match.avatarId) {
+      const avatarKey = match.avatarId;
+      this.avatarService.getAvatar(avatarKey).then(url => {
+        if (url) {
+          this.avatarUrlCache[avatarKey] = url;
+          match.avatarUrl = url;
+          if (this.isCharacterSpeaking(match.name)) {
+            this.setCurrentAvatarUrl(url);
+          }
+        }
+      });
+    }
+    return null;
+  }
+
+  private setCurrentAvatarUrl(url: string | null): void {
+    this.currentAvatarUrl = url;
+    this.applyAvatarBackground();
   }
 }

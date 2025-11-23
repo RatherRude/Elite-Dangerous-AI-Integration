@@ -17,10 +17,10 @@ from .actions.Actions import set_speed, fire_weapons, get_visuals
 
 @final
 class Assistant:
-    def __init__(self, config: Config, enabled_game_events: list[str], event_manager: EventManager, action_manager: ActionManager, llmClient: OpenAI, tts: TTS, prompt_generator: PromptGenerator, embeddingClient: OpenAI | None = None, disabled_game_events: list[str] | None = None):
+    def __init__(self, config: Config, enabled_game_events: list[str], event_manager: EventManager, action_manager: ActionManager, llmClient: OpenAI, tts: TTS, prompt_generator: PromptGenerator, disabled_game_events: list[str], embeddingClient: OpenAI | None = None):
         self.config = config
         self.enabled_game_events = enabled_game_events
-        self.disabled_game_events = disabled_game_events if disabled_game_events is not None else []
+        self.disabled_game_events = disabled_game_events
         self.event_manager = event_manager
         self.action_manager = action_manager
         self.llmClient = llmClient

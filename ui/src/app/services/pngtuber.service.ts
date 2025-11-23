@@ -1,9 +1,18 @@
 import { Injectable } from "@angular/core";
 import { BaseMessage, TauriService } from "./tauri.service";
-import {BehaviorSubject} from "rxjs";
+import {BehaviorSubject, filter} from "rxjs";
 import {ChatMessage, ChatService} from "./chat.service";
 import {EventService} from "./event.service";
 import {CharacterService} from "./character.service";
+
+interface OverlayVoiceMessage extends BaseMessage {
+    type: "overlay_voice";
+    character?: {
+        name?: string;
+        voice?: string;
+        provider?: string;
+    }
+}
 
 @Injectable({
     providedIn: "root",
@@ -26,6 +35,8 @@ export class PngTuberService {
 
     private chatPreviewSubject = new BehaviorSubject<ChatMessage[]>([])
     public chatPreview$ = this.chatPreviewSubject.asObservable()
+    private speakingCharacterSubject = new BehaviorSubject<{ name: string; voice?: string } | null>(null);
+    public speakingCharacter$ = this.speakingCharacterSubject.asObservable();
 
     constructor(
         private tauriService: TauriService,
@@ -43,6 +54,19 @@ export class PngTuberService {
                 }
             },
         );
+        this.tauriService.output$.pipe(
+            filter((message): message is OverlayVoiceMessage => message.type === "overlay_voice")
+        ).subscribe(message => {
+            const name = message.character?.name?.trim();
+            if (!name) {
+                this.speakingCharacterSubject.next(null);
+                return;
+            }
+            this.speakingCharacterSubject.next({
+                name,
+                voice: message.character?.voice,
+            });
+        });
         this.eventService.events$.subscribe(
             (messages)=> {
                 const message = messages.at(-1)!;
@@ -57,6 +81,7 @@ export class PngTuberService {
                 }
                 if (message.event.kind === 'assistant_completed') {
                     this.actionSubject.next('idle');
+                    this.speakingCharacterSubject.next(null);
                 }
                 if (message.event.kind === 'assistant_acting') {
                     this.actionSubject.next('acting');

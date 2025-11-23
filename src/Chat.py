@@ -50,11 +50,9 @@ class Chat:
         self.backstory = self.character["character"].replace("{commander_name}", self.config['commander_name'])
 
         self.enabled_game_events: list[str] = []
-        disabled_events = self.character.get("disabled_game_events", [])
-        if self.character["event_reaction_enabled_var"]:
-            for event, state in self.character["game_events"].items():
-                if state and event not in disabled_events:
-                    self.enabled_game_events.append(event)
+        self.disabled_game_events: list[str] = []
+        self.enabled_event_character_map: dict[str, list[str]] = {}
+        self._build_game_event_lists()
 
         log("debug", "Initializing Controller Manager...")
         self.controller_manager = ControllerManager()
@@ -121,6 +119,7 @@ class Chat:
             speed=self.character["tts_speed"],
             output_device=self.config["output_device_name"],
             character_voices=self._build_voice_overrides(),
+            primary_character_name=self.character.get("name", "Primary Character"),
         )
         self.stt = STT(openai_client=self.sttClient, provider=self.config["stt_provider"], input_device_name=self.config["input_device_name"], model=self.config["stt_model_name"], language=self.config["stt_language"], custom_prompt=self.config["stt_custom_prompt"], required_word=self.config["stt_required_word"])
 
@@ -140,8 +139,9 @@ class Chat:
             important_game_events=self.enabled_game_events,
             system_db=self.system_database,
             weapon_types=cast(list[dict], self.config.get("weapon_types", [])),
-            disabled_game_events=disabled_events,
+            disabled_game_events=self.disabled_game_events,
             config=self.config,
+            enabled_event_character_map=self.enabled_event_character_map,
         )
 
         log("debug", "Initializing event manager...")
@@ -159,7 +159,7 @@ class Chat:
             tts=self.tts,
             prompt_generator=self.prompt_generator,
             embeddingClient=self.embeddingClient,
-            disabled_game_events=disabled_events
+            disabled_game_events=self.disabled_game_events
         )
         self.is_replying = False
         self.listening = False
@@ -455,9 +455,7 @@ class Chat:
         if not isinstance(characters, list):
             return overrides
 
-        active_indexes = self.config.get('active_characters') or []
-        if not active_indexes and isinstance(self.config.get('active_character_index'), int):
-            active_indexes = [self.config['active_character_index']]
+        active_indexes = self._get_active_character_indexes()
 
         for idx in active_indexes:
             if isinstance(idx, int) and 0 <= idx < len(characters):
@@ -468,6 +466,83 @@ class Chat:
                     overrides[name.lower()] = voice
 
         return overrides
+
+    def _get_active_character_indexes(self) -> list[int]:
+        characters = self.config.get('characters', [])
+        if not isinstance(characters, list):
+            return []
+
+        indexes: list[int] = []
+        raw_indexes = self.config.get('active_characters')
+
+        if isinstance(raw_indexes, list) and raw_indexes:
+            candidates = raw_indexes
+        elif isinstance(self.config.get('active_character_index'), int):
+            candidates = [self.config['active_character_index']]
+        else:
+            candidates = []
+
+        for idx in candidates:
+            if isinstance(idx, int) and 0 <= idx < len(characters) and idx not in indexes:
+                indexes.append(idx)
+
+        return indexes
+
+    def _build_game_event_lists(self) -> None:
+        self.enabled_game_events = []
+        self.disabled_game_events = []
+        self.enabled_event_character_map = {}
+
+        characters = self.config.get('characters', [])
+        if not isinstance(characters, list):
+            return
+
+        enabled_seen: set[str] = set()
+        disabled_seen: set[str] = set()
+        event_characters: dict[str, list[str]] = {}
+
+        active_indexes = self._get_active_character_indexes()
+        if not active_indexes and isinstance(self.config.get('active_character_index'), int):
+            active_indexes = [self.config['active_character_index']]
+
+        for idx in active_indexes:
+            if not isinstance(idx, int) or not (0 <= idx < len(characters)):
+                continue
+            character = characters[idx]
+            if not isinstance(character, dict):
+                continue
+
+            disabled_list = character.get("disabled_game_events") or []
+            if not isinstance(disabled_list, list):
+                disabled_list = []
+            disabled_local = {event for event in disabled_list if isinstance(event, str) and event}
+            for event in disabled_local:
+                if event not in disabled_seen:
+                    disabled_seen.add(event)
+                    self.disabled_game_events.append(event)
+
+            if not character.get("event_reaction_enabled_var"):
+                continue
+
+            game_events = character.get("game_events") or {}
+            if not isinstance(game_events, dict):
+                continue
+
+            char_name = character.get("name") or f"Character {idx}"
+
+            for event_name, state in game_events.items():
+                if not state or not isinstance(event_name, str) or not event_name:
+                    continue
+                if event_name in disabled_local:
+                    continue
+                if event_name not in enabled_seen:
+                    enabled_seen.add(event_name)
+                    self.enabled_game_events.append(event_name)
+                slot = event_characters.setdefault(event_name, [])
+                if char_name not in slot:
+                    slot.append(char_name)
+
+        self.enabled_event_character_map = event_characters
 
 
 def read_stdin(chat: Chat):

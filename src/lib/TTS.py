@@ -13,6 +13,7 @@ import strip_markdown
 from num2words import num2words
 
 from .Logger import log, observe, show_chat_message
+from .UI import send_message
 
 
 @final
@@ -73,7 +74,18 @@ class Mp3Stream(miniaudio.StreamableSource):
 
 @final
 class TTS:
-    def __init__(self, openai_client: Optional[openai.OpenAI] = None, provider: Literal['openai', 'edge-tts', 'custom', 'none', 'local-ai-server'] | str ='openai', voice="nova", voice_instructions="", model='tts-1',  speed: Union[str,float]=1, output_device: Optional[str] = None, character_voices: Optional[dict[str, str]] = None):
+    def __init__(
+        self,
+        openai_client: Optional[openai.OpenAI] = None,
+        provider: Literal['openai', 'edge-tts', 'custom', 'none', 'local-ai-server'] | str = 'openai',
+        voice="nova",
+        voice_instructions="",
+        model='tts-1',
+        speed: Union[str, float] = 1,
+        output_device: Optional[str] = None,
+        character_voices: Optional[dict[str, str]] = None,
+        primary_character_name: Optional[str] = None,
+    ):
         self.openai_client = openai_client
         self.provider = provider
         self.model = model
@@ -81,6 +93,8 @@ class TTS:
         self.voice_instructions = voice_instructions
 
         self.speed = speed
+        self.primary_character_name = (primary_character_name or "").strip() or "Primary Character"
+        self.primary_character_key = self.primary_character_name.lower()
         self.character_voices = {
             k.lower(): v
             for k, v in (character_voices or {}).items()
@@ -92,6 +106,9 @@ class TTS:
         self.read_queue = queue.Queue()
         self.is_aborted = False
         self._is_playing = False
+        self._last_announced_voice: Optional[str] = None
+        self._last_announced_speaker: Optional[str] = None
+        self._overlay_refresh_required = False
         self.prebuffer_size = 4
         self.output_format = pyaudio.paInt16
         self.frames_per_buffer = 1024
@@ -136,15 +153,18 @@ class TTS:
             while not self.is_aborted:
                 if not self.read_queue.empty():
                     self._is_playing = True
-                    voice, text = self.read_queue.get()
+                    voice, text, speaker = self.read_queue.get()
                     try:
+                        self._announce_voice_start(speaker, voice)
                         self._playback_one(text, stream, voice)
                     except Exception as e:
-                        self.read_queue.put((voice, text))
+                        self.read_queue.put((voice, text, speaker))
                         raise e
+                    continue
 
+                if self._is_playing:
+                    self._mark_overlay_idle()
                 self._is_playing = False
-
                 sleep(0.1)
             self._is_playing = False
             stream.stop_stream()
@@ -256,6 +276,7 @@ class TTS:
             self.read_queue.get()
 
         self.is_aborted = True
+        self._mark_overlay_idle()
 
     def get_is_playing(self):
         return self._is_playing or not self.read_queue.empty()
@@ -270,31 +291,71 @@ class TTS:
         cleaned = re.sub(r"\s+", " ", cleaned)
         return cleaned.strip()
 
-    def _segment_text(self, text: str) -> list[tuple[str, str]]:
-        segments: list[tuple[str, str]] = []
+    def _segment_text(self, text: str) -> list[tuple[str, str, str]]:
+        segments: list[tuple[str, str, str]] = []
         current_voice = self.voice
+        current_speaker = self.primary_character_name
         pattern = re.compile(r"\(([^)]+)\)")
         last_idx = 0
         for match in pattern.finditer(text):
             chunk = text[last_idx:match.start()]
             cleaned_chunk = self._strip(chunk)
             if cleaned_chunk:
-                segments.append((current_voice, cleaned_chunk))
+                segments.append((current_voice, cleaned_chunk, current_speaker))
             label = match.group(1).strip()
-            current_voice = self._voice_for_label(label)
+            if label:
+                voice_data = self._match_voice_and_speaker(label)
+                if voice_data:
+                    current_voice, current_speaker = voice_data
             last_idx = match.end()
         tail = self._strip(text[last_idx:])
         if tail:
-            segments.append((current_voice, tail))
+            segments.append((current_voice, tail, current_speaker))
         if not segments:
-            segments.append((self.voice, self._strip(text)))
+            segments.append((self.voice, self._strip(text), self.primary_character_name))
         return segments
 
     def _voice_for_label(self, label: str) -> str:
-        key = label.lower()
-        if key in self.character_voices:
-            return self.character_voices[key]
+        voice_data = self._match_voice_and_speaker(label)
+        if voice_data:
+            return voice_data[0]
         return self.voice
+
+    def _match_voice_and_speaker(self, label: str) -> Optional[tuple[str, str]]:
+        cleaned = label.strip()
+        if not cleaned:
+            return None
+        key = cleaned.lower()
+        if key in self.character_voices:
+            return self.character_voices[key], cleaned
+        if key == self.primary_character_key:
+            return self.voice, self.primary_character_name
+        return None
+
+    def _mark_overlay_idle(self) -> None:
+        self._overlay_refresh_required = True
+
+    def _announce_voice_start(self, speaker_name: Optional[str], voice: str):
+        name = (speaker_name or self.primary_character_name or "").strip()
+        if not name:
+            return
+        if (
+            not self._overlay_refresh_required
+            and voice == self._last_announced_voice
+            and name == self._last_announced_speaker
+        ):
+            return
+        self._last_announced_voice = voice
+        self._last_announced_speaker = name
+        self._overlay_refresh_required = False
+        send_message({
+            "type": "overlay_voice",
+            "character": {
+                "name": name,
+                "voice": voice,
+                "provider": self.provider,
+            },
+        })
 
     def quit(self):
         pass

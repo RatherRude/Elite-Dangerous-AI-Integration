@@ -103,6 +103,7 @@ web_search_prompt_generator = PromptGenerator(
     weapon_types=None,
     disabled_game_events=None,
     config={"characters": []},
+    enabled_event_character_map={},
 )
 
 async def run_sample(sample: Sample) -> SampleResult:

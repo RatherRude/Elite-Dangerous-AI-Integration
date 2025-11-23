@@ -7,23 +7,12 @@
              [ngClass]="action"
              *ngIf="avatarShow"
              #pngtuberElement></div>
-        <div class="overlay-character-info" *ngIf="activeCharacters.length">
-            @for (character of activeCharacters; track character.name) {
-                <div class="character-chip">
-                    <div class="chip-avatar" [style.border-color]="character.color">
-                        @if (character.avatarUrl) {
-                            <img [src]="character.avatarUrl" [alt]="character.name + ' avatar'">
-                        } @else {
-                            <span class="chip-color" [style.background-color]="character.color"></span>
-                        }
-                    </div>
-                    <div class="chip-details">
-                        <span class="chip-name" [style.color]="character.color">{{ character.name }}</span>
-                        <span class="chip-voice" *ngIf="character.voice">({{ character.voice }})</span>
-                    </div>
-                </div>
-            }
-        </div>
+<!--        <div class="current-speaker" *ngIf="speakingCharacterName">-->
+<!--            <span class="speaker-label">Speaking:</span>-->
+<!--            <span class="speaker-name" [style.color]="getColorForName(speakingCharacterName)">-->
+<!--                {{ speakingCharacterName }}-->
+<!--            </span>-->
+<!--        </div>-->
         <div class="overlay-chat" *ngIf="chatShow">
 <!--            <p class="ready-text" *ngIf="runMode=='starting'">System preparing...</p>-->
             @for (msg of chat; track msg.index) {

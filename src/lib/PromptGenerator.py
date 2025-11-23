@@ -50,7 +50,17 @@ LocationEvent = dict
 NavRouteEvent = dict
 
 class PromptGenerator:
-    def __init__(self, commander_name: str, character_prompt: str, important_game_events: list[str], system_db: SystemDatabase, weapon_types: list[dict] | None = None, disabled_game_events: list[str] | None = None, config: dict[str, Any] | None = None):
+    def __init__(
+        self,
+        commander_name: str,
+        character_prompt: str,
+        important_game_events: list[str],
+        system_db: SystemDatabase,
+        weapon_types: list[dict] | None = None,
+        disabled_game_events: list[str] | None = None,
+        config: dict[str, Any] | None = None,
+        enabled_event_character_map: dict[str, list[str]] | None = None,
+    ):
         self.registered_prompt_event_handlers: list[Callable[[Event], str|None]] = []
         self.registered_status_generators: list[Callable[[dict[str, dict]], list[tuple[str, Any]]]] = []
         self.commander_name = commander_name
@@ -58,8 +68,27 @@ class PromptGenerator:
         self.important_game_events = important_game_events
         self.disabled_game_events = disabled_game_events if disabled_game_events is not None else []
         self.system_db = system_db
-        self.weapon_types: list[dict] = weapon_types if weapon_types is not None else []
-        self.config = config or {}
+        self.weapon_types= weapon_types
+        self.config = config
+        self.enabled_event_character_map: dict[str, list[str]] = {}
+        if enabled_event_character_map:
+            for event_name, character_list in enabled_event_character_map.items():
+                if not isinstance(event_name, str):
+                    continue
+                if not isinstance(character_list, list):
+                    continue
+                unique_names: list[str] = []
+                seen: set[str] = set()
+                for name in character_list:
+                    if not isinstance(name, str):
+                        continue
+                    trimmed = name.strip()
+                    if not trimmed or trimmed in seen:
+                        continue
+                    seen.add(trimmed)
+                    unique_names.append(trimmed)
+                if unique_names:
+                    self.enabled_event_character_map[event_name] = unique_names
 
         # Pad map for station docking positions
         self.pad_map = {
@@ -2347,12 +2376,37 @@ class PromptGenerator:
 
         return None
 
+    def _extract_event_name(self, event: Union[GameEvent, ProjectedEvent, ExternalEvent]) -> str | None:
+        content = getattr(event, "content", None)
+        if isinstance(content, dict):
+            name = content.get("event")
+            if isinstance(name, str):
+                return name
+        fallback = getattr(event, "event", None)
+        return fallback if isinstance(fallback, str) else None
+
+    def _get_event_characters(self, event_name: str | None) -> list[str]:
+        if not event_name:
+            return []
+        return self.enabled_event_character_map.get(event_name, [])
+
+    def _format_event_header(self, event_name: str | None, timeoffset: str, is_important: bool) -> str:
+        importance_prefix = ""
+        if is_important:
+            characters = self._get_event_characters(event_name)
+            if characters:
+                importance_prefix = f"IMPORTANT ({', '.join(characters)}) "
+            else:
+                importance_prefix = "IMPORTANT "
+        return f"[{importance_prefix}Game Event, {timeoffset}]"
+
     def event_message(self, event: Union[GameEvent, ProjectedEvent, ExternalEvent], timeoffset: str, is_important: bool):
         message = self.get_event_template(event)
         if message:
+            header = self._format_event_header(self._extract_event_name(event), timeoffset, is_important)
             return {
                 "role": "user",
-                "content": f"[{'IMPORTANT ' if is_important else ''}Game Event, {timeoffset}] {message}",
+                "content": f"{header} {message}",
             }
 
         # Deliberately ignored events
@@ -2362,9 +2416,12 @@ class PromptGenerator:
     def status_messages(self, event: StatusEvent, timeoffset: str, is_important: bool):
         message = self.get_status_event_template(event)
         if message:
+            status_data: Any = event.status
+            event_name = status_data.get('event') if isinstance(status_data, dict) else None
+            header = self._format_event_header(event_name, timeoffset, is_important)
             return {
                 "role": "user",
-                "content": f"[{'IMPORTANT ' if is_important else ''}Game Event, {timeoffset}] {message}",
+                "content": f"{header} {message}",
             }
 
         # Deliberately ignored events
@@ -3351,7 +3408,7 @@ class PromptGenerator:
                     + "You do not ask questions or initiate conversations. You respond only when addressed and in a single sentence. "
                     + "Don't repeat the same words and sentences, mix it up. "
 
-                    + "You are playing multiple roles, each with a distinct personality and communication style. Respond as follows:\n"
+                    + "You are playing multiple roles, each with a distinct personality and communication style.\n"
                     + "\n"
                     + "Role Responses:\n"
                     + "Begin each response with (Role-Identifier). "
@@ -3361,10 +3418,10 @@ class PromptGenerator:
                     + "When multiple roles respond, use the format: "
                     + "(Role-1)Response(Role-2)Response(Role-1)Response\n"
                     + "Interactions:\n"
-                    + "Only respond when prompted or if interaction between characters is specifically requested. "
-                    + "Follow any defined behavior.\n"
-                    + "Primary Character:\n"
-                    + "The primary character issues commands and receives input. All responses are directed here unless stated otherwise.\n"
+                    + "Follow any defined behavior, avoid using multiple roles at once if possible.\n"
+                    + "The primary character issues commands and receives input. All responses are directed to the primary character unless stated otherwise."
+                    + "Only the primary character responds user queries.\n"
+                    + "Non-primary characters must not talk unless spoken to or if an event was marked as important to them. Only characters that are designated as important to that event may respond to it.\n"
                     + "Character List:\n"
                     + self._format_active_character_list(),
                 }
@@ -3387,16 +3444,16 @@ class PromptGenerator:
             active_indexes = [self.config["active_character_index"]]
 
         lines: list[str] = []
-        for idx in active_indexes:
+        for order, idx in enumerate(active_indexes):
             if not isinstance(idx, int):
                 continue
             if idx < 0 or idx >= len(characters):
                 continue
             character = characters[idx]
             name = character.get("name", f"Character {idx}")
-            prompt = character.get("character", "").strip()
+            prompt = character.get("character", "").strip().replace("\n", "\n  ").format(commander_name=self.commander_name)
             formatted_prompt = prompt if prompt else "No additional prompt provided."
-            lines.append(f"- ({name})\n  Prompt: {formatted_prompt}")
+            lines.append(f"- {"Primary character " if order == 0 else ""}({name})\n  Prompt: {formatted_prompt}")
 
         if not lines:
             lines.append("- (Primary)\n  Prompt: No additional prompt provided.")

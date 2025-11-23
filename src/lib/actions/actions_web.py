@@ -227,7 +227,6 @@ def web_search_agent(
             completion = llm_client.chat.completions.create(
                 model=llm_model_name,
                 messages=messages,
-                seed=42,
                 tools=tools,
                 tool_choice="auto",
                 temperature=temperature,

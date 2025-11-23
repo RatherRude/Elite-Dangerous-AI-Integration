@@ -85,59 +85,24 @@
 
 }
 
-.overlay-character-info {
+.current-speaker {
   display: flex;
-  flex-direction: column;
+  align-items: baseline;
   gap: 8px;
   padding: 8px 24px;
+  font-size: 1.1rem;
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.55);
 }
 
-.character-chip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(0, 0, 0, 0.35);
-  padding: 6px 10px;
-  border-radius: 8px;
-}
-
-.chip-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 2px solid transparent;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.chip-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.chip-color {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  display: block;
-}
-
-.chip-details {
-  display: flex;
-  flex-direction: column;
-  line-height: 1;
-}
-
-.chip-name {
-  font-weight: 600;
-}
-
-.chip-voice {
-  font-size: 0.8rem;
+.speaker-label {
   color: #ccc;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.85rem;
+}
+
+.speaker-name {
+  font-weight: 600;
 }
 
 
