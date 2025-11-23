@@ -446,6 +446,7 @@ class Assistant:
     def register_should_reply_handler(self, handler: Callable[[Event, dict[str, Any]], bool | None]):
         self.registered_should_reply_handlers.append(handler)
 
+    @observe()
     def web_search(self, query: str, projected_states: dict[str, Any]):
         action_name = 'web_search_agent'
         action_descriptor = self.action_manager.actions.get(action_name)
