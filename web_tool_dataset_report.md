@@ -14678,3 +14678,2676 @@
 ├───────────────────────────────┼───────────────────────────────┼───────────────────────────────┼───────────────────────────────┼───────────────────────────────┼──────────┤
 │ Averages                      │                               │                               │                               │ 69.2% ✔                       │     7.9s │
 └───────────────────────────────┴───────────────────────────────┴───────────────────────────────┴───────────────────────────────┴───────────────────────────────┴──────────┘
+
+
+# New Run 2025-11-23T00:56:34.484098
+
+**Timestamp:** 2025-11-23T00:56:34.484098
+
+**Agent Model:** gemini-2.5-flash-lite-preview-09-2025
+
+**Reasoning Effort:** high
+
+**Judge Model:** openai/gpt-5-mini
+
+## Report gemini-2.5-flash-lite-preview-09-2025 (high)
+
+                                                            Evaluation Summary: run_sample                                                             
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┓
+┃ Case ID                   ┃ Inputs                    ┃ Expected Output           ┃ Outputs                  ┃ Assertions                ┃ Duration ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━┩
+│ system name sirius        │ query='find system named  │ answer='Sirius'           │ answer='The user         │ LLMJudge: ✔               │     2.8s │
+│                           │ Sirius'                   │                           │ requested to find the    │   Reason: The provided    │          │
+│                           │ projected_states={}       │                           │ star system named        │ output explicitly states  │          │
+│                           │                           │                           │ "Sirius". I used the     │ 'The system found is      │          │
+│                           │                           │                           │ `system_finder` tool     │ Sirius' and includes      │          │
+│                           │                           │                           │ with the system name as  │ additional details about  │          │
+│                           │                           │                           │ the search               │ the Sirius system,        │          │
+│                           │                           │                           │ criterion.\n\n**Search   │ satisfying the            │          │
+│                           │                           │                           │ Parameters Used:**\n*    │ requirement to mention    │          │
+│                           │                           │                           │ **Name:**                │ the expected output.      │          │
+│                           │                           │                           │ Sirius\n\n**Answer:**\nT │                           │          │
+│                           │                           │                           │ he system found is       │                           │          │
+│                           │                           │                           │ **Sirius**.\n\nHere are  │                           │          │
+│                           │                           │                           │ the details for the      │                           │          │
+│                           │                           │                           │ Sirius system:\n*        │                           │          │
+│                           │                           │                           │ **Allegiance:**          │                           │          │
+│                           │                           │                           │ Independent\n*           │                           │          │
+│                           │                           │                           │ **Security:** High\n*    │                           │          │
+│                           │                           │                           │ **Primary Economy:**     │                           │          │
+│                           │                           │                           │ Industrial\n*            │                           │          │
+│                           │                           │                           │ **Population:**          │                           │          │
+│                           │                           │                           │ 2,501,068\n*   **Minor   │                           │          │
+│                           │                           │                           │ Faction:** Sirius        │                           │          │
+│                           │                           │                           │ Corporation (State:      │                           │          │
+│                           │                           │                           │ Boom)\n*   **Contents:** │                           │          │
+│                           │                           │                           │ It contains 4 celestial  │                           │          │
+│                           │                           │                           │ bodies and 9             │                           │          │
+│                           │                           │                           │ stations.\n\n*(Note: The │                           │          │
+│                           │                           │                           │ distance returned in the │                           │          │
+│                           │                           │                           │ result,                  │                           │          │
+│                           │                           │                           │ 8.58874854460765, is     │                           │          │
+│                           │                           │                           │ relative to the search   │                           │          │
+│                           │                           │                           │ origin, which was not    │                           │          │
+│                           │                           │                           │ explicitly set, but for  │                           │          │
+│                           │                           │                           │ context, the user is     │                           │          │
+│                           │                           │                           │ currently in the Sol     │                           │          │
+│                           │                           │                           │ system.)*'               │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ system allied empire      │ query='find systems       │ answer='Toolfa'           │ answer='The user         │ LLMJudge: ✔               │     2.1s │
+│                           │ allied to the Empire'     │                           │ requested a list of star │   Reason: The output      │          │
+│                           │ projected_states={}       │                           │ systems allied to the    │ answers the user's query  │          │
+│                           │                           │                           │ Empire. I used the       │ and explicitly mentions   │          │
+│                           │                           │                           │ `system_finder` tool     │ 'Toolfa', which matches   │          │
+│                           │                           │                           │ with the allegiance      │ the expected output. The  │          │
+│                           │                           │                           │ parameter set to         │ response lists systems    │          │
+│                           │                           │                           │ "Empire".\n\nThe search  │ allied to the Empire and  │          │
+│                           │                           │                           │ returned the following   │ includes the required     │          │
+│                           │                           │                           │ systems allied to the    │ expected answer.          │          │
+│                           │                           │                           │ Empire:\n\n*             │                           │          │
+│                           │                           │                           │ **Toolfa**: 14.01        │                           │          │
+│                           │                           │                           │ light-years away, High   │                           │          │
+│                           │                           │                           │ Security, High Tech      │                           │          │
+│                           │                           │                           │ economy, and has 55      │                           │          │
+│                           │                           │                           │ stations.\n*   **Luyten  │                           │          │
+│                           │                           │                           │ 205-128**: 19.01         │                           │          │
+│                           │                           │                           │ light-years away, Medium │                           │          │
+│                           │                           │                           │ Security, High Tech      │                           │          │
+│                           │                           │                           │ economy, and has 9       │                           │          │
+│                           │                           │                           │ stations.\n*   **LAWD    │                           │          │
+│                           │                           │                           │ 26**: 22.53 light-years  │                           │          │
+│                           │                           │                           │ away, Low Security,      │                           │          │
+│                           │                           │                           │ Extraction economy, and  │                           │          │
+│                           │                           │                           │ has 5 stations.'         │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ system government anarchy │ query='find systems with  │ answer='WISE 0410+1502'   │ answer='I have searched  │ LLMJudge: ✔               │     3.1s │
+│                           │ an anarchy government'    │                           │ for star systems with an │   Reason: The output      │          │
+│                           │ projected_states={}       │                           │ Anarchy government using │ lists WISE 0410+1502 (as  │          │
+│                           │                           │                           │ the available            │ the first system) and     │          │
+│                           │                           │                           │ tools.\n\nI found **3**  │ thus mentions the         │          │
+│                           │                           │                           │ systems matching your    │ expected output; it       │          │
+│                           │                           │                           │ criteria out of a total  │ answers the query and     │          │
+│                           │                           │                           │ of **4233** possible     │ provides additional valid │          │
+│                           │                           │                           │ systems.\n\nThe systems  │ details.                  │          │
+│                           │                           │                           │ found are:\n\n1.  **WISE │                           │          │
+│                           │                           │                           │ 0410+1502**:\n    *      │                           │          │
+│                           │                           │                           │ **Distance**: 14.01 ly\n │                           │          │
+│                           │                           │                           │ *   **Allegiance**:      │                           │          │
+│                           │                           │                           │ Independent\n    *       │                           │          │
+│                           │                           │                           │ **Population**:          │                           │          │
+│                           │                           │                           │ 41,493,915\n    *        │                           │          │
+│                           │                           │                           │ **Primary Economy**:     │                           │          │
+│                           │                           │                           │ Industrial\n    *        │                           │          │
+│                           │                           │                           │ **Minor Faction**:       │                           │          │
+│                           │                           │                           │ Brothers of Lung (State: │                           │          │
+│                           │                           │                           │ Boom)\n    *             │                           │          │
+│                           │                           │                           │ **Stations**: 11\n\n2.   │                           │          │
+│                           │                           │                           │ **LP 658-2**:\n    *     │                           │          │
+│                           │                           │                           │ **Distance**: 21.08 ly\n │                           │          │
+│                           │                           │                           │ *   **Allegiance**:      │                           │          │
+│                           │                           │                           │ Independent\n    *       │                           │          │
+│                           │                           │                           │ **Population**:          │                           │          │
+│                           │                           │                           │ 1,822,954\n    *         │                           │          │
+│                           │                           │                           │ **Primary Economy**:     │                           │          │
+│                           │                           │                           │ Tourism\n    *   **Minor │                           │          │
+│                           │                           │                           │ Faction**: Brothers of   │                           │          │
+│                           │                           │                           │ Lung (State: Boom)\n     │                           │          │
+│                           │                           │                           │ *   **Stations**:        │                           │          │
+│                           │                           │                           │ 7\n\n3.  **WISE          │                           │          │
+│                           │                           │                           │ J0254+0223**:\n    *     │                           │          │
+│                           │                           │                           │ **Distance**: 24.22 ly\n │                           │          │
+│                           │                           │                           │ *   **Allegiance**:      │                           │          │
+│                           │                           │                           │ Independent\n    *       │                           │          │
+│                           │                           │                           │ **Population**:          │                           │          │
+│                           │                           │                           │ 125,367\n    *           │                           │          │
+│                           │                           │                           │ **Primary Economy**:     │                           │          │
+│                           │                           │                           │ Service\n    *   **Minor │                           │          │
+│                           │                           │                           │ Faction**: Brothers of   │                           │          │
+│                           │                           │                           │ Lung (State: War)\n    * │                           │          │
+│                           │                           │                           │ **Stations**:            │                           │          │
+│                           │                           │                           │ 2\n\nPlease note that I  │                           │          │
+│                           │                           │                           │ can only retrieve a      │                           │          │
+│                           │                           │                           │ small sample of the      │                           │          │
+│                           │                           │                           │ total matching results.  │                           │          │
+│                           │                           │                           │ If you require a system  │                           │          │
+│                           │                           │                           │ further away or with     │                           │          │
+│                           │                           │                           │ different                │                           │          │
+│                           │                           │                           │ characteristics (like    │                           │          │
+│                           │                           │                           │ population or economy),  │                           │          │
+│                           │                           │                           │ please specify your      │                           │          │
+│                           │                           │                           │ requirements.'           │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ system power li yong-rui  │ query='find systems       │ answer='Sirius'           │ answer='The user         │ LLMJudge: ✔               │     3.0s │
+│                           │ controlled by Li          │                           │ requested a list of star │   Reason: Output includes │          │
+│                           │ Yong-Rui'                 │                           │ systems controlled by    │ 'Sirius' as required and  │          │
+│                           │ projected_states={}       │                           │ the power **Li           │ provides additional       │          │
+│                           │                           │                           │ Yong-Rui**.\n\nI used    │ details; it therefore     │          │
+│                           │                           │                           │ the `system_finder` tool │ meets the rubric.         │          │
+│                           │                           │                           │ with the `power`         │                           │          │
+│                           │                           │                           │ parameter set to "Li     │                           │          │
+│                           │                           │                           │ Yong-Rui" to perform     │                           │          │
+│                           │                           │                           │ this search. The search  │                           │          │
+│                           │                           │                           │ identified **1470**      │                           │          │
+│                           │                           │                           │ total systems under this │                           │          │
+│                           │                           │                           │ power\'s control, and    │                           │          │
+│                           │                           │                           │ the first three results  │                           │          │
+│                           │                           │                           │ are detailed below:\n\n| │                           │          │
+│                           │                           │                           │ System Name | Allegiance │                           │          │
+│                           │                           │                           │ | Controlling Faction |  │                           │          │
+│                           │                           │                           │ State | Primary Economy  │                           │          │
+│                           │                           │                           │ | Security |\n| :--- |   │                           │          │
+│                           │                           │                           │ :--- | :--- | :--- |     │                           │          │
+│                           │                           │                           │ :--- | :--- |\n|         │                           │          │
+│                           │                           │                           │ **Sirius** | Independent │                           │          │
+│                           │                           │                           │ | Sirius Corporation |   │                           │          │
+│                           │                           │                           │ Boom | Industrial | High │                           │          │
+│                           │                           │                           │ |\n| **WISE 0410+1502**  │                           │          │
+│                           │                           │                           │ | Independent | Brothers │                           │          │
+│                           │                           │                           │ of Lung | Boom |         │                           │          │
+│                           │                           │                           │ Industrial | Anarchy     │                           │          │
+│                           │                           │                           │ |\n| **LHS 1827** |      │                           │          │
+│                           │                           │                           │ Independent | Hutton     │                           │          │
+│                           │                           │                           │ Orbital Truckers         │                           │          │
+│                           │                           │                           │ Co-Operative | Expansion │                           │          │
+│                           │                           │                           │ | Industrial | Low |'    │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ system economy            │ query='find systems with  │ answer='Epsilon Eridani'  │ answer='The request was  │ LLMJudge: ✔               │     3.4s │
+│ agriculture               │ an agriculture economy'   │                           │ to find star systems     │   Reason: The assistant   │          │
+│                           │ projected_states={}       │                           │ with an **Agriculture**  │ output lists 'Epsilon     │          │
+│                           │                           │                           │ primary economy.\n\nI    │ Eridani' as one of the    │          │
+│                           │                           │                           │ have used the            │ systems with an           │          │
+│                           │                           │                           │ `system_finder` tool     │ Agriculture primary       │          │
+│                           │                           │                           │ with the parameter       │ economy, which matches    │          │
+│                           │                           │                           │ `primary_economy:        │ the expected output. The  │          │
+│                           │                           │                           │ ["Agriculture"]`.\n\nThe │ response therefore        │          │
+│                           │                           │                           │ search returned a        │ answers the query and     │          │
+│                           │                           │                           │ partial list of matching │ includes the expected     │          │
+│                           │                           │                           │ systems (3 displayed out │ item.                     │          │
+│                           │                           │                           │ of 5426 total            │                           │          │
+│                           │                           │                           │ results):\n\n*           │                           │          │
+│                           │                           │                           │ **Epsilon Eridani**:     │                           │          │
+│                           │                           │                           │ Independent allegiance,  │                           │          │
+│                           │                           │                           │ Medium security, with a  │                           │          │
+│                           │                           │                           │ population of            │                           │          │
+│                           │                           │                           │ 80,020,906.\n*           │                           │          │
+│                           │                           │                           │ **Procyon**: Independent │                           │          │
+│                           │                           │                           │ allegiance, Medium       │                           │          │
+│                           │                           │                           │ security, with a         │                           │          │
+│                           │                           │                           │ population of            │                           │          │
+│                           │                           │                           │ 18,561,357,265.\n*       │                           │          │
+│                           │                           │                           │ **Epsilon Indi**:        │                           │          │
+│                           │                           │                           │ Independent allegiance,  │                           │          │
+│                           │                           │                           │ High security, with a    │                           │          │
+│                           │                           │                           │ population of            │                           │          │
+│                           │                           │                           │ 4,000,000,5459.\n\nPleas │                           │          │
+│                           │                           │                           │ e note that the results  │                           │          │
+│                           │                           │                           │ provided are only the    │                           │          │
+│                           │                           │                           │ first few from a very    │                           │          │
+│                           │                           │                           │ large total set of 5,426 │                           │          │
+│                           │                           │                           │ matching systems.'       │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ system low security       │ query='find low security  │ answer="Barnard's Star"   │ answer='I have searched  │ LLMJudge: ✔               │     2.7s │
+│                           │ systems'                  │                           │ for star systems with    │   Reason: The provided    │          │
+│                           │ projected_states={}       │                           │ **Low Security**.\n\nThe │ Output lists three        │          │
+│                           │                           │                           │ search parameters used   │ low-security systems and  │          │
+│                           │                           │                           │ were:\n*   **Security    │ explicitly includes       │          │
+│                           │                           │                           │ Level:** Low\n\nI found  │ 'Barnard's Star', which   │          │
+│                           │                           │                           │ the following three low  │ matches the               │          │
+│                           │                           │                           │ security systems near    │ ExpectedOutput. The       │          │
+│                           │                           │                           │ your current location in │ rubric allows extra       │          │
+│                           │                           │                           │ Sol:\n\n1.  **Alpha      │ details, so this          │          │
+│                           │                           │                           │ Centauri**: Allegiance   │ satisfies the             │          │
+│                           │                           │                           │ is Independent, with a   │ requirement.              │          │
+│                           │                           │                           │ population of 106,811,   │                           │          │
+│                           │                           │                           │ and the primary economy  │                           │          │
+│                           │                           │                           │ is Extraction. It has 1  │                           │          │
+│                           │                           │                           │ station and 9            │                           │          │
+│                           │                           │                           │ bodies.\n2.              │                           │          │
+│                           │                           │                           │ **Barnard\'s Star**:     │                           │          │
+│                           │                           │                           │ Allegiance is            │                           │          │
+│                           │                           │                           │ Independent, with a      │                           │          │
+│                           │                           │                           │ population of 1,256,069, │                           │          │
+│                           │                           │                           │ and the primary economy  │                           │          │
+│                           │                           │                           │ is Refinery. It has 117  │                           │          │
+│                           │                           │                           │ stations and 16          │                           │          │
+│                           │                           │                           │ bodies.\n3.  **WISE      │                           │          │
+│                           │                           │                           │ 0855-0714**: Allegiance  │                           │          │
+│                           │                           │                           │ is Independent, with a   │                           │          │
+│                           │                           │                           │ population of 34,825,    │                           │          │
+│                           │                           │                           │ and the primary economy  │                           │          │
+│                           │                           │                           │ is Refinery. It has 18   │                           │          │
+│                           │                           │                           │ stations and 16          │                           │          │
+│                           │                           │                           │ bodies.\n\nAll three     │                           │          │
+│                           │                           │                           │ systems share the        │                           │          │
+│                           │                           │                           │ controlling minor        │                           │          │
+│                           │                           │                           │ faction "Hutton Orbital  │                           │          │
+│                           │                           │                           │ Truckers Co-Operative"   │                           │          │
+│                           │                           │                           │ which is currently in an │                           │          │
+│                           │                           │                           │ Expansion state.'        │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ system population over 1m │ query='find systems with  │ answer="Barnard's Star"   │ answer="The user         │ LLMJudge: ✔               │     4.4s │
+│                           │ at least 1 million        │                           │ requested a list of star │   Reason: The output      │          │
+│                           │ population'               │                           │ systems with a           │ lists Barnard's Star      │          │
+│                           │ projected_states={}       │                           │ population of at least 1 │ among the systems with at │          │
+│                           │                           │                           │ million. I used the      │ least 1,000,000           │          │
+│                           │                           │                           │ `system_finder` tool to  │ population, matching the  │          │
+│                           │                           │                           │ search for systems       │ ExpectedOutput.           │          │
+│                           │                           │                           │ meeting this criterion,  │ Additional systems are    │          │
+│                           │                           │                           │ using the user's current │ included but the rubric   │          │
+│                           │                           │                           │ location (Sol) as a      │ allows extra details.     │          │
+│                           │                           │                           │ reference point (though  │ Therefore the required    │          │
+│                           │                           │                           │ the distance is not the  │ expected output is        │          │
+│                           │                           │                           │ primary filter           │ mentioned.                │          │
+│                           │                           │                           │ here).\n\nHere are the   │                           │          │
+│                           │                           │                           │ systems found with a     │                           │          │
+│                           │                           │                           │ population of at least   │                           │          │
+│                           │                           │                           │ 1,000,000:\n\n*          │                           │          │
+│                           │                           │                           │ **Sol**:\n    *          │                           │          │
+│                           │                           │                           │ **Population**:          │                           │          │
+│                           │                           │                           │ 18,320,926,115\n    *    │                           │          │
+│                           │                           │                           │ **Allegiance**:          │                           │          │
+│                           │                           │                           │ Federation\n    *        │                           │          │
+│                           │                           │                           │ **Primary Economy**:     │                           │          │
+│                           │                           │                           │ Refinery\n    *          │                           │          │
+│                           │                           │                           │ **Security**: High\n*    │                           │          │
+│                           │                           │                           │ **Barnard's Star**:\n    │                           │          │
+│                           │                           │                           │ *   **Population**:      │                           │          │
+│                           │                           │                           │ 1,256,069\n    *         │                           │          │
+│                           │                           │                           │ **Allegiance**:          │                           │          │
+│                           │                           │                           │ Independent\n    *       │                           │          │
+│                           │                           │                           │ **Primary Economy**:     │                           │          │
+│                           │                           │                           │ Refinery\n    *          │                           │          │
+│                           │                           │                           │ **Security**: Low\n*     │                           │          │
+│                           │                           │                           │ **Lalande 21185**:\n     │                           │          │
+│                           │                           │                           │ *   **Population**:      │                           │          │
+│                           │                           │                           │ 43,392,900\n    *        │                           │          │
+│                           │                           │                           │ **Allegiance**:          │                           │          │
+│                           │                           │                           │ Federation\n    *        │                           │          │
+│                           │                           │                           │ **Primary Economy**:     │                           │          │
+│                           │                           │                           │ Military\n    *          │                           │          │
+│                           │                           │                           │ **Security**: Low"       │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ distance to maia          │ query='give me the        │ answer='383'              │ answer='I am currently   │ LLMJudge: ✗               │     2.5s │
+│                           │ distance to Maia'         │                           │ in the **Sol** star      │   Reason: The provided    │          │
+│                           │ projected_states={}       │                           │ system.\n\nI can search  │ output does not include   │          │
+│                           │                           │                           │ for systems or stations  │ the expected answer       │          │
+│                           │                           │                           │ relative to a known      │ "383". Instead it states  │          │
+│                           │                           │                           │ location, but I do not   │ an inability to provide   │          │
+│                           │                           │                           │ have a tool that can     │ the distance, so it fails │          │
+│                           │                           │                           │ directly calculate the   │ to answer the query as    │          │
+│                           │                           │                           │ distance between two     │ required by the rubric.   │          │
+│                           │                           │                           │ star systems, such as    │                           │          │
+│                           │                           │                           │ from Sol to Maia.        │                           │          │
+│                           │                           │                           │ Therefore, I cannot      │                           │          │
+│                           │                           │                           │ provide you with the     │                           │          │
+│                           │                           │                           │ exact distance to Maia.' │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ station name solaris      │ query='find a station     │ answer='Vox Solaris in    │ answer='I have searched  │ LLMJudge: ✔               │     3.5s │
+│                           │ named Solaris'            │ Col 285 Sector XA-N       │ for space stations with  │   Reason: The output      │          │
+│                           │ projected_states={}       │ d7-51'                    │ "Solaris" in their name, │ lists 'Vox Solaris' and   │          │
+│                           │                           │                           │ relative to your current │ its system 'Col 285       │          │
+│                           │                           │                           │ location in the **Sol**  │ Sector XA-N d7-51', which │          │
+│                           │                           │                           │ system.\n\nThe search    │ matches the expected      │          │
+│                           │                           │                           │ parameters used were:\n* │ output, so the expected   │          │
+│                           │                           │                           │ **Station Name required  │ station is mentioned.     │          │
+│                           │                           │                           │ string**: `Solaris`\n*   │                           │          │
+│                           │                           │                           │ **Reference System**:    │                           │          │
+│                           │                           │                           │ `Sol`\n\nI found the     │                           │          │
+│                           │                           │                           │ following                │                           │          │
+│                           │                           │                           │ stations:\n\n1.          │                           │          │
+│                           │                           │                           │ **Solaris-kyp            │                           │          │
+│                           │                           │                           │ Anchoridge**\n    *      │                           │          │
+│                           │                           │                           │ **System**: Hyades       │                           │          │
+│                           │                           │                           │ Sector IC-M b7-0\n    *  │                           │          │
+│                           │                           │                           │ **Distance**: 218.39     │                           │          │
+│                           │                           │                           │ (unit not explicitly     │                           │          │
+│                           │                           │                           │ specified by the tool    │                           │          │
+│                           │                           │                           │ output, but usually      │                           │          │
+│                           │                           │                           │ light-seconds/light-year │                           │          │
+│                           │                           │                           │ s in this context)\n2.   │                           │          │
+│                           │                           │                           │ **Vox Solaris**\n    *   │                           │          │
+│                           │                           │                           │ **System**: Col 285      │                           │          │
+│                           │                           │                           │ Sector XA-N d7-51\n    * │                           │          │
+│                           │                           │                           │ **Distance**: 288.55     │                           │          │
+│                           │                           │                           │ (unit not explicitly     │                           │          │
+│                           │                           │                           │ specified by the tool    │                           │          │
+│                           │                           │                           │ output)'                 │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ closest encoded material  │ query='find me the        │ answer='Magnus Gateway in │ answer='The closest      │ LLMJudge: ✔               │     2.8s │
+│ trader                    │ closest material trader   │ the EZ Aquarii system'    │ material trader for      │   Reason: The provided    │          │
+│                           │ for encoded materials'    │                           │ Encoded materials,       │ output explicitly names   │          │
+│                           │ projected_states={}       │                           │ starting from the Sol    │ Magnus Gateway in the EZ  │          │
+│                           │                           │                           │ system, has been found   │ Aquarii system as the     │          │
+│                           │                           │                           │ using the                │ closest station and       │          │
+│                           │                           │                           │ `station_finder` tool,   │ includes additional       │          │
+│                           │                           │                           │ sorted by                │ alternatives; this        │          │
+│                           │                           │                           │ distance.\n\nThe closest │ matches the expected      │          │
+│                           │                           │                           │ station is:\n\n*         │ answer.                   │          │
+│                           │                           │                           │ **Station:** **Magnus    │                           │          │
+│                           │                           │                           │ Gateway**\n*             │                           │          │
+│                           │                           │                           │ **System:** **EZ         │                           │          │
+│                           │                           │                           │ Aquarii**\n*             │                           │          │
+│                           │                           │                           │ **Distance:** **11.098   │                           │          │
+│                           │                           │                           │ ly**\n\nThe search also  │                           │          │
+│                           │                           │                           │ returned the following   │                           │          │
+│                           │                           │                           │ stations as              │                           │          │
+│                           │                           │                           │ alternatives:\n1.        │                           │          │
+│                           │                           │                           │ **Clement Orbital** in   │                           │          │
+│                           │                           │                           │ **YZ Ceti** (12.066      │                           │          │
+│                           │                           │                           │ ly)\n2.  **Kepler        │                           │          │
+│                           │                           │                           │ Gateway** in **Kruger    │                           │          │
+│                           │                           │                           │ 60** (13.076 ly)'        │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ closest guardian          │ query='find the closest   │ answer='Magnus Gateway in │ answer='The closest      │ LLMJudge: ✔               │     3.1s │
+│ technology broker         │ technology broker for     │ the EZ Aquarii system'    │ station offering a       │   Reason: The output      │          │
+│                           │ guardian technology'      │                           │ Technology Broker with   │ explicitly names Magnus   │          │
+│                           │ projected_states={}       │                           │ Guardian technology      │ Gateway in the EZ Aquarii │          │
+│                           │                           │                           │ blueprints, relative to  │ system (and additionally  │          │
+│                           │                           │                           │ your current location in │ lists alternatives),      │          │
+│                           │                           │                           │ Sol, is:\n\n*            │ matching the expected     │          │
+│                           │                           │                           │ **Station:** **Magnus    │ answer.                   │          │
+│                           │                           │                           │ Gateway**\n*             │                           │          │
+│                           │                           │                           │ **System:** **EZ         │                           │          │
+│                           │                           │                           │ Aquarii**\n*             │                           │          │
+│                           │                           │                           │ **Distance:** **11.10    │                           │          │
+│                           │                           │                           │ light years**\n\nThe     │                           │          │
+│                           │                           │                           │ next closest options are │                           │          │
+│                           │                           │                           │ Feynman Terminal in      │                           │          │
+│                           │                           │                           │ Bhritzameno (19.09 ly)   │                           │          │
+│                           │                           │                           │ and Merbold Ring in EQ   │                           │          │
+│                           │                           │                           │ Pegasi (20.19 ly).'      │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ buy guardian fsd booster  │ query='where can I buy a  │ answer='Magnus Gateway in │ answer='The user is      │ LLMJudge: ✔               │     4.5s │
+│                           │ Guardian frame shift      │ EZ Aquarii system'        │ asking where to purchase │   Reason: The output      │          │
+│                           │ drive booster'            │                           │ a Guardian Frame Shift   │ lists Magnus Gateway in   │          │
+│                           │ projected_states={}       │                           │ Drive Booster. Since the │ the EZ Aquarii system     │          │
+│                           │                           │                           │ initial search for the   │ (matching the expected    │          │
+│                           │                           │                           │ exact name failed, the   │ answer) and provides      │          │
+│                           │                           │                           │ search was refined to    │ additional stations and   │          │
+│                           │                           │                           │ the suggested name,      │ pricing, so it satisfies  │          │
+│                           │                           │                           │ **"Guardian FSD          │ the rubric.               │          │
+│                           │                           │                           │ Booster"**, searching    │                           │          │
+│                           │                           │                           │ near the user\'s current │                           │          │
+│                           │                           │                           │ location,                │                           │          │
+│                           │                           │                           │ **Sol**.\n\nThe          │                           │          │
+│                           │                           │                           │ following stations have  │                           │          │
+│                           │                           │                           │ been found selling the   │                           │          │
+│                           │                           │                           │ Guardian FSD Booster     │                           │          │
+│                           │                           │                           │ module:\n\n| Station     │                           │          │
+│                           │                           │                           │ Name | System | Class 1  │                           │          │
+│                           │                           │                           │ Price (CR) | Class 5     │                           │          │
+│                           │                           │                           │ Price (CR) |\n| :--- |   │                           │          │
+│                           │                           │                           │ :--- | :--- | :--- |\n|  │                           │          │
+│                           │                           │                           │ **Magnus Gateway** | EZ  │                           │          │
+│                           │                           │                           │ Aquarii | 405,020 |      │                           │          │
+│                           │                           │                           │ 6,483,100 |\n| **Feynman │                           │          │
+│                           │                           │                           │ Terminal** | Bhritzameno │                           │          │
+│                           │                           │                           │ | 405,020 | 6,483,100    │                           │          │
+│                           │                           │                           │ |\n| **Merbold Ring** |  │                           │          │
+│                           │                           │                           │ EQ Pegasi | 405,020 |    │                           │          │
+│                           │                           │                           │ 6,483,100 |\n\nAll three │                           │          │
+│                           │                           │                           │ stations listed offer    │                           │          │
+│                           │                           │                           │ all classes (1 through   │                           │          │
+│                           │                           │                           │ 5) of the Guardian FSD   │                           │          │
+│                           │                           │                           │ Booster, with prices     │                           │          │
+│                           │                           │                           │ ranging from 405,020 CR  │                           │          │
+│                           │                           │                           │ for Class 1 to 6,483,100 │                           │          │
+│                           │                           │                           │ CR for Class 5.'         │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ buy meta-alloys           │ query='where can I buy    │ answer="Darnielle's       │ answer="The user is      │ LLMJudge: ✔               │     2.3s │
+│                           │ meta-alloys'              │ Progress in the Maia      │ asking where to purchase │   Reason: The output      │          │
+│                           │ projected_states={}       │ system"                   │ **Meta-Alloys** near     │ directly answers the      │          │
+│                           │                           │                           │ their current location   │ query by naming the       │          │
+│                           │                           │                           │ of **Sol**.\n\nThe       │ station and system:       │          │
+│                           │                           │                           │ search for stations      │ Darnielle's Progress in   │          │
+│                           │                           │                           │ buying Meta-Alloys       │ the Maia system, and      │          │
+│                           │                           │                           │ within range of Sol      │ provides additional       │          │
+│                           │                           │                           │ returned the following   │ details (distance and     │          │
+│                           │                           │                           │ result:\n\n*             │ price). It therefore      │          │
+│                           │                           │                           │ **Station:**             │ includes the expected     │          │
+│                           │                           │                           │ **Darnielle's            │ output.                   │          │
+│                           │                           │                           │ Progress**\n*            │                           │          │
+│                           │                           │                           │ **System:** **Maia**\n*  │                           │          │
+│                           │                           │                           │ **Distance from Sol:**   │                           │          │
+│                           │                           │                           │ Approximately 383.31     │                           │          │
+│                           │                           │                           │ light-years\n*   **Buy   │                           │          │
+│                           │                           │                           │ Price:** 271,014 CR per  │                           │          │
+│                           │                           │                           │ unit\n\nThis is the only │                           │          │
+│                           │                           │                           │ station found that is    │                           │          │
+│                           │                           │                           │ currently stocking       │                           │          │
+│                           │                           │                           │ Meta-Alloys for purchase │                           │          │
+│                           │                           │                           │ in the search results."  │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ buy imperial courier      │ query='where to buy       │ answer='Cayley Enterprise │ answer="The requested    │ LLMJudge: ✔               │     2.9s │
+│                           │ imperial courier'         │ in the Wolf 359 system'   │ information for          │   Reason: The output      │          │
+│                           │ projected_states={}       │                           │ purchasing an Imperial   │ lists stations selling    │          │
+│                           │                           │                           │ Courier near your        │ the Imperial Courier and  │          │
+│                           │                           │                           │ current location in      │ explicitly names Cayley   │          │
+│                           │                           │                           │ **Sol** has been         │ Enterprise in the Wolf    │          │
+│                           │                           │                           │ retrieved.\n\nThe search │ 359 system as the closest │          │
+│                           │                           │                           │ for stations selling the │ option, which matches the │          │
+│                           │                           │                           │ **Imperial Courier**     │ expected output. It       │          │
+│                           │                           │                           │ returned the following   │ provides additional       │          │
+│                           │                           │                           │ results:\n\n| Station    │ helpful details but       │          │
+│                           │                           │                           │ Name | System | Distance │ includes the required     │          │
+│                           │                           │                           │ (LY) | Price (CR) |      │ expected answer.          │          │
+│                           │                           │                           │ Station Type | Key       │                           │          │
+│                           │                           │                           │ Services |\n| :--- |     │                           │          │
+│                           │                           │                           │ :--- | :--- | :--- |     │                           │          │
+│                           │                           │                           │ :--- | :--- |\n|         │                           │          │
+│                           │                           │                           │ **Cayley Enterprise** |  │                           │          │
+│                           │                           │                           │ Wolf 359 | 7.78 |        │                           │          │
+│                           │                           │                           │ 2,542,930 | Planetary |  │                           │          │
+│                           │                           │                           │ Market, Shipyard,        │                           │          │
+│                           │                           │                           │ Outfitting |\n|          │                           │          │
+│                           │                           │                           │ **O'Brien Depot** |      │                           │          │
+│                           │                           │                           │ Kruger 60 | 13.08 |      │                           │          │
+│                           │                           │                           │ 2,542,930 | Planetary |  │                           │          │
+│                           │                           │                           │ Outfitting, Shipyard     │                           │          │
+│                           │                           │                           │ |\n| **Crook Hub** |     │                           │          │
+│                           │                           │                           │ Toolfa | 14.01 |         │                           │          │
+│                           │                           │                           │ 2,542,930 |              │                           │          │
+│                           │                           │                           │ Non-Planetary | Market,  │                           │          │
+│                           │                           │                           │ Shipyard, Outfitting     │                           │          │
+│                           │                           │                           │ |\n\nAll three stations  │                           │          │
+│                           │                           │                           │ offer the Imperial       │                           │          │
+│                           │                           │                           │ Courier at the same      │                           │          │
+│                           │                           │                           │ price and include a      │                           │          │
+│                           │                           │                           │ Shipyard for purchase.   │                           │          │
+│                           │                           │                           │ Cayley Enterprise in     │                           │          │
+│                           │                           │                           │ Wolf 359 is the closest  │                           │          │
+│                           │                           │                           │ option."                 │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ closest interstellar      │ query='where is the       │ answer='Here is a list of │ answer='The closest      │ LLMJudge: ✔               │     3.3s │
+│ factors                   │ closest interstellar      │ stations:                 │ stations in the Sol      │   Reason: The assistant   │          │
+│                           │ factors'                  │ {"amount_total": 10000,   │ system that offer an     │ output lists the three    │          │
+│                           │ projected_states={}       │ "amount_displayed": 3,    │ Interstellar Factors     │ stations (Walz Depot,     │          │
+│                           │                           │ "results": [{"name":      │ Contact service are      │ Ehrlich City, Haberlandt  │          │
+│                           │                           │ "Walz Depot", "system":   │ located in the system    │ Survey) with distance     │          │
+│                           │                           │ "Sol", "distance": 0.0,   │ itself, with a reported  │ 0.0, matching the         │          │
+│                           │                           │ "orbit": 179.462843,      │ distance of 0.0.\n\nThe  │ expected output's station │          │
+│                           │                           │ "is_planetary": true,     │ following stations have  │ list and distances. It    │          │
+│                           │                           │ "market": [], "services": │ the service:\n\n*        │ therefore answers the     │          │
+│                           │                           │ [{"name": "Dock"},        │ **Walz Depot**           │ query and includes the    │          │
+│                           │                           │ {"name": "Autodock"},     │ (Planetary Outpost       │ expected items.           │          │
+│                           │                           │ {"name": "Market"},       │ orbiting Mercury)\n*     │                           │          │
+│                           │                           │ {"name": "Contacts"},     │ **Ehrlich City**         │                           │          │
+│                           │                           │ {"name": "Universal       │ (Planetary Port orbiting │                           │          │
+│                           │                           │ Cartographics"}, {"name": │ Mercury)\n*              │                           │          │
+│                           │                           │ "Missions"}, {"name":     │ **Haberlandt Survey**    │                           │          │
+│                           │                           │ "Outfitting"}, {"name":   │ (Planetary Outpost       │                           │          │
+│                           │                           │ "Crew Lounge"}, {"name":  │ orbiting                 │                           │          │
+│                           │                           │ "Restock"}, {"name":      │ Europa)\n\nSince they    │                           │          │
+│                           │                           │ "Refuel"}, {"name":       │ are all listed at        │                           │          │
+│                           │                           │ "Repair"}, {"name":       │ distance 0.0, you can    │                           │          │
+│                           │                           │ "Shipyard"}, {"name":     │ choose any of these for  │                           │          │
+│                           │                           │ "Workshop"}, {"name":     │ your transactions.'      │                           │          │
+│                           │                           │ "Missions Generated"},    │                          │                           │          │
+│                           │                           │ {"name": "Flight          │                          │                           │          │
+│                           │                           │ Controller"}, {"name":    │                          │                           │          │
+│                           │                           │ "Station Operations"},    │                          │                           │          │
+│                           │                           │ {"name": "Powerplay"},    │                          │                           │          │
+│                           │                           │ {"name": "Search and      │                          │                           │          │
+│                           │                           │ Rescue"}, {"name":        │                          │                           │          │
+│                           │                           │ "Station Menu"}, {"name": │                          │                           │          │
+│                           │                           │ "Shop"}, {"name":         │                          │                           │          │
+│                           │                           │ "Livery"}, {"name":       │                          │                           │          │
+│                           │                           │ "Social Space"}, {"name": │                          │                           │          │
+│                           │                           │ "Bartender"}, {"name":    │                          │                           │          │
+│                           │                           │ "Vista Genomics"},        │                          │                           │          │
+│                           │                           │ {"name": "Pioneer         │                          │                           │          │
+│                           │                           │ Supplies"}, {"name":      │                          │                           │          │
+│                           │                           │ "Apex Interstellar"},     │                          │                           │          │
+│                           │                           │ {"name": "Frontline       │                          │                           │          │
+│                           │                           │ Solutions"}]}, {"name":   │                          │                           │          │
+│                           │                           │ "Ehrlich City", "system": │                          │                           │          │
+│                           │                           │ "Sol", "distance": 0.0,   │                          │                           │          │
+│                           │                           │ "orbit": 169.85313,       │                          │                           │          │
+│                           │                           │ "is_planetary": true,     │                          │                           │          │
+│                           │                           │ "market": [], "services": │                          │                           │          │
+│                           │                           │ [{"name": "Dock"},        │                          │                           │          │
+│                           │                           │ {"name": "Autodock"},     │                          │                           │          │
+│                           │                           │ {"name": "Market"},       │                          │                           │          │
+│                           │                           │ {"name": "Contacts"},     │                          │                           │          │
+│                           │                           │ {"name": "Universal       │                          │                           │          │
+│                           │                           │ Cartographics"}, {"name": │                          │                           │          │
+│                           │                           │ "Missions"}, {"name":     │                          │                           │          │
+│                           │                           │ "Outfitting"}, {"name":   │                          │                           │          │
+│                           │                           │ "Crew Lounge"}, {"name":  │                          │                           │          │
+│                           │                           │ "Restock"}, {"name":      │                          │                           │          │
+│                           │                           │ "Refuel"}, {"name":       │                          │                           │          │
+│                           │                           │ "Repair"}, {"name":       │                          │                           │          │
+│                           │                           │ "Shipyard"}, {"name":     │                          │                           │          │
+│                           │                           │ "Tuning"}, {"name":       │                          │                           │          │
+│                           │                           │ "Workshop"}, {"name":     │                          │                           │          │
+│                           │                           │ "Missions Generated"},    │                          │                           │          │
+│                           │                           │ {"name": "Flight          │                          │                           │          │
+│                           │                           │ Controller"}, {"name":    │                          │                           │          │
+│                           │                           │ "Station Operations"},    │                          │                           │          │
+│                           │                           │ {"name": "Powerplay"},    │                          │                           │          │
+│                           │                           │ {"name": "Search and      │                          │                           │          │
+│                           │                           │ Rescue"}, {"name":        │                          │                           │          │
+│                           │                           │ "Station Menu"}, {"name": │                          │                           │          │
+│                           │                           │ "Shop"}, {"name":         │                          │                           │          │
+│                           │                           │ "Livery"}, {"name":       │                          │                           │          │
+│                           │                           │ "Social Space"}, {"name": │                          │                           │          │
+│                           │                           │ "Bartender"}, {"name":    │                          │                           │          │
+│                           │                           │ "Vista Genomics"},        │                          │                           │          │
+│                           │                           │ {"name": "Pioneer         │                          │                           │          │
+│                           │                           │ Supplies"}, {"name":      │                          │                           │          │
+│                           │                           │ "Apex Interstellar"},     │                          │                           │          │
+│                           │                           │ {"name": "Frontline       │                          │                           │          │
+│                           │                           │ Solutions"}]}, {"name":   │                          │                           │          │
+│                           │                           │ "Haberlandt Survey",      │                          │                           │          │
+│                           │                           │ "system": "Sol",          │                          │                           │          │
+│                           │                           │ "distance": 0.0, "orbit": │                          │                           │          │
+│                           │                           │ 2671.258012,              │                          │                           │          │
+│                           │                           │ "is_planetary": true,     │                          │                           │          │
+│                           │                           │ "market": [], "services": │                          │                           │          │
+│                           │                           │ [{"name": "Dock"},        │                          │                           │          │
+│                           │                           │ {"name": "Autodock"},     │                          │                           │          │
+│                           │                           │ {"name": "Market"},       │                          │                           │          │
+│                           │                           │ {"name": "Contacts"},     │                          │                           │          │
+│                           │                           │ {"name": "Universal       │                          │                           │          │
+│                           │                           │ Cartographics"}, {"name": │                          │                           │          │
+│                           │                           │ "Missions"}, {"name":     │                          │                           │          │
+│                           │                           │ "Outfitting"}, {"name":   │                          │                           │          │
+│                           │                           │ "Crew Lounge"}, {"name":  │                          │                           │          │
+│                           │                           │ "Restock"}, {"name":      │                          │                           │          │
+│                           │                           │ "Refuel"}, {"name":       │                          │                           │          │
+│                           │                           │ "Repair"}, {"name":       │                          │                           │          │
+│                           │                           │ "Tuning"}, {"name":       │                          │                           │          │
+│                           │                           │ "Workshop"}, {"name":     │                          │                           │          │
+│                           │                           │ "Missions Generated"},    │                          │                           │          │
+│                           │                           │ {"name": "Flight          │                          │                           │          │
+│                           │                           │ Controller"}, {"name":    │                          │                           │          │
+│                           │                           │ "Station Operations"},    │                          │                           │          │
+│                           │                           │ {"name": "Powerplay"},    │                          │                           │          │
+│                           │                           │ {"name": "Search and      │                          │                           │          │
+│                           │                           │ Rescue"}, {"name":        │                          │                           │          │
+│                           │                           │ "Station Menu"}, {"name": │                          │                           │          │
+│                           │                           │ "Shop"}, {"name":         │                          │                           │          │
+│                           │                           │ "Livery"}, {"name":       │                          │                           │          │
+│                           │                           │ "Social Space"}, {"name": │                          │                           │          │
+│                           │                           │ "Bartender"}, {"name":    │                          │                           │          │
+│                           │                           │ "Vista Genomics"},        │                          │                           │          │
+│                           │                           │ {"name": "Pioneer         │                          │                           │          │
+│                           │                           │ Supplies"}, {"name":      │                          │                           │          │
+│                           │                           │ "Apex Interstellar"},     │                          │                           │          │
+│                           │                           │ {"name": "Frontline       │                          │                           │          │
+│                           │                           │ Solutions"}]}]}'          │                          │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ body named earth          │ query='find a body named  │ answer='Earth in Sol'     │ answer='The user asked   │ LLMJudge: ✔               │     2.1s │
+│                           │ Earth'                    │                           │ to find a celestial body │   Reason: The output      │          │
+│                           │ projected_states={}       │                           │ named "Earth".\n\nI used │ explicitly states that    │          │
+│                           │                           │                           │ the `body_finder` tool   │ Earth is located in the   │          │
+│                           │                           │                           │ with the name "Earth"    │ Sol system ("Located in   │          │
+│                           │                           │                           │ and the current          │ the **Sol** system"),     │          │
+│                           │                           │                           │ reference system         │ which matches the         │          │
+│                           │                           │                           │ "Sol".\n\nThe search     │ expected 'Earth in Sol'.  │          │
+│                           │                           │                           │ returned the following   │ It includes additional    │          │
+│                           │                           │                           │ result:\n*   **Earth**:  │ details but still         │          │
+│                           │                           │                           │ Located in the **Sol**   │ mentions the expected     │          │
+│                           │                           │                           │ system, classified as an │ output.                   │          │
+│                           │                           │                           │ **Earth-like             │                           │          │
+│                           │                           │                           │ world**.\n\nThe search   │                           │          │
+│                           │                           │                           │ also found two other     │                           │          │
+│                           │                           │                           │ celestial bodies         │                           │          │
+│                           │                           │                           │ containing "Earth" in    │                           │          │
+│                           │                           │                           │ their name in the system │                           │          │
+│                           │                           │                           │ "Earth Expeditionary     │                           │          │
+│                           │                           │                           │ Fleet", but the direct   │                           │          │
+│                           │                           │                           │ match in the current     │                           │          │
+│                           │                           │                           │ system is the most       │                           │          │
+│                           │                           │                           │ relevant.'               │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ next fuelable star        │ query='next fuelable      │ answer='Alpha Centauri'   │ answer='The user is      │ LLMJudge: ✗               │     3.2s │
+│                           │ star' projected_states={} │                           │ asking for the location  │   Reason: The Output does │          │
+│                           │                           │                           │ of the next fuelable     │ not mention the expected  │          │
+│                           │                           │                           │ star system they should  │ answer "Alpha Centauri"   │          │
+│                           │                           │                           │ travel to, starting from │ and therefore fails to    │          │
+│                           │                           │                           │ their current location   │ answer the input query.   │          │
+│                           │                           │                           │ in the Sol               │ Instead it states it      │          │
+│                           │                           │                           │ system.\n\n**Interpretat │ cannot determine the next │          │
+│                           │                           │                           │ ion:** The goal is to    │ fuelable star and only    │          │
+│                           │                           │                           │ identify the nearest     │ references Sol, so it     │          │
+│                           │                           │                           │ system that contains a   │ does not include the      │          │
+│                           │                           │                           │ star classified as       │ expected output.          │          │
+│                           │                           │                           │ scoopable.\n\n**Search   │                           │          │
+│                           │                           │                           │ Parameters Used:** No    │                           │          │
+│                           │                           │                           │ tools were called        │                           │          │
+│                           │                           │                           │ because the available    │                           │          │
+│                           │                           │                           │ functions                │                           │          │
+│                           │                           │                           │ (`system_finder`,        │                           │          │
+│                           │                           │                           │ `body_finder`, etc.) are │                           │          │
+│                           │                           │                           │ not designed to search   │                           │          │
+│                           │                           │                           │ for the nearest systems  │                           │          │
+│                           │                           │                           │ based on the star\'s     │                           │          │
+│                           │                           │                           │ scoopability property,   │                           │          │
+│                           │                           │                           │ which is required to     │                           │          │
+│                           │                           │                           │ answer the query about   │                           │          │
+│                           │                           │                           │ the *next* fuelable      │                           │          │
+│                           │                           │                           │ star.\n\n**Answer:** I   │                           │          │
+│                           │                           │                           │ am unable to determine   │                           │          │
+│                           │                           │                           │ the "next fuelable star" │                           │          │
+│                           │                           │                           │ system using the         │                           │          │
+│                           │                           │                           │ available tools, as      │                           │          │
+│                           │                           │                           │ there is no function to  │                           │          │
+│                           │                           │                           │ search for neighboring   │                           │          │
+│                           │                           │                           │ star systems based on    │                           │          │
+│                           │                           │                           │ the star type or         │                           │          │
+│                           │                           │                           │ scoopability             │                           │          │
+│                           │                           │                           │ status.\n\nHowever, I    │                           │          │
+│                           │                           │                           │ can confirm that your    │                           │          │
+│                           │                           │                           │ current system, **Sol**, │                           │          │
+│                           │                           │                           │ contains a scoopable     │                           │          │
+│                           │                           │                           │ star (a G-type           │                           │          │
+│                           │                           │                           │ White-Yellow Star).'     │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ closest neutron star      │ query='closest neutron    │ answer='18 Camelopardalis │ answer="The closest      │ LLMJudge: ✔               │     3.9s │
+│                           │ star' projected_states={} │ C'                        │ neutron star to your     │   Reason: The assistant   │          │
+│                           │                           │                           │ current location in Sol  │ output explicitly names   │          │
+│                           │                           │                           │ was determined by        │ '18 Camelopardalis C' as  │          │
+│                           │                           │                           │ searching for celestial  │ the closest neutron star  │          │
+│                           │                           │                           │ bodies of subtype        │ and thus includes the     │          │
+│                           │                           │                           │ 'Neutron Star' near Sol  │ expected answer. It       │          │
+│                           │                           │                           │ using the `body_finder`  │ answers the query and     │          │
+│                           │                           │                           │ tool.\n\nThe search      │ also provides additional  │          │
+│                           │                           │                           │ returned the following   │ nearby neutron star       │          │
+│                           │                           │                           │ results, assumed to be   │ alternatives, which is    │          │
+│                           │                           │                           │ in order of              │ allowed by the rubric.    │          │
+│                           │                           │                           │ proximity:\n\n1.  **18   │                           │          │
+│                           │                           │                           │ Camelopardalis C**       │                           │          │
+│                           │                           │                           │ located in the **18      │                           │          │
+│                           │                           │                           │ Camelopardalis**         │                           │          │
+│                           │                           │                           │ system.\n2.  **Jackson's │                           │          │
+│                           │                           │                           │ Lighthouse** located in  │                           │          │
+│                           │                           │                           │ the **Jackson's          │                           │          │
+│                           │                           │                           │ Lighthouse** system.\n3. │                           │          │
+│                           │                           │                           │ **Beta Sculptoris B**    │                           │          │
+│                           │                           │                           │ located in the **Beta    │                           │          │
+│                           │                           │                           │ Sculptoris**             │                           │          │
+│                           │                           │                           │ system.\n\nTherefore,    │                           │          │
+│                           │                           │                           │ **18 Camelopardalis C**  │                           │          │
+│                           │                           │                           │ in the **18              │                           │          │
+│                           │                           │                           │ Camelopardalis** system  │                           │          │
+│                           │                           │                           │ is the closest neutron   │                           │          │
+│                           │                           │                           │ star found in the        │                           │          │
+│                           │                           │                           │ search."                 │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ engineer shields helper   │ query='what engineer can  │ answer='Didi Vatermann,   │ answer='The request      │ LLMJudge: ✗               │    10.8s │
+│                           │ help me with my shields?' │ but only up to grade 3.   │ could not be completed   │   Reason: The provided    │          │
+│                           │ projected_states={'Engine │ Lei Cheung and Mel        │ within the allowed       │ output did not answer the │          │
+│                           │ erProgress':              │ Brandon can upgrade to    │ number of steps.'        │ user query and did not    │          │
+│                           │ {'Engineers':             │ grade 5, but still need   │                          │ mention the expected      │          │
+│                           │ [{'Engineer': 'Didi       │ to be unlocked.'          │                          │ output. The expected      │          │
+│                           │ Vatermann', 'EngineerID': │                           │                          │ answer was                │          │
+│                           │ 300000, 'Progress':       │                           │                          │ {"answer":"Didi           │          │
+│                           │ 'Unlocked',               │                           │                          │ Vatermann, but only up to │          │
+│                           │ 'RankProgress': 0,        │                           │                          │ grade 3. Lei Cheung and   │          │
+│                           │ 'Rank': 5}]}}             │                           │                          │ Mel Brandon can upgrade   │          │
+│                           │                           │                           │                          │ to grade 5, but still     │          │
+│                           │                           │                           │                          │ need to be unlocked."},   │          │
+│                           │                           │                           │                          │ but the output instead    │          │
+│                           │                           │                           │                          │ stated: "The request      │          │
+│                           │                           │                           │                          │ could not be completed    │          │
+│                           │                           │                           │                          │ within the allowed number │          │
+│                           │                           │                           │                          │ of steps.", which fails   │          │
+│                           │                           │                           │                          │ to meet the rubric        │          │
+│                           │                           │                           │                          │ requirement.              │          │
+│                           │                           │                           │                          │                           │          │
+│                           │                           │                           │                          │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ unlock felicity           │ query='unlock felicity'   │ answer='1 unit of Meta    │ answer='The current game │ LLMJudge: ✗               │     5.2s │
+│                           │ projected_states={}       │ Alloys'                   │ state shows that you are │   Reason: The assistant's │          │
+│                           │                           │                           │ in the **Sol**           │ output describes Felicity │          │
+│                           │                           │                           │ system.\n\nI have used   │ Farseer's location and    │          │
+│                           │                           │                           │ the `engineer_finder` to │ limitations but does not  │          │
+│                           │                           │                           │ locate **Felicity        │ include or mention the    │          │
+│                           │                           │                           │ Farseer**:\n\n*          │ expected answer "1 unit   │          │
+│                           │                           │                           │ **Location:** Farseer    │ of Meta Alloys". It       │          │
+│                           │                           │                           │ Inc in the **Deciat**    │ therefore does not        │          │
+│                           │                           │                           │ system.\n*   **Current   │ satisfy the rubric        │          │
+│                           │                           │                           │ Progress Status:**       │ requirement that the      │          │
+│                           │                           │                           │ **Unknown**. The tool    │ result answer the input   │          │
+│                           │                           │                           │ suggests she is          │ query and mention the     │          │
+│                           │                           │                           │ "Available from start,"  │ expected output.          │          │
+│                           │                           │                           │ which typically means    │                           │          │
+│                           │                           │                           │ the system is known but  │                           │          │
+│                           │                           │                           │ the engineer has not yet │                           │          │
+│                           │                           │                           │ been discovered or       │                           │          │
+│                           │                           │                           │ unlocked by your pilot   │                           │          │
+│                           │                           │                           │ profile.\n\n**To unlock  │                           │          │
+│                           │                           │                           │ Felicity Farseer, you    │                           │          │
+│                           │                           │                           │ generally need to meet   │                           │          │
+│                           │                           │                           │ specific prerequisites   │                           │          │
+│                           │                           │                           │ related to reputation    │                           │          │
+│                           │                           │                           │ with other engineers or  │                           │          │
+│                           │                           │                           │ faction                  │                           │          │
+│                           │                           │                           │ missions.**\n\n**Limitat │                           │          │
+│                           │                           │                           │ ion:** While I can find  │                           │          │
+│                           │                           │                           │ an engineer\'s location  │                           │          │
+│                           │                           │                           │ and current standing,    │                           │          │
+│                           │                           │                           │ the available tools do   │                           │          │
+│                           │                           │                           │ not contain a function   │                           │          │
+│                           │                           │                           │ to list the exact unlock │                           │          │
+│                           │                           │                           │ requirements (e.g.,      │                           │          │
+│                           │                           │                           │ which rank is needed     │                           │          │
+│                           │                           │                           │ with which other         │                           │          │
+│                           │                           │                           │ engineer, or which       │                           │          │
+│                           │                           │                           │ missions must be         │                           │          │
+│                           │                           │                           │ completed) to gain       │                           │          │
+│                           │                           │                           │ access to Felicity       │                           │          │
+│                           │                           │                           │ Farseer. You will need   │                           │          │
+│                           │                           │                           │ to discover these        │                           │          │
+│                           │                           │                           │ prerequisites through    │                           │          │
+│                           │                           │                           │ in-game means or         │                           │          │
+│                           │                           │                           │ external resources.'     │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ blueprint thermal         │ query='can I upgrade my   │ answer='Current Grade:    │ answer="Yes, you can     │ LLMJudge: ✗               │     9.3s │
+│ resistant shields         │ shield with thermal       │ 3\nGrade 4 requirements:  │ upgrade your shield      │   Reason: The provided    │          │
+│                           │ resistance?'              │ 1 Mercury (4 required, 3  │ module for thermal       │ Output does not state the │          │
+│                           │ projected_states={'Materi │ in cargo)\nGrade 5        │ resistance. This         │ Current Grade (3) nor the │          │
+│                           │ als': {'timestamp':       │ requirements: Refined     │ modification is          │ specific graded material  │          │
+│                           │ '2025-10-28T19:15:13Z',   │ Focus Crystal (5          │ available for both       │ requirements with counts  │          │
+│                           │ 'event': 'Materials',     │ required, 0 in cargo)'    │ **Shield Generators**    │ from the projected_states │          │
+│                           │ 'Raw': [{'Name':          │                           │ and **Shield             │ (Grade 4: 1 Mercury       │          │
+│                           │ 'mercury', 'Count': 3},   │                           │ Boosters**.\n\nThe       │ needed — 4 required, 3 in │          │
+│                           │ {'Name': 'ruthenium',     │                           │ specific requirements    │ cargo; Grade 5: Refined   │          │
+│                           │ 'Count': 3}],             │                           │ and engineers depend on  │ Focus Crystal — 5         │          │
+│                           │ 'Manufactured': [{'Name': │                           │ which module you wish to │ required, 0 in cargo).    │          │
+│                           │ 'shieldsoakanalysis',     │                           │ upgrade and the grade of │ Because it fails to       │          │
+│                           │ 'Name_Localised':         │                           │ the                      │ mention the expected      │          │
+│                           │ 'Inconsistent Shield Soak │                           │ modification.\n\nHere is │ output details, it does   │          │
+│                           │ Analysis', 'Count': 4},   │                           │ a summary of the         │ not meet the rubric.      │          │
+│                           │ {'Name': 'focuscrystals', │                           │ available **Thermal      │                           │          │
+│                           │ 'Name_Localised': 'Focus  │                           │ Resistant** blueprints   │                           │          │
+│                           │ Crystals', 'Count': 4}],  │                           │ found:\n\n### Shield     │                           │          │
+│                           │ 'Encoded': [{'Name':      │                           │ Generator (Thermal       │                           │          │
+│                           │ 'shielddensityreports',   │                           │ Resistant)\n\n| Grade |  │                           │          │
+│                           │ 'Name_Localised':         │                           │ Key Materials Needed     │                           │          │
+│                           │ 'Untypical Shield Scans', │                           │ (Example) | Available    │                           │          │
+│                           │ 'Count': 110}], 'id':     │                           │ Engineer(s) | Engineer   │                           │          │
+│                           │ 'Journal.2025-10-28T20144 │                           │ Location |\n| :---: |    │                           │          │
+│                           │ 8.01.log.000004'},        │                           │ :---: | :--- | :--- |\n| │                           │          │
+│                           │ 'Loadout': {'timestamp':  │                           │ **1-3** | Distorted      │                           │          │
+│                           │ '2025-10-28T19:15:38Z',   │                           │ Shield Cycle Recordings, │                           │          │
+│                           │ 'event': 'Loadout',       │                           │ Germanium, Selenium,     │                           │          │
+│                           │ 'Ship': 'anaconda',       │                           │ Phosphorus | Didi        │                           │          │
+│                           │ 'ShipID': 10, 'ShipName': │                           │ Vatermann | Leesti |\n|  │                           │          │
+│                           │ 'Landing party',          │                           │ | | Elvira Martuuk |     │                           │          │
+│                           │ 'ShipIdent': 'P4I27y',    │                           │ Khun |\n| **4-5** |      │                           │          │
+│                           │ 'HullValue': 146969451,   │                           │ Focus Crystals,          │                           │          │
+│                           │ 'ModulesValue':           │                           │ Inconsistent Shield Soak │                           │          │
+│                           │ 385626720, 'HullHealth':  │                           │ Analysis, Ruthenium |    │                           │          │
+│                           │ 1.0, 'UnladenMass':       │                           │ Lei Cheung (Locked) |    │                           │          │
+│                           │ 1266.605713,              │                           │ Unknown |\n\n### Shield  │                           │          │
+│                           │ 'CargoCapacity': 32,      │                           │ Booster (Thermal         │                           │          │
+│                           │ 'MaxJumpRange':           │                           │ Resistant)\n\n| Grade |  │                           │          │
+│                           │ 33.260761,                │                           │ Key Materials Needed     │                           │          │
+│                           │ 'FuelCapacity': {'Main':  │                           │ (Example) | Available    │                           │          │
+│                           │ 32.0, 'Reserve': 1.07},   │                           │ Engineer(s) | Engineer   │                           │          │
+│                           │ 'Rebuy': 26629811,        │                           │ Location |\n| :---: |    │                           │          │
+│                           │ 'Modules': [{'Slot':      │                           │ :--- | :--- | :--- |\n|  │                           │          │
+│                           │ 'Slot01_Size7', 'Item':   │                           │ **1-3** | Iron,          │                           │          │
+│                           │ 'int_shieldgenerator_size │                           │ Germanium, Heat          │                           │          │
+│                           │ 7_class3_fast', 'On':     │                           │ Conduction Wiring, Focus │                           │          │
+│                           │ True, 'Priority': 0,      │                           │ Crystals | Didi          │                           │          │
+│                           │ 'Health': 1.0, 'Value':   │                           │ Vatermann | Leesti |\n|  │                           │          │
+│                           │ 8548185, 'Engineering':   │                           │ | | Lei Cheung (Locked)  │                           │          │
+│                           │ {'Engineer': 'Lei         │                           │ | Unknown |\n| **4-5** | │                           │          │
+│                           │ Cheung', 'EngineerID':    │                           │ Heat Dispersion Plate,   │                           │          │
+│                           │ 300120, 'BlueprintID':    │                           │ Refined Focus Crystals,  │                           │          │
+│                           │ 128673844,                │                           │ Heat Exchangers | Didi   │                           │          │
+│                           │ 'BlueprintName':          │                           │ Vatermann | Leesti       │                           │          │
+│                           │ 'ShieldGenerator_Thermic' │                           │ |\n\nSince your current  │                           │          │
+│                           │ , 'Level': 3, 'Quality':  │                           │ location is **Sol**, you │                           │          │
+│                           │ 1.0,                      │                           │ will need to travel to   │                           │          │
+│                           │ 'ExperimentalEffect':     │                           │ the engineers' home      │                           │          │
+│                           │ 'special_shield_regenerat │                           │ systems, such as         │                           │          │
+│                           │ ive',                     │                           │ **Leesti** (for Didi     │                           │          │
+│                           │ 'ExperimentalEffect_Local │                           │ Vatermann) or **Khun**   │                           │          │
+│                           │ ised': 'Fast Charge',     │                           │ (for Elvira Martuuk), to │                           │          │
+│                           │ 'Modifiers': [{'Label':   │                           │ apply these              │                           │          │
+│                           │ 'Integrity', 'Value':     │                           │ modifications. You will  │                           │          │
+│                           │ 183.399994,               │                           │ also need to gather the  │                           │          │
+│                           │ 'OriginalValue': 131.0,   │                           │ specific engineering     │                           │          │
+│                           │ 'LessIsGood': 0},         │                           │ materials listed for     │                           │          │
+│                           │ {'Label': 'RegenRate',    │                           │ your desired grade."     │                           │          │
+│                           │ 'Value': 5.06,            │                           │                          │                           │          │
+│                           │ 'OriginalValue': 4.4,     │                           │                          │                           │          │
+│                           │ 'LessIsGood': 0},         │                           │                          │                           │          │
+│                           │ {'Label':                 │                           │                          │                           │          │
+│                           │ 'BrokenRegenRate',        │                           │                          │                           │          │
+│                           │ 'Value': 12.65,           │                           │                          │                           │          │
+│                           │ 'OriginalValue': 11.0,    │                           │                          │                           │          │
+│                           │ 'LessIsGood': 0},         │                           │                          │                           │          │
+│                           │ {'Label':                 │                           │                          │                           │          │
+│                           │ 'KineticResistance',      │                           │                          │                           │          │
+│                           │ 'Value': 26.919996,       │                           │                          │                           │          │
+│                           │ 'OriginalValue':          │                           │                          │                           │          │
+│                           │ 39.999996, 'LessIsGood':  │                           │                          │                           │          │
+│                           │ 0}, {'Label':             │                           │                          │                           │          │
+│                           │ 'ThermicResistance',      │                           │                          │                           │          │
+│                           │ 'Value': 39.099998,       │                           │                          │                           │          │
+│                           │ 'OriginalValue':          │                           │                          │                           │          │
+│                           │ -20.000004, 'LessIsGood': │                           │                          │                           │          │
+│                           │ 0}, {'Label':             │                           │                          │                           │          │
+│                           │ 'ExplosiveResistance',    │                           │                          │                           │          │
+│                           │ 'Value': 49.25,           │                           │                          │                           │          │
+│                           │ 'OriginalValue': 50.0,    │                           │                          │                           │          │
+│                           │ 'LessIsGood': 0}]}}],     │                           │                          │                           │          │
+│                           │ 'id':                     │                           │                          │                           │          │
+│                           │ 'Journal.2025-10-28T20144 │                           │                          │                           │          │
+│                           │ 8.01.log.000018'}}        │                           │                          │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ material refined focus    │ query='refined focus      │ answer='Mission reward'   │ answer='The material     │ LLMJudge: ✗               │    12.2s │
+│ crystals source           │ crystals'                 │                           │ "Refined Focus Crystals" │   Reason: The provided    │          │
+│                           │ projected_states={}       │                           │ is required for several  │ Output does not mention   │          │
+│                           │                           │                           │ Grade 5 engineering      │ the expected output value │          │
+│                           │                           │                           │ blueprints, primarily    │ "Mission reward". Instead │          │
+│                           │                           │                           │ for Shield               │ it gives information      │          │
+│                           │                           │                           │ modifications. I have    │ about Refined Focus       │          │
+│                           │                           │                           │ checked your current     │ Crystals and engineers,   │          │
+│                           │                           │                           │ location (Sol) and the   │ so it fails to include    │          │
+│                           │                           │                           │ available engineers to   │ the required expected     │          │
+│                           │                           │                           │ provide the following    │ output.                   │          │
+│                           │                           │                           │ information:\n\n###      │                           │          │
+│                           │                           │                           │ Engineering Blueprints   │                           │          │
+│                           │                           │                           │ Requiring Refined Focus  │                           │          │
+│                           │                           │                           │ Crystals (Grade          │                           │          │
+│                           │                           │                           │ 5)\n\nRefined Focus      │                           │          │
+│                           │                           │                           │ Crystals are required in │                           │          │
+│                           │                           │                           │ a quantity of **5        │                           │          │
+│                           │                           │                           │ units** for the          │                           │          │
+│                           │                           │                           │ following Grade 5        │                           │          │
+│                           │                           │                           │ modifications:\n\n|      │                           │          │
+│                           │                           │                           │ Modification Type |      │                           │          │
+│                           │                           │                           │ Blueprint Name |         │                           │          │
+│                           │                           │                           │ Required Materials       │                           │          │
+│                           │                           │                           │ (besides Refined Focus   │                           │          │
+│                           │                           │                           │ Crystals) | Engineer     │                           │          │
+│                           │                           │                           │ |\n| :--- | :--- | :---  │                           │          │
+│                           │                           │                           │ | :--- |\n| **Shield     │                           │          │
+│                           │                           │                           │ Booster** | Resistance   │                           │          │
+│                           │                           │                           │ Augmented | 5x           │                           │          │
+│                           │                           │                           │ Conductive Ceramics, 5x  │                           │          │
+│                           │                           │                           │ Imperial Shielding |     │                           │          │
+│                           │                           │                           │ Didi Vatermann (Leesti)  │                           │          │
+│                           │                           │                           │ |\n| **Shield Booster**  │                           │          │
+│                           │                           │                           │ | Blast Resistant | 5x   │                           │          │
+│                           │                           │                           │ Aberrant Shield Pattern  │                           │          │
+│                           │                           │                           │ Analysis, 5x Niobium |   │                           │          │
+│                           │                           │                           │ Didi Vatermann (Leesti)  │                           │          │
+│                           │                           │                           │ |\n| **Shield Booster**  │                           │          │
+│                           │                           │                           │ | Kinetic Resistant | 5x │                           │          │
+│                           │                           │                           │ Aberrant Shield Pattern  │                           │          │
+│                           │                           │                           │ Analysis, 5x Phase       │                           │          │
+│                           │                           │                           │ Alloys | Didi Vatermann  │                           │          │
+│                           │                           │                           │ (Leesti) |\n| **Shield   │                           │          │
+│                           │                           │                           │ Generator** |            │                           │          │
+│                           │                           │                           │ Kinetic/Thermal          │                           │          │
+│                           │                           │                           │ Resistant | 5x           │                           │          │
+│                           │                           │                           │ Ruthenium, 5x Untypical  │                           │          │
+│                           │                           │                           │ Shield Scans | Lei       │                           │          │
+│                           │                           │                           │ Cheung (Status: Locked)  │                           │          │
+│                           │                           │                           │ |\n\n### Accessible      │                           │          │
+│                           │                           │                           │ Engineer\n\nThe engineer │                           │          │
+│                           │                           │                           │ who can apply the        │                           │          │
+│                           │                           │                           │ blueprints that require  │                           │          │
+│                           │                           │                           │ Refined Focus Crystals   │                           │          │
+│                           │                           │                           │ and is currently         │                           │          │
+│                           │                           │                           │ unlocked is **Didi       │                           │          │
+│                           │                           │                           │ Vatermann**, located at  │                           │          │
+│                           │                           │                           │ **Vatermann LLC** in the │                           │          │
+│                           │                           │                           │ **Leesti** system        │                           │          │
+│                           │                           │                           │ (approximately 111.03    │                           │          │
+│                           │                           │                           │ light-years from         │                           │          │
+│                           │                           │                           │ Sol).\n\n### Material    │                           │          │
+│                           │                           │                           │ Sourcing                 │                           │          │
+│                           │                           │                           │ Limitation\n\nWhile I    │                           │          │
+│                           │                           │                           │ can identify the         │                           │          │
+│                           │                           │                           │ blueprints and the       │                           │          │
+│                           │                           │                           │ engineers who can apply  │                           │          │
+│                           │                           │                           │ them, the initial search │                           │          │
+│                           │                           │                           │ for "Refined Focus       │                           │          │
+│                           │                           │                           │ Crystals" did not return │                           │          │
+│                           │                           │                           │ any stock information or │                           │          │
+│                           │                           │                           │ where to source them     │                           │          │
+│                           │                           │                           │ directly from your       │                           │          │
+│                           │                           │                           │ inventory or a general   │                           │          │
+│                           │                           │                           │ material list. You will  │                           │          │
+│                           │                           │                           │ need to source the       │                           │          │
+│                           │                           │                           │ required **5 units** of  │                           │          │
+│                           │                           │                           │ **Refined Focus          │                           │          │
+│                           │                           │                           │ Crystals**, along with   │                           │          │
+│                           │                           │                           │ the other necessary      │                           │          │
+│                           │                           │                           │ manufactured and raw     │                           │          │
+│                           │                           │                           │ materials, before        │                           │          │
+│                           │                           │                           │ visiting Didi            │                           │          │
+│                           │                           │                           │ Vatermann.'              │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ closest scoopable primary │ query='closest system     │ answer='Alpha Centauri'   │ answer='The closest      │ LLMJudge: ✗               │     8.8s │
+│ system                    │ with a scoopable primary  │                           │ system with a scoopable  │   Reason: The provided    │          │
+│                           │ star' projected_states={} │                           │ primary star is the one  │ output identifies 'Sol'   │          │
+│                           │                           │                           │ you are currently in:    │ as the closest scoopable  │          │
+│                           │                           │                           │ **Sol**.\n\n**Report     │ primary star and does not │          │
+│                           │                           │                           │ Summary:**\n\n*          │ mention the expected      │          │
+│                           │                           │                           │ **Query                  │ system 'Alpha Centauri'.  │          │
+│                           │                           │                           │ Interpretation:** The    │ The rubric requires the   │          │
+│                           │                           │                           │ user requested the star  │ output to mention the     │          │
+│                           │                           │                           │ system closest to their  │ expected output; since it │          │
+│                           │                           │                           │ current location that    │ does not, it fails.       │          │
+│                           │                           │                           │ has a scoopable primary  │                           │          │
+│                           │                           │                           │ star.\n*   **Search      │                           │          │
+│                           │                           │                           │ Parameters:** The        │                           │          │
+│                           │                           │                           │ current game state       │                           │          │
+│                           │                           │                           │ indicates the player is  │                           │          │
+│                           │                           │                           │ in the **Sol** system,   │                           │          │
+│                           │                           │                           │ which has a **G          │                           │          │
+│                           │                           │                           │ (White-Yellow) Star**    │                           │          │
+│                           │                           │                           │ that is marked as        │                           │          │
+│                           │                           │                           │ **Scoopable**. Since the │                           │          │
+│                           │                           │                           │ distance to the current  │                           │          │
+│                           │                           │                           │ system is zero, no other │                           │          │
+│                           │                           │                           │ system can be closer. No │                           │          │
+│                           │                           │                           │ tool calls were          │                           │          │
+│                           │                           │                           │ necessary as this        │                           │          │
+│                           │                           │                           │ information was          │                           │          │
+│                           │                           │                           │ available in the         │                           │          │
+│                           │                           │                           │ provided state.\n*       │                           │          │
+│                           │                           │                           │ **Answer:** The closest  │                           │          │
+│                           │                           │                           │ system with a scoopable  │                           │          │
+│                           │                           │                           │ primary star is          │                           │          │
+│                           │                           │                           │ **Sol**.'                │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ closest raw material      │ query='closest raw        │ answer='Here is a list of │ answer="The closest Raw  │ LLMJudge: ✔               │     3.5s │
+│ trader near marco         │ material trader near      │ stations:                 │ Material Trader to Marco │   Reason: The assistant   │          │
+│                           │ marco'                    │ {"amount_total": 371,     │ Qwent's location in      │ output answers the query  │          │
+│                           │ projected_states={}       │ "amount_displayed": 3,    │ **Sirius** is **Bresnik  │ and explicitly lists the  │          │
+│                           │                           │ "results": [{"name":      │ Port** in the **82       │ three stations and        │          │
+│                           │                           │ "Bresnik Port", "system": │ Eridani** system,        │ distances that match the  │          │
+│                           │                           │ "82 Eridani", "distance": │ located approximately    │ expected output (Bresnik  │          │
+│                           │                           │ 15.7230051397626,         │ **15.72 light-years**    │ Port — ~15.72 LY;         │          │
+│                           │                           │ "orbit": 94.919405,       │ away.\n\n### Search      │ Horowitz Hub — ~17.43 LY; │          │
+│                           │                           │ "is_planetary": false,    │ Parameters:\n*           │ Broglie Terminal — ~18.88 │          │
+│                           │                           │ "market": [], "services": │ **Reference System:**    │ LY). It omits the full    │          │
+│                           │                           │ [{"name": "Dock"},        │ Sirius (Marco Qwent's    │ detailed JSON fields      │          │
+│                           │                           │ {"name": "Autodock"},     │ location)\n*   **Service │ (amount_total,            │          │
+│                           │                           │ {"name": "Market"},       │ Searched:** Material     │ amount_displayed, and     │          │
+│                           │                           │ {"name": "Contacts"},     │ Trader for Raw           │ services arrays), but the │          │
+│                           │                           │ {"name": "Universal       │ materials\n*   **Sort    │ rubric only requires the  │          │
+│                           │                           │ Cartographics"}, {"name": │ Order:** Closest         │ result to answer the      │          │
+│                           │                           │ "Missions"}, {"name":     │ distance\n\n### Results  │ query and mention the     │          │
+│                           │                           │ "Outfitting"}, {"name":   │ Summary:\nThe search     │ expected output, which it │          │
+│                           │                           │ "Crew Lounge"}, {"name":  │ returned the following   │ does.                     │          │
+│                           │                           │ "Restock"}, {"name":      │ closest stations trading │                           │          │
+│                           │                           │ "Refuel"}, {"name":       │ Raw materials:\n\n1.     │                           │          │
+│                           │                           │ "Repair"}, {"name":       │ **Bresnik Port** in **82 │                           │          │
+│                           │                           │ "Shipyard"}, {"name":     │ Eridani** (15.72 LY)\n2. │                           │          │
+│                           │                           │ "Tuning"}, {"name":       │ **Horowitz Hub** in      │                           │          │
+│                           │                           │ "Workshop"}, {"name":     │ **LTT 3572** (17.43      │                           │          │
+│                           │                           │ "Missions Generated"},    │ LY)\n3.  **Broglie       │                           │          │
+│                           │                           │ {"name": "Flight          │ Terminal** in **61       │                           │          │
+│                           │                           │ Controller"}, {"name":    │ Cygni** (18.88 LY)"      │                           │          │
+│                           │                           │ "Station Operations"},    │                          │                           │          │
+│                           │                           │ {"name": "Powerplay"},    │                          │                           │          │
+│                           │                           │ {"name": "Search and      │                          │                           │          │
+│                           │                           │ Rescue"}, {"name":        │                          │                           │          │
+│                           │                           │ "Material Trader"},       │                          │                           │          │
+│                           │                           │ {"name": "Station Menu"}, │                          │                           │          │
+│                           │                           │ {"name": "Shop"},         │                          │                           │          │
+│                           │                           │ {"name": "Livery"},       │                          │                           │          │
+│                           │                           │ {"name": "Social Space"}, │                          │                           │          │
+│                           │                           │ {"name": "Bartender"},    │                          │                           │          │
+│                           │                           │ {"name": "Vista           │                          │                           │          │
+│                           │                           │ Genomics"}, {"name":      │                          │                           │          │
+│                           │                           │ "Pioneer Supplies"},      │                          │                           │          │
+│                           │                           │ {"name": "Apex            │                          │                           │          │
+│                           │                           │ Interstellar"}, {"name":  │                          │                           │          │
+│                           │                           │ "Frontline Solutions"},   │                          │                           │          │
+│                           │                           │ {"name": "System          │                          │                           │          │
+│                           │                           │ Colonisation"}]},         │                          │                           │          │
+│                           │                           │ {"name": "Horowitz Hub",  │                          │                           │          │
+│                           │                           │ "system": "LTT 3572",     │                          │                           │          │
+│                           │                           │ "distance":               │                          │                           │          │
+│                           │                           │ 17.4341674682934,         │                          │                           │          │
+│                           │                           │ "orbit": 390.06306,       │                          │                           │          │
+│                           │                           │ "is_planetary": false,    │                          │                           │          │
+│                           │                           │ "market": [], "services": │                          │                           │          │
+│                           │                           │ [{"name": "Dock"},        │                          │                           │          │
+│                           │                           │ {"name": "Autodock"},     │                          │                           │          │
+│                           │                           │ {"name": "Market"},       │                          │                           │          │
+│                           │                           │ {"name": "Contacts"},     │                          │                           │          │
+│                           │                           │ {"name": "Universal       │                          │                           │          │
+│                           │                           │ Cartographics"}, {"name": │                          │                           │          │
+│                           │                           │ "Missions"}, {"name":     │                          │                           │          │
+│                           │                           │ "Outfitting"}, {"name":   │                          │                           │          │
+│                           │                           │ "Crew Lounge"}, {"name":  │                          │                           │          │
+│                           │                           │ "Restock"}, {"name":      │                          │                           │          │
+│                           │                           │ "Refuel"}, {"name":       │                          │                           │          │
+│                           │                           │ "Repair"}, {"name":       │                          │                           │          │
+│                           │                           │ "Shipyard"}, {"name":     │                          │                           │          │
+│                           │                           │ "Tuning"}, {"name":       │                          │                           │          │
+│                           │                           │ "Workshop"}, {"name":     │                          │                           │          │
+│                           │                           │ "Missions Generated"},    │                          │                           │          │
+│                           │                           │ {"name": "Flight          │                          │                           │          │
+│                           │                           │ Controller"}, {"name":    │                          │                           │          │
+│                           │                           │ "Station Operations"},    │                          │                           │          │
+│                           │                           │ {"name": "Powerplay"},    │                          │                           │          │
+│                           │                           │ {"name": "Search and      │                          │                           │          │
+│                           │                           │ Rescue"}, {"name":        │                          │                           │          │
+│                           │                           │ "Material Trader"},       │                          │                           │          │
+│                           │                           │ {"name": "Station Menu"}, │                          │                           │          │
+│                           │                           │ {"name": "Shop"},         │                          │                           │          │
+│                           │                           │ {"name": "Livery"},       │                          │                           │          │
+│                           │                           │ {"name": "Social Space"}, │                          │                           │          │
+│                           │                           │ {"name": "Bartender"},    │                          │                           │          │
+│                           │                           │ {"name": "Vista           │                          │                           │          │
+│                           │                           │ Genomics"}, {"name":      │                          │                           │          │
+│                           │                           │ "Pioneer Supplies"},      │                          │                           │          │
+│                           │                           │ {"name": "Apex            │                          │                           │          │
+│                           │                           │ Interstellar"}, {"name":  │                          │                           │          │
+│                           │                           │ "Frontline Solutions"},   │                          │                           │          │
+│                           │                           │ {"name": "System          │                          │                           │          │
+│                           │                           │ Colonisation"}]},         │                          │                           │          │
+│                           │                           │ {"name": "Broglie         │                          │                           │          │
+│                           │                           │ Terminal", "system": "61  │                          │                           │          │
+│                           │                           │ Cygni", "distance":       │                          │                           │          │
+│                           │                           │ 18.8779747241991,         │                          │                           │          │
+│                           │                           │ "orbit": 24.012126,       │                          │                           │          │
+│                           │                           │ "is_planetary": false,    │                          │                           │          │
+│                           │                           │ "market": [], "services": │                          │                           │          │
+│                           │                           │ [{"name": "Dock"},        │                          │                           │          │
+│                           │                           │ {"name": "Autodock"},     │                          │                           │          │
+│                           │                           │ {"name": "Market"},       │                          │                           │          │
+│                           │                           │ {"name": "Contacts"},     │                          │                           │          │
+│                           │                           │ {"name": "Universal       │                          │                           │          │
+│                           │                           │ Cartographics"}, {"name": │                          │                           │          │
+│                           │                           │ "Missions"}, {"name":     │                          │                           │          │
+│                           │                           │ "Outfitting"}, {"name":   │                          │                           │          │
+│                           │                           │ "Crew Lounge"}, {"name":  │                          │                           │          │
+│                           │                           │ "Restock"}, {"name":      │                          │                           │          │
+│                           │                           │ "Refuel"}, {"name":       │                          │                           │          │
+│                           │                           │ "Repair"}, {"name":       │                          │                           │          │
+│                           │                           │ "Shipyard"}, {"name":     │                          │                           │          │
+│                           │                           │ "Tuning"}, {"name":       │                          │                           │          │
+│                           │                           │ "Workshop"}, {"name":     │                          │                           │          │
+│                           │                           │ "Missions Generated"},    │                          │                           │          │
+│                           │                           │ {"name": "Flight          │                          │                           │          │
+│                           │                           │ Controller"}, {"name":    │                          │                           │          │
+│                           │                           │ "Station Operations"},    │                          │                           │          │
+│                           │                           │ {"name": "Powerplay"},    │                          │                           │          │
+│                           │                           │ {"name": "Search and      │                          │                           │          │
+│                           │                           │ Rescue"}, {"name":        │                          │                           │          │
+│                           │                           │ "Material Trader"},       │                          │                           │          │
+│                           │                           │ {"name": "Station Menu"}, │                          │                           │          │
+│                           │                           │ {"name": "Shop"},         │                          │                           │          │
+│                           │                           │ {"name": "Livery"},       │                          │                           │          │
+│                           │                           │ {"name": "Social Space"}, │                          │                           │          │
+│                           │                           │ {"name": "Bartender"},    │                          │                           │          │
+│                           │                           │ {"name": "Vista           │                          │                           │          │
+│                           │                           │ Genomics"}, {"name":      │                          │                           │          │
+│                           │                           │ "Pioneer Supplies"},      │                          │                           │          │
+│                           │                           │ {"name": "Apex            │                          │                           │          │
+│                           │                           │ Interstellar"}, {"name":  │                          │                           │          │
+│                           │                           │ "Frontline Solutions"},   │                          │                           │          │
+│                           │                           │ {"name": "System          │                          │                           │          │
+│                           │                           │ Colonisation"}]}]}'       │                          │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ mine painite              │ query='painite'           │ answer='Painite can be    │ answer="The user is      │ LLMJudge: ✗               │     4.8s │
+│                           │ projected_states={}       │ acquired by mining        │ asking about the         │   Reason: The assistant's │          │
+│                           │                           │ hotspots. Here is a list  │ material                 │ output does not match the │          │
+│                           │                           │ of celestial bodies:      │ **Painite**.\n\nI used   │ expected output. The      │          │
+│                           │                           │ {"amount_total": 10000,   │ the `material_finder`    │ expected output indicates │          │
+│                           │                           │ "amount_displayed": 3,    │ tool to search for this  │ that Painite can be       │          │
+│                           │                           │ "results": [{"name": "LFT │ material.\n\n**Search    │ acquired from mining      │          │
+│                           │                           │ 65 1", "subtype": "Class  │ Parameters Used:**\n1.   │ hotspots and provides a   │          │
+│                           │                           │ III gas giant",           │ Searched for 'Painite'   │ detailed list of          │          │
+│                           │                           │ "system_name": "LFT 65",  │ as a grade 5 **raw**     │ celestial bodies          │          │
+│                           │                           │ "rings": {"signals":      │ material.\n2.  Searched  │ (including LFT 65 1, Caer │          │
+│                           │                           │ [{"count": 1, "name":     │ for 'Painite' as a       │ Bran A 4, OT Serpentis    │          │
+│                           │                           │ "Monazite"}, {"count": 1, │ **raw** material without │ ABC 1) where Painite      │          │
+│                           │                           │ "name": "Painite"},       │ specifying a             │ appears. The assistant's  │          │
+│                           │                           │ {"count": 1, "name":      │ grade.\n\n**Result:**\nT │ output instead reports    │          │
+│                           │                           │ "Platinum"}, {"count": 1, │ he material finder tool  │ that the material_finder  │          │
+│                           │                           │ "name": "Rhodplumsite"},  │ did not return any       │ returned no results and   │          │
+│                           │                           │ {"count": 1, "name":      │ results for Painite      │ offers general            │          │
+│                           │                           │ "Serendibite"}, {"count": │ under the 'raw' material │ recommendations, without  │          │
+│                           │                           │ 1, "name":                │ type in either search,   │ stating that Painite can  │          │
+│                           │                           │ "Alexandrite"}, {"count": │ suggesting it might not  │ be obtained from mining   │          │
+│                           │                           │ 2, "name": "Bromellite"}, │ be classified as such in │ hotspots or providing the │          │
+│                           │                           │ {"count": 1, "name":      │ the current database     │ required list of bodies.  │          │
+│                           │                           │ "Grandidierite"},         │ context or is not        │ Therefore it does not     │          │
+│                           │                           │ {"count": 1, "name":      │ available in a way that  │ mention the expected      │          │
+│                           │                           │ "Void Opal"}, {"count":   │ the tool can currently   │ output content.           │          │
+│                           │                           │ 1, "name": "Tritium"}]}}, │ identify (e.g., if it's  │                           │          │
+│                           │                           │ {"name": "Caer Bran A 4", │ only found in specific   │                           │          │
+│                           │                           │ "subtype": "Class I gas   │ asteroid belts which the │                           │          │
+│                           │                           │ giant", "system_name":    │ `material_finder`        │                           │          │
+│                           │                           │ "Caer Bran", "rings":     │ doesn't detail, or if    │                           │          │
+│                           │                           │ {"signals": [{"count": 2, │ the                      │                           │          │
+│                           │                           │ "name": "Monazite"},      │ spelling/classification  │                           │          │
+│                           │                           │ {"count": 2, "name":      │ is slightly              │                           │          │
+│                           │                           │ "Painite"}, {"count": 2,  │ different).\n\n**Recomme │                           │          │
+│                           │                           │ "name": "Platinum"},      │ ndation:**\nSince        │                           │          │
+│                           │                           │ {"count": 2, "name":      │ Painite is a highly      │                           │          │
+│                           │                           │ "Rhodplumsite"},          │ valuable raw material,   │                           │          │
+│                           │                           │ {"count": 1, "name":      │ you may need to look for │                           │          │
+│                           │                           │ "Serendibite"}, {"count": │ it in specific types of  │                           │          │
+│                           │                           │ 3, "name": "Bromellite"}, │ asteroid belts (like Icy │                           │          │
+│                           │                           │ {"count": 2, "name":      │ Rings or Metallic        │                           │          │
+│                           │                           │ "Void Opal"}]}}, {"name": │ Clusters) in systems     │                           │          │
+│                           │                           │ "OT Serpentis ABC 1",     │ with high security or    │                           │          │
+│                           │                           │ "subtype": "Icy body",    │ high extraction          │                           │          │
+│                           │                           │ "system_name": "OT        │ economies. You are       │                           │          │
+│                           │                           │ Serpentis", "rings":      │ currently in **Sol**.    │                           │          │
+│                           │                           │ {"signals": [{"count": 1, │ You could use the        │                           │          │
+│                           │                           │ "name": "Monazite"},      │ `station_finder` tool to │                           │          │
+│                           │                           │ {"count": 2, "name":      │ look for stations in Sol │                           │          │
+│                           │                           │ "Painite"}, {"count": 1,  │ that deal in **Raw**     │                           │          │
+│                           │                           │ "name": "Rhodplumsite"},  │ materials, though this   │                           │          │
+│                           │                           │ {"count": 2, "name":      │ will only show if they   │                           │          │
+│                           │                           │ "Serendibite"}, {"count": │ *buy* or *sell* it as a  │                           │          │
+│                           │                           │ 3, "name":                │ commodity, not if they   │                           │          │
+│                           │                           │ "Alexandrite"}, {"count": │ stock it as an           │                           │          │
+│                           │                           │ 1, "name": "Low           │ engineering material."   │                           │          │
+│                           │                           │ Temperature Diamonds"},   │                          │                           │          │
+│                           │                           │ {"count": 1, "name":      │                          │                           │          │
+│                           │                           │ "Tritium"}]}}]}'          │                          │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ steel for construction    │ query='where do i find    │ answer='Here is a list of │ answer='The construction │ LLMJudge: ✗               │     3.8s │
+│                           │ the remaining steel for   │ stations:                 │ of your colony in        │   Reason: The output      │          │
+│                           │ my construction?'         │ {"amount_total": 10000,   │ **Praea Euq LV-Y b5** is │ answers the query and     │          │
+│                           │ projected_states={'Coloni │ "amount_displayed": 3,    │ missing **56,320 units   │ correctly calculates the  │          │
+│                           │ sationConstruction':      │ "results": [{"name":      │ of Steel**. I have       │ missing Steel (63,936     │          │
+│                           │ {'ConstructionProgress':  │ "Janifer Base", "system": │ searched for stations    │ required − 7,616 provided │          │
+│                           │ 0.034678,                 │ "Gabrani", "distance":    │ within 50 lightyears     │ = 56,320), and it lists   │          │
+│                           │ 'ConstructionComplete':   │ 371.973520300421,         │ that are currently       │ stations where Steel can  │          │
+│                           │ False,                    │ "orbit": 465635.900401,   │ selling this             │ be bought. However, the   │          │
+│                           │ 'ConstructionFailed':     │ "is_planetary": true,     │ material.\n\nHere are    │ rubric requires that the  │          │
+│                           │ False,                    │ "market": [{"buy_price":  │ the stations where you   │ output must mention the   │          │
+│                           │ 'ResourcesRequired':      │ 355, "category":          │ can purchase the         │ expected output (the      │          │
+│                           │ [{'Name':                 │ "Metals", "commodity":    │ required Steel:\n\n|     │ specific expected         │          │
+│                           │ '$cmmcomposite_name;',    │ "Steel", "demand": 1,     │ Station Name | System |  │ stations and JSON         │          │
+│                           │ 'Name_Localised': 'CMM    │ "sell_price": 346,        │ Distance (ly) | Buy      │ structure). The provided  │          │
+│                           │ Composite',               │ "supply": 1519}],         │ Price (CR) |\n| :--- |   │ Output does not include   │          │
+│                           │ 'RequiredAmount': 39737,  │ "services": [{"name":     │ :--- | :--- | :--- |\n|  │ the expected stations     │          │
+│                           │ 'ProvidedAmount': 0,      │ "Dock"}, {"name":         │ **Cleopatra Base** |     │ (Janifer Base, Hauser's   │          │
+│                           │ 'Payment': 6788},         │ "Autodock"}, {"name":     │ **HIP 70597** | 7.57 |   │ Reach, Brunel Depot) nor  │          │
+│                           │ {'Name':                  │ "Black Market"}, {"name": │ 3,434 |\n| **Navigator   │ the expected JSON         │          │
+│                           │ '$powergenerators_name;', │ "Market"}, {"name":       │ Relay** | **Praea Euq    │ details. Therefore it     │          │
+│                           │ 'Name_Localised': 'Power  │ "Contacts"}, {"name":     │ GU-A b4** | 32.60 |      │ does not satisfy the      │          │
+│                           │ Generators',              │ "Universal                │ **3,423 (Cheapest)**     │ rubric.                   │          │
+│                           │ 'RequiredAmount': 277,    │ Cartographics"}, {"name": │ |\n| **Lagrange          │                           │          │
+│                           │ 'ProvidedAmount': 0,      │ "Missions"}, {"name":     │ Obligation** | **HIP     │                           │          │
+│                           │ 'Payment': 3072},         │ "Outfitting"}, {"name":   │ 73550** | 48.32 | 3,472  │                           │          │
+│                           │ {'Name':                  │ "Crew Lounge"}, {"name":  │ |\n\n**Recommendation:** │                           │          │
+│                           │ '$semiconductors_name;',  │ "Restock"}, {"name":      │ \n\n*   For the **best   │                           │          │
+│                           │ 'Name_Localised':         │ "Refuel"}, {"name":       │ price**, travel to       │                           │          │
+│                           │ 'Semiconductors',         │ "Repair"}, {"name":       │ **Navigator Relay** in   │                           │          │
+│                           │ 'RequiredAmount': 413,    │ "Tuning"}, {"name":       │ **Praea Euq GU-A         │                           │          │
+│                           │ 'ProvidedAmount': 0,      │ "Workshop"}, {"name":     │ b4**.\n*   For the       │                           │          │
+│                           │ 'Payment': 1526},         │ "Missions Generated"},    │ **shortest travel        │                           │          │
+│                           │ {'Name': '$steel_name;',  │ {"name": "Flight          │ distance**, go to        │                           │          │
+│                           │ 'Name_Localised':         │ Controller"}, {"name":    │ **Cleopatra Base** in    │                           │          │
+│                           │ 'Steel',                  │ "Station Operations"},    │ **HIP 70597**.'          │                           │          │
+│                           │ 'RequiredAmount': 63936,  │ {"name": "Powerplay"},    │                          │                           │          │
+│                           │ 'ProvidedAmount': 7616,   │ {"name": "Search and      │                          │                           │          │
+│                           │ 'Payment': 5057},         │ Rescue"}, {"name":        │                          │                           │          │
+│                           │ {'Name':                  │ "Station Menu"}, {"name": │                          │                           │          │
+│                           │ '$titanium_name;',        │ "Shop"}, {"name":         │                          │                           │          │
+│                           │ 'Name_Localised':         │ "Livery"}, {"name":       │                          │                           │          │
+│                           │ 'Titanium',               │ "Social Space"}, {"name": │                          │                           │          │
+│                           │ 'RequiredAmount': 35165,  │ "Bartender"}, {"name":    │                          │                           │          │
+│                           │ 'ProvidedAmount': 0,      │ "Vista Genomics"},        │                          │                           │          │
+│                           │ 'Payment': 5360}],        │ {"name": "Pioneer         │                          │                           │          │
+│                           │ 'MarketID': 4263743747,   │ Supplies"}, {"name":      │                          │                           │          │
+│                           │ 'StarSystem': 'Praea Euq  │ "Apex Interstellar"},     │                          │                           │          │
+│                           │ LV-Y b5',                 │ {"name": "Frontline       │                          │                           │          │
+│                           │ 'StarSystemRecall':       │ Solutions"}, {"name":     │                          │                           │          │
+│                           │ 'Praea Euq LV-Y b5'}}     │ "System Colonisation"},   │                          │                           │          │
+│                           │                           │ {"name": "Refinery        │                          │                           │          │
+│                           │                           │ Contact"}]}, {"name":     │                          │                           │          │
+│                           │                           │ "Hauser\'s Reach",        │                          │                           │          │
+│                           │                           │ "system": "Robigo",       │                          │                           │          │
+│                           │                           │ "distance":               │                          │                           │          │
+│                           │                           │ 755.243062850878,         │                          │                           │          │
+│                           │                           │ "orbit": 1075.835224,     │                          │                           │          │
+│                           │                           │ "is_planetary": false,    │                          │                           │          │
+│                           │                           │ "market": [{"buy_price":  │                          │                           │          │
+│                           │                           │ 359, "category":          │                          │                           │          │
+│                           │                           │ "Metals", "commodity":    │                          │                           │          │
+│                           │                           │ "Steel", "demand": 1,     │                          │                           │          │
+│                           │                           │ "sell_price": 350,        │                          │                           │          │
+│                           │                           │ "supply": 2332}],         │                          │                           │          │
+│                           │                           │ "services": [{"name":     │                          │                           │          │
+│                           │                           │ "Dock"}, {"name":         │                          │                           │          │
+│                           │                           │ "Autodock"}, {"name":     │                          │                           │          │
+│                           │                           │ "Market"}, {"name":       │                          │                           │          │
+│                           │                           │ "Contacts"}, {"name":     │                          │                           │          │
+│                           │                           │ "Universal                │                          │                           │          │
+│                           │                           │ Cartographics"}, {"name": │                          │                           │          │
+│                           │                           │ "Missions"}, {"name":     │                          │                           │          │
+│                           │                           │ "Outfitting"}, {"name":   │                          │                           │          │
+│                           │                           │ "Crew Lounge"}, {"name":  │                          │                           │          │
+│                           │                           │ "Restock"}, {"name":      │                          │                           │          │
+│                           │                           │ "Refuel"}, {"name":       │                          │                           │          │
+│                           │                           │ "Repair"}, {"name":       │                          │                           │          │
+│                           │                           │ "Shipyard"}, {"name":     │                          │                           │          │
+│                           │                           │ "Tuning"}, {"name":       │                          │                           │          │
+│                           │                           │ "Workshop"}, {"name":     │                          │                           │          │
+│                           │                           │ "Missions Generated"},    │                          │                           │          │
+│                           │                           │ {"name": "Flight          │                          │                           │          │
+│                           │                           │ Controller"}, {"name":    │                          │                           │          │
+│                           │                           │ "Station Operations"},    │                          │                           │          │
+│                           │                           │ {"name": "Search and      │                          │                           │          │
+│                           │                           │ Rescue"}, {"name":        │                          │                           │          │
+│                           │                           │ "Station Menu"}, {"name": │                          │                           │          │
+│                           │                           │ "Shop"}, {"name":         │                          │                           │          │
+│                           │                           │ "Livery"}, {"name":       │                          │                           │          │
+│                           │                           │ "Social Space"}, {"name": │                          │                           │          │
+│                           │                           │ "Bartender"}, {"name":    │                          │                           │          │
+│                           │                           │ "Vista Genomics"},        │                          │                           │          │
+│                           │                           │ {"name": "Pioneer         │                          │                           │          │
+│                           │                           │ Supplies"}, {"name":      │                          │                           │          │
+│                           │                           │ "Apex Interstellar"},     │                          │                           │          │
+│                           │                           │ {"name": "Frontline       │                          │                           │          │
+│                           │                           │ Solutions"}]}, {"name":   │                          │                           │          │
+│                           │                           │ "Brunel Depot", "system": │                          │                           │          │
+│                           │                           │ "Col 285 Sector YG-I      │                          │                           │          │
+│                           │                           │ b24-6", "distance":       │                          │                           │          │
+│                           │                           │ 224.337499042319,         │                          │                           │          │
+│                           │                           │ "orbit": 13.315131,       │                          │                           │          │
+│                           │                           │ "is_planetary": true,     │                          │                           │          │
+│                           │                           │ "market": [{"buy_price":  │                          │                           │          │
+│                           │                           │ 369, "category":          │                          │                           │          │
+│                           │                           │ "Metals", "commodity":    │                          │                           │          │
+│                           │                           │ "Steel", "demand": 1,     │                          │                           │          │
+│                           │                           │ "sell_price": 360,        │                          │                           │          │
+│                           │                           │ "supply": 320}],          │                          │                           │          │
+│                           │                           │ "services": [{"name":     │                          │                           │          │
+│                           │                           │ "Dock"}, {"name":         │                          │                           │          │
+│                           │                           │ "Autodock"}, {"name":     │                          │                           │          │
+│                           │                           │ "Contacts"}, {"name":     │                          │                           │          │
+│                           │                           │ "Missions"}, {"name":     │                          │                           │          │
+│                           │                           │ "Restock"}, {"name":      │                          │                           │          │
+│                           │                           │ "Refuel"}, {"name":       │                          │                           │          │
+│                           │                           │ "Repair"}, {"name":       │                          │                           │          │
+│                           │                           │ "Workshop"}, {"name":     │                          │                           │          │
+│                           │                           │ "Interstellar Factors     │                          │                           │          │
+│                           │                           │ Contact"}, {"name":       │                          │                           │          │
+│                           │                           │ "Flight Controller"},     │                          │                           │          │
+│                           │                           │ {"name": "Station         │                          │                           │          │
+│                           │                           │ Operations"}, {"name":    │                          │                           │          │
+│                           │                           │ "Powerplay"}, {"name":    │                          │                           │          │
+│                           │                           │ "Search and Rescue"},     │                          │                           │          │
+│                           │                           │ {"name": "Station Menu"}, │                          │                           │          │
+│                           │                           │ {"name": "Shop"},         │                          │                           │          │
+│                           │                           │ {"name": "Social Space"}, │                          │                           │          │
+│                           │                           │ {"name": "Bartender"},    │                          │                           │          │
+│                           │                           │ {"name": "Vista           │                          │                           │          │
+│                           │                           │ Genomics"}, {"name":      │                          │                           │          │
+│                           │                           │ "Pioneer Supplies"},      │                          │                           │          │
+│                           │                           │ {"name": "Apex            │                          │                           │          │
+│                           │                           │ Interstellar"}, {"name":  │                          │                           │          │
+│                           │                           │ "Frontline                │                          │                           │          │
+│                           │                           │ Solutions"}]}]}'          │                          │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ Averages                  │                           │                           │                          │ 65.4% ✔                   │     4.4s │
+└───────────────────────────┴───────────────────────────┴───────────────────────────┴──────────────────────────┴───────────────────────────┴──────────┘
+
+
+# New Run 2025-11-23T01:06:19.840087
+
+**Timestamp:** 2025-11-23T01:06:19.840087
+
+**Agent Model:** gemini-2.5-flash-preview-09-2025
+
+**Reasoning Effort:** high
+
+**Judge Model:** openai/gpt-5-mini
+
+## Report gemini-2.5-flash-preview-09-2025 (high)
+
+                                                            Evaluation Summary: run_sample                                                             
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┓
+┃ Case ID                   ┃ Inputs                    ┃ Expected Output           ┃ Outputs                  ┃ Assertions                ┃ Duration ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━┩
+│ system name sirius        │ query='find system named  │ answer='Sirius'           │ answer='The user wants   │ LLMJudge: ✔               │     2.3s │
+│                           │ Sirius'                   │                           │ to find the star system  │   Reason: The output      │          │
+│                           │ projected_states={}       │                           │ named "Sirius" and is    │ explicitly mentions the   │          │
+│                           │                           │                           │ currently located in     │ expected answer 'Sirius'  │          │
+│                           │                           │                           │ "Sol".\n\n**Search       │ (included in the answer   │          │
+│                           │                           │                           │ Parameters:**\n*         │ text and under 'System    │          │
+│                           │                           │                           │ **System Name:**         │ Found' -> 'Name: Sirius') │          │
+│                           │                           │                           │ `Sirius`\n*              │ and therefore meets the   │          │
+│                           │                           │                           │ **Reference System:**    │ rubric; additional        │          │
+│                           │                           │                           │ `Sol`\n\n**System        │ details are permissible.  │          │
+│                           │                           │                           │ Found:**\n*   **Name:**  │                           │          │
+│                           │                           │                           │ Sirius\n*                │                           │          │
+│                           │                           │                           │ **Allegiance:**          │                           │          │
+│                           │                           │                           │ Independent\n*           │                           │          │
+│                           │                           │                           │ **Controlling Faction:** │                           │          │
+│                           │                           │                           │ Sirius Corporation\n*    │                           │          │
+│                           │                           │                           │ **Distance from Sol:**   │                           │          │
+│                           │                           │                           │ 8.59 light-years\n*      │                           │          │
+│                           │                           │                           │ **Population:**          │                           │          │
+│                           │                           │                           │ 2,501,068\n*   **Primary │                           │          │
+│                           │                           │                           │ Economy:** Industrial\n* │                           │          │
+│                           │                           │                           │ **Security:** High'      │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ system allied empire      │ query='find systems       │ answer='Toolfa'           │ answer='The user wants   │ LLMJudge: ✔               │     2.7s │
+│                           │ allied to the Empire'     │                           │ to find star systems     │   Reason: The output      │          │
+│                           │ projected_states={}       │                           │ allied with the Empire   │ includes 'Toolfa' (the    │          │
+│                           │                           │                           │ near their current       │ expected answer) and also │          │
+│                           │                           │                           │ location,                │ provides additional       │          │
+│                           │                           │                           │ Sol.\n\n**Search         │ allowed details about     │          │
+│                           │                           │                           │ Parameters:**\n*         │ other Empire-allied       │          │
+│                           │                           │                           │ **Allegiance:**          │ systems. This satisfies   │          │
+│                           │                           │                           │ Empire\n*   **Reference  │ the rubric requirement    │          │
+│                           │                           │                           │ System:**                │ that the expected output  │          │
+│                           │                           │                           │ Sol\n\n**Search          │ be mentioned; extra       │          │
+│                           │                           │                           │ Results:**\nThe search   │ information is permitted. │          │
+│                           │                           │                           │ returned 3 star systems  │                           │          │
+│                           │                           │                           │ allied with the Empire   │                           │          │
+│                           │                           │                           │ that are relatively      │                           │          │
+│                           │                           │                           │ close to Sol:\n\n1.      │                           │          │
+│                           │                           │                           │ **Toolfa**\n    *        │                           │          │
+│                           │                           │                           │ **Distance:** 14.01      │                           │          │
+│                           │                           │                           │ light-years\n    *       │                           │          │
+│                           │                           │                           │ **Minor Faction:** East  │                           │          │
+│                           │                           │                           │ India Company\n    *     │                           │          │
+│                           │                           │                           │ **State:** Boom\n    *   │                           │          │
+│                           │                           │                           │ **Primary Economy:**     │                           │          │
+│                           │                           │                           │ High Tech\n    *         │                           │          │
+│                           │                           │                           │ **Security:** High\n\n2. │                           │          │
+│                           │                           │                           │ **Luyten 205-128**\n     │                           │          │
+│                           │                           │                           │ *   **Distance:** 19.01  │                           │          │
+│                           │                           │                           │ light-years\n    *       │                           │          │
+│                           │                           │                           │ **Minor Faction:** East  │                           │          │
+│                           │                           │                           │ India Company\n    *     │                           │          │
+│                           │                           │                           │ **State:** Boom\n    *   │                           │          │
+│                           │                           │                           │ **Primary Economy:**     │                           │          │
+│                           │                           │                           │ High Tech\n    *         │                           │          │
+│                           │                           │                           │ **Security:**            │                           │          │
+│                           │                           │                           │ Medium\n\n3.  **LAWD     │                           │          │
+│                           │                           │                           │ 26**\n    *              │                           │          │
+│                           │                           │                           │ **Distance:** 22.53      │                           │          │
+│                           │                           │                           │ light-years\n    *       │                           │          │
+│                           │                           │                           │ **Minor Faction:** East  │                           │          │
+│                           │                           │                           │ India Company\n    *     │                           │          │
+│                           │                           │                           │ **State:** Boom\n    *   │                           │          │
+│                           │                           │                           │ **Primary Economy:**     │                           │          │
+│                           │                           │                           │ Extraction\n    *        │                           │          │
+│                           │                           │                           │ **Security:** Low'       │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ system government anarchy │ query='find systems with  │ answer='WISE 0410+1502'   │ answer='**Report**\n\n** │ LLMJudge: ✔               │     3.0s │
+│                           │ an anarchy government'    │                           │ Query Interpretation:**  │   Reason: The provided    │          │
+│                           │ projected_states={}       │                           │ The user is requesting a │ output lists WISE         │          │
+│                           │                           │                           │ list of star systems     │ 0410+1502 as the first    │          │
+│                           │                           │                           │ with an Anarchy          │ result among the top      │          │
+│                           │                           │                           │ government, searched     │ three systems, which      │          │
+│                           │                           │                           │ from their current       │ matches the expected      │          │
+│                           │                           │                           │ location in the Sol      │ output.                   │          │
+│                           │                           │                           │ system.\n\n**Search      │                           │          │
+│                           │                           │                           │ Parameters:**\n*         │                           │          │
+│                           │                           │                           │ **Government:**          │                           │          │
+│                           │                           │                           │ Anarchy\n*   **Reference │                           │          │
+│                           │                           │                           │ System:**                │                           │          │
+│                           │                           │                           │ Sol\n\n**Answer:**\nA    │                           │          │
+│                           │                           │                           │ search for systems with  │                           │          │
+│                           │                           │                           │ an **Anarchy**           │                           │          │
+│                           │                           │                           │ government near your     │                           │          │
+│                           │                           │                           │ current location in      │                           │          │
+│                           │                           │                           │ **Sol** returned         │                           │          │
+│                           │                           │                           │ **4,233** results. The   │                           │          │
+│                           │                           │                           │ top three closest        │                           │          │
+│                           │                           │                           │ systems are:\n\n1.       │                           │          │
+│                           │                           │                           │ **WISE 0410+1502**\n     │                           │          │
+│                           │                           │                           │ *   **Distance:** 14.01  │                           │          │
+│                           │                           │                           │ light-years\n    *       │                           │          │
+│                           │                           │                           │ **Government:**          │                           │          │
+│                           │                           │                           │ Anarchy\n    *           │                           │          │
+│                           │                           │                           │ **Allegiance:**          │                           │          │
+│                           │                           │                           │ Independent\n    *       │                           │          │
+│                           │                           │                           │ **Primary Economy:**     │                           │          │
+│                           │                           │                           │ Industrial\n    *        │                           │          │
+│                           │                           │                           │ **Controlling Faction:** │                           │          │
+│                           │                           │                           │ Brothers of Lung (in     │                           │          │
+│                           │                           │                           │ Boom state)\n2.  **LP    │                           │          │
+│                           │                           │                           │ 658-2**\n    *           │                           │          │
+│                           │                           │                           │ **Distance:** 21.08      │                           │          │
+│                           │                           │                           │ light-years\n    *       │                           │          │
+│                           │                           │                           │ **Government:**          │                           │          │
+│                           │                           │                           │ Anarchy\n    *           │                           │          │
+│                           │                           │                           │ **Allegiance:**          │                           │          │
+│                           │                           │                           │ Independent\n    *       │                           │          │
+│                           │                           │                           │ **Primary Economy:**     │                           │          │
+│                           │                           │                           │ Tourism\n    *           │                           │          │
+│                           │                           │                           │ **Controlling Faction:** │                           │          │
+│                           │                           │                           │ Brothers of Lung (in     │                           │          │
+│                           │                           │                           │ Boom state)\n3.  **WISE  │                           │          │
+│                           │                           │                           │ J0254+0223**\n    *      │                           │          │
+│                           │                           │                           │ **Distance:** 24.22      │                           │          │
+│                           │                           │                           │ light-years\n    *       │                           │          │
+│                           │                           │                           │ **Government:**          │                           │          │
+│                           │                           │                           │ Anarchy\n    *           │                           │          │
+│                           │                           │                           │ **Allegiance:**          │                           │          │
+│                           │                           │                           │ Independent\n    *       │                           │          │
+│                           │                           │                           │ **Primary Economy:**     │                           │          │
+│                           │                           │                           │ Service\n    *           │                           │          │
+│                           │                           │                           │ **Controlling Faction:** │                           │          │
+│                           │                           │                           │ Brothers of Lung (in War │                           │          │
+│                           │                           │                           │ state)'                  │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ system power li yong-rui  │ query='find systems       │ answer='Sirius'           │ answer='Li Yong-Rui is a │ LLMJudge: ✔               │     3.2s │
+│                           │ controlled by Li          │                           │ Powerplay figure in      │   Reason: The output      │          │
+│                           │ Yong-Rui'                 │                           │ Elite Dangerous, and     │ lists 'Sirius' as the     │          │
+│                           │ projected_states={}       │                           │ systems he controls are  │ first system associated   │          │
+│                           │                           │                           │ those where he is the    │ with Li Yong-Rui,         │          │
+│                           │                           │                           │ governing                │ matching the expected     │          │
+│                           │                           │                           │ Power.\n\nBased on your  │ output. It answers the    │          │
+│                           │                           │                           │ current location in the  │ query and includes        │          │
+│                           │                           │                           │ **Sol** system, here are │ additional acceptable     │          │
+│                           │                           │                           │ the three closest        │ details.                  │          │
+│                           │                           │                           │ systems that are         │                           │          │
+│                           │                           │                           │ associated with Li       │                           │          │
+│                           │                           │                           │ Yong-Rui:\n\n| System    │                           │          │
+│                           │                           │                           │ Name | Allegiance |      │                           │          │
+│                           │                           │                           │ Minor Faction | State |  │                           │          │
+│                           │                           │                           │ Distance (Ly) |          │                           │          │
+│                           │                           │                           │ Population | Primary     │                           │          │
+│                           │                           │                           │ Economy | Security |\n|  │                           │          │
+│                           │                           │                           │ :--- | :--- | :--- |     │                           │          │
+│                           │                           │                           │ :--- | :--- | :--- |     │                           │          │
+│                           │                           │                           │ :--- | :--- |\n|         │                           │          │
+│                           │                           │                           │ **Sirius** | Independent │                           │          │
+│                           │                           │                           │ | Sirius Corporation |   │                           │          │
+│                           │                           │                           │ Boom | 8.59 | 2,501,068  │                           │          │
+│                           │                           │                           │ | Industrial | High |\n| │                           │          │
+│                           │                           │                           │ **WISE 0410+1502** |     │                           │          │
+│                           │                           │                           │ Independent | Brothers   │                           │          │
+│                           │                           │                           │ of Lung | Boom | 14.01 | │                           │          │
+│                           │                           │                           │ 41,493,915 | Industrial  │                           │          │
+│                           │                           │                           │ | Anarchy |\n| **LHS     │                           │          │
+│                           │                           │                           │ 1827** | Independent |   │                           │          │
+│                           │                           │                           │ Hutton Orbital Truckers  │                           │          │
+│                           │                           │                           │ Co-Operative | Expansion │                           │          │
+│                           │                           │                           │ | 18.77 | 50,729,013 |   │                           │          │
+│                           │                           │                           │ Industrial | Low         │                           │          │
+│                           │                           │                           │ |\n\nThere are a total   │                           │          │
+│                           │                           │                           │ of 1470 systems          │                           │          │
+│                           │                           │                           │ associated with Li       │                           │          │
+│                           │                           │                           │ Yong-Rui. The search has │                           │          │
+│                           │                           │                           │ been sorted by distance  │                           │          │
+│                           │                           │                           │ from your current        │                           │          │
+│                           │                           │                           │ system, Sol.'            │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ system economy            │ query='find systems with  │ answer='Epsilon Eridani'  │ answer='**Final          │ LLMJudge: ✔               │     2.8s │
+│ agriculture               │ an agriculture economy'   │                           │ Report**\n\nYou are      │   Reason: The provided    │          │
+│                           │ projected_states={}       │                           │ currently in the **Sol** │ output includes 'Epsilon  │          │
+│                           │                           │                           │ system.\n\n**Search      │ Eridani' in the list of   │          │
+│                           │                           │                           │ Parameters:**\n*         │ systems, matching the     │          │
+│                           │                           │                           │ **Primary Economy:**     │ expected output.          │          │
+│                           │                           │                           │ Agriculture\n*           │                           │          │
+│                           │                           │                           │ **Reference System:**    │                           │          │
+│                           │                           │                           │ Sol\n*   **Maximum       │                           │          │
+│                           │                           │                           │ Distance:** 50 Light     │                           │          │
+│                           │                           │                           │ Years\n\nHere are the    │                           │          │
+│                           │                           │                           │ nearest star systems     │                           │          │
+│                           │                           │                           │ with a primary           │                           │          │
+│                           │                           │                           │ Agriculture              │                           │          │
+│                           │                           │                           │ economy:\n\n| System     │                           │          │
+│                           │                           │                           │ Name | Allegiance |      │                           │          │
+│                           │                           │                           │ Distance (Ly) | Primary  │                           │          │
+│                           │                           │                           │ Economy |\n| :--- | :--- │                           │          │
+│                           │                           │                           │ | :--- | :--- |\n|       │                           │          │
+│                           │                           │                           │ **Epsilon Eridani** |    │                           │          │
+│                           │                           │                           │ Independent | 10.52 |    │                           │          │
+│                           │                           │                           │ Agriculture |\n|         │                           │          │
+│                           │                           │                           │ **Procyon** |            │                           │          │
+│                           │                           │                           │ Independent | 11.41 |    │                           │          │
+│                           │                           │                           │ Agriculture |\n|         │                           │          │
+│                           │                           │                           │ **Epsilon Indi** |       │                           │          │
+│                           │                           │                           │ Independent | 11.80 |    │                           │          │
+│                           │                           │                           │ Agriculture |'           │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ system low security       │ query='find low security  │ answer="Barnard's Star"   │ answer='**Query          │ LLMJudge: ✔               │     2.8s │
+│                           │ systems'                  │                           │ Interpretation:**\nThe   │   Reason: The provided    │          │
+│                           │ projected_states={}       │                           │ user wants to find star  │ Output lists Barnard's    │          │
+│                           │                           │                           │ systems with low         │ Star in the results (in   │          │
+│                           │                           │                           │ security near their      │ the table), satisfying    │          │
+│                           │                           │                           │ current location,        │ the rubric requirement    │          │
+│                           │                           │                           │ Sol.\n\n**Search         │ that the expected output  │          │
+│                           │                           │                           │ Parameters:**\n*         │ be mentioned. Additional  │          │
+│                           │                           │                           │ **Reference System:**    │ details are present but   │          │
+│                           │                           │                           │ Sol (current             │ acceptable.               │          │
+│                           │                           │                           │ location)\n*             │                           │          │
+│                           │                           │                           │ **Security:** Low\n*     │                           │          │
+│                           │                           │                           │ **Distance:** 50         │                           │          │
+│                           │                           │                           │ light-years (default     │                           │          │
+│                           │                           │                           │ maximum for local        │                           │          │
+│                           │                           │                           │ search)\n\n**Answer:**\n │                           │          │
+│                           │                           │                           │ I found 3 star systems   │                           │          │
+│                           │                           │                           │ with a "Low" security    │                           │          │
+│                           │                           │                           │ rating within 50         │                           │          │
+│                           │                           │                           │ light-years of your      │                           │          │
+│                           │                           │                           │ current system,          │                           │          │
+│                           │                           │                           │ **Sol**:\n\n| System     │                           │          │
+│                           │                           │                           │ Name | Allegiance |      │                           │          │
+│                           │                           │                           │ Primary Economy |        │                           │          │
+│                           │                           │                           │ Security | Distance (ly) │                           │          │
+│                           │                           │                           │ |\n| :--- | :--- | :---  │                           │          │
+│                           │                           │                           │ | :--- | :--- |\n|       │                           │          │
+│                           │                           │                           │ **Alpha Centauri** |     │                           │          │
+│                           │                           │                           │ Independent | Extraction │                           │          │
+│                           │                           │                           │ | Low | 4.38 |\n|        │                           │          │
+│                           │                           │                           │ **Barnard\'s Star** |    │                           │          │
+│                           │                           │                           │ Independent | Refinery | │                           │          │
+│                           │                           │                           │ Low | 5.95 |\n| **WISE   │                           │          │
+│                           │                           │                           │ 0855-0714** |            │                           │          │
+│                           │                           │                           │ Independent | Refinery | │                           │          │
+│                           │                           │                           │ Low | 7.17 |'            │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ system population over 1m │ query='find systems with  │ answer="Barnard's Star"   │ answer="The user is      │ LLMJudge: ✔               │     4.0s │
+│                           │ at least 1 million        │                           │ looking for star systems │   Reason: The output      │          │
+│                           │ population'               │                           │ with a population of at  │ includes Barnard's Star   │          │
+│                           │ projected_states={}       │                           │ least 1 million,         │ among the systems with    │          │
+│                           │                           │                           │ relative to their        │ population >= 1,000,000,  │          │
+│                           │                           │                           │ current location in      │ satisfying the expected   │          │
+│                           │                           │                           │ **Sol**.\n\nI used the   │ answer. Therefore it      │          │
+│                           │                           │                           │ `system_finder` tool     │ answers the query and     │          │
+│                           │                           │                           │ with the following       │ mentions the expected     │          │
+│                           │                           │                           │ parameters:\n*           │ output.                   │          │
+│                           │                           │                           │ **Population:** Greater  │                           │          │
+│                           │                           │                           │ than (`>`) 999,999       │                           │          │
+│                           │                           │                           │ (i.e., 1 million or      │                           │          │
+│                           │                           │                           │ more)\n*   **Reference   │                           │          │
+│                           │                           │                           │ System:** `Sol`\n\nThe   │                           │          │
+│                           │                           │                           │ following systems were   │                           │          │
+│                           │                           │                           │ found:\n\n| System Name  │                           │          │
+│                           │                           │                           │ | Allegiance |           │                           │          │
+│                           │                           │                           │ Population | Primary     │                           │          │
+│                           │                           │                           │ Economy | Distance from  │                           │          │
+│                           │                           │                           │ Sol (Ly) |\n| :--- |     │                           │          │
+│                           │                           │                           │ :--- | :--- | :--- |     │                           │          │
+│                           │                           │                           │ :--- |\n| **Sol** |      │                           │          │
+│                           │                           │                           │ Federation |             │                           │          │
+│                           │                           │                           │ 18,320,926,115 |         │                           │          │
+│                           │                           │                           │ Refinery | 0.0 |\n|      │                           │          │
+│                           │                           │                           │ **Lalande 21185** |      │                           │          │
+│                           │                           │                           │ Federation | 43,392,900  │                           │          │
+│                           │                           │                           │ | Military | 8.29 |\n|   │                           │          │
+│                           │                           │                           │ **Barnard's Star** |     │                           │          │
+│                           │                           │                           │ Independent | 1,256,069  │                           │          │
+│                           │                           │                           │ | Refinery | 5.95 |"     │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ distance to maia          │ query='give me the        │ answer='383'              │ answer='I am unable to   │ LLMJudge: ✗               │    36.0s │
+│                           │ distance to Maia'         │                           │ provide the exact        │   Reason: The expected    │          │
+│                           │ projected_states={}       │                           │ distance to Maia at this │ output is                 │          │
+│                           │                           │                           │ time. The star system    │ {"answer":"383"}, but the │          │
+│                           │                           │                           │ search tool is currently │ provided output says it   │          │
+│                           │                           │                           │ unavailable, which       │ cannot provide the        │          │
+│                           │                           │                           │ prevents me from         │ distance and does not     │          │
+│                           │                           │                           │ calculating the distance │ mention the value "383".  │          │
+│                           │                           │                           │ from your current        │ Therefore it does not     │          │
+│                           │                           │                           │ location, **Sol**, to    │ answer the query as       │          │
+│                           │                           │                           │ the **Maia** system.'    │ required by the rubric.   │          │
+│                           │                           │                           │                          │                           │          │
+│                           │                           │                           │                          │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ station name solaris      │ query='find a station     │ answer='Vox Solaris in    │ answer='**Search Query   │ LLMJudge: ✔               │     4.2s │
+│                           │ named Solaris'            │ Col 285 Sector XA-N       │ Interpretation:**\nThe   │   Reason: The output      │          │
+│                           │ projected_states={}       │ d7-51'                    │ user is searching for a  │ includes the expected     │          │
+│                           │                           │                           │ station named            │ station 'Vox Solaris in   │          │
+│                           │                           │                           │ \'Solaris\' starting     │ Col 285 Sector XA-N       │          │
+│                           │                           │                           │ from their current       │ d7-51' and therefore      │          │
+│                           │                           │                           │ location, the Sol        │ satisfies the rubric.     │          │
+│                           │                           │                           │ system.\n\n**Search      │ Additional                │          │
+│                           │                           │                           │ Parameters:**\n*         │ stations/details are      │          │
+│                           │                           │                           │ **Station Name (Partial  │ allowed.                  │          │
+│                           │                           │                           │ Match):** `Solaris`\n*   │                           │          │
+│                           │                           │                           │ **Reference System:**    │                           │          │
+│                           │                           │                           │ `Sol`\n\n**Search        │                           │          │
+│                           │                           │                           │ Results:**\nI found two  │                           │          │
+│                           │                           │                           │ stations with "Solaris"  │                           │          │
+│                           │                           │                           │ in their name, located   │                           │          │
+│                           │                           │                           │ outside of the Sol       │                           │          │
+│                           │                           │                           │ system:\n\n1.            │                           │          │
+│                           │                           │                           │ **Solaris-kyp            │                           │          │
+│                           │                           │                           │ Anchoridge**\n    *      │                           │          │
+│                           │                           │                           │ **System:** Hyades       │                           │          │
+│                           │                           │                           │ Sector IC-M b7-0\n    *  │                           │          │
+│                           │                           │                           │ **Distance from Sol:**   │                           │          │
+│                           │                           │                           │ 218.39 light-years\n     │                           │          │
+│                           │                           │                           │ *   **Services:**        │                           │          │
+│                           │                           │                           │ Shipyard, Outfitting,    │                           │          │
+│                           │                           │                           │ Market, Interstellar     │                           │          │
+│                           │                           │                           │ Factors Contact, and     │                           │          │
+│                           │                           │                           │ various others.\n\n2.    │                           │          │
+│                           │                           │                           │ **Vox Solaris**\n    *   │                           │          │
+│                           │                           │                           │ **System:** Col 285      │                           │          │
+│                           │                           │                           │ Sector XA-N d7-51\n    * │                           │          │
+│                           │                           │                           │ **Distance from Sol:**   │                           │          │
+│                           │                           │                           │ 288.55 light-years\n     │                           │          │
+│                           │                           │                           │ *   **Services:**        │                           │          │
+│                           │                           │                           │ Shipyard, Outfitting,    │                           │          │
+│                           │                           │                           │ Market, **Black          │                           │          │
+│                           │                           │                           │ Market**, Interstellar   │                           │          │
+│                           │                           │                           │ Factors Contact, and     │                           │          │
+│                           │                           │                           │ various others.'         │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ closest encoded material  │ query='find me the        │ answer='Magnus Gateway in │ answer='**Query:** Find  │ LLMJudge: ✔               │     2.4s │
+│ trader                    │ closest material trader   │ the EZ Aquarii system'    │ the closest material     │   Reason: The output      │          │
+│                           │ for encoded materials'    │                           │ trader for encoded       │ explicitly identifies     │          │
+│                           │ projected_states={}       │                           │ materials.\n\n**Search   │ 'Magnus Gateway' in the   │          │
+│                           │                           │                           │ Parameters:**\n*         │ 'EZ Aquarii' system,      │          │
+│                           │                           │                           │ **Material Trader        │ which matches the         │          │
+│                           │                           │                           │ Type:** Encoded\n*       │ expected answer. It also  │          │
+│                           │                           │                           │ **Reference System:**    │ includes extra details    │          │
+│                           │                           │                           │ Sol\n*   **Sort By:**    │ (distance, station),      │          │
+│                           │                           │                           │ Distance\n\n**Answer:**\ │ which are allowed by the  │          │
+│                           │                           │                           │ n\nThe closest Encoded   │ rubric.                   │          │
+│                           │                           │                           │ Material Trader to your  │                           │          │
+│                           │                           │                           │ current location in Sol  │                           │          │
+│                           │                           │                           │ is **Magnus Gateway** in │                           │          │
+│                           │                           │                           │ the **EZ Aquarii**       │                           │          │
+│                           │                           │                           │ system.\n\n*             │                           │          │
+│                           │                           │                           │ **System:** EZ           │                           │          │
+│                           │                           │                           │ Aquarii\n*               │                           │          │
+│                           │                           │                           │ **Station:** Magnus      │                           │          │
+│                           │                           │                           │ Gateway\n*               │                           │          │
+│                           │                           │                           │ **Distance:** 11.10      │                           │          │
+│                           │                           │                           │ light-years'             │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ closest guardian          │ query='find the closest   │ answer='Magnus Gateway in │ answer='The user is      │ LLMJudge: ✔               │     3.0s │
+│ technology broker         │ technology broker for     │ the EZ Aquarii system'    │ currently in the **Sol** │   Reason: The output      │          │
+│                           │ guardian technology'      │                           │ system and is looking    │ explicitly states the     │          │
+│                           │ projected_states={}       │                           │ for the closest          │ closest Guardian          │          │
+│                           │                           │                           │ **Guardian Technology    │ Technology Broker is      │          │
+│                           │                           │                           │ Broker**.\n\nI used the  │ Magnus Gateway in the EZ  │          │
+│                           │                           │                           │ `station_finder` tool    │ Aquarii system and        │          │
+│                           │                           │                           │ with the following       │ provides supporting       │          │
+│                           │                           │                           │ parameters:\n*           │ details and alternatives, │          │
+│                           │                           │                           │ `reference_system`:      │ matching the expected     │          │
+│                           │                           │                           │ Sol\n*                   │ output.                   │          │
+│                           │                           │                           │ `technology_broker`:     │                           │          │
+│                           │                           │                           │ Guardian\n\nThe closest  │                           │          │
+│                           │                           │                           │ Guardian Technology      │                           │          │
+│                           │                           │                           │ Broker found is at       │                           │          │
+│                           │                           │                           │ **Magnus Gateway** in    │                           │          │
+│                           │                           │                           │ the **EZ Aquarii**       │                           │          │
+│                           │                           │                           │ system, which is **11.10 │                           │          │
+│                           │                           │                           │ light-years** away from  │                           │          │
+│                           │                           │                           │ Sol.\n\nHere are the     │                           │          │
+│                           │                           │                           │ three closest stations   │                           │          │
+│                           │                           │                           │ with a Guardian          │                           │          │
+│                           │                           │                           │ Technology Broker:\n\n|  │                           │          │
+│                           │                           │                           │ Station Name | System |  │                           │          │
+│                           │                           │                           │ Distance (ly) |\n| :---  │                           │          │
+│                           │                           │                           │ | :--- | :--- |\n|       │                           │          │
+│                           │                           │                           │ **Magnus Gateway** |     │                           │          │
+│                           │                           │                           │ **EZ Aquarii** |         │                           │          │
+│                           │                           │                           │ **11.10** |\n| Feynman   │                           │          │
+│                           │                           │                           │ Terminal | Bhritzameno | │                           │          │
+│                           │                           │                           │ 19.09 |\n| Merbold Ring  │                           │          │
+│                           │                           │                           │ | EQ Pegasi | 20.19 |'   │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ buy guardian fsd booster  │ query='where can I buy a  │ answer='Magnus Gateway in │ answer='The Guardian     │ LLMJudge: ✔               │     7.2s │
+│                           │ Guardian frame shift      │ EZ Aquarii system'        │ Frame Shift Drive (FSD)  │   Reason: The output      │          │
+│                           │ drive booster'            │                           │ Booster is a module that │ explicitly lists 'Magnus  │          │
+│                           │ projected_states={}       │                           │ must be acquired at a    │ Gateway' in the 'EZ       │          │
+│                           │                           │                           │ **Guardian Technology    │ Aquarii' system as the    │          │
+│                           │                           │                           │ Broker**. It is not a    │ closest station (first    │          │
+│                           │                           │                           │ standard purchasable     │ entry), matching the      │          │
+│                           │                           │                           │ item in the traditional  │ expected answer. It also  │          │
+│                           │                           │                           │ sense, but is unlocked   │ includes additional       │          │
+│                           │                           │                           │ using a combination of   │ relevant details, which   │          │
+│                           │                           │                           │ credits and rare         │ is allowed by the rubric. │          │
+│                           │                           │                           │ Guardian materials, and  │                           │          │
+│                           │                           │                           │ is then available to     │                           │          │
+│                           │                           │                           │ purchase in the          │                           │          │
+│                           │                           │                           │ Outfitting screen.\n\nI  │                           │          │
+│                           │                           │                           │ searched for the nearest │                           │          │
+│                           │                           │                           │ stations with a Guardian │                           │          │
+│                           │                           │                           │ Technology Broker to     │                           │          │
+│                           │                           │                           │ your current location in │                           │          │
+│                           │                           │                           │ **Sol**.\n\nThe closest  │                           │          │
+│                           │                           │                           │ stations with a Guardian │                           │          │
+│                           │                           │                           │ Technology Broker        │                           │          │
+│                           │                           │                           │ are:\n\n1.  **Magnus     │                           │          │
+│                           │                           │                           │ Gateway** in the **EZ    │                           │          │
+│                           │                           │                           │ Aquarii** system,        │                           │          │
+│                           │                           │                           │ located **11.10 Light    │                           │          │
+│                           │                           │                           │ Years** from Sol.\n2.    │                           │          │
+│                           │                           │                           │ **Feynman Terminal** in  │                           │          │
+│                           │                           │                           │ the **Bhritzameno**      │                           │          │
+│                           │                           │                           │ system, located **19.09  │                           │          │
+│                           │                           │                           │ Light Years** from       │                           │          │
+│                           │                           │                           │ Sol.\n3.  **Merbold      │                           │          │
+│                           │                           │                           │ Ring** in the **EQ       │                           │          │
+│                           │                           │                           │ Pegasi** system, located │                           │          │
+│                           │                           │                           │ **20.19 Light Years**    │                           │          │
+│                           │                           │                           │ from Sol.\n\nOnce you    │                           │          │
+│                           │                           │                           │ arrive at one of these   │                           │          │
+│                           │                           │                           │ stations, navigate to    │                           │          │
+│                           │                           │                           │ the **Technology         │                           │          │
+│                           │                           │                           │ Broker** in the Station  │                           │          │
+│                           │                           │                           │ Services menu to unlock  │                           │          │
+│                           │                           │                           │ and purchase the         │                           │          │
+│                           │                           │                           │ Guardian FSD Booster     │                           │          │
+│                           │                           │                           │ module.\n\n**Note:** The │                           │          │
+│                           │                           │                           │ Guardian FSD Booster is  │                           │          │
+│                           │                           │                           │ available in various     │                           │          │
+│                           │                           │                           │ sizes (Class 1 to Class  │                           │          │
+│                           │                           │                           │ 5), and each size        │                           │          │
+│                           │                           │                           │ requires different       │                           │          │
+│                           │                           │                           │ amounts of Guardian      │                           │          │
+│                           │                           │                           │ materials to unlock. You │                           │          │
+│                           │                           │                           │ will need to gather the  │                           │          │
+│                           │                           │                           │ required materials       │                           │          │
+│                           │                           │                           │ before you can unlock a  │                           │          │
+│                           │                           │                           │ booster of your desired  │                           │          │
+│                           │                           │                           │ size.'                   │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ buy meta-alloys           │ query='where can I buy    │ answer="Darnielle's       │ answer="**Meta-Alloys    │ LLMJudge: ✔               │     2.8s │
+│                           │ meta-alloys'              │ Progress in the Maia      │ Purchase                 │   Reason: The output      │          │
+│                           │ projected_states={}       │ system"                   │ Location**\n\nThe user   │ explicitly names          │          │
+│                           │                           │                           │ is currently in the      │ Darnielle's Progress in   │          │
+│                           │                           │                           │ **Sol** system and is    │ the Maia system, matching │          │
+│                           │                           │                           │ looking to buy           │ the expected answer; it   │          │
+│                           │                           │                           │ **Meta-Alloys**.\n\n**Se │ also provides additional  │          │
+│                           │                           │                           │ arch Parameters:**\n*    │ details (prices,          │          │
+│                           │                           │                           │ **Commodity:**           │ distance, supply), which  │          │
+│                           │                           │                           │ Meta-Alloys (Buy)\n*     │ is allowed by the rubric. │          │
+│                           │                           │                           │ **Reference System:**    │                           │          │
+│                           │                           │                           │ Sol\n*   **Sort By:**    │                           │          │
+│                           │                           │                           │ Distance\n\n**Answer:**\ │                           │          │
+│                           │                           │                           │ n\nThe closest and most  │                           │          │
+│                           │                           │                           │ reliable place to buy    │                           │          │
+│                           │                           │                           │ Meta-Alloys is at        │                           │          │
+│                           │                           │                           │ **Darnielle's Progress** │                           │          │
+│                           │                           │                           │ station in the **Maia**  │                           │          │
+│                           │                           │                           │ system.\n\n*             │                           │          │
+│                           │                           │                           │ **System:** Maia\n*      │                           │          │
+│                           │                           │                           │ **Station:** Darnielle's │                           │          │
+│                           │                           │                           │ Progress (Planetary      │                           │          │
+│                           │                           │                           │ Port)\n*   **Distance    │                           │          │
+│                           │                           │                           │ from Sol:** 383.31       │                           │          │
+│                           │                           │                           │ light-years\n*           │                           │          │
+│                           │                           │                           │ **Current Buy Price:**   │                           │          │
+│                           │                           │                           │ 271,014 credits\n*       │                           │          │
+│                           │                           │                           │ **Current Supply:** 2    │                           │          │
+│                           │                           │                           │ units"                   │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ buy imperial courier      │ query='where to buy       │ answer='Cayley Enterprise │ answer="The Imperial     │ LLMJudge: ✔               │     3.0s │
+│                           │ imperial courier'         │ in the Wolf 359 system'   │ Courier is an Imperial   │   Reason: Output          │          │
+│                           │ projected_states={}       │                           │ Navy vessel, which means │ explicitly lists 'Cayley  │          │
+│                           │                           │                           │ it can only be purchased │ Enterprise' in the Wolf   │          │
+│                           │                           │                           │ in systems controlled by │ 359 system and identifies │          │
+│                           │                           │                           │ the Empire or at a       │ it as the closest         │          │
+│                           │                           │                           │ station with an Imperial │ location, which matches   │          │
+│                           │                           │                           │ allegiance. Since you    │ the expected output.      │          │
+│                           │                           │                           │ are currently in         │                           │          │
+│                           │                           │                           │ **Sol**, a Federation    │                           │          │
+│                           │                           │                           │ system, the closest      │                           │          │
+│                           │                           │                           │ locations to purchase an │                           │          │
+│                           │                           │                           │ **Imperial Courier**     │                           │          │
+│                           │                           │                           │ are:\n\n| Station Name | │                           │          │
+│                           │                           │                           │ System Name | Distance   │                           │          │
+│                           │                           │                           │ from Sol (ly) | Price    │                           │          │
+│                           │                           │                           │ (Cr) |\n| :--- | :--- |  │                           │          │
+│                           │                           │                           │ :--- | :--- |\n|         │                           │          │
+│                           │                           │                           │ **Cayley Enterprise** |  │                           │          │
+│                           │                           │                           │ **Wolf 359** | 7.78 |    │                           │          │
+│                           │                           │                           │ 2,542,930 |\n| **O'Brien │                           │          │
+│                           │                           │                           │ Depot** | **Kruger 60**  │                           │          │
+│                           │                           │                           │ | 13.08 | 2,542,930 |\n| │                           │          │
+│                           │                           │                           │ **Crook Hub** |          │                           │          │
+│                           │                           │                           │ **Toolfa** | 14.01 |     │                           │          │
+│                           │                           │                           │ 2,542,930 |\n\nThe       │                           │          │
+│                           │                           │                           │ closest station,         │                           │          │
+│                           │                           │                           │ **Cayley Enterprise** in │                           │          │
+│                           │                           │                           │ the **Wolf 359** system, │                           │          │
+│                           │                           │                           │ is only **7.78           │                           │          │
+│                           │                           │                           │ light-years** away."     │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ closest interstellar      │ query='where is the       │ answer='Here is a list of │ answer="The closest      │ LLMJudge: ✔               │     2.9s │
+│ factors                   │ closest interstellar      │ stations:                 │ Interstellar Factors     │   Reason: The output      │          │
+│                           │ factors'                  │ {"amount_total": 10000,   │ Contact is available at  │ lists the expected        │          │
+│                           │ projected_states={}       │ "amount_displayed": 3,    │ several stations in your │ stations (Walz Depot,     │          │
+│                           │                           │ "results": [{"name":      │ current system,          │ Ehrlich City, Haberlandt  │          │
+│                           │                           │ "Walz Depot", "system":   │ **Sol**:\n\n*   **Walz   │ Survey) with matching     │          │
+│                           │                           │ "Sol", "distance": 0.0,   │ Depot** (Planetary       │ distances and locations   │          │
+│                           │                           │ "orbit": 179.462843,      │ Outpost)\n    *          │ and states that Ehrlich   │          │
+│                           │                           │ "is_planetary": true,     │ Distance from star:      │ City and Walz Depot are   │          │
+│                           │                           │ "market": [], "services": │ 179.46 ls\n    *         │ the closest, which        │          │
+│                           │                           │ [{"name": "Dock"},        │ Location: Orbits         │ answers the query and     │          │
+│                           │                           │ {"name": "Autodock"},     │ Mercury\n*   **Ehrlich   │ mentions the expected     │          │
+│                           │                           │ {"name": "Market"},       │ City** (Planetary        │ output.                   │          │
+│                           │                           │ {"name": "Contacts"},     │ Port)\n    *   Distance  │                           │          │
+│                           │                           │ {"name": "Universal       │ from star: 169.85 ls\n   │                           │          │
+│                           │                           │ Cartographics"}, {"name": │ *   Location: Orbits     │                           │          │
+│                           │                           │ "Missions"}, {"name":     │ Mercury\n*               │                           │          │
+│                           │                           │ "Outfitting"}, {"name":   │ **Haberlandt Survey**    │                           │          │
+│                           │                           │ "Crew Lounge"}, {"name":  │ (Planetary Outpost)\n    │                           │          │
+│                           │                           │ "Restock"}, {"name":      │ *   Distance from star:  │                           │          │
+│                           │                           │ "Refuel"}, {"name":       │ 2,671.26 ls\n    *       │                           │          │
+│                           │                           │ "Repair"}, {"name":       │ Location: Orbits         │                           │          │
+│                           │                           │ "Shipyard"}, {"name":     │ Europa\n\n**Ehrlich      │                           │          │
+│                           │                           │ "Workshop"}, {"name":     │ City** and **Walz        │                           │          │
+│                           │                           │ "Missions Generated"},    │ Depot** are the closest, │                           │          │
+│                           │                           │ {"name": "Flight          │ both orbiting Mercury at │                           │          │
+│                           │                           │ Controller"}, {"name":    │ approximately 170-180    │                           │          │
+│                           │                           │ "Station Operations"},    │ light-seconds from the   │                           │          │
+│                           │                           │ {"name": "Powerplay"},    │ system's primary star."  │                           │          │
+│                           │                           │ {"name": "Search and      │                          │                           │          │
+│                           │                           │ Rescue"}, {"name":        │                          │                           │          │
+│                           │                           │ "Station Menu"}, {"name": │                          │                           │          │
+│                           │                           │ "Shop"}, {"name":         │                          │                           │          │
+│                           │                           │ "Livery"}, {"name":       │                          │                           │          │
+│                           │                           │ "Social Space"}, {"name": │                          │                           │          │
+│                           │                           │ "Bartender"}, {"name":    │                          │                           │          │
+│                           │                           │ "Vista Genomics"},        │                          │                           │          │
+│                           │                           │ {"name": "Pioneer         │                          │                           │          │
+│                           │                           │ Supplies"}, {"name":      │                          │                           │          │
+│                           │                           │ "Apex Interstellar"},     │                          │                           │          │
+│                           │                           │ {"name": "Frontline       │                          │                           │          │
+│                           │                           │ Solutions"}]}, {"name":   │                          │                           │          │
+│                           │                           │ "Ehrlich City", "system": │                          │                           │          │
+│                           │                           │ "Sol", "distance": 0.0,   │                          │                           │          │
+│                           │                           │ "orbit": 169.85313,       │                          │                           │          │
+│                           │                           │ "is_planetary": true,     │                          │                           │          │
+│                           │                           │ "market": [], "services": │                          │                           │          │
+│                           │                           │ [{"name": "Dock"},        │                          │                           │          │
+│                           │                           │ {"name": "Autodock"},     │                          │                           │          │
+│                           │                           │ {"name": "Market"},       │                          │                           │          │
+│                           │                           │ {"name": "Contacts"},     │                          │                           │          │
+│                           │                           │ {"name": "Universal       │                          │                           │          │
+│                           │                           │ Cartographics"}, {"name": │                          │                           │          │
+│                           │                           │ "Missions"}, {"name":     │                          │                           │          │
+│                           │                           │ "Outfitting"}, {"name":   │                          │                           │          │
+│                           │                           │ "Crew Lounge"}, {"name":  │                          │                           │          │
+│                           │                           │ "Restock"}, {"name":      │                          │                           │          │
+│                           │                           │ "Refuel"}, {"name":       │                          │                           │          │
+│                           │                           │ "Repair"}, {"name":       │                          │                           │          │
+│                           │                           │ "Shipyard"}, {"name":     │                          │                           │          │
+│                           │                           │ "Tuning"}, {"name":       │                          │                           │          │
+│                           │                           │ "Workshop"}, {"name":     │                          │                           │          │
+│                           │                           │ "Missions Generated"},    │                          │                           │          │
+│                           │                           │ {"name": "Flight          │                          │                           │          │
+│                           │                           │ Controller"}, {"name":    │                          │                           │          │
+│                           │                           │ "Station Operations"},    │                          │                           │          │
+│                           │                           │ {"name": "Powerplay"},    │                          │                           │          │
+│                           │                           │ {"name": "Search and      │                          │                           │          │
+│                           │                           │ Rescue"}, {"name":        │                          │                           │          │
+│                           │                           │ "Station Menu"}, {"name": │                          │                           │          │
+│                           │                           │ "Shop"}, {"name":         │                          │                           │          │
+│                           │                           │ "Livery"}, {"name":       │                          │                           │          │
+│                           │                           │ "Social Space"}, {"name": │                          │                           │          │
+│                           │                           │ "Bartender"}, {"name":    │                          │                           │          │
+│                           │                           │ "Vista Genomics"},        │                          │                           │          │
+│                           │                           │ {"name": "Pioneer         │                          │                           │          │
+│                           │                           │ Supplies"}, {"name":      │                          │                           │          │
+│                           │                           │ "Apex Interstellar"},     │                          │                           │          │
+│                           │                           │ {"name": "Frontline       │                          │                           │          │
+│                           │                           │ Solutions"}]}, {"name":   │                          │                           │          │
+│                           │                           │ "Haberlandt Survey",      │                          │                           │          │
+│                           │                           │ "system": "Sol",          │                          │                           │          │
+│                           │                           │ "distance": 0.0, "orbit": │                          │                           │          │
+│                           │                           │ 2671.258012,              │                          │                           │          │
+│                           │                           │ "is_planetary": true,     │                          │                           │          │
+│                           │                           │ "market": [], "services": │                          │                           │          │
+│                           │                           │ [{"name": "Dock"},        │                          │                           │          │
+│                           │                           │ {"name": "Autodock"},     │                          │                           │          │
+│                           │                           │ {"name": "Market"},       │                          │                           │          │
+│                           │                           │ {"name": "Contacts"},     │                          │                           │          │
+│                           │                           │ {"name": "Universal       │                          │                           │          │
+│                           │                           │ Cartographics"}, {"name": │                          │                           │          │
+│                           │                           │ "Missions"}, {"name":     │                          │                           │          │
+│                           │                           │ "Outfitting"}, {"name":   │                          │                           │          │
+│                           │                           │ "Crew Lounge"}, {"name":  │                          │                           │          │
+│                           │                           │ "Restock"}, {"name":      │                          │                           │          │
+│                           │                           │ "Refuel"}, {"name":       │                          │                           │          │
+│                           │                           │ "Repair"}, {"name":       │                          │                           │          │
+│                           │                           │ "Tuning"}, {"name":       │                          │                           │          │
+│                           │                           │ "Workshop"}, {"name":     │                          │                           │          │
+│                           │                           │ "Missions Generated"},    │                          │                           │          │
+│                           │                           │ {"name": "Flight          │                          │                           │          │
+│                           │                           │ Controller"}, {"name":    │                          │                           │          │
+│                           │                           │ "Station Operations"},    │                          │                           │          │
+│                           │                           │ {"name": "Powerplay"},    │                          │                           │          │
+│                           │                           │ {"name": "Search and      │                          │                           │          │
+│                           │                           │ Rescue"}, {"name":        │                          │                           │          │
+│                           │                           │ "Station Menu"}, {"name": │                          │                           │          │
+│                           │                           │ "Shop"}, {"name":         │                          │                           │          │
+│                           │                           │ "Livery"}, {"name":       │                          │                           │          │
+│                           │                           │ "Social Space"}, {"name": │                          │                           │          │
+│                           │                           │ "Bartender"}, {"name":    │                          │                           │          │
+│                           │                           │ "Vista Genomics"},        │                          │                           │          │
+│                           │                           │ {"name": "Pioneer         │                          │                           │          │
+│                           │                           │ Supplies"}, {"name":      │                          │                           │          │
+│                           │                           │ "Apex Interstellar"},     │                          │                           │          │
+│                           │                           │ {"name": "Frontline       │                          │                           │          │
+│                           │                           │ Solutions"}]}]}'          │                          │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ body named earth          │ query='find a body named  │ answer='Earth in Sol'     │ answer='The user is      │ LLMJudge: ✔               │     3.3s │
+│                           │ Earth'                    │                           │ looking for a celestial  │   Reason: Output          │          │
+│                           │ projected_states={}       │                           │ body named "Earth".\nThe │ explicitly identifies     │          │
+│                           │                           │                           │ search was performed     │ Earth located in the Sol  │          │
+│                           │                           │                           │ using the `body_finder`  │ system (mentions both     │          │
+│                           │                           │                           │ tool with the following  │ 'Earth' and 'Sol'), which │          │
+│                           │                           │                           │ parameters:\n*           │ matches the expected      │          │
+│                           │                           │                           │ **Name:** `Earth`\n*     │ answer 'Earth in Sol'.    │          │
+│                           │                           │                           │ **Reference System:**    │                           │          │
+│                           │                           │                           │ `Sol`\n\nThe search      │                           │          │
+│                           │                           │                           │ returned the following   │                           │          │
+│                           │                           │                           │ result:\n\n| Name |      │                           │          │
+│                           │                           │                           │ Subtype | System Name    │                           │          │
+│                           │                           │                           │ |\n| :--- | :--- | :---  │                           │          │
+│                           │                           │                           │ |\n| Earth | Earth-like  │                           │          │
+│                           │                           │                           │ world | Sol              │                           │          │
+│                           │                           │                           │ |\n\n**Answer:**\n\nThe  │                           │          │
+│                           │                           │                           │ celestial body named     │                           │          │
+│                           │                           │                           │ **Earth** is an          │                           │          │
+│                           │                           │                           │ **Earth-like world**     │                           │          │
+│                           │                           │                           │ located in the **Sol**   │                           │          │
+│                           │                           │                           │ system.'                 │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ next fuelable star        │ query='next fuelable      │ answer='Alpha Centauri'   │ answer='Based on your    │ LLMJudge: ✗               │     2.9s │
+│                           │ star' projected_states={} │                           │ current location in the  │   Reason: The provided    │          │
+│                           │                           │                           │ **Sol** system, your     │ output discusses the Sol  │          │
+│                           │                           │                           │ primary star is a **G    │ system and which star     │          │
+│                           │                           │                           │ (White-Yellow) Star**,   │ types are fuel-scoopable  │          │
+│                           │                           │                           │ which **is fuel          │ but does not mention the  │          │
+│                           │                           │                           │ scoopable**.\n\nYou are  │ expected output 'Alpha    │          │
+│                           │                           │                           │ currently at a star that │ Centauri' as required by  │          │
+│                           │                           │                           │ you can refuel           │ the rubric.               │          │
+│                           │                           │                           │ from.\n\n***\n\nFor      │                           │          │
+│                           │                           │                           │ future reference, the    │                           │          │
+│                           │                           │                           │ types of stars that are  │                           │          │
+│                           │                           │                           │ fuel scoopable are: **K, │                           │          │
+│                           │                           │                           │ G, B, F, O, A, M**       │                           │          │
+│                           │                           │                           │ (often remembered by the │                           │          │
+│                           │                           │                           │ mnemonic "KGB FOAM").'   │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ closest neutron star      │ query='closest neutron    │ answer='18 Camelopardalis │ answer="The closest      │ LLMJudge: ✗               │    24.0s │
+│                           │ star' projected_states={} │ C'                        │ neutron star to your     │   Reason: Output mentions │          │
+│                           │                           │                           │ current location in      │ '18 Camelopardalis' but   │          │
+│                           │                           │                           │ **Sol** is likely        │ does not state '18        │          │
+│                           │                           │                           │ located in the **18      │ Camelopardalis C' as      │          │
+│                           │                           │                           │ Camelopardalis**         │ given in the expected     │          │
+│                           │                           │                           │ system.\n\n### **Final   │ output, so it fails to    │          │
+│                           │                           │                           │ Report**\n\n| Search     │ mention the expected      │          │
+│                           │                           │                           │ Parameter | Value |\n|   │ output exactly.           │          │
+│                           │                           │                           │ :--- | :--- |\n|         │                           │          │
+│                           │                           │                           │ **Current System** | Sol │                           │          │
+│                           │                           │                           │ |\n| **Body Subtype** |  │                           │          │
+│                           │                           │                           │ Neutron Star |\n\nThe    │                           │          │
+│                           │                           │                           │ system with the closest  │                           │          │
+│                           │                           │                           │ confirmed Neutron Star,  │                           │          │
+│                           │                           │                           │ **18 Camelopardalis**,   │                           │          │
+│                           │                           │                           │ did not return a precise │                           │          │
+│                           │                           │                           │ distance due to an issue │                           │          │
+│                           │                           │                           │ with the system name     │                           │          │
+│                           │                           │                           │ search tool. However,    │                           │          │
+│                           │                           │                           │ the search results       │                           │          │
+│                           │                           │                           │ strongly indicate it is  │                           │          │
+│                           │                           │                           │ significantly closer     │                           │          │
+│                           │                           │                           │ than the other known     │                           │          │
+│                           │                           │                           │ options.\n\nThe next     │                           │          │
+│                           │                           │                           │ closest known neutron    │                           │          │
+│                           │                           │                           │ star in the search       │                           │          │
+│                           │                           │                           │ results is:\n\n*         │                           │          │
+│                           │                           │                           │ **Jackson's              │                           │          │
+│                           │                           │                           │ Lighthouse**\n    *      │                           │          │
+│                           │                           │                           │ **Distance from Sol:**   │                           │          │
+│                           │                           │                           │ 174.01 Ly"               │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ engineer shields helper   │ query='what engineer can  │ answer='Didi Vatermann,   │ answer="The user is      │ LLMJudge: ✗               │     4.4s │
+│                           │ help me with my shields?' │ but only up to grade 3.   │ asking for engineers who │   Reason: The output does │          │
+│                           │ projected_states={'Engine │ Lei Cheung and Mel        │ can help with shield     │ mention Didi Vatermann,   │          │
+│                           │ erProgress':              │ Brandon can upgrade to    │ modifications.\nI have   │ Lei Cheung, and Mel       │          │
+│                           │ {'Engineers':             │ grade 5, but still need   │ used the                 │ Brandon, but it           │          │
+│                           │ [{'Engineer': 'Didi       │ to be unlocked.'          │ `engineer_finder` tool   │ contradicts the           │          │
+│                           │ Vatermann', 'EngineerID': │                           │ with the filter          │ ExpectedOutput: the       │          │
+│                           │ 300000, 'Progress':       │                           │ `modifications:          │ ExpectedOutput states     │          │
+│                           │ 'Unlocked',               │                           │ 'Shield'` to find        │ ‘Didi Vatermann, but only │          │
+│                           │ 'RankProgress': 0,        │                           │ relevant                 │ up to grade 3,’ whereas   │          │
+│                           │ 'Rank': 5}]}}             │                           │ engineers.\n\nThe        │ the Output lists Didi     │          │
+│                           │                           │                           │ following engineers can  │ offering a Grade 5 Shield │          │
+│                           │                           │                           │ help with ship shield    │ Booster (and Grade 3      │          │
+│                           │                           │                           │ modifications:\n\n|      │ Shield Generator). The    │          │
+│                           │                           │                           │ Engineer | Location      │ Output does note that Lei │          │
+│                           │                           │                           │ (System) | Modifications │ Cheung needs an           │          │
+│                           │                           │                           │ | Distance from Sol |\n| │ introduction (unlock) but │          │
+│                           │                           │                           │ :--- | :--- | :--- |     │ does not state that Mel   │          │
+│                           │                           │                           │ :--- |\n| **Lei Cheung** │ Brandon needs to be       │          │
+│                           │                           │                           │ | Trader's Rest (Laksak) │ unlocked. Because the     │          │
+│                           │                           │                           │ | Shield Generator       │ output does not match the │          │
+│                           │                           │                           │ (Grade 5), Shield        │ key claims in the         │          │
+│                           │                           │                           │ Booster (Grade 3) |      │ expected output, it fails │          │
+│                           │                           │                           │ 118.18 LY |\n| **Didi    │ the rubric.               │          │
+│                           │                           │                           │ Vatermann** | Vatermann  │                           │          │
+│                           │                           │                           │ LLC (Leesti) | Shield    │                           │          │
+│                           │                           │                           │ Booster (Grade 5),       │                           │          │
+│                           │                           │                           │ Shield Generator (Grade  │                           │          │
+│                           │                           │                           │ 3) | 111.03 LY |\n|      │                           │          │
+│                           │                           │                           │ **Elvira Martuuk** |     │                           │          │
+│                           │                           │                           │ Long Sight Base (Khun) | │                           │          │
+│                           │                           │                           │ Shield Generator (Grade  │                           │          │
+│                           │                           │                           │ 3), Shield Cell Bank     │                           │          │
+│                           │                           │                           │ (Grade 1) | 181.9 LY     │                           │          │
+│                           │                           │                           │ |\n| **Lori Jameson** |  │                           │          │
+│                           │                           │                           │ Jameson Base (Shinrarta  │                           │          │
+│                           │                           │                           │ Dezhra) | Shield Cell    │                           │          │
+│                           │                           │                           │ Bank (Grade 3) | 64.43   │                           │          │
+│                           │                           │                           │ LY (Permit Required)     │                           │          │
+│                           │                           │                           │ |\n| **Mel Brandon** |   │                           │          │
+│                           │                           │                           │ The Brig (Luchtaine) |   │                           │          │
+│                           │                           │                           │ Shield Generator (Grade  │                           │          │
+│                           │                           │                           │ 5), Shield Booster       │                           │          │
+│                           │                           │                           │ (Grade 5), Shield Cell   │                           │          │
+│                           │                           │                           │ Bank (Grade 4) |         │                           │          │
+│                           │                           │                           │ 22013.55 LY (Colonia)    │                           │          │
+│                           │                           │                           │ |\n| **Felicity          │                           │          │
+│                           │                           │                           │ Farseer** | Farseer Inc  │                           │          │
+│                           │                           │                           │ (Deciat) | Shield        │                           │          │
+│                           │                           │                           │ Booster (Grade 1) |      │                           │          │
+│                           │                           │                           │ 131.43 LY                │                           │          │
+│                           │                           │                           │ |\n\nAdditionally, there │                           │          │
+│                           │                           │                           │ are engineers for suit   │                           │          │
+│                           │                           │                           │ shield upgrades (Faster  │                           │          │
+│                           │                           │                           │ Shield Regen):\n\n|      │                           │          │
+│                           │                           │                           │ Engineer | Location      │                           │          │
+│                           │                           │                           │ (System) | Suit          │                           │          │
+│                           │                           │                           │ Modifications | Distance │                           │          │
+│                           │                           │                           │ from Sol |\n| :--- |     │                           │          │
+│                           │                           │                           │ :--- | :--- | :--- |\n|  │                           │          │
+│                           │                           │                           │ **Kit Fowler** | Capoya  │                           │          │
+│                           │                           │                           │ | Faster Shield Regen |  │                           │          │
+│                           │                           │                           │ 111.83 LY |\n| **Uma     │                           │          │
+│                           │                           │                           │ Laszlo** | Xuane |       │                           │          │
+│                           │                           │                           │ Faster Shield Regen |    │                           │          │
+│                           │                           │                           │ 99.78 LY |\n| **Eleanor  │                           │          │
+│                           │                           │                           │ Bresa** | Desy | Faster  │                           │          │
+│                           │                           │                           │ Shield Regen | 21987.99  │                           │          │
+│                           │                           │                           │ LY (Colonia)             │                           │          │
+│                           │                           │                           │ |\n\n**Recommendation    │                           │          │
+│                           │                           │                           │ near your current        │                           │          │
+│                           │                           │                           │ location (Sol):**\n\n*   │                           │          │
+│                           │                           │                           │ **Didi Vatermann** at    │                           │          │
+│                           │                           │                           │ **Vatermann LLC** in the │                           │          │
+│                           │                           │                           │ **Leesti** system        │                           │          │
+│                           │                           │                           │ (111.03 LY from Sol) is  │                           │          │
+│                           │                           │                           │ already **Unlocked** and │                           │          │
+│                           │                           │                           │ offers up to **Grade 5   │                           │          │
+│                           │                           │                           │ Shield Booster** and     │                           │          │
+│                           │                           │                           │ **Grade 3 Shield         │                           │          │
+│                           │                           │                           │ Generator**              │                           │          │
+│                           │                           │                           │ modifications.\n*        │                           │          │
+│                           │                           │                           │ **Lei Cheung** at        │                           │          │
+│                           │                           │                           │ **Trader's Rest** in the │                           │          │
+│                           │                           │                           │ **Laksak** system        │                           │          │
+│                           │                           │                           │ (118.18 LY from Sol)     │                           │          │
+│                           │                           │                           │ offers up to **Grade 5   │                           │          │
+│                           │                           │                           │ Shield Generator** and   │                           │          │
+│                           │                           │                           │ **Grade 3 Shield         │                           │          │
+│                           │                           │                           │ Booster** modifications. │                           │          │
+│                           │                           │                           │ You need to be           │                           │          │
+│                           │                           │                           │ introduced to him by     │                           │          │
+│                           │                           │                           │ **The Dweller**.\n*      │                           │          │
+│                           │                           │                           │ **Elvira Martuuk** at    │                           │          │
+│                           │                           │                           │ **Long Sight Base** in   │                           │          │
+│                           │                           │                           │ the **Khun** system      │                           │          │
+│                           │                           │                           │ (181.9 LY from Sol)      │                           │          │
+│                           │                           │                           │ offers up to **Grade 3   │                           │          │
+│                           │                           │                           │ Shield Generator**       │                           │          │
+│                           │                           │                           │ modifications."          │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ unlock felicity           │ query='unlock felicity'   │ answer='1 unit of Meta    │ answer='The request      │ LLMJudge: ✗               │    12.1s │
+│                           │ projected_states={}       │ Alloys'                   │ could not be completed   │   Reason: The output does │          │
+│                           │                           │                           │ within the allowed       │ not contain the expected  │          │
+│                           │                           │                           │ number of steps.'        │ answer. The rubric        │          │
+│                           │                           │                           │                          │ requires the result to    │          │
+│                           │                           │                           │                          │ answer the input query    │          │
+│                           │                           │                           │                          │ and must mention the      │          │
+│                           │                           │                           │                          │ expected output           │          │
+│                           │                           │                           │                          │ ("{"answer":"1 unit of    │          │
+│                           │                           │                           │                          │ Meta Alloys"}"). Instead, │          │
+│                           │                           │                           │                          │ the output states "The    │          │
+│                           │                           │                           │                          │ request could not be      │          │
+│                           │                           │                           │                          │ completed within the      │          │
+│                           │                           │                           │                          │ allowed number of         │          │
+│                           │                           │                           │                          │ steps.", so it fails the  │          │
+│                           │                           │                           │                          │ rubric.                   │          │
+│                           │                           │                           │                          │                           │          │
+│                           │                           │                           │                          │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ blueprint thermal         │ query='can I upgrade my   │ answer='Current Grade:    │ answer="You can          │ LLMJudge: ✗               │    10.1s │
+│ resistant shields         │ shield with thermal       │ 3\nGrade 4 requirements:  │ absolutely upgrade your  │   Reason: The assistant's │          │
+│                           │ resistance?'              │ 1 Mercury (4 required, 3  │ shield generator with    │ output answers the query  │          │
+│                           │ projected_states={'Materi │ in cargo)\nGrade 5        │ **Thermal Resistant**    │ but fails to mention the  │          │
+│                           │ als': {'timestamp':       │ requirements: Refined     │ engineering, up to Grade │ expected output items     │          │
+│                           │ '2025-10-28T19:15:13Z',   │ Focus Crystal (5          │ 5.\n\n### Blueprint      │ required by the rubric.   │          │
+│                           │ 'event': 'Materials',     │ required, 0 in cargo)'    │ Details\n\n*             │ The ExpectedOutput lists: │          │
+│                           │ 'Raw': [{'Name':          │                           │ **Modification:**        │ current grade (3) and     │          │
+│                           │ 'mercury', 'Count': 3},   │                           │ Thermal Resistant Shield │ Grade 4 requirement of 1  │          │
+│                           │ {'Name': 'ruthenium',     │                           │ Generator (Grade 5)\n*   │ Mercury (4 required, 3 in │          │
+│                           │ 'Count': 3}],             │                           │ **Module:** Shield       │ cargo) and Grade 5        │          │
+│                           │ 'Manufactured': [{'Name': │                           │ Generator\n*             │ requirement of Refined    │          │
+│                           │ 'shieldsoakanalysis',     │                           │ **Engineer:** **Lei      │ Focus Crystal (5          │          │
+│                           │ 'Name_Localised':         │                           │ Cheung**\n    *          │ required, 0 in cargo).    │          │
+│                           │ 'Inconsistent Shield Soak │                           │ **Location:** Trader's   │ The provided Output does  │          │
+│                           │ Analysis', 'Count': 4},   │                           │ Rest, **Laksak** system  │ not state the current     │          │
+│                           │ {'Name': 'focuscrystals', │                           │ (118.18 LY from Sol).\n  │ grade or the Grade 4      │          │
+│                           │ 'Name_Localised': 'Focus  │                           │ *   **Current            │ mercury requirement, and  │          │
+│                           │ Crystals', 'Count': 4}],  │                           │ Progress:** **Unknown**. │ it misreports inventory:  │          │
+│                           │ 'Encoded': [{'Name':      │                           │ You will need to be      │ it claims 0 Refined Focus │          │
+│                           │ 'shielddensityreports',   │                           │ introduced to him by     │ Crystals and 0 Untypical  │          │
+│                           │ 'Name_Localised':         │                           │ **The Dweller**          │ Shield Scans, whereas the │          │
+│                           │ 'Untypical Shield Scans', │                           │ first.\n*   **Materials  │ projected state includes  │          │
+│                           │ 'Count': 110}], 'id':     │                           │ Required (for Grade      │ 4 Focus Crystals          │          │
+│                           │ 'Journal.2025-10-28T20144 │                           │ 5):**\n    *   **5** x   │ (Manufactured) and 110    │          │
+│                           │ 8.01.log.000004'},        │                           │ **Refined Focus          │ shield density reports    │          │
+│                           │ 'Loadout': {'timestamp':  │                           │ Crystals** (Missing 5)\n │ (Encoded). Because the    │          │
+│                           │ '2025-10-28T19:15:38Z',   │                           │ *   **5** x              │ output does not mention   │          │
+│                           │ 'event': 'Loadout',       │                           │ **Ruthenium** (You have  │ the expected output and   │          │
+│                           │ 'Ship': 'anaconda',       │                           │ 3, Missing 2)\n    *     │ contains inventory        │          │
+│                           │ 'ShipID': 10, 'ShipName': │                           │ **5** x **Untypical      │ mismatches, it does not   │          │
+│                           │ 'Landing party',          │                           │ Shield Scans** (Missing  │ satisfy the rubric.       │          │
+│                           │ 'ShipIdent': 'P4I27y',    │                           │ 5)\n\n### Material       │                           │          │
+│                           │ 'HullValue': 146969451,   │                           │ Sourcing\n\nBased on     │                           │          │
+│                           │ 'ModulesValue':           │                           │ your inventory, you are  │                           │          │
+│                           │ 385626720, 'HullHealth':  │                           │ missing all of the       │                           │          │
+│                           │ 1.0, 'UnladenMass':       │                           │ **Refined Focus          │                           │          │
+│                           │ 1266.605713,              │                           │ Crystals** and           │                           │          │
+│                           │ 'CargoCapacity': 32,      │                           │ **Untypical Shield       │                           │          │
+│                           │ 'MaxJumpRange':           │                           │ Scans**, and you are 2   │                           │          │
+│                           │ 33.260761,                │                           │ short on                 │                           │          │
+│                           │ 'FuelCapacity': {'Main':  │                           │ **Ruthenium**.\n\n|      │                           │          │
+│                           │ 32.0, 'Reserve': 1.07},   │                           │ Material | Type | Grade  │                           │          │
+│                           │ 'Rebuy': 26629811,        │                           │ | Your Inventory |       │                           │          │
+│                           │ 'Modules': [{'Slot':      │                           │ Sourcing Information     │                           │          │
+│                           │ 'Slot01_Size7', 'Item':   │                           │ |\n| :--- | :--- | :---  │                           │          │
+│                           │ 'int_shieldgenerator_size │                           │ | :--- | :--- |\n|       │                           │          │
+│                           │ 7_class3_fast', 'On':     │                           │ **Refined Focus          │                           │          │
+│                           │ True, 'Priority': 0,      │                           │ Crystals** | Encoded |   │                           │          │
+│                           │ 'Health': 1.0, 'Value':   │                           │ Grade 4 | 0 | No         │                           │          │
+│                           │ 8548185, 'Engineering':   │                           │ specific sourcing        │                           │          │
+│                           │ {'Engineer': 'Lei         │                           │ information available in │                           │          │
+│                           │ Cheung', 'EngineerID':    │                           │ the current database.    │                           │          │
+│                           │ 300120, 'BlueprintID':    │                           │ |\n| **Untypical Shield  │                           │          │
+│                           │ 128673844,                │                           │ Scans** | Encoded |      │                           │          │
+│                           │ 'BlueprintName':          │                           │ Grade 4 | 0 | No         │                           │          │
+│                           │ 'ShieldGenerator_Thermic' │                           │ specific sourcing        │                           │          │
+│                           │ , 'Level': 3, 'Quality':  │                           │ information available in │                           │          │
+│                           │ 1.0,                      │                           │ the current database.    │                           │          │
+│                           │ 'ExperimentalEffect':     │                           │ |\n| **Ruthenium** | Raw │                           │          │
+│                           │ 'special_shield_regenerat │                           │ | Grade 4 | 3 | Source   │                           │          │
+│                           │ ive',                     │                           │ location for the highest │                           │          │
+│                           │ 'ExperimentalEffect_Local │                           │ grade includes: Crystal  │                           │          │
+│                           │ ised': 'Fast Charge',     │                           │ Shards in **HIP 36601**  │                           │          │
+│                           │ 'Modifiers': [{'Label':   │                           │ (planet C 1 D) and       │                           │          │
+│                           │ 'Integrity', 'Value':     │                           │ **Outotz LS-K D8-3**     │                           │          │
+│                           │ 183.399994,               │                           │ (planet B 7 B), or Brain │                           │          │
+│                           │ 'OriginalValue': 131.0,   │                           │ Trees in **35 G.         │                           │          │
+│                           │ 'LessIsGood': 0},         │                           │ Carinae** (planet 2 C).  │                           │          │
+│                           │ {'Label': 'RegenRate',    │                           │ |\n\n**Recommendation:** │                           │          │
+│                           │ 'Value': 5.06,            │                           │ \n\n1.  **Unlock Lei     │                           │          │
+│                           │ 'OriginalValue': 4.4,     │                           │ Cheung:** Start by       │                           │          │
+│                           │ 'LessIsGood': 0},         │                           │ meeting the prerequisite │                           │          │
+│                           │ {'Label':                 │                           │ engineer, **The          │                           │          │
+│                           │ 'BrokenRegenRate',        │                           │ Dweller**, to get an     │                           │          │
+│                           │ 'Value': 12.65,           │                           │ introduction to Lei      │                           │          │
+│                           │ 'OriginalValue': 11.0,    │                           │ Cheung.\n2.  **Gather    │                           │          │
+│                           │ 'LessIsGood': 0},         │                           │ Materials:** Collect the │                           │          │
+│                           │ {'Label':                 │                           │ necessary materials. For │                           │          │
+│                           │ 'KineticResistance',      │                           │ the missing Encoded      │                           │          │
+│                           │ 'Value': 26.919996,       │                           │ materials (**Refined     │                           │          │
+│                           │ 'OriginalValue':          │                           │ Focus Crystals** and     │                           │          │
+│                           │ 39.999996, 'LessIsGood':  │                           │ **Untypical Shield       │                           │          │
+│                           │ 0}, {'Label':             │                           │ Scans**), you'll         │                           │          │
+│                           │ 'ThermicResistance',      │                           │ typically find them by   │                           │          │
+│                           │ 'Value': 39.099998,       │                           │ scanning ships or data   │                           │          │
+│                           │ 'OriginalValue':          │                           │ points. For the Raw      │                           │          │
+│                           │ -20.000004, 'LessIsGood': │                           │ material                 │                           │          │
+│                           │ 0}, {'Label':             │                           │ (**Ruthenium**), you can │                           │          │
+│                           │ 'ExplosiveResistance',    │                           │ travel to one of the     │                           │          │
+│                           │ 'Value': 49.25,           │                           │ listed Crystal Shard or  │                           │          │
+│                           │ 'OriginalValue': 50.0,    │                           │ Brain Tree sites.\n3.    │                           │          │
+│                           │ 'LessIsGood': 0}]}}],     │                           │ **Visit Lei Cheung:**    │                           │          │
+│                           │ 'id':                     │                           │ Once unlocked, travel to │                           │          │
+│                           │ 'Journal.2025-10-28T20144 │                           │ Trader's Rest in         │                           │          │
+│                           │ 8.01.log.000018'}}        │                           │ **Laksak** to apply the  │                           │          │
+│                           │                           │                           │ modification."           │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ material refined focus    │ query='refined focus      │ answer='Mission reward'   │ answer='The material     │ LLMJudge: ✔               │    18.8s │
+│ crystals source           │ crystals'                 │                           │ "Refined Focus Crystals" │   Reason: The output      │          │
+│                           │ projected_states={}       │                           │ appears to be an         │ explicitly states that    │          │
+│                           │                           │                           │ unofficial or            │ Focus Crystals are found  │          │
+│                           │                           │                           │ non-standard name, as it │ as 'Mission Rewards' and  │          │
+│                           │                           │                           │ was not found in the     │ provides additional       │          │
+│                           │                           │                           │ material                 │ relevant details about    │          │
+│                           │                           │                           │ database.\n\nAssuming    │ obtaining and trading     │          │
+│                           │                           │                           │ you are looking for the  │ them, which matches the   │          │
+│                           │                           │                           │ official material        │ expected output.          │          │
+│                           │                           │                           │ **Focus Crystals** (a    │                           │          │
+│                           │                           │                           │ Grade 2 Manufactured     │                           │          │
+│                           │                           │                           │ Material), here is the   │                           │          │
+│                           │                           │                           │ information:\n\n**Materi │                           │          │
+│                           │                           │                           │ al:** Focus Crystals     │                           │          │
+│                           │                           │                           │ (Grade 2 Manufactured    │                           │          │
+│                           │                           │                           │ Material)\n\n**How to    │                           │          │
+│                           │                           │                           │ get it:**\nFocus         │                           │          │
+│                           │                           │                           │ Crystals are found as    │                           │          │
+│                           │                           │                           │ Mission Rewards, or by   │                           │          │
+│                           │                           │                           │ defeating and salvaging  │                           │          │
+│                           │                           │                           │ from trade or transport  │                           │          │
+│                           │                           │                           │ ships.\n\n**Where to     │                           │          │
+│                           │                           │                           │ Trade for it:**\nSince   │                           │          │
+│                           │                           │                           │ this is a manufactured   │                           │          │
+│                           │                           │                           │ material, you would      │                           │          │
+│                           │                           │                           │ trade for it at a        │                           │          │
+│                           │                           │                           │ **Manufactured Material  │                           │          │
+│                           │                           │                           │ Trader**.\n\nTo find the │                           │          │
+│                           │                           │                           │ nearest **Material       │                           │          │
+│                           │                           │                           │ Trader** (the tool does  │                           │          │
+│                           │                           │                           │ not allow for filtering  │                           │          │
+│                           │                           │                           │ by Manufactured, Raw or  │                           │          │
+│                           │                           │                           │ Encoded so it returned   │                           │          │
+│                           │                           │                           │ the closest **Encoded**  │                           │          │
+│                           │                           │                           │ traders in the area),    │                           │          │
+│                           │                           │                           │ here are the closest     │                           │          │
+│                           │                           │                           │ stations to Sol that     │                           │          │
+│                           │                           │                           │ have one:\n\n| Station   │                           │          │
+│                           │                           │                           │ Name | System | Distance │                           │          │
+│                           │                           │                           │ (LY) |\n| :--- | :--- |  │                           │          │
+│                           │                           │                           │ :--- |\n| Magnus Gateway │                           │          │
+│                           │                           │                           │ | EZ Aquarii | 11.10     │                           │          │
+│                           │                           │                           │ |\n| Clement Orbital |   │                           │          │
+│                           │                           │                           │ YZ Ceti | 12.07 |\n|     │                           │          │
+│                           │                           │                           │ Kepler Gateway | Kruger  │                           │          │
+│                           │                           │                           │ 60 | 13.08 |\n\nTo find  │                           │          │
+│                           │                           │                           │ the **Manufactured       │                           │          │
+│                           │                           │                           │ Material Trader**        │                           │          │
+│                           │                           │                           │ specifically, you will   │                           │          │
+│                           │                           │                           │ need to check the        │                           │          │
+│                           │                           │                           │ services at nearby       │                           │          │
+│                           │                           │                           │ stations in-game, as the │                           │          │
+│                           │                           │                           │ API only returns the     │                           │          │
+│                           │                           │                           │ closest general          │                           │          │
+│                           │                           │                           │ \'Material Trader\'      │                           │          │
+│                           │                           │                           │ service, which in this   │                           │          │
+│                           │                           │                           │ case, all appeared to be │                           │          │
+│                           │                           │                           │ for Encoded materials.'  │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ closest scoopable primary │ query='closest system     │ answer='Alpha Centauri'   │ answer='The closest      │ LLMJudge: ✔               │     6.0s │
+│ system                    │ with a scoopable primary  │                           │ system with a scoopable  │   Reason: The provided    │          │
+│                           │ star' projected_states={} │                           │ primary star is **Alpha  │ output explicitly         │          │
+│                           │                           │                           │ Centauri**, which is     │ identifies 'Alpha         │          │
+│                           │                           │                           │ **4.38 light-years**     │ Centauri' as the closest  │          │
+│                           │                           │                           │ away from Sol.\n\nThe    │ system with a scoopable   │          │
+│                           │                           │                           │ search parameters used   │ primary star and includes │          │
+│                           │                           │                           │ were:\n*   **Reference   │ supporting details        │          │
+│                           │                           │                           │ System:** Sol\n*         │ (distance and star type). │          │
+│                           │                           │                           │ **Maximum Distance:** 10 │ This matches the expected │          │
+│                           │                           │                           │ light-years (though the  │ output, which required    │          │
+│                           │                           │                           │ closest was found well   │ mention of 'Alpha         │          │
+│                           │                           │                           │ within this              │ Centauri'.                │          │
+│                           │                           │                           │ range)\n\n**Alpha        │                           │          │
+│                           │                           │                           │ Centauri** System        │                           │          │
+│                           │                           │                           │ Details:\n*   **Distance │                           │          │
+│                           │                           │                           │ from Sol:** 4.38 ly\n*   │                           │          │
+│                           │                           │                           │ **Allegiance:**          │                           │          │
+│                           │                           │                           │ Independent\n*           │                           │          │
+│                           │                           │                           │ **Primary Economy:**     │                           │          │
+│                           │                           │                           │ Extraction\n*            │                           │          │
+│                           │                           │                           │ **Security:**            │                           │          │
+│                           │                           │                           │ Low\n\n*Note: Scoopable  │                           │          │
+│                           │                           │                           │ star information is not  │                           │          │
+│                           │                           │                           │ explicitly returned by   │                           │          │
+│                           │                           │                           │ the system finder, but   │                           │          │
+│                           │                           │                           │ the primary star of the  │                           │          │
+│                           │                           │                           │ Alpha Centauri system    │                           │          │
+│                           │                           │                           │ (Alpha Centauri A, a     │                           │          │
+│                           │                           │                           │ G-type star) is          │                           │          │
+│                           │                           │                           │ generally known to be    │                           │          │
+│                           │                           │                           │ scoopable.*'             │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ closest raw material      │ query='closest raw        │ answer='Here is a list of │ answer='The closest Raw  │ LLMJudge: ✔               │     2.6s │
+│ trader near marco         │ material trader near      │ stations:                 │ Material Trader near     │   Reason: The output      │          │
+│                           │ marco'                    │ {"amount_total": 371,     │ Marco Qwent (who is      │ names Bresnik Port in the │          │
+│                           │ projected_states={}       │ "amount_displayed": 3,    │ located in the           │ 82 Eridani system and     │          │
+│                           │                           │ "results": [{"name":      │ **Sirius** system) is    │ gives its distance        │          │
+│                           │                           │ "Bresnik Port", "system": │ **Bresnik Port** in the  │ (~15.72 ly), which        │          │
+│                           │                           │ "82 Eridani", "distance": │ **82 Eridani**           │ matches the expected      │          │
+│                           │                           │ 15.7230051397626,         │ system.\n\n*             │ output’s primary result.  │          │
+│                           │                           │ "orbit": 94.919405,       │ **System:** 82           │ The expected output       │          │
+│                           │                           │ "is_planetary": false,    │ Eridani\n*               │ included additional       │          │
+│                           │                           │ "market": [], "services": │ **Station:** Bresnik     │ stations, but the rubric  │          │
+│                           │                           │ [{"name": "Dock"},        │ Port\n*   **Distance:**  │ only requires that the    │          │
+│                           │                           │ {"name": "Autodock"},     │ 15.72 light-years from   │ expected output be        │          │
+│                           │                           │ {"name": "Market"},       │ Sirius'                  │ mentioned; therefore this │          │
+│                           │                           │ {"name": "Contacts"},     │                          │ passes.                   │          │
+│                           │                           │ {"name": "Universal       │                          │                           │          │
+│                           │                           │ Cartographics"}, {"name": │                          │                           │          │
+│                           │                           │ "Missions"}, {"name":     │                          │                           │          │
+│                           │                           │ "Outfitting"}, {"name":   │                          │                           │          │
+│                           │                           │ "Crew Lounge"}, {"name":  │                          │                           │          │
+│                           │                           │ "Restock"}, {"name":      │                          │                           │          │
+│                           │                           │ "Refuel"}, {"name":       │                          │                           │          │
+│                           │                           │ "Repair"}, {"name":       │                          │                           │          │
+│                           │                           │ "Shipyard"}, {"name":     │                          │                           │          │
+│                           │                           │ "Tuning"}, {"name":       │                          │                           │          │
+│                           │                           │ "Workshop"}, {"name":     │                          │                           │          │
+│                           │                           │ "Missions Generated"},    │                          │                           │          │
+│                           │                           │ {"name": "Flight          │                          │                           │          │
+│                           │                           │ Controller"}, {"name":    │                          │                           │          │
+│                           │                           │ "Station Operations"},    │                          │                           │          │
+│                           │                           │ {"name": "Powerplay"},    │                          │                           │          │
+│                           │                           │ {"name": "Search and      │                          │                           │          │
+│                           │                           │ Rescue"}, {"name":        │                          │                           │          │
+│                           │                           │ "Material Trader"},       │                          │                           │          │
+│                           │                           │ {"name": "Station Menu"}, │                          │                           │          │
+│                           │                           │ {"name": "Shop"},         │                          │                           │          │
+│                           │                           │ {"name": "Livery"},       │                          │                           │          │
+│                           │                           │ {"name": "Social Space"}, │                          │                           │          │
+│                           │                           │ {"name": "Bartender"},    │                          │                           │          │
+│                           │                           │ {"name": "Vista           │                          │                           │          │
+│                           │                           │ Genomics"}, {"name":      │                          │                           │          │
+│                           │                           │ "Pioneer Supplies"},      │                          │                           │          │
+│                           │                           │ {"name": "Apex            │                          │                           │          │
+│                           │                           │ Interstellar"}, {"name":  │                          │                           │          │
+│                           │                           │ "Frontline Solutions"},   │                          │                           │          │
+│                           │                           │ {"name": "System          │                          │                           │          │
+│                           │                           │ Colonisation"}]},         │                          │                           │          │
+│                           │                           │ {"name": "Horowitz Hub",  │                          │                           │          │
+│                           │                           │ "system": "LTT 3572",     │                          │                           │          │
+│                           │                           │ "distance":               │                          │                           │          │
+│                           │                           │ 17.4341674682934,         │                          │                           │          │
+│                           │                           │ "orbit": 390.06306,       │                          │                           │          │
+│                           │                           │ "is_planetary": false,    │                          │                           │          │
+│                           │                           │ "market": [], "services": │                          │                           │          │
+│                           │                           │ [{"name": "Dock"},        │                          │                           │          │
+│                           │                           │ {"name": "Autodock"},     │                          │                           │          │
+│                           │                           │ {"name": "Market"},       │                          │                           │          │
+│                           │                           │ {"name": "Contacts"},     │                          │                           │          │
+│                           │                           │ {"name": "Universal       │                          │                           │          │
+│                           │                           │ Cartographics"}, {"name": │                          │                           │          │
+│                           │                           │ "Missions"}, {"name":     │                          │                           │          │
+│                           │                           │ "Outfitting"}, {"name":   │                          │                           │          │
+│                           │                           │ "Crew Lounge"}, {"name":  │                          │                           │          │
+│                           │                           │ "Restock"}, {"name":      │                          │                           │          │
+│                           │                           │ "Refuel"}, {"name":       │                          │                           │          │
+│                           │                           │ "Repair"}, {"name":       │                          │                           │          │
+│                           │                           │ "Shipyard"}, {"name":     │                          │                           │          │
+│                           │                           │ "Tuning"}, {"name":       │                          │                           │          │
+│                           │                           │ "Workshop"}, {"name":     │                          │                           │          │
+│                           │                           │ "Missions Generated"},    │                          │                           │          │
+│                           │                           │ {"name": "Flight          │                          │                           │          │
+│                           │                           │ Controller"}, {"name":    │                          │                           │          │
+│                           │                           │ "Station Operations"},    │                          │                           │          │
+│                           │                           │ {"name": "Powerplay"},    │                          │                           │          │
+│                           │                           │ {"name": "Search and      │                          │                           │          │
+│                           │                           │ Rescue"}, {"name":        │                          │                           │          │
+│                           │                           │ "Material Trader"},       │                          │                           │          │
+│                           │                           │ {"name": "Station Menu"}, │                          │                           │          │
+│                           │                           │ {"name": "Shop"},         │                          │                           │          │
+│                           │                           │ {"name": "Livery"},       │                          │                           │          │
+│                           │                           │ {"name": "Social Space"}, │                          │                           │          │
+│                           │                           │ {"name": "Bartender"},    │                          │                           │          │
+│                           │                           │ {"name": "Vista           │                          │                           │          │
+│                           │                           │ Genomics"}, {"name":      │                          │                           │          │
+│                           │                           │ "Pioneer Supplies"},      │                          │                           │          │
+│                           │                           │ {"name": "Apex            │                          │                           │          │
+│                           │                           │ Interstellar"}, {"name":  │                          │                           │          │
+│                           │                           │ "Frontline Solutions"},   │                          │                           │          │
+│                           │                           │ {"name": "System          │                          │                           │          │
+│                           │                           │ Colonisation"}]},         │                          │                           │          │
+│                           │                           │ {"name": "Broglie         │                          │                           │          │
+│                           │                           │ Terminal", "system": "61  │                          │                           │          │
+│                           │                           │ Cygni", "distance":       │                          │                           │          │
+│                           │                           │ 18.8779747241991,         │                          │                           │          │
+│                           │                           │ "orbit": 24.012126,       │                          │                           │          │
+│                           │                           │ "is_planetary": false,    │                          │                           │          │
+│                           │                           │ "market": [], "services": │                          │                           │          │
+│                           │                           │ [{"name": "Dock"},        │                          │                           │          │
+│                           │                           │ {"name": "Autodock"},     │                          │                           │          │
+│                           │                           │ {"name": "Market"},       │                          │                           │          │
+│                           │                           │ {"name": "Contacts"},     │                          │                           │          │
+│                           │                           │ {"name": "Universal       │                          │                           │          │
+│                           │                           │ Cartographics"}, {"name": │                          │                           │          │
+│                           │                           │ "Missions"}, {"name":     │                          │                           │          │
+│                           │                           │ "Outfitting"}, {"name":   │                          │                           │          │
+│                           │                           │ "Crew Lounge"}, {"name":  │                          │                           │          │
+│                           │                           │ "Restock"}, {"name":      │                          │                           │          │
+│                           │                           │ "Refuel"}, {"name":       │                          │                           │          │
+│                           │                           │ "Repair"}, {"name":       │                          │                           │          │
+│                           │                           │ "Shipyard"}, {"name":     │                          │                           │          │
+│                           │                           │ "Tuning"}, {"name":       │                          │                           │          │
+│                           │                           │ "Workshop"}, {"name":     │                          │                           │          │
+│                           │                           │ "Missions Generated"},    │                          │                           │          │
+│                           │                           │ {"name": "Flight          │                          │                           │          │
+│                           │                           │ Controller"}, {"name":    │                          │                           │          │
+│                           │                           │ "Station Operations"},    │                          │                           │          │
+│                           │                           │ {"name": "Powerplay"},    │                          │                           │          │
+│                           │                           │ {"name": "Search and      │                          │                           │          │
+│                           │                           │ Rescue"}, {"name":        │                          │                           │          │
+│                           │                           │ "Material Trader"},       │                          │                           │          │
+│                           │                           │ {"name": "Station Menu"}, │                          │                           │          │
+│                           │                           │ {"name": "Shop"},         │                          │                           │          │
+│                           │                           │ {"name": "Livery"},       │                          │                           │          │
+│                           │                           │ {"name": "Social Space"}, │                          │                           │          │
+│                           │                           │ {"name": "Bartender"},    │                          │                           │          │
+│                           │                           │ {"name": "Vista           │                          │                           │          │
+│                           │                           │ Genomics"}, {"name":      │                          │                           │          │
+│                           │                           │ "Pioneer Supplies"},      │                          │                           │          │
+│                           │                           │ {"name": "Apex            │                          │                           │          │
+│                           │                           │ Interstellar"}, {"name":  │                          │                           │          │
+│                           │                           │ "Frontline Solutions"},   │                          │                           │          │
+│                           │                           │ {"name": "System          │                          │                           │          │
+│                           │                           │ Colonisation"}]}]}'       │                          │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ mine painite              │ query='painite'           │ answer='Painite can be    │ answer='The user is      │ LLMJudge: ✗               │     4.8s │
+│                           │ projected_states={}       │ acquired by mining        │ asking for information   │   Reason: The provided    │          │
+│                           │                           │ hotspots. Here is a list  │ regarding the commodity  │ output gives sell         │          │
+│                           │                           │ of celestial bodies:      │ **Painite**. Since       │ locations and prices for  │          │
+│                           │                           │ {"amount_total": 10000,   │ Painite is a mined       │ Painite, but the expected │          │
+│                           │                           │ "amount_displayed": 3,    │ commodity, the most      │ output describes how      │          │
+│                           │                           │ "results": [{"name": "LFT │ relevant information to  │ Painite is acquired       │          │
+│                           │                           │ 65 1", "subtype": "Class  │ provide is where the     │ (mining hotspots) and     │          │
+│                           │                           │ III gas giant",           │ user can sell it for the │ lists celestial bodies    │          │
+│                           │                           │ "system_name": "LFT 65",  │ best price near their    │ containing Painite. The   │          │
+│                           │                           │ "rings": {"signals":      │ current location,        │ result does not mention   │          │
+│                           │                           │ [{"count": 1, "name":     │ Sol.\n\n**Search         │ the expected acquisition  │          │
+│                           │                           │ "Monazite"}, {"count": 1, │ Parameters:**\n*         │ information or include    │          │
+│                           │                           │ "name": "Painite"},       │ **Commodity:**           │ the expected list, so it  │          │
+│                           │                           │ {"count": 1, "name":      │ Painite\n*               │ does not meet the rubric. │          │
+│                           │                           │ "Platinum"}, {"count": 1, │ **Transaction:** Sell\n* │                           │          │
+│                           │                           │ "name": "Rhodplumsite"},  │ **Reference System:**    │                           │          │
+│                           │                           │ {"count": 1, "name":      │ Sol\n*   **Sort By:**    │                           │          │
+│                           │                           │ "Serendibite"}, {"count": │ Best                     │                           │          │
+│                           │                           │ 1, "name":                │ Price\n\n**Results:**\nT │                           │          │
+│                           │                           │ "Alexandrite"}, {"count": │ he following stations    │                           │          │
+│                           │                           │ 2, "name": "Bromellite"}, │ offer the best sell      │                           │          │
+│                           │                           │ {"count": 1, "name":      │ price for Painite near   │                           │          │
+│                           │                           │ "Grandidierite"},         │ the Sol system:\n\n|     │                           │          │
+│                           │                           │ {"count": 1, "name":      │ Station Name | System |  │                           │          │
+│                           │                           │ "Void Opal"}, {"count":   │ Sell Price (Cr) |        │                           │          │
+│                           │                           │ 1, "name": "Tritium"}]}}, │ Distance from Sol (ly)   │                           │          │
+│                           │                           │ {"name": "Caer Bran A 4", │ |\n| :--- | :--- | :---  │                           │          │
+│                           │                           │ "subtype": "Class I gas   │ | :--- |\n| **New New    │                           │          │
+│                           │                           │ giant", "system_name":    │ Amsterdam** | Col 285    │                           │          │
+│                           │                           │ "Caer Bran", "rings":     │ Sector HF-C b14-8 |      │                           │          │
+│                           │                           │ {"signals": [{"count": 2, │ 293,200 | 350.73 |\n|    │                           │          │
+│                           │                           │ "name": "Monazite"},      │ **Lockwood Legacy** |    │                           │          │
+│                           │                           │ {"count": 2, "name":      │ LPM 173 | 279,178 |      │                           │          │
+│                           │                           │ "Painite"}, {"count": 2,  │ 83.65 |\n| **Parnell     │                           │          │
+│                           │                           │ "name": "Platinum"},      │ Terminal** | Col 285     │                           │          │
+│                           │                           │ {"count": 2, "name":      │ Sector NV-I b24-1 |      │                           │          │
+│                           │                           │ "Rhodplumsite"},          │ 235,096 | 185.40         │                           │          │
+│                           │                           │ {"count": 1, "name":      │ |\n\n**Conclusion:**\nTh │                           │          │
+│                           │                           │ "Serendibite"}, {"count": │ e best place to sell     │                           │          │
+│                           │                           │ 3, "name": "Bromellite"}, │ your Painite is at **New │                           │          │
+│                           │                           │ {"count": 2, "name":      │ New Amsterdam** in the   │                           │          │
+│                           │                           │ "Void Opal"}]}}, {"name": │ **Col 285 Sector HF-C    │                           │          │
+│                           │                           │ "OT Serpentis ABC 1",     │ b14-8** system for       │                           │          │
+│                           │                           │ "subtype": "Icy body",    │ **293,200 Cr per ton**.  │                           │          │
+│                           │                           │ "system_name": "OT        │ This station is          │                           │          │
+│                           │                           │ Serpentis", "rings":      │ approximately **350.73   │                           │          │
+│                           │                           │ {"signals": [{"count": 1, │ light-years** from your  │                           │          │
+│                           │                           │ "name": "Monazite"},      │ current location,        │                           │          │
+│                           │                           │ {"count": 2, "name":      │ Sol.\n\nIf you are       │                           │          │
+│                           │                           │ "Painite"}, {"count": 1,  │ looking for a closer     │                           │          │
+│                           │                           │ "name": "Rhodplumsite"},  │ option, **Lockwood       │                           │          │
+│                           │                           │ {"count": 2, "name":      │ Legacy** in the **LPM    │                           │          │
+│                           │                           │ "Serendibite"}, {"count": │ 173** system offers the  │                           │          │
+│                           │                           │ 3, "name":                │ second-best price of     │                           │          │
+│                           │                           │ "Alexandrite"}, {"count": │ **279,178 Cr per ton**   │                           │          │
+│                           │                           │ 1, "name": "Low           │ and is only **83.65      │                           │          │
+│                           │                           │ Temperature Diamonds"},   │ light-years** away.'     │                           │          │
+│                           │                           │ {"count": 1, "name":      │                          │                           │          │
+│                           │                           │ "Tritium"}]}}]}'          │                          │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ steel for construction    │ query='where do i find    │ answer='Here is a list of │ answer='You are looking  │ LLMJudge: ✔               │     3.6s │
+│                           │ the remaining steel for   │ stations:                 │ for **56,320 units of    │   Reason: Output          │          │
+│                           │ my construction?'         │ {"amount_total": 10000,   │ Steel** to complete a    │ correctly calculated the  │          │
+│                           │ projected_states={'Coloni │ "amount_displayed": 3,    │ colonization             │ remaining Steel required  │          │
+│                           │ sationConstruction':      │ "results": [{"name":      │ construction project in  │ (63,936 required − 7,616  │          │
+│                           │ {'ConstructionProgress':  │ "Janifer Base", "system": │ the **Praea Euq LV-Y     │ provided = 56,320 units)  │          │
+│                           │ 0.034678,                 │ "Gabrani", "distance":    │ b5** system.\n\nSince    │ and answered the user     │          │
+│                           │ 'ConstructionComplete':   │ 371.973520300421,         │ you are currently in the │ query by listing nearby   │          │
+│                           │ False,                    │ "orbit": 465635.900401,   │ **Sol** system, I have   │ stations offering Steel,  │          │
+│                           │ 'ConstructionFailed':     │ "is_planetary": true,     │ searched for the closest │ including at least one    │          │
+│                           │ False,                    │ "market": [{"buy_price":  │ stations selling Steel   │ with enough supply; this  │          │
+│                           │ 'ResourcesRequired':      │ 355, "category":          │ at the best price:\n\n|  │ matches the               │          │
+│                           │ [{'Name':                 │ "Metals", "commodity":    │ Station Name | System |  │ expected-output           │          │
+│                           │ '$cmmcomposite_name;',    │ "Steel", "demand": 1,     │ Distance from Sol (ly) | │ requirement to provide a  │          │
+│                           │ 'Name_Localised': 'CMM    │ "sell_price": 346,        │ Buy Price (CR) | Supply  │ list of stations and      │          │
+│                           │ Composite',               │ "supply": 1519}],         │ (units) |\n| :--- | :--- │ mention the required      │          │
+│                           │ 'RequiredAmount': 39737,  │ "services": [{"name":     │ | :--- | :--- | :---     │ amount.                   │          │
+│                           │ 'ProvidedAmount': 0,      │ "Dock"}, {"name":         │ |\n| **Crick Refinery**  │                           │          │
+│                           │ 'Payment': 6788},         │ "Autodock"}, {"name":     │ | HR 8071 | 314.23 |     │                           │          │
+│                           │ {'Name':                  │ "Black Market"}, {"name": │ 3,050 | 61,481 |\n|      │                           │          │
+│                           │ '$powergenerators_name;', │ "Market"}, {"name":       │ **Luk Hub** | HIP 11879  │                           │          │
+│                           │ 'Name_Localised': 'Power  │ "Contacts"}, {"name":     │ | 484.65 | 3,061 |       │                           │          │
+│                           │ Generators',              │ "Universal                │ 75,920 |\n| **Robinson   │                           │          │
+│                           │ 'RequiredAmount': 277,    │ Cartographics"}, {"name": │ Gateway** | HIP 11879 |  │                           │          │
+│                           │ 'ProvidedAmount': 0,      │ "Missions"}, {"name":     │ 484.65 | 3,087 | 81,024  │                           │          │
+│                           │ 'Payment': 3072},         │ "Outfitting"}, {"name":   │ |\n\n**Crick Refinery**  │                           │          │
+│                           │ {'Name':                  │ "Crew Lounge"}, {"name":  │ in the **HR 8071**       │                           │          │
+│                           │ '$semiconductors_name;',  │ "Restock"}, {"name":      │ system offers the best   │                           │          │
+│                           │ 'Name_Localised':         │ "Refuel"}, {"name":       │ combination of proximity │                           │          │
+│                           │ 'Semiconductors',         │ "Repair"}, {"name":       │ and price. It has a      │                           │          │
+│                           │ 'RequiredAmount': 413,    │ "Tuning"}, {"name":       │ supply of **61,481       │                           │          │
+│                           │ 'ProvidedAmount': 0,      │ "Workshop"}, {"name":     │ units**, which is enough │                           │          │
+│                           │ 'Payment': 1526},         │ "Missions Generated"},    │ to cover your required   │                           │          │
+│                           │ {'Name': '$steel_name;',  │ {"name": "Flight          │ amount of 56,320 units.' │                           │          │
+│                           │ 'Name_Localised':         │ Controller"}, {"name":    │                          │                           │          │
+│                           │ 'Steel',                  │ "Station Operations"},    │                          │                           │          │
+│                           │ 'RequiredAmount': 63936,  │ {"name": "Powerplay"},    │                          │                           │          │
+│                           │ 'ProvidedAmount': 7616,   │ {"name": "Search and      │                          │                           │          │
+│                           │ 'Payment': 5057},         │ Rescue"}, {"name":        │                          │                           │          │
+│                           │ {'Name':                  │ "Station Menu"}, {"name": │                          │                           │          │
+│                           │ '$titanium_name;',        │ "Shop"}, {"name":         │                          │                           │          │
+│                           │ 'Name_Localised':         │ "Livery"}, {"name":       │                          │                           │          │
+│                           │ 'Titanium',               │ "Social Space"}, {"name": │                          │                           │          │
+│                           │ 'RequiredAmount': 35165,  │ "Bartender"}, {"name":    │                          │                           │          │
+│                           │ 'ProvidedAmount': 0,      │ "Vista Genomics"},        │                          │                           │          │
+│                           │ 'Payment': 5360}],        │ {"name": "Pioneer         │                          │                           │          │
+│                           │ 'MarketID': 4263743747,   │ Supplies"}, {"name":      │                          │                           │          │
+│                           │ 'StarSystem': 'Praea Euq  │ "Apex Interstellar"},     │                          │                           │          │
+│                           │ LV-Y b5',                 │ {"name": "Frontline       │                          │                           │          │
+│                           │ 'StarSystemRecall':       │ Solutions"}, {"name":     │                          │                           │          │
+│                           │ 'Praea Euq LV-Y b5'}}     │ "System Colonisation"},   │                          │                           │          │
+│                           │                           │ {"name": "Refinery        │                          │                           │          │
+│                           │                           │ Contact"}]}, {"name":     │                          │                           │          │
+│                           │                           │ "Hauser\'s Reach",        │                          │                           │          │
+│                           │                           │ "system": "Robigo",       │                          │                           │          │
+│                           │                           │ "distance":               │                          │                           │          │
+│                           │                           │ 755.243062850878,         │                          │                           │          │
+│                           │                           │ "orbit": 1075.835224,     │                          │                           │          │
+│                           │                           │ "is_planetary": false,    │                          │                           │          │
+│                           │                           │ "market": [{"buy_price":  │                          │                           │          │
+│                           │                           │ 359, "category":          │                          │                           │          │
+│                           │                           │ "Metals", "commodity":    │                          │                           │          │
+│                           │                           │ "Steel", "demand": 1,     │                          │                           │          │
+│                           │                           │ "sell_price": 350,        │                          │                           │          │
+│                           │                           │ "supply": 2332}],         │                          │                           │          │
+│                           │                           │ "services": [{"name":     │                          │                           │          │
+│                           │                           │ "Dock"}, {"name":         │                          │                           │          │
+│                           │                           │ "Autodock"}, {"name":     │                          │                           │          │
+│                           │                           │ "Market"}, {"name":       │                          │                           │          │
+│                           │                           │ "Contacts"}, {"name":     │                          │                           │          │
+│                           │                           │ "Universal                │                          │                           │          │
+│                           │                           │ Cartographics"}, {"name": │                          │                           │          │
+│                           │                           │ "Missions"}, {"name":     │                          │                           │          │
+│                           │                           │ "Outfitting"}, {"name":   │                          │                           │          │
+│                           │                           │ "Crew Lounge"}, {"name":  │                          │                           │          │
+│                           │                           │ "Restock"}, {"name":      │                          │                           │          │
+│                           │                           │ "Refuel"}, {"name":       │                          │                           │          │
+│                           │                           │ "Repair"}, {"name":       │                          │                           │          │
+│                           │                           │ "Shipyard"}, {"name":     │                          │                           │          │
+│                           │                           │ "Tuning"}, {"name":       │                          │                           │          │
+│                           │                           │ "Workshop"}, {"name":     │                          │                           │          │
+│                           │                           │ "Missions Generated"},    │                          │                           │          │
+│                           │                           │ {"name": "Flight          │                          │                           │          │
+│                           │                           │ Controller"}, {"name":    │                          │                           │          │
+│                           │                           │ "Station Operations"},    │                          │                           │          │
+│                           │                           │ {"name": "Search and      │                          │                           │          │
+│                           │                           │ Rescue"}, {"name":        │                          │                           │          │
+│                           │                           │ "Station Menu"}, {"name": │                          │                           │          │
+│                           │                           │ "Shop"}, {"name":         │                          │                           │          │
+│                           │                           │ "Livery"}, {"name":       │                          │                           │          │
+│                           │                           │ "Social Space"}, {"name": │                          │                           │          │
+│                           │                           │ "Bartender"}, {"name":    │                          │                           │          │
+│                           │                           │ "Vista Genomics"},        │                          │                           │          │
+│                           │                           │ {"name": "Pioneer         │                          │                           │          │
+│                           │                           │ Supplies"}, {"name":      │                          │                           │          │
+│                           │                           │ "Apex Interstellar"},     │                          │                           │          │
+│                           │                           │ {"name": "Frontline       │                          │                           │          │
+│                           │                           │ Solutions"}]}, {"name":   │                          │                           │          │
+│                           │                           │ "Brunel Depot", "system": │                          │                           │          │
+│                           │                           │ "Col 285 Sector YG-I      │                          │                           │          │
+│                           │                           │ b24-6", "distance":       │                          │                           │          │
+│                           │                           │ 224.337499042319,         │                          │                           │          │
+│                           │                           │ "orbit": 13.315131,       │                          │                           │          │
+│                           │                           │ "is_planetary": true,     │                          │                           │          │
+│                           │                           │ "market": [{"buy_price":  │                          │                           │          │
+│                           │                           │ 369, "category":          │                          │                           │          │
+│                           │                           │ "Metals", "commodity":    │                          │                           │          │
+│                           │                           │ "Steel", "demand": 1,     │                          │                           │          │
+│                           │                           │ "sell_price": 360,        │                          │                           │          │
+│                           │                           │ "supply": 320}],          │                          │                           │          │
+│                           │                           │ "services": [{"name":     │                          │                           │          │
+│                           │                           │ "Dock"}, {"name":         │                          │                           │          │
+│                           │                           │ "Autodock"}, {"name":     │                          │                           │          │
+│                           │                           │ "Contacts"}, {"name":     │                          │                           │          │
+│                           │                           │ "Missions"}, {"name":     │                          │                           │          │
+│                           │                           │ "Restock"}, {"name":      │                          │                           │          │
+│                           │                           │ "Refuel"}, {"name":       │                          │                           │          │
+│                           │                           │ "Repair"}, {"name":       │                          │                           │          │
+│                           │                           │ "Workshop"}, {"name":     │                          │                           │          │
+│                           │                           │ "Interstellar Factors     │                          │                           │          │
+│                           │                           │ Contact"}, {"name":       │                          │                           │          │
+│                           │                           │ "Flight Controller"},     │                          │                           │          │
+│                           │                           │ {"name": "Station         │                          │                           │          │
+│                           │                           │ Operations"}, {"name":    │                          │                           │          │
+│                           │                           │ "Powerplay"}, {"name":    │                          │                           │          │
+│                           │                           │ "Search and Rescue"},     │                          │                           │          │
+│                           │                           │ {"name": "Station Menu"}, │                          │                           │          │
+│                           │                           │ {"name": "Shop"},         │                          │                           │          │
+│                           │                           │ {"name": "Social Space"}, │                          │                           │          │
+│                           │                           │ {"name": "Bartender"},    │                          │                           │          │
+│                           │                           │ {"name": "Vista           │                          │                           │          │
+│                           │                           │ Genomics"}, {"name":      │                          │                           │          │
+│                           │                           │ "Pioneer Supplies"},      │                          │                           │          │
+│                           │                           │ {"name": "Apex            │                          │                           │          │
+│                           │                           │ Interstellar"}, {"name":  │                          │                           │          │
+│                           │                           │ "Frontline                │                          │                           │          │
+│                           │                           │ Solutions"}]}]}'          │                          │                           │          │
+├───────────────────────────┼───────────────────────────┼───────────────────────────┼──────────────────────────┼───────────────────────────┼──────────┤
+│ Averages                  │                           │                           │                          │ 73.1% ✔                   │     6.7s │
+└───────────────────────────┴───────────────────────────┴───────────────────────────┴──────────────────────────┴───────────────────────────┴──────────┘

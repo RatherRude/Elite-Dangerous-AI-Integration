@@ -433,6 +433,11 @@ class Chat:
         # Execute plugin chat stop hooks
         self.plugin_manager.on_chat_stop(self.plugin_helper)
 
+    def web_search(self, query: str):
+        """Perform a web search using the assistant's action manager"""
+        _, projected_states = self.event_manager.get_current_state()
+        self.assistant.web_search(query, projected_states)
+
 
 def read_stdin(chat: Chat):
     log("debug", "Reading stdin...")
@@ -471,6 +476,10 @@ def read_stdin(chat: Chat):
                 }) + '\n', flush=True)
             if data.get("type") == "init_overlay":
                 print(json.dumps({"type": "running_config", "config": config})+'\n', flush=True)
+            if data.get("type") == "web_search":
+                query = data.get("query", "")
+                if query:
+                    chat.web_search(query)
 
 def check_zombie_status():
     """Checks if the current process is a zombie and exits if it is."""

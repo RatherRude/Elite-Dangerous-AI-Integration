@@ -1,5 +1,6 @@
 import json
 import traceback
+from datetime import datetime
 from openai.types.chat import ChatCompletion, ChatCompletionMessageToolCall
 from time import time
 
@@ -56,7 +57,7 @@ class Assistant:
                     speed_args = {"speed": "Zero"}
                     set_speed(speed_args, projected_states)
 
-                if self.config.get("qol_autoscan"):
+                if self.config.get("qol_autoscane"):
                     fire_args = {
                         "weaponType": "discovery_scanner",
                         "action": "fire",
@@ -369,9 +370,13 @@ class Assistant:
         for event in self.pending:
             # check if pending contains conversational events
             if isinstance(event, ConversationEvent) and event.kind == "user":
+                if getattr(event, 'do_not_reply', False):
+                    continue
                 return True
 
             if isinstance(event, ToolEvent):
+                if getattr(event, 'do_not_reply', False):
+                    continue
                 return True
 
             if isinstance(event, GameEvent) and event.content.get("event") in self.enabled_game_events:
@@ -440,3 +445,42 @@ class Assistant:
     
     def register_should_reply_handler(self, handler: Callable[[Event, dict[str, Any]], bool | None]):
         self.registered_should_reply_handlers.append(handler)
+
+    def web_search(self, query: str, projected_states: dict[str, Any]):
+        action_name = 'web_search_agent'
+        action_descriptor = self.action_manager.actions.get(action_name)
+        
+        if not action_descriptor:
+            log('error', f"Action {action_name} not found")
+            return
+
+
+        method = action_descriptor.get('method')
+        args = {'query': query}
+        self.tts.say(f"Searching: {query}")
+        
+        try:
+            result_content = method(args, projected_states)
+        except Exception as e:
+            log('error', f"Error executing {action_name}", e)
+            result_content = f"Error: {e}"
+
+        request = [{
+            "id": f"call_{int(datetime.now().timestamp())}",
+            "type": "function",
+            "function": {
+                "name": action_name,
+                "arguments": json.dumps(args)
+            }
+        }]
+        
+        results = [{
+            "tool_call_id": request[0]['id'],
+            "role": "tool",
+            "name": action_name,
+            "content": result_content
+        }]
+        
+        # Add tool event, also not triggering a reply
+        self.event_manager.add_conversation_event('user', query)
+        self.event_manager.add_tool_call(request, results, [f"Searching: {query}"])

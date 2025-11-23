@@ -63,6 +63,13 @@
                     </mat-tab>
                 }
 
+                <mat-tab label="Search">
+                    <div class="tab-content-container">
+                        <app-search-results-container></app-search-results-container>
+                    </div>
+                    <app-chat-container [limit]="2"></app-chat-container>
+                </mat-tab>
+
                 @if (false) {
                     <mat-tab label="Logs">
                         <div class="tab-content-container">

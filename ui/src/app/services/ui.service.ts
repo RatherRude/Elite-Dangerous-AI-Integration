@@ -22,4 +22,8 @@ export class UIService {
             }
         })
     }
+
+    public showTab(tabName: string) {
+        this.changeUISubject.next(tabName);
+    }
 }
