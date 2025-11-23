@@ -125,7 +125,8 @@ def web_search_agent(
                         "subtype": { "type": "array", "items": { "type": "string" } },
                         "landmark_subtype": { "type": "array", "items": { "type": "string" } },
                         "distance": { "type": "number", "description": "Maximum distance to search" },
-                        "rings": { "type": "object", "properties": { "material": { "type": "string" }, "hotspots": { "type": "integer" } }, "required": ["material", "hotspots"] }
+                        "rings": { "type": "object", "properties": { "material": { "type": "string" }, "hotspots": { "type": "integer" } }, "required": ["material", "hotspots"] },
+                        "signals": { "type": "array", "items": { "type": "string", "enum": ["Biological", "Geological", "Human", "Guardian", "Thargoid"] }, "description": "Filter for signals on the body surface." }
                     }
                 }
             }
@@ -196,13 +197,15 @@ def web_search_agent(
     You will be given a user query and a set of tools.
     You can call one or more tools to gather information.
     Once you have enough information, you must generate a concise and helpful final report answering the user's query.
-    The report summarizes the interpretation of the query, the search parameters used to acquire the answer and the answer to the user's query.  
+    The report summarizes the interpretation of the query, the search parameters used to acquire the answer and the answer to the user's query.
     
     Do not just regurgitate the tool outputs. Synthesize them into a coherent answer.
     
-    Always use the `reference_system` parameter for finders if you know the user's current location. The current location is provided in the `projected_states`.
     If a tool returns an error or no results, try to call it again with different parameters if it makes sense, or try a different tool.
     If you can not find an answer to the user's question, do your best to provide related information given your set of tools and mention this limitation in your final output.
+
+    If you are uncertain if something is a material or a commodity, search for both.
+    If the user asks for a specific commodity or module, search explicitly for that in stations, rather than ones that have a fitting economy or service for that.
 
     Here are some examples of how to use the tools:
 
@@ -211,8 +214,8 @@ def web_search_agent(
     2. Summarize the results from `station_finder` and present them to the user in the final report.
 
     User Query: "I need to engineer my FSD for increased range. What do I need?"
-    1. Call `blueprint_finder` with `{"modifications": ["Increased FSD Range"]}`.
-    2. The result will show the materials needed for different grades.
+    1. Call `blueprint_finder` with `{"modifications": ["Increased FSD Range"]}` and list all missing grades up to 5 for your ship.
+    2. The result will show the materials needed for the different grades.
     3. Call `material_finder` for each of the required materials to check if you have them and where to find them.
     4. Call `engineer_finder` to find the location of the engineers that can perform the modification.
     5. Generate a report summarizing the required materials, where to find them, and which engineers can apply the blueprint.
@@ -220,6 +223,10 @@ def web_search_agent(
     User Query: "What's the latest news about the Thargoids?"
     1. Call `get_galnet_news` with `{"query": "Thargoids"}`.
     2. Summarize the news articles in the final report.
+
+    User Query: "Where can I mine Painite?"
+    1. Call `body_finder` with `{"rings": {"material": "Painite", "hotspots": 1}}`.
+    2. Summarize the found bodies and their hotspot details.
     """
 
     messages = [
@@ -1999,6 +2006,19 @@ def prepare_body_request(obj, projected_states):
                 }
             ]
 
+    if "signals" in obj and obj["signals"]:
+        signal_filters = []
+        for signal in obj["signals"]:
+            signal_filters.append({
+                "comparison": "<=>",
+                "count": [
+                    1,
+                    999
+                ],
+                "name": signal.capitalize()
+            })
+        filters["signals"] = signal_filters
+
     # Build the request body
     request_body = {
         "filters": filters,
@@ -2071,6 +2091,11 @@ def filter_body_response(request, response):
                 
                 if ring_signals:
                     filtered_body["rings"] = {"signals": ring_signals}
+
+        # signals information
+        if "signals" in request_filters:
+            if "signals" in body and body["signals"]:
+                filtered_body["signals"] = body.get("signals")
 
         # Add filtered system to the list
         filtered_results.append(filtered_body)
