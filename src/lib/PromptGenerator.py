@@ -1756,7 +1756,7 @@ class PromptGenerator:
 
         if event_name == 'LaunchFighter':
             fighter_event = cast(Dict[str, Any], content)
-            return f"{self.commander_name if fighter_event.get('PlayerControlled') else "An NPC crew"} has launched in a fighter."
+            return f"{self.commander_name if fighter_event.get('PlayerControlled') else 'An NPC crew'} has launched in a fighter."
 
         if event_name == 'LaunchSRV':
             srv_event = cast(Dict[str, Any], content)
@@ -2519,7 +2519,7 @@ class PromptGenerator:
         # Add all other basic fields
         normalized["name"] = station.get("name", "Unknown")
         normalized["type"] = station.get("type", "Unknown")
-        normalized["government"] = f"{station.get("allegiance", "")} {station.get("government", "None")}"
+        normalized["government"] = f"{station.get('allegiance', '')} {station.get('government', 'None')}"
         
         # Handle controllingFaction which might have different structure
         if raw_format and isinstance(station.get("controllingFaction"), dict):

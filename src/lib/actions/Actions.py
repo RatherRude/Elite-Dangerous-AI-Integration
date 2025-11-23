@@ -547,7 +547,7 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
                 if not current_gui == "GalaxyMap":  # if we are already in the galaxy map we don't want to close it
                     keys.send(galaxymap_key)
 
-                return (f"Best location found: {json.dumps(args['details'])}. " if 'details' in args else '') + f"Route to {args['system_name']} successfully plotted ({f"Distance: {distance_ly} LY, " if distance_ly > 0 else ""}Jumps: {jumpAmount})"
+                return (f"Best location found: {json.dumps(args['details'])}. " if 'details' in args else '') + f"Route to {args['system_name']} successfully plotted ({f'Distance: {distance_ly} LY, ' if distance_ly > 0 else ''}Jumps: {jumpAmount})"
 
             except TimeoutError:
                 return f"Failed to plot a route to {args['system_name']}"
