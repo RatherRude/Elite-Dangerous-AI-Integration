@@ -205,7 +205,8 @@ def web_search_agent(
     If you can not find an answer to the user's question, do your best to provide related information given your set of tools and mention this limitation in your final output.
 
     If you are uncertain if something is a material or a commodity, search for both.
-    If the user asks for a specific commodity or module, search explicitly for that in stations, rather than ones that have a fitting economy or service for that.
+    If the user asks for a specific commodity or module, search explicitly for that in stations, rather than with fitting economies or service that could supply that.
+    Explore both options for commodity procurement, mining from planet ring's hotspots or buying it from a station's market.
 
     Here are some examples of how to use the tools:
 
