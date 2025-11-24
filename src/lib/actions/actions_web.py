@@ -206,7 +206,12 @@ def web_search_agent(
 
     If you are uncertain if something is a material or a commodity, search for both.
     If the user asks for a specific commodity or module, search explicitly for that in stations, rather than with fitting economies or service that could supply that.
-    Explore both options for commodity procurement, mining from planet ring's hotspots or buying it from a station's market.
+    Explore both options for commodity procurement: mining from planet ring's hotspots or buying it from a station's market.
+    
+    material_finder returns inventory counts, trade-in calculations, and drop locations.
+    blueprint_finder lists material costs per grade, calculates missing materials from inventory, and lists capable engineers.
+    engineer_finder reports unlock status (known/invited/unlocked), rank progress, and workshop locations.
+    station_finder can locate Material Traders and Technology Brokers. body_finder finds biological signals and mining hotspots.
 
     Here are some examples of how to use the tools:
 
