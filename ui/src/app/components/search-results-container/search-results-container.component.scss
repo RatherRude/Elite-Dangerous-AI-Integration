@@ -120,6 +120,16 @@
 .no-results {
   color: rgba(255, 255, 255, 0.5);
   text-align: center;
-  margin-top: 2rem;
+  font-style: italic;
+}
+
+.results-footer {
+  text-align: right;
+}
+
+.footer-text {
+  margin-top: 0.3rem;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
   font-style: italic;
 }
