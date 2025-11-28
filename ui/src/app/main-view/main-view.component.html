@@ -25,7 +25,7 @@
                                 <app-status-container></app-status-container>
                             </div>
                         </div>
-                        <app-chat-container [limit]="2"></app-chat-container>
+                        <app-chat-container class="small" [limit]="2"></app-chat-container>
                     </mat-tab>
                     <mat-tab label="Storage">
                         <div class="tab-content-container">
@@ -33,7 +33,7 @@
                                 <app-storage-container></app-storage-container>
                             </div>
                         </div>
-                        <app-chat-container [limit]="2"></app-chat-container>
+                        <app-chat-container class="small" [limit]="2"></app-chat-container>
                     </mat-tab>
                     <mat-tab label="Tasks">
                         <div class="tab-content-container">
@@ -41,7 +41,7 @@
                                 <app-tasks-container></app-tasks-container>
                             </div>
                         </div>
-                        <app-chat-container [limit]="2"></app-chat-container>
+                        <app-chat-container class="small" [limit]="2"></app-chat-container>
                     </mat-tab>
                     @if (isDockedAtStation) {
                         <mat-tab label="Station">
@@ -50,7 +50,7 @@
                                     <app-station-container></app-station-container>
                                 </div>
                             </div>
-                            <app-chat-container [limit]="2"></app-chat-container>
+                            <app-chat-container class="small" [limit]="2"></app-chat-container>
                         </mat-tab>
                     }
                 }
@@ -59,7 +59,7 @@
                         <div class="tab-content-container">
                             <app-memories-container></app-memories-container>
                         </div>
-                        <app-chat-container [limit]="2"></app-chat-container>
+                        <app-chat-container class="small" [limit]="2"></app-chat-container>
                     </mat-tab>
                 }
 
@@ -67,7 +67,7 @@
                     <div class="tab-content-container">
                         <app-search-results-container></app-search-results-container>
                     </div>
-                    <app-chat-container [limit]="2"></app-chat-container>
+                    <app-chat-container class="small" [limit]="2"></app-chat-container>
                 </mat-tab>
 
                 @if (false) {
@@ -77,7 +77,7 @@
                                 <app-log-container></app-log-container>
                             </div>
                         </div>
-                        <app-chat-container [limit]="2"></app-chat-container>
+                        <app-chat-container class="small" [limit]="2"></app-chat-container>
                     </mat-tab>
                 }
             </mat-tab-group>

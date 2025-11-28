@@ -118,7 +118,7 @@
   justify-content: center;
 }
 
-:not(.chat-container) > app-chat-container {
+app-chat-container.small {
   max-height: 4em;
   overflow-y: auto;
   border-top: 1px solid #666;
