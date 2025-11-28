@@ -118,7 +118,7 @@
   justify-content: center;
 }
 
-app-chat-container[ng-reflect-limit] {
+app-chat-container {
   max-height: 4em;
   overflow-y: auto;
   border-top: 1px solid #666;
