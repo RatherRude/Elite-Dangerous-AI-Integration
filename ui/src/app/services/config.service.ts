@@ -103,19 +103,20 @@ export interface Config {
         | "custom-multi-modal"
         | "google-ai-studio"
         | "none"
-        | "local-ai-server";
+        | "local-ai-server"
+        | string;
     stt_model_name: string;
     stt_api_key: string;
     stt_endpoint: string;
     stt_language: string;
     stt_custom_prompt: string;
     stt_required_word: string;
-    tts_provider: "openai" | "edge-tts" | "custom" | "none" | "local-ai-server";
+    tts_provider: "openai" | "edge-tts" | "custom" | "none" | "local-ai-server" | string;
     tts_model_name: string;
     tts_api_key: string;
     tts_endpoint: string;
     // Embedding settings
-    embedding_provider: "openai" | "google-ai-studio" | "custom" | "none" | "local-ai-server";
+    embedding_provider: "openai" | "google-ai-studio" | "custom" | "none" | "local-ai-server" | string;
     embedding_model_name: string;
     embedding_api_key: string;
     embedding_endpoint: string;
