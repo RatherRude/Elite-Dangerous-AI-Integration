@@ -1,7 +1,7 @@
 import datetime
 import math
+from typing import cast, Any, List, Dict
 
-import openai
 import requests
 import yaml
 import traceback
@@ -13,30 +13,26 @@ from .data import *
 from ..ActionManager import ActionManager
 from ..EventManager import EventManager
 from ..Logger import log
+from ..Models import LLMModel, EmbeddingModel
 
-llm_client: openai.OpenAI | None = None
-llm_model_name: str | None = None
-llm_reasoning_effort: str | None = None
-embedding_client: openai.OpenAI | None = None
-embedding_model_name: str | None = None
-event_manager: EventManager | None = None
-prompt_generator: PromptGenerator | None = None
+llm_model: LLMModel = cast(LLMModel, None)
+embedding_model: EmbeddingModel = cast(EmbeddingModel, None)
+event_manager: EventManager = cast(EventManager, None)
+prompt_generator: PromptGenerator = cast(PromptGenerator, None)
+agent_max_tries: int = 7
 
 def web_search_agent(
         obj,
         projected_states,
         prompt_generator,
-        llm_client: openai.OpenAI  | None = None,
-        llm_model_name: str | None = None,
-        temperature: float | None = None,
+        llm_model: LLMModel | None = None,
         max_loops: int = 7,
-        reasoning_effort: str | None = None,
      ):
     """
     Uses an agentic loop to answer a web-related query by calling various internal tools.
     """
-    if not llm_client or not llm_model_name:
-        return "LLM client or model name not configured."
+    if not llm_model:
+        return "LLM model not configured."
     
     query = obj.get('query')
     if not query:
@@ -235,30 +231,31 @@ def web_search_agent(
     2. Summarize the found bodies and their hotspot details.
     """
 
-    messages = [
+    messages: List[Dict[str, Any]] = [
         {"role": "system", "content": system_prompt},
         {"role": "user", "content": f"Current game state is:\n{prompt_generator.generate_status_message(projected_states)}\n\nUser query: {query}"}
     ]
 
-    for _ in range(max_loops):
+    for iter in range(max_loops):
         try:
-            add_args = {}
-            if reasoning_effort and reasoning_effort != 'default':
-                add_args['reasoning_effort'] = reasoning_effort
-            completion = llm_client.chat.completions.create(
-                model=llm_model_name,
+            if iter == max_loops - 1:
+                messages.append({
+                    "role": "user",
+                    "content": "Maximum number of iterations reached. Please provide the best possible answer based on the information gathered so far."
+                })
+                
+            response_text, tool_calls = llm_model.generate(
                 messages=messages,
-                tools=tools,
+                tools=tools if iter < max_loops - 1 else [],
                 tool_choice="auto",
-                temperature=temperature,
-                **add_args,
             )
 
-            response_message = completion.choices[0].message
-            tool_calls = response_message.tool_calls
-
             if tool_calls:
-                messages.append(response_message)
+                messages.append({
+                    "role": "assistant",
+                    "content": response_text,
+                    "tool_calls": [t.model_dump() for t in tool_calls]
+                })
                 for tool_call in tool_calls:
                     function_name = tool_call.function.name
                     function_to_call = available_functions.get(function_name)
@@ -286,7 +283,7 @@ def web_search_agent(
                     )
             else:
                 # No tool call, so this should be the final answer
-                return response_message.content or 'No response content.'
+                return response_text or 'No response content.'
 
         except Exception as e:
             log('error', f"An error occurred in the agentic loop: {e}", traceback.format_exc())
@@ -299,11 +296,8 @@ def web_search(obj, projected_states):
         obj,
         projected_states,
         prompt_generator=prompt_generator,
-        llm_client=llm_client,
-        llm_model_name=llm_model_name,
-        temperature=llm_temperature,
+        llm_model=llm_model,
         max_loops=agent_max_tries,
-        reasoning_effort=llm_reasoning_effort
     )
     return res
 
@@ -326,20 +320,14 @@ def get_galnet_news(obj, projected_states):
                 }
                 articles.append(article)
 
-            completion = llm_client.chat.completions.create(
-                extra_headers={
-                    "HTTP-Referer": "https://github.com/RatherRude/Elite-Dangerous-AI-Integration",
-                    "X-Title": "Elite Dangerous AI Integration",
-                },
-                model=llm_model_name,
+            response_text, _ = llm_model.generate(
                 messages=[{
                     "role": "user",
                     "content": f"Analyze the following list of news articles, either answer the given inquiry or create a short summary that includes all named entities: {articles}\nInquiry: {obj.get('query')}"
                 }],
-                temperature=llm_temperature,
             )
 
-            return completion.choices[0].message.content
+            return response_text
 
         return "News feed currently unavailable"
 
@@ -1457,17 +1445,13 @@ def remember_memories(obj, projected_states):
     k = max(1, min(k, 20))
 
     # Create embedding for the query and search the vector store
-    if not embedding_client or not embedding_model_name:
+    if not embedding_model:
         log('warn', 'Embeddings model not configured, cannot search memories.')
         return 'Unable to search memories, please configure the embedding model.'
 
-    embedding_response = embedding_client.embeddings.create(
-        model=embedding_model_name,
-        input=query
-    )
-    embedding = embedding_response.data[0].embedding
+    (model_name, embedding) = embedding_model.create_embedding(query)
 
-    results = event_manager.long_term_memory.search(query, embedding_response.model, embedding, n=k)
+    results = event_manager.long_term_memory.search(query, model_name, embedding, n=k)
 
     if not results:
         return f"No relevant memories found for '{query}'."
@@ -2138,22 +2122,14 @@ def body_finder(obj, projected_states):
 
 def register_web_actions(actionManager: ActionManager, eventManager: EventManager, 
                         promptGenerator: PromptGenerator,
-                         llmClient: openai.OpenAI | None,
-                         llmModelName: str | None,
-                         llmReasoningEffort: str | None,
-                         embeddingClient: openai.OpenAI | None,
-                         embeddingModelName: str | None,
-                         llmTemperature: float | None = None,
+                         llmModel: LLMModel | None,
+                         embeddingModel: EmbeddingModel | None,
                          agentMaxTries: int = 7):
-    global event_manager, llm_client, llm_model_name, llm_reasoning_effort, embedding_model_name, embedding_client, prompt_generator, llm_temperature, agent_max_tries
+    global event_manager, llm_model, embedding_model, prompt_generator, agent_max_tries
     event_manager = eventManager
     prompt_generator = promptGenerator
-    llm_client = llmClient
-    llm_model_name = llmModelName
-    llm_reasoning_effort = llmReasoningEffort
-    embedding_model_name = embeddingModelName
-    embedding_client = embeddingClient
-    llm_temperature = llmTemperature if llmTemperature is not None else 1.0
+    llm_model = cast(LLMModel, llmModel)
+    embedding_model = cast(EmbeddingModel, embeddingModel)
     agent_max_tries = agentMaxTries
 
     actionManager.registerAction(
@@ -2176,7 +2152,7 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
 
     # Retrieve memories via semantic search
 
-    if embeddingClient:
+    if embeddingModel:
         actionManager.registerAction(
             'remember_memories',
         "Retrieve relevant long-term memory notes from logbook by semantic search. Use this to remember and recall older logbook entries and memories than currently known to answer questions concerning the past.",
@@ -2205,66 +2181,3 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
             action_type='web'
         )
 
-
-if __name__ == '__main__':
-    # This is a simple CLI for testing the web_search agent.
-    import os
-    import json
-
-    # Initialize the OpenAI client
-    # Make sure you have OPENAI_API_KEY set in your environment or a .env file
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        print("Error: OPENAI_API_KEY environment variable not set.")
-        exit(1)
-
-    llm_client = openai.OpenAI(api_key=api_key)
-    llm_model_name = os.getenv("OPENAI_MODEL_NAME", "gpt-4.1")
-
-    # Dummy projected state for testing
-    dummy_projected_state = {
-        "Location": {
-            "StarSystem": "Sol",
-            "StarPos": [0.0, 0.0, 0.0],
-            "SystemAddress": 10477373803
-        },
-        "EngineerProgress": {
-            "Engineers": [
-                {
-                    "EngineerID": 300160,
-                    "Engineer": "Marco Qwent",
-                    "Progress": "Unlocked"
-                }
-            ]
-        },
-        "Materials": {
-            "Raw": [{"Name": "iron", "Count": 100}],
-            "Manufactured": [],
-            "Encoded": []
-        },
-        "ShipInfo": {"LandingPadSize": 'L'},
-        "ShipLocker": {
-            "Items": [],
-            "Components": [],
-            "Data": [],
-            "Consumables": []
-        }
-    }
-
-    print("Elite Dangerous AI Web Search CLI")
-    print("Type 'exit' to quit.")
-    print("-" * 30)
-
-    while True:
-        print('You: ', file=sys.stderr, flush=True)
-        user_query = input("You: ")
-        if user_query.lower() == 'exit':
-            break
-
-        if not user_query:
-            continue
-
-        print("Agent: Thinking...", file=sys.stderr, flush=True)
-        response = web_search({"query": user_query}, dummy_projected_state)
-        print(f"Agent: {response}", file=sys.stderr, flush=True)
-        print("-" * 30, file=sys.stderr, flush=True)

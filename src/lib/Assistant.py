@@ -4,6 +4,7 @@ from datetime import datetime
 from openai.types.chat import ChatCompletion, ChatCompletionMessageToolCall
 from time import time
 
+from .Models import LLMModel, EmbeddingModel, LLMError
 from .Logger import log, observe, show_chat_message
 from .Config import Config
 from .Event import ConversationEvent, Event, GameEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent, MemoryEvent
@@ -11,23 +12,22 @@ from .EventManager import EventManager
 from .ActionManager import ActionManager
 from .PromptGenerator import PromptGenerator
 from .TTS import TTS
-from openai import APIStatusError, BadRequestError, OpenAI, RateLimitError
 from typing import Any,  Callable, final
 from threading import Thread
 from .actions.Actions import set_speed, fire_weapons, get_visuals
 
 @final
 class Assistant:
-    def __init__(self, config: Config, enabled_game_events: list[str], event_manager: EventManager, action_manager: ActionManager, llmClient: OpenAI, tts: TTS, prompt_generator: PromptGenerator, embeddingClient: OpenAI | None = None, disabled_game_events: list[str] | None = None):
+    def __init__(self, config: Config, enabled_game_events: list[str], event_manager: EventManager, action_manager: ActionManager, llmModel: LLMModel, tts: TTS, prompt_generator: PromptGenerator, embeddingModel: EmbeddingModel | None = None, disabled_game_events: list[str] | None = None):
         self.config = config
         self.enabled_game_events = enabled_game_events
         self.disabled_game_events = disabled_game_events if disabled_game_events is not None else []
         self.event_manager = event_manager
         self.action_manager = action_manager
-        self.llmClient = llmClient
+        self.llmModel = llmModel
         self.tts = tts
         self.prompt_generator = prompt_generator
-        self.embeddingClient = embeddingClient
+        self.embeddingModel = embeddingModel
         self.is_replying = False
         self.reply_pending = False
         self.pending: list[Event] = []
@@ -129,37 +129,39 @@ class Assistant:
                 chat.append(mem.timestamp +' [Previous Memory]: '+ mem.content)
 
             chat_text = '\n'.join(reversed(chat))
+            
+            if not self.llmModel:
+                log('warn', 'LLM model not configured, cannot summarize memories.')
+                return
+            
+            if not self.embeddingModel:
+                log('warn', 'Embeddings model not configured, cannot summarize memories.')
+                return
 
-            response = self.llmClient.chat.completions.create(  # pyright: ignore[reportCallIssue]
-                model=self.config["llm_model_name"],
+            response_text, _ = self.llmModel.generate(
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant in Elite Dangerous that summarizes events and conversation into short concise notes for long-term memory storage. Only include important information that is not already stored in long-term memory. Do not include unimportant information, irrelevant details or repeated information. Do not include any timestamps in the summary.\nKeep it short to about 5 sentences."},
                     {"role": "user", "content": "Summarize the following events into short concise notes for long-term memory storage:\n<conversation>\n"+(chat_text)+'\n</conversation>'}],
-                temperature=self.config["llm_temperature"],
             )
 
-            embedding_response = self.embeddingClient.embeddings.create(
-                model=self.config["embedding_model_name"],
-                input=response.choices[0].message.content
-            )
-            embedding = embedding_response.data[0].embedding
+            (model_name, embedding) = self.embeddingModel.create_embedding(response_text or "")
 
             self.event_manager.add_memory_event(
-                embedding_response.model,
+                model_name=model_name,
                 last_processed_at=memory_until,
-                content=response.choices[0].message.content or 'Error',
+                content=response_text or 'Error',
                 metadata={"original_text": chat_text, "event_count": len(memory), "time_until": memory_until, "time_since": memory_since},
                 embedding=embedding
             )
             log('info', f'Summarized {len(memory)} events into long-term memory up to {memory_until}')
         except Exception as e:
-            log("debug", "Error during memory summarization:", e, traceback.format_exc())
+            log("error", "Error during memory summarization:", e, traceback.format_exc())
         finally:
             self.is_summarizing = False
 
 
     @observe()
-    def execute_actions(self, actions: list[dict[str, Any]], projected_states: dict[str, dict]):
+    def execute_actions(self, actions: list[ChatCompletionMessageToolCall], projected_states: dict[str, dict]):
         action_descriptions: list[str | None] = []
         action_results: list[Any] = []
         for action in actions:
@@ -188,22 +190,17 @@ class Assistant:
         
         # confirm the action by sending the user input to the model without any context
 
-        completion = self.llmClient.chat.completions.create(
-            model=self.config["llm_model_name"],
-            messages=[prompt[0]] + [{"role": "user", "content": user_input}],
-            temperature=0,
-            tools=tools
-        )
-        
-        if not isinstance(completion, ChatCompletion) or hasattr(completion, 'error'):
-            log("debug", "Cache: error during action verification:", completion)
+        try:
+            _, response_actions = self.llmModel.generate(
+                messages=[prompt[0]] + [{"role": "user", "content": user_input}],
+                tools=tools
+            )
+            
+            if response_actions:
+                self.action_manager.confirm_action_in_cache(user_input, response_actions[0], tools)
+        except LLMError as e:
+            log("error", "Cache: error during action verification:", e, traceback.format_exc())
             return
-        if not completion.choices:
-            log("debug", "Cache: LLM completion has no choices:", completion)
-            return
-
-        if completion.choices[0].message.tool_calls:
-            self.action_manager.confirm_action_in_cache(user_input, completion.choices[0].message.tool_calls[0], tools)
 
 
     def reply(self, events: list[Event], projected_states: dict[str, dict]):
@@ -230,9 +227,16 @@ class Assistant:
             max_conversation_processed = max([event.processed_at for event in events]+[0.0])
             prompt = self.prompt_generator.generate_prompt(events=events, projected_states=projected_states, pending_events=new_events, memories=memories)
 
-            user_input: list[str] = [event.content for event in new_events if event.kind == 'user']
+            user_input: list[str] = [event.content for event in new_events if isinstance(event, ConversationEvent) and event.kind == 'user']
             tool_uses: int = len([event for event in new_events if event.kind == 'tool'])
-            reasons = [event.content.get('event', event.kind) if event.kind=='game' else event.kind for event in new_events if event.kind in ['user', 'game', 'tool', 'status']]
+            reasons = []
+            for event in new_events:
+                if event.kind in ['user', 'game', 'tool', 'status']:
+                    if isinstance(event, GameEvent):
+                        reasons.append(event.content.get('event', event.kind))
+                    else:
+                        reasons.append(event.kind)
+            
             use_tools = self.config["tools_var"] and ('user' in reasons or 'tool' in reasons)
 
             current_status = projected_states.get("CurrentStatus")
@@ -267,84 +271,21 @@ class Assistant:
                 response_actions = predicted_actions
             else:
                 start_time = time()
-                llm_params: dict[str, str] = {}
-                
-                if self.config.get("llm_reasoning_effort") and self.config.get("llm_reasoning_effort") != 'default':
-                    llm_params["reasoning_effort"] = self.config["llm_reasoning_effort"]
-                
-                if self.config["llm_model_name"] in ['gpt-5', 'gpt-5-mini', 'gpt-5-nano']:
-                    llm_params["verbosity"] = "low"
-                    
-                if self.config["llm_model_name"] in ['gpt-5.1']:
-                    llm_params["verbosity"] = "low"
-                    
-                if self.config["llm_model_name"] in ['gemini-3-pro-preview']:
-                    for m in prompt:
-                        if 'tool_calls' in m and m.get('tool_calls', None):
-                            calls = m.get('tool_calls', [{}])
-                            calls[0]['extra_content'] = {"google": {
-                                "thought_signature": "skip_thought_signature_validator"
-                            }}
                     
                 try:
-                    response = self.llmClient.chat.completions.with_raw_response.create(  # pyright: ignore[reportCallIssue]
-                        model=self.config["llm_model_name"],
+                    response_text, response_actions = self.llmModel.generate(
                         messages=prompt,
-                        temperature=self.config["llm_temperature"],
                         tools=tool_list,  # pyright: ignore[reportArgumentType]
-                        **llm_params,  # pyright: ignore[reportArgumentType]
                     )
                     end_time = time()
                     log('debug', 'Response time LLM', end_time - start_time)
-                except APIStatusError as e:
-                    log("debug", "LLM error request:", e.request.method, e.request.url, e.request.headers, e.request.read().decode('utf-8', errors='replace'))
-                    log("debug", "LLM error response:", e.response.status_code, e.response.headers, e.response.read().decode('utf-8', errors='replace'))
-                    
-                    try:
-                        error: dict = e.body[0] if hasattr(e, 'body') and e.body and isinstance(e.body, list) else e.body # pyright: ignore[reportAssignmentType]
-                        message = error.get('error', {}).get('message', e.body if e.body else 'Unknown error')
-                    except:
-                        message = e.message
-                    
-                    show_chat_message('error', f'LLM {e.response.reason_phrase}:', message)
+                except LLMError as e:
+                    show_chat_message('error', 'LLM Error:', str(e))
                     return
-                
-                completion = response.parse()
-                
-                if not isinstance(completion, ChatCompletion) or hasattr(completion, 'error'):
-                    log("debug", "LLM completion error request:", response.http_request.method, response.http_request.url, response.http_request.headers, response.http_request.read().decode('utf-8', errors='replace'))
-                    log("debug", "LLM completion error:", completion)
-                    show_chat_message("error", "LLM error: No valid completion received")
-                    return
-                if not completion.choices:
-                    log("debug", "LLM completion has no choices:", completion)
-                    show_chat_message("covas", "...")
-                    return
-                if not hasattr(completion.choices[0], 'message') or not completion.choices[0].message:
-                    log("debug", "LLM completion choice has no message:", completion)
-                    show_chat_message("covas", "...")
-                    return
-                
-                if hasattr(completion, 'usage') and completion.usage:
-                    log("debug", f'LLM completion usage', completion.usage)
-                
-                if hasattr(completion.choices[0].message, 'content'):
-                    response_text = completion.choices[0].message.content
-                    if completion.choices[0].message.content is None or completion.choices[0].message.content == "":
-                        log("debug", "LLM completion no content:", completion)
-                        show_chat_message("covas", "...")
-                else:
-                    log("debug", f'LLM completion without text')
-                    response_text = None
-
-                if hasattr(completion.choices[0].message, 'tool_calls'):
-                    response_actions = completion.choices[0].message.tool_calls
-                else:
-                    response_actions = None
 
             if response_text and not response_actions:
                 self.tts.say(response_text)
-                self.event_manager.add_conversation_event('assistant', completion.choices[0].message.content, reasons=reasons, processed_at=max_conversation_processed)
+                self.event_manager.add_conversation_event('assistant', response_text, reasons=reasons, processed_at=max_conversation_processed)
                 self.tts.wait_for_completion()
                 self.event_manager.add_assistant_complete_event()
 
@@ -352,7 +293,7 @@ class Assistant:
                 self.event_manager.add_assistant_acting(processed_at=max_conversation_processed)
                 self.execute_actions(response_actions, projected_states)
 
-                if not predicted_actions and self.config["use_action_cache_var"]:
+                if not predicted_actions and self.config["use_action_cache_var"] and tool_list:
                     if len(response_actions) == 1 and len(user_input):
                         self.verify_action(user_input[-1], response_actions[0], prompt, tool_list)
                     

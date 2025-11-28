@@ -1,7 +1,7 @@
 import { Injectable } from "@angular/core";
 import { BehaviorSubject, filter, Observable } from "rxjs";
 import { BaseCommand, type BaseMessage, TauriService } from "./tauri.service";
-import { PluginSettings, PluginSettingsMessage } from "./plugin-settings";
+import { ModelProviderDefinition, PluginModelProvidersMessage, PluginSettings, PluginSettingsMessage } from "./plugin-settings";
 import { ScreenInfo } from "../models/screen-info";
 
 export interface ConfigMessage extends BaseMessage {
@@ -192,6 +192,12 @@ export class ConfigService {
     public keybinds$ = this.keybinds_subject
         .asObservable();
 
+    private plugin_model_providers_subject = new BehaviorSubject<
+        ModelProviderDefinition[]
+    >([]);
+    public plugin_model_providers$ = this.plugin_model_providers_subject
+        .asObservable();
+
     constructor(private tauriService: TauriService) {
         // Subscribe to config messages from the TauriService
         this.tauriService.output$.pipe(
@@ -203,6 +209,7 @@ export class ConfigService {
                 | SystemInfoMessage
                 | ModelValidationMessage
                 | PluginSettingsMessage
+                | PluginModelProvidersMessage
                 | StartMessage
                 | KeybindsMessages =>
                 message.type === "config" ||
@@ -210,10 +217,11 @@ export class ConfigService {
                 message.type === "system" ||
                 message.type === "model_validation" ||
                 message.type === "plugin_settings_configs" ||
+                message.type === "plugin_model_providers" ||
                 message.type === "start" ||
                 message.type === "keybinds"
             ),
-        ).subscribe((message: ConfigMessage | RunningConfigMessage | SystemInfoMessage | ModelValidationMessage | PluginSettingsMessage | StartMessage | KeybindsMessages) => {
+        ).subscribe((message: ConfigMessage | RunningConfigMessage | SystemInfoMessage | ModelValidationMessage | PluginSettingsMessage | PluginModelProvidersMessage | StartMessage | KeybindsMessages) => {
             if (message.type === "config") {
                 this.configSubject.next(message.config);
             } else if (message.type === "running_config") {
@@ -239,6 +247,8 @@ export class ConfigService {
                 this.validationSubject.next(message);
             } else if (message.type === "plugin_settings_configs") {
                 this.plugin_settings_message_subject.next(message);
+            } else if (message.type === "plugin_model_providers") {
+                this.plugin_model_providers_subject.next(message.providers);
             } else if (message.type === "start") {
                 this.validationSubject.next(null);
             } else if (message.type === "keybinds") {

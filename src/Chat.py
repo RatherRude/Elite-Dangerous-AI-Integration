@@ -10,12 +10,27 @@ import traceback
 from datetime import datetime
 
 from EDMesg.CovasNext import ExternalChatNotification, ExternalBackgroundChatNotification
-from openai import OpenAI
+from lib.Models import create_llm_model, LLMModel, create_embedding_model, EmbeddingModel, create_stt_model, STTModel, create_tts_model, TTSModel
 
 from lib.PluginHelper import PluginHelper
 from lib.Config import Config, assign_ptt, get_ed_appdata_path, get_ed_journals_path, get_system_info, load_config, save_config, update_config, update_event_config, validate_config, update_character, reset_game_events
 from lib.PluginManager import PluginManager
 from lib.ActionManager import ActionManager
+
+
+def parse_plugin_provider(provider: str) -> tuple[str, str] | None:
+    """
+    Parse a plugin provider string in format 'plugin:<guid>:<id>'.
+    
+    Returns:
+        Tuple of (plugin_guid, provider_id) or None if not a plugin provider
+    """
+    if not provider.startswith('plugin:'):
+        return None
+    parts = provider.split(':', 2)
+    if len(parts) != 3:
+        return None
+    return (parts[1], parts[2])
 from lib.actions.Actions import register_actions
 from lib.ControllerManager import ControllerManager
 from lib.EDKeys import EDKeys
@@ -71,49 +86,87 @@ class Chat:
         self.jn = EDJournal(get_ed_journals_path(config))
 
         # gets API Key from config.json
-        self.llmClient = OpenAI(
-            base_url="https://api.openai.com/v1" if self.config["llm_endpoint"] == '' else self.config["llm_endpoint"],
-            api_key=self.config["api_key"] if self.config["llm_api_key"] == '' else self.config["llm_api_key"],
-        )
-        self.agent_llm_client = OpenAI(
-            base_url="https://api.openai.com/v1" if self.config["agent_llm_endpoint"] == '' else self.config["agent_llm_endpoint"],
-            api_key=self.config["api_key"] if self.config["agent_llm_api_key"] == '' else self.config["agent_llm_api_key"],
-        )
+        # LLM model - check for plugin provider
+        llm_plugin = parse_plugin_provider(self.config["llm_provider"])
+        if llm_plugin:
+            model = self.plugin_manager.create_plugin_model(llm_plugin[0], llm_plugin[1], 'llm')
+            if model is None:
+                show_chat_message("error", f"Failed to create LLM from plugin provider. Check logs for details.")
+                raise RuntimeError(f"Failed to create LLM from plugin provider {self.config['llm_provider']}")
+            self.llmModel = cast(LLMModel, model)
+        else:
+            self.llmModel = create_llm_model(self.config["llm_provider"], self.config, "llm")
+        
+        # Agent LLM model - check for plugin provider
+        agent_llm_plugin = parse_plugin_provider(self.config["agent_llm_provider"])
+        if agent_llm_plugin:
+            model = self.plugin_manager.create_plugin_model(agent_llm_plugin[0], agent_llm_plugin[1], 'llm')
+            if model is None:
+                show_chat_message("error", f"Failed to create Agent LLM from plugin provider. Check logs for details.")
+                raise RuntimeError(f"Failed to create Agent LLM from plugin provider {self.config['agent_llm_provider']}")
+            self.agent_llm_model = cast(LLMModel, model)
+        else:
+            self.agent_llm_model = create_llm_model(self.config["agent_llm_provider"], self.config, "agent_llm")
+
         # embeddings
-        self.embeddingClient: OpenAI | None = None
-        if self.config.get("embedding_provider") in ['openai', 'custom', 'google-ai-studio', 'local-ai-server']:
-            self.embeddingClient = OpenAI(
-                base_url=self.config["embedding_endpoint"],
-                api_key=self.config["api_key"] if self.config["embedding_api_key"] == '' else self.config["embedding_api_key"],
-            )
+        self.embeddingModel: EmbeddingModel | None = None
+        embedding_provider = self.config.get("embedding_provider", "")
+        embedding_plugin = parse_plugin_provider(embedding_provider)
+        if embedding_plugin:
+            model = self.plugin_manager.create_plugin_model(embedding_plugin[0], embedding_plugin[1], 'embedding')
+            if model is None:
+                show_chat_message("warning", f"Failed to create Embedding model from plugin provider. Embeddings disabled.")
+            else:
+                self.embeddingModel = cast(EmbeddingModel, model)
+        elif embedding_provider in ['openai', 'custom', 'google-ai-studio', 'local-ai-server']:
+            self.embeddingModel = create_embedding_model(embedding_provider, self.config, "embedding")
 
         # vision
-        self.visionClient: OpenAI | None = None
+        self.visionModel: LLMModel | None = None
         if self.config["vision_var"]:
-            self.visionClient = OpenAI(
-                base_url="https://api.openai.com/v1" if self.config["vision_endpoint"] == '' else self.config["vision_endpoint"],
-                api_key=self.config["api_key"] if self.config["vision_api_key"] == '' else self.config["vision_api_key"],
-            )
+            vision_provider = self.config.get("vision_provider", "openai")
+            vision_plugin = parse_plugin_provider(vision_provider)
+            if vision_plugin:
+                model = self.plugin_manager.create_plugin_model(vision_plugin[0], vision_plugin[1], 'llm')
+                if model is None:
+                    show_chat_message("warning", f"Failed to create Vision model from plugin provider. Vision disabled.")
+                else:
+                    self.visionModel = cast(LLMModel, model)
+            else:
+                self.visionModel = create_llm_model(vision_provider, self.config, "vision")
             
 
         log("debug", "Initializing Speech processing...")
-        self.sttClient: OpenAI | None = None
-        if self.config["stt_provider"] in ['openai', 'custom', 'custom-multi-modal', 'google-ai-studio', 'local-ai-server']:
-            self.sttClient = OpenAI(
-                base_url=self.config["stt_endpoint"],
-                api_key=self.config["api_key"] if self.config["stt_api_key"] == '' else self.config["stt_api_key"],
-            )
+        self.sttModel: STTModel | None = None
+        if self.config["stt_provider"] != 'none':
+            stt_plugin = parse_plugin_provider(self.config["stt_provider"])
+            if stt_plugin:
+                model = self.plugin_manager.create_plugin_model(stt_plugin[0], stt_plugin[1], 'stt')
+                if model is None:
+                    show_chat_message("warning", f"Failed to create STT model from plugin provider. STT disabled.")
+                else:
+                    self.sttModel = cast(STTModel, model)
+            else:
+                self.sttModel = create_stt_model(self.config["stt_provider"], self.config, "stt")
 
-        self.ttsClient: OpenAI | None = None
-        if self.config["tts_provider"] in ['openai', 'custom', 'local-ai-server']:
-            self.ttsClient = OpenAI(
-                base_url=self.config["tts_endpoint"],
-                api_key=self.config["api_key"] if self.config["tts_api_key"] == '' else self.config["tts_api_key"],
-            )
+        self.ttsModel: TTSModel | None = None
+        if self.config["tts_provider"] != 'none':
+            tts_plugin = parse_plugin_provider(self.config["tts_provider"])
+            if tts_plugin:
+                model = self.plugin_manager.create_plugin_model(tts_plugin[0], tts_plugin[1], 'tts')
+                if model is None:
+                    show_chat_message("warning", f"Failed to create TTS model from plugin provider. TTS disabled.")
+                else:
+                    self.ttsModel = cast(TTSModel, model)
+            else:
+                # Create a config copy with character specific settings
+                tts_config = dict(self.config.copy())
+                tts_config["tts_speed"] = float(self.character["tts_speed"])
+                tts_config["tts_voice_instructions"] = self.character["tts_prompt"]
+                self.ttsModel = create_tts_model(self.config["tts_provider"], tts_config, "tts")
             
-        tts_provider = self.config["tts_provider"]
-        self.tts = TTS(openai_client=self.ttsClient, provider=tts_provider, model=self.config["tts_model_name"], voice=self.character["tts_voice"], voice_instructions=self.character["tts_prompt"], speed=self.character["tts_speed"], output_device=self.config["output_device_name"])
-        self.stt = STT(openai_client=self.sttClient, provider=self.config["stt_provider"], input_device_name=self.config["input_device_name"], model=self.config["stt_model_name"], language=self.config["stt_language"], custom_prompt=self.config["stt_custom_prompt"], required_word=self.config["stt_required_word"])
+        self.tts = TTS(tts_model=self.ttsModel, voice=self.character["tts_voice"], speed=float(self.character["tts_speed"]), output_device=self.config["output_device_name"])
+        self.stt = STT(stt_model=self.sttModel, input_device_name=self.config["input_device_name"], required_word=self.config["stt_required_word"])
 
         log("debug", "Initializing SystemDatabase...")
         self.system_database = SystemDatabase()
@@ -138,10 +191,10 @@ class Chat:
             enabled_game_events=self.enabled_game_events,
             event_manager=self.event_manager,
             action_manager=self.action_manager,
-            llmClient=self.llmClient,
+            llmModel=self.llmModel,
             tts=self.tts,
             prompt_generator=self.prompt_generator,
-            embeddingClient=self.embeddingClient,
+            embeddingModel=self.embeddingModel,
             disabled_game_events=disabled_events
         )
         self.is_replying = False
@@ -151,7 +204,7 @@ class Chat:
         self.event_manager.register_sideeffect(self.on_event)
         self.event_manager.register_sideeffect(self.assistant.on_event)
         
-        self.plugin_helper = PluginHelper(self.plugin_manager, self.prompt_generator, config, self.action_manager, self.event_manager, self.llmClient, self.config["llm_model_name"], self.visionClient, self.config["vision_model_name"], self.system_database, self.ed_keys, self.assistant)
+        self.plugin_helper = PluginHelper(self.plugin_manager, self.prompt_generator, config, self.action_manager, self.event_manager, self.llmModel, self.visionModel, self.system_database, self.ed_keys, self.assistant)
         log("debug", "Plugin helper is ready...")
 
         self.previous_states = {}
@@ -199,25 +252,17 @@ class Chat:
     
     def query_memories(self, query: str, top_k: int = 5):
         """Query long-term memories without triggering LLM interaction"""
-        if not self.embeddingClient:
+        if not self.embeddingModel:
             return {"error": "Embeddings model not configured"}
-        
-        embedding_model = self.config.get("embedding_model_name")
-        if not embedding_model:
-            return {"error": "Embedding model name not configured"}
         
         try:
             # Create embedding for the query
-            embedding_response = self.embeddingClient.embeddings.create(
-                model=embedding_model,
-                input=query
-            )
-            embedding = embedding_response.data[0].embedding
+            (model_name, embedding) = self.embeddingModel.create_embedding(query)
             
             # Search the vector store
             results = self.event_manager.long_term_memory.search(
                 query,
-                embedding_response.model, 
+                model_name, 
                 embedding, 
                 n=min(max(1, top_k), 20)
             )
@@ -343,12 +388,10 @@ class Chat:
                 actionManager=self.action_manager,
                 eventManager=self.event_manager,
                 promptGenerator=self.prompt_generator,
-                llmClient=self.llmClient,
-                llmModelName=self.config["llm_model_name"],
-                visionClient=self.visionClient,
+                llmModel=self.llmModel,
+                visionModel=self.visionModel,
                 visionModelName=self.config["vision_model_name"],
-                embeddingClient=self.embeddingClient,
-                embeddingModelName=self.config["embedding_model_name"],
+                embeddingModel=self.embeddingModel,
                 edKeys=self.ed_keys,
                 discovery_primary_var_flag=self.config.get("discovery_primary_var", True),
                 discovery_firegroup_var_flag=self.config.get("discovery_firegroup_var", 1),
@@ -358,10 +401,7 @@ class Chat:
                 chat_squadron_tabbed_flag=self.config.get("chat_squadron_tabbed_var", False),
                 chat_direct_tabbed_flag=self.config.get("chat_direct_tabbed_var", False),
                 weapon_types_list=self.config.get("weapon_types", []),
-                agent_llm_client=self.agent_llm_client,
-                agent_llm_model_name=self.config["agent_llm_model_name"],
-                agent_llm_reasoning_effort=self.config.get("agent_llm_reasoning_effort", None),
-                agent_llm_temperature=self.config.get("agent_llm_temperature", 1.0),
+                agent_llm_model=self.agent_llm_model,
                 agent_llm_max_tries=self.config.get("agent_llm_max_tries", 7),
             )
 

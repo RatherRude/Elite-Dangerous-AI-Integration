@@ -20,6 +20,13 @@
                 <mat-option value="google-ai-studio">Google AI Studio</mat-option>
                 <mat-option value="local-ai-server">Local AIServer</mat-option>
                 <mat-option value="custom">Custom</mat-option>
+                @if (pluginLLMProviders.length > 0) {
+                    <mat-optgroup label="Plugins">
+                        @for (provider of pluginLLMProviders; track provider.id) {
+                            <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                        }
+                    </mat-optgroup>
+                }
             </mat-select>
         </mat-form-field>
         @if (config.llm_provider === "openai")
@@ -197,6 +204,19 @@
                 </mat-slide-toggle>
             </label>
         }
+        @if (isPluginProvider(config.llm_provider)) {
+            @if (getSelectedPluginProvider(config.llm_provider, 'llm'); as provider) {
+                @for (grid of provider.settings_config; track grid.key) {
+                    <app-settings-grid
+                        [grid]="grid"
+                        [getValue]="createGetValueFn(provider.plugin_guid)"
+                        [setValue]="createSetValueFn(provider.plugin_guid)"
+                        [headerLevel]="'h3'"
+                        [gridClass]="'plugin-provider-settings'">
+                    </app-settings-grid>
+                }
+            }
+        }
         </mat-expansion-panel>
         <mat-expansion-panel>
             <mat-expansion-panel-header>
@@ -214,6 +234,13 @@
                 <mat-option value="google-ai-studio">Google AI Studio</mat-option>
                 <mat-option value="local-ai-server">Local AIServer</mat-option>
                 <mat-option value="custom">Custom</mat-option>
+                @if (pluginLLMProviders.length > 0) {
+                    <mat-optgroup label="Plugins">
+                        @for (provider of pluginLLMProviders; track provider.id) {
+                            <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                        }
+                    </mat-optgroup>
+                }
             </mat-select>
         </mat-form-field>
         <mat-form-field>
@@ -375,6 +402,19 @@
                         (ngModelChange)="onConfigChange({agent_llm_api_key: $event})">
             </mat-form-field>
         }
+        @if (isPluginProvider(config.agent_llm_provider)) {
+            @if (getSelectedPluginProvider(config.agent_llm_provider, 'llm'); as provider) {
+                @for (grid of provider.settings_config; track grid.key) {
+                    <app-settings-grid
+                        [grid]="grid"
+                        [getValue]="createGetValueFn(provider.plugin_guid)"
+                        [setValue]="createSetValueFn(provider.plugin_guid)"
+                        [headerLevel]="'h3'"
+                        [gridClass]="'plugin-provider-settings'">
+                    </app-settings-grid>
+                }
+            }
+        }
         </mat-expansion-panel>
 
         <mat-expansion-panel>
@@ -394,6 +434,13 @@
                 <mat-option value="custom">Custom</mat-option>
                 <mat-option value="custom-multi-modal">Custom Multi-Modal</mat-option>
                 <mat-option value="none">None</mat-option>
+                @if (pluginSTTProviders.length > 0) {
+                    <mat-optgroup label="Plugins">
+                        @for (provider of pluginSTTProviders; track provider.id) {
+                            <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                        }
+                    </mat-optgroup>
+                }
             </mat-select>
         </mat-form-field>
         @if (config.stt_provider === "openai") {
@@ -479,6 +526,19 @@
         @if (config.stt_provider === "none") {
             <p>STT is disabled</p>
         }
+        @if (isPluginProvider(config.stt_provider)) {
+            @if (getSelectedPluginProvider(config.stt_provider, 'stt'); as provider) {
+                @for (grid of provider.settings_config; track grid.key) {
+                    <app-settings-grid
+                        [grid]="grid"
+                        [getValue]="createGetValueFn(provider.plugin_guid)"
+                        [setValue]="createSetValueFn(provider.plugin_guid)"
+                        [headerLevel]="'h3'"
+                        [gridClass]="'plugin-provider-settings'">
+                    </app-settings-grid>
+                }
+            }
+        }
         </mat-expansion-panel>
 
         <mat-expansion-panel>
@@ -497,6 +557,13 @@
                 <mat-option value="local-ai-server">Local AIServer</mat-option>
                 <mat-option value="custom">Custom</mat-option>
                 <mat-option value="none">None</mat-option>
+                @if (pluginTTSProviders.length > 0) {
+                    <mat-optgroup label="Plugins">
+                        @for (provider of pluginTTSProviders; track provider.id) {
+                            <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                        }
+                    </mat-optgroup>
+                }
             </mat-select>
         </mat-form-field>
         @if (config.tts_provider === "openai") {
@@ -605,6 +672,19 @@
         @if (config.tts_provider === "none") {
             <p>TTS is disabled</p>
         }
+        @if (isPluginProvider(config.tts_provider)) {
+            @if (getSelectedPluginProvider(config.tts_provider, 'tts'); as provider) {
+                @for (grid of provider.settings_config; track grid.key) {
+                    <app-settings-grid
+                        [grid]="grid"
+                        [getValue]="createGetValueFn(provider.plugin_guid)"
+                        [setValue]="createSetValueFn(provider.plugin_guid)"
+                        [headerLevel]="'h3'"
+                        [gridClass]="'plugin-provider-settings'">
+                    </app-settings-grid>
+                }
+            }
+        }
         </mat-expansion-panel>
 
         <mat-expansion-panel>
@@ -691,6 +771,13 @@
                 <mat-option value="local-ai-server">Local AIServer</mat-option>
                 <mat-option value="custom">Custom</mat-option>
                 <mat-option value="none">None</mat-option>
+                @if (pluginEmbeddingProviders.length > 0) {
+                    <mat-optgroup label="Plugins">
+                        @for (provider of pluginEmbeddingProviders; track provider.id) {
+                            <mat-option [value]="'plugin:' + provider.plugin_guid + ':' + provider.id">{{ provider.label }}</mat-option>
+                        }
+                    </mat-optgroup>
+                }
             </mat-select>
         </mat-form-field>
 
@@ -748,6 +835,19 @@
         }
         @if (config.embedding_provider === "none") {
             <p>Embedding is disabled</p>
+        }
+        @if (isPluginProvider(config.embedding_provider)) {
+            @if (getSelectedPluginProvider(config.embedding_provider, 'embedding'); as provider) {
+                @for (grid of provider.settings_config; track grid.key) {
+                    <app-settings-grid
+                        [grid]="grid"
+                        [getValue]="createGetValueFn(provider.plugin_guid)"
+                        [setValue]="createSetValueFn(provider.plugin_guid)"
+                        [headerLevel]="'h3'"
+                        [gridClass]="'plugin-provider-settings'">
+                    </app-settings-grid>
+                }
+            }
         }
         </mat-expansion-panel>
 

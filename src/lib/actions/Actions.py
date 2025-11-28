@@ -3,7 +3,7 @@ import platform
 import threading
 from time import sleep
 import math
-from typing import Any, Literal
+from typing import Any, Literal, cast
 from pyautogui import typewrite
 
 import openai
@@ -17,16 +17,17 @@ from ..EDKeys import EDKeys
 from ..EventManager import EventManager
 from ..ActionManager import ActionManager
 from ..PromptGenerator import PromptGenerator
+from ..Models import LLMModel, EmbeddingModel
 
-keys: EDKeys = None
+keys: EDKeys = cast(EDKeys, None)
 discovery_primary_var: bool = True
 discovery_firegroup_var: int = 1
 weapon_types: list = []
-vision_client: openai.OpenAI | None = None
-llm_client: openai.OpenAI = None
-llm_model_name: str = None
+vision_model: LLMModel | None = None
+llm_model: LLMModel = cast(LLMModel, None)
 vision_model_name: str | None = None
-event_manager: EventManager = None
+event_manager: EventManager = cast(EventManager, None)
+embedding_model: EmbeddingModel | None = None
 
 chat_local_tabbed: bool = False
 chat_wing_tabbed: bool = False
@@ -342,12 +343,12 @@ def cycle_fire_group(args, projected_states):
 
         status_event = event_manager.wait_for_condition('CurrentStatus',
                                                         lambda s: s.get('FireGroup') == firegroup_ask, 2)
-        new_firegroup = status_event["FireGroup"]
+        new_firegroup = status_event["FireGroup"] if status_event else None
     except TimeoutError:
         # handles case where we cycle back round to zero
         return "Failed to cycle to requested fire group. Please ensure it exists."
 
-    return f"Fire group {chr(65 + new_firegroup)} is now selected."
+    return f"Fire group {chr(65 + new_firegroup) if new_firegroup is not None else '?'} is now selected."
 
 
 def ship_spot_light_toggle(args, projected_states):
@@ -542,7 +543,7 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
             try:
                 data = event_manager.wait_for_condition('NavInfo',
                                                         lambda s: s.get('NavRoute') and len(s.get('NavRoute', [])) > 0 and s.get('NavRoute')[-1].get('StarSystem').lower() == args['system_name'].lower(), zoom_wait_time)
-                jumpAmount = len(data.get('NavRoute', []))  # amount of jumps to do
+                jumpAmount = len(data.get('NavRoute', [])) if data else 0  # amount of jumps to do
 
                 if not current_gui == "GalaxyMap":  # if we are already in the galaxy map we don't want to close it
                     keys.send(galaxymap_key)
@@ -1302,18 +1303,13 @@ def send_message(obj, projected_states):
 def get_visuals(obj, projected_states):
     image = screenshot()
     if not image: return "Unable to take screenshot."
-    if not vision_client: return "Vision not enabled."
+    if not vision_model: return "Vision not enabled."
 
-    completion = vision_client.chat.completions.create(
-        extra_headers={
-            "HTTP-Referer": "https://github.com/RatherRude/Elite-Dangerous-AI-Integration",
-            "X-Title": "Elite Dangerous AI Integration",
-        },
-        model=llm_model_name if vision_model_name == '' else vision_model_name,
+    response_text, _ = vision_model.generate(
         messages=format_image(image, obj.get("query")),
     )
 
-    return completion.choices[0].message.content
+    return response_text or ""
 
 
 def target_subsystem_thread(current_subsystem: str, current_event_id: str, desired_subsystem: str):
@@ -1358,9 +1354,9 @@ def target_subsystem(args, projected_states):
     return f"The submodule {args['subsystem']} is being targeted."
 
 
-def register_actions(actionManager: ActionManager, eventManager: EventManager, promptGenerator: PromptGenerator ,llmClient: openai.OpenAI,
-                     llmModelName: str, visionClient: openai.OpenAI | None, visionModelName: str | None,
-                     embeddingClient: openai.OpenAI | None, embeddingModelName: str | None,
+def register_actions(actionManager: ActionManager, eventManager: EventManager, promptGenerator: PromptGenerator ,llmModel: LLMModel,
+                     visionModel: LLMModel | None, visionModelName: str | None,
+                     embeddingModel: EmbeddingModel | None,
                      edKeys: EDKeys, discovery_primary_var_flag: bool = True, discovery_firegroup_var_flag: int = 1,
                      chat_local_tabbed_flag: bool = False,
                      chat_wing_tabbed_flag: bool = False,
@@ -1368,18 +1364,15 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
                      chat_squadron_tabbed_flag: bool = False,
                      chat_direct_tabbed_flag: bool = False,
                      weapon_types_list: list | None = None,
-                     agent_llm_client: openai.OpenAI | None = None,
-                     agent_llm_model_name: str | None = None,
-                     agent_llm_reasoning_effort: str | None = None,
-                     agent_llm_temperature: float | None = None,
+                     agent_llm_model: LLMModel | None = None,
                      agent_llm_max_tries: int = 7):
-    global event_manager, vision_client, llm_client, llm_model_name, vision_model_name, keys, weapon_types
+    global event_manager, vision_model, llm_model, vision_model_name, keys, weapon_types, embedding_model
     keys = edKeys
     event_manager = eventManager
-    llm_client = llmClient
-    llm_model_name = llmModelName
-    vision_client = visionClient
+    llm_model = llmModel
+    vision_model = visionModel
     vision_model_name = visionModelName
+    embedding_model = embeddingModel
     weapon_types = weapon_types_list or []
     global discovery_primary_var, discovery_firegroup_var
     discovery_primary_var = discovery_primary_var_flag
@@ -2441,9 +2434,8 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
 
     register_web_actions(
         actionManager, eventManager,
-        promptGenerator, agent_llm_client, agent_llm_model_name, agent_llm_reasoning_effort,
-        embeddingClient, embeddingModelName,
-        agent_llm_temperature,
+        promptGenerator, agent_llm_model,
+        embedding_model,
         agent_llm_max_tries
     )
 
@@ -2451,7 +2443,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         actionManager, eventManager
     )
 
-    if vision_client:
+    if vision_model:
         actionManager.registerAction('getVisuals', "Describes what's currently visible to the Commander.", {
             "type": "object",
             "properties": {

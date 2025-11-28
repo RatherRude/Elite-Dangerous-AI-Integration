@@ -1,19 +1,15 @@
-import io
 import queue
 import threading
 import traceback
 from time import sleep, time
 from typing import Literal, final
-import base64
 
-import openai
 import pyaudio
 import speech_recognition as sr
-import soundfile as sf
-import numpy as np
 from pysilero_vad import SileroVoiceActivityDetector
 
 from .Logger import log, observe, show_chat_message
+from .Models import STTModel, LLMError
 
 
 @final
@@ -35,14 +31,10 @@ class STT:
     recording = False
     resultQueue = queue.Queue()
 
-    def __init__(self, openai_client: openai.OpenAI | None, provider: Literal['openai', 'custom', 'custom-multi-modal', 'google-ai-studio', 'none', 'local-ai-server'], input_device_name, model='whisper-1', language=None, custom_prompt=None, required_word=None):
-        self.openai_client = openai_client
-        self.provider = provider
+    def __init__(self, stt_model: STTModel | None, input_device_name, required_word=None):
+        self.stt_model = stt_model
         self.vad = SileroVoiceActivityDetector()
         self.input_device_name = input_device_name
-        self.model = model
-        self.language = language
-        self.prompt = custom_prompt if custom_prompt else "COVAS, give me a status update... and throw in something inspiring, would you?"
         self.required_word = required_word
         self.continuous_listening_paused = False
 
@@ -54,7 +46,7 @@ class STT:
 
     def listen_once_start(self):
         log('debug', 'listen_once_start')
-        if self.provider == 'none':
+        if self.stt_model is None:
             return
         if self.listening:
             return
@@ -95,7 +87,7 @@ class STT:
         log('debug', 'listen_once_thread end')
 
     def listen_continuous(self):
-        if self.provider == 'none':
+        if self.stt_model is None:
             return
         self.listening = True
         threading.Thread(target=self._listen_continuous_thread, daemon=True).start()
@@ -196,7 +188,7 @@ class STT:
     @observe()
     def _transcribe(self, audio: sr.AudioData) -> str:
         log('debug', 'Transcribing audio...')
-        if self.openai_client is None:
+        if self.stt_model is None:
             raise ValueError('Speech recognition is disabled')
         
         audio_raw = audio.get_raw_data(convert_rate=16000, convert_width=2)
@@ -212,10 +204,15 @@ class STT:
         text = None
         start_time = time()
         
-        if self.provider == 'openai' or self.provider == 'custom' or self.provider == 'local-ai-server':
-            text = self._transcribe_openai_audio(audio_raw)
-        elif self.provider == 'google-ai-studio' or self.provider == 'custom-multi-modal':
-            text = self._transcribe_openai_mm(audio_raw)
+        try:
+            text = self.stt_model.transcribe(audio)
+        except LLMError as e:
+            log('error', 'STT Error:', e)
+            show_chat_message('error', 'STT Error:', str(e))
+            return ''
+        except Exception as e:
+            log('error', 'STT Error:', e, traceback.format_exc())
+            return ''
 
         end_time = time()
         log('debug', f'Response time STT', end_time - start_time)
@@ -229,120 +226,23 @@ class STT:
 
         # print("transcription received", text)
         return text
-    
-    def _transcribe_openai_mm(self, audio: bytes) -> str:
-        # Convert raw PCM data to numpy array
-        audio_np = np.frombuffer(audio, dtype=np.int16).astype(np.float32) / 32768.0
-        
-        # Create a BytesIO buffer for the Ogg file
-        audio_wav = io.BytesIO()
-        
-        # Write as Ogg Vorbis
-        sf.write(audio_wav, audio_np, 16000, format='WAV', subtype='PCM_16')
-        audio_wav.seek(0)
-        audio_wav.name = "audio.wav"  # OpenAI needs a filename
-        
-        try:
-            response = self.openai_client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role":"system", "content":
-                        "You are a high quality transcription model. You are given audio input from the user, and return the transcribed text from the input. Do NOT add any additional text in your response, only respond with the text given by the user.\n" +
-                        "The audio may be related to space sci-fi terminology like systems, equipment, and station names, specifically the game Elite Dangerous.\n" + 
-                        #"Here is an example of the type of text you should return: <example>" + self.prompt + "</example>\n" +
-                        "Always provide an exact transcription of the audio. If the user is not speaking or inaudible, return only the word 'silence'."
-                    },
-                    {"role": "user", "content": [{
-                        "type": "text",
-                        "text": "<input>"
-                    },{
-                        "type": "input_audio",
-                        "input_audio": {
-                            "data": base64.b64encode(audio_wav.getvalue()).decode('utf-8'),
-                            "format": "wav"
-                        }
-                    },{
-                        "type": "text",
-                        "text": "</input>"
-                    },]}
-                ]
-            )
-        except openai.APIStatusError as e:
-            log("debug", "STT mm error request:", e.request.method, e.request.url, e.request.headers, e.request.read().decode('utf-8', errors='replace'))
-            log("debug", "STT mm error response:", e.response.status_code, e.response.headers, e.response.read().decode('utf-8', errors='replace'))
-            
-            try:
-                error: dict = e.body[0] if hasattr(e, 'body') and e.body and isinstance(e.body, list) else e.body # pyright: ignore[reportAssignmentType]
-                message = error.get('error', {}).get('message', e.body if e.body else 'Unknown error')
-            except:
-                message = e.message
-            
-            show_chat_message('error', f'STT {e.response.reason_phrase}:', message)
-            return ''
-        
-        if not response.choices or not hasattr(response.choices[0], 'message') or not hasattr(response.choices[0].message, 'content'):
-            log('debug', "STT mm response is incomplete or malformed:", response)
-            show_chat_message('error', f'STT completion error: Response incomplete or malformed')
-            return ''
-        
-        text = response.choices[0].message.content
-        if not text:
-            return ''
-        if text.strip() == 'silence' or text.strip() == '':
-            return ''
-        return text.strip()
-    
-    def _transcribe_openai_audio(self, audio: bytes) -> str:
-        # Convert raw PCM data to numpy array
-        audio_np = np.frombuffer(audio, dtype=np.int16).astype(np.float32) / 32768.0
-        
-        # Create a BytesIO buffer for the Ogg file
-        audio_ogg = io.BytesIO()
-        
-        # Write as Ogg Vorbis
-        sf.write(audio_ogg, audio_np, 16000, format='OGG', subtype='VORBIS')
-        audio_ogg.seek(0)
-        audio_ogg.name = "audio.ogg"  # OpenAI needs a filename
-        
-        try:
-            transcription = self.openai_client.audio.transcriptions.create(
-                model=self.model,
-                file=audio_ogg,
-                language=self.language if self.language else None,  # pyright: ignore[reportArgumentType]
-                prompt=self.prompt
-            )
-        except openai.APIStatusError as e:
-            log("debug", "STT error request:", e.request.method, e.request.url, e.request.headers)
-            log("debug", "STT error response:", e.response.status_code, e.response.headers, e.response.read().decode('utf-8', errors='replace'))
-            
-            try:
-                error: dict = e.body[0] if hasattr(e, 'body') and e.body and isinstance(e.body, list) else e.body # pyright: ignore[reportAssignmentType]
-                message = error.get('error', {}).get('message', e.body if e.body else 'Unknown error')
-            except:
-                message = e.message
-            
-            show_chat_message('error', f'STT {e.response.reason_phrase}:', message)
-            return ''
-        
-        text = transcription.text
-        return text
 
     def pause_continuous_listening(self, pause: bool):
         self.continuous_listening_paused = pause
 
-if __name__ == "__main__":
-    openai_audio = openai.OpenAI()
+# if __name__ == "__main__":
+#     openai_audio = openai.OpenAI()
 
-    stt = STT(openai_client=openai_audio)
+#     stt = STT(openai_client=openai_audio)
 
-    stt.listen_once_start()
-    sleep(5)
-    stt.listen_once_end()
+#     stt.listen_once_start()
+#     sleep(5)
+#     stt.listen_once_end()
 
-    stt.listen_continuous()
+#     stt.listen_continuous()
 
-    while True:
-        sleep(0.25)
-        while not stt.resultQueue.empty():
-            result = stt.resultQueue.get()
-            print(result)
+#     while True:
+#         sleep(0.25)
+#         while not stt.resultQueue.empty():
+#             result = stt.resultQueue.get()
+#             print(result)

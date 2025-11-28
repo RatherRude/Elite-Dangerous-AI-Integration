@@ -19,6 +19,7 @@ export interface SettingBase {
     type: "paragraph" | "number" | "toggle" | "text" | "textarea" | "select";
     readonly: boolean | null;
     placeholder: string | null;
+    default_value?: any;
 
     // Paragraph
     content: string;
@@ -77,4 +78,17 @@ export interface PluginSettingsMessage extends BaseMessage {
     type: "plugin_settings_configs";
     plugin_settings_configs: PluginSettingsMap;
     has_plugin_settings: boolean;
+}
+
+export interface ModelProviderDefinition {
+    kind: 'llm' | 'stt' | 'tts' | 'embedding';
+    id: string;
+    label: string;
+    settings_config: SettingsGrid[];
+    plugin_guid: string;
+}
+
+export interface PluginModelProvidersMessage extends BaseMessage {
+    type: "plugin_model_providers";
+    providers: ModelProviderDefinition[];
 }

@@ -1,4 +1,4 @@
-import { Component } from "@angular/core";
+import { Component, OnDestroy } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import {
     MatFormField,
@@ -29,6 +29,8 @@ import {
     MatExpansionPanelHeader,
     MatExpansionPanelTitle,
 } from "@angular/material/expansion";
+import { ModelProviderDefinition, SettingsGrid } from "../../services/plugin-settings";
+import { SettingsGridComponent } from "../settings-grid/settings-grid.component";
 
 @Component({
     selector: "app-advanced-settings",
@@ -53,18 +55,26 @@ import {
         MatExpansionPanel,
         MatExpansionPanelHeader,
         MatExpansionPanelTitle,
+        SettingsGridComponent,
     ],
     templateUrl: "./advanced-settings.component.html",
     styleUrl: "./advanced-settings.component.css",
 })
-export class AdvancedSettingsComponent {
+export class AdvancedSettingsComponent implements OnDestroy {
     config: Config | null = null;
     system: SystemInfo | null = null;
     character: Character | null = null;
     configSubscription: Subscription;
     systemSubscription: Subscription;
     characterSubscription: Subscription;
+    pluginProvidersSubscription: Subscription;
     voiceInstructionSupportedModels: string[] = this.characterService.voiceInstructionSupportedModels;
+
+    // Plugin model providers grouped by kind
+    pluginLLMProviders: ModelProviderDefinition[] = [];
+    pluginSTTProviders: ModelProviderDefinition[] = [];
+    pluginTTSProviders: ModelProviderDefinition[] = [];
+    pluginEmbeddingProviders: ModelProviderDefinition[] = [];
 
     constructor(
         private configService: ConfigService,
@@ -87,12 +97,93 @@ export class AdvancedSettingsComponent {
                 this.character = character;
             }
         );
+        this.pluginProvidersSubscription = this.configService.plugin_model_providers$.subscribe(
+            (providers) => {
+                this.pluginLLMProviders = providers.filter(p => p.kind === 'llm');
+                this.pluginSTTProviders = providers.filter(p => p.kind === 'stt');
+                this.pluginTTSProviders = providers.filter(p => p.kind === 'tts');
+                this.pluginEmbeddingProviders = providers.filter(p => p.kind === 'embedding');
+            }
+        );
     }
     ngOnDestroy() {
         // Unsubscribe from the config observable to prevent memory leaks
         if (this.configSubscription) {
             this.configSubscription.unsubscribe();
         }
+        if (this.systemSubscription) {
+            this.systemSubscription.unsubscribe();
+        }
+        if (this.characterSubscription) {
+            this.characterSubscription.unsubscribe();
+        }
+        if (this.pluginProvidersSubscription) {
+            this.pluginProvidersSubscription.unsubscribe();
+        }
+    }
+
+    // Check if a provider string is a plugin provider
+    isPluginProvider(provider: string): boolean {
+        return provider?.startsWith('plugin:') ?? false;
+    }
+
+    // Parse plugin provider string to get guid and id
+    parsePluginProvider(provider: string): { guid: string; id: string } | null {
+        if (!this.isPluginProvider(provider)) return null;
+        const parts = provider.split(':');
+        if (parts.length !== 3) return null;
+        return { guid: parts[1], id: parts[2] };
+    }
+
+    // Get the selected plugin provider definition for a given provider string
+    getSelectedPluginProvider(provider: string, kind: 'llm' | 'stt' | 'tts' | 'embedding'): ModelProviderDefinition | null {
+        const parsed = this.parsePluginProvider(provider);
+        if (!parsed) return null;
+        
+        const providers = {
+            'llm': this.pluginLLMProviders,
+            'stt': this.pluginSTTProviders,
+            'tts': this.pluginTTSProviders,
+            'embedding': this.pluginEmbeddingProviders
+        }[kind];
+        
+        return providers.find(p => p.plugin_guid === parsed.guid && p.id === parsed.id) || null;
+    }
+
+    // Get plugin setting value
+    getPluginProviderSetting(pluginGuid: string, key: string, defaultValue: any = null): any {
+        const pluginSettings = this.config?.plugin_settings?.[pluginGuid];
+        return pluginSettings?.[key] ?? defaultValue;
+    }
+
+    // Set plugin setting value
+    async setPluginProviderSetting(pluginGuid: string, key: string, value: any): Promise<void> {
+        if (!this.config) return;
+        
+        const currentPluginSettings = this.config.plugin_settings?.[pluginGuid] ?? {};
+        const updatedPluginSettings = {
+            ...this.config.plugin_settings,
+            [pluginGuid]: {
+                ...currentPluginSettings,
+                [key]: value
+            }
+        };
+        
+        await this.onConfigChange({ plugin_settings: updatedPluginSettings });
+    }
+
+    // Create a getValue function for a specific plugin (for use with SettingsGridComponent)
+    createGetValueFn(pluginGuid: string): (fieldKey: string, defaultValue: any) => any {
+        return (fieldKey: string, defaultValue: any) => {
+            return this.config?.plugin_settings?.[pluginGuid]?.[fieldKey] ?? defaultValue;
+        };
+    }
+
+    // Create a setValue function for a specific plugin (for use with SettingsGridComponent)
+    createSetValueFn(pluginGuid: string): (fieldKey: string, value: any) => void {
+        return (fieldKey: string, value: any) => {
+            this.setPluginProviderSetting(pluginGuid, fieldKey, value);
+        };
     }
 
     updateTTSVoice(voice: string) {
