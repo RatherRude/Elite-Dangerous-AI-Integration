@@ -24,7 +24,6 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
   commander: any = null;
   inCombat: any = null;
   friends: any = null;
-  colonisationConstruction: any = null;
   target: any = null;
   navInfo: any = null;
   exobiologyScan: any = null;
@@ -53,7 +52,6 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
   
   // UI state
   showFriendsPanel = false;
-  showColonisationPanel = false;
   showWingPanel = false;
   showFightersPanel = false;
   showNavDetails = false;
@@ -104,9 +102,6 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
         this.friends = friends;
       }),
       
-      this.projectionsService.colonisationConstruction$.subscribe(colonisation => {
-        this.colonisationConstruction = colonisation;
-      }),
       
       this.projectionsService.target$.subscribe(target => {
         this.target = target;
@@ -185,10 +180,6 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
   }
 
   // Toggle methods
-  toggleColonisationPanel(): void {
-    this.showColonisationPanel = !this.showColonisationPanel;
-  }
-
   toggleFriendsPanel(): void {
     this.showFriendsPanel = !this.showFriendsPanel;
   }
@@ -214,10 +205,6 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
     this.showFightersPanel = false;
   }
 
-  closeColonisationPanel(): void {
-    this.showColonisationPanel = false;
-  }
-
   // Handle background clicks to close panels
   onBackgroundClick(event: Event, panelType: string): void {
     event.stopPropagation();
@@ -230,9 +217,6 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
         break;
       case 'fighters':
         this.closeFightersPanel();
-        break;
-      case 'colonisation':
-        this.closeColonisationPanel();
         break;
     }
   }
@@ -306,6 +290,31 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
     return this.getOnlineFriends().length;
   }
 
+  formatTargetShipName(rawName?: string | null): string {
+    if (!rawName) {
+      return '';
+    }
+
+    const hasSpace = rawName.includes(' ');
+    const hasUnderscore = rawName.includes('_');
+    const hasUppercase = /[A-Z]/.test(rawName);
+
+    if (hasSpace || (hasUppercase && !hasUnderscore)) {
+      return rawName;
+    }
+
+    const cleaned = rawName.replace(/_/g, ' ');
+    return cleaned.replace(/\b\w/g, (char) => char.toUpperCase());
+  }
+
+  formatHealth(value?: number | null): string {
+    if (value === null || value === undefined) {
+      return '';
+    }
+    const clamped = Math.max(0, Math.min(100, value));
+    return `${Math.round(clamped)}%`;
+  }
+
   // Wing methods
   getWingMembers(): any[] {
     return this.wing?.Others || [];
@@ -344,39 +353,6 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
     if (Number.isNaN(etaMs)) return 0;
     const remainingSeconds = Math.ceil((etaMs - this.currentTimeMs) / 1000);
     return remainingSeconds > 0 ? remainingSeconds : 0;
-  }
-
-  // Colonisation methods
-  isColonisationActive(colonisation: any): boolean {
-    return colonisation && colonisation.StarSystem && colonisation.StarSystem !== 'Unknown';
-  }
-
-  getColonisationSystem(): string {
-    return this.colonisationConstruction?.StarSystem || 'Unknown System';
-  }
-
-  getColonisationStatusText(): string {
-    if (this.colonisationConstruction?.ConstructionComplete) return 'Complete';
-    if (this.colonisationConstruction?.ConstructionFailed) return 'Failed';
-    return 'In Progress';
-  }
-
-  getColonisationStatusClass(): string {
-    if (this.colonisationConstruction?.ConstructionComplete) return 'status-complete';
-    if (this.colonisationConstruction?.ConstructionFailed) return 'status-failed';
-    return 'status-active';
-  }
-
-  getColonisationProgress(): number {
-    return this.colonisationConstruction?.ConstructionProgress || 0;
-  }
-
-  getColonisationProgressValue(): number {
-    return this.getColonisationProgress() * 100;
-  }
-
-  getColonisationResources(): any[] {
-    return this.colonisationConstruction?.ResourcesRequired || [];
   }
 
   // Status flag methods
@@ -800,8 +776,45 @@ export class StatusContainerComponent implements OnInit, OnDestroy {
                .trim() || 'Unknown Module';
   }
 
+  formatEngineeringName(name?: string): string {
+    if (!name) return 'Unknown';
+
+    const underscoreIndex = name.indexOf('_');
+    let trimmed = underscoreIndex >= 0 ? name.slice(underscoreIndex + 1) : name;
+
+    trimmed = trimmed
+      .replace(/_/g, ' ')
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .trim();
+
+    return trimmed || name;
+  }
+
   formatSlotName(slot: string): string {
     return slot?.replace(/([A-Z])/g, ' $1').trim() || 'Unknown Slot';
+  }
+
+  getModuleClassLabel(module: any): string {
+    if (!module) {
+      return 'Class ?';
+    }
+
+    const classValue = module.Class ?? module?.class;
+    if (typeof classValue === 'number' && classValue > 0) {
+      return `Class ${classValue}`;
+    }
+
+    const slotMatch = module.Slot?.match(/Size(\d+)/i);
+    if (slotMatch) {
+      return `Class ${slotMatch[1]}`;
+    }
+
+    const itemMatch = module.Item?.match(/class(\d+)/i);
+    if (itemMatch) {
+      return `Class ${itemMatch[1]}`;
+    }
+
+    return 'Class ?';
   }
 
   // Debug method for troubleshooting

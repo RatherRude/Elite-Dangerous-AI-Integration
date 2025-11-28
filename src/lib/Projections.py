@@ -911,23 +911,26 @@ class ShipInfo(Projection[ShipInfoState]):
 
 TargetState = TypedDict('TargetState', {
     "EventID": NotRequired[str],
-    "Ship":NotRequired[str],
-    "Scanned":NotRequired[bool],
+    "Ship": NotRequired[str],
+    "ScanStage": NotRequired[int],
 
-    "PilotName":NotRequired[str],
-    "PilotRank":NotRequired[str],
-    "Faction":NotRequired[str],
-    "LegalStatus":NotRequired[str],
+    "PilotName": NotRequired[str],
+    "PilotRank": NotRequired[str],
+    "Faction": NotRequired[str],
+    "LegalStatus": NotRequired[str],
     "Bounty": NotRequired[int],
+    "ShieldHealth": NotRequired[float],
+    "HullHealth": NotRequired[float],
+    "SubsystemHealth": NotRequired[float],
 
-    "Subsystem":NotRequired[str],
+    "Subsystem": NotRequired[str],
 })
 
 
 @final
 class Target(Projection[TargetState]):
     @override
-    def get_default_state(self) -> TargetState|None:
+    def get_default_state(self) -> TargetState:
         return {}
 
     @override
@@ -935,28 +938,46 @@ class Target(Projection[TargetState]):
         projected_events: list[ProjectedEvent] = []
 
         global keys
-        if isinstance(event, GameEvent) and event.content.get('event') == 'LoadGame':
+        if isinstance(event, GameEvent) and event.content.get('event') in ['LoadGame', 'Shutdown']:
             self.state = self.get_default_state()
         if isinstance(event, GameEvent) and event.content.get('event') == 'ShipTargeted':
             if not event.content.get('TargetLocked', False):
                 self.state = self.get_default_state()
             else:
-                # self.state['SubsystemToTarget'] = 'Drive'
-                self.state['Ship'] = event.content.get('Ship', '')
-                if event.content.get('ScanStage', 0) < 3:
-                    self.state['Scanned'] = False
-                else:
-                    self.state['Scanned'] = True
-                    self.state["PilotName"] = event.content.get('PilotName_Localised', '')
-                    self.state["PilotRank"] = event.content.get('PilotRank', '')
-                    self.state["Faction"] = event.content.get('Faction', '')
-                    self.state["LegalStatus"] = event.content.get('LegalStatus', '')
-                    self.state["Bounty"] = event.content.get('Bounty', 0)
+                self.state = self.get_default_state()
+                self.state['Ship'] = event.content.get('Ship_Localised', event.content.get('Ship', ''))
+                self.state['ScanStage'] = int(event.content.get('ScanStage', 0) or 0)
 
-                    if (event.content.get('Bounty', 0) > 1 and not event.content.get('Subsystem', False)):
+                pilot_name_value = event.content.get('PilotName_Localised') or event.content.get('PilotName')
+                if pilot_name_value:
+                    self.state["PilotName"] = pilot_name_value
+
+                if 'PilotRank' in event.content:
+                    self.state["PilotRank"] = event.content.get('PilotRank', '')
+
+                if 'Faction' in event.content:
+                    self.state["Faction"] = event.content.get('Faction', '')
+
+                if 'LegalStatus' in event.content:
+                    self.state["LegalStatus"] = event.content.get('LegalStatus', '')
+
+                if 'Bounty' in event.content:
+                    self.state["Bounty"] = int(event.content.get('Bounty', 0) or 0)
+                    if event.content.get('Bounty', 0) > 1 and not event.content.get('Subsystem', False):
                         projected_events.append(ProjectedEvent(content={"event": "BountyScanned"}))
-                if event.content.get('Subsystem_Localised', False):
-                    self.state["Subsystem"] = event.content.get('Subsystem_Localised', '')
+
+                if 'ShieldHealth' in event.content:
+                    self.state["ShieldHealth"] = float(event.content.get('ShieldHealth', 0.0) or 0.0)
+
+                if 'HullHealth' in event.content:
+                    self.state["HullHealth"] = float(event.content.get('HullHealth', 0.0) or 0.0)
+
+                if 'SubsystemHealth' in event.content:
+                    self.state["SubsystemHealth"] = float(event.content.get('SubsystemHealth', 0.0) or 0.0)
+
+                subsystem_value = event.content.get('Subsystem_Localised', event.content.get('Subsystem', ''))
+                if subsystem_value:
+                    self.state["Subsystem"] = subsystem_value
             self.state['EventID'] = event.content.get('id')
         return projected_events
 
@@ -1367,7 +1388,8 @@ class SuitLoadout(Projection[SuitLoadoutState]):
 
 # Define types for Friends Projection
 OnlineFriendsState = TypedDict('OnlineFriendsState', {
-    "Online": list[str]  # List of online friend names
+    "Online": list[str],  # List of online friend names
+    "Pending": list[str]
 })
 
 
@@ -1376,7 +1398,8 @@ class Friends(Projection[OnlineFriendsState]):
     @override
     def get_default_state(self) -> OnlineFriendsState:
         return {
-            "Online": []
+            "Online": [],
+            "Pending": []
         }
 
     @override
@@ -1384,6 +1407,7 @@ class Friends(Projection[OnlineFriendsState]):
         # Clear the list on Fileheader event (new game session)
         if isinstance(event, GameEvent) and event.content.get('event') == 'Fileheader':
             self.state["Online"] = []
+            self.state["Pending"] = []
 
         # Process Friends events
         if isinstance(event, GameEvent) and event.content.get('event') == 'Friends':
@@ -1395,13 +1419,330 @@ class Friends(Projection[OnlineFriendsState]):
                 return
 
             # If the friend is coming online, add them to the list
-            if friend_status == "Online":
+            if friend_status in ["Online", "Added"]:
                 if friend_name not in self.state["Online"]:
                     self.state["Online"].append(friend_name)
+                if friend_name in self.state["Pending"]:
+                    self.state["Pending"].remove(friend_name)
+
+            elif friend_status == "Requested":
+                if friend_name not in self.state["Pending"]:
+                    self.state["Pending"].append(friend_name)
 
             # If the friend was previously online but now has a different status, remove them
-            elif friend_name in self.state["Online"]:
+            elif friend_name in self.state["Online"] and friend_status in ["Offline", "Lost"]:
                 self.state["Online"].remove(friend_name)
+
+            elif friend_status == "Declined":
+                if friend_name in self.state["Pending"]:
+                    self.state["Pending"].remove(friend_name)
+
+
+MaterialsCategory = Literal['Raw', 'Manufactured', 'Encoded']
+
+MaterialEntry = TypedDict('MaterialEntry', {
+    "Name": str,
+    "Count": int,
+    "Name_Localised": NotRequired[str]
+})
+
+MaterialsState = TypedDict('MaterialsState', {
+    "Raw": list[MaterialEntry],
+    "Manufactured": list[MaterialEntry],
+    "Encoded": list[MaterialEntry],
+    "LastUpdated": NotRequired[str]
+})
+
+
+MATERIAL_TEMPLATE: dict[MaterialsCategory, list[MaterialEntry]] = {
+    "Raw": [
+        {"Name": "carbon", "Count": 0},
+        {"Name": "phosphorus", "Count": 0},
+        {"Name": "sulphur", "Count": 0},
+        {"Name": "iron", "Count": 0},
+        {"Name": "polonium", "Count": 0},
+        {"Name": "manganese", "Count": 0},
+        {"Name": "molybdenum", "Count": 0},
+        {"Name": "arsenic", "Count": 0},
+        {"Name": "nickel", "Count": 0},
+        {"Name": "vanadium", "Count": 0},
+        {"Name": "mercury", "Count": 0},
+        {"Name": "ruthenium", "Count": 0},
+        {"Name": "tellurium", "Count": 0},
+        {"Name": "tungsten", "Count": 0},
+        {"Name": "zinc", "Count": 0},
+        {"Name": "technetium", "Count": 0},
+        {"Name": "yttrium", "Count": 0},
+        {"Name": "antimony", "Count": 0},
+        {"Name": "selenium", "Count": 0},
+        {"Name": "boron", "Count": 0},
+        {"Name": "zirconium", "Count": 0},
+        {"Name": "lead", "Count": 0},
+        {"Name": "rhenium", "Count": 0},
+        {"Name": "germanium", "Count": 0},
+        {"Name": "tin", "Count": 0},
+        {"Name": "chromium", "Count": 0},
+        {"Name": "niobium", "Count": 0},
+        {"Name": "cadmium", "Count": 0},
+    ],
+    "Manufactured": [
+        {"Name": "conductiveceramics", "Name_Localised": "Conductive Ceramics", "Count": 0},
+        {"Name": "heatdispersionplate", "Name_Localised": "Heat Dispersion Plate", "Count": 0},
+        {"Name": "mechanicalcomponents", "Name_Localised": "Mechanical Components", "Count": 0},
+        {"Name": "chemicalprocessors", "Name_Localised": "Chemical Processors", "Count": 0},
+        {"Name": "conductivecomponents", "Name_Localised": "Conductive Components", "Count": 0},
+        {"Name": "heatexchangers", "Name_Localised": "Heat Exchangers", "Count": 0},
+        {"Name": "shieldemitters", "Name_Localised": "Shield Emitters", "Count": 0},
+        {"Name": "phasealloys", "Name_Localised": "Phase Alloys", "Count": 0},
+        {"Name": "precipitatedalloys", "Name_Localised": "Precipitated Alloys", "Count": 0},
+        {"Name": "focuscrystals", "Name_Localised": "Focus Crystals", "Count": 0},
+        {"Name": "mechanicalequipment", "Name_Localised": "Mechanical Equipment", "Count": 0},
+        {"Name": "heatconductionwiring", "Name_Localised": "Heat Conduction Wiring", "Count": 0},
+        {"Name": "basicconductors", "Name_Localised": "Basic Conductors", "Count": 0},
+        {"Name": "shieldingsensors", "Name_Localised": "Shielding Sensors", "Count": 0},
+        {"Name": "heatvanes", "Name_Localised": "Heat Vanes", "Count": 0},
+        {"Name": "filamentcomposites", "Name_Localised": "Filament Composites", "Count": 0},
+        {"Name": "chemicaldistillery", "Name_Localised": "Chemical Distillery", "Count": 0},
+        {"Name": "salvagedalloys", "Name_Localised": "Salvaged Alloys", "Count": 0},
+        {"Name": "configurablecomponents", "Name_Localised": "Configurable Components", "Count": 0},
+        {"Name": "highdensitycomposites", "Name_Localised": "High Density Composites", "Count": 0},
+        {"Name": "refinedfocuscrystals", "Name_Localised": "Refined Focus Crystals", "Count": 0},
+        {"Name": "crystalshards", "Name_Localised": "Crystal Shards", "Count": 0},
+        {"Name": "compoundshielding", "Name_Localised": "Compound Shielding", "Count": 0},
+        {"Name": "conductivepolymers", "Name_Localised": "Conductive Polymers", "Count": 0},
+        {"Name": "wornshieldemitters", "Name_Localised": "Worn Shield Emitters", "Count": 0},
+        {"Name": "uncutfocuscrystals", "Name_Localised": "Flawed Focus Crystals", "Count": 0},
+        {"Name": "mechanicalscrap", "Name_Localised": "Mechanical Scrap", "Count": 0},
+        {"Name": "galvanisingalloys", "Name_Localised": "Galvanising Alloys", "Count": 0},
+        {"Name": "hybridcapacitors", "Name_Localised": "Hybrid Capacitors", "Count": 0},
+        {"Name": "polymercapacitors", "Name_Localised": "Polymer Capacitors", "Count": 0},
+        {"Name": "electrochemicalarrays", "Name_Localised": "Electrochemical Arrays", "Count": 0},
+        {"Name": "chemicalmanipulators", "Name_Localised": "Chemical Manipulators", "Count": 0},
+        {"Name": "heatresistantceramics", "Name_Localised": "Heat Resistant Ceramics", "Count": 0},
+        {"Name": "chemicalstorageunits", "Name_Localised": "Chemical Storage Units", "Count": 0},
+        {"Name": "compactcomposites", "Name_Localised": "Compact Composites", "Count": 0},
+        {"Name": "exquisitefocuscrystals", "Name_Localised": "Exquisite Focus Crystals", "Count": 0},
+        {"Name": "biotechconductors", "Name_Localised": "Biotech Conductors", "Count": 0},
+        {"Name": "gridresistors", "Name_Localised": "Grid Resistors", "Count": 0},
+        {"Name": "guardian_sentinel_wreckagecomponents", "Name_Localised": "Guardian Wreckage Components", "Count": 0},
+        {"Name": "guardian_powerconduit", "Name_Localised": "Guardian Power Conduit", "Count": 0},
+        {"Name": "guardian_sentinel_weaponparts", "Name_Localised": "Guardian Sentinel Weapon Parts", "Count": 0},
+        {"Name": "guardian_techcomponent", "Name_Localised": "Guardian Technology Component", "Count": 0},
+        {"Name": "guardian_powercell", "Name_Localised": "Guardian Power Cell", "Count": 0},
+        {"Name": "imperialshielding", "Name_Localised": "Imperial Shielding", "Count": 0},
+        {"Name": "fedcorecomposites", "Name_Localised": "Core Dynamics Composites", "Count": 0},
+        {"Name": "fedproprietarycomposites", "Name_Localised": "Proprietary Composites", "Count": 0},
+        {"Name": "protoradiolicalloys", "Name_Localised": "Proto Radiolic Alloys", "Count": 0},
+        {"Name": "protolightalloys", "Name_Localised": "Proto Light Alloys", "Count": 0},
+        {"Name": "temperedalloys", "Name_Localised": "Tempered Alloys", "Count": 0},
+        {"Name": "unknownenergysource", "Name_Localised": "Sensor Fragment", "Count": 0},
+        {"Name": "pharmaceuticalisolators", "Name_Localised": "Pharmaceutical Isolators", "Count": 0},
+        {"Name": "tg_wreckagecomponents", "Name_Localised": "Wreckage Components", "Count": 0},
+        {"Name": "tg_biomechanicalconduits", "Name_Localised": "Bio-Mechanical Conduits", "Count": 0},
+        {"Name": "tg_weaponparts", "Name_Localised": "Weapon Parts", "Count": 0},
+        {"Name": "tg_propulsionelement", "Name_Localised": "Propulsion Elements", "Count": 0},
+        {"Name": "militarygradealloys", "Name_Localised": "Military Grade Alloys", "Count": 0},
+        {"Name": "thermicalloys", "Name_Localised": "Thermic Alloys", "Count": 0},
+        {"Name": "improvisedcomponents", "Name_Localised": "Improvised Components", "Count": 0},
+        {"Name": "protoheatradiators", "Name_Localised": "Proto Heat Radiators", "Count": 0},
+        {"Name": "militarysupercapacitors", "Name_Localised": "Military Supercapacitors", "Count": 0},
+        {"Name": "tg_causticgeneratorparts", "Name_Localised": "Corrosive Mechanisms", "Count": 0},
+        {"Name": "tg_causticcrystal", "Name_Localised": "Caustic Crystal", "Count": 0},
+        {"Name": "tg_causticshard", "Name_Localised": "Caustic Shard", "Count": 0},
+        {"Name": "unknowncarapace", "Name_Localised": "Thargoid Carapace", "Count": 0},
+        {"Name": "tg_abrasion02", "Name_Localised": "Phasing Membrane Residue", "Count": 0},
+        {"Name": "tg_abrasion03", "Name_Localised": "Hardened Surface Fragments", "Count": 0},
+        {"Name": "unknownenergycell", "Name_Localised": "Thargoid Energy Cell", "Count": 0},
+        {"Name": "unknowncorechip", "Name_Localised": "Tactical Core Chip", "Count": 0},
+        {"Name": "unknowntechnologycomponents", "Name_Localised": "Thargoid Technological Components", "Count": 0},
+    ],
+    "Encoded": [
+        {"Name": "archivedemissiondata", "Name_Localised": "Irregular Emission Data", "Count": 0},
+        {"Name": "shieldpatternanalysis", "Name_Localised": "Aberrant Shield Pattern Analysis", "Count": 0},
+        {"Name": "scanarchives", "Name_Localised": "Unidentified Scan Archives", "Count": 0},
+        {"Name": "bulkscandata", "Name_Localised": "Anomalous Bulk Scan Data", "Count": 0},
+        {"Name": "shielddensityreports", "Name_Localised": "Untypical Shield Scans", "Count": 0},
+        {"Name": "adaptiveencryptors", "Name_Localised": "Adaptive Encryptors Capture", "Count": 0},
+        {"Name": "encryptionarchives", "Name_Localised": "Atypical Encryption Archives", "Count": 0},
+        {"Name": "consumerfirmware", "Name_Localised": "Modified Consumer Firmware", "Count": 0},
+        {"Name": "industrialfirmware", "Name_Localised": "Cracked Industrial Firmware", "Count": 0},
+        {"Name": "disruptedwakeechoes", "Name_Localised": "Atypical Disrupted Wake Echoes", "Count": 0},
+        {"Name": "wakesolutions", "Name_Localised": "Strange Wake Solutions", "Count": 0},
+        {"Name": "hyperspacetrajectories", "Name_Localised": "Eccentric Hyperspace Trajectories", "Count": 0},
+        {"Name": "dataminedwake", "Name_Localised": "Datamined Wake Exceptions", "Count": 0},
+        {"Name": "legacyfirmware", "Name_Localised": "Specialised Legacy Firmware", "Count": 0},
+        {"Name": "emissiondata", "Name_Localised": "Unexpected Emission Data", "Count": 0},
+        {"Name": "scandatabanks", "Name_Localised": "Classified Scan Databanks", "Count": 0},
+        {"Name": "encryptedfiles", "Name_Localised": "Unusual Encrypted Files", "Count": 0},
+        {"Name": "securityfirmware", "Name_Localised": "Security Firmware Patch", "Count": 0},
+        {"Name": "fsdtelemetry", "Name_Localised": "Anomalous FSD Telemetry", "Count": 0},
+        {"Name": "embeddedfirmware", "Name_Localised": "Modified Embedded Firmware", "Count": 0},
+        {"Name": "shieldsoakanalysis", "Name_Localised": "Inconsistent Shield Soak Analysis", "Count": 0},
+        {"Name": "encryptioncodes", "Name_Localised": "Tagged Encryption Codes", "Count": 0},
+        {"Name": "tg_interdictiondata", "Name_Localised": "Thargoid Interdiction Telemetry", "Count": 0},
+        {"Name": "shieldcyclerecordings", "Name_Localised": "Distorted Shield Cycle Recordings", "Count": 0},
+        {"Name": "ancientculturaldata", "Name_Localised": "Pattern Beta Obelisk Data", "Count": 0},
+        {"Name": "ancientlanguagedata", "Name_Localised": "Pattern Delta Obelisk Data", "Count": 0},
+        {"Name": "ancienthistoricaldata", "Name_Localised": "Pattern Gamma Obelisk Data", "Count": 0},
+        {"Name": "ancientbiologicaldata", "Name_Localised": "Pattern Alpha Obelisk Data", "Count": 0},
+        {"Name": "ancienttechnologicaldata", "Name_Localised": "Pattern Epsilon Obelisk Data", "Count": 0},
+        {"Name": "symmetrickeys", "Name_Localised": "Open Symmetric Keys", "Count": 0},
+        {"Name": "encodedscandata", "Name_Localised": "Divergent Scan Data", "Count": 0},
+        {"Name": "decodedemissiondata", "Name_Localised": "Decoded Emission Data", "Count": 0},
+        {"Name": "scrambledemissiondata", "Name_Localised": "Exceptional Scrambled Emission Data", "Count": 0},
+        {"Name": "guardian_vesselblueprint", "Name_Localised": "Guardian Vessel Blueprint Fragment", "Count": 0},
+        {"Name": "shieldfrequencydata", "Name_Localised": "Peculiar Shield Frequency Data", "Count": 0},
+        {"Name": "tg_shutdowndata", "Name_Localised": "Massive Energy Surge Analytics", "Count": 0},
+        {"Name": "classifiedscandata", "Name_Localised": "Classified Scan Fragment", "Count": 0},
+        {"Name": "tg_shipflightdata", "Name_Localised": "Ship Flight Data", "Count": 0},
+        {"Name": "unknownshipsignature", "Name_Localised": "Thargoid Ship Signature", "Count": 0},
+        {"Name": "compactemissionsdata", "Name_Localised": "Abnormal Compact Emissions Data", "Count": 0},
+        {"Name": "tg_shipsystemsdata", "Name_Localised": "Ship Systems Data", "Count": 0},
+    ]
+}
+
+MATERIAL_NAME_LOOKUP: dict[str, MaterialsCategory] = {
+    entry['Name'].lower(): category
+    for category, items in MATERIAL_TEMPLATE.items()
+    for entry in items
+}
+
+
+@final
+class Materials(Projection[MaterialsState]):
+    MATERIAL_CATEGORIES: tuple[MaterialsCategory, ...] = ('Raw', 'Manufactured', 'Encoded')
+    TEMPLATE = MATERIAL_TEMPLATE
+    LOOKUP = MATERIAL_NAME_LOOKUP
+
+    @override
+    def get_default_state(self) -> MaterialsState:
+        return {
+            "Raw": [entry.copy() for entry in self.TEMPLATE["Raw"]],
+            "Manufactured": [entry.copy() for entry in self.TEMPLATE["Manufactured"]],
+            "Encoded": [entry.copy() for entry in self.TEMPLATE["Encoded"]],
+            "LastUpdated": ""
+        }
+
+    @override
+    def process(self, event: Event) -> None:
+        if not isinstance(event, GameEvent):
+            return
+
+        content = event.content
+        event_name = content.get('event')
+
+        # Update the stored timestamp when new data arrives.
+        def update_timestamp():
+            timestamp = content.get('timestamp')
+            if isinstance(timestamp, str) and timestamp:
+                self.state["LastUpdated"] = timestamp
+
+        # Apply a delta to the appropriate material entry, creating it if needed.
+        def update_material(name: str | None, delta: int, category: str | None = None, localized: str | None = None):
+            if not name or delta == 0:
+                return
+            name_key = name.lower()
+            bucket_name = None
+            if category:
+                normalized = category.strip().lower()
+                for option in self.MATERIAL_CATEGORIES:
+                    if option.lower() == normalized:
+                        bucket_name = option
+                        break
+            if not bucket_name:
+                bucket_name = self.LOOKUP.get(name_key)
+            if not bucket_name:
+                return
+            bucket = self.state[bucket_name]
+            for entry in bucket:
+                if entry['Name'].lower() == name_key:
+                    entry['Count'] = max(0, entry['Count'] + delta)
+                    if localized:
+                        entry['Name_Localised'] = localized
+                    return
+            if delta > 0:
+                new_entry: MaterialEntry = {"Name": name, "Count": delta}
+                if localized:
+                    new_entry["Name_Localised"] = localized
+                bucket.append(new_entry)
+
+        if event_name == 'Materials':
+            for category in self.MATERIAL_CATEGORIES:
+                items = content.get(category, [])
+                incoming = {}
+                if isinstance(items, list):
+                    for item in items:
+                        if isinstance(item, dict) and item.get('Name'):
+                            incoming[item['Name']] = item
+                bucket = self.state[category]
+                for entry in bucket:
+                    payload = incoming.pop(entry['Name'], None)
+                    if payload:
+                        entry['Count'] = payload.get('Count', 0) or 0
+                        if payload.get('Name_Localised'):
+                            entry['Name_Localised'] = payload['Name_Localised']
+                    else:
+                        entry['Count'] = 0
+                for payload in incoming.values():
+                    new_entry: MaterialEntry = {"Name": payload['Name'], "Count": payload.get('Count', 0) or 0}
+                    if payload.get('Name_Localised'):
+                        new_entry["Name_Localised"] = payload['Name_Localised']
+                    bucket.append(new_entry)
+            update_timestamp()
+            return
+
+        if event_name == 'MaterialTrade':
+            paid = content.get('Paid')
+            if isinstance(paid, dict):
+                quantity = paid.get('Quantity', 0)
+                if isinstance(quantity, int):
+                    update_material(paid.get('Material'), -quantity, paid.get('Category'), paid.get('Material_Localised'))
+            received = content.get('Received')
+            if isinstance(received, dict):
+                quantity = received.get('Quantity', 0)
+                if isinstance(quantity, int):
+                    update_material(received.get('Material'), quantity, received.get('Category'), received.get('Material_Localised'))
+            update_timestamp()
+            return
+
+        if event_name == 'MaterialCollected':
+            count_value = content.get('Count', 0)
+            if isinstance(count_value, int):
+                update_material(content.get('Name'), count_value, content.get('Category'), content.get('Name_Localised'))
+                update_timestamp()
+            return
+
+        if event_name == 'TechnologyBroker':
+            materials = content.get('Materials')
+            if isinstance(materials, list):
+                for material in materials:
+                    if isinstance(material, dict):
+                        count_value = material.get('Count', 0)
+                        if isinstance(count_value, int):
+                            update_material(material.get('Name'), -count_value, material.get('Category'), material.get('Name_Localised'))
+            update_timestamp()
+            return
+
+        if event_name == 'EngineerCraft':
+            ingredients = content.get('Ingredients')
+            if isinstance(ingredients, list):
+                for ingredient in ingredients:
+                    if isinstance(ingredient, dict):
+                        count_value = ingredient.get('Count', 0)
+                        if isinstance(count_value, int):
+                            update_material(ingredient.get('Name'), -count_value, None, ingredient.get('Name_Localised'))
+            update_timestamp()
+            return
+
+        if event_name == 'Synthesis':
+            materials = content.get('Materials')
+            if isinstance(materials, list):
+                for material in materials:
+                    if isinstance(material, dict):
+                        count_value = material.get('Count', 0)
+                        if isinstance(count_value, int):
+                            update_material(material.get('Name'), -count_value)
+            update_timestamp()
 
 
 ColonisationResourceItem = TypedDict('ColonisationResourceItem', {
@@ -1643,6 +1984,7 @@ def registerProjections(event_manager: EventManager, system_db: SystemDatabase, 
     event_manager.register_projection(Cargo())
     event_manager.register_projection(Backpack())
     event_manager.register_projection(SuitLoadout())
+    event_manager.register_projection(Materials())
     event_manager.register_projection(Friends())
     event_manager.register_projection(ColonisationConstruction())
     event_manager.register_projection(DockingEvents())
@@ -1653,7 +1995,6 @@ def registerProjections(event_manager: EventManager, system_db: SystemDatabase, 
     # ToDo: SLF, SRV,
     for proj in [
         'Commander',
-        'Materials',
         'ModuleInfo',
         'Rank',
         'Progress',

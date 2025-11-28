@@ -2,16 +2,15 @@ import queue
 import threading
 import time
 import traceback
-from typing import Any, override, Optional
+from typing import Any, override, Optional, Iterable
 
-from lib.PluginHelper import PluginHelper
+from lib.PluginHelper import PluginHelper, TTSModel, LLMModel, STTModel, EmbeddingModel
 from lib.PluginSettingDefinitions import (
     PluginSettings, 
     SettingsGrid, 
     ToggleSetting, 
     ParagraphSetting,
-    SelectSetting,
-    SelectOption
+    ModelProviderDefinition,
 )
 from lib.Logger import log, show_chat_message
 from lib.PluginBase import PluginBase, PluginManifest
@@ -55,6 +54,27 @@ def get_process_id() -> (int | None):
         return None
 
 
+class EDCoPilotDominantTTSModel(TTSModel):
+    """
+    TTS model that generates silence, allowing EDCoPilot to handle speech output.
+    This is used when EDCoPilot is in "Dominant" mode.
+    """
+    
+    def __init__(self, speed: float = 1.0):
+        super().__init__("edcopilot-dominant")
+        self.speed = speed
+    
+    def synthesize(self, text: str, voice: str) -> Iterable[bytes]:
+        """Generate silent audio based on text length, mimicking speech duration."""
+        word_count = len(text.split())
+        words_per_minute = 150 * float(self.speed)
+        audio_duration = word_count / words_per_minute * 60
+        # Generate silent audio for the duration of the text (24kHz, 16-bit mono)
+        # Each chunk is 1024 bytes of silence
+        for _ in range(int(audio_duration * 24_000 / 1024)):
+            yield b"\x00" * 1024
+
+
 # Main plugin class
 class EDCoPilotPlugin(PluginBase):
     def __init__(self, plugin_manifest: PluginManifest):
@@ -68,7 +88,7 @@ class EDCoPilotPlugin(PluginBase):
         self.listener_thread = None
         self.event_publication_queue: queue.Queue[ExternalChatNotification|ExternalBackgroundChatNotification] = queue.Queue()
 
-        # Define the plugin settings - conditional on installation
+        # Define the plugin settings and model providers - conditional on installation
         if self.is_installed():
             self.settings_config: PluginSettings | None = PluginSettings(
                 key="EDCoPilotPlugin",
@@ -96,27 +116,14 @@ class EDCoPilotPlugin(PluginBase):
                                 placeholder=None,
                                 default_value=False
                             ),
-                            SelectSetting(
-                                key="mode",
-                                label="Speech Output Application",
-                                type="select",
-                                readonly=False,
-                                placeholder=None,
-                                default_value="covas",
-                                select_options=[
-                                    SelectOption(key='covas_dominant', disabled=False, label="COVAS:NEXT Dominant", value="covas"),
-                                    SelectOption(key='edcopilot_dominant', disabled=False, label="EDCoPilot Dominant", value="edcopilot")
-                                ],
-                                multi_select=False
-                            ),
                             ParagraphSetting(
-                                key="actions_warning",
+                                key="dominant_mode_hint",
                                 label=None,
                                 type="paragraph",
                                 readonly=False,
                                 placeholder=None,
                                 
-                                content="When using EDCoPilot in Dominant mode, you should set the COVAS:NEXT TTS Provider to 'None' to avoid conflicts."
+                                content="To enable EDCoPilot Dominant mode (where EDCoPilot handles speech output), go to <b>Advanced Settings → TTS Settings</b> and select <b>\"EDCoPilot (Dominant)\"</b> as the TTS Provider."
                             ),
                             ToggleSetting(
                                 key="actions",
@@ -139,6 +146,40 @@ class EDCoPilotPlugin(PluginBase):
                     ),
                 ]
             )
+            
+            # Add TTS model provider for EDCoPilot Dominant mode
+            self.model_providers: list[ModelProviderDefinition] | None = [
+                ModelProviderDefinition(
+                    kind='tts',
+                    id='edcopilot-dominant',
+                    label='EDCoPilot (Dominant)',
+                    settings_config=[
+                        SettingsGrid(
+                            key='tts',
+                            label='EDCoPilot Dominant Mode',
+                            fields=[
+                                ParagraphSetting(
+                                    key="dominant_mode_hint",
+                                    label=None,
+                                    type="paragraph",
+                                    readonly=False,
+                                    placeholder=None,
+                                    
+                                    content="In Dominant mode, EDCoPilot handles all speech output. Slow or delayed responses are expected in this mode."
+                                ),
+                            ]
+                        ),
+                    ],
+                ),
+            ]
+
+    def create_model(self, provider_id: str, settings: dict[str, Any]) -> LLMModel | STTModel | TTSModel | EmbeddingModel:
+        """Create a model instance for the given provider."""
+        if provider_id == 'edcopilot-dominant':
+            # Get TTS speed from main config if available
+            speed = 1.0
+            return EDCoPilotDominantTTSModel(speed=speed)
+        raise ValueError(f"Unknown provider_id: {provider_id}")
     
     def is_installed(self) -> bool:
         """Check if EDCoPilot is installed"""
@@ -170,10 +211,18 @@ class EDCoPilotPlugin(PluginBase):
                     self.event_publication_queue.put(action)
             time.sleep(0.1)
 
+    def is_edcopilot_dominant(self) -> bool:
+        """Check if EDCoPilot Dominant TTS provider is selected in config."""
+        if not hasattr(self, '_helper') or not self._helper:
+            return False
+        tts_provider = self._helper._config.get('tts_provider', '')
+        # Plugin providers are formatted as 'plugin:<guid>:<provider_id>'
+        return tts_provider == f'plugin:{self.plugin_manifest.guid}:edcopilot-dominant'
+
     def share_config(self):
         """Send configuration to EDCoPilot"""
         if self.provider:
-            is_edcopilot_dominant = self.get_setting("mode") == "edcopilot"
+            is_edcopilot_dominant = self.is_edcopilot_dominant()
             config = self._helper._config
             character = config['characters'][config['active_character_index']]
 
@@ -191,7 +240,7 @@ class EDCoPilotPlugin(PluginBase):
     def output_commander(self, message: str):
         """Send commander message to EDCoPilot"""
         if self.provider:
-            is_edcopilot_dominant = self.get_setting("mode") == "edcopilot"
+            is_edcopilot_dominant = self.is_edcopilot_dominant()
             return self.provider.publish(
                 CommanderSpoke(muted=is_edcopilot_dominant, text=message)
             )
@@ -199,7 +248,7 @@ class EDCoPilotPlugin(PluginBase):
     def output_covas(self, message: str, reasons: list[str]):
         """Send COVAS message to EDCoPilot"""
         if self.provider:
-            is_edcopilot_dominant = self.get_setting("mode") == "edcopilot"
+            is_edcopilot_dominant = self.is_edcopilot_dominant()
             return self.provider.publish(
                 CovasReplied(muted=is_edcopilot_dominant, text=message, reasons=reasons)
             )
@@ -320,7 +369,7 @@ class EDCoPilotPlugin(PluginBase):
         
         log('debug', f"EDCoPilot actions registered")
         
-    def _on_event(self, event: Any):
+    def _on_event(self, event: Any, context: dict[str, Any]):
         if event.kind in ['user', 'assistant']:
             self._on_conversation_event(event)
     

@@ -1,11 +1,12 @@
 import sys
+import traceback
 from typing import Any, Literal
 import io
 import datetime
 import logging
 import json
 import atexit
-from functools import wraps 
+from functools import wraps
 from pythonjsonlogger.json import JsonFormatter
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
@@ -34,30 +35,33 @@ logHandler.setFormatter(formatter)
 logger.addHandler(logHandler)
 logger.setLevel(logging.DEBUG)
 
+httpx_logger = logging.getLogger("httpx")
+httpx_logger.setLevel(logging.WARNING)
+
 tracer = trace.get_tracer(__name__)
 
 def enable_remote_tracing(username: str, attributes: dict[str, str]):
     """
     Enable remote OpenTelemetry tracing and logging to the monitoring endpoint.
-    
+
     Args:
         username: The username for identification in traces and logs
         attributes: Additional attributes to attach to telemetry data
     """
-    
+
     # Setup shared resource for both tracing and logging
     resource = Resource.create({
         "service.name": "com.covaslabs.chat",
         "user.name": username,
         **attributes
     })
-    
+
     log('debug', f'Enabling remote tracing and logging', attributes)
-    
+
     # Setup OpenTelemetry tracing
     otel_provider = TracerProvider(resource=resource)
     trace.set_tracer_provider(otel_provider)
-    
+
     # Add OTLP exporter for remote tracing
     trace_endpoint_url = "https://monitoring.covaslabs.com/v1/traces"
     otlp_trace_exporter = OTLPSpanExporter(
@@ -68,9 +72,9 @@ def enable_remote_tracing(username: str, attributes: dict[str, str]):
         timeout=10,
         compression=None,
     )
-    
+
     log('debug', f'Creating BatchSpanProcessor with OTLP exporter to {trace_endpoint_url}')
-    
+
     trace_processor = BatchSpanProcessor(
         otlp_trace_exporter,
         max_queue_size=2048,
@@ -79,11 +83,11 @@ def enable_remote_tracing(username: str, attributes: dict[str, str]):
         export_timeout_millis=30000,
     )
     otel_provider.add_span_processor(trace_processor)
-    
+
     # Setup OpenTelemetry logging
     log_provider = LoggerProvider(resource=resource)
     set_logger_provider(log_provider)
-    
+
     # Add OTLP exporter for remote logging
     log_endpoint_url = "https://monitoring.covaslabs.com/v1/logs"
     otlp_log_exporter = OTLPLogExporter(
@@ -94,9 +98,9 @@ def enable_remote_tracing(username: str, attributes: dict[str, str]):
         timeout=10,
         compression=None,
     )
-    
+
     log('debug', f'Creating BatchLogRecordProcessor with OTLP exporter to {log_endpoint_url}')
-    
+
     log_processor = BatchLogRecordProcessor(
         otlp_log_exporter,
         max_queue_size=2048,
@@ -105,24 +109,24 @@ def enable_remote_tracing(username: str, attributes: dict[str, str]):
         export_timeout_millis=30000,
     )
     log_provider.add_log_record_processor(log_processor)
-    
+
     # Attach OTLP logging handler to the root logger
     otel_log_handler = LoggingHandler(level=logging.NOTSET, logger_provider=log_provider)
-    
+
     # Add a filter to prevent urllib3 and opentelemetry logs from going to remote
     # while still allowing them to be logged locally
     class NoTelemetryLibsFilter(logging.Filter):
         def filter(self, record):
             # Prevent logs from telemetry libraries from being sent remotely
             return not ((record.threadName or '').startswith('OtelBatchLogRecordProcessor') or 'monitoring.covaslabs.com' in record.message or record.name.startswith('opentelemetry'))
-    
+
     otel_log_handler.addFilter(NoTelemetryLibsFilter())
     logging.getLogger().addHandler(otel_log_handler)
-    
+
     # Instrument OpenAI for automatic tracing
     log('debug', 'Instrumenting OpenAI API calls')
     OpenAIInstrumentor().instrument()
-    
+
     # Register shutdown handler to ensure spans and logs are flushed on exit
     def shutdown_telemetry():
         try:
@@ -134,9 +138,9 @@ def enable_remote_tracing(username: str, attributes: dict[str, str]):
             log('debug', 'Telemetry shutdown complete')
         except Exception as e:
             log('warn', f'Error during telemetry shutdown: {e}')
-    
+
     atexit.register(shutdown_telemetry)
-    
+
     log('info', f'Remote tracing and logging enabled', attributes)
 
 
@@ -147,15 +151,12 @@ def handle_exception(exc_type, exc_value, exc_traceback):
         return
     
     if not sys.stderr.closed and not sys.stdout.closed:
-        output = io.StringIO()
-        print("Uncaught exception", exc_type, exc_value, exc_traceback, file=output)
-        contents = output.getvalue().strip()
-        output.close()
+        contents = traceback.format_exception(exc_type, exc_value, exc_traceback)
         print(json.dumps({
             "type": "log",
             "timestamp": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ"),
             "prefix": "error",
-            "message": contents
+            "message": "Uncaught exception: "+str(contents),
         }), file=sys.stderr)
         print(json.dumps({
             "type": "chat",
@@ -182,7 +183,7 @@ def show_chat_message(role: str, *args: Any):
     
     #logger.info(contents)
     
-    print(json.dumps(message), flush=True)
+    print(json.dumps(message) + "\n", flush=True)
 
 def log(prefix: Literal['info', 'debug', 'warn', 'error'], message: Any, *args: Any):
     output = io.StringIO()
@@ -207,7 +208,7 @@ def log(prefix: Literal['info', 'debug', 'warn', 'error'], message: Any, *args: 
         sys.stdout.flush()
     if sys.stderr:
         sys.stderr.flush()
-        
+
 def observe():
     """Observe decorator for tracing function calls with arguments and return values using OpenTelemetry."""
     def decorator(func):
@@ -229,7 +230,7 @@ def observe():
                 finally:
                     logger.debug(f"Trace for function {func.__name__} completed", extra={
                         "func_name": func.__name__,
-                        "span_id": format(span.get_span_context().span_id, '016x'), 
+                        "span_id": format(span.get_span_context().span_id, '016x'),
                         "trace_id": format(span.get_span_context().trace_id, '032x'),
                         "arguments": {**{f"arg{i}": repr(arg) for i, arg in enumerate(args)}, **{k: repr(v) for k, v in kwargs.items()}},
                         "return": repr(result) if 'result' in locals() else 'exception',

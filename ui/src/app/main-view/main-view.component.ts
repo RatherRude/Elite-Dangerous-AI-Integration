@@ -20,6 +20,7 @@ import { StationContainerComponent } from "../components/station-container/stati
 import { TasksContainerComponent } from "../components/tasks-container/tasks-container.component";
 import { ProjectionsService } from "../services/projections.service";
 import { MemoriesContainerComponent } from "../components/memories-container/memories-container.component";
+import { SearchResultsComponent } from "../components/search-results-container/search-results-container.component";
 import { MetricsService } from "../services/metrics.service.js";
 import { PolicyService } from "../services/policy.service.js";
 import {UIService} from "../services/ui.service";
@@ -43,6 +44,7 @@ import {UIService} from "../services/ui.service";
         StationContainerComponent,
         TasksContainerComponent,
         MemoriesContainerComponent,
+        SearchResultsComponent,
     ],
     templateUrl: "./main-view.component.html",
     styleUrl: "./main-view.component.css",
@@ -112,16 +114,35 @@ export class MainViewComponent implements OnInit, OnDestroy {
         this.uiChangeSubscription = this.uiService.changeUI$.subscribe(
             (tabName) => {
                 if (tabName === null) return;
-                const desiredIndex = {
-                    chat: 0,
-                    status: 1,
-                    storage: 2,
-                    tasks: 3,
-                    station: 4,
-                    logbook: 5,
-                }[tabName];
-                if (desiredIndex !== undefined) {
-                    this.selectedTabIndex = desiredIndex;
+                
+                let current = 0;
+                if (tabName === 'chat') {
+                    this.selectedTabIndex = current;
+                    return;
+                }
+                current++;
+
+                if (!this.isShipIdentUnknown) {
+                    if (tabName === 'status') { this.selectedTabIndex = current; return; }
+                    current++;
+                    if (tabName === 'storage') { this.selectedTabIndex = current; return; }
+                    current++;
+                    if (tabName === 'tasks') { this.selectedTabIndex = current; return; }
+                    current++;
+                    if (this.isDockedAtStation) {
+                        if (tabName === 'station') { this.selectedTabIndex = current; return; }
+                        current++;
+                    }
+                }
+
+                if (this.hasLogbook) {
+                    if (tabName === 'logbook') { this.selectedTabIndex = current; return; }
+                    current++;
+                }
+
+                if (tabName === 'search') {
+                    this.selectedTabIndex = current;
+                    return;
                 }
             }
         )

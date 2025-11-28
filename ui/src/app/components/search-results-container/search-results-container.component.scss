@@ -1,0 +1,135 @@
+.search-results-log {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 1rem;
+  box-sizing: border-box;
+  gap: 1rem;
+  overflow: hidden;
+}
+
+.search-controls {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.search-input-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+
+  .search-icon-inside {
+    position: absolute;
+    left: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+  }
+
+  .search-input {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 10px 10px 10px 40px;
+    color: #fff;
+    font-family: inherit;
+    font-size: 14px;
+    transition: all 0.2s ease;
+
+    &:focus {
+      outline: none;
+      border-color: rgba(255, 166, 0, 0.5);
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    &::placeholder {
+      color: rgba(255, 255, 255, 0.3);
+    }
+    
+    &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+  }
+}
+
+.results-content {
+  flex: 1;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 1rem;
+  
+  ::ng-deep {
+      p {
+          margin-bottom: 1em;
+          line-height: 1.5;
+      }
+      
+      h1, h2, h3, h4, h5, h6 {
+          margin-top: 1.5em;
+          margin-bottom: 0.5em;
+          color: #ffa600;
+      }
+      
+      ul, ol {
+          padding-left: 1.5em;
+          margin-bottom: 1em;
+      }
+      
+      li {
+          margin-bottom: 0.5em;
+      }
+      
+      a {
+          color: #ffa600;
+          text-decoration: none;
+          
+          &:hover {
+              text-decoration: underline;
+          }
+      }
+      
+      code {
+          background: rgba(255, 255, 255, 0.1);
+          padding: 0.2em 0.4em;
+          border-radius: 3px;
+          font-family: monospace;
+      }
+      
+      pre {
+          background: rgba(0, 0, 0, 0.3);
+          padding: 1em;
+          border-radius: 4px;
+          overflow-x: auto;
+          margin-bottom: 1em;
+          
+          code {
+              background: transparent;
+              padding: 0;
+          }
+      }
+  }
+}
+
+.no-results {
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+  font-style: italic;
+}
+
+.results-footer {
+  text-align: right;
+}
+
+.footer-text {
+  margin-top: 0.3rem;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+}

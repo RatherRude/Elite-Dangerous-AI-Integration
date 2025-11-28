@@ -50,12 +50,12 @@
 
     <mat-tab>
         <ng-template mat-tab-label>
-            <mat-icon class="tab-icon">psychology</mat-icon>
-            Behavior
+            <mat-icon class="tab-icon">bolt</mat-icon>
+            Actions
         </ng-template>
         <div class="tab-content">
             @if (config) {
-                <app-behavior-settings></app-behavior-settings>
+                <app-actions-settings></app-actions-settings>
             }
         </div>
     </mat-tab>
@@ -71,7 +71,7 @@
             }
         </div>
     </mat-tab>
-    
+
     @if (has_plugin_settings) {
         <mat-tab>
             <ng-template mat-tab-label>

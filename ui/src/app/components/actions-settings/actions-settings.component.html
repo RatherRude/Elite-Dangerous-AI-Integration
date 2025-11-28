@@ -1,21 +1,56 @@
 <div class="settings-grid">
     @if (config) {
-        <h2>Actions</h2>
-        <div style="display:flex; align-items:center; gap:8px;">
-            <mat-slide-toggle [ngModel]="config.tools_var && config.game_actions_var"
-                              (ngModelChange)="onConfigChange({game_actions_var: $event})"
-                              [disabled]="!config.tools_var">
-                Enable Game Actions
-            </mat-slide-toggle>
-            <button mat-stroked-button color="primary" (click)="showGameDetails = !showGameDetails">{{ showGameDetails ? 'Hide' : 'Show' }} Details</button>
-        </div>
+        @if (keybindsData && (keybindsData.missing.length > 0 || keybindsData.collisions.length > 0)) {
+            <div class="keybind-warning-box">
+                @if (keybindsData.missing.length > 0) {
+                    <div class="keybind-warning-section">
+                        <div class="keybind-warning-header">
+                            <mat-icon style="color: #ff9800;">warning</mat-icon>
+                            <strong style="color: #ff9800;">Missing Keybinds ({{ keybindsData.missing.length }})</strong>
+                        </div>
+                        <div class="keybind-warning-content">
+                            {{ keybindsData.missing.join(', ') }}
+                        </div>
+                    </div>
+                }
+                
+                @if (keybindsData.collisions.length > 0) {
+                    <div class="keybind-warning-section">
+                        <div class="keybind-warning-header">
+                            <mat-icon style="color: #ff9800;">error_outline</mat-icon>
+                            <strong style="color: #ff9800;">Keybind Collisions ({{ keybindsData.collisions.length }})</strong>
+                        </div>
+                        <div class="keybind-warning-content">
+                            @for (collision of keybindsData.collisions; track $index) {
+                                <div class="keybind-collision-item">{{ collision[0] }} ↔ {{ collision[1] }}</div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        
+        <mat-slide-toggle [ngModel]="config.tools_var && config.game_actions_var"
+                          (ngModelChange)="onConfigChange({game_actions_var: $event})"
+                          [disabled]="!config.tools_var">
+            Enable Game Actions
+        </mat-slide-toggle>
         <p>Game actions are performed by the AI on your behalf, like deploying the landing gear or opening
-            the galaxy map.</p>
+            the galaxy map. <a target="_blank" rel="noopener noreferrer" href="https://ratherrude.github.io/Elite-Dangerous-AI-Integration/20_actions/#available-game-actions">Learn more.</a></p>
         @if (config.tools_var && config.game_actions_var) {
-            <div>
-                @if (showGameDetails) {
-                    <h3 style="margin: 6px 0;">Available game actions</h3>
-                    <div class="permission-list">
+            <mat-expansion-panel>
+                <mat-expansion-panel-header>
+                    <mat-panel-title>
+                        <mat-icon class="tab-icon">tune</mat-icon>
+                        Available Game Actions
+                    </mat-panel-title>
+                </mat-expansion-panel-header>
+                <mat-slide-toggle [ngModel]="config.prefer_primary_bindings"
+                                  (ngModelChange)="onConfigChange({prefer_primary_bindings: $event})">
+                    Prefer Primary Keybinds
+                </mat-slide-toggle>
+                <p>When enabled, the AI uses primary keybinds before falling back to secondary bindings.</p>
+                <div class="permission-list">
                         <ng-container *ngFor="let group of gamePermissionsGrouped">
                             <div class="permission-item" *ngFor="let perm of group.actions; let i = index">
                                 <div class="perm-type">{{ i === 0 ? (groupTypeLabels[group.type] || group.type) : '' }}</div>
@@ -220,9 +255,9 @@
                             </div>
                         </ng-container>
                     </div>
-                }
-            </div>
+            </mat-expansion-panel>
         }
+        
         <div style="display:flex; align-items:center; gap:8px;">
             <mat-slide-toggle [ngModel]="config.tools_var && config.web_search_actions_var"
                               (ngModelChange)="onConfigChange({web_search_actions_var: $event})"
@@ -247,7 +282,7 @@
         </mat-slide-toggle>
         <p>The action cache allows the AI to learn from previous interactions and reuse actions for similar
             inputs, making responses faster and more consistent.</p>
-        <h2>Quality of Life Actions</h2>
+        <h2>Quality of Life</h2>
         <mat-slide-toggle [ngModel]="config.qol_autobrake"
                             (ngModelChange)="onConfigChange({qol_autobrake: $event})">
             Auto Brake

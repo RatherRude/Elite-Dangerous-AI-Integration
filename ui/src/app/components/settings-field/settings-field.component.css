@@ -1,0 +1,31 @@
+:host {
+    display: block;
+    width: 100%;
+}
+
+mat-form-field {
+    width: 100%;
+}
+
+mat-slide-toggle {
+    margin: 10px 0;
+}
+
+.paragraph-field {
+    margin: 8px 0;
+}
+
+.paragraph-field h4 {
+    margin: 0 0 4px 0;
+    font-weight: 500;
+}
+
+.paragraph-field p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.unknown-field {
+    color: #ff9800;
+    font-style: italic;
+}

@@ -25,7 +25,9 @@ import {
 import { ConfirmationDialogService } from "../../services/confirmation-dialog.service";
 import {
   PluginSettings,
+  SettingsGrid,
 } from "../../services/plugin-settings";
+import { SettingsGridComponent } from "../settings-grid/settings-grid.component";
 
 @Component({
   selector: "app-plugin-settings",
@@ -48,6 +50,7 @@ import {
     MatCheckboxModule,
     MatDialogModule,
     MatProgressSpinnerModule,
+    SettingsGridComponent,
   ],
   templateUrl: "./plugin-settings.component.html",
   styleUrls: ["../settings-menu/settings-menu.component.scss"],
@@ -129,6 +132,27 @@ export class PluginSettingsComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Create a getValue function for a specific plugin
+  createGetValueFn(pluginGuid: string): (fieldKey: string, defaultValue: any) => any {
+    return (fieldKey: string, defaultValue: any) => {
+      return this.config?.plugin_settings?.[pluginGuid]?.[fieldKey] ?? defaultValue;
+    };
+  }
+
+  // Create a setValue function for a specific plugin
+  createSetValueFn(pluginGuid: string): (fieldKey: string, value: any) => void {
+    return (fieldKey: string, value: any) => {
+      if (this.config == null) {
+        return;
+      }
+      this.config.plugin_settings ??= {};
+      this.config.plugin_settings[pluginGuid] ??= {};
+      this.config.plugin_settings[pluginGuid][fieldKey] = value;
+      this.onConfigChange({ plugin_settings: this.config.plugin_settings });
+    };
+  }
+
+  // Legacy methods kept for backward compatibility
   getPluginSetting(
     pluginGuid: string,
     fieldKey: string,

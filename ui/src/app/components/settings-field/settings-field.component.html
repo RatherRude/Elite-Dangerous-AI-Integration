@@ -1,0 +1,80 @@
+@switch (field.type) {
+    @case ('toggle') {
+        <mat-slide-toggle [ngModel]="value"
+                        (ngModelChange)="onValueChange($event)">
+            {{ field.label }}
+        </mat-slide-toggle>
+    }
+    @case ('paragraph') {
+        <div class="paragraph-field">
+            @if (field.label) {
+                <h4>{{ field.label }}</h4>
+            }
+            <p [innerHTML]="field.content"></p>
+        </div>
+    }
+    @case ('text') {
+        <mat-form-field>
+            <mat-label>{{ field.label }}</mat-label>
+            @if (field.hidden) {
+                <input matInput type="password"
+                    [ngModel]="value"
+                    (ngModelChange)="onValueChange($event)"
+                    [readonly]="field.readonly"
+                    [placeholder]="field.placeholder || ''"
+                    [minlength]="field.min_length"
+                    [maxlength]="field.max_length">
+            } @else {
+                <input matInput
+                    [ngModel]="value"
+                    (ngModelChange)="onValueChange($event)"
+                    [readonly]="field.readonly"
+                    [placeholder]="field.placeholder || ''"
+                    [minlength]="field.min_length"
+                    [maxlength]="field.max_length">
+            }
+        </mat-form-field>
+    }
+    @case ('number') {
+        <mat-form-field>
+            <mat-label>{{ field.label }}</mat-label>
+            <input matInput type="number"
+                [ngModel]="value"
+                (ngModelChange)="onValueChange($event)"
+                [min]="field.min_value"
+                [max]="field.max_value"
+                [step]="field.step"
+                [readonly]="field.readonly"
+                [placeholder]="field.placeholder || ''">
+        </mat-form-field>
+    }
+    @case ('textarea') {
+        <mat-form-field>
+            <mat-label>{{ field.label }}</mat-label>
+            <textarea matInput
+                [ngModel]="value"
+                (ngModelChange)="onValueChange($event)"
+                [rows]="field.rows"
+                [cols]="field.cols"
+                [readonly]="field.readonly"
+                [placeholder]="field.placeholder || ''"></textarea>
+        </mat-form-field>
+    }
+    @case ('select') {
+        <mat-form-field>
+            <mat-label>{{ field.label }}</mat-label>
+            <mat-select
+                [ngModel]="value"
+                (ngModelChange)="onValueChange($event)"
+                [disabled]="field.readonly || false"
+                [multiple]="field.multi_select">
+                @for (option of field.select_options; track option.key) {
+                    <mat-option [value]="option.value" [disabled]="option.disabled">{{ option.label }}</mat-option>
+                }
+            </mat-select>
+        </mat-form-field>
+    }
+    @default {
+        <p class="unknown-field">Unknown field type: {{ field.type }}</p>
+    }
+}

@@ -1,17 +1,26 @@
 import os
 from typing import Any, Callable
-import openai
-from openai.types.chat import ChatCompletionMessageParam
 
+from .Models import LLMModel, STTModel, TTSModel, EmbeddingModel
 from .Logger import log
 from .EDKeys import EDKeys
-from .EventManager import EventManager, Projection
+from .EventManager import EventManager, Projection as _Projection
 from .ActionManager import ActionManager
 from .SystemDatabase import SystemDatabase
 from .Config import Config, save_config
-from .Event import Event, PluginEvent
+from .Event import Event, PluginEvent as _PluginEvent
 from .PromptGenerator import PromptGenerator
 from .Assistant import Assistant
+
+# reexport Projection and PluginEvent for plugins
+Projection = _Projection
+PluginEvent = _PluginEvent
+
+# reexport Model base classes for plugins to extend
+LLMModel = LLMModel
+STTModel = STTModel
+TTSModel = TTSModel
+EmbeddingModel = EmbeddingModel
 
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
@@ -25,9 +34,8 @@ class PluginHelper():
     _assistant: Assistant
     _prompt_generator: PromptGenerator
     _keys: EDKeys
-    _vision_client: openai.OpenAI | None = None
-    _llm_client: openai.OpenAI
-    _llm_model_name: str
+    _vision_model: LLMModel | None = None
+    _llm_model: LLMModel
     _vision_model_name: str | None = None
     _event_manager: EventManager
     _action_manager: ActionManager
@@ -35,17 +43,14 @@ class PluginHelper():
     _system_db: SystemDatabase
     PLUGIN_DATA_PATH: str = "plugin_data"
 
-    def __init__(self, plugin_manager: 'PluginManager', prompt_generator: PromptGenerator, config: Config, action_manager: ActionManager, event_manager: EventManager, llm_client: openai.OpenAI,
-                     llm_model_name: str, vision_client: openai.OpenAI | None, vision_model_name: str | None,
+    def __init__(self, plugin_manager: 'PluginManager', prompt_generator: PromptGenerator, config: Config, action_manager: ActionManager, event_manager: EventManager, llm_model: LLMModel, vision_model: LLMModel | None,
                      system_db: SystemDatabase, ed_keys: EDKeys, assistant: Assistant):
         self._plugin_manager = plugin_manager
         self._prompt_generator = prompt_generator
         self._keys = ed_keys
         self._system_db = system_db
-        self._vision_client = vision_client
-        self._llm_client = llm_client
-        self._llm_model_name = llm_model_name
-        self._vision_model_name = vision_model_name
+        self._vision_model = vision_model
+        self._llm_model = llm_model
         self._event_manager = event_manager
         self._action_manager = action_manager
         self._config = config

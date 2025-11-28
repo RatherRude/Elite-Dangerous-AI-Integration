@@ -153,8 +153,17 @@ export class StorageContainerComponent implements OnInit, OnDestroy {
     return (this.getCargoAmount() / capacity) * 100;
   }
 
-  formatNumber(num: number): string {
-    return num.toLocaleString();
+  formatNumber(num: number | null | undefined): string {
+    if (num === null || num === undefined) {
+      return "0";
+    }
+
+    const value = Number(num);
+    if (Number.isNaN(value)) {
+      return "0";
+    }
+
+    return value.toLocaleString();
   }
 
   // Stored Ships methods

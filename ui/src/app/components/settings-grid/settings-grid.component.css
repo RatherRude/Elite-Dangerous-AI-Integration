@@ -1,0 +1,45 @@
+:host {
+    display: block;
+    width: 100%;
+}
+
+.settings-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0px;
+    width: 100%;
+}
+
+.plugin-provider-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 0px;
+    width: 100%;
+}
+
+.settings-grid h2,
+.settings-grid h3,
+.settings-grid h4,
+.plugin-provider-settings h2,
+.plugin-provider-settings h3,
+.plugin-provider-settings h4 {
+    margin: 16px 0 8px 0;
+}
+
+.settings-grid h2,
+.plugin-provider-settings h2 {
+    font-size: 1.25rem;
+    font-weight: 500;
+}
+
+.settings-grid h3,
+.plugin-provider-settings h3 {
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.settings-grid h4,
+.plugin-provider-settings h4 {
+    font-size: 1rem;
+    font-weight: 500;
+}

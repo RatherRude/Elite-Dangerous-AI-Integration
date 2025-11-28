@@ -7,7 +7,7 @@ from typing_extensions import deprecated
 
 from .Database import EventStore, KeyValueStore, VectorStore
 from .EDJournal import *
-from .Event import Event, GameEvent, ConversationEvent, MemoryEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent
+from .Event import Event, EventClasses, GameEvent, ConversationEvent, MemoryEvent, PluginEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent
 from .Logger import log, show_chat_message
 
 import threading
@@ -52,7 +52,7 @@ class EventManager:
         self._conditions_registry = defaultdict(list)
         self._registry_lock = threading.Lock()
 
-        self.event_classes: list[type[Event]] = [ConversationEvent, ToolEvent, GameEvent, StatusEvent, ExternalEvent, MemoryEvent]
+        self.event_classes: list[type[Event]] = EventClasses
         self.projections: list[Projection] = []
         self.sideeffects: list[Callable[[Event, dict[str, Any]], None]] = []
         
@@ -139,6 +139,10 @@ class EventManager:
         
     def get_short_term_memory(self, limit: int = 100) -> list[Event]:
         return self.short_term_memory.get_latest(limit=limit)
+
+    def get_latest_memories(self, limit: int = 10) -> list[MemoryEvent]:
+        mems = self.long_term_memory.get_most_recent_entries(limit=limit)
+        return [MemoryEvent(content=mem['content'], metadata=mem['metadata'], embedding=[]) for mem in mems]
 
     def process(self):
         projected_states: dict[str, Any] | None = None
