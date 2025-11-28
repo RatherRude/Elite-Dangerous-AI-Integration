@@ -369,7 +369,7 @@ class EDCoPilotPlugin(PluginBase):
         
         log('debug', f"EDCoPilot actions registered")
         
-    def _on_event(self, event: Any):
+    def _on_event(self, event: Any, context: dict[str, Any]):
         if event.kind in ['user', 'assistant']:
             self._on_conversation_event(event)
     
