@@ -49,8 +49,23 @@ def mock_pyaudio(monkeypatch):
 def mock_vad():
     """Mock SileroVAD"""
     mock = MagicMock()
-    # Simulate voice detection
-    mock.side_effect = lambda bytes: bytes[0] / 0xff
+    
+    # Make the VAD callable - returns voice activity score based on audio content
+    # This is used by _listen_continuous_loop which calls self.vad(buffer)
+    def vad_call_side_effect(audio_bytes):
+        # Check if audio contains voice (non-zero values)
+        if audio_bytes and audio_bytes[0] != 0:
+            return 1.0  # Voice detected (above threshold)
+        return 0.0  # No voice (below threshold)
+    mock.side_effect = vad_call_side_effect
+    
+    # process_chunks is used by _transcribe to filter silent audio
+    def process_chunks_side_effect(audio_bytes):
+        if audio_bytes and audio_bytes[0] != 0:
+            return [1.0]  # Voice detected (above threshold)
+        return [0.0]  # No voice (below threshold)
+    mock.process_chunks.side_effect = process_chunks_side_effect
+    mock.chunk_bytes.return_value = 512 * 2  # frames * sample_size
     return mock
 
 class MockTextResponse:
@@ -59,26 +74,28 @@ class MockTextResponse:
         self.text = text
 
 @pytest.fixture
+def mock_stt_model():
+    mock = MagicMock()
+    mock.transcribe.return_value = "Test transcription via API"
+    return mock
+
+@pytest.fixture
+def mock_vad_detector():
+    """Mock SileroVoiceActivityDetector class"""
+    mock = MagicMock()
+    return mock
+
+@pytest.fixture
 def mock_openai():
-    """Mock OpenAI client"""
-    mock_client = MagicMock()
-    mock_client.audio.transcriptions.create.return_value = MockTextResponse("Test transcription via API")
-    return mock_client
+    """Mock OpenAI client (not used but referenced by test signatures)"""
+    mock = MagicMock()
+    return mock
 
 @pytest.fixture
-def mock_vad_detector(mock_vad):
-    """Mock SileroVAD detector class"""
-    mock_detector = MagicMock()
-    mock_detector.return_value = mock_vad
-    # also mock the process_chunks method
-    mock_vad.process_chunks.side_effect = lambda bytes: [bytes[0] / 0xff] * len(bytes)
-    return mock_detector
-
-@pytest.fixture
-def stt(mock_openai, mock_vad, mock_vad_detector, mock_pyaudio, monkeypatch):
+def stt(mock_stt_model, mock_vad, mock_vad_detector, mock_pyaudio, monkeypatch):
     """Create STT instance with mocked dependencies"""
     monkeypatch.setattr('pysilero_vad.SileroVoiceActivityDetector', mock_vad_detector)
-    stt =  STT(mock_openai, "openai", "TestDevice")
+    stt =  STT(mock_stt_model, "TestDevice")
     stt.vad = mock_vad
     return stt
 

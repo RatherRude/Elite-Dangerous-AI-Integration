@@ -1786,7 +1786,7 @@ class PromptGenerator:
 
         if event_name == 'LaunchFighter':
             fighter_event = cast(Dict[str, Any], content)
-            return f"{self.commander_name if fighter_event.get('PlayerControlled') else "An NPC crew"} has launched in a fighter."
+            return f"{self.commander_name if fighter_event.get('PlayerControlled') else 'An NPC crew'} has launched in a fighter."
 
         if event_name == 'LaunchSRV':
             srv_event = cast(Dict[str, Any], content)
@@ -2577,7 +2577,7 @@ class PromptGenerator:
         # Add all other basic fields
         normalized["name"] = station.get("name", "Unknown")
         normalized["type"] = station.get("type", "Unknown")
-        normalized["government"] = f"{station.get("allegiance", "")} {station.get("government", "None")}"
+        normalized["government"] = f"{station.get('allegiance', '')} {station.get('government', 'None')}"
         
         # Handle controllingFaction which might have different structure
         if raw_format and isinstance(station.get("controllingFaction"), dict):
@@ -2693,7 +2693,7 @@ class PromptGenerator:
 
         return active_mode, status_info
 
-    def generate_status_message(self, projected_states: dict[str, dict]):
+    def generate_status_message(self, projected_states: dict[str, dict], search_agent_context: bool = False):
         status_entries: list[tuple[str, Any]] = []
 
         gravity = projected_states.get('CurrentStatus', {}).get('Gravity', None)
@@ -2703,13 +2703,14 @@ class PromptGenerator:
         active_mode, vehicle_status = self.generate_vehicle_status(projected_states.get('CurrentStatus', {}), projected_states.get('InCombat', {}))
         status_entries.append((active_mode+" status", vehicle_status))
 
-        wingmembers = projected_states.get('Wing', {}).get('Members', [])
-        if len(wingmembers) > 0:
-            status_entries.append(("Current wing members: ", wingmembers))
+        if not search_agent_context:
+            wingmembers = projected_states.get('Wing', {}).get('Members', [])
+            if len(wingmembers) > 0:
+                status_entries.append(("Current wing members: ", wingmembers))
 
-        guifocus = projected_states.get('CurrentStatus', {}).get('GuiFocus', '')
-        if guifocus != "NoFocus":
-            status_entries.append(("Current active window: ", guifocus))
+            guifocus = projected_states.get('CurrentStatus', {}).get('GuiFocus', '')
+            if guifocus != "NoFocus":
+                status_entries.append(("Current active window: ", guifocus))
 
         # Get ship and cargo info
         ship_info: ShipInfoState = projected_states.get('ShipInfo', {})  # pyright: ignore[reportAssignmentType]
@@ -2954,9 +2955,10 @@ class PromptGenerator:
                     system_info = self.format_system_info(raw_system_info)
 
                 # Get stations from system database
-                stations_data = self.system_db.get_stations(system_name)
-                if stations_data:
-                    stations_info = self.format_stations_data(stations_data)
+                if not search_agent_context:
+                    stations_data = self.system_db.get_stations(system_name)
+                    if stations_data:
+                        stations_info = self.format_stations_data(stations_data)
 
             if location_info.get('Station'):
                 if not location_info.get('Docked'):
@@ -2970,7 +2972,8 @@ class PromptGenerator:
 
             status_entries.append(("Location", location_info))
             status_entries.append(("Local system", system_info))
-            status_entries.append(("Stations in local system", stations_info))
+            if not search_agent_context:
+                status_entries.append(("Stations in local system", stations_info))
 
         # Community Goal
         community_goal = projected_states.get('CommunityGoal', {})
@@ -3044,18 +3047,19 @@ class PromptGenerator:
             status_entries.append((nav_route_title, enhanced_nav_route_dict))
 
         # Target
-        target_info: TargetState = projected_states.get('Target', {})  # pyright: ignore[reportAssignmentType]
-        target_info.pop('EventID', None)
-        target_info.pop('ScanStage', None)
-        if target_info.get('Ship', False):
-            status_entries.append(("Weapons' target", target_info))
+        if not search_agent_context:
+            target_info: TargetState = projected_states.get('Target', {})  # pyright: ignore[reportAssignmentType]
+            target_info.pop('EventID', None)
+            target_info.pop('ScanStage', None)
+            if target_info.get('Ship', False):
+                status_entries.append(("Weapons' target", target_info))
 
         # Market and station information
         current_station = projected_states.get('Location', {}).get('Station')
         market = projected_states.get('Market', {})
         outfitting = projected_states.get('Outfitting', {})
         storedShips = projected_states.get('StoredShips', {})
-        if current_station and current_station == market.get('StationName'):
+        if current_station and current_station == market.get('StationName') and not search_agent_context:
             buy_items = {
                 item.get('Name_Localised'): {
                     'Category': item.get('Category_Localised'),
@@ -3087,7 +3091,7 @@ class PromptGenerator:
                     }
                 ))
 
-        if current_station and current_station == outfitting.get('StationName'):
+        if current_station and current_station == outfitting.get('StationName') and not search_agent_context:
             # Create a nested structure from outfitting items with optimized leaf nodes
             nested_outfitting = {}
 
@@ -3179,7 +3183,7 @@ class PromptGenerator:
             nested_outfitting = flatten_special_entries(nested_outfitting)
 
             status_entries.append(("Local outfitting information", nested_outfitting))
-        if current_station and current_station == storedShips.get('StationName'):
+        if current_station and current_station == storedShips.get('StationName') and not search_agent_context:
             status_entries.append(("Local, stored ships", storedShips.get('ShipsHere', [])))
             
         # Missions
@@ -3221,17 +3225,18 @@ class PromptGenerator:
             status_entries.append(("Colonisation Construction", construction_status))
 
         # Add friends status (always include this entry)
-        friends_info = projected_states.get('Friends', {})
-        online_friends = friends_info.get('Online', [])
+        if not search_agent_context:
+            friends_info = projected_states.get('Friends', {})
+            online_friends = friends_info.get('Online', [])
 
-        # Always add the entry, with appropriate message based on online status
-        if online_friends:
-            status_entries.append(("Friends Status", {
-                "Online Count": len(online_friends),
-                "Online Friends": online_friends
-            }))
-        else:
-            status_entries.append(("Friends Status", "No friends currently online"))
+            # Always add the entry, with appropriate message based on online status
+            if online_friends:
+                status_entries.append(("Friends Status", {
+                    "Online Count": len(online_friends),
+                    "Online Friends": online_friends
+                }))
+            else:
+                status_entries.append(("Friends Status", "No friends currently online"))
 
         # Engineer status
         engineer_systems = {

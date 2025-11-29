@@ -1388,7 +1388,8 @@ class SuitLoadout(Projection[SuitLoadoutState]):
 
 # Define types for Friends Projection
 OnlineFriendsState = TypedDict('OnlineFriendsState', {
-    "Online": list[str]  # List of online friend names
+    "Online": list[str],  # List of online friend names
+    "Pending": list[str]
 })
 
 
@@ -1397,7 +1398,8 @@ class Friends(Projection[OnlineFriendsState]):
     @override
     def get_default_state(self) -> OnlineFriendsState:
         return {
-            "Online": []
+            "Online": [],
+            "Pending": []
         }
 
     @override
@@ -1405,6 +1407,7 @@ class Friends(Projection[OnlineFriendsState]):
         # Clear the list on Fileheader event (new game session)
         if isinstance(event, GameEvent) and event.content.get('event') == 'Fileheader':
             self.state["Online"] = []
+            self.state["Pending"] = []
 
         # Process Friends events
         if isinstance(event, GameEvent) and event.content.get('event') == 'Friends':
@@ -1416,13 +1419,23 @@ class Friends(Projection[OnlineFriendsState]):
                 return
 
             # If the friend is coming online, add them to the list
-            if friend_status == "Online":
+            if friend_status in ["Online", "Added"]:
                 if friend_name not in self.state["Online"]:
                     self.state["Online"].append(friend_name)
+                if friend_name in self.state["Pending"]:
+                    self.state["Pending"].remove(friend_name)
+
+            elif friend_status == "Requested":
+                if friend_name not in self.state["Pending"]:
+                    self.state["Pending"].append(friend_name)
 
             # If the friend was previously online but now has a different status, remove them
-            elif friend_name in self.state["Online"]:
+            elif friend_name in self.state["Online"] and friend_status in ["Offline", "Lost"]:
                 self.state["Online"].remove(friend_name)
+
+            elif friend_status == "Declined":
+                if friend_name in self.state["Pending"]:
+                    self.state["Pending"].remove(friend_name)
 
 
 MaterialsCategory = Literal['Raw', 'Manufactured', 'Encoded']

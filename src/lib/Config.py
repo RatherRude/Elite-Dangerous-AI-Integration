@@ -381,9 +381,11 @@ class Config(TypedDict):
     active_characters: list[int]
     llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom', 'local-ai-server']
     llm_model_name: str
+    llm_reasoning_effort: Literal['default', 'none', 'minimal', 'low', 'medium', 'high'] | None
     llm_temperature: float
     agent_llm_provider: Literal['openai', 'openrouter','google-ai-studio', 'custom', 'local-ai-server']
     agent_llm_model_name: str
+    agent_llm_reasoning_effort: Literal['default', 'none', 'minimal', 'low', 'medium', 'high'] | None
     agent_llm_endpoint: str
     agent_llm_api_key: str
     agent_llm_temperature: float
@@ -666,6 +668,50 @@ def migrate(data: dict) -> dict:
         data.setdefault('agent_llm_temperature', data.get('llm_temperature', 1.0))
         data['agent_llm_max_tries'] = 7
 
+    if data['config_version'] < 8:
+        data['config_version'] = 8
+        
+        provider = data.get('agent_llm_provider', 'openai')
+        model = data.get('agent_llm_model_name', 'gpt-4.1-mini')
+        
+        reasoning_effort = 'default'
+        
+        if provider == 'openai':
+            if model in ['gpt-5', 'gpt-5-mini', 'gpt-5-nano']:
+                reasoning_effort = 'high'
+            elif model == 'gpt-5.1':
+                reasoning_effort = 'none'
+            
+        elif provider == 'google-ai-studio':
+            if model in ['gemini-2.5-flash', 'gemini-2.5-flash-lite']:
+                reasoning_effort = 'high'
+            elif model == 'gemini-2.5-pro':
+                reasoning_effort = 'low'
+                
+        data['agent_llm_reasoning_effort'] = reasoning_effort
+
+    if data['config_version'] < 9:
+        data['config_version'] = 9
+        
+        provider = data.get('llm_provider', 'openai')
+        model = data.get('llm_model_name', 'gpt-4.1-mini')
+        
+        reasoning_effort = 'default'
+        
+        if provider == 'openai':
+            if model in ['gpt-5', 'gpt-5-mini', 'gpt-5-nano']:
+                reasoning_effort = 'minimal'
+            elif model == 'gpt-5.1':
+                reasoning_effort = 'none'
+            
+        elif provider == 'google-ai-studio':
+            if model in ['gemini-2.5-flash', 'gemini-2.5-flash-lite']:
+                reasoning_effort = 'none'
+            elif model == 'gemini-2.5-pro':
+                reasoning_effort = 'low'
+                
+        data['llm_reasoning_effort'] = reasoning_effort
+
     return data
 
 
@@ -797,11 +843,13 @@ def load_config() -> Config:
         'output_device_name': get_default_output_device_name(),
         'llm_provider': "openai",
         'llm_model_name': "gpt-4.1-mini",
+        'llm_reasoning_effort': 'default',
         'llm_endpoint': "https://api.openai.com/v1",
         'llm_api_key': "",
         'llm_temperature': 1.0,
         'agent_llm_provider': "openai",
         'agent_llm_model_name': "gpt-4.1-mini",
+        'agent_llm_reasoning_effort': 'default',
         'agent_llm_endpoint': "https://api.openai.com/v1",
         'agent_llm_api_key': "",
         'agent_llm_temperature': 1.0,
@@ -1249,56 +1297,66 @@ def update_config(config: Config, data: dict) -> Config:
             data["llm_model_name"] = "gpt-4.1-mini"
             data["llm_api_key"] = ""
             data["tools_var"] = True
+            data["llm_reasoning_effort"] = 'default'
 
         elif data["llm_provider"] == "openrouter":
             data["llm_endpoint"] = "https://openrouter.ai/api/v1/"
             data["llm_model_name"] = "llama-3.3-70b-instruct:free"
             data["llm_api_key"] = ""
             data["tools_var"] = False
+            data["llm_reasoning_effort"] = 'default'
 
         elif data["llm_provider"] == "google-ai-studio":
             data["llm_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
             data["llm_model_name"] = "gemini-2.5-flash"
             data["llm_api_key"] = ""
             data["tools_var"] = True
+            data["llm_reasoning_effort"] = "none"
 
         elif data["llm_provider"] == "local-ai-server":
             data["llm_endpoint"] = "http://127.0.0.1:8080"
             data["llm_model_name"] = "gpt-4.1-mini"
             data["llm_api_key"] = ""
             data["tools_var"] = True
+            data["llm_reasoning_effort"] = 'default'
 
         elif data["llm_provider"] == "custom":
             data["llm_endpoint"] = "https://api.openai.com/v1"
             data["llm_model_name"] = "gpt-4.1-mini"
             data["llm_api_key"] = ""
             data["tools_var"] = False
+            data["llm_reasoning_effort"] = 'default'
 
     if data.get("agent_llm_provider"):
         if data["agent_llm_provider"] == "openai":
             data["agent_llm_endpoint"] = "https://api.openai.com/v1"
             data["agent_llm_model_name"] = "gpt-4.1-mini"
             data["agent_llm_api_key"] = ""
+            data["agent_llm_reasoning_effort"] = 'default'
 
         elif data["agent_llm_provider"] == "openrouter":
             data["agent_llm_endpoint"] = "https://openrouter.ai/api/v1/"
             data["agent_llm_model_name"] = "llama-3.3-70b-instruct:free"
             data["agent_llm_api_key"] = ""
+            data["agent_llm_reasoning_effort"] = 'default'
 
         elif data["agent_llm_provider"] == "google-ai-studio":
             data["agent_llm_endpoint"] = "https://generativelanguage.googleapis.com/v1beta"
             data["agent_llm_model_name"] = "gemini-2.5-flash"
             data["agent_llm_api_key"] = ""
+            data["agent_llm_reasoning_effort"] = "high"
 
         elif data["agent_llm_provider"] == "local-ai-server":
             data["agent_llm_endpoint"] = "http://127.0.0.1:8080"
             data["agent_llm_model_name"] = "gpt-4.1-mini"
             data["agent_llm_api_key"] = ""
+            data["agent_llm_reasoning_effort"] = 'default'
 
         elif data["agent_llm_provider"] == "custom":
             data["agent_llm_endpoint"] = "https://api.openai.com/v1"
             data["agent_llm_model_name"] = "gpt-4.1-mini"
             data["agent_llm_api_key"] = ""
+            data["agent_llm_reasoning_effort"] = 'default'
 
     if data.get("agent_llm_max_tries") is not None:
         try:

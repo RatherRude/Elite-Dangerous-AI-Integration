@@ -61,3 +61,26 @@ class PluginSettings(TypedDict):
     label: str
     icon: str
     grids: list[SettingsGrid]
+
+
+class ModelProviderDefinition(TypedDict):
+    """
+    Defines a model provider that a plugin can contribute.
+    
+    Plugins can provide LLM, STT, TTS, or Embedding model implementations
+    that appear in the Advanced Settings provider dropdowns.
+    """
+    kind: Literal['llm', 'stt', 'tts', 'embedding']
+    """The type of model this provider creates."""
+    
+    id: str
+    """Unique identifier for this provider within the plugin."""
+    
+    label: str
+    """Human-readable name shown in the UI dropdown."""
+    
+    settings_config: list[SettingsGrid]
+    """
+    Settings fields specific to this provider, rendered inline in Advanced Settings
+    when this provider is selected. Values are stored in the plugin's settings namespace.
+    """

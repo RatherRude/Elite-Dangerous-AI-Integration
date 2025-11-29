@@ -160,12 +160,30 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
   
   private updateAvatarShowStatus(config: Config): void {
     // Use global overlay setting
-    this.avatarShow = config?.overlay_show_avatar !== false && config?.tts_provider !== 'none';
+    this.avatarShow = true;
+    if (config?.overlay_show_avatar === false) {
+      this.avatarShow = false;
+    }
+    if (config?.tts_provider === 'none') {
+      this.avatarShow = false;
+    }
+    if (config?.tts_provider === 'plugin:ec3eee66-8c4c-4ede-be36-b8612b14a5c0:edcopilot-dominant') {
+      this.avatarShow = false;
+    }
   }
 
   private updateChatShowStatus(config: Config): void {
     // Use global overlay setting for chat
-    this.chatShow = config?.overlay_show_chat !== false && config?.tts_provider !== 'none';
+    this.chatShow = true;
+    if (config?.overlay_show_chat === false) {
+      this.chatShow = false;
+    } 
+    if (config?.tts_provider === 'none') {
+      this.chatShow = false;
+    }
+    if (config?.tts_provider === 'plugin:ec3eee66-8c4c-4ede-be36-b8612b14a5c0:edcopilot-dominant') {
+      this.chatShow = false;
+    }
   }
 
   private applyAvatarBackground() {
