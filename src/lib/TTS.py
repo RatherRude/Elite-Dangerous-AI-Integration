@@ -11,38 +11,20 @@ from num2words import num2words
 
 from .Logger import log, observe, show_chat_message
 from .Models import TTSModel, OpenAITTSModel
-from .UI import send_message
 
 
 @final
 class TTS:
-    def __init__(
-        self,
-         tts_model: Optional[TTSModel] = None,
-         voice="nova",
-         speed: float=1.0,
-         output_device: Optional[str] = None,
-         character_voices: Optional[dict[str, str]] = None,
-         primary_character_name: Optional[str] = None):
+    def __init__(self, tts_model: Optional[TTSModel] = None, voice="nova", speed: float=1.0, output_device: Optional[str] = None):
         self.tts_model = tts_model
         self.voice = voice
         self.speed = speed
-        self.primary_character_name = (primary_character_name or "").strip() or "Primary Character"
-        self.primary_character_key = self.primary_character_name.lower()
-        self.character_voices = {
-            k.lower(): v
-            for k, v in (character_voices or {}).items()
-            if k and v
-        }
 
         self.p = pyaudio.PyAudio()
         self.output_device = output_device
-        self.read_queue = queue.Queue()
+        self.read_queue: queue.Queue[tuple[str, str]] = queue.Queue()
         self.is_aborted = False
         self._is_playing = False
-        self._last_announced_voice: Optional[str] = None
-        self._last_announced_speaker: Optional[str] = None
-        self._overlay_refresh_required = False
         self.prebuffer_size = 4
         self.output_format = pyaudio.paInt16
         self.frames_per_buffer = 1024
@@ -87,24 +69,20 @@ class TTS:
             while not self.is_aborted:
                 if not self.read_queue.empty():
                     self._is_playing = True
-                    voice, text, speaker = self.read_queue.get()
+                    voice, text = self.read_queue.get()
                     try:
-                        self._announce_voice_start(speaker, voice)
-                        self._playback_one(text, stream, voice)
+                        self._playback_one(voice, text, stream)
                     except Exception as e:
-                        self.read_queue.put((voice, text, speaker))
+                        self.read_queue.put((voice, text))
                         raise e
-                    continue
 
-                if self._is_playing:
-                    self._mark_overlay_idle()
                 self._is_playing = False
                 sleep(0.1)
             self._is_playing = False
             stream.stop_stream()
 
     @observe()
-    def _playback_one(self, text: str, stream: pyaudio.Stream, voice: Optional[str] = None):
+    def _playback_one(self, voice: str, text: str, stream: pyaudio.Stream):
         # Fix numberformatting for different providers
         text = re.sub(r"\d+(,\d{3})*(\.\d+)?", self._number_to_text, text)
         text = strip_markdown.strip_markdown(text)
@@ -114,7 +92,7 @@ class TTS:
         first_chunk = True
         underflow_count = 0
         empty_buffer_available = stream.get_write_available()
-        for chunk in self._stream_audio(text, voice):
+        for chunk in self._stream_audio(voice=voice, text=text):
             if not end_time:
                 end_time = time()
                 log('debug', f'Response time TTS', end_time - start_time)
@@ -141,8 +119,7 @@ class TTS:
         
 
     @observe()
-    def _stream_audio(self, text, voice: Optional[str] = None):
-        selected_voice = voice or self.voice
+    def _stream_audio(self, voice: str, text: str):
         if self.tts_model is None:
             word_count = len(text.split())
             words_per_minute = 150 * float(self.speed)
@@ -152,7 +129,7 @@ class TTS:
                 yield b"\x00" * 1024
         else:
             try:
-                for chunk in self.tts_model.synthesize(text, selected_voice):
+                for chunk in self.tts_model.synthesize(text=text, voice=voice):
                     yield chunk
             except Exception as e:
                 log('error', 'TTS synthesis error', e, traceback.format_exc())
@@ -168,16 +145,16 @@ class TTS:
         else:
             return match.group()
 
-    def say(self, text: str):
-        for segment in self._segment_text(text):
-            self.read_queue.put(segment)
+    def say(self, text: str, voice: str | None = None):
+        if voice is None:
+            voice = self.voice
+        self.read_queue.put((voice, text))
 
     def abort(self):
         while not self.read_queue.empty():
             self.read_queue.get()
 
         self.is_aborted = True
-        self._mark_overlay_idle()
 
     def get_is_playing(self):
         return self._is_playing or not self.read_queue.empty()
@@ -186,76 +163,6 @@ class TTS:
     def wait_for_completion(self):
         while self.get_is_playing():
             sleep(0.2)
-
-    def _strip(self, text: str) -> str:
-        cleaned = re.sub(r"\([^)]*\)", "", text)
-        cleaned = re.sub(r"\s+", " ", cleaned)
-        return cleaned.strip()
-
-    def _segment_text(self, text: str) -> list[tuple[str, str, str]]:
-        segments: list[tuple[str, str, str]] = []
-        current_voice = self.voice
-        current_speaker = self.primary_character_name
-        pattern = re.compile(r"\(([^)]+)\)")
-        last_idx = 0
-        for match in pattern.finditer(text):
-            chunk = text[last_idx:match.start()]
-            cleaned_chunk = self._strip(chunk)
-            if cleaned_chunk:
-                segments.append((current_voice, cleaned_chunk, current_speaker))
-            label = match.group(1).strip()
-            if label:
-                voice_data = self._match_voice_and_speaker(label)
-                if voice_data:
-                    current_voice, current_speaker = voice_data
-            last_idx = match.end()
-        tail = self._strip(text[last_idx:])
-        if tail:
-            segments.append((current_voice, tail, current_speaker))
-        if not segments:
-            segments.append((self.voice, self._strip(text), self.primary_character_name))
-        return segments
-
-    def _voice_for_label(self, label: str) -> str:
-        voice_data = self._match_voice_and_speaker(label)
-        if voice_data:
-            return voice_data[0]
-        return self.voice
-
-    def _match_voice_and_speaker(self, label: str) -> Optional[tuple[str, str]]:
-        cleaned = label.strip()
-        if not cleaned:
-            return None
-        key = cleaned.lower()
-        if key in self.character_voices:
-            return self.character_voices[key], cleaned
-        if key == self.primary_character_key:
-            return self.voice, self.primary_character_name
-        return None
-
-    def _mark_overlay_idle(self) -> None:
-        self._overlay_refresh_required = True
-
-    def _announce_voice_start(self, speaker_name: Optional[str], voice: str):
-        name = (speaker_name or self.primary_character_name or "").strip()
-        if not name:
-            return
-        if (
-            not self._overlay_refresh_required
-            and voice == self._last_announced_voice
-            and name == self._last_announced_speaker
-        ):
-            return
-        self._last_announced_voice = voice
-        self._last_announced_speaker = name
-        self._overlay_refresh_required = False
-        send_message({
-            "type": "overlay_voice",
-            "character": {
-                "name": name,
-                "voice": voice,
-            },
-        })
 
     def quit(self):
         pass

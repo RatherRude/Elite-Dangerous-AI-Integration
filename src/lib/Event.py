@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Generic, Literal, TypedDict, TypeVar
+from typing import Any, Generic, Literal, NotRequired, TypedDict, TypeVar
 
 
 EventKind = Literal[
@@ -87,6 +87,7 @@ class PluginEvent(Event[Literal['plugin']]):
 @dataclass(kw_only=True)
 class ConversationEvent(Event[ConversationEventKind]):
     content: str
+    character: str | None = None
     reasons: list[str] | None = None
     kind: ConversationEventKind
 

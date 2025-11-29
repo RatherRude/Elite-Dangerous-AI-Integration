@@ -1,10 +1,10 @@
 import json
 import traceback
 from datetime import datetime
-from openai.types.chat import ChatCompletion, ChatCompletionMessageToolCall
+from openai.types.chat import ChatCompletionMessageToolCall
 from time import time
 
-from .Models import LLMModel, EmbeddingModel, LLMError
+from .Models import LLMModel, EmbeddingModel, LLMError, CharacterMessage
 from .Logger import log, observe, show_chat_message
 from .Config import Config
 from .Event import ConversationEvent, Event, GameEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent, MemoryEvent
@@ -138,11 +138,15 @@ class Assistant:
                 log('warn', 'Embeddings model not configured, cannot summarize memories.')
                 return
 
-            response_text, _ = self.llmModel.generate(
+            # Consume generator and collect text response
+            response_text = ""
+            for result in self.llmModel.generate(
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant in Elite Dangerous that summarizes events and conversation into short concise notes for long-term memory storage. Only include important information that is not already stored in long-term memory. Do not include unimportant information, irrelevant details or repeated information. Do not include any timestamps in the summary.\nKeep it short to about 5 sentences."},
                     {"role": "user", "content": "Summarize the following events into short concise notes for long-term memory storage:\n<conversation>\n"+(chat_text)+'\n</conversation>'}],
-            )
+            ):
+                if isinstance(result, CharacterMessage):
+                    response_text += result.text
 
             (model_name, embedding) = self.embeddingModel.create_embedding(response_text or "")
 
@@ -191,10 +195,13 @@ class Assistant:
         # confirm the action by sending the user input to the model without any context
 
         try:
-            _, response_actions = self.llmModel.generate(
+            response_actions = []
+            for result in self.llmModel.generate(
                 messages=[prompt[0]] + [{"role": "user", "content": user_input}],
                 tools=tools
-            )
+            ):
+                if isinstance(result, ChatCompletionMessageToolCall):
+                    response_actions.append(result)
 
             if response_actions:
                 self.action_manager.confirm_action_in_cache(user_input, response_actions[0], tools)
@@ -267,26 +274,45 @@ class Assistant:
                 
             if predicted_actions:
                 #log('info', 'predicted_actions', predicted_actions)
-                response_text = None
+                response_characters = []
                 response_actions = predicted_actions
             else:
                 start_time = time()
                     
                 try:
-                    response_text, response_actions = self.llmModel.generate(
+                    # Consume generator and collect complete responses
+                    response_actions = []
+                    response_characters = []
+                    
+                    for result in self.llmModel.generate(
                         messages=prompt,
                         tools=tool_list,  # pyright: ignore[reportArgumentType]
-                    )
+                        characters=[self.config['characters'][i].get('name','default') for i in self.config['active_characters']],
+                    ):
+                        if isinstance(result, CharacterMessage):
+                            character = {}
+                            for character in self.config['characters']:
+                                if character.get('name', 'default').lower() == result.character.lower():
+                                    character = character
+                                    break
+                            voice = character.get('tts_voice', None)
+                            self.tts.say(text=result.text, voice=voice)
+                            response_characters.append(result.character)
+                            self.event_manager.add_conversation_event('assistant', content=result.text, character=result.character, reasons=reasons, processed_at=max_conversation_processed)
+                            self.tts.wait_for_completion()
+
+                        elif isinstance(result, ChatCompletionMessageToolCall):
+                            response_actions.append(result)
+                    
+                    
                     end_time = time()
                     log('debug', 'Response time LLM', end_time - start_time)
                 except LLMError as e:
                     show_chat_message('error', 'LLM Error:', str(e))
                     return
 
-            if response_text and not response_actions:
-                self.tts.say(response_text)
-                self.event_manager.add_conversation_event('assistant', response_text, reasons=reasons, processed_at=max_conversation_processed)
-                self.tts.wait_for_completion()
+            if response_characters and not response_actions:
+                
                 self.event_manager.add_assistant_complete_event()
 
             if response_actions:

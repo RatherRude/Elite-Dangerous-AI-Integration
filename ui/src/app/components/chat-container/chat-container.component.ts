@@ -12,7 +12,6 @@ import { Config, ConfigService } from "../../services/config.service.js";
   imports: [CommonModule, MatCardModule],
   templateUrl: "./chat-container.component.html",
   styleUrl: "./chat-container.component.css",
-  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ChatContainerComponent implements AfterViewChecked, OnChanges, OnDestroy {
   @Input() limit?: number;
@@ -31,7 +30,6 @@ export class ChatContainerComponent implements AfterViewChecked, OnChanges, OnDe
     private chatService: ChatService, 
     private characterService: CharacterService,
     private configService: ConfigService,
-    private cd: ChangeDetectorRef,
     element: ElementRef<HTMLElement>
   ) {
     this.element = element;
@@ -44,7 +42,6 @@ export class ChatContainerComponent implements AfterViewChecked, OnChanges, OnDe
       if (this.chat.length > previousLength) {
         this.shouldScroll = true;
       }
-      this.cd.markForCheck();
     });
     
     // Subscribe to character changes
@@ -52,10 +49,6 @@ export class ChatContainerComponent implements AfterViewChecked, OnChanges, OnDe
       this.currentCharacter = character;
     });
 
-    this.configSubscription = this.configService.config$.subscribe((config) => {
-      this.characterColorMap = this.buildCharacterColorMap(config as ConfigWithCharacters | null);
-      this.cd.markForCheck();
-    });
   }
 
   ngOnDestroy(): void {
@@ -155,71 +148,5 @@ export class ChatContainerComponent implements AfterViewChecked, OnChanges, OnDe
       return 'event-enabled';
     }
     return '';
-  }
-
-  public formatMessageSegments(message: string): { text: string; color: string }[] {
-    const defaultColor = "#ffffff";
-    const segments: { text: string; color: string }[] = [];
-    let currentColor = defaultColor;
-    const regex = /\(([^)]+)\)/g;
-    let lastIndex = 0;
-    let match: RegExpExecArray | null;
-
-    while ((match = regex.exec(message)) !== null) {
-      this.appendSegments(segments, message.slice(lastIndex, match.index), currentColor);
-
-      const label = match[1]?.trim().toLowerCase() ?? "";
-      currentColor = label && this.characterColorMap[label] ? this.characterColorMap[label] : defaultColor;
-      lastIndex = regex.lastIndex;
-    }
-
-    this.appendSegments(segments, message.slice(lastIndex), currentColor);
-
-    if (segments.length === 0) {
-      segments.push({ text: "", color: defaultColor });
-    }
-
-    return segments;
-  }
-
-  private appendSegments(
-    segments: { text: string; color: string }[],
-    rawText: string,
-    color: string,
-  ): void {
-    if (!rawText) return;
-
-    for (const part of rawText.split(/\r?\n/)) {
-      const trimmed = part.trim();
-      if (!trimmed) continue;
-      segments.push({ text: trimmed, color });
-    }
-  }
-
-  private buildCharacterColorMap(config: ConfigWithCharacters | null): Record<string, string> {
-    const map: Record<string, string> = {};
-    if (!config || !Array.isArray(config.characters)) {
-      return map;
-    }
-
-    const activeIndexes = Array.isArray(config.active_characters) && config.active_characters.length > 0
-      ? config.active_characters
-      : (typeof config.active_character_index === "number" ? [config.active_character_index] : []);
-
-    for (const idx of activeIndexes) {
-      if (idx === undefined || idx === null) continue;
-      const character = config.characters[idx];
-      if (!character || !character.name) continue;
-      const color = character.color ? this.normalizeColor(character.color) : "#ffffff";
-      map[character.name.toLowerCase()] = color;
-    }
-
-    return map;
-  }
-
-  private normalizeColor(value: string): string {
-    const trimmed = value?.trim() ?? "";
-    if (!trimmed) return "#ffffff";
-    return trimmed.startsWith("#") ? trimmed : `#${trimmed}`;
   }
 }

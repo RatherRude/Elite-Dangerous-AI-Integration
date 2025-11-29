@@ -1,16 +1,13 @@
-import { Component, OnDestroy, ElementRef, ViewChild, AfterViewInit } from "@angular/core";
+import { Component, OnDestroy, OnInit, ElementRef, ViewChild, AfterViewInit } from "@angular/core";
 import { ActivatedRoute } from "@angular/router";
 import { TauriService } from "../services/tauri.service";
 import { Subscription } from "rxjs";
 import { CommonModule } from "@angular/common";
 import {PngTuberService} from "../services/pngtuber.service";
-import {ChatMessage} from "../services/chat.service";
+import {ChatMessage, ChatService} from "../services/chat.service";
 import {AvatarService} from "../services/avatar.service";
-import {Character, CharacterService} from "../services/character.service";
+import {CharacterService} from "../services/character.service";
 import {Config, ConfigService} from "../services/config.service";
-
-type ChatSegment = { text: string; color: string };
-type OverlayChatEntry = ChatMessage & { segments: ChatSegment[] };
 
 @Component({
   selector: "app-overlay-view",
@@ -24,22 +21,9 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
   
   action = 'idle'
   runMode = 'configuring'
-  chat: OverlayChatEntry[] = []
-  characterColorMap: Record<string, string> = {};
-  activeCharacters: {
-    name: string;
-    normalizedName: string;
-    color: string;
-    voice?: string;
-    avatarId?: string;
-    avatarUrl?: string | null;
-  }[] = [];
-  private avatarUrlCache: Record<string, string> = {};
-
+  chat: ChatMessage[] = []
   
   private currentAvatarUrl: string | null = null;
-  private primaryAvatarUrl: string | null = null;
-  speakingCharacterName: string | null = null;
   private subscriptions: Subscription[] = [];
 
   // Overlay display settings
@@ -51,9 +35,10 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
   constructor(
     private tauriService: TauriService,
     private pngTuberService: PngTuberService,
+    private chatService: ChatService,
     private avatarService: AvatarService,
     private characterService: CharacterService,
-    private configService: ConfigService,
+    private configService: ConfigService
   ) {
     // Subscribe to run mode changes
     this.subscriptions.push(
@@ -72,38 +57,15 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
     // Subscribe to chat changes
     this.subscriptions.push(
       pngTuberService.chatPreview$.subscribe(preview=>{
-        this.chat = preview.map(msg => ({
-          ...msg,
-          segments: this.formatMessageSegments(msg.message),
-        }));
+        this.chat = preview;
       })
     );
     
     // Subscribe to avatar URL changes from character service
     this.subscriptions.push(
       characterService.avatarUrl$.subscribe(avatarUrl => {
-        this.primaryAvatarUrl = avatarUrl;
-        if (!this.speakingCharacterName) {
-          this.setCurrentAvatarUrl(avatarUrl);
-        }
-      })
-    );
-
-    // Track which character is currently speaking
-    this.subscriptions.push(
-      pngTuberService.speakingCharacter$.subscribe(activeSpeaker => {
-        if (!activeSpeaker || !activeSpeaker.name) {
-          this.speakingCharacterName = null;
-          this.setCurrentAvatarUrl(this.primaryAvatarUrl);
-          return;
-        }
-        this.speakingCharacterName = activeSpeaker.name;
-        const avatarUrl = this.getAvatarUrlForName(activeSpeaker.name);
-        if (avatarUrl) {
-          this.setCurrentAvatarUrl(avatarUrl);
-        } else {
-          this.setCurrentAvatarUrl(this.primaryAvatarUrl);
-        }
+        this.currentAvatarUrl = avatarUrl;
+        this.applyAvatarBackground();
       })
     );
 
@@ -114,9 +76,6 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
           this.avatarPosition = config.overlay_position || 'right';
           this.updateAvatarShowStatus(config);
           this.updateChatShowStatus(config);
-          this.characterColorMap = this.buildCharacterColorMap(config);
-          this.updateActiveCharacterInfo(config);
-          this.reformatChatMessages();
           this.applyAvatarBackground(); // Update avatar when position changes
           this.isInitialized = true;
         } else if (!this.isInitialized) {
@@ -124,9 +83,17 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
           this.avatarPosition = 'right';
           this.avatarShow = true;
           this.chatShow = true;
-          this.activeCharacters = [];
-          this.characterColorMap = {};
           this.applyAvatarBackground(); // Update avatar when resetting to defaults
+        }
+      })
+    );
+
+    // Subscribe to config changes to update overlay visibility settings
+    this.subscriptions.push(
+      configService.config$.subscribe(config => {
+        if (config) {
+          this.updateAvatarShowStatus(config);
+          this.updateChatShowStatus(config);
         }
       })
     );
@@ -223,175 +190,5 @@ export class OverlayViewComponent implements OnDestroy, AfterViewInit {
       default:
         return "inherit";
     }
-  }
-
-  private formatMessageSegments(message: string): ChatSegment[] {
-    const defaultColor = "#ffffff";
-    const segments: ChatSegment[] = [];
-    let currentColor = defaultColor;
-    const regex = /\(([^)]+)\)/g;
-    let lastIndex = 0;
-    let match: RegExpExecArray | null;
-
-    while ((match = regex.exec(message)) !== null) {
-      this.appendSegments(segments, message.slice(lastIndex, match.index), currentColor);
-
-      const label = this.normalizeName(match[1]);
-      currentColor = label && this.characterColorMap[label] ? this.characterColorMap[label] : defaultColor;
-      lastIndex = regex.lastIndex;
-    }
-
-    this.appendSegments(segments, message.slice(lastIndex), currentColor);
-
-    if (segments.length === 0) {
-      segments.push({ text: "", color: defaultColor });
-    }
-
-    return segments;
-  }
-
-  private appendSegments(segments: ChatSegment[], rawText: string, color: string): void {
-    if (!rawText) return;
-
-    for (const part of rawText.split(/\r?\n/)) {
-      const trimmed = part.trim();
-      if (!trimmed) continue;
-      segments.push({ text: trimmed, color });
-    }
-  }
-
-  private buildCharacterColorMap(config: Config | null): Record<string, string> {
-    const map: Record<string, string> = {};
-    if (!config || !Array.isArray(config.characters)) {
-      return map;
-    }
-
-    const activeIndexes = Array.isArray(config.active_characters) && config.active_characters.length > 0
-      ? config.active_characters
-      : (typeof config.active_character_index === "number" ? [config.active_character_index] : []);
-
-    for (const idx of activeIndexes) {
-      if (typeof idx !== "number") continue;
-      const character = config.characters[idx] as Character | undefined;
-      if (!character) continue;
-      const normalizedName = this.normalizeName(character.name ?? `Character ${idx + 1}`);
-      if (!normalizedName) continue;
-      map[normalizedName] = this.normalizeColor(character.color);
-    }
-
-    return map;
-  }
-
-  private normalizeColor(value?: string): string {
-    const trimmed = value?.trim();
-    if (!trimmed) return "#ffffff";
-    return trimmed.startsWith("#") ? trimmed : `#${trimmed}`;
-  }
-
-  private updateActiveCharacterInfo(config: Config | null): void {
-    if (!config || !Array.isArray(config.characters)) {
-      this.activeCharacters = [];
-      return;
-    }
-
-    const activeIndexes = Array.isArray(config.active_characters) && config.active_characters.length > 0
-      ? config.active_characters
-      : (typeof config.active_character_index === "number" ? [config.active_character_index] : []);
-
-    const infoList: typeof this.activeCharacters = [];
-    for (const idx of activeIndexes) {
-      if (typeof idx !== "number" || idx < 0 || idx >= config.characters.length) continue;
-      const character = config.characters[idx] as Character | undefined;
-      if (!character) continue;
-      const avatarId = character.avatar ?? undefined;
-      const displayName = character.name ?? `Character ${idx + 1}`;
-      const info = {
-        name: displayName,
-        normalizedName: this.normalizeName(displayName),
-        color: this.normalizeColor(character.color),
-        voice: character.tts_voice,
-        avatarId,
-        avatarUrl: avatarId ? this.avatarUrlCache[avatarId] ?? null : null,
-      };
-
-      if (avatarId && !info.avatarUrl) {
-        this.avatarService.getAvatar(avatarId).then(url => {
-          if (url) {
-            this.avatarUrlCache[avatarId] = url;
-            info.avatarUrl = url;
-            if (this.isCharacterSpeaking(info.name)) {
-              this.setCurrentAvatarUrl(url);
-            }
-          }
-        });
-      }
-
-      infoList.push(info);
-    }
-
-    this.activeCharacters = infoList;
-    if (this.speakingCharacterName) {
-      const avatar = this.getAvatarUrlForName(this.speakingCharacterName);
-      if (avatar) {
-        this.setCurrentAvatarUrl(avatar);
-      } else {
-        this.setCurrentAvatarUrl(this.primaryAvatarUrl);
-      }
-    }
-  }
-
-  private reformatChatMessages(): void {
-    this.chat = this.chat.map(msg => ({
-      ...msg,
-      segments: this.formatMessageSegments(msg.message),
-    }));
-  }
-
-  private normalizeName(value?: string | null): string {
-    return (value ?? "").trim().toLowerCase();
-  }
-
-  public isCharacterSpeaking(name?: string): boolean {
-    if (!name || !this.speakingCharacterName) {
-      return false;
-    }
-    return this.normalizeName(name) === this.normalizeName(this.speakingCharacterName);
-  }
-
-  public getColorForName(name: string): string {
-    const normalized = this.normalizeName(name);
-    return this.characterColorMap[normalized] ?? "#ffffff";
-  }
-
-  private getAvatarUrlForName(name: string): string | null {
-    const normalized = this.normalizeName(name);
-    if (!normalized) return null;
-    const match = this.activeCharacters.find(char => char.normalizedName === normalized);
-    if (!match) return null;
-    if (match.avatarUrl) {
-      return match.avatarUrl;
-    }
-    if (match.avatarId && this.avatarUrlCache[match.avatarId]) {
-      match.avatarUrl = this.avatarUrlCache[match.avatarId];
-      return match.avatarUrl;
-    }
-    if (match.avatarId) {
-      const avatarKey = match.avatarId;
-      this.avatarService.getAvatar(avatarKey).then(url => {
-        if (url) {
-          this.avatarUrlCache[avatarKey] = url;
-          match.avatarUrl = url;
-          if (this.isCharacterSpeaking(match.name)) {
-            this.setCurrentAvatarUrl(url);
-          }
-        }
-      });
-    }
-    return null;
-  }
-
-  private setCurrentAvatarUrl(url: string | null): void {
-    this.currentAvatarUrl = url;
-    this.applyAvatarBackground();
   }
 }

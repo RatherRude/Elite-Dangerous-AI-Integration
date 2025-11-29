@@ -166,9 +166,7 @@ class Chat:
         self.tts = TTS(tts_model=self.ttsModel,
                        voice=self.character["tts_voice"],
                        speed=float(self.character["tts_speed"]),
-                       output_device=self.config["output_device_name"],
-                       character_voices=self._build_voice_overrides(),
-                       primary_character_name=self.character.get("name", "Primary Character"),)
+                       output_device=self.config["output_device_name"])
         self.stt = STT(stt_model=self.sttModel,
                        input_device_name=self.config["input_device_name"],
                        required_word=self.config["stt_required_word"])
@@ -237,7 +235,7 @@ class Chat:
         })
         if event.kind=='assistant':
             event = cast(ConversationEvent, event)
-            show_chat_message('covas', event.content)
+            show_chat_message(event.character or 'covas', event.content)
         if event.kind=='user':
             event = cast(ConversationEvent, event)
             show_chat_message('cmdr', event.content)

@@ -7,24 +7,13 @@
              [ngClass]="action"
              *ngIf="avatarShow"
              #pngtuberElement></div>
-<!--        <div class="current-speaker" *ngIf="speakingCharacterName">-->
-<!--            <span class="speaker-label">Speaking:</span>-->
-<!--            <span class="speaker-name" [style.color]="getColorForName(speakingCharacterName)">-->
-<!--                {{ speakingCharacterName }}-->
-<!--            </span>-->
-<!--        </div>-->
         <div class="overlay-chat" *ngIf="chatShow">
 <!--            <p class="ready-text" *ngIf="runMode=='starting'">System preparing...</p>-->
             @for (msg of chat; track msg.index) {
               <div class="chat-entry">
                 <span class="timestamp">{{ msg.timestamp | date:'HH:mm:ss' }}</span>
                 <span class="prefix" [style.color]="getLogColor(msg.role)">{{ msg.role }}</span>
-                <span class="message">
-                    <ng-container *ngFor="let segment of msg.segments; let last = last">
-                        <span class="message-segment" [style.color]="segment.color">{{ segment.text }}</span>
-                        <br *ngIf="!last">
-                    </ng-container>
-                </span>
+                <span class="message">{{ msg.message }}</span>
               </div>
             }
 

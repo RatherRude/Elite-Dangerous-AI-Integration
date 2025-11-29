@@ -3405,10 +3405,9 @@ class PromptGenerator:
                 role_guidance = (
                     "You are playing multiple roles, each with a distinct personality and communication style.\n\n"
                     "Role Responses:\n"
-                    "Begin each response with (Role-Identifier). Maintain the character's personality, tone and behavior consistent with the assigned role. "
+                    'Use the following format for your reply: {"messages": [{"character": "character_name", "text": "response_text"}]}'
+                    "Maintain the character's personality, tone and behavior consistent with the assigned role. "
                     "Do not end sentences with questions unless specifically instructed.\n"
-                    "Multi-Character Responses:\n"
-                    "When multiple roles respond, use the format: (Role-1)Response(Role-2)Response(Role-1)Response\n"
                     "Interactions:\n"
                     "Follow any defined behavior, avoid using multiple roles at once if possible. The primary character issues commands and receives input. "
                     "All responses are directed to the primary character unless stated otherwise. Only the primary character responds to user queries.\n"

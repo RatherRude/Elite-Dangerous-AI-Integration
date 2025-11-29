@@ -85,26 +85,6 @@
 
 }
 
-.current-speaker {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  padding: 8px 24px;
-  font-size: 1.1rem;
-  text-shadow: 0 0 8px rgba(0, 0, 0, 0.55);
-}
-
-.speaker-label {
-  color: #ccc;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  font-size: 0.85rem;
-}
-
-.speaker-name {
-  font-weight: 600;
-}
-
 
 .overlay-chat {
     grid-area: content;
@@ -123,11 +103,6 @@
   .chat-entry .prefix {
     text-transform: uppercase;
     margin-right: 6px;
-  }
-
-  .message-segment {
-    display: inline-block;
-    white-space: pre-wrap;
   }
 }
 
