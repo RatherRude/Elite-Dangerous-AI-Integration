@@ -45,11 +45,17 @@
                         Available Game Actions
                     </mat-panel-title>
                 </mat-expansion-panel-header>
-                <mat-slide-toggle [ngModel]="config.prefer_primary_bindings"
-                                  (ngModelChange)="onConfigChange({prefer_primary_bindings: $event})">
-                    Prefer Primary Keybinds
-                </mat-slide-toggle>
-                <p>When enabled, the AI uses primary keybinds before falling back to secondary bindings.</p>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px;">
+                    <p style="margin: 0; flex: 1;">Select which keybinding set (Primary or Secondary) the AI should use by default.</p>
+                    <mat-form-field appearance="fill" style="width: 200px; flex-shrink: 0;">
+                        <mat-label>Preferred Bindings</mat-label>
+                        <mat-select [ngModel]="config.prefer_primary_bindings ? 'primary' : 'secondary'"
+                                    (ngModelChange)="onConfigChange({prefer_primary_bindings: $event === 'primary'})">
+                            <mat-option value="primary">Primary</mat-option>
+                            <mat-option value="secondary">Secondary</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+                </div>
                 <div class="permission-list">
                         <ng-container *ngFor="let group of gamePermissionsGrouped">
                             <div class="permission-item" *ngFor="let perm of group.actions; let i = index">
