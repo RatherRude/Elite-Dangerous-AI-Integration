@@ -10,6 +10,7 @@ import traceback
 from time import sleep, time
 import edge_tts
 import miniaudio
+from openai.types.audio.speech_create_params import SpeechCreateParams
 from openai import OpenAI, APIStatusError
 from openai.types.chat import ChatCompletion, ChatCompletionMessageToolCall
 from openai.types import CreateEmbeddingResponse
@@ -353,7 +354,7 @@ class TTSModel(ABC):
         pass
 
 class OpenAITTSModel(TTSModel):
-    def __init__(self, base_url: str, api_key: str, model_name: str, speed: float = 1.0, voice_instructions: str = ""):
+    def __init__(self, base_url: str, api_key: str, model_name: str, speed: float = 1.0, voice_instructions: str | None = None):
         super().__init__(model_name)
         self.client = OpenAI(base_url=base_url, api_key=api_key)
         self.speed = speed
@@ -361,39 +362,15 @@ class OpenAITTSModel(TTSModel):
 
     def synthesize(self, text: str, voice: str) -> Iterable[bytes]:
         try:
-            # Note: OpenAI python lib doesn't support 'instructions' for TTS yet, but the user's code had it.
-            # I will omit it if it's not supported, or check if it was a custom thing.
-            # The user's code had: instructions = self.voice_instructions
-            # But standard OpenAI TTS doesn't have instructions. Maybe it's for a custom backend?
-            # I'll include it if I can, but standard OpenAI client might complain.
-            # Let's check the user's code again.
-            # It was: instructions = self.voice_instructions
-            # I'll assume it's valid for their custom backend or they are using a modified client/backend.
-            # However, standard OpenAI client will raise TypeError if unexpected arg.
-            # I'll use extra_body if needed, but for now I'll try to pass it if it's not empty?
-            # Or just stick to standard args. The user's code had it.
-            
-            kwargs = {
+            kwargs: SpeechCreateParams = {
                 "model": self.model_name,
                 "voice": voice, # pyright: ignore[reportArgumentType]
                 "input": text,
                 "response_format": "pcm",
                 "speed": self.speed
             }
-            # if self.voice_instructions:
-            #    kwargs["instructions"] = self.voice_instructions 
-            # Wait, standard OpenAI TTS definitely doesn't have instructions.
-            # The user's code had:
-            # with self.openai_client.audio.speech.with_streaming_response.create(..., instructions = self.voice_instructions, ...)
-            # This suggests they might be using a custom backend that supports it, or they modified the library?
-            # Or maybe I should just leave it out for now to be safe, or add it to extra_body?
-            # The OpenAI library allows extra_body.
-            
-            # Let's try to pass it as a keyword argument and see if it works, or use extra_body.
-            # Actually, let's look at how I handled extra_body in LLMModel.
-            
-            # For now, I will NOT include instructions to avoid breaking standard OpenAI.
-            # If they need it, they can add it back.
+            if self.voice_instructions:
+                kwargs["instructions"] = self.voice_instructions
             
             with self.client.audio.speech.with_streaming_response.create(**kwargs) as response:
                 for chunk in response.iter_bytes(1024):
@@ -516,7 +493,7 @@ def create_tts_model(provider: str, config: dict, prefix: str = "tts") -> TTSMod
     api_key = str(config.get("api_key") if config.get(f"{prefix}_api_key", "") == "" else config.get(f"{prefix}_api_key"))
     model_name = str(config.get(f"{prefix}_model_name", "tts-1"))
     speed = float(config.get(f"{prefix}_speed", 1.0))
-    voice_instructions = config.get(f"{prefix}_voice_instructions", "")
+    voice_instructions = config.get(f"{prefix}_voice_instructions", "") or None
 
     if provider == "openai" or provider == "custom" or provider == "local-ai-server":
         if provider == "openai" and not base_url:
