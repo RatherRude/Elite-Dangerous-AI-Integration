@@ -254,7 +254,6 @@ class TTS:
             "character": {
                 "name": name,
                 "voice": voice,
-                "provider": self.provider,
             },
         })
 

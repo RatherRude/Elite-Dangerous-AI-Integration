@@ -208,7 +208,7 @@ class Chat:
             llmModel=self.llmModel,
             tts=self.tts,
             prompt_generator=self.prompt_generator,
-            embeddingClient=self.embeddingClient,
+            embeddingModel=self.embeddingModel,
             disabled_game_events=self.disabled_game_events
         )
         self.is_replying = False

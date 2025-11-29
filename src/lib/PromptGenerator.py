@@ -3401,7 +3401,6 @@ class PromptGenerator:
                 })
 
         try:
-            active_characters = 
             if len(self.config.get("active_characters")) > 1:
                 role_guidance = (
                     "You are playing multiple roles, each with a distinct personality and communication style.\n\n"
