@@ -103,6 +103,7 @@ export class GeneralSettingsComponent implements OnDestroy {
             this.apiKeyType = "Google AI Studio";
             providerChanges = {
                 llm_provider: "google-ai-studio",
+                agent_llm_provider: "google-ai-studio",
                 stt_provider: "google-ai-studio",
                 vision_provider: "google-ai-studio",
                 tts_provider: "edge-tts",
@@ -114,6 +115,7 @@ export class GeneralSettingsComponent implements OnDestroy {
             this.apiKeyType = "OpenRouter";
             providerChanges = {
                 llm_provider: "openrouter",
+                agent_llm_provider: "openrouter",
                 stt_provider: "none",
                 vision_provider: "none",
                 tts_provider: "edge-tts",
@@ -125,6 +127,7 @@ export class GeneralSettingsComponent implements OnDestroy {
             this.apiKeyType = "OpenAI";
             providerChanges = {
                 llm_provider: "openai",
+                agent_llm_provider: "openai",
                 stt_provider: "openai",
                 vision_provider: "openai",
                 tts_provider: "edge-tts",

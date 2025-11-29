@@ -474,11 +474,12 @@ def get_ed_appdata_path(config: Config) -> str:
         return path
 
     from os import environ
-    return environ['LOCALAPPDATA'] + "\\Frontier Developments\\Elite Dangerous"
+    return environ.get('LOCALAPPDATA', '') + "\\Frontier Developments\\Elite Dangerous"
 
-def get_color_matrix():
-    from os import environ
-    return environ['LOCALAPPDATA'] + "\\Frontier Developments\\Elite Dangerous\\Options\\Graphics"
+def get_color_matrix(config: Config):
+    appdata = get_ed_appdata_path(config)
+    return os.path.join(appdata, "Options/Graphics")
+
 def get_asset_path(filename: str) -> str:
     assets_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../assets'))
     if hasattr(sys, 'frozen'):
