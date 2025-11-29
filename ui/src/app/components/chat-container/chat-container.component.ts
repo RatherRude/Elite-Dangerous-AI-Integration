@@ -1,10 +1,9 @@
-import { AfterViewChecked, ChangeDetectionStrategy, ChangeDetectorRef, Component, ElementRef, Input, OnChanges, SimpleChanges, OnDestroy } from "@angular/core";
+import { AfterViewChecked, Component, ElementRef, Input, OnChanges, SimpleChanges, OnDestroy } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatCardModule } from "@angular/material/card";
 import { ChatMessage, ChatService } from "../../services/chat.service.js";
-import { Character, CharacterService, ConfigWithCharacters } from "../../services/character.service.js";
+import { Character, CharacterService } from "../../services/character.service.js";
 import { Subscription } from "rxjs";
-import { Config, ConfigService } from "../../services/config.service.js";
 
 @Component({
   selector: "app-chat-container",
@@ -21,15 +20,12 @@ export class ChatContainerComponent implements AfterViewChecked, OnChanges, OnDe
   private shouldScroll: boolean = false;
   private currentCharacter: Character | null = null;
   private characterSubscription?: Subscription;
-  private configSubscription?: Subscription;
-  private characterColorMap: Record<string, string> = {};
 
   private element!: ElementRef<HTMLElement>;
 
   constructor(
     private chatService: ChatService, 
     private characterService: CharacterService,
-    private configService: ConfigService,
     element: ElementRef<HTMLElement>
   ) {
     this.element = element;
@@ -53,7 +49,6 @@ export class ChatContainerComponent implements AfterViewChecked, OnChanges, OnDe
 
   ngOnDestroy(): void {
     this.characterSubscription?.unsubscribe();
-    this.configSubscription?.unsubscribe();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
