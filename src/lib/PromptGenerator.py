@@ -3396,6 +3396,28 @@ class PromptGenerator:
                 })
 
         try:
+            active_characters = 
+            if len(self.config.get("active_characters")) > 1:
+                role_guidance = (
+                    "You are playing multiple roles, each with a distinct personality and communication style.\n\n"
+                    "Role Responses:\n"
+                    "Begin each response with (Role-Identifier). Maintain the character's personality, tone and behavior consistent with the assigned role. "
+                    "Do not end sentences with questions unless specifically instructed.\n"
+                    "Multi-Character Responses:\n"
+                    "When multiple roles respond, use the format: (Role-1)Response(Role-2)Response(Role-1)Response\n"
+                    "Interactions:\n"
+                    "Follow any defined behavior, avoid using multiple roles at once if possible. The primary character issues commands and receives input. "
+                    "All responses are directed to the primary character unless stated otherwise. Only the primary character responds to user queries.\n"
+                    "Non-primary characters must not talk unless spoken to or if an event was marked as important to them, and only characters designated as important to that event may respond.\n"
+                    "Character List:\n"
+                    + self._format_active_character_list()
+                )
+            else:
+                role_guidance = (
+                    "Your character prompt is: "
+                    + self.character_prompt.format(commander_name=self.commander_name)
+                )
+
             conversational_pieces.append(
                 {
                     "role": "system",
@@ -3407,23 +3429,7 @@ class PromptGenerator:
                     + "Be specific about amounts and percentages for inquiries as the commander can not see the game events' text description but lives in the universe. "
                     + "You do not ask questions or initiate conversations. You respond only when addressed and in a single sentence. "
                     + "Don't repeat the same words and sentences, mix it up. "
-
-                    + "You are playing multiple roles, each with a distinct personality and communication style.\n"
-                    + "\n"
-                    + "Role Responses:\n"
-                    + "Begin each response with (Role-Identifier). "
-                    + "Maintain the character's personality, tone and behavior consistent with the assigned role. "
-                    + "Do not end sentences with questions unless specifically instructed.\n"
-                    + "Multi-Character Responses:\n"
-                    + "When multiple roles respond, use the format: "
-                    + "(Role-1)Response(Role-2)Response(Role-1)Response\n"
-                    + "Interactions:\n"
-                    + "Follow any defined behavior, avoid using multiple roles at once if possible.\n"
-                    + "The primary character issues commands and receives input. All responses are directed to the primary character unless stated otherwise."
-                    + "Only the primary character responds user queries.\n"
-                    + "Non-primary characters must not talk unless spoken to or if an event was marked as important to them. Only characters that are designated as important to that event may respond to it.\n"
-                    + "Character List:\n"
-                    + self._format_active_character_list(),
+                    + role_guidance,
                 }
             )
         except Exception as e:
