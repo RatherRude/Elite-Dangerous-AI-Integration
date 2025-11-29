@@ -1740,9 +1740,12 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "properties": {}
     }, fire_chaff_launcher, 'ship', permission='fireChaffLauncher', cache_prefill={
         "chaff": {},
+        "chef": {},
         "fire chaff": {},
         "launch chaff": {},
         "deploy chaff": {},
+        "chaff launcher": {},
+        "chef launcher": {},
         "countermeasures": {},
         "evade": {},
     })
@@ -1951,6 +1954,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "docking request": {},
         "permission to dock": {},
         "requesting docking": {},
+        "requesting talking": {},
         "docking permission": {},
     })
 

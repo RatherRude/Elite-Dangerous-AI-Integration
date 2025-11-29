@@ -44,6 +44,7 @@ export class ChatContainerComponent implements AfterViewChecked, OnChanges, OnDe
     this.characterSubscription = this.characterService.character$.subscribe((character) => {
       this.currentCharacter = character;
     });
+
   }
 
   ngOnDestroy(): void {

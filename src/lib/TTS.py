@@ -19,10 +19,10 @@ class TTS:
         self.tts_model = tts_model
         self.voice = voice
         self.speed = speed
-        
+
         self.p = pyaudio.PyAudio()
         self.output_device = output_device
-        self.read_queue = queue.Queue()
+        self.read_queue: queue.Queue[tuple[str, str]] = queue.Queue()
         self.is_aborted = False
         self._is_playing = False
         self.prebuffer_size = 4
@@ -69,21 +69,20 @@ class TTS:
             while not self.is_aborted:
                 if not self.read_queue.empty():
                     self._is_playing = True
-                    text = self.read_queue.get()
+                    voice, text = self.read_queue.get()
                     try:
-                        self._playback_one(text, stream)
+                        self._playback_one(voice, text, stream)
                     except Exception as e:
-                        self.read_queue.put(text)
+                        self.read_queue.put((voice, text))
                         raise e
 
                 self._is_playing = False
-
                 sleep(0.1)
             self._is_playing = False
             stream.stop_stream()
 
     @observe()
-    def _playback_one(self, text: str, stream: pyaudio.Stream):
+    def _playback_one(self, voice: str, text: str, stream: pyaudio.Stream):
         # Fix numberformatting for different providers
         text = re.sub(r"\d+(,\d{3})*(\.\d+)?", self._number_to_text, text)
         text = strip_markdown.strip_markdown(text)
@@ -93,7 +92,7 @@ class TTS:
         first_chunk = True
         underflow_count = 0
         empty_buffer_available = stream.get_write_available()
-        for chunk in self._stream_audio(text):
+        for chunk in self._stream_audio(voice=voice, text=text):
             if not end_time:
                 end_time = time()
                 log('debug', f'Response time TTS', end_time - start_time)
@@ -120,7 +119,7 @@ class TTS:
         
 
     @observe()
-    def _stream_audio(self, text):
+    def _stream_audio(self, voice: str, text: str):
         if self.tts_model is None:
             word_count = len(text.split())
             words_per_minute = 150 * float(self.speed)
@@ -130,7 +129,7 @@ class TTS:
                 yield b"\x00" * 1024
         else:
             try:
-                for chunk in self.tts_model.synthesize(text, self.voice):
+                for chunk in self.tts_model.synthesize(text=text, voice=voice):
                     yield chunk
             except Exception as e:
                 log('error', 'TTS synthesis error', e, traceback.format_exc())
@@ -146,8 +145,10 @@ class TTS:
         else:
             return match.group()
 
-    def say(self, text: str):
-        self.read_queue.put(text)
+    def say(self, text: str, voice: str | None = None):
+        if voice is None:
+            voice = self.voice
+        self.read_queue.put((voice, text))
 
     def abort(self):
         while not self.read_queue.empty():

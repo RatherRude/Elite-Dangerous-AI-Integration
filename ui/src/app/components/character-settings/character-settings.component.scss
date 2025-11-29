@@ -45,7 +45,129 @@ mat-slide-toggle {
 .character-selector {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 0;
+}
+
+.crew-roster {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.crew-avatar {
+  width: 20%;
+  margin: 0 2.5%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.avatar-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.avatar-button {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+  display: block;
+
+  img {
+    width: 200%;
+    height: 200%;
+    object-fit: cover;
+    object-position: left top;
+  }
+
+  &.add-button img {
+    opacity: 0.4;
+  }
+
+  &.add-button mat-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+}
+.avatar-star {
+  position: absolute;
+  bottom: 6px;
+  left: 6px;
+  font-size: 28px;
+  color: var(--primary-color, #ffcc33);
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
+  z-index: 2;
+}
+
+.avatar-hover-actions {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+
+  .avatar-action {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 28px;
+    height: 28px;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    border-radius: 50%;
+    pointer-events: auto;
+
+    mat-icon {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+  }
+}
+
+.crew-avatar:hover .avatar-hover-actions {
+  opacity: 1;
+}
+
+.crew-avatar.no-edit .avatar-hover-actions .avatar-action.edit {
+  display: none;
+  pointer-events: none;
+}
+
+.avatar-name {
+  font-size: 0.85rem;
+  max-width: 100%;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.crew-select-field {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+:host ::ng-deep .crew-select-panel {
+  min-width: 350px !important;
+  overflow: visible;
+  z-index: 1000;
 }
 
 .character-buttons {
@@ -210,25 +332,28 @@ ul {
     font-size: 18px;
     font-weight: 500;
   }
+  margin-top: 16px;
+  height: 220px;
+  //height: 350px;
 }
 .character-content {
     white-space: pre-wrap;
     //font-size: 14px;
     //line-height: 1.5;
-    max-height: 330px;
+    max-height: 220px;
     overflow-y: auto;
-    padding: 0 2px;
-    margin: 0 0 8px;
+    padding: 0;
+    margin: 0;
   }
 
 .character-display.with-traits {
   display: flex;
 
   .character-traits{
-    width: 25%;
+    width: 230px;
   }
   .character-content{
-    width: 75%;
+    width: calc(100% - 230px);
   }
 }
 
@@ -316,6 +441,8 @@ ul {
     border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.1);
     width: fit-content;
+    gap: 24px;
+    flex-wrap: wrap;
   }
   
   .avatar-display-container {
@@ -335,10 +462,6 @@ ul {
         border-radius: 12px;
         border: 3px solid rgba(255, 255, 255, 0.2);
         transition: all 0.2s ease;
-        
-        &:hover {
-          border-color: rgba(255, 255, 255, 0.4);
-        }
       }
       
       .avatar-edit-button {
@@ -360,6 +483,36 @@ ul {
           height: 18px;
         }
       }
+    }
+  }
+  .color-picker-control {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .color-picker-label {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .color-picker-inputs {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    input[type="color"] {
+      width: 48px;
+      height: 48px;
+      border: none;
+      padding: 0;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .color-value {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.9rem;
     }
   }
 }

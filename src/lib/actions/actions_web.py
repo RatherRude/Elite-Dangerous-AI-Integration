@@ -33,7 +33,7 @@ def web_search_agent(
     """
     if not llm_model:
         return "LLM model not configured."
-    
+
     query = obj.get('query')
     if not query:
         return "Please provide a query for the web search."
@@ -243,7 +243,7 @@ def web_search_agent(
                     "role": "user",
                     "content": "Maximum number of iterations reached. Please provide the best possible answer based on the information gathered so far."
                 })
-                
+
             response_text, tool_calls = llm_model.generate(
                 messages=messages,
                 tools=tools if iter < max_loops - 1 else [],

@@ -1,4 +1,4 @@
-import { Component } from "@angular/core";
+import { ChangeDetectorRef, Component, ViewChildren, QueryList } from "@angular/core";
 import { CommonModule, KeyValue } from "@angular/common";
 import {
     MatFormField,
@@ -37,6 +37,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { CharacterService, ConfigWithCharacters, Character } from "../../services/character.service";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { CharacterPresets } from "./character-presets";
+import { AvatarService } from "../../services/avatar.service";
 
 interface PromptSettings {
     // Existing settings
@@ -97,12 +98,22 @@ export class CharacterSettingsComponent {
     editMode = false;
     initializing: boolean = true;
     private localCharacterCopy: Character | null = null;
+    activeRoster: number[] = [];
+    hoveredRosterSlot: number | null = null;
+    editingSlotIndex: number | null = null;
+    addingSlot = false;
+    private avatarCache: Record<string, string> = {};
+    private pendingAvatarLoads = new Set<string>();
+    private readonly fallbackAvatarUrl = 'assets/cn_avatar_default.png';
+    @ViewChildren('crewSelect') crewSelectRefs!: QueryList<MatSelect>;
+    @ViewChildren('addSelect') addSelectRefs!: QueryList<MatSelect>;
     expandedSection: string | null = null;
     filteredGameEvents: Record<string, Record<string, boolean>> = {};
     eventSearchQuery: string = "";
     isApplyingChange: boolean = false;
     public GameEventTooltips = GameEventTooltips;
     voiceInstructionSupportedModels: string[] = this.characterService.voiceInstructionSupportedModels;
+    private readonly maxActiveCharacters = 4;
 
     gameEventCategories = GameEventCategories;
 
@@ -548,11 +559,20 @@ export class CharacterSettingsComponent {
         private snackBar: MatSnackBar,
         private confirmationDialog: ConfirmationDialogService,
         private dialog: MatDialog,
+        private avatarService: AvatarService,
+        private cdRef: ChangeDetectorRef,
     ) {
         this.configSubscription = this.configService.config$.subscribe(
             (config) => {
-                this.config = config as ConfigWithCharacters;
-                this.selectedCharacterIndex = config?.active_character_index ?? null;
+                if (config) {
+                    this.config = config as ConfigWithCharacters;
+                    this.selectedCharacterIndex = config.active_character_index ?? null;
+                    this.activeRoster = this.buildRosterFromConfig(this.config);
+                } else {
+                    this.config = null;
+                    this.activeRoster = [];
+                    this.selectedCharacterIndex = null;
+                }
                 this.filterEvents(this.eventSearchQuery);
             },
         );
@@ -576,6 +596,219 @@ export class CharacterSettingsComponent {
     ): number => {
         return a.key.localeCompare(b.key);
     };
+
+    getActiveRoster(): number[] {
+        return this.activeRoster;
+    }
+
+    private buildRosterFromConfig(config: ConfigWithCharacters | null): number[] {
+        if (!config) return [];
+        const roster = Array.isArray(config.active_characters)
+            ? [...config.active_characters]
+            : [];
+        if (!roster.length && typeof config.active_character_index === "number" && config.active_character_index >= 0) {
+            roster.push(config.active_character_index);
+        }
+        if (this.hoveredRosterSlot !== null && this.hoveredRosterSlot >= roster.length) {
+            this.hoveredRosterSlot = roster.length > 0 ? roster.length - 1 : null;
+        }
+        return roster;
+    }
+
+    getCrewSlotLabel(slot: number): string {
+        return slot === 0 ? "Active Character" : `Crew Member ${slot + 1}`;
+    }
+
+    isCharacterTaken(index: number, slot: number | null = null): boolean {
+        const roster = this.getActiveRoster();
+        return roster.some((value, idx) => idx !== slot && value === index);
+    }
+
+    canAddCrewSlot(): boolean {
+        if (!this.config || !this.config.characters) return false;
+        if (this.config.characters.length === 0) return false;
+        const roster = this.getActiveRoster();
+        if (roster.length >= this.maxActiveCharacters) return false;
+        return this.findNextAvailableCharacter(roster) !== null;
+    }
+
+    startEditingSlot(slot: number): void {
+        this.editingSlotIndex = slot;
+        this.addingSlot = false;
+        setTimeout(() => {
+            const select = this.crewSelectRefs?.first;
+            select?.open();
+        }, 0);
+    }
+
+    stopEditingSlot(slot: number | null = null): void {
+        if (slot === null || this.editingSlotIndex === slot) {
+            this.editingSlotIndex = null;
+        }
+    }
+
+    async removeCrewSlot(slot: number): Promise<void> {
+        if (!this.config) return;
+        if (slot <= 0) return;
+        const roster = [...this.activeRoster];
+        roster.splice(slot, 1);
+        this.activeRoster = roster;
+        await this.characterService.setActiveRoster(roster);
+    }
+
+    startAddingSlot(): void {
+        this.addingSlot = true;
+        this.editingSlotIndex = null;
+        setTimeout(() => {
+            const select = this.addSelectRefs?.first;
+            select?.open();
+        }, 0);
+    }
+
+    async onCrewSelectionChange(slot: number, value: number | null): Promise<void> {
+        if (value === null || value === undefined) {
+            if (slot > 0) {
+                await this.removeCrewSlot(slot);
+            }
+            this.editingSlotIndex = null;
+            return;
+        }
+        if (!this.config) return;
+        const index = Number(value);
+        if (!Number.isFinite(index)) return;
+
+        if (slot === 0) {
+            await this.characterService.setActiveCharacter(index);
+        }
+
+        const roster = [...this.activeRoster];
+        roster[slot] = index;
+        this.activeRoster = roster;
+        this.editingSlotIndex = null;
+        await this.characterService.setActiveRoster(roster);
+    }
+
+    async onAddSlotSelection(value: number | null): Promise<void> {
+        if (value === null || value === undefined) {
+            this.addingSlot = false;
+            return;
+        }
+        if (!this.config) return;
+        const index = Number(value);
+        if (!Number.isFinite(index) || this.isCharacterTaken(index)) {
+            this.addingSlot = false;
+            return;
+        }
+        const roster = [...this.activeRoster, index];
+        this.activeRoster = roster;
+        this.addingSlot = false;
+        await this.characterService.setActiveRoster(roster);
+    }
+
+    cancelAddingSlot(): void {
+        if (this.addingSlot) {
+            this.addingSlot = false;
+        }
+    }
+
+    async editCharacterSlot(slot: number): Promise<void> {
+        const roster = this.getActiveRoster();
+        const characterIndex = roster[slot];
+        if (characterIndex === undefined) return;
+        await this.characterService.setActiveCharacter(characterIndex);
+        this.selectedCharacterIndex = characterIndex;
+        if (!this.editMode) {
+            this.toggleEditMode();
+        }
+    }
+
+    private findNextAvailableCharacter(roster: number[]): number | null {
+        if (!this.config || !this.config.characters) return null;
+        for (let i = 0; i < this.config.characters.length; i++) {
+            if (!roster.includes(i)) {
+                return i;
+            }
+        }
+        return null;
+    }
+
+    onCrewSlotHover(slot: number): void {
+        this.hoveredRosterSlot = slot;
+    }
+
+    get displayCharacter(): Character | null {
+        const character = this.getCharacterByRosterSlot(this.hoveredRosterSlot);
+        return character ?? this.activeCharacter;
+    }
+
+    get displayCharacterIndex(): number | null {
+        const roster = this.getActiveRoster();
+        if (!roster.length) return null;
+        const slot = this.hoveredRosterSlot ?? 0;
+        if (slot < 0 || slot >= roster.length) {
+            return roster[0];
+        }
+        return roster[slot];
+    }
+
+    private getCharacterByRosterSlot(slot: number | null): Character | null {
+        if (slot === null) return null;
+        const roster = this.getActiveRoster();
+        if (slot < 0 || slot >= roster.length) return null;
+        const index = roster[slot];
+        return this.config?.characters?.[index] ?? null;
+    }
+
+    isEditingSlot(slot: number): boolean {
+        return this.editingSlotIndex === slot;
+    }
+
+    getAvatarUrlForCharacterIndex(index: number | null): string {
+        if (index === null) {
+            return this.fallbackAvatarUrl;
+        }
+        const character = this.config?.characters?.[index];
+        if (!character) {
+            return this.fallbackAvatarUrl;
+        }
+        const avatarId = character.avatar;
+        if (!avatarId) {
+            return this.fallbackAvatarUrl;
+        }
+        if (this.avatarCache[avatarId]) {
+            return this.avatarCache[avatarId];
+        }
+        if (!this.pendingAvatarLoads.has(avatarId)) {
+            this.pendingAvatarLoads.add(avatarId);
+            this.avatarService.getAvatar(avatarId).then((url) => {
+                if (url) {
+                    this.avatarCache[avatarId] = url;
+                } else {
+                    this.avatarCache[avatarId] = this.fallbackAvatarUrl;
+                }
+                this.pendingAvatarLoads.delete(avatarId);
+                this.cdRef.markForCheck();
+            }).catch(() => {
+                this.pendingAvatarLoads.delete(avatarId);
+            });
+        }
+        return this.fallbackAvatarUrl;
+    }
+
+    getAvatarBorderColor(index: number | null): string {
+        if (index === null) return '#ffffff';
+        const color = this.config?.characters?.[index]?.color;
+        if (!color) return '#ffffff';
+        return color.startsWith('#') ? color : `#${color}`;
+    }
+
+    get isDisplayCharacterCustom(): boolean {
+        const display = this.displayCharacter;
+        if (!display) {
+            return this.isCustomPreset();
+        }
+        return display.personality_preset === "custom";
+    }
 
     // Track expanded state
     onSectionToggled(sectionName: string | null) {
@@ -1042,31 +1275,6 @@ export class CharacterSettingsComponent {
         return voice;
     }
 
-    // Character Management Methods
-    onCharacterSelect(index: number) {
-        if (!this.config) return;
-
-        // Check if we're in edit mode with unsaved changes
-        if (this.editMode) {
-            this.confirmationDialog.openConfirmationDialog({
-                title: "Unsaved Changes",
-                message:
-                    "You have unsaved changes. Do you want to discard them?",
-                confirmButtonText: "Discard Changes",
-                cancelButtonText: "Keep Editing",
-            }).subscribe((result) => {
-                if (result) {
-                    // User chose to discard changes, proceed with character selection
-                    this.characterService.setActiveCharacter(index);
-                }
-                // If false, stay in edit mode with current character
-            });
-        } else {
-            // Not in edit mode, proceed directly
-            this.characterService.setActiveCharacter(index);
-        }
-    }
-
     toggleEditMode() {
         if (!this.config) return;
         if (this.selectedCharacterIndex === null) return;
@@ -1364,6 +1572,19 @@ export class CharacterSettingsComponent {
 
     getAvatarUrl(): string {
         return this.characterService.getAvatarUrl();
+    }
+
+    getCharacterColor(includeHash = false): string {
+        const color = this.activeCharacter?.color ?? 'FFFFFF';
+        const normalized = color.startsWith('#') ? color.slice(1) : color;
+        return includeHash ? `#${normalized.toUpperCase()}` : normalized.toUpperCase();
+    }
+
+    onColorPickerChange(value: string): void {
+        const sanitized = (value || '').replace('#', '').toUpperCase();
+        const isValidHex = /^[0-9A-F]{6}$/.test(sanitized);
+        const nextColor = isValidHex ? sanitized : 'FFFFFF';
+        void this.setCharacterProperty('color', nextColor);
     }
 
     openAvatarCatalog() {

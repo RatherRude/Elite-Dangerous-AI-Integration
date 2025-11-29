@@ -1,7 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import Any, List, Optional, Generator, Iterable
+from dataclasses import dataclass
 import io
 import base64
+import re
 import speech_recognition as sr
 import soundfile as sf
 import numpy as np
@@ -11,14 +13,21 @@ from time import sleep, time
 import edge_tts
 import miniaudio
 from openai import OpenAI, APIStatusError
-from openai.types.chat import ChatCompletion, ChatCompletionMessageToolCall
-from openai.types import CreateEmbeddingResponse
+from openai.types.chat import ChatCompletionMessageToolCall
 from .Logger import log
+
 
 class LLMError(Exception):
     def __init__(self, message: str, original_error: Exception | None = None):
         super().__init__(message)
         self.original_error = original_error
+
+
+@dataclass
+class CharacterMessage:
+    character: str
+    text: str
+
 
 class LLMModel(ABC):
     model_name: str
@@ -27,8 +36,28 @@ class LLMModel(ABC):
         self.model_name = model_name
 
     @abstractmethod
-    def generate(self, messages: List[dict], tools: Optional[List[dict]] = None, tool_choice: Optional[Any] = None) -> tuple[str | None, List[Any] | None]:
+    def generate(
+        self,
+        messages: List[dict],
+        characters: List[str] = ["default"],
+        tools: Optional[List[dict]] = None,
+        tool_choice: Optional[Any] = None,
+    ) -> Iterable[CharacterMessage | ChatCompletionMessageToolCall]:
+        """
+        Generate a response from the LLM.
+
+        Args:
+            messages: The conversation messages
+            characters: List of character names. If single character, uses regular streaming.
+                       If multiple characters, uses structured output.
+            tools: Optional list of tool definitions
+            tool_choice: Optional tool choice preference
+
+        Yields:
+            CharacterMessage for text responses or ChatCompletionMessageToolCall for tool calls
+        """
         pass
+
 
 class EmbeddingModel(ABC):
     model_name: str
@@ -40,6 +69,7 @@ class EmbeddingModel(ABC):
     def create_embedding(self, input_text: str) -> tuple[str, List[float]]:
         pass
 
+
 class OpenAILLMModel(LLMModel):
     def __init__(self, base_url: str, api_key: str, model_name: str, temperature: float, reasoning_effort: Optional[str] = None, extra_body: Optional[dict] = None, extra_headers: Optional[dict] = None):
         super().__init__(model_name)
@@ -49,12 +79,18 @@ class OpenAILLMModel(LLMModel):
         self.extra_body = extra_body or {}
         self.extra_headers = extra_headers or {}
 
-    def generate(self, messages: List[dict], tools: Optional[List[dict]] = None, tool_choice: Optional[Any] = None) -> tuple[str | None, List[Any] | None]:
+    def generate(
+        self,
+        messages: List[dict],
+        characters: List[str] = ["default"],
+        tools: Optional[List[dict]] = None,
+        tool_choice: Optional[Any] = None,
+    ) -> Iterable[CharacterMessage | ChatCompletionMessageToolCall]:
         kwargs = {}
         # Special handling for specific models or providers if needed
         if self.model_name in ['gpt-5', 'gpt-5-mini', 'gpt-5-nano', 'gpt-5.1']:
             kwargs["verbosity"] = "low"
-                    
+
         if self.model_name in ['gemini-3-pro-preview']:
             for m in messages:
                 if 'tool_calls' in m and m.get('tool_calls', None):
@@ -65,82 +101,235 @@ class OpenAILLMModel(LLMModel):
                                 calls[0] = calls[0].model_dump()
                             elif hasattr(calls[0], 'dict'):
                                 calls[0] = calls[0].dict()
-                        
+
                         if isinstance(calls[0], dict):
                             calls[0]['extra_content'] = {"google": {
                                 "thought_signature": "skip_thought_signature_validator"
                             }}
-        
+
+        use_multi_character = len(characters) > 1
+
         params: dict[str, Any] = {
             "model": self.model_name,
             "messages": messages,
             "temperature": self.temperature,
-            **self.extra_body,
+            "stream": True,
             **kwargs
         }
-        if tools:
-            params["tools"] = tools
-            if tool_choice:
-                params["tool_choice"] = tool_choice
-        
+
+        # Build tools list
+        tools_list = list(tools) if tools else []
+
+        # For multiple characters, add a reply tool to get structured character messages
+        if use_multi_character:
+            reply_tool = {
+                "type": "function",
+                "function": {
+                    "name": "reply",
+                    "description": "Send a reply with messages from one or more characters",
+                    "strict": True,
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "messages": {
+                                "type": "array",
+                                "description": "Array of character messages",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "character": {
+                                            "type": "string",
+                                            "description": "The name of the character speaking",
+                                            "enum": characters
+                                        },
+                                        "text": {
+                                            "type": "string",
+                                            "description": "The message text from this character"
+                                        }
+                                    },
+                                    "required": ["character", "text"],
+                                    "additionalProperties": False
+                                }
+                            }
+                        },
+                        "required": ["messages"],
+                        "additionalProperties": False
+                    }
+                }
+            }
+            tools_list.append(reply_tool)
+
+        params["tools"] = tools_list
+        if use_multi_character:
+            # Force tool use when multiple characters (to get structured reply)
+            params["tool_choice"] = "required"
+        elif tool_choice:
+            params["tool_choice"] = "tool_choice"
+
         if self.reasoning_effort and self.reasoning_effort not in ["disabled", "default", None, ""]:
-             params["reasoning_effort"] = self.reasoning_effort
+            params["reasoning_effort"] = self.reasoning_effort
 
         if self.extra_body:
             params["extra_body"] = self.extra_body
-            
+
         if self.extra_headers:
             params["extra_headers"] = self.extra_headers
 
         try:
-            completion = self.client.chat.completions.create(**params) # pyright: ignore[reportCallIssue]
+            stream = self.client.chat.completions.create(**params)  # pyright: ignore[reportCallIssue]
         except APIStatusError as e:
             log("debug", "LLM error request:", e.request.method, e.request.url, e.request.headers, e.request.read().decode('utf-8', errors='replace'))
             log("debug", "LLM error response:", e.response.status_code, e.response.headers, e.response.read().decode('utf-8', errors='replace'))
-            
+
             try:
-                error: dict = e.body[0] if hasattr(e, 'body') and e.body and isinstance(e.body, list) else e.body # pyright: ignore[reportAssignmentType]
+                error: dict = e.body[0] if hasattr(e, 'body') and e.body and isinstance(e.body, list) else e.body  # pyright: ignore[reportAssignmentType]
                 message = error.get('error', {}).get('message', e.body if e.body else 'Unknown error')
             except:
                 message = e.message
-            
+
             raise LLMError(f'LLM {e.response.reason_phrase}: {message}', e)
         except Exception as e:
             raise LLMError(f'LLM Error: {str(e)}', e)
 
-        if not isinstance(completion, ChatCompletion) or hasattr(completion, 'error'):
-            log("debug", "LLM completion error:", completion)
-            raise LLMError("LLM error: No valid completion received")
-        
-        if not completion.choices:
-            log("debug", "LLM completion has no choices:", completion)
-            return (None, None) # Treated as "..."
+        # Helper to extract complete character messages from partial JSON
+        def extract_complete_messages(args_str: str, yielded_count: int) -> tuple[list[dict], int]:
+            """Extract complete message objects from partial reply tool arguments."""
+            messages = []
+            # Try to find complete message objects in the array
+            # Match complete message objects - handles escaped quotes in text
+            pattern = r'\{\s*"character"\s*:\s*"([^"]+)"\s*,\s*"text"\s*:\s*"((?:[^"\\]|\\.)*)"\s*\}'
+            matches = list(re.finditer(pattern, args_str))
+            
+            # Only return messages we haven't yielded yet
+            for match in matches[yielded_count:]:
+                messages.append({
+                    "character": match.group(1),
+                    "text": match.group(2).replace('\\"', '"').replace('\\n', '\n').replace('\\\\', '\\')
+                })
+            
+            return messages, len(matches)
 
-        if not hasattr(completion.choices[0], 'message') or not completion.choices[0].message:
-            log("debug", "LLM completion choice has no message:", completion)
-            return (None, None) # Treated as "..."
-        
-        if hasattr(completion, 'usage') and completion.usage:
-            log("debug", f'LLM completion usage', completion.usage)
-        
-        response_text = None
-        if hasattr(completion.choices[0].message, 'content'):
-            response_text = completion.choices[0].message.content
-            if completion.choices[0].message.content is None or completion.choices[0].message.content == "":
-                log("debug", "LLM completion no content:", completion)
-                response_text = None
-        else:
-            log("debug", f'LLM completion without text')
-            response_text = None
+        # Helper to yield a completed tool call
+        def make_tool_call(tc_data: dict) -> ChatCompletionMessageToolCall:
+            return ChatCompletionMessageToolCall(
+                id=tc_data["id"],
+                type=tc_data["type"],  # pyright: ignore[reportArgumentType]
+                function={  # pyright: ignore[reportArgumentType]
+                    "name": tc_data["function"]["name"],
+                    "arguments": tc_data["function"]["arguments"]
+                }
+            )
 
-        response_actions = None
-        if hasattr(completion.choices[0].message, 'tool_calls'):
-            response_actions = completion.choices[0].message.tool_calls
+        # Accumulate content and tool calls from stream
+        accumulated_content = ""
+        tool_calls_data: dict[int, dict] = {}  # index -> {id, type, function: {name, arguments}}
+        yielded_tool_indices: set[int] = set()  # Track which tool calls we've yielded
+        reply_messages_yielded: int = 0  # Track how many reply messages we've yielded
+        last_chunk = None
 
-        if response_text is None and response_actions is None:
-             return (None, None)
+        for chunk in stream:
+            log("debug", "LLM stream chunk", chunk)
+            last_chunk = chunk
+            if not chunk.choices:
+                continue
 
-        return (response_text, response_actions)
+            delta = chunk.choices[0].delta
+
+            # Handle content delta - accumulate without yielding
+            if delta.content:
+                accumulated_content += delta.content
+
+            # Handle tool calls delta
+            if delta.tool_calls:
+                for tc_delta in delta.tool_calls:
+                    idx = tc_delta.index
+
+                    # When we see a new index, the previous tool call is complete
+                    if idx not in tool_calls_data:
+                        # Yield any previous completed tool calls
+                        for prev_idx in sorted(tool_calls_data.keys()):
+                            if prev_idx not in yielded_tool_indices and prev_idx < idx:
+                                tc_data = tool_calls_data[prev_idx]
+                                func_name = tc_data["function"]["name"]
+                                
+                                if func_name == "reply":
+                                    # Yield any remaining messages from reply tool
+                                    new_msgs, reply_messages_yielded = extract_complete_messages(
+                                        tc_data["function"]["arguments"], reply_messages_yielded
+                                    )
+                                    for msg in new_msgs:
+                                        log("debug", "Yielding reply message", msg)
+                                        yield CharacterMessage(
+                                            character=msg.get("character", characters[0]),
+                                            text=msg.get("text", "")
+                                        )
+                                else:
+                                    log("debug", "Yielding tool call", tc_data)
+                                    yield make_tool_call(tc_data)
+                                yielded_tool_indices.add(prev_idx)
+
+                        # Initialize new tool call
+                        tool_calls_data[idx] = {
+                            "id": tc_delta.id or "",
+                            "type": tc_delta.type or "function",
+                            "function": {"name": "", "arguments": ""}
+                        }
+                        # Reset reply message counter for new tool
+                        if idx > 0:
+                            reply_messages_yielded = 0
+
+                    if tc_delta.id:
+                        tool_calls_data[idx]["id"] = tc_delta.id
+                    if tc_delta.type:
+                        tool_calls_data[idx]["type"] = tc_delta.type
+                    if tc_delta.function:
+                        if tc_delta.function.name:
+                            tool_calls_data[idx]["function"]["name"] = tc_delta.function.name
+                        if tc_delta.function.arguments:
+                            tool_calls_data[idx]["function"]["arguments"] += tc_delta.function.arguments
+
+                            # For reply tool, try to yield character messages incrementally
+                            if tool_calls_data[idx]["function"]["name"] == "reply":
+                                new_msgs, reply_messages_yielded = extract_complete_messages(
+                                    tool_calls_data[idx]["function"]["arguments"], reply_messages_yielded
+                                )
+                                for msg in new_msgs:
+                                    log("debug", "Yielding reply message from tool call", msg)
+                                    yield CharacterMessage(
+                                        character=msg.get("character", characters[0]),
+                                        text=msg.get("text", "")
+                                    )
+
+            # Check for finish reason
+            if chunk.choices[0].finish_reason:
+                break
+
+        # After streaming completes, yield accumulated content for single character
+        if accumulated_content and not use_multi_character and not tool_calls_data:
+            yield CharacterMessage(character=characters[0], text=accumulated_content)
+
+        # Yield any remaining tool calls that weren't yielded during streaming
+        for idx in sorted(tool_calls_data.keys()):
+            if idx not in yielded_tool_indices:
+                tc_data = tool_calls_data[idx]
+                func_name = tc_data["function"]["name"]
+
+                if func_name == "reply":
+                    # Yield any remaining messages from reply tool
+                    new_msgs, _ = extract_complete_messages(
+                        tc_data["function"]["arguments"], reply_messages_yielded
+                    )
+                    for msg in new_msgs:
+                        yield CharacterMessage(
+                            character=msg.get("character", characters[0]),
+                            text=msg.get("text", "")
+                        )
+                else:
+                    yield make_tool_call(tc_data)
+
+        # Log usage if available (from last chunk)
+        if last_chunk and hasattr(last_chunk, 'usage') and last_chunk.usage:
+            log("debug", f'LLM completion usage', last_chunk.usage)
 
     def list_models(self) -> List[str]:
         try:
@@ -148,6 +337,7 @@ class OpenAILLMModel(LLMModel):
             return [model.id for model in models]
         except Exception as e:
             raise e
+
 
 class OpenAIEmbeddingModel(EmbeddingModel):
     def __init__(self, base_url: str, api_key: str, model_name: str, extra_headers: Optional[dict] = None, extra_body: Optional[dict] = None):
@@ -164,9 +354,10 @@ class OpenAIEmbeddingModel(EmbeddingModel):
         }
         if self.extra_headers:
             params["extra_headers"] = self.extra_headers
-            
+
         response = self.client.embeddings.create(**params)
         return (response.model, response.data[0].embedding)
+
 
 class STTModel(ABC):
     model_name: str
@@ -177,6 +368,7 @@ class STTModel(ABC):
     @abstractmethod
     def transcribe(self, audio: sr.AudioData) -> str:
         pass
+
 
 class OpenAISTTModel(STTModel):
     def __init__(self, base_url: str, api_key: str, model_name: str, language: Optional[str] = None, prompt: Optional[str] = None):
@@ -189,36 +381,37 @@ class OpenAISTTModel(STTModel):
         audio_raw = audio.get_raw_data(convert_rate=16000, convert_width=2)
         # Convert raw PCM data to numpy array
         audio_np = np.frombuffer(audio_raw, dtype=np.int16).astype(np.float32) / 32768.0
-        
+
         # Create a BytesIO buffer for the Ogg file
         audio_ogg = io.BytesIO()
-        
+
         # Write as Ogg Vorbis
         sf.write(audio_ogg, audio_np, 16000, format='OGG', subtype='VORBIS')
         audio_ogg.seek(0)
         audio_ogg.name = "audio.ogg"  # OpenAI needs a filename
-        
+
         try:
             transcription = self.client.audio.transcriptions.create(
                 model=self.model_name,
                 file=audio_ogg,
-                language=self.language if self.language else None, # pyright: ignore[reportArgumentType]
+                language=self.language if self.language else None,  # pyright: ignore[reportArgumentType]
                 prompt=self.prompt
             )
         except APIStatusError as e:
             log("debug", "STT error request:", e.request.method, e.request.url, e.request.headers)
             log("debug", "STT error response:", e.response.status_code, e.response.headers, e.response.read().decode('utf-8', errors='replace'))
-            
+
             try:
-                error: dict = e.body[0] if hasattr(e, 'body') and e.body and isinstance(e.body, list) else e.body # pyright: ignore[reportAssignmentType]
+                error: dict = e.body[0] if hasattr(e, 'body') and e.body and isinstance(e.body, list) else e.body  # pyright: ignore[reportAssignmentType]
                 message = error.get('error', {}).get('message', e.body if e.body else 'Unknown error')
             except:
                 message = e.message
-            
+
             raise LLMError(f'STT {e.response.reason_phrase}: {message}', e)
-        
+
         text = transcription.text
         return text
+
 
 class OpenAIMultiModalSTTModel(STTModel):
     def __init__(self, base_url: str, api_key: str, model_name: str, prompt: Optional[str] = None):
@@ -230,62 +423,63 @@ class OpenAIMultiModalSTTModel(STTModel):
         audio_raw = audio.get_raw_data(convert_rate=16000, convert_width=2)
         # Convert raw PCM data to numpy array
         audio_np = np.frombuffer(audio_raw, dtype=np.int16).astype(np.float32) / 32768.0
-        
+
         # Create a BytesIO buffer for the Ogg file
         audio_wav = io.BytesIO()
-        
+
         # Write as Ogg Vorbis
         sf.write(audio_wav, audio_np, 16000, format='WAV', subtype='PCM_16')
         audio_wav.seek(0)
         audio_wav.name = "audio.wav"  # OpenAI needs a filename
-        
+
         try:
             response = self.client.chat.completions.create(
                 model=self.model_name,
                 messages=[
-                    {"role":"system", "content":
+                    {"role": "system", "content":
                         "You are a high quality transcription model. You are given audio input from the user, and return the transcribed text from the input. Do NOT add any additional text in your response, only respond with the text given by the user.\n" +
-                        "The audio may be related to space sci-fi terminology like systems, equipment, and station names, specifically the game Elite Dangerous.\n" + 
-                        #"Here is an example of the type of text you should return: <example>" + self.prompt + "</example>\n" +
+                        "The audio may be related to space sci-fi terminology like systems, equipment, and station names, specifically the game Elite Dangerous.\n" +
+                        # "Here is an example of the type of text you should return: <example>" + self.prompt + "</example>\n" +
                         "Always provide an exact transcription of the audio. If the user is not speaking or inaudible, return only the word 'silence'."
-                    },
+                     },
                     {"role": "user", "content": [{
                         "type": "text",
                         "text": "<input>"
-                    },{
+                    }, {
                         "type": "input_audio",
                         "input_audio": {
                             "data": base64.b64encode(audio_wav.getvalue()).decode('utf-8'),
                             "format": "wav"
                         }
-                    },{
+                    }, {
                         "type": "text",
                         "text": "</input>"
-                    },]}
+                    }, ]}
                 ]
             )
         except APIStatusError as e:
             log("debug", "STT mm error request:", e.request.method, e.request.url, e.request.headers, e.request.read().decode('utf-8', errors='replace'))
             log("debug", "STT mm error response:", e.response.status_code, e.response.headers, e.response.read().decode('utf-8', errors='replace'))
-            
+
             try:
-                error: dict = e.body[0] if hasattr(e, 'body') and e.body and isinstance(e.body, list) else e.body # pyright: ignore[reportAssignmentType]
+                error: dict = e.body[0] if hasattr(e, 'body') and e.body and isinstance(e.body, list) else e.body  # pyright: ignore[reportAssignmentType]
                 message = error.get('error', {}).get('message', e.body if e.body else 'Unknown error')
             except:
                 message = e.message
-            
+
             raise LLMError(f'STT {e.response.reason_phrase}: {message}', e)
-        
+
         if not response.choices or not hasattr(response.choices[0], 'message') or not hasattr(response.choices[0].message, 'content'):
             log('debug', "STT mm response is incomplete or malformed:", response)
             raise LLMError('STT completion error: Response incomplete or malformed')
-        
+
         text = response.choices[0].message.content
         if not text:
             return ''
         if text.strip() == 'silence' or text.strip() == '':
             return ''
         return text.strip()
+
 
 class Mp3Stream(miniaudio.StreamableSource):
     def __init__(self, gen: Generator, prebuffer_size=4, initial_timeout: float = 10.0, chunk_timeout: float = 5.0) -> None:
@@ -342,6 +536,7 @@ class Mp3Stream(miniaudio.StreamableSource):
                 sleep(0.01)
         return bytes(out)
 
+
 class TTSModel(ABC):
     model_name: str
 
@@ -351,6 +546,7 @@ class TTSModel(ABC):
     @abstractmethod
     def synthesize(self, text: str, voice: str) -> Iterable[bytes]:
         pass
+
 
 class OpenAITTSModel(TTSModel):
     def __init__(self, base_url: str, api_key: str, model_name: str, speed: float = 1.0, voice_instructions: str = ""):
@@ -372,10 +568,10 @@ class OpenAITTSModel(TTSModel):
             # However, standard OpenAI client will raise TypeError if unexpected arg.
             # I'll use extra_body if needed, but for now I'll try to pass it if it's not empty?
             # Or just stick to standard args. The user's code had it.
-            
+
             kwargs = {
                 "model": self.model_name,
-                "voice": voice, # pyright: ignore[reportArgumentType]
+                "voice": voice,  # pyright: ignore[reportArgumentType]
                 "input": text,
                 "response_format": "pcm",
                 "speed": self.speed
@@ -388,27 +584,28 @@ class OpenAITTSModel(TTSModel):
             # This suggests they might be using a custom backend that supports it, or they modified the library?
             # Or maybe I should just leave it out for now to be safe, or add it to extra_body?
             # The OpenAI library allows extra_body.
-            
+
             # Let's try to pass it as a keyword argument and see if it works, or use extra_body.
             # Actually, let's look at how I handled extra_body in LLMModel.
-            
+
             # For now, I will NOT include instructions to avoid breaking standard OpenAI.
             # If they need it, they can add it back.
-            
+
             with self.client.audio.speech.with_streaming_response.create(**kwargs) as response:
                 for chunk in response.iter_bytes(1024):
                     yield chunk
         except APIStatusError as e:
             log("debug", "TTS error request:", e.request.method, e.request.url, e.request.headers, e.request.read().decode('utf-8', errors='replace'))
             log("debug", "TTS error response:", e.response.status_code, e.response.headers, e.response.read().decode('utf-8', errors='replace'))
-            
+
             try:
-                error: dict = e.body[0] if hasattr(e, 'body') and e.body and isinstance(e.body, list) else e.body # pyright: ignore[reportAssignmentType]
+                error: dict = e.body[0] if hasattr(e, 'body') and e.body and isinstance(e.body, list) else e.body  # pyright: ignore[reportAssignmentType]
                 message = error.get('error', {}).get('message', e.body if e.body else 'Unknown error')
             except:
                 message = e.message
-            
+
             raise LLMError(f'TTS {e.response.reason_phrase}: {message}', e)
+
 
 class EdgeTTSModel(TTSModel):
     def __init__(self, model_name: str, speed: float = 1.0):
@@ -419,7 +616,7 @@ class EdgeTTSModel(TTSModel):
     def synthesize(self, text: str, voice: str) -> Iterable[bytes]:
         rate = f"+{int((float(self.speed) - 1) * 100)}%" if float(self.speed) > 1 else f"-{int((1 - float(self.speed)) * 100)}%"
         response = edge_tts.Communicate(text, voice=voice, rate=rate)
-        
+
         pcm_stream = miniaudio.stream_any(
             source=Mp3Stream(response.stream_sync(), self.prebuffer_size),
             source_format=miniaudio.FileFormat.MP3,
@@ -432,6 +629,7 @@ class EdgeTTSModel(TTSModel):
         for i in pcm_stream:
             yield i.tobytes()
 
+
 def create_llm_model(provider: str, config: dict, prefix: str = "llm") -> LLMModel:
     base_url = str(config.get(f"{prefix}_endpoint", ""))
     api_key = str(config.get("api_key") if config.get(f"{prefix}_api_key", "") == "" else config.get(f"{prefix}_api_key"))
@@ -440,7 +638,7 @@ def create_llm_model(provider: str, config: dict, prefix: str = "llm") -> LLMMod
     reasoning_effort = config.get(f"{prefix}_reasoning_effort", None)
     if reasoning_effort:
         reasoning_effort = str(reasoning_effort)
-    
+
     if provider == "openai":
         if not base_url:
             base_url = "https://api.openai.com/v1"
@@ -450,7 +648,7 @@ def create_llm_model(provider: str, config: dict, prefix: str = "llm") -> LLMMod
     elif provider == "openrouter":
         if not base_url:
             base_url = "https://openrouter.ai/api/v1"
-            
+
     extra_body = {}
     extra_headers = {}
 
@@ -464,11 +662,12 @@ def create_llm_model(provider: str, config: dict, prefix: str = "llm") -> LLMMod
         extra_headers=extra_headers
     )
 
+
 def create_embedding_model(provider: str, config: dict, prefix: str = "embedding") -> EmbeddingModel:
     base_url = str(config.get(f"{prefix}_endpoint", ""))
     api_key = str(config.get("api_key") if config.get(f"{prefix}_api_key", "") == "" else config.get(f"{prefix}_api_key"))
     model_name = str(config.get(f"{prefix}_model_name", ""))
-    
+
     if provider == "openai":
         if not base_url:
             base_url = "https://api.openai.com/v1"
@@ -478,13 +677,13 @@ def create_embedding_model(provider: str, config: dict, prefix: str = "embedding
     elif provider == "openrouter":
         if not base_url:
             base_url = "https://openrouter.ai/api/v1"
-          
 
     return OpenAIEmbeddingModel(
         base_url=base_url,
         api_key=api_key,
         model_name=model_name,
     )
+
 
 def create_stt_model(provider: str, config: dict, prefix: str = "stt") -> STTModel | None:
     if provider == 'none':
@@ -500,13 +699,14 @@ def create_stt_model(provider: str, config: dict, prefix: str = "stt") -> STTMod
         if provider == "openai" and not base_url:
             base_url = "https://api.openai.com/v1"
         return OpenAISTTModel(base_url, api_key, model_name, language, prompt)
-    
+
     elif provider == "google-ai-studio" or provider == "custom-multi-modal":
         if provider == "google-ai-studio" and not base_url:
             base_url = "https://generativelanguage.googleapis.com/v1beta"
         return OpenAIMultiModalSTTModel(base_url, api_key, model_name, prompt)
-    
+
     return None
+
 
 def create_tts_model(provider: str, config: dict, prefix: str = "tts") -> TTSModel | None:
     if provider == 'none':
@@ -522,8 +722,8 @@ def create_tts_model(provider: str, config: dict, prefix: str = "tts") -> TTSMod
         if provider == "openai" and not base_url:
             base_url = "https://api.openai.com/v1"
         return OpenAITTSModel(base_url, api_key, model_name, speed, voice_instructions)
-    
+
     elif provider == "edge-tts":
         return EdgeTTSModel(model_name, speed)
-    
+
     return None
