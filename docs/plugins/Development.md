@@ -8,7 +8,7 @@ Do you want to build a plugin, to expand on COVAS' features? This page will help
 
 # The easy way to get started
 
-To quickly create a starting point, we suggest using [this cookiecutter template](http://github.com/MaverickMartyn/COVAS-NEXT-Plugin-Template).
+To quickly create a starting point, we suggest using [this cookiecutter template](http://github.com/COVAS-Labs/COVAS-NEXT-Plugin-Template).
 Use the template to create a project in a sub-folder of the `plugins` folder.
 
 ## Plugin structure

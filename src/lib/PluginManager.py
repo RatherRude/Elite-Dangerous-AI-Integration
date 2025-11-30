@@ -1,3 +1,4 @@
+import traceback
 import importlib
 import json
 import os
@@ -111,7 +112,7 @@ class PluginManager:
                     module = self.load_plugin_module(manifest, entrypoint_path)
                     self.plugin_list[module_name] = module
             except Exception as e:
-                log('error', f"Failed to load plugin {file}: {e}")
+                log('error', f"Failed to load plugin {file}:", e, traceback.format_exc())
         return self
     
     def load_default_plugins(self):
