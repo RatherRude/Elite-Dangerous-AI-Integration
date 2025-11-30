@@ -369,7 +369,15 @@ app.whenReady().then(async ()=>{
   const mainWindow = createMainWindow();
   let floatingOverlay = null;
   ipcMain.handle('send_json_line', (...args)=>backend.sendJsonLine(...args));
-  ipcMain.handle('start_process', (...args)=>backend.startProcess(mainWindow, ...args));
+  ipcMain.handle('start_process', (...args)=>{
+    // Close existing overlay on process start (handles reload scenarios)
+    if (floatingOverlay && !floatingOverlay.isDestroyed()) {
+      backend.detachWindow(floatingOverlay);
+      floatingOverlay.close();
+      floatingOverlay = null;
+    }
+    return backend.startProcess(mainWindow, ...args);
+  });
   ipcMain.handle('stop_process', (...args)=>backend.stopProcess(mainWindow, ...args));
   ipcMain.handle('create_floating_overlay', async (event, opts) => {
     if (floatingOverlay) {
