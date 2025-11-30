@@ -277,6 +277,8 @@ class Assistant:
                         messages=prompt,
                         tools=tool_list,  # pyright: ignore[reportArgumentType]
                     )
+                    if not response_text and not response_actions:
+                        response_text = "..."
                     end_time = time()
                     log('debug', 'Response time LLM', end_time - start_time)
                 except LLMError as e:
