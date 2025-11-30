@@ -130,17 +130,6 @@ class PluginManager:
             "version": "1.0.0",
             "repository": ""
         })))
-        
-        # Google Vertex Plugin
-        #from plugins.GoogleVertexPlugin import GoogleVertexPlugin
-        #google_vertex_guid = '6b8fdb40-cc7a-11f0-86cf-271e1701f7c6'
-        #self.plugin_list[google_vertex_guid] = GoogleVertexPlugin(PluginManifest(json.dumps({
-        #    "guid": google_vertex_guid,
-        #    "name": "Google Vertex AI",
-        #    "author": "Elite Dangerous AI Integration",
-        #    "version": "1.0.0",
-        #    "repository": ""
-        #})))
     
     def register_settings(self):
         """Register all settings and model providers for each plugin."""
