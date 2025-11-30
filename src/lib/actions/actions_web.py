@@ -77,7 +77,8 @@ def web_search_agent(
                         "primary_economy": { "type": "array", "items": { "type": "string" } },
                         "security": { "type": "array", "items": { "type": "string" } },
                         "thargoid_war_state": { "type": "array", "items": { "type": "string" } },
-                        "population": { "type": "object", "properties": { "comparison": { "type": "string", "enum": ["<", ">"] }, "value": { "type": "number" } } }
+                        "population": { "type": "object", "properties": { "comparison": { "type": "string", "enum": ["<", ">"] }, "value": { "type": "number" } } },
+                        "sort_by": { "type": "string", "enum": ["distance", "population"], "description": "Sort systems by distance or by population (highest first). Default: distance." }
                     }
                 }
             }
@@ -1828,15 +1829,18 @@ def prepare_system_request(obj, projected_states):# Helper function for fuzzy ma
             "value": obj["name"]
         }
 
+    # Determine sort order based on sort_by parameter
+    sort_preference = obj.get("sort_by", "distance")
+    if sort_preference == "population":
+        sort_object = {"population": {"direction": "desc"}}
+    else:
+        sort_object = {"distance": {"direction": "asc"}}
+
     # Build the request body
     request_body = {
         "filters": filters,
         "sort": [
-            {
-                "distance": {
-                    "direction": "asc"
-                }
-            }
+            sort_object
         ],
         "size": 3,
         "page": 0
