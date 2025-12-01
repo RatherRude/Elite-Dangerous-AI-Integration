@@ -381,6 +381,48 @@ def charge_ecm(args, projected_states):
     return "ECM is attempting to charge"
 
 
+def charge_field_neutraliser(args, projected_states):
+    checkStatus(projected_states, {'Docked': True, 'Landed': True, 'Supercruise': True})
+    setGameWindowActive()
+    
+    # Desired pips: system: 4.0, engine: 2.0, weapons: 0.0
+    desired_pips = {'system': 4.0, 'engine': 2.0, 'weapons': 0.0}
+    
+    # Get current pips from CurrentStatus
+    current_status = projected_states.get('CurrentStatus', {})
+    current_pips = current_status.get('Pips')
+    
+    # Check if pips need to be adjusted
+    pips_need_adjustment = False
+    if current_pips:
+        if (current_pips.get('system', 0.0) != desired_pips['system'] or
+            current_pips.get('engine', 0.0) != desired_pips['engine'] or
+            current_pips.get('weapons', 0.0) != desired_pips['weapons']):
+            pips_need_adjustment = True
+    else:
+        # If pips are not available, assume we need to adjust
+        pips_need_adjustment = True
+    
+    if pips_need_adjustment:
+        # Balance energy first
+        keys.send("ResetPowerDistribution")
+        sleep(0.2)
+        
+        # Increase energy to drive one time
+        keys.send("IncreaseEnginesPower")
+        sleep(0.2)
+        
+        # Increase energy to system three times
+        for _ in range(3):
+            keys.send("IncreaseSystemsPower")
+            sleep(0.2)
+    
+    # Press and hold TriggerFieldNeutraliser for 10 seconds
+    keys.send('TriggerFieldNeutraliser', hold=10)
+    
+    return "Shutdown Field Neutraliser activated for 10 seconds"
+
+
 def calculate_navigation_distance_and_timing(current_system: str, target_system: str) -> tuple[float, int]:
     distance_ly = 0.0  # Default value in case API call fails
 
@@ -1774,7 +1816,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
                     "Power Distributor",
                     "Life Support",
                     "FSD",
-                    "Point Defence Turret"
+                    "Point Defence Turret",
                     "Power Plant"
                 ],
             },
@@ -1815,6 +1857,18 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         "activate ecm": {},
         "ecm blast": {},
         "disrupt": {},
+    })
+
+    actionManager.registerAction('chargeFieldNeutraliser', "Charge Shutdown Field Neutraliser", {
+        "type": "object",
+        "properties": {}
+    }, charge_field_neutraliser, 'ship', permission='chargeFieldNeutraliser', cache_prefill={
+        "field neutraliser": {},
+        "charge field neutraliser": {},
+        "shutdown field neutraliser": {},
+        "activate field neutraliser": {},
+        "neutralise shutdown field": {},
+        "neutraliser": {},
     })
 
     # Register actions - NPC Crew Order Actions

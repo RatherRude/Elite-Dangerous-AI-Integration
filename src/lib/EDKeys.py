@@ -82,6 +82,7 @@ class EDKeys:
             'SelectHighestThreat',
             'ToggleCargoScoop',
             'ChargeECM',
+            'TriggerFieldNeutraliser',
             'CycleNextPanel',
             'CyclePreviousPanel',
             'FocusLeftPanel',
