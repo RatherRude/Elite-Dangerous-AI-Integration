@@ -44,7 +44,7 @@ class SampleResult(BaseModel):
 
 
 dummy_projected_state = {
-    "CurrentStatus": CurrentStatus().get_default_state(),
+    "CurrentStatus": CurrentStatus().get_default_state().model_dump(),
     "Location": {
         "StarSystem": "Sol",
         "StarPos": [0.0, 0.0, 0.0],

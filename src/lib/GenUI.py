@@ -5,13 +5,12 @@ import quickjs
 from openai import OpenAI
 from typing import Optional, Dict, Tuple, Any
 from dotenv import load_dotenv
+from .Database import CodeStore
+
 load_dotenv()
 
 # --- CONFIGURATION ---
-PREACT_BUNDLE_PATH = "preact-ssr-bundle.js"
 MAX_RETRIES = 3
-MODEL_NAME = "gpt-5.1"  # or "gpt-4-turbo" / "claude-3-5-sonnet"
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
 # --- SYSTEM PROMPT ---
 SYSTEM_PROMPT = """
@@ -47,8 +46,6 @@ const App = ({ state }) => {
   `;
 };
 """
-
-import requests
 
 def build_preact_bundle():
     print("Downloading libraries...")
@@ -275,16 +272,34 @@ class GenUIAgent:
             tool_choice="auto" if tools else None
         )
 
-    def iterate_genui(self, current_code: str, state: Dict, instruction: str) -> tuple[str, str]:
+    def iterate_genui(self, current_code: str, state: Dict, instruction: str, state_schema: Optional[Dict] = None) -> tuple[str, str]:
         """
         Main entry point. Takes instructions and ensures valid output.
+        
+        Args:
+            current_code: Existing UI code to modify
+            state: Current game state values (dict)
+            instruction: User's instruction for UI generation
+            state_schema: Optional schema documentation for the state structure
         
         Returns:
             tuple[str, str]: (generated_code, rendered_html)
         """
+        # Build the state documentation for the LLM
+        if state_schema:
+            state_documentation = f"""
+Available State Schema (props.state):
+{json.dumps(state_schema, indent=2)}
+
+Current State Values:
+{json.dumps(state, indent=2)}
+"""
+        else:
+            state_documentation = f"State Structure: {json.dumps(state)}"
+        
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": f"Current Code:\n{current_code}\n\nTask: {instruction}\n\nState Structure: {json.dumps(state)}"}
+            {"role": "user", "content": f"Current Code:\n{current_code}\n\nTask: {instruction}\n\n{state_documentation}"}
         ]
 
         print(f"--- Agent Task: {instruction} ---")
@@ -423,17 +438,21 @@ def generate_ui_code(
     state: Dict,
     current_code: str = "",
     llm_model: Any = None,
-    max_retries: int = 3
+    max_retries: int = 3,
+    store_key: str = "default_ui",
+    state_schema: Optional[Dict] = None
 ) -> tuple[str, str]:
     """
     High-level function to generate UI code.
     
     Args:
         instruction: What UI to generate
-        state: Game state data
+        state: Current game state values (dict)
         current_code: Existing UI code to modify (optional)
         llm_model: LLMModel instance to use (required)
         max_retries: Maximum generation attempts
+        store_key: Key to use for persistence in CodeStore
+        state_schema: Optional schema documentation describing state structure
     
     Returns:
         tuple[str, str]: (generated_code, rendered_html)
@@ -444,10 +463,36 @@ def generate_ui_code(
     if llm_model is None:
         raise ValueError("llm_model is required for generate_ui_code")
     
+    store = CodeStore("genui")
+    
+    # If no current code provided, try to load from store
+    if not current_code:
+        entry = store.get_latest(store_key)
+        if entry:
+            current_code = entry.code
+            print(f"Loaded existing UI code from store (version {entry.version})")
+
     agent = GenUIAgent(llm_model=llm_model)
     agent.max_retries = max_retries
     agent.validator = get_validator()
-    return agent.iterate_genui(current_code, state, instruction)
+    
+    final_code, html_output = agent.iterate_genui(current_code, state, instruction, state_schema)
+    
+    # Save to store
+    # Simple versioning: increment major version if we could parse it, else 1.0
+    new_version = "1.0"
+    latest = store.get_latest(store_key)
+    if latest:
+        try:
+            v = float(latest.version)
+            new_version = f"{v + 0.1:.1f}"
+        except ValueError:
+            pass
+            
+    store.commit(store_key, final_code, instruction, new_version)
+    print(f"Saved new UI code to store (version {new_version})")
+    
+    return final_code, html_output
 
 # --- EXAMPLE USAGE ---
 if __name__ == "__main__":
@@ -470,7 +515,6 @@ if __name__ == "__main__":
         
         def generate(self, messages, tools=None, tool_choice=None):
             kwargs = {
-                "model": MODEL_NAME,
                 "messages": messages,
                 "temperature": 0.2
             }

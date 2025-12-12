@@ -7,6 +7,7 @@ import yaml
 import traceback
 import sys
 
+from pydantic import BaseModel
 
 from ..PromptGenerator import PromptGenerator
 from .data import *
@@ -14,6 +15,21 @@ from ..ActionManager import ActionManager
 from ..EventManager import EventManager
 from ..Logger import log
 from ..Models import LLMModel, EmbeddingModel
+
+# Type alias for projected states dictionary
+ProjectedStates = dict[str, BaseModel]
+
+
+def get_state_dict(projected_states: ProjectedStates, key: str, default: dict | None = None) -> dict:
+    """Helper to get a projection state as a dict for backward-compatible access patterns."""
+    if default is None:
+        default = {}
+    state = projected_states.get(key)
+    if state is None:
+        return default
+    if hasattr(state, 'model_dump'):
+        return state.model_dump()
+    return state if isinstance(state, dict) else default
 
 llm_model: LLMModel = cast(LLMModel, None)
 embedding_model: EmbeddingModel = cast(EmbeddingModel, None)
@@ -340,7 +356,7 @@ def get_galnet_news(obj, projected_states):
 def blueprint_finder(obj, projected_states):
     import yaml
     # Get current location coordinates for distance calculation
-    current_location = projected_states.get('Location', {})
+    current_location = get_state_dict(projected_states, 'Location')
     current_coords = current_location.get('StarPos', [0, 0, 0])
     
     # Helper function to calculate distance to engineer
@@ -355,7 +371,7 @@ def blueprint_finder(obj, projected_states):
         return round(distance_ly, 2)
 
     # Get engineer progress data
-    engineer_progress = projected_states.get('EngineerProgress')
+    engineer_progress = get_state_dict(projected_states, 'EngineerProgress')
     game_engineers = {}
     if engineer_progress:
         engineers = engineer_progress.get('Engineers', [])
@@ -415,8 +431,8 @@ def blueprint_finder(obj, projected_states):
         search_grade = None
 
     # Get inventory data from projected states
-    materials_data = projected_states.get('Materials', {})
-    shiplocker_data = projected_states.get('ShipLocker', {})
+    materials_data = get_state_dict(projected_states, 'Materials')
+    shiplocker_data = get_state_dict(projected_states, 'ShipLocker')
 
     # Helper function to get inventory count for a material
     def get_inventory_count(material_name):
@@ -692,7 +708,7 @@ def blueprint_finder(obj, projected_states):
 
 def engineer_finder(obj, projected_states):
     # Get current location coordinates for distance calculation
-    current_location = projected_states.get('Location', {})
+    current_location = get_state_dict(projected_states, 'Location')
     current_coords = current_location.get('StarPos', [0, 0, 0])
     
     # Helper function to calculate distance to engineer
@@ -714,7 +730,7 @@ def engineer_finder(obj, projected_states):
     search_modifications = obj.get('modifications', '').lower().strip() if obj else ''
     search_progress = obj.get('progress', '').strip() if obj else ''
 
-    engineer_progress = projected_states.get('EngineerProgress')
+    engineer_progress = get_state_dict(projected_states, 'EngineerProgress')
 
     if not engineer_progress:
         return "No engineer progress found"
@@ -971,8 +987,8 @@ def material_finder(obj, projected_states):
     search_type = obj.get('type', '').lower().strip() if obj else ''
 
     # Get data from projected states
-    materials_data = projected_states.get('Materials', {})
-    shiplocker_data = projected_states.get('ShipLocker', {})
+    materials_data = get_state_dict(projected_states, 'Materials')
+    shiplocker_data = get_state_dict(projected_states, 'ShipLocker')
 
     # Helper function to find ship material info
     def find_ship_material_info(material_name):
@@ -1514,7 +1530,8 @@ def prepare_station_request(obj, projected_states):# Helper function for fuzzy m
         }
     }
     # Add optional filters if they exist
-    requires_large_pad = projected_states.get('ShipInfo').get('LandingPadSize') == 'L'
+    ship_info = get_state_dict(projected_states, 'ShipInfo')
+    requires_large_pad = ship_info.get('LandingPadSize') == 'L'
     if requires_large_pad:
         filters["has_large_pad"] = {"value": True}
     if "material_trader" in obj and obj["material_trader"]:
@@ -1614,7 +1631,8 @@ def prepare_station_request(obj, projected_states):# Helper function for fuzzy m
             "destination": destination
         }
     else:
-        request_body["reference_system"] = obj.get("reference_system", projected_states.get("Location", {}).get("StarSystem", "Sol"))
+        location = get_state_dict(projected_states, 'Location')
+        request_body["reference_system"] = obj.get("reference_system", location.get("StarSystem", "Sol"))
 
     return request_body
 
@@ -1857,8 +1875,9 @@ def prepare_system_request(obj, projected_states):# Helper function for fuzzy ma
             "destination": destination
         }
     else:
+        location = get_state_dict(projected_states, "Location")
         request_body["reference_system"] = obj.get("reference_system",
-                                                   projected_states.get("Location", {}).get("StarSystem", "Sol"))
+                                                   location.get("StarSystem", "Sol"))
 
     return request_body
 
@@ -2038,8 +2057,9 @@ def prepare_body_request(obj, projected_states):
             "destination": destination
         }
     else:
+        location = get_state_dict(projected_states, 'Location')
         request_body["reference_system"] = obj.get("reference_system",
-                                                   projected_states.get("Location", {}).get("StarSystem", "Sol"))
+                                                   location.get("StarSystem", "Sol"))
 
     return request_body
 

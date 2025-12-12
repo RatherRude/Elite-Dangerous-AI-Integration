@@ -64,72 +64,10 @@ export class GenUiService {
      * Transform projected states from backend to UI-friendly format
      */
     private transformState(projectedStates: Record<string, any>): any {
-        const state: any = {};
-        
-        // Ship info
-        if (projectedStates['Ship']) {
-            const ship = projectedStates['Ship'];
-            state.ship = {
-                name: ship.Name || 'Unknown',
-                type: ship.Ship || 'Unknown',
-                ident: ship.ShipIdent || '',
-            };
-        }
-        
-        // Current status (flags, fuel, cargo, etc.)
-        if (projectedStates['CurrentStatus']) {
-            const status = projectedStates['CurrentStatus'];
-            state.status = {
-                flags: status.flags || {},
-                flags2: status.flags2 || {},
-            };
-            if (status.fuel) {
-                state.ship = state.ship || {};
-                state.ship.fuel = status.fuel;
-            }
-            if (status.cargo !== undefined) {
-                state.ship = state.ship || {};
-                state.ship.cargoCapacity = status.cargo;
-            }
-        }
-        
-        // Location
-        if (projectedStates['Location']) {
-            const loc = projectedStates['Location'];
-            state.location = {
-                system: loc.StarSystem || 'Unknown',
-                body: loc.Body || '',
-                station: loc.StationName || '',
-            };
-        }
-        
-        // Navigation
-        if (projectedStates['Navigation']) {
-            const nav = projectedStates['Navigation'];
-            state.navigation = {
-                destination: nav.Destination || {},
-                route: nav.Route || [],
-            };
-        }
-        
-        // Missions
-        if (projectedStates['Missions']) {
-            state.missions = projectedStates['Missions'];
-        }
-        
-        // Materials
-        if (projectedStates['Materials']) {
-            state.materials = projectedStates['Materials'];
-        }
-        
-        // Cargo
-        if (projectedStates['Cargo']) {
-            state.cargo = projectedStates['Cargo'];
-            // Also set ship cargo for convenience
-            if (state.ship) {
-                state.ship.cargo = projectedStates['Cargo'];
-            }
-        }
+        const state: any = {
+            ...this.getCurrentState(),
+            ...projectedStates,
+        };
         
         return state;
     }

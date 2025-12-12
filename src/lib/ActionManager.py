@@ -4,11 +4,15 @@ import random
 from typing import Callable, Literal
 
 from openai.types.chat import ChatCompletionMessageFunctionToolCall
+from pydantic import BaseModel
 
 
 from .Database import KeyValueStore
 from .Logger import log
 import traceback
+
+# Type alias for projected states dictionary
+ProjectedStates = dict[str, BaseModel]
 
 
 class ActionManager:
@@ -61,7 +65,7 @@ class ActionManager:
 
         return valid_actions
     
-    def getActionDesc(self, tool_call: ChatCompletionMessageFunctionToolCall, projected_states: dict[str, dict]):
+    def getActionDesc(self, tool_call: ChatCompletionMessageFunctionToolCall, projected_states: ProjectedStates):
         """ summarize functions input as text """
         if tool_call.function.name in self.actions:
             action_descriptor = self.actions.get(tool_call.function.name)
@@ -75,7 +79,7 @@ class ActionManager:
         return None
     
 
-    def runAction(self, tool_call: ChatCompletionMessageFunctionToolCall, projected_states: dict[str, dict]):
+    def runAction(self, tool_call: ChatCompletionMessageFunctionToolCall, projected_states: ProjectedStates):
         """get function response and fetch matching python function, then call function using arguments provided"""
         function_result = None
 

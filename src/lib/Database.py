@@ -83,6 +83,13 @@ class VectorStoreDateSummary(TypedDict):
     date: str
     count: int
 
+@dataclass
+class CodeEntry:
+    code: str
+    commit_message: str
+    version: str
+    inserted_at: float
+
 @final
 class EventStore():
     def __init__(self, store_name: str, event_classes: list[Any]):
@@ -806,3 +813,92 @@ class KeyValueStore():
             DELETE FROM {self.table_name}
         ''')
         conn.commit()
+
+@final
+class CodeStore():
+    def __init__(self, store_name: str):
+        self.store_name = store_name
+        self.table_name = f'{store_name}_code_v1'
+        
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(f'''
+            CREATE TABLE IF NOT EXISTS {self.table_name} (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                key TEXT,
+                code TEXT,
+                commit_message TEXT,
+                version TEXT,
+                inserted_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        conn.commit()
+
+    def init(self, key: str, default_code: str, default_commit_message: str, version: str = "1.0") -> CodeEntry:
+        conn = get_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute(f'''
+            SELECT code, commit_message, version, unixepoch(inserted_at)
+            FROM {self.table_name}
+            WHERE key = ?
+            ORDER BY id DESC
+            LIMIT 1
+        ''', (key,))
+        row = cursor.fetchone()
+        
+        if row:
+            return CodeEntry(code=row[0], commit_message=row[1], version=row[2], inserted_at=row[3])
+        
+        cursor.execute(f'''
+            INSERT INTO {self.table_name} (key, code, commit_message, version)
+            VALUES (?, ?, ?, ?)
+        ''', (key, default_code, default_commit_message, version))
+        conn.commit()
+        
+        cursor.execute(f'''
+            SELECT code, commit_message, version, unixepoch(inserted_at)
+            FROM {self.table_name}
+            WHERE key = ?
+            ORDER BY id DESC
+            LIMIT 1
+        ''', (key,))
+        row = cursor.fetchone()
+        return CodeEntry(code=row[0], commit_message=row[1], version=row[2], inserted_at=row[3])
+
+    def commit(self, key: str, code: str, commit_message: str, version: str) -> None:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(f'''
+            INSERT INTO {self.table_name} (key, code, commit_message, version)
+            VALUES (?, ?, ?, ?)
+        ''', (key, code, commit_message, version))
+        conn.commit()
+
+    def get_latest(self, key: str) -> CodeEntry | None:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(f'''
+            SELECT code, commit_message, version, unixepoch(inserted_at)
+            FROM {self.table_name}
+            WHERE key = ?
+            ORDER BY id DESC
+            LIMIT 1
+        ''', (key,))
+        row = cursor.fetchone()
+        if row:
+            return CodeEntry(code=row[0], commit_message=row[1], version=row[2], inserted_at=row[3])
+        return None
+
+    def get_history(self, key: str, limit: int = 100) -> list[CodeEntry]:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(f'''
+            SELECT code, commit_message, version, unixepoch(inserted_at)
+            FROM {self.table_name}
+            WHERE key = ?
+            ORDER BY id DESC
+            LIMIT ?
+        ''', (key, limit))
+        rows = cursor.fetchall()
+        return [CodeEntry(code=r[0], commit_message=r[1], version=r[2], inserted_at=r[3]) for r in rows]

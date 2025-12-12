@@ -88,3 +88,4 @@ opentelemetry-api==1.38.0
 opentelemetry-sdk==1.38.0 
 opentelemetry-exporter-otlp==1.38.0
 opentelemetry-instrumentation-openai==0.48.0
+quickjs==1.19.4

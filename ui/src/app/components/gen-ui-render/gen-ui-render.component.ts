@@ -41,6 +41,7 @@ export class GenUiRenderComponent implements AfterViewInit, OnDestroy {
   
   private codeSub: Subscription | null = null;
   private stateSub: Subscription | null = null;
+  private state: any = {};
 
   constructor(
     private genUiService: GenUiService,
@@ -50,6 +51,7 @@ export class GenUiRenderComponent implements AfterViewInit, OnDestroy {
   ngAfterViewInit() {
     // 1. Subscribe to CODE changes (Rare)
     this.codeSub = this.genUiService.uiCode$.subscribe((code) => {
+      console.log("GenUI: Rebuilding sandbox with new code", code);
       if (code) this.rebuildSandbox(code);
     });
 
@@ -58,7 +60,9 @@ export class GenUiRenderComponent implements AfterViewInit, OnDestroy {
     // on the main thread frequently.
     this.ngZone.runOutsideAngular(() => {
       this.stateSub = this.genUiService.uiState$.subscribe((state) => {
+        console.log("GenUI: Updating state", state);
         if (state) this.updateSandboxState(state);
+        this.state = state; 
       });
     });
   }
@@ -121,7 +125,7 @@ export class GenUiRenderComponent implements AfterViewInit, OnDestroy {
             ${llmCode}
             // Capture App component
             window.App = App;
-            console.log("GenUI: App component loaded");
+            console.log("GenUI: App component loaded", window.App);
           } catch(e) {
             console.error("GenUI: Error loading component", e);
             document.body.innerHTML = '<div class="text-red-500 p-4">Runtime Error: ' + e.message + '</div>';
@@ -158,6 +162,8 @@ export class GenUiRenderComponent implements AfterViewInit, OnDestroy {
     doc.open();
     doc.write(htmlContent);
     doc.close();
+
+    this.updateSandboxState(this.state); // Initial empty state
   }
 
   /**

@@ -2,8 +2,9 @@ import hashlib
 import inspect
 from abc import ABC, abstractmethod
 from datetime import timezone, datetime
-from typing import Any, Generic, Literal, Callable, TypeVar, final
+from typing import Any, Generic, Literal, Callable, TypeVar, final, get_type_hints, get_args, get_origin
 from typing_extensions import deprecated
+from pydantic import BaseModel
 
 from .Database import EventStore, KeyValueStore, VectorStore
 from .EDJournal import *
@@ -13,17 +14,45 @@ from .Logger import log, show_chat_message
 import threading
 from collections import defaultdict
 
-ProjectedState = TypeVar("ProjectedState")
+# Type alias for projected states dictionary
+ProjectedStates = dict[str, BaseModel]
 
-class Projection(ABC, Generic[ProjectedState]):
-    @abstractmethod
-    def get_default_state(self) -> ProjectedState:
-        pass
+StateModel = TypeVar("StateModel", bound=BaseModel)
+
+class Projection(ABC, Generic[StateModel]):
+    """
+    Base class for projections. Subclasses should define a StateModel class attribute
+    that is a Pydantic BaseModel with default values.
+    """
+    StateModel: type[BaseModel]  # Should be overridden by subclasses
     
     def __init__(self):
-        self.state: ProjectedState = self.get_default_state()
+        # Get the StateModel from class attribute or type hints
+        state_model_type = self._get_state_model_type()
+        self.state: StateModel = state_model_type()  # type: ignore
         self.last_processed: float = 0.0
-        pass
+
+    def _get_state_model_type(self) -> type[BaseModel]:
+        """Get the StateModel type from class attribute or Generic type parameter."""
+        # First try class attribute - check if it's actually defined on the subclass, not just inherited as a type annotation
+        subclass_state_model = self.__class__.__dict__.get('StateModel')
+        if subclass_state_model is not None and isinstance(subclass_state_model, type) and issubclass(subclass_state_model, BaseModel):
+            return subclass_state_model
+        
+        # Then try to extract from Generic type parameter
+        for base in getattr(self.__class__, '__orig_bases__', []):
+            origin = get_origin(base)
+            if origin is Projection or (isinstance(origin, type) and issubclass(origin, Projection)):
+                args = get_args(base)
+                if args and isinstance(args[0], type) and issubclass(args[0], BaseModel):
+                    return args[0]
+        
+        raise TypeError(f"Projection subclass {self.__class__.__name__} must define a StateModel class attribute or use a Pydantic BaseModel as the generic type parameter")
+    
+    def get_default_state(self) -> StateModel:
+        """Returns a new instance of the state model with default values."""
+        state_model_type = self._get_state_model_type()
+        return state_model_type()  # type: ignore
 
     @abstractmethod
     def process(self, event: Event) -> None | list[ProjectedEvent]:
@@ -54,7 +83,7 @@ class EventManager:
 
         self.event_classes: list[type[Event]] = EventClasses
         self.projections: list[Projection] = []
-        self.sideeffects: list[Callable[[Event, dict[str, Any]], None]] = []
+        self.sideeffects: list[Callable[[Event, ProjectedStates], None]] = []
         
         self.short_term_memory = EventStore('events', self.event_classes)
         self.projection_store = KeyValueStore('projections')
@@ -144,8 +173,8 @@ class EventManager:
         mems = self.long_term_memory.get_most_recent_entries(limit=limit)
         return [MemoryEvent(content=mem['content'], metadata=mem['metadata'], embedding=[]) for mem in mems]
 
-    def process(self):
-        projected_states: dict[str, Any] | None = None
+    def process(self) -> ProjectedStates | None:
+        projected_states: ProjectedStates | None = None
         while not self.incoming.empty():
             event = self.incoming.get()
             
@@ -163,7 +192,7 @@ class EventManager:
                 
             projected_states = {}
             for projection in self.projections:
-                projected_states[projection.__class__.__name__] = projection.state.copy()
+                projected_states[projection.__class__.__name__] = projection.state
             
             self.trigger_sideeffects(event, projected_states)
             for projected_event in projected_events:
@@ -177,24 +206,24 @@ class EventManager:
         return projected_states
     
 
-    def trigger_sideeffects(self, event: Event, projected_states: dict[str, Any]):
+    def trigger_sideeffects(self, event: Event, projected_states: ProjectedStates):
         for sideeffect in self.sideeffects:
             try:
                 sideeffect(event, projected_states)
             except Exception as e:
                 log('error', 'Error triggering sideeffect', sideeffect, e, traceback.format_exc())
     
-    def register_sideeffect(self, sideeffect: Callable[[Event, dict[str, Any]], None]):
+    def register_sideeffect(self, sideeffect: Callable[[Event, ProjectedStates], None]):
         self.sideeffects.append(sideeffect)
         
-    def get_current_state(self) -> tuple[list[Event], dict[str, Any]]:
+    def get_current_state(self) -> tuple[list[Event], ProjectedStates]:
         """
         Returns the current state of the event manager.
         :return: A tuple containing the list of processed events and a dictionary of projection states.
         """
-        projected_states = {}
+        projected_states: ProjectedStates = {}
         for projection in self.projections:
-            projected_states[projection.__class__.__name__] = projection.state.copy()
+            projected_states[projection.__class__.__name__] = projection.state
         return self.processed, projected_states
 
     def update_projections(self, event: Event, save_later: bool = False) -> list[ProjectedEvent]:
@@ -220,12 +249,12 @@ class EventManager:
             log('warn', 'Projection', projection_name, 'is running backwards in time!', 'Event:', event.processed_at, 'Projection:', projection.last_processed)
         projection.last_processed = event.processed_at
         if not save_later:
-            self.projection_store.set(projection_name, {"state": projection.state, "last_processed": projection.last_processed})
+            self.projection_store.set(projection_name, {"state": projection.state.model_dump(), "last_processed": projection.last_processed})
         return projected_events if projected_events else []
 
     def save_projections(self):
         for projection in self.projections:
-            self.projection_store.set(projection.__class__.__name__, {"state": projection.state, "last_processed": projection.last_processed})
+            self.projection_store.set(projection.__class__.__name__, {"state": projection.state.model_dump(), "last_processed": projection.last_processed})
     
     def register_projection(self, projection: Projection, raise_error: bool = True):
         projection_class_name = projection.__class__.__name__
@@ -234,9 +263,14 @@ class EventManager:
         log('debug', 'Register projection', projection_class_name, 'version', projection_version)
         
         try:
-            state = self.projection_store.init(projection_class_name, projection_version, {"state": projection.get_default_state(), "last_processed": 0.0})
-            projection.state = state["state"]
-            projection.last_processed = state["last_processed"]
+            # Get the state model type for deserialization
+            state_model_type = projection._get_state_model_type()
+            default_state_dict = projection.get_default_state().model_dump()
+            stored = self.projection_store.init(projection_class_name, projection_version, {"state": default_state_dict, "last_processed": 0.0})
+            
+            # Deserialize state from dict to Pydantic model
+            projection.state = state_model_type.model_validate(stored["state"])
+            projection.last_processed = stored["last_processed"]
 
             for event in self.processed + self.pending:
                 if event.processed_at > 0.0 and event.processed_at <= projection.last_processed:
@@ -291,7 +325,7 @@ class EventManager:
             raise TimeoutError(f"Condition not met within {timeout} seconds.")
         return satisfying_state[0]
 
-    def check_conditions(self, projection_name: str, new_state: dict):
+    def check_conditions(self, projection_name: str, new_state: BaseModel):
         """
         Call this after updating the state of `projections[projection_name]`.
         Checks if any registered conditions are satisfied by the latest state.
