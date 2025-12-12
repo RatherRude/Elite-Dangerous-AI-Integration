@@ -3,7 +3,7 @@ from typing import Literal, TypedDict
 class SettingBase(TypedDict):
     key: str
     label: str | None
-    type: Literal['paragraph', 'text', 'textarea', 'toggle', 'number', 'select']
+    type: Literal['paragraph', 'text', 'textarea', 'toggle', 'number', 'select', 'error']
     readonly: bool
     placeholder: str | None
 
@@ -47,6 +47,10 @@ class ToggleSetting(SettingBase):
 
 class ParagraphSetting(SettingBase):
     """Used to display a paragraph of text. The label is used as the title."""
+    content: str
+
+class ErrorSetting(SettingBase):
+    """Used to display an error message."""
     content: str
 
 class SettingsGrid(TypedDict):

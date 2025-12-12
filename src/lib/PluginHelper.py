@@ -1,3 +1,4 @@
+from pydantic.main import BaseModel
 import os
 from typing import Any, Callable
 
@@ -63,9 +64,17 @@ class PluginHelper():
             os.makedirs(plugin_data_path, exist_ok=True)
         return plugin_data_path
 
-    def register_action(self, name, description, parameters, method: Callable[[dict, dict], str], action_type="ship", input_template: Callable[[dict, dict], str]|None=None):
+    def register_action(self, name: str, description: str, parameters: type[BaseModel], method: Callable[[BaseModel, dict], str], action_type="ship", input_template: Callable[[dict, dict], str]|None=None):
         """Register an action"""
-        self._action_manager.registerAction(name=name, description=description, parameters=parameters, method=method, action_type=action_type, input_template=input_template)
+        def _wrapper(args: dict, context: dict) -> str:
+            try:
+                model = parameters(**args)
+                return method(model, context)
+            except Exception as e:
+                log('error', f"Plugin action '{name}' raised an exception: {e}")
+                return f"Error executing action {name}: {str(e)}"
+
+        self._action_manager.registerAction(name=name, description=description, parameters=parameters.model_json_schema(), method=_wrapper, action_type=action_type, input_template=input_template)
 
     def register_projection(self, projection: Projection):
         """Register a projection to maintain state over time

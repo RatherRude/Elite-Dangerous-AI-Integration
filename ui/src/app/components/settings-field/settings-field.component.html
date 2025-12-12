@@ -13,6 +13,14 @@
             <p [innerHTML]="field.content"></p>
         </div>
     }
+    @case ('error') {
+        <div class="error-field">
+            @if (field.label) {
+                <h4>{{ field.label }}</h4>
+            }
+            <pre>{{ field.content }}</pre>
+        </div>
+    }
     @case ('text') {
         <mat-form-field>
             <mat-label>{{ field.label }}</mat-label>

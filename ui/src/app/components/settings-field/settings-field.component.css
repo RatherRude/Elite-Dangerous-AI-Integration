@@ -25,6 +25,31 @@ mat-slide-toggle {
     color: rgba(255, 255, 255, 0.7);
 }
 
+.error-field {
+    margin: 8px 0;
+    padding: 12px;
+    background-color: rgba(244, 67, 54, 0.1);
+    border: 1px solid rgba(244, 67, 54, 0.5);
+    border-radius: 4px;
+}
+
+.error-field h4 {
+    margin: 0 0 8px 0;
+    font-weight: 500;
+    color: #ff5252;
+}
+
+.error-field pre {
+    margin: 0;
+    white-space: pre-wrap;
+    font-family: monospace;
+    font-size: 0.9em;
+    color: rgba(255, 255, 255, 0.9);
+    background-color: rgba(0, 0, 0, 0.2);
+    padding: 8px;
+    border-radius: 4px;
+}
+
 .unknown-field {
     color: #ff9800;
     font-style: italic;

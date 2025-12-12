@@ -16,12 +16,12 @@ export interface SettingsGrid {
 export interface SettingBase {
     key: string;
     label: string;
-    type: "paragraph" | "number" | "toggle" | "text" | "textarea" | "select";
+    type: "paragraph" | "number" | "toggle" | "text" | "textarea" | "select" | "error";
     readonly: boolean | null;
     placeholder: string | null;
     default_value?: any;
 
-    // Paragraph
+    // Paragraph & Error
     content: string;
 
     // Text & Textarea

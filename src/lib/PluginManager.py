@@ -8,7 +8,7 @@ from typing import Self
 
 from lib.Config import Config
 
-from .PluginSettingDefinitions import PluginSettings, ModelProviderDefinition
+from .PluginSettingDefinitions import PluginSettings, ModelProviderDefinition, ParagraphSetting, SettingsGrid, ErrorSetting
 from .Logger import log
 
 from .PluginBase import PluginBase, PluginManifest
@@ -30,6 +30,7 @@ class PluginManager:
         self.plugin_list: dict[str, 'PluginBase'] = {}
         self.plugin_settings_configs: dict[str, PluginSettings] = {}
         self.plugin_model_providers: list[PluginModelProvider] = []
+        self.failed_plugins: list[dict] = []
         self.PLUGIN_FOLDER: str = "plugins"
         self.PLUGIN_DEPENDENCIES_FOLDER: str = "deps"
         self.config = config
@@ -68,18 +69,20 @@ class PluginManager:
                 return plugin
 
         raise TypeError("No valid PluginBase subclass found.")
-
     def load_plugins(self) -> Self:
         """Load all .py files in PLUGIN_FOLDER as plugins."""
         
         self.load_default_plugins()
+        self.failed_plugins = []
         
+        # Create PLUGIN_FOLDER if it doesn't exist
         # Create PLUGIN_FOLDER if it doesn't exist
         if not os.path.exists(self.PLUGIN_FOLDER):
             os.makedirs(self.PLUGIN_FOLDER)
-
         for file in os.listdir(self.PLUGIN_FOLDER):
+            manifest = None
             try:
+                # Check if the file is a folder
                 # Check if the file is a folder
                 subfolder_path = os.path.join(self.PLUGIN_FOLDER, file)
                 if os.path.isdir(subfolder_path):
@@ -113,6 +116,12 @@ class PluginManager:
                     self.plugin_list[module_name] = module
             except Exception as e:
                 log('error', f"Failed to load plugin {file}:", e, traceback.format_exc())
+                self.failed_plugins.append({
+                    "file": file,
+                    "error": str(e),
+                    "traceback": traceback.format_exc(),
+                    "manifest": manifest
+                })
         return self
     
     def load_default_plugins(self):
@@ -158,6 +167,44 @@ class PluginManager:
             except Exception as e:
                 log('error', f"Failed to read model_providers for {module.plugin_manifest.name}: {e}")
         
+        # Add failed plugins to settings
+        for failed in self.failed_plugins:
+            manifest = failed.get("manifest")
+            file = failed.get("file")
+            error = failed.get("error")
+            tb = failed.get("traceback")
+            
+            if manifest:
+                guid = manifest.guid
+                name = manifest.name
+            else:
+                guid = f"failed_{file}"
+                name = f"Failed Plugin: {file}"
+            
+            # Create error settings page
+            error_settings: PluginSettings = {
+                "key": guid,
+                "label": name,
+                "icon": "alert-circle",
+                "grids": [
+                    {
+                        "key": "error_info",
+                        "label": "Plugin Load Error",
+                        "fields": [
+                            {
+                                "key": "error_msg",
+                                "label": "Error Message",
+                                "type": "error",
+                                "content": f"This plugin failed to load.\n\nError: {error}\n\nTraceback:\n{tb}",
+                                "readonly": True,
+                                "placeholder": None
+                            }
+                        ]
+                    }
+                ]
+            }
+            self.plugin_settings_configs[guid] = error_settings
+
         # Broadcast settings configs to UI
         print(json.dumps({"type": "plugin_settings_configs", "plugin_settings_configs": self.plugin_settings_configs, "has_plugin_settings": (len(self.plugin_settings_configs) > 0)})+'\n', flush=True)
         
