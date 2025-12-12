@@ -11,6 +11,7 @@ import requests
 
 from .actions_web import register_web_actions
 from .actions_ui import register_ui_actions
+from .actions_genui import register_genui_actions
 
 from ..Logger import log, show_chat_message
 from ..EDKeys import EDKeys
@@ -2495,6 +2496,12 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
 
     register_ui_actions(
         actionManager, eventManager
+    )
+
+    register_genui_actions(
+        actionManager, eventManager,
+        promptGenerator, agent_llm_model,
+        agent_llm_max_tries
     )
 
     if vision_model:
