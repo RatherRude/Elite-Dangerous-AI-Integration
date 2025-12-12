@@ -94,7 +94,7 @@ export class GenUiRenderComponent implements AfterViewInit, OnDestroy {
         <script src="https://cdn.tailwindcss.com"></script>
         <style>
           :root { color-scheme: only dark; }
-          html, body { background: transparent !important; overflow: hidden; margin: 0; padding: 0; color-scheme: only dark; }
+          html, body { background: transparent !important; overflow: visible; margin: 0; padding: 0; color-scheme: only dark; }
           /* Scrollbar hiding for cleaner UI */
           ::-webkit-scrollbar { display: none; }
         </style>
