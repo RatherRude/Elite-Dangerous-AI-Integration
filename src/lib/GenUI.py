@@ -4,10 +4,7 @@ import requests
 import quickjs
 from openai import OpenAI
 from typing import Optional, Dict, Tuple, Any
-from dotenv import load_dotenv
 from .Database import CodeStore
-
-load_dotenv()
 
 # --- CONFIGURATION ---
 MAX_RETRIES = 3
