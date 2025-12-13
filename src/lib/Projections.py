@@ -797,11 +797,11 @@ class ShipInfo(Projection[ShipInfoStateModel]):
         if isinstance(event, StatusEvent) and event.status.get('event') == 'Status':
             status: Status = event.status  # pyright: ignore[reportAssignmentType]
             if 'Cargo' in event.status:
-                self.state.Cargo = event.status.get('Cargo', 0)
+                self.state.Cargo = event.status.get('Cargo', 0) or 0
                 
             if 'Fuel' in status and status['Fuel']:
-                self.state.FuelMain = status['Fuel'].get('FuelMain', 0)
-                self.state.FuelReservoir = status['Fuel'].get('FuelReservoir', 0)
+                self.state.FuelMain = status['Fuel'].get('FuelMain', 0) or 0
+                self.state.FuelReservoir = status['Fuel'].get('FuelReservoir', 0) or 0
                 
         
         if isinstance(event, GameEvent) and event.content.get('event') == 'Loadout':

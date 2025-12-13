@@ -1,3 +1,4 @@
+from pydantic import ValidationError
 import hashlib
 import inspect
 from abc import ABC, abstractmethod
@@ -269,8 +270,12 @@ class EventManager:
             stored = self.projection_store.init(projection_class_name, projection_version, {"state": default_state_dict, "last_processed": 0.0})
             
             # Deserialize state from dict to Pydantic model
-            projection.state = state_model_type.model_validate(stored["state"])
-            projection.last_processed = stored["last_processed"]
+            try:
+                projection.state = state_model_type.model_validate(stored["state"])
+                projection.last_processed = stored["last_processed"]
+            except ValidationError as ve:
+                log('error', 'Validation error while deserializing state for projection', projection_class_name, ve)
+                projection.state = state_model_type.model_validate(default_state_dict)
 
             for event in self.processed + self.pending:
                 if event.processed_at > 0.0 and event.processed_at <= projection.last_processed:
