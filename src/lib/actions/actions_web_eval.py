@@ -4,8 +4,11 @@ from datetime import datetime
 from typing import Any
 import os
 
+from dotenv import load_dotenv
+
 from ..SystemDatabase import SystemDatabase
 
+load_dotenv()
 from pydantic import BaseModel
 from unittest.mock import MagicMock
 
