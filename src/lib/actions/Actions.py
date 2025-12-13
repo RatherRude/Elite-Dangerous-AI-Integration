@@ -365,8 +365,8 @@ def cycle_fire_group(args, projected_states):
     try:
 
         status_event = event_manager.wait_for_condition('CurrentStatus',
-                                                        lambda s: s.get('FireGroup') == firegroup_ask, 2)
-        new_firegroup = status_event["FireGroup"] if status_event else None
+                                                        lambda s: s.FireGroup == firegroup_ask, 2)
+        new_firegroup = status_event.FireGroup if status_event else None
     except TimeoutError:
         # handles case where we cycle back round to zero
         return "Failed to cycle to requested fire group. Please ensure it exists."
@@ -538,13 +538,13 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
         keys.send(galaxymap_key)
 
     try:
-        event_manager.wait_for_condition('CurrentStatus', lambda s: s.get('GuiFocus') == "GalaxyMap", 4)
+        event_manager.wait_for_condition('CurrentStatus', lambda s: s.GuiFocus == "GalaxyMap", 4)
 
     except TimeoutError:
         keys.send("UI_Back", repeat=10, repeat_delay=0.05)
         keys.send(galaxymap_key)
         try:
-            event_manager.wait_for_condition('CurrentStatus', lambda s: s.get('GuiFocus') == "GalaxyMap", 5)
+            event_manager.wait_for_condition('CurrentStatus', lambda s: s.GuiFocus == "GalaxyMap", 5)
         except TimeoutError:
             return "Galaxy map can not be opened currently, the current GUI needs to be closed first"
 
@@ -609,8 +609,8 @@ def galaxy_map_open(args, projected_states, galaxymap_key="GalaxyMapOpen"):
 
             try:
                 data = event_manager.wait_for_condition('NavInfo',
-                                                        lambda s: s.get('NavRoute') and len(s.get('NavRoute', [])) > 0 and s.get('NavRoute')[-1].get('StarSystem').lower() == args['system_name'].lower(), zoom_wait_time)
-                jumpAmount = len(data.get('NavRoute', [])) if data else 0  # amount of jumps to do
+                                                        lambda s: s.NavRoute and len(s.NavRoute) > 0 and s.NavRoute[-1].StarSystem.lower() == args['system_name'].lower(), zoom_wait_time)
+                jumpAmount = len(data.NavRoute) if data else 0  # amount of jumps to do
 
                 if not current_gui == "GalaxyMap":  # if we are already in the galaxy map we don't want to close it
                     keys.send(galaxymap_key)
@@ -656,12 +656,12 @@ def system_map_open_or_close(args, projected_states, sys_map_key='SystemMapOpen'
     keys.send(sys_map_key)
 
     try:
-        event_manager.wait_for_condition('CurrentStatus', lambda s: s.get('GuiFocus') == "SystemMap", 4)
+        event_manager.wait_for_condition('CurrentStatus', lambda s: s.GuiFocus == "SystemMap", 4)
     except TimeoutError:
         keys.send("UI_Back", repeat=10, repeat_delay=0.05)
         keys.send(sys_map_key)
         try:
-            event_manager.wait_for_condition('CurrentStatus', lambda s: s.get('GuiFocus') == "SystemMap", 4)
+            event_manager.wait_for_condition('CurrentStatus', lambda s: s.GuiFocus == "SystemMap", 4)
         except TimeoutError:
             return "System map can not be opened currently, the current GUI needs to be closed first"
 
@@ -800,16 +800,16 @@ def request_docking(args, projected_states):
         old_timestamp = get_state_dict(projected_states, 'DockingEvents').get('Timestamp', "1970-01-01T00:00:01Z")
         # Wait for a docking event with a timestamp newer than when we started
         docking_events = event_manager.wait_for_condition('DockingEvents',
-                                         lambda s: ((s.get('LastEventType') in ['DockingGranted', 'DockingCanceled', 'DockingDenied', 'DockingTimeout'])
-                                                    and (s.get('Timestamp', "1970-01-01T00:00:02Z") != old_timestamp)), 10)
+                                         lambda s: ((s.LastEventType in ['DockingGranted', 'DockingCanceled', 'DockingDenied', 'DockingTimeout'])
+                                                    and (s.Timestamp != old_timestamp)), 10)
         ship_info = get_state_dict(projected_states, 'ShipInfo')
-        if docking_events.get('LastEventType') == 'DockingGranted' and ship_info.get('hasDockingComputer', False):
+        if docking_events.LastEventType == 'DockingGranted' and ship_info.get('hasDockingComputer', False):
             keys.send('SetSpeedZero')
             sleep(0.2)
         msg = ""
-        if docking_events.get('LastEventType') == 'DockingGranted':
+        if docking_events.LastEventType == 'DockingGranted':
             msg = "Docking request was sent and granted"
-        if docking_events.get('LastEventType') in ['DockingCanceled', 'DockingDenied', 'DockingTimeout']:
+        if docking_events.LastEventType in ['DockingCanceled', 'DockingDenied', 'DockingTimeout']:
             msg = "Docking request was sent but previous station communication indicates that it has failed"
 
     except:
@@ -858,7 +858,7 @@ def npc_order(args, projected_states):
                 keys.send('UI_Select')
                 keys.send('UIFocus')
                 event_manager.wait_for_condition('ShipInfo',
-                                                 lambda s: any(fighter.get('Status') == 'Launched' and fighter.get('Pilot') == 'NPC Crew' for fighter in s.get('Fighters', [])), 1)
+                                                 lambda s: any(fighter.Status == 'Launched' and fighter.Pilot == 'NPC Crew' for fighter in s.Fighters), 1)
             else:
                 if order == 'ReturnToShip':
                     order = 'RequestDock'
@@ -1400,25 +1400,28 @@ def target_subsystem_thread(current_subsystem: str, current_event_id: str, desir
     if not current_subsystem:
         keys.send('CycleNextSubsystem')
         log('debug', 'CycleNextSubsystem key sent first time')
-        new_state = event_manager.wait_for_condition('Target', lambda s: s.get('Subsystem'))
-        current_subsystem = new_state.get('Subsystem')
-        current_event_id = new_state.get('EventID')
+        new_state = event_manager.wait_for_condition('Target', lambda s: s.Subsystem)
+        if not new_state:
+            show_chat_message('info', 'No subsystems found on target')
+            return
+        current_subsystem = new_state.Subsystem
+        current_event_id = new_state.EventID
     subsystem_loop = False
     while current_subsystem != desired_subsystem:
         keys.send('CycleNextSubsystem')
         log('debug', 'CycleNextSubsystem key sent')
-        new_state = event_manager.wait_for_condition('Target', lambda s: s.get('EventID') != current_event_id)
-        if 'Subsystem' not in new_state:
+        new_state = event_manager.wait_for_condition('Target', lambda s: s.EventID != current_event_id)
+        if not new_state.Subsystem:
             show_chat_message('info', 'Target lost, abort cycle')
             return
-        if new_state.get('Subsystem') == 'Power Plant':
+        if new_state.Subsystem == 'Power Plant':
             if subsystem_loop:
                 break
             subsystem_loop = True
 
-        log('debug', 'new subsystem targeted', new_state.get('Subsystem'))
-        current_subsystem = new_state.get('Subsystem')
-        current_event_id = new_state.get('EventID')
+        log('debug', 'new subsystem targeted', new_state.Subsystem)
+        current_subsystem = new_state.Subsystem
+        current_event_id = new_state.EventID
     log('debug', 'desired subsystem targeted', current_subsystem)
 
 
@@ -1447,6 +1450,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
                      chat_system_tabbed_flag: bool = True,
                      chat_squadron_tabbed_flag: bool = False,
                      chat_direct_tabbed_flag: bool = False,
+                     overlay_show_hud: bool = True,
                      weapon_types_list: list | None = None,
                      agent_llm_model: LLMModel | None = None,
                      agent_llm_max_tries: int = 7):
@@ -2539,11 +2543,12 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
         actionManager, eventManager
     )
 
-    register_genui_actions(
-        actionManager, eventManager,
-        promptGenerator, agent_llm_model,
-        agent_llm_max_tries
-    )
+    if overlay_show_hud:
+        register_genui_actions(
+            actionManager, eventManager,
+            promptGenerator, agent_llm_model,
+            agent_llm_max_tries
+        )
 
     if vision_model:
         actionManager.registerAction('getVisuals', "Describes what's currently visible to the Commander.", {

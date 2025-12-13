@@ -400,6 +400,7 @@ class Chat:
                 chat_system_tabbed_flag=self.config.get("chat_system_tabbed_var", True),
                 chat_squadron_tabbed_flag=self.config.get("chat_squadron_tabbed_var", False),
                 chat_direct_tabbed_flag=self.config.get("chat_direct_tabbed_var", False),
+                overlay_show_hud=self.config.get("overlay_show_hud", True),
                 weapon_types_list=self.config.get("weapon_types", []),
                 agent_llm_model=self.agent_llm_model,
                 agent_llm_max_tries=self.config.get("agent_llm_max_tries", 7),

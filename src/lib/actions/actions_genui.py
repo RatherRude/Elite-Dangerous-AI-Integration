@@ -17,6 +17,12 @@ from ..Database import CodeStore
 # Type alias for projected states dictionary
 ProjectedStates = dict[str, BaseModel]
 
+# Default empty skeleton UI code - a minimal valid Preact component
+DEFAULT_UI_CODE = """const App = ({ state }) => {
+  return html`<div></div>`;
+};
+"""
+
 
 class GenUIManager:
     """
@@ -47,16 +53,20 @@ class GenUIManager:
     def init(self) -> None:
         """
         Initialize the GenUI system by loading saved code from the database
-        and sending it to the frontend.
+        and sending it to the frontend. If no saved code exists, initializes
+        with the default skeleton UI code.
         """
         try:
-            entry = self._store.get_latest(self.STORE_KEY)
-            if entry and entry.code:
-                self.current_code = entry.code
-                self._send_to_frontend(self.current_code)
-                log('info', f"GenUI: Loaded and sent saved UI code on startup (version {entry.version})")
-            else:
-                log('info', "GenUI: No saved UI code found, starting fresh")
+            # Use CodeStore.init() which returns existing entry or creates default
+            entry = self._store.init(
+                self.STORE_KEY, 
+                DEFAULT_UI_CODE, 
+                "Initial default UI", 
+                "1.0"
+            )
+            self.current_code = entry.code
+            self._send_to_frontend(self.current_code)
+            log('info', f"GenUI: Loaded and sent UI code on startup (version {entry.version})")
         except Exception as e:
             log('warn', f"GenUI: Failed to load saved UI code on startup: {e}")
     
@@ -120,21 +130,22 @@ class GenUIManager:
     
     def clear(self) -> str:
         """
-        Clear the current UI overlay.
+        Clear the current UI overlay, resetting to the default empty skeleton.
         
         Returns:
             Status message confirming the clear
         """
-        self.current_code = ""
-        self._send_to_frontend("")
+        self.current_code = DEFAULT_UI_CODE
+        self._send_to_frontend(DEFAULT_UI_CODE)
         
-        # Also clear from database
+        # Save the reset state to database
         try:
-            self._store.commit(self.STORE_KEY, "", "Cleared overlay", "0.0")
+            self._store.commit(self.STORE_KEY, DEFAULT_UI_CODE, "Reset to default", "0.0")
+            log('info', "GenUI: Cleared overlay and reset to default skeleton")
         except Exception as e:
-            log('warn', f"GenUI: Failed to clear saved UI from database: {e}")
+            log('warn', f"GenUI: Failed to save cleared UI to database: {e}")
         
-        return "UI overlay cleared."
+        return "UI overlay cleared and reset to default."
     
     def _build_state_for_llm(self, projected_states: ProjectedStates) -> tuple[dict[str, Any], dict[str, Any]]:
         """
@@ -284,7 +295,7 @@ def register_genui_actions(
             "properties": {
                 "instruction": {
                     "type": "string",
-                    "description": "Description of what UI to create or how to modify the current UI. Be specific about what information to display and where. Examples: 'Show fuel and cargo in the top right', 'Create a mission tracker in the bottom left', 'Add a heat warning indicator'."
+                    "description": "Description of what UI to create or how to modify the current UI. Be specific about what information to display and where. Limit the input to the requested change only, no need to reiterate the full requirements. Examples: 'Move fuel and cargo in the top right', 'Create a mission tracker in the bottom left', 'Add a heat warning indicator'."
                 },
             },
             "required": ["instruction"]
@@ -297,10 +308,11 @@ def register_genui_actions(
     # Clear UI action
     actionManager.registerAction(
         'clear_overlay_ui',
-        "Clear the current overlay UI, removing all custom HUD elements.",
+        "Clear and reset the game overlay UI to its default empty state. Use this when the user wants to remove all custom HUD elements, hide the overlay, or start fresh with a clean overlay.",
         {
             "type": "object",
             "properties": {},
+            "required": []
         },
         _clear_ui_action,
         'ui',

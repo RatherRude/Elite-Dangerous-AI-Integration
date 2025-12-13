@@ -65,11 +65,27 @@ export class GenUiRenderComponent implements AfterViewInit, OnDestroy {
         this.state = state; 
       });
     });
+
+    // Listen for messages from the iframe
+    window.addEventListener('message', this.messageHandler);
   }
 
   ngOnDestroy() {
     this.codeSub?.unsubscribe();
     this.stateSub?.unsubscribe();
+    window.removeEventListener('message', this.messageHandler);
+  }
+
+  private messageHandler = (event: MessageEvent) => {
+    // Security check: ensure message comes from our iframe
+    if (event.source !== this.iframeRef.nativeElement.contentWindow) return;
+    
+    if (event.data?.type === 'GENUI_READY') {
+      console.log("GenUI: Iframe ready, syncing state");
+      this.updateSandboxState(this.state);
+    } else if (event.data?.type === 'GENUI_ERROR') {
+      console.error("GenUI: Iframe reported error", event.data.error);
+    }
   }
 
   /**
@@ -126,9 +142,11 @@ export class GenUiRenderComponent implements AfterViewInit, OnDestroy {
             // Capture App component
             window.App = App;
             console.log("GenUI: App component loaded", window.App);
+            window.parent.postMessage({ type: 'GENUI_READY' }, '*');
           } catch(e) {
             console.error("GenUI: Error loading component", e);
             document.body.innerHTML = '<div class="text-red-500 p-4">Runtime Error: ' + e.message + '</div>';
+            window.parent.postMessage({ type: 'GENUI_ERROR', error: e.message }, '*');
           }
         </script>
 
@@ -162,8 +180,6 @@ export class GenUiRenderComponent implements AfterViewInit, OnDestroy {
     doc.open();
     doc.write(htmlContent);
     doc.close();
-
-    this.updateSandboxState(this.state); // Initial empty state
   }
 
   /**

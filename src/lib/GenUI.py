@@ -35,10 +35,77 @@ CRITICAL RULES:
 
 Example Output:
 const App = ({ state }) => {
-  const fuel = state.ship?.fuel?.current ?? 0;
+  const numOrNull = (v) => {
+    if (v == null || v === "") return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
+  
+  // ---------- PIPS (SYS/ENG/WEP) ----------
+  // Bind directly to live status model:
+  const pipsRaw = state?.CurrentStatus?.Pips ?? null;
+
+  const pipSys = numOrNull(pipsRaw?.system);
+  const pipEng = numOrNull(pipsRaw?.engine);
+  const pipWep = numOrNull(pipsRaw?.weapons);
+
+  const pipKnown = pipSys != null && pipEng != null && pipWep != null;
+
+  const pipBarPct = (v) => {
+    if (v == null) return 0;
+    const clamped = Math.max(0, Math.min(4, v)); // typical range 0..4
+    return (clamped / 4) * 100;
+  };
+
+  const panelClass =
+    "rounded-md border border-gray-700 bg-gray-900/70 backdrop-blur px-3 py-2 shadow-lg";
+  const labelClass = "text-[10px] font-semibold tracking-wide text-gray-300/80";
+  const valueClass = "text-xs font-semibold text-gray-100 tabular-nums";
+
+  const pipItems = [
+    { k: "SYS", v: pipSys, c: "bg-sky-400" },
+    { k: "ENG", v: pipEng, c: "bg-amber-400" },
+    { k: "WEP", v: pipWep, c: "bg-rose-400" },
+  ];
+
   return html`
-    <div class="bg-gray-900 p-2 border border-gray-700">
-      <div class="text-orange-500 font-bold">FUEL: ${fuel}</div>
+    <div class="fixed top-3 left-1/2 -translate-x-1/2 z-50 pointer-events-none">
+      <div class="w-[34rem] max-w-[96vw]">
+        <div class="grid grid-cols-3 gap-2">
+          <!-- (3) PIPS -->
+          <div class=${panelClass}>
+            <div class="flex items-center justify-between">
+              <div class=${labelClass}>PIPS</div>
+              <div class=${valueClass}>
+                ${pipKnown
+                  ? `${pipSys.toFixed(1)} / ${pipEng.toFixed(1)} / ${pipWep.toFixed(1)}`
+                  : "--.- / --.- / --.-"}
+              </div>
+            </div>
+
+            <div class="mt-2 grid grid-cols-3 gap-2">
+              ${pipItems.map(
+                (p) => html`
+                  <div class="min-w-0">
+                    <div class="flex items-center justify-between">
+                      <div class="text-[10px] font-semibold text-gray-300/80">${p.k}</div>
+                      <div class="text-[10px] font-semibold text-gray-200/90 tabular-nums">
+                        ${p.v == null ? "--.-" : p.v.toFixed(1)}
+                      </div>
+                    </div>
+                    <div class="mt-1 h-1.5 w-full rounded bg-gray-800 overflow-hidden">
+                      <div
+                        class=${["h-full", p.c].join(" ")}
+                        style=${`width:${pipBarPct(p.v)}%; transition: width 200ms linear; opacity:${p.v == null ? 0.35 : 1};`}
+                      ></div>
+                    </div>
+                  </div>
+                `
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   `;
 };
