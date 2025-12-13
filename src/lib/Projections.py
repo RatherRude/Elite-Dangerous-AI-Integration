@@ -797,30 +797,30 @@ class ShipInfo(Projection[ShipInfoStateModel]):
         if isinstance(event, StatusEvent) and event.status.get('event') == 'Status':
             status: Status = event.status  # pyright: ignore[reportAssignmentType]
             if 'Cargo' in event.status:
-                self.state.Cargo = event.status.get('Cargo', 0) or 0
+                self.state.Cargo = event.status.get('Cargo') or 0
                 
             if 'Fuel' in status and status['Fuel']:
-                self.state.FuelMain = status['Fuel'].get('FuelMain', 0) or 0
-                self.state.FuelReservoir = status['Fuel'].get('FuelReservoir', 0) or 0
+                self.state.FuelMain = status['Fuel'].get('FuelMain') or 0
+                self.state.FuelReservoir = status['Fuel'].get('FuelReservoir') or 0
                 
         
         if isinstance(event, GameEvent) and event.content.get('event') == 'Loadout':
             if 'ShipName' in event.content:
-                self.state.Name = event.content.get('ShipName', 'Unknown')
+                self.state.Name = event.content.get('ShipName') or 'Unknown'
             if 'Ship' in event.content:
-                self.state.Type = event.content.get('Ship', 'Unknown')
+                self.state.Type = event.content.get('Ship') or 'Unknown'
             if 'ShipIdent' in event.content:
-                self.state.ShipIdent = event.content.get('ShipIdent', 'Unknown')
+                self.state.ShipIdent = event.content.get('ShipIdent') or 'Unknown'
             if 'UnladenMass' in event.content:
-                self.state.UnladenMass = event.content.get('UnladenMass', 0)
+                self.state.UnladenMass = event.content.get('UnladenMass') or 0.0
             if 'CargoCapacity' in event.content:
-                self.state.CargoCapacity = event.content.get('CargoCapacity', 0)
+                self.state.CargoCapacity = event.content.get('CargoCapacity') or 0
             if 'FuelCapacity' in event.content:
-                self.state.FuelMainCapacity = event.content['FuelCapacity'].get('Main', 0)
-                self.state.FuelReservoirCapacity = event.content['FuelCapacity'].get('Reserve', 0)
+                self.state.FuelMainCapacity = event.content['FuelCapacity'].get('Main') or 0
+                self.state.FuelReservoirCapacity = event.content['FuelCapacity'].get('Reserve') or 0
 
             if 'MaxJumpRange' in event.content:
-                self.state.ReportedMaximumJumpRange = event.content.get('MaxJumpRange', 0)
+                self.state.ReportedMaximumJumpRange = event.content.get('MaxJumpRange') or 0
 
             if 'Modules' in event.content:
                 has_refinery = any(module["Item"].startswith("int_refinery") for module in event.content["Modules"])
@@ -929,9 +929,9 @@ class ShipInfo(Projection[ShipInfoStateModel]):
 
         
         if isinstance(event, GameEvent) and event.content.get('event') == 'Cargo':
-            self.state.Cargo = event.content.get('Count', 0)
+            self.state.Cargo = event.content.get('Count') or 0
             if event.content.get('Vessel') == 'Ship': 
-                self.state.ShipCargo = event.content.get('Count', 0)
+                self.state.ShipCargo = event.content.get('Count') or 0
 
         if isinstance(event, GameEvent) and event.content.get('event') in ['RefuelAll','RepairAll','BuyAmmo']:
             if self.state.hasLimpets and self.state.Cargo < self.state.CargoCapacity:
@@ -939,9 +939,9 @@ class ShipInfo(Projection[ShipInfoStateModel]):
 
         if isinstance(event, GameEvent) and event.content.get('event') == 'SetUserShipName':
             if 'UserShipName' in event.content:
-                self.state.Name = event.content.get('UserShipName', 'Unknown')
+                self.state.Name = event.content.get('UserShipName') or 'Unknown'
             if 'UserShipId' in event.content:
-                self.state.ShipIdent = event.content.get('UserShipId', 'Unknown')
+                self.state.ShipIdent = event.content.get('UserShipId') or 'Unknown'
 
         # Fighter events
         # No events for crew fighter destroyed or docked...

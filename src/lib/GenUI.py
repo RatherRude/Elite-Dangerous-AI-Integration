@@ -1,3 +1,4 @@
+import yaml
 import os
 import json
 import requests
@@ -265,7 +266,9 @@ Evaluate whether the HTML output:
 - Correctly displays the requested information
 - Has proper structure and layout
 - Uses appropriate styling for an Elite Dangerous game overlay
-- Handles edge cases (empty data, missing values) gracefully
+- Handles edge cases (empty data, missing values) 
+
+Be lenient on different interpretations of the content that is shown. The user's instruction may be impossible to implement exactly as requested.
 
 You MUST call one of the provided tools to indicate your decision:
 - Use 'approve_ui' if the output is correct and meets the requirements
@@ -353,10 +356,10 @@ class GenUIAgent:
         if state_schema:
             state_documentation = f"""
 Available State Schema (props.state):
-{json.dumps(state_schema, indent=2)}
+{yaml.dump(state_schema, indent=2)}
 
 Current State Values:
-{json.dumps(state, indent=2)}
+{yaml.dump(state, indent=2)}
 """
         else:
             state_documentation = f"State Structure: {json.dumps(state)}"
