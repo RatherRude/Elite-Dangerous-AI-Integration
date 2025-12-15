@@ -8,12 +8,11 @@ import {ChatMessage, ChatService} from "../services/chat.service";
 import {AvatarService} from "../services/avatar.service";
 import {CharacterService} from "../services/character.service";
 import {Config, ConfigService} from "../services/config.service";
-import {GenUiRenderComponent} from "../components/gen-ui-render/gen-ui-render.component";
 
 @Component({
   selector: "app-overlay-view",
   standalone: true,
-  imports: [CommonModule, GenUiRenderComponent],
+  imports: [CommonModule],
   templateUrl: "./overlay-view.component.html",
   styleUrl: "./overlay-view.component.css",
 })

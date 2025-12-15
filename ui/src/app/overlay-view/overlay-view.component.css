@@ -6,32 +6,9 @@
   width: 100vw;
   height: 100vh;
   font-family: "Jura", sans-serif;
-  position: relative;
-}
-
-/* GenUI container - fills the centered 16:9 area as background */
-.genui-container {
-  position: absolute;
-  aspect-ratio: 16/9;
-  width: min(100vw, 100vh * 16 / 9);
-  height: min(100vh, 100vw * 9 / 16);
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 0;
-  pointer-events: none;
-}
-
-.genui-container app-gen-ui-render {
-  display: block;
-  width: 100%;
-  height: 100%;
-  pointer-events: auto;
 }
 
 .overlay-container {
-  position: relative;
-  z-index: 1;
   display: grid;
   box-sizing: border-box;
   aspect-ratio: 16/9;

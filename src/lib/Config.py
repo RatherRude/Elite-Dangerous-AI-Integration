@@ -1264,7 +1264,7 @@ def update_config(config: Config, data: dict) -> Config:
 
         elif data["llm_provider"] == "openrouter":
             data["llm_endpoint"] = "https://openrouter.ai/api/v1/"
-            data["llm_model_name"] = "meta-llama/llama-3.3-70b-instruct:free"
+            data["llm_model_name"] = "llama-3.3-70b-instruct:free"
             data["llm_api_key"] = ""
             data["tools_var"] = False
             data["llm_reasoning_effort"] = 'default'
@@ -1299,7 +1299,7 @@ def update_config(config: Config, data: dict) -> Config:
 
         elif data["agent_llm_provider"] == "openrouter":
             data["agent_llm_endpoint"] = "https://openrouter.ai/api/v1/"
-            data["agent_llm_model_name"] = "meta-llama/llama-3.3-70b-instruct:free"
+            data["agent_llm_model_name"] = "llama-3.3-70b-instruct:free"
             data["agent_llm_api_key"] = ""
             data["agent_llm_reasoning_effort"] = 'default'
 
