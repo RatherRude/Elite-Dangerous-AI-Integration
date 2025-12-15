@@ -212,7 +212,7 @@ class EventManager:
             if projected_events:
                 for e in projected_events:
                     self.add_projected_event(e, event)
-                    self.short_term_memory.insert_event(event, datetime.now(timezone.utc).timestamp())
+                    self.short_term_memory.insert_event(e, event.processed_at)
         except Exception as e:
             log('error', 'Error processing event', event, 'with projection', projection, e, traceback.format_exc())
             return []
