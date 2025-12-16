@@ -308,6 +308,8 @@ default_config = {
         "Status Events": {
             "LandingGearUp": False,
             "LandingGearDown": False,
+            "HudSwitchedToAnalysisMode": False,
+            "HudSwitchedToCombatMode": False,
             "FlightAssistOn": False,
             "FlightAssistOff": False,
             "HardpointsRetracted": False,

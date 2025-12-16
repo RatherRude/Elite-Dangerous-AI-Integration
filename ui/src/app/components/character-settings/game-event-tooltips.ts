@@ -100,6 +100,8 @@ export const GameEventTooltips: Record<string, string> = {
   "JetConeDamage": "COVAS:NEXT will react when your ship takes damage from a neutron or white dwarf jet cone.",
   "LandingGearUp": "COVAS:NEXT will react when your landing gear is retracted.",
   "LandingGearDown": "COVAS:NEXT will react when your landing gear is deployed.",
+  "HudSwitchedToAnalysisMode": "COVAS:NEXT will react when your HUD switches to Analysis mode.",
+  "HudSwitchedToCombatMode": "COVAS:NEXT will react when your HUD switches to Combat mode.",
   "FlightAssistOn": "COVAS:NEXT will react when flight assist is activated.",
   "FlightAssistOff": "COVAS:NEXT will react when flight assist is deactivated.",
   "HardpointsRetracted": "COVAS:NEXT will react when your ship’s hardpoints are retracted.",

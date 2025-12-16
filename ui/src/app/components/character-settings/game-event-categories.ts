@@ -98,6 +98,8 @@ export const GameEventCategories: Record<string, string[]> = {
         "JetConeDamage",
         "LandingGearUp",
         "LandingGearDown",
+        "HudSwitchedToAnalysisMode",
+        "HudSwitchedToCombatMode",
         "FlightAssistOn",
         "FlightAssistOff",
         "HardpointsRetracted",
