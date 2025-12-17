@@ -876,27 +876,27 @@ class PromptGenerator:
             return None
         
         if event_name == 'FleetCarrierDiscovered':
-            return f"FleetCarrier {content.get('SignalName')} discovered."
+            return f"{self.commander_name} discovered a fleet carrier signal: {content.get('SignalName', 'unknown signal')}."
         if event_name == 'ResourceExtractionDiscovered':
-            return f"ResourceExtraction {content.get('SignalName')} discovered."
+            return f"{self.commander_name} discovered a resource extraction signal: {content.get('SignalName', 'unknown signal')}."
         if event_name == 'InstallationDiscovered':
-            return f"Installation {content.get('SignalName')} discovered."
+            return f"{self.commander_name} discovered an installation signal: {content.get('SignalName', 'unknown signal')}."
         if event_name == 'NavBeaconDiscovered':
-            return f"NavBeacon {content.get('SignalName')} discovered."
+            return f"{self.commander_name} discovered a navigation beacon signal: {content.get('SignalName', 'unknown signal')}."
         if event_name == 'TouristBeaconDiscovered':
-            return f"TouristBeacon {content.get('SignalName')} discovered."
+            return f"{self.commander_name} discovered a tourist beacon signal: {content.get('SignalName', 'unknown signal')}."
         if event_name == 'MegashipDiscovered':
-            return f"Megaship {content.get('SignalName')} discovered."
+            return f"{self.commander_name} discovered a megaship signal: {content.get('SignalName', 'unknown signal')}."
         if event_name == 'GenericDiscovered':
-            return f"Generic {content.get('SignalName')} discovered."
+            return f"{self.commander_name} discovered a signal: {content.get('SignalName', 'unknown signal')}."
         if event_name == 'OutpostDiscovered':
-            return f"Outpost {content.get('SignalName')} discovered."
+            return f"{self.commander_name} discovered an outpost signal: {content.get('SignalName', 'unknown signal')}."
         if event_name == 'CombatDiscovered':
-            return f"Combat {content.get('SignalName')} discovered."
+            return f"{self.commander_name} discovered a combat signal: {content.get('SignalName', 'unknown signal')}."
         if event_name == 'StationDiscovered':
-            return f"Station {content.get('SignalName')} discovered."
+            return f"{self.commander_name} discovered a station signal: {content.get('SignalName', 'unknown signal')}."
         if event_name == 'UnknownSignalDiscovered':
-            return f"UnknownSignal {content.get('SignalName')} discovered."
+            return f"{self.commander_name} discovered an unknown signal: {content.get('SignalName', 'unknown signal')}."
             
         if event_name == 'FSSBodySignals':
             fss_body_signals_event = cast(FSSBodySignalsEvent, content)
