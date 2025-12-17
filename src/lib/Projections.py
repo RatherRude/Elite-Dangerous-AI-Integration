@@ -8,6 +8,7 @@ from webbrowser import get
 from typing_extensions import NotRequired, override
 
 from .Event import Event, StatusEvent, GameEvent, ProjectedEvent, ExternalEvent, ConversationEvent, ToolEvent
+from .EventModels import FSSSignalDiscoveredEvent
 from .EventManager import EventManager, Projection
 from .Logger import log
 from .EDFuelCalc import RATING_BY_CLASSNUM , FSD_OVERCHARGE_STATS ,FSD_OVERCHARGE_V2PRE_STATS, FSD_STATS ,FSD_GUARDIAN_BOOSTER
@@ -1927,6 +1928,72 @@ class Wing(Projection[WingState]):
         if isinstance(event, GameEvent) and event.content.get('event') in ['WingLeave', 'LoadGame']:
             self.state['Members'] = []
 
+
+FSSSignalsState = TypedDict('FSSSignalsState', {
+    "SystemAddress": int,
+    
+    "FleetCarrier": list[str], 
+    "ResourceExtraction": list[str], 
+    "Installation": list[str], 
+    "NavBeacon": list[str], 
+    "TouristBeacon": list[str], 
+    "Megaship": list[str], 
+    "Generic": list[str], 
+    "Outpost": list[str], 
+    "Combat": list[str], 
+    "Station": list[str],
+    "UnknownSignal": list[str],
+})
+
+class FSSSignals(Projection[dict]):
+    @override
+    def get_default_state(self) -> dict:
+        return {
+            "SystemAddress": 0,
+            "FleetCarrier": [],
+            "ResourceExtraction": [],
+            "Installation": [],
+            "NavBeacon": [],
+            "TouristBeacon": [],
+            "Megaship": [],
+            "Generic": [],
+            "Outpost": [],
+            "Combat": [],
+            "Station": [],
+            "UnknownSignal": []
+        }
+
+    @override
+    def process(self, event: Event) -> list[ProjectedEvent]:
+        projected_events: list[ProjectedEvent] = []
+        if isinstance(event, GameEvent) and event.content.get('event') == 'FSSSignalDiscovered':
+            signal = cast(FSSSignalDiscoveredEvent, event.content)
+            signal_type = signal.get("SignalType", "Unknown")
+            signal_name = signal.get("SignalName", "Unknown")
+            systemAddress = signal.get("SystemAddress", 0)
+            if systemAddress != self.state.get("SystemAddress", 0):
+                # New system, clear previous signals
+                self.state = self.get_default_state()
+                self.state["SystemAddress"] = systemAddress
+            
+            if signal_type in self.state:
+                self.state[signal_type].append(signal_name)
+            else:
+                if signal.get("IsStation"):
+                    self.state["Station"].append(signal_name)
+                    signal_type = "Station"
+                else:
+                    self.state["UnknownSignal"].append(signal_name)
+                    signal_type = "UnknownSignal"
+            
+            projected_events.append(ProjectedEvent(content={"event": f"{signal_type}Discovered", "SignalName": signal_name}))
+        
+        if isinstance(event, GameEvent) and event.content.get('event') in ['FSDJump', 'SupercruiseExit', 'FSSDiscoveryScan']:
+            # These indicate that no more signals are discovered immediately, so we could batch on those
+            pass
+        
+        return projected_events
+
 # Define types for Idle Projection
 IdleState = TypedDict('IdleState', {
     "LastInteraction": str,  # ISO timestamp of last interaction
@@ -1990,6 +2057,7 @@ def registerProjections(event_manager: EventManager, system_db: SystemDatabase, 
     event_manager.register_projection(DockingEvents())
     event_manager.register_projection(InCombat())
     event_manager.register_projection(Wing())
+    event_manager.register_projection(FSSSignals())
     event_manager.register_projection(Idle(idle_timeout))
 
     # ToDo: SLF, SRV,

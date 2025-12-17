@@ -873,9 +873,30 @@ class PromptGenerator:
             return f"{self.commander_name} performed an FSS discovery scan. Progress: {progress:.1f}%, Bodies detected: {body_count}, Non-body signals: {non_body_count}."
             
         if event_name == 'FSSSignalDiscovered':
-            fss_signal_event = cast(FSSSignalDiscoveredEvent, content)
-            signal_type = fss_signal_event.get('SignalName_Localised', fss_signal_event.get('SignalName', 'Unknown signal'))
-            return f"{self.commander_name} discovered a signal: {signal_type}."
+            return None
+        
+        if event_name == 'FleetCarrierDiscovered':
+            return f"FleetCarrier {content.get('SignalName')} discovered."
+        if event_name == 'ResourceExtractionDiscovered':
+            return f"ResourceExtraction {content.get('SignalName')} discovered."
+        if event_name == 'InstallationDiscovered':
+            return f"Installation {content.get('SignalName')} discovered."
+        if event_name == 'NavBeaconDiscovered':
+            return f"NavBeacon {content.get('SignalName')} discovered."
+        if event_name == 'TouristBeaconDiscovered':
+            return f"TouristBeacon {content.get('SignalName')} discovered."
+        if event_name == 'MegashipDiscovered':
+            return f"Megaship {content.get('SignalName')} discovered."
+        if event_name == 'GenericDiscovered':
+            return f"Generic {content.get('SignalName')} discovered."
+        if event_name == 'OutpostDiscovered':
+            return f"Outpost {content.get('SignalName')} discovered."
+        if event_name == 'CombatDiscovered':
+            return f"Combat {content.get('SignalName')} discovered."
+        if event_name == 'StationDiscovered':
+            return f"Station {content.get('SignalName')} discovered."
+        if event_name == 'UnknownSignalDiscovered':
+            return f"UnknownSignal {content.get('SignalName')} discovered."
             
         if event_name == 'FSSBodySignals':
             fss_body_signals_event = cast(FSSBodySignalsEvent, content)
