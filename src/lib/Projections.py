@@ -1945,6 +1945,7 @@ FSSSignalsState = TypedDict('FSSSignalsState', {
     "UnknownSignal": list[str],
 })
 
+@final
 class FSSSignals(Projection[dict]):
     @override
     def get_default_state(self) -> dict:
