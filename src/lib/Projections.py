@@ -1971,11 +1971,11 @@ class FSSSignals(Projection[dict]):
             signal = cast(FSSSignalDiscoveredEvent, event.content)
             signal_type = signal.get("SignalType", "Unknown")
             signal_name = signal.get("SignalName", "Unknown")
-            systemAddress = signal.get("SystemAddress", 0)
-            if systemAddress != self.state.get("SystemAddress", 0):
+            system_address = signal.get("SystemAddress", 0)
+            if system_address != self.state.get("SystemAddress", 0):
                 # New system, clear previous signals
                 self.state = self.get_default_state()
-                self.state["SystemAddress"] = systemAddress
+                self.state["SystemAddress"] = system_address
             
             if signal_type in self.state:
                 self.state[signal_type].append(signal_name)
