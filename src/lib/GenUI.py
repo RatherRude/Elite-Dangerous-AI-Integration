@@ -28,11 +28,18 @@ CRITICAL RULES:
    - Use Tailwind CSS for styling.
 
 3. COMPONENT NAME:
-   - You MUST name your component `App`.
+   - You MUST name your main component `App`.
+   - You MAY define helper components inside the same code.
 
 4. ROBUSTNESS:
    - Always check if nested properties exist in 'state' before accessing them to prevent runtime errors.
    - Example: state.ship?.fuel?.current ?? 0
+
+5. CHANGE SCOPE:
+   - Only apply minimal changes needed to fulfill the user's request.
+   - Preserve existing functionality, layout, and style as much as possible.
+   - Avoid large rewrites unless absolutely necessary.
+   - Always repeat the full existing code in your response, with minimal changes.
 
 Example Output:
 const App = ({ state }) => {
