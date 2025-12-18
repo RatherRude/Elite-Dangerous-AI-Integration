@@ -94,6 +94,12 @@
                 </mat-slide-toggle>
 
                 <mat-slide-toggle
+                    [(ngModel)]="config.overlay_show_hud"
+                    (ngModelChange)="onConfigChange({overlay_show_hud: $event})">
+                    Show HUD
+                </mat-slide-toggle>
+
+                <mat-slide-toggle
                     [(ngModel)]="config.overlay_show_chat"
                     (ngModelChange)="onConfigChange({overlay_show_chat: $event})">
                     Show Chat

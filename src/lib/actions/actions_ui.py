@@ -1,19 +1,27 @@
+from pydantic import BaseModel
+
 from ..ActionManager import ActionManager
 from ..EventManager import EventManager
 from ..UI import send_message
 from typing import Optional
 
+# Type alias for projected states dictionary
+ProjectedStates = dict[str, BaseModel]
+
 event_manager: Optional[EventManager] = None
 
 # Checking status projection to exit game actions early if not applicable
-def checkStatus(projected_states: dict[str, dict], blocked_status_dict: dict[str, bool]):
+def checkStatus(projected_states: ProjectedStates, blocked_status_dict: dict[str, bool]):
     current_status = projected_states.get("CurrentStatus")
 
     if current_status:
+        # Convert BaseModel to dict for flag checking
+        status_dict = current_status.model_dump() if hasattr(current_status, 'model_dump') else current_status
         for blocked_status, expected_value in blocked_status_dict.items():
             for flag_group in ['flags', 'flags2']:
-                if flag_group in current_status and blocked_status in current_status[flag_group]:
-                    if current_status[flag_group][blocked_status] == expected_value:
+                flags = status_dict.get(flag_group, {})
+                if flags and blocked_status in flags:
+                    if flags[blocked_status] == expected_value:
                         raise Exception(f"Action not possible due to {'not ' if not expected_value else ''}being in a state of {blocked_status}!")
 
 
