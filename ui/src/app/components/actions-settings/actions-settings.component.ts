@@ -49,7 +49,7 @@ export class ActionsSettingsComponent {
         'managePowerDistribution', 'galaxyMapOpen', 'galaxyMapClose', 'systemMapOpenOrClose',
         'targetShip', 'toggleWingNavLock', 'cycle_fire_group', 'Change_ship_HUD_mode',
         'shipSpotLightToggle', 'fireChaffLauncher', 'nightVisionToggle', 'targetSubmodule',
-        'chargeECM', 'npcOrder', 'FsdJump', 'target_next_system_in_route',
+        'chargeECM', 'chargeFieldNeutraliser', 'npcOrder', 'FsdJump', 'target_next_system_in_route',
         'toggleCargoScoop', 'ejectAllCargo', 'landingGearToggle', 'useShieldCell',
         'requestDocking', 'undockShip', 'fighterRequestDock',
         // Buggy
@@ -67,7 +67,7 @@ export class ActionsSettingsComponent {
                 'fireWeapons', 'setSpeed', 'deployHeatSink', 'deployHardpointToggle',
                 'managePowerDistribution', 'galaxyMapOpen', 'galaxyMapClose', 'systemMapOpenOrClose',
                 'targetShip', 'toggleWingNavLock', 'cycle_fire_group', 'shipSpotLightToggle',
-                'fireChaffLauncher', 'nightVisionToggle', 'targetSubmodule', 'chargeECM', 'npcOrder'
+                'fireChaffLauncher', 'nightVisionToggle', 'targetSubmodule', 'chargeECM', 'chargeFieldNeutraliser', 'npcOrder'
             ],
         },
         {
