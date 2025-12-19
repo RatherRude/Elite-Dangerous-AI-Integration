@@ -11,7 +11,7 @@ from .Event import Event, StatusEvent, GameEvent, ProjectedEvent, ExternalEvent,
 from .EventModels import FSSSignalDiscoveredEvent
 from .EventManager import EventManager, Projection
 from .Logger import log
-from .EDFuelCalc import RATING_BY_CLASSNUM , FSD_OVERCHARGE_STATS ,FSD_OVERCHARGE_V2PRE_STATS, FSD_STATS ,FSD_GUARDIAN_BOOSTER
+from .EDFuelCalc import RATING_BY_CLASSNUM , FSD_OVERCHARGE_STATS , FSD_MKii ,FSD_OVERCHARGE_V2PRE_STATS, FSD_STATS ,FSD_GUARDIAN_BOOSTER
 from .StatusParser import parse_status_flags, parse_status_json, Status
 from .SystemDatabase import SystemDatabase
 
@@ -494,6 +494,7 @@ ship_sizes: dict[str, Literal['S', 'M', 'L', 'Unknown']] = {
     'cobramkiv':                     'S',
     'clipper':                       'Unknown',
     'cutter':                        'L',
+    'corsair':                       'M',
     'diamondback':                   'S',
     'diamondbackxl':                 'S',
     'dolphin':                       'S',
@@ -502,6 +503,7 @@ ship_sizes: dict[str, Literal['S', 'M', 'L', 'Unknown']] = {
     'empire_eagle':                  'S',
     'empire_fighter':                'Unknown',
     'empire_trader':                 'L',
+    'explorer_nx':                   'L',    
     'federation_corvette':           'L',
     'federation_dropship':           'M',
     'federation_dropship_mkii':      'M',
@@ -515,10 +517,10 @@ ship_sizes: dict[str, Literal['S', 'M', 'L', 'Unknown']] = {
     'krait_light':                   'M',
     'mamba':                         'M',
     'mandalay':                      'M',
-    'corsair':                       'M',
     'orca':                          'L',
     'python':                        'M',
     'python_nx':                     'M',
+    'panthermkii':                   'L',
     'scout':                         'Unknown',
     'sidewinder':                    'S',
     'testbuggy':                     'Unknown',
@@ -527,7 +529,6 @@ ship_sizes: dict[str, Literal['S', 'M', 'L', 'Unknown']] = {
     'type8':                         'L',
     'type9':                         'L',
     'type9_military':                'L',
-    'panthermkii':                   'L',
     'typex':                         'M',
     'typex_2':                       'M',
     'typex_3':                       'M',
@@ -691,6 +692,7 @@ class ShipInfo(Projection[ShipInfoState]):
                     
                     module_item = module.get('Item')
                     over = "hyperdrive_overcharge" in module_item
+                    mkii = "overchargebooster_mkii" in module_item
                     module_size_match = re.search(r"size(\d)", module_item)
                     module_class_match = re.search(r"class(\d)", module_item)
                     module_size = int(module_size_match.group(1)) if module_size_match else None
@@ -705,13 +707,18 @@ class ShipInfo(Projection[ShipInfoState]):
                             
                         if modifier.get("Label") in ("MaxFuelPerJump", "maxfuelperjump"):
                             engineering_max_fuel_override = float(modifier.get("Value"))
-
-                    all_module_stats = FSD_OVERCHARGE_STATS if over else FSD_STATS
+                    if mkii == True:
+                        all_module_stats = FSD_MKii
+                    else:
+                        all_module_stats = FSD_OVERCHARGE_STATS if over else FSD_STATS
+                    
                     module_stat: dict = all_module_stats.get((module_size, module_rating))
                     self.state['DriveOptimalMass'] = engineering_optimal_mass_override if engineering_optimal_mass_override is not None else module_stat.get('opt_mass', 0.00)
                     self.state['DriveMaxFuel'] = engineering_max_fuel_override if engineering_max_fuel_override is not None else module_stat.get('max_fuel', 0.00)
                     self.state['DriveLinearConst'] = module_stat.get('linear_const', 0.0)
                     self.state['DrivePowerConst'] = module_stat.get('power_const', 0.0)
+
+                    log('debug','mkii?: ',mkii,' Fsd type again :', module_item)
                     
                 # Check for GuardianfsdBooster
                 self.state['GuardianfsdBooster'] = 0
