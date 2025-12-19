@@ -134,11 +134,7 @@ class PromptGenerator:
         if event_name == 'NewCommander':
             return f"{self.commander_name} is starting a new career as  {content.get('Name')}"
         if event_name == 'Missions':
-            missions_event = cast(MissionsEvent, content)
-            active_count = len(missions_event.get('Active', []))
-            complete_count = len(missions_event.get('Complete', []))
-            failed_count = len(missions_event.get('Failed', []))
-            return f"{self.commander_name} has {active_count} active missions, {complete_count} completed, and {failed_count} failed."
+            return None
         
         # Message events
         if event_name == 'ReceiveText':
@@ -1830,10 +1826,7 @@ class PromptGenerator:
                 return f"{self.commander_name}'s ship has been repaired by a repair drone."
                 
         if event_name == 'ReservoirReplenished':
-            reservoir_event = cast(Dict[str, Any], content)
-            main = reservoir_event.get('FuelMain', 0)
-            reservoir = reservoir_event.get('FuelReservoir', 0)
-            return f"{self.commander_name} has replenished their fuel reservoir. Main tank: {main:.2f} tons, Reservoir: {reservoir:.2f} tons."
+            return None
             
         if event_name == 'Resurrect':
             resurrect_event = cast(Dict[str, Any], content)
@@ -1967,10 +1960,7 @@ class PromptGenerator:
             return f"{self.commander_name} is dropping from supercruise at {destination}{threat}"
 
         if event_name == 'SquadronStartup':
-            if content.get('SquadronName'):
-                return f"{self.commander_name} is a member of the squadron '{content.get('SquadronName')}' with callsign {content.get('SquadronID', 'Unknown')}."
-            else:
-                return f"{self.commander_name} is a member of a squadron."
+            return None
 
         if event_name == 'EscapeInterdiction':
             escape_event = cast(Dict[str, Any], content)
@@ -2159,11 +2149,7 @@ class PromptGenerator:
             return f"{self.commander_name}'s {srv_type} has been destroyed."
 
         if event_name == 'Statistics':
-            # AI thinks wealth is credits when it's total assets so renaming it
-            if "Bank_Account" in content and "Current_Wealth" in content["Bank_Account"]:
-                content["Bank_Account"]["Total_Asset_Value"] = content["Bank_Account"].pop("Current_Wealth")
-
-            return f"{self.commander_name}'s game statistics have been reported:\n{yaml.dump(content)}"
+            return None
 
         if event_name == 'WeaponSelected':
             weapon_event = cast(Dict[str, Any], content)

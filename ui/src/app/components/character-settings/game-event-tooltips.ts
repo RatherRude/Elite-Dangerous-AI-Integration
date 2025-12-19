@@ -1,19 +1,19 @@
 export const GameEventTooltips: Record<string, string> = {
   // System
-  "Cargo": "COVAS:NEXT will react when you start the game by reporting your ship’s cargo inventory, including all onboard commodities and their quantities.",
-  "ClearSavedGame": "COVAS:NEXT will react when you reset your Commander save, marking a complete loss of all previous progress.",
+  // "Cargo": "COVAS:NEXT will react when you start the game by reporting your ship’s cargo inventory, including all onboard commodities and their quantities.",
+  // "ClearSavedGame": "COVAS:NEXT will react when you reset your Commander save, marking a complete loss of all previous progress.",
   "LoadGame": "COVAS:NEXT will react when you load into the simulation from the main menu, acknowledging your name, ship, credits, location, and game mode.",
   "Shutdown": "COVAS:NEXT will react when you exit the simulation cleanly, marking the end of that session’s log.",
   "NewCommander": "COVAS:NEXT will react when a new Commander is created, documenting the chosen name and starting loadout.",
-  "Materials": "COVAS:NEXT will react at startup by listing your current inventory of raw, manufactured, and encoded materials.",
-  "Missions": "COVAS:NEXT will react at startup by summarizing your active, failed, and completed missions.",
-  "Progress": "COVAS:NEXT will react at startup by providing your current progress toward the next rank in Combat, Trade, Exploration, and more.",
-  "Powerplay": "COVAS:NEXT will react at startup when you are pledged to a power, reporting your rank, merits, and allegiance.",
-  "Rank": "COVAS:NEXT will react at startup by acknowledging your current ranks in combat, trade, exploration, and both navy affiliations.",
-  "Reputation": "COVAS:NEXT will react at startup by reporting your reputation with major factions, from hostile to allied.",
-  "Statistics": "COVAS:NEXT will react at startup by compiling your overall commander statistics, including exploration, trading, combat, and on-foot data.",
-  "SquadronStartup": "COVAS:NEXT will react at startup by confirming your squadron affiliation and current rank within it.",
-  "EngineerProgress": "COVAS:NEXT will react when your status with an Engineer changes, or at startup by reviewing your unlocks and reputation with known Engineers.",
+  // "Materials": "COVAS:NEXT will react at startup by listing your current inventory of raw, manufactured, and encoded materials.",
+  // "Missions": "COVAS:NEXT will react at startup by summarizing your active, failed, and completed missions.",
+  // "Progress": "COVAS:NEXT will react at startup by providing your current progress toward the next rank in Combat, Trade, Exploration, and more.",
+  // "Powerplay": "COVAS:NEXT will react at startup when you are pledged to a power, reporting your rank, merits, and allegiance.",
+  // "Rank": "COVAS:NEXT will react at startup by acknowledging your current ranks in combat, trade, exploration, and both navy affiliations.",
+  // "Reputation": "COVAS:NEXT will react at startup by reporting your reputation with major factions, from hostile to allied.",
+  // "Statistics": "COVAS:NEXT will react at startup by compiling your overall commander statistics, including exploration, trading, combat, and on-foot data.",
+  // "SquadronStartup": "COVAS:NEXT will react at startup by confirming your squadron affiliation and current rank within it.",
+  // "EngineerProgress": "COVAS:NEXT will react when your status with an Engineer changes, or at startup by reviewing your unlocks and reputation with known Engineers.",
 
   // Combat
   "Died": "COVAS:NEXT will react when your ship is destroyed and you are killed, identifying the attacker if known.",
@@ -122,7 +122,6 @@ export const GameEventTooltips: Record<string, string> = {
   "NightVisionOff": "COVAS:NEXT will react when night vision is turned off.",
   "NightVisionOn": "COVAS:NEXT will react when night vision is activated.",
   "SupercruiseDestinationDrop": "COVAS:NEXT will react when you drop out of supercruise at a targeted destination, logging threat level and type.",
-  "ReservoirReplenished": "COVAS:NEXT will react when your ship's fuel is refilled from reserves.",
 
   // SRV Updates
   "LaunchSRV": "COVAS:NEXT will react when you deploy an SRV onto a planet's surface. Telling you about the SRV type and loadout being launched.",

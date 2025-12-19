@@ -1,19 +1,19 @@
 export const GameEventCategories: Record<string, string[]> = {
     "System": [
-        "Cargo",
-        "ClearSavedGame",
+        // "Cargo",
+        // "ClearSavedGame",
         "LoadGame",
         "Shutdown",
         "NewCommander",
-        "Materials",
-        "Missions",
-        "Progress",
-        "Powerplay",
-        "Rank",
-        "Reputation",
-        "Statistics",
-        "SquadronStartup",
-        "EngineerProgress",
+        // "Materials",
+        // "Missions",
+        // "Progress",
+        // "Powerplay",
+        // "Rank",
+        // "Reputation",
+        // "Statistics",
+        // "SquadronStartup",
+        // "EngineerProgress",
     ],
     "Combat": [
         "Died",
@@ -120,7 +120,6 @@ export const GameEventCategories: Record<string, string[]> = {
         "NightVisionOff",
         "NightVisionOn",
         "SupercruiseDestinationDrop",
-        "ReservoirReplenished",
     ],
 
     "SRV Updates": [

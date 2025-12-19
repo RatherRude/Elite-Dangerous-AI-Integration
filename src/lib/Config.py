@@ -16,18 +16,17 @@ game_events = {
     # System
     # 'Cargo': False,
     # 'ClearSavedGame': False,
-    'Idle': False
-    ,
+    'Idle': False,
     'LoadGame': True,
     'Shutdown': True,
     'NewCommander': True,
     # 'Materials': False,
-    'Missions': True,
+    # 'Missions': True,
     # 'Progress': False,
     # 'Powerplay': False,
     # 'Rank': False,
     # 'Reputation': False,
-    'Statistics': False,
+    # 'Statistics': False,
     # 'SquadronStartup': False,
     # 'EngineerProgress': False,
 
@@ -136,7 +135,6 @@ game_events = {
     'NightVisionOff': False,
     'NightVisionOn': False,
     'SupercruiseDestinationDrop': False,
-    'ReservoirReplenished': False,
 
     # SRV Updates
     'LaunchSRV': True,
