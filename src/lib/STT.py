@@ -11,6 +11,7 @@ from pysilero_vad import SileroVoiceActivityDetector
 from .Logger import log, observe, show_chat_message
 from .Models import STTModel, LLMError
 
+MAX_TEXT_LENGTH = 512
 
 @final
 class STTResult:
@@ -224,7 +225,11 @@ class STT:
         if self.required_word and self.required_word.lower() not in text.lower():
             return ''
 
-        # print("transcription received", text)
+        # Truncate overly long transcriptions - prevents hang
+        if len(text) > MAX_TEXT_LENGTH:
+            log('warn', f"STT transcription too long ({len(text)} chars), truncating")
+            text = text[:MAX_TEXT_LENGTH].rstrip() + "..."
+
         return text
 
     def pause_continuous_listening(self, pause: bool):
