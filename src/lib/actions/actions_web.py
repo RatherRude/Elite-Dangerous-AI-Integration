@@ -60,6 +60,17 @@ def web_search_agent(
         {
             "type": "function",
             "function": {
+                "name": "get_stored_ships",
+                "description": "Return all stored ships",
+                "parameters": {
+                    "type": "object",
+                    "properties": {}
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
                 "name": "get_stored_ship_modules",
                 "description": "Return current stored ship modules",
                 "parameters": {
@@ -214,6 +225,7 @@ def web_search_agent(
         "blueprint_finder": blueprint_finder,
         "material_finder": material_finder,
         "get_stored_ship_modules": get_stored_ship_modules,
+        "get_stored_ships": get_stored_ships,
     }
 
     system_prompt = """
