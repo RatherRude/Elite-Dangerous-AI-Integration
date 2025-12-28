@@ -56,12 +56,12 @@ NavRouteEvent = dict
 
 def get_state_dict(projected_states: ProjectedStates, key: str, default: dict | None = None) -> dict:
     """Helper to get a projection state as a dict for backward-compatible access patterns.
-    
+
     Args:
         projected_states: The projected states dictionary
         key: The projection name (e.g., 'CurrentStatus', 'Location')
         default: Default value if key not found (defaults to empty dict)
-    
+
     Returns:
         The state as a dict (via model_dump() if BaseModel, or as-is if already dict)
     """
@@ -159,11 +159,7 @@ class PromptGenerator:
         if event_name == 'NewCommander':
             return f"{self.commander_name} is starting a new career as  {content.get('Name')}"
         if event_name == 'Missions':
-            missions_event = cast(MissionsEvent, content)
-            active_count = len(missions_event.get('Active', []))
-            complete_count = len(missions_event.get('Complete', []))
-            failed_count = len(missions_event.get('Failed', []))
-            return f"{self.commander_name} has {active_count} active missions, {complete_count} completed, and {failed_count} failed."
+            return None
         
         # Message events
         if event_name == 'ReceiveText':
@@ -898,9 +894,30 @@ class PromptGenerator:
             return f"{self.commander_name} performed an FSS discovery scan. Progress: {progress:.1f}%, Bodies detected: {body_count}, Non-body signals: {non_body_count}."
             
         if event_name == 'FSSSignalDiscovered':
-            fss_signal_event = cast(FSSSignalDiscoveredEvent, content)
-            signal_type = fss_signal_event.get('SignalName_Localised', fss_signal_event.get('SignalName', 'Unknown signal'))
-            return f"{self.commander_name} discovered a signal: {signal_type}."
+            return None
+
+        if event_name == 'FleetCarrierDiscovered':
+            return f"{self.commander_name} discovered a fleet carrier signal: {content.get('SignalName', 'unknown signal')}."
+        if event_name == 'ResourceExtractionDiscovered':
+            return f"{self.commander_name} discovered a resource extraction signal: {content.get('SignalName', 'unknown signal')}."
+        if event_name == 'InstallationDiscovered':
+            return f"{self.commander_name} discovered an installation signal: {content.get('SignalName', 'unknown signal')}."
+        if event_name == 'NavBeaconDiscovered':
+            return f"{self.commander_name} discovered a navigation beacon signal: {content.get('SignalName', 'unknown signal')}."
+        if event_name == 'TouristBeaconDiscovered':
+            return f"{self.commander_name} discovered a tourist beacon signal: {content.get('SignalName', 'unknown signal')}."
+        if event_name == 'MegashipDiscovered':
+            return f"{self.commander_name} discovered a megaship signal: {content.get('SignalName', 'unknown signal')}."
+        if event_name == 'GenericDiscovered':
+            return f"{self.commander_name} discovered a signal: {content.get('SignalName', 'unknown signal')}."
+        if event_name == 'OutpostDiscovered':
+            return f"{self.commander_name} discovered an outpost signal: {content.get('SignalName', 'unknown signal')}."
+        if event_name == 'CombatDiscovered':
+            return f"{self.commander_name} discovered a combat signal: {content.get('SignalName', 'unknown signal')}."
+        if event_name == 'StationDiscovered':
+            return f"{self.commander_name} discovered a station signal: {content.get('SignalName', 'unknown signal')}."
+        if event_name == 'UnknownSignalDiscovered':
+            return f"{self.commander_name} discovered an unknown signal: {content.get('SignalName', 'unknown signal')}."
             
         if event_name == 'FSSBodySignals':
             fss_body_signals_event = cast(FSSBodySignalsEvent, content)
@@ -1855,10 +1872,7 @@ class PromptGenerator:
                 return f"{self.commander_name}'s ship has been repaired by a repair drone."
                 
         if event_name == 'ReservoirReplenished':
-            reservoir_event = cast(Dict[str, Any], content)
-            main = reservoir_event.get('FuelMain', 0)
-            reservoir = reservoir_event.get('FuelReservoir', 0)
-            return f"{self.commander_name} has replenished their fuel reservoir. Main tank: {main:.2f} tons, Reservoir: {reservoir:.2f} tons."
+            return None
             
         if event_name == 'Resurrect':
             resurrect_event = cast(Dict[str, Any], content)
@@ -1992,10 +2006,7 @@ class PromptGenerator:
             return f"{self.commander_name} is dropping from supercruise at {destination}{threat}"
 
         if event_name == 'SquadronStartup':
-            if content.get('SquadronName'):
-                return f"{self.commander_name} is a member of the squadron '{content.get('SquadronName')}' with callsign {content.get('SquadronID', 'Unknown')}."
-            else:
-                return f"{self.commander_name} is a member of a squadron."
+            return None
 
         if event_name == 'EscapeInterdiction':
             escape_event = cast(Dict[str, Any], content)
@@ -2184,11 +2195,7 @@ class PromptGenerator:
             return f"{self.commander_name}'s {srv_type} has been destroyed."
 
         if event_name == 'Statistics':
-            # AI thinks wealth is credits when it's total assets so renaming it
-            if "Bank_Account" in content and "Current_Wealth" in content["Bank_Account"]:
-                content["Bank_Account"]["Total_Asset_Value"] = content["Bank_Account"].pop("Current_Wealth")
-
-            return f"{self.commander_name}'s game statistics have been reported:\n{yaml.dump(content)}"
+            return None
 
         if event_name == 'WeaponSelected':
             weapon_event = cast(Dict[str, Any], content)
@@ -2213,7 +2220,7 @@ class PromptGenerator:
         if event_name == 'ScanOrganicFirst':
             scan_event = cast(Dict[str, Any], content)
             new_distance = scan_event.get('NewSampleDistance', 'unknown')
-            return f"{self.commander_name} took the first of three biological samples. New sample distance acquired: {new_distance}"
+            return f"{self.commander_name} took the first of three biological samples. New sample distance acquired: {new_distance}."
         if event_name == 'ScanOrganicSecond':
             return f"{self.commander_name} took the second of three biological samples."
         if event_name == 'ScanOrganicThird':
@@ -2229,7 +2236,11 @@ class PromptGenerator:
         if event_name == 'CombatExited':
             return f"{self.commander_name} is no longer in combat."
         if event_name == 'FirstPlayerSystemDiscovered':
-            return f"{self.commander_name} has a new system discovered"
+            return f"{self.commander_name} has a new system discovered."
+        if event_name == 'FetchRemoteModuleCompleted':
+            return f"{self.commander_name}'s module has arrived."
+        if event_name == 'ShipyardTransferCompleted':
+            return f"{self.commander_name}'s ship has arrived."
         # if event_name == 'ExternalDiscordNotification':
         #     twitch_event = cast(Dict[str, Any], content)
         #     return f"Twitch Alert! {twitch_event.get('text','')}",
@@ -3018,6 +3029,7 @@ class PromptGenerator:
         market = get_state_dict(projected_states, 'Market')
         outfitting = get_state_dict(projected_states, 'Outfitting')
         storedShips = get_state_dict(projected_states, 'StoredShips')
+        storedModules = get_state_dict(projected_states, 'StoredModules')
         if current_station and current_station == market.get('StationName') and not search_agent_context:
             buy_items = {
                 item.get('Name_Localised'): {
@@ -3144,7 +3156,106 @@ class PromptGenerator:
             status_entries.append(("Local outfitting information", nested_outfitting))
         if current_station and current_station == storedShips.get('StationName') and not search_agent_context:
             status_entries.append(("Local, stored ships", storedShips.get('ShipsHere', [])))
-            
+
+        # Show modules in transit to current system
+        if len(storedModules.get('ItemsInTransit', [])) > 0:
+            from datetime import datetime, timezone
+            current_system = location_info.get('StarSystem')
+            current_time = datetime.now(timezone.utc)
+
+            def format_time_remaining(seconds):
+                """Format seconds into human-readable time"""
+                if seconds < 0:
+                    return "Arrived"
+                hours = seconds // 3600
+                minutes = (seconds % 3600) // 60
+                secs = seconds % 60
+
+                parts = []
+                if hours > 0:
+                    parts.append(f"{hours}h")
+                if minutes > 0:
+                    parts.append(f"{minutes}m")
+                if secs > 0 or not parts:
+                    parts.append(f"{secs}s")
+                return " ".join(parts)
+
+            itemsInTransit = []
+            for item in storedModules.get('ItemsInTransit', []):
+                if item.get('StarSystem') == current_system:
+                    # Calculate time remaining in seconds
+                    completion_time = datetime.fromisoformat(item.get('TransferCompleteTime', ''))
+                    time_remaining = int((completion_time - current_time).total_seconds())
+
+                    # Find the module name from StorageSlot in Items
+                    storage_slot = item.get('StorageSlot')
+                    module_name = 'Unknown'
+                    for module in storedModules.get('Items', []):
+                        if module.get('StorageSlot') == storage_slot:
+                            module_name = module.get('Name_Localised', module.get('Name', 'Unknown'))
+                            break
+
+                    itemsInTransit.append({
+                        "Name": module_name,
+                        "TimeRemaining": format_time_remaining(time_remaining)
+                    })
+
+            if itemsInTransit:
+                status_entries.append(("Modules in transit to this system", itemsInTransit))
+
+        # Show ships in transit to current system
+        storedShips = projected_states.get('StoredShips', {})
+        if len(storedShips.get('ShipsInTransit', [])) > 0:
+            from datetime import datetime, timezone
+            current_system = location_info.get('StarSystem')
+            current_time = datetime.now(timezone.utc)
+
+            def format_time_remaining(seconds):
+                """Format seconds into human-readable time"""
+                if seconds < 0:
+                    return "Arrived"
+                hours = seconds // 3600
+                minutes = (seconds % 3600) // 60
+                secs = seconds % 60
+
+                parts = []
+                if hours > 0:
+                    parts.append(f"{hours}h")
+                if minutes > 0:
+                    parts.append(f"{minutes}m")
+                if secs > 0 or not parts:
+                    parts.append(f"{secs}s")
+                return " ".join(parts)
+
+            shipsInTransit = []
+            for ship in storedShips.get('ShipsInTransit', []):
+                if ship.get('System') == current_system:
+                    # Calculate time remaining in seconds
+                    completion_time = datetime.fromisoformat(ship.get('TransferCompleteTime', ''))
+                    time_remaining = int((completion_time - current_time).total_seconds())
+
+                    # Find the ship name/type from ShipID in ShipsRemote
+                    ship_id = ship.get('ShipID')
+                    ship_display = 'Unknown'
+                    for remote_ship in storedShips.get('ShipsRemote', []):
+                        if remote_ship.get('ShipID') == ship_id:
+                            ship_type = remote_ship.get('ShipType_Localised', remote_ship.get('ShipType', 'Unknown'))
+                            ship_name = remote_ship.get('Name', '')
+                            if ship_name:
+                                ship_display = f"{ship_type} '{ship_name}'"
+                            else:
+                                ship_display = ship_type
+                            break
+
+                    shipsInTransit.append({
+                        "Ship": ship_display,
+                        "TimeRemaining": format_time_remaining(time_remaining)
+                    })
+
+            if shipsInTransit:
+                status_entries.append(("Ships in transit to this system", shipsInTransit))
+
+
         # Missions
         missions_info = get_state_dict(projected_states, 'Missions')
         if missions_info and 'Active' in missions_info:

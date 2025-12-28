@@ -16,18 +16,17 @@ game_events = {
     # System
     # 'Cargo': False,
     # 'ClearSavedGame': False,
-    'Idle': False
-    ,
+    'Idle': False,
     'LoadGame': True,
     'Shutdown': True,
     'NewCommander': True,
     # 'Materials': False,
-    'Missions': True,
+    # 'Missions': True,
     # 'Progress': False,
     # 'Powerplay': False,
     # 'Rank': False,
     # 'Reputation': False,
-    'Statistics': False,
+    # 'Statistics': False,
     # 'SquadronStartup': False,
     # 'EngineerProgress': False,
 
@@ -61,6 +60,9 @@ game_events = {
     'CrimeVictim': True,
     'SystemsShutdown': True,
     'SelfDestruct': True,
+
+    'FetchRemoteModuleCompleted': False,
+    'ShipyardTransferCompleted': False,
 
     # Trading
     'BuyTradeData': False,
@@ -136,7 +138,6 @@ game_events = {
     'NightVisionOff': False,
     'NightVisionOn': False,
     'SupercruiseDestinationDrop': False,
-    'ReservoirReplenished': False,
 
     # SRV Updates
     'LaunchSRV': True,
@@ -302,7 +303,17 @@ game_events = {
     'FSSBodySignals': False,
     'FSSDiscoveryScan': False,
     'FirstPlayerSystemDiscovered':False,
-    'FSSSignalDiscovered': False,
+    'FleetCarrierDiscovered': False,
+    'ResourceExtractionDiscovered': False,
+    'InstallationDiscovered': False,
+    'NavBeaconDiscovered': False,
+    'TouristBeaconDiscovered': False,
+    'MegashipDiscovered': False,
+    'GenericDiscovered': False,
+    'OutpostDiscovered': False,
+    'CombatDiscovered': False,
+    'StationDiscovered': False,
+    'UnknownSignalDiscovered': False,
     'MaterialCollected': False,
     'MaterialDiscarded': False,
     'MaterialDiscovered': False,
