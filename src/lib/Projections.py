@@ -1175,57 +1175,45 @@ class NavRouteItem(BaseModel):
     StarSystem: str = Field(description="Star system name")
     Scoopable: bool = Field(description="Whether the star is fuel-scoopable (K/G/B/F/O/A/M class)")
 
-StoredModuleItem = TypedDict('StoredModuleItem', {
-    "Name": str,
-    "Name_Localised": str,
-    "StorageSlot": int,
-    "BuyPrice": int,
-    "Hot": bool,
+class StoredModuleItem(BaseModel):
+    """A module stored at a station or in transit."""
+    Name: str = Field(description="Module internal name")
+    Name_Localised: str = Field(description="Human-readable module name")
+    StorageSlot: int = Field(description="Storage slot identifier")
+    BuyPrice: int = Field(description="Original purchase price in credits")
+    Hot: bool = Field(description="Whether module is marked as hot/stolen")
+    InTransit: Optional[bool] = Field(default=None, description="Whether module is in transit")
+    StarSystem: Optional[str] = Field(default=None, description="System where module is stored")
+    MarketID: Optional[int] = Field(default=None, description="Market ID where module is stored")
+    TransferCost: Optional[int] = Field(default=None, description="Cost to transfer module in credits")
+    TransferTime: Optional[int] = Field(default=None, description="Time to transfer module in seconds")
+    EngineerModifications: Optional[str] = Field(default=None, description="Applied engineering modifications")
+    Level: Optional[int] = Field(default=None, description="Engineering level")
+    Quality: Optional[float] = Field(default=None, description="Engineering quality")
 
-    # Present when in transit
-    "InTransit": NotRequired[bool],
 
-    # Present when stored at location (not in transit)
-    "StarSystem": NotRequired[str],
-    "MarketID": NotRequired[int],
-    "TransferCost": NotRequired[int],
-    "TransferTime": NotRequired[int],
+class FetchRemoteModuleItem(BaseModel):
+    """A module being transferred to current location."""
+    MarketID: int = Field(description="Destination market ID")
+    StationName: str = Field(description="Destination station name")
+    StarSystem: str = Field(description="Destination star system")
+    StorageSlot: int = Field(description="Storage slot identifier")
+    TransferCompleteTime: str = Field(description="ISO timestamp when transfer completes")
+    TransferCost: int = Field(description="Transfer cost in credits")
 
-    # Optional in both states
-    "EngineerModifications": NotRequired[str],
-    "Level": NotRequired[int],
-    "Quality": NotRequired[float],
-})
 
-FetchRemoteModuleItem = TypedDict('FetchRemoteModuleItem', {
-    "MarketID": int,
-    "StationName": str,
-    "StarSystem": str,
-    "StorageSlot": int,
-    "TransferCompleteTime": str,  # ISO timestamp when transfer completes
-    "TransferCost": int,
-})
-
-StoredModulesState = TypedDict('StoredModulesState', {
-    "MarketID": int,
-    "StationName": str,
-    "StarSystem": str,
-    "Items": list[StoredModuleItem],
-    "ItemsInTransit": list[FetchRemoteModuleItem],
-})
+class StoredModulesStateModel(BaseModel):
+    """Current stored modules status."""
+    MarketID: int = Field(default=0, description="Current market ID")
+    StationName: str = Field(default="", description="Current station name")
+    StarSystem: str = Field(default="", description="Current star system")
+    Items: list[StoredModuleItem] = Field(default_factory=list, description="Stored modules")
+    ItemsInTransit: list[FetchRemoteModuleItem] = Field(default_factory=list, description="Modules in transit")
 
 
 @final
-class StoredModules(Projection[StoredModulesState]):
-    @override
-    def get_default_state(self) -> StoredModulesState:
-        return {
-            "MarketID": 0,
-            "StationName": "",
-            "StarSystem": "",
-            "Items": [],
-            "ItemsInTransit": []
-        }
+class StoredModules(Projection[StoredModulesStateModel]):
+    StateModel = StoredModulesStateModel
 
     @override
     def process(self, event: Event) -> list[ProjectedEvent]:
@@ -1233,10 +1221,10 @@ class StoredModules(Projection[StoredModulesState]):
 
         if isinstance(event, GameEvent) and event.content.get('event') == 'StoredModules':
             # Save the event as-is (all fields are required in the event)
-            self.state['MarketID'] = event.content.get('MarketID', 0)
-            self.state['StationName'] = event.content.get('StationName', '')
-            self.state['StarSystem'] = event.content.get('StarSystem', '')
-            self.state['Items'] = event.content.get('Items', [])
+            self.state.MarketID = event.content.get('MarketID', 0)
+            self.state.StationName = event.content.get('StationName', '')
+            self.state.StarSystem = event.content.get('StarSystem', '')
+            self.state.Items = [StoredModuleItem(**item) for item in event.content.get('Items', [])]
 
         if isinstance(event, GameEvent) and event.content.get('event') == 'FetchRemoteModule':
             # Calculate completion timestamp using the event's timestamp
@@ -1245,20 +1233,19 @@ class StoredModules(Projection[StoredModulesState]):
             completion_time = event_timestamp + timedelta(seconds=transfer_time_seconds)
 
             # Create an item in transit using data from the event and current state
-            transit_item: FetchRemoteModuleItem = {
-                "MarketID": self.state.get('MarketID', 0),
-                "StationName": self.state.get('StationName', ''),
-                "StarSystem": self.state.get('StarSystem', ''),
-                "StorageSlot": event.content.get('StorageSlot', 0),
-                "TransferCompleteTime": completion_time.isoformat(),
-                "TransferCost": event.content.get('TransferCost', 0),
-            }
+            transit_item = FetchRemoteModuleItem(
+                MarketID=self.state.MarketID,
+                StationName=self.state.StationName,
+                StarSystem=self.state.StarSystem,
+                StorageSlot=event.content.get('StorageSlot', 0),
+                TransferCompleteTime=completion_time.isoformat(),
+                TransferCost=event.content.get('TransferCost', 0),
+            )
 
-            self.state['ItemsInTransit'].append(transit_item)
+            self.state.ItemsInTransit.append(transit_item)
 
         # Check if any items in transit have completed
-        if len(self.state['ItemsInTransit']) > 0:
-            log('info', 'in transit')
+        if len(self.state.ItemsInTransit) > 0:
             # Use event timestamp if available, otherwise use current time
             if isinstance(event, GameEvent) and 'timestamp' in event.content:
                 current_time = datetime.fromisoformat(event.content.get('timestamp', '').replace('Z', '+00:00'))
@@ -1267,91 +1254,82 @@ class StoredModules(Projection[StoredModulesState]):
 
             completed_items: list[FetchRemoteModuleItem] = []
 
-            for transit_item in self.state['ItemsInTransit']:
-                completion_time = datetime.fromisoformat(transit_item['TransferCompleteTime'])
+            for transit_item in self.state.ItemsInTransit:
+                completion_time = datetime.fromisoformat(transit_item.TransferCompleteTime)
                 if current_time >= completion_time:
                     completed_items.append(transit_item)
-                    log('info', 'added to transit' + str(transit_item['StorageSlot']))
 
             # Process completed transfers
             for completed in completed_items:
-                storage_slot = completed['StorageSlot']
+                storage_slot = completed.StorageSlot
 
                 # Find the item in Items with matching StorageSlot and update it
-                for item in self.state['Items']:
-                    if item.get('StorageSlot') == storage_slot:
+                for item in self.state.Items:
+                    if item.StorageSlot == storage_slot:
                         # Remove in-transit flag if present
-                        if 'InTransit' in item:
-                            del item['InTransit']
+                        item.InTransit = None
 
                         # Add location information
-                        item['StarSystem'] = completed['StarSystem']
-                        item['MarketID'] = completed['MarketID']
-                        item['TransferCost'] = completed['TransferCost']
-                        item['TransferTime'] = 0  # Transfer is complete
+                        item.StarSystem = completed.StarSystem
+                        item.MarketID = completed.MarketID
+                        item.TransferCost = completed.TransferCost
+                        item.TransferTime = 0  # Transfer is complete
                         break
 
                 # Remove from ItemsInTransit
-                self.state['ItemsInTransit'].remove(completed)
+                self.state.ItemsInTransit.remove(completed)
                 projected_events.append(ProjectedEvent(content={"event": "FetchRemoteModuleCompleted"}))
-                log('info', 'removed to transit' + str(completed['StorageSlot']))
 
         return projected_events
 
 
-ShipHereItem = TypedDict('ShipHereItem', {
-    "ShipID": int,
-    "ShipType": str,
-    "Name": str,
-    "Value": int,
-    "Hot": bool,
-})
+class ShipHereItem(BaseModel):
+    """A ship stored at the current station."""
+    ShipID: int = Field(description="Unique ship identifier")
+    ShipType: str = Field(description="Ship type identifier")
+    Name: str = Field(description="Custom ship name")
+    Value: int = Field(description="Ship value in credits")
+    Hot: bool = Field(description="Whether ship is marked as hot/stolen")
 
-ShipRemoteItem = TypedDict('ShipRemoteItem', {
-    "ShipID": int,
-    "ShipType": str,
-    "ShipType_Localised": NotRequired[str],
-    "Name": str,
-    "StarSystem": NotRequired[str],
-    "ShipMarketID": NotRequired[int],
-    "TransferPrice": NotRequired[int],
-    "TransferTime": NotRequired[int],
-    "Value": int,
-    "Hot": bool,
-    "InTransit": NotRequired[bool],
-})
 
-ShipInTransitItem = TypedDict('ShipInTransitItem', {
-    "ShipID": int,
-    "ShipType": str,
-    "System": str,  # Destination system
-    "ShipMarketID": int,  # Destination market
-    "TransferCompleteTime": str,  # ISO timestamp
-    "TransferPrice": int,
-})
+class ShipRemoteItem(BaseModel):
+    """A ship stored at a remote location."""
+    ShipID: int = Field(description="Unique ship identifier")
+    ShipType: str = Field(description="Ship type identifier")
+    ShipType_Localised: Optional[str] = Field(default=None, description="Human-readable ship type")
+    Name: str = Field(description="Custom ship name")
+    StarSystem: Optional[str] = Field(default=None, description="System where ship is stored")
+    ShipMarketID: Optional[int] = Field(default=None, description="Market ID where ship is stored")
+    TransferPrice: Optional[int] = Field(default=None, description="Cost to transfer ship in credits")
+    TransferTime: Optional[int] = Field(default=None, description="Time to transfer ship in seconds")
+    Value: int = Field(description="Ship value in credits")
+    Hot: bool = Field(description="Whether ship is marked as hot/stolen")
+    InTransit: Optional[bool] = Field(default=None, description="Whether ship is in transit")
 
-StoredShipsState = TypedDict('StoredShipsState', {
-    "StationName": str,
-    "MarketID": int,
-    "StarSystem": str,
-    "ShipsHere": list[ShipHereItem],
-    "ShipsRemote": list[ShipRemoteItem],
-    "ShipsInTransit": list[ShipInTransitItem],
-})
+
+class ShipInTransitItem(BaseModel):
+    """A ship being transferred to current location."""
+    ShipID: int = Field(description="Unique ship identifier")
+    ShipType: str = Field(description="Ship type identifier")
+    System: str = Field(description="Destination star system")
+    ShipMarketID: int = Field(description="Destination market ID")
+    TransferCompleteTime: str = Field(description="ISO timestamp when transfer completes")
+    TransferPrice: int = Field(description="Transfer cost in credits")
+
+
+class StoredShipsStateModel(BaseModel):
+    """Current stored ships status."""
+    StationName: str = Field(default="", description="Current station name")
+    MarketID: int = Field(default=0, description="Current market ID")
+    StarSystem: str = Field(default="", description="Current star system")
+    ShipsHere: list[ShipHereItem] = Field(default_factory=list, description="Ships at current station")
+    ShipsRemote: list[ShipRemoteItem] = Field(default_factory=list, description="Ships at remote locations")
+    ShipsInTransit: list[ShipInTransitItem] = Field(default_factory=list, description="Ships in transit")
 
 
 @final
-class StoredShips(Projection[StoredShipsState]):
-    @override
-    def get_default_state(self) -> StoredShipsState:
-        return {
-            "StationName": "",
-            "MarketID": 0,
-            "StarSystem": "",
-            "ShipsHere": [],
-            "ShipsRemote": [],
-            "ShipsInTransit": []
-        }
+class StoredShips(Projection[StoredShipsStateModel]):
+    StateModel = StoredShipsStateModel
 
     @override
     def process(self, event: Event) -> list[ProjectedEvent]:
@@ -1359,11 +1337,11 @@ class StoredShips(Projection[StoredShipsState]):
 
         if isinstance(event, GameEvent) and event.content.get('event') == 'StoredShips':
             # Save the event as-is (all fields are required in the event)
-            self.state['StationName'] = event.content.get('StationName', '')
-            self.state['MarketID'] = event.content.get('MarketID', 0)
-            self.state['StarSystem'] = event.content.get('StarSystem', '')
-            self.state['ShipsHere'] = event.content.get('ShipsHere', [])
-            self.state['ShipsRemote'] = event.content.get('ShipsRemote', [])
+            self.state.StationName = event.content.get('StationName', '')
+            self.state.MarketID = event.content.get('MarketID', 0)
+            self.state.StarSystem = event.content.get('StarSystem', '')
+            self.state.ShipsHere = [ShipHereItem(**ship) for ship in event.content.get('ShipsHere', [])]
+            self.state.ShipsRemote = [ShipRemoteItem(**ship) for ship in event.content.get('ShipsRemote', [])]
 
         if isinstance(event, GameEvent) and event.content.get('event') == 'ShipyardTransfer':
             # Calculate completion timestamp using the event's timestamp
@@ -1372,19 +1350,19 @@ class StoredShips(Projection[StoredShipsState]):
             completion_time = event_timestamp + timedelta(seconds=transfer_time_seconds)
 
             # Create a ship in transit using data from the event
-            transit_item: ShipInTransitItem = {
-                "ShipID": event.content.get('ShipID', 0),
-                "ShipType": event.content.get('ShipType', ''),
-                "System": self.state.get('StarSystem', ''),
-                "ShipMarketID": self.state.get('MarketID', 0),
-                "TransferCompleteTime": completion_time.isoformat(),
-                "TransferPrice": event.content.get('TransferPrice', 0),
-            }
+            transit_item = ShipInTransitItem(
+                ShipID=event.content.get('ShipID', 0),
+                ShipType=event.content.get('ShipType', ''),
+                System=self.state.StarSystem,
+                ShipMarketID=self.state.MarketID,
+                TransferCompleteTime=completion_time.isoformat(),
+                TransferPrice=event.content.get('TransferPrice', 0),
+            )
 
-            self.state['ShipsInTransit'].append(transit_item)
+            self.state.ShipsInTransit.append(transit_item)
 
         # Check if any ships in transit have completed
-        if len(self.state['ShipsInTransit']) > 0:
+        if len(self.state.ShipsInTransit) > 0:
             # Use event timestamp if available, otherwise use current time
             if isinstance(event, GameEvent) and 'timestamp' in event.content:
                 current_time = datetime.fromisoformat(event.content.get('timestamp', '').replace('Z', '+00:00'))
@@ -1393,40 +1371,34 @@ class StoredShips(Projection[StoredShipsState]):
 
             completed_items: list[ShipInTransitItem] = []
 
-            for transit_item in self.state['ShipsInTransit']:
-                completion_time = datetime.fromisoformat(transit_item['TransferCompleteTime'])
+            for transit_item in self.state.ShipsInTransit:
+                completion_time = datetime.fromisoformat(transit_item.TransferCompleteTime)
                 if current_time >= completion_time:
                     completed_items.append(transit_item)
 
             # Process completed transfers
             for completed in completed_items:
-                ship_id = completed['ShipID']
+                ship_id = completed.ShipID
 
                 # Find the ship in ShipsRemote with matching ShipID and update it
-                for ship in self.state['ShipsRemote']:
-                    if ship.get('ShipID') == ship_id:
+                for ship in self.state.ShipsRemote:
+                    if ship.ShipID == ship_id:
                         # Remove in-transit flag if present
-                        if 'InTransit' in ship:
-                            del ship['InTransit']
+                        ship.InTransit = None
 
                         # Add location information
-                        ship['StarSystem'] = completed['System']
-                        ship['ShipMarketID'] = completed['ShipMarketID']
-                        ship['TransferPrice'] = completed['TransferPrice']
-                        ship['TransferTime'] = 0  # Transfer is complete
+                        ship.StarSystem = completed.System
+                        ship.ShipMarketID = completed.ShipMarketID
+                        ship.TransferPrice = completed.TransferPrice
+                        ship.TransferTime = 0  # Transfer is complete
                         break
 
                 # Remove from ShipsInTransit
-                self.state['ShipsInTransit'].remove(completed)
+                self.state.ShipsInTransit.remove(completed)
                 projected_events.append(ProjectedEvent(content={"event": "ShipyardTransferCompleted"}))
 
         return projected_events
 
-
-NavRouteItem = TypedDict('NavRouteItem', {
-    "StarSystem": str,
-    "Scoopable": bool
-})
 
 class NavInfoStateModel(BaseModel):
     """Current navigation and route information."""
@@ -2353,40 +2325,25 @@ class IdleStateModel(BaseModel):
     IsIdle: bool = Field(default=True, description="Whether the user is currently idle")
 
 
-FSSSignalsState = TypedDict('FSSSignalsState', {
-    "SystemAddress": int,
+class FSSSignalsStateModel(BaseModel):
+    """Current FSS signal discoveries in the system."""
+    SystemAddress: int = Field(default=0, description="Unique system identifier")
+    FleetCarrier: list[str] = Field(default_factory=list, description="Fleet carrier signals")
+    ResourceExtraction: list[str] = Field(default_factory=list, description="Resource extraction site signals")
+    Installation: list[str] = Field(default_factory=list, description="Installation signals")
+    NavBeacon: list[str] = Field(default_factory=list, description="Navigation beacon signals")
+    TouristBeacon: list[str] = Field(default_factory=list, description="Tourist beacon signals")
+    Megaship: list[str] = Field(default_factory=list, description="Megaship signals")
+    Generic: list[str] = Field(default_factory=list, description="Generic signals")
+    Outpost: list[str] = Field(default_factory=list, description="Outpost signals")
+    Combat: list[str] = Field(default_factory=list, description="Combat zone signals")
+    Station: list[str] = Field(default_factory=list, description="Station signals")
+    UnknownSignal: list[str] = Field(default_factory=list, description="Unknown signal types")
 
-    "FleetCarrier": list[str],
-    "ResourceExtraction": list[str],
-    "Installation": list[str],
-    "NavBeacon": list[str],
-    "TouristBeacon": list[str],
-    "Megaship": list[str],
-    "Generic": list[str],
-    "Outpost": list[str],
-    "Combat": list[str],
-    "Station": list[str],
-    "UnknownSignal": list[str],
-})
 
 @final
-class FSSSignals(Projection[FSSSignalsState]):
-    @override
-    def get_default_state(self) -> dict:
-        return {
-            "SystemAddress": 0,
-            "FleetCarrier": [],
-            "ResourceExtraction": [],
-            "Installation": [],
-            "NavBeacon": [],
-            "TouristBeacon": [],
-            "Megaship": [],
-            "Generic": [],
-            "Outpost": [],
-            "Combat": [],
-            "Station": [],
-            "UnknownSignal": []
-        }
+class FSSSignals(Projection[FSSSignalsStateModel]):
+    StateModel = FSSSignalsStateModel
 
     @override
     def process(self, event: Event) -> list[ProjectedEvent]:
@@ -2396,19 +2353,18 @@ class FSSSignals(Projection[FSSSignalsState]):
             signal_type = signal.get("SignalType", "Unknown")
             signal_name = signal.get("SignalName", "Unknown")
             system_address = signal.get("SystemAddress", 0)
-            if system_address != self.state.get("SystemAddress", 0):
+            if system_address != self.state.SystemAddress:
                 # New system, clear previous signals
-                self.state = self.get_default_state()
-                self.state["SystemAddress"] = system_address
+                self.state = FSSSignalsStateModel(SystemAddress=system_address)
 
-            if signal_type in self.state:
-                self.state[signal_type].append(signal_name)
+            if hasattr(self.state, signal_type):
+                getattr(self.state, signal_type).append(signal_name)
             else:
                 if signal.get("IsStation"):
-                    self.state["Station"].append(signal_name)
+                    self.state.Station.append(signal_name)
                     signal_type = "Station"
                 else:
-                    self.state["UnknownSignal"].append(signal_name)
+                    self.state.UnknownSignal.append(signal_name)
                     signal_type = "UnknownSignal"
 
             projected_events.append(ProjectedEvent(content={"event": f"{signal_type}Discovered", "SignalName": signal_name}))
@@ -2419,11 +2375,6 @@ class FSSSignals(Projection[FSSSignalsState]):
 
         return projected_events
 
-# Define types for Idle Projection
-IdleState = TypedDict('IdleState', {
-    "LastInteraction": str,  # ISO timestamp of last interaction
-    "IsIdle": bool  # Whether the user is currently idle
-})
 
 @final
 class Idle(Projection[IdleStateModel]):
