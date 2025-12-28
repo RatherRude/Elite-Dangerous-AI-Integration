@@ -61,6 +61,9 @@ game_events = {
     'SystemsShutdown': True,
     'SelfDestruct': True,
 
+    'FetchRemoteModuleCompleted': False,
+    'ShipyardTransferCompleted': False,
+
     # Trading
     'BuyTradeData': False,
     'CollectCargo': False,
@@ -300,7 +303,17 @@ game_events = {
     'FSSBodySignals': False,
     'FSSDiscoveryScan': False,
     'FirstPlayerSystemDiscovered':False,
-    'FSSSignalDiscovered': False,
+    'FleetCarrierDiscovered': False,
+    'ResourceExtractionDiscovered': False,
+    'InstallationDiscovered': False,
+    'NavBeaconDiscovered': False,
+    'TouristBeaconDiscovered': False,
+    'MegashipDiscovered': False,
+    'GenericDiscovered': False,
+    'OutpostDiscovered': False,
+    'CombatDiscovered': False,
+    'StationDiscovered': False,
+    'UnknownSignalDiscovered': False,
     'MaterialCollected': False,
     'MaterialDiscarded': False,
     'MaterialDiscovered': False,

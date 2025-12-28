@@ -44,6 +44,17 @@ def web_search_agent(
         {
             "type": "function",
             "function": {
+                "name": "get_stored_ship_modules",
+                "description": "Return current stored ship modules",
+                "parameters": {
+                    "type": "object",
+                    "properties": {}
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
                 "name": "get_galnet_news",
                 "description": "Retrieve current interstellar news from Galnet. Use this for questions about recent events, thargoids, etc.",
                 "parameters": {
@@ -186,6 +197,7 @@ def web_search_agent(
         "engineer_finder": engineer_finder,
         "blueprint_finder": blueprint_finder,
         "material_finder": material_finder,
+        "get_stored_ship_modules": get_stored_ship_modules,
     }
 
     system_prompt = """
@@ -335,7 +347,103 @@ def get_galnet_news(obj, projected_states):
     except:
         return "News feed currently unavailable"
 
+def get_stored_ship_modules(obj, projected_states):
+    stored_modules = projected_states.get('StoredModules', {})
+    items = stored_modules.get('Items', [])
+    
+    if not items:
+        return 'No stored modules found. Advise user to interact with an outfitting service in a station to retrieve information.'
+    
+    # Group items by star system
+    grouped = {}
+    for item in items:
+        star_system = item.get('StarSystem', 'Unknown')
+        if star_system not in grouped:
+            grouped[star_system] = {
+                'transfer_time': item.get('TransferTime', 0),
+                'modules': []
+            }
+        
+        # Build module string
+        name = item.get('Name_Localised', item.get('Name', 'Unknown'))
+        module_parts = [name]
+        
+        # Add engineering info if present
+        if 'EngineerModifications' in item:
+            eng_mod = item.get('EngineerModifications', '')
+            level = item.get('Level', '')
+            module_parts.append(f"({eng_mod} {level})")
+        
+        # Add hot indicator
+        if item.get('Hot', False):
+            module_parts.append("(HOT)")
+        
+        grouped[star_system]['modules'].append(' '.join(module_parts))
+    
+    # Format output
+    result = {}
+    for system, data in grouped.items():
+        transfer_time = data['transfer_time']
+        header = f"{system} ({transfer_time} seconds)" if transfer_time > 0 else system
+        result[header] = data['modules']
+    
+    return result
 
+def get_stored_ships(obj, projected_states):
+    stored_ships = projected_states.get('StoredShips', {})
+    ships_here = stored_ships.get('ShipsHere', [])
+    ships_remote = stored_ships.get('ShipsRemote', [])
+    
+    if not ships_here and not ships_remote:
+        return {}
+    
+    result = {}
+    
+    # Add ships at current station
+    if ships_here:
+        current_station = stored_ships.get('StationName', 'Current Station')
+        ship_names = []
+        for ship in ships_here:
+            ship_type = ship.get('ShipType', 'Unknown')
+            name = ship.get('Name', '')
+            if name:
+                ship_names.append(f"{ship_type} '{name}'")
+            else:
+                ship_names.append(ship_type)
+        result[current_station] = ship_names
+    
+    # Group remote ships by star system
+    remote_grouped = {}
+    for ship in ships_remote:
+        # Skip ships that are in transit (they'll be shown separately)
+        if ship.get('InTransit', False):
+            continue
+            
+        star_system = ship.get('StarSystem', 'Unknown')
+        if star_system not in remote_grouped:
+            remote_grouped[star_system] = {
+                'transfer_time': ship.get('TransferTime', 0),
+                'ships': []
+            }
+        
+        # Build ship string
+        ship_type = ship.get('ShipType_Localised', ship.get('ShipType', 'Unknown'))
+        name = ship.get('Name', '')
+        ship_parts = [f"{ship_type} '{name}'" if name else ship_type]
+        
+        # Add hot indicator
+        if ship.get('Hot', False):
+            ship_parts.append("(HOT)")
+        
+        remote_grouped[star_system]['ships'].append(' '.join(ship_parts))
+    
+    # Format remote ships output
+    for system, data in remote_grouped.items():
+        transfer_time = data['transfer_time']
+        header = f"{system} ({transfer_time} seconds)" if transfer_time > 0 else system
+        result[header] = data['ships']
+    
+    return result
 
 def blueprint_finder(obj, projected_states):
     import yaml
