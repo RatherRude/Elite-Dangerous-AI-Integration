@@ -62,6 +62,7 @@ game_events = {
     'SelfDestruct': True,
 
     'FetchRemoteModuleCompleted': False,
+    'ShipyardTransferCompleted': False,
 
     # Trading
     'BuyTradeData': False,

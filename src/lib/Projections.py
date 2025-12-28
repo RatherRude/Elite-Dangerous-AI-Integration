@@ -1114,6 +1114,130 @@ class StoredModules(Projection[StoredModulesState]):
         return projected_events
 
 
+ShipHereItem = TypedDict('ShipHereItem', {
+    "ShipID": int,
+    "ShipType": str,
+    "Name": str,
+    "Value": int,
+    "Hot": bool,
+})
+
+ShipRemoteItem = TypedDict('ShipRemoteItem', {
+    "ShipID": int,
+    "ShipType": str,
+    "ShipType_Localised": NotRequired[str],
+    "Name": str,
+    "StarSystem": NotRequired[str],
+    "ShipMarketID": NotRequired[int],
+    "TransferPrice": NotRequired[int],
+    "TransferTime": NotRequired[int],
+    "Value": int,
+    "Hot": bool,
+    "InTransit": NotRequired[bool],
+})
+
+ShipInTransitItem = TypedDict('ShipInTransitItem', {
+    "ShipID": int,
+    "ShipType": str,
+    "System": str,  # Destination system
+    "ShipMarketID": int,  # Destination market
+    "TransferCompleteTime": str,  # ISO timestamp
+    "TransferPrice": int,
+})
+
+StoredShipsState = TypedDict('StoredShipsState', {
+    "StationName": str,
+    "MarketID": int,
+    "StarSystem": str,
+    "ShipsHere": list[ShipHereItem],
+    "ShipsRemote": list[ShipRemoteItem],
+    "ShipsInTransit": list[ShipInTransitItem],
+})
+
+
+@final
+class StoredShips(Projection[StoredShipsState]):
+    @override
+    def get_default_state(self) -> StoredShipsState:
+        return {
+            "StationName": "",
+            "MarketID": 0,
+            "StarSystem": "",
+            "ShipsHere": [],
+            "ShipsRemote": [],
+            "ShipsInTransit": []
+        }
+
+    @override
+    def process(self, event: Event) -> list[ProjectedEvent]:
+        projected_events: list[ProjectedEvent] = []
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'StoredShips':
+            # Save the event as-is (all fields are required in the event)
+            self.state['StationName'] = event.content.get('StationName', '')
+            self.state['MarketID'] = event.content.get('MarketID', 0)
+            self.state['StarSystem'] = event.content.get('StarSystem', '')
+            self.state['ShipsHere'] = event.content.get('ShipsHere', [])
+            self.state['ShipsRemote'] = event.content.get('ShipsRemote', [])
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'ShipyardTransfer':
+            # Calculate completion timestamp using the event's timestamp
+            transfer_time_seconds = event.content.get('TransferTime', 0)
+            event_timestamp = datetime.fromisoformat(event.content.get('timestamp', datetime.now(timezone.utc).isoformat()).replace('Z', '+00:00'))
+            completion_time = event_timestamp + timedelta(seconds=transfer_time_seconds)
+            
+            # Create a ship in transit using data from the event
+            transit_item: ShipInTransitItem = {
+                "ShipID": event.content.get('ShipID', 0),
+                "ShipType": event.content.get('ShipType', ''),
+                "System": event.content.get('System', ''),
+                "ShipMarketID": event.content.get('ShipMarketID', 0),
+                "TransferCompleteTime": completion_time.isoformat(),
+                "TransferPrice": event.content.get('TransferPrice', 0),
+            }
+
+            self.state['ShipsInTransit'].append(transit_item)
+
+        # Check if any ships in transit have completed
+        if len(self.state['ShipsInTransit']) > 0:
+            # Use event timestamp if available, otherwise use current time
+            if isinstance(event, GameEvent) and 'timestamp' in event.content:
+                current_time = datetime.fromisoformat(event.content.get('timestamp', '').replace('Z', '+00:00'))
+            else:
+                current_time = datetime.now(timezone.utc)
+            
+            completed_items: list[ShipInTransitItem] = []
+            
+            for transit_item in self.state['ShipsInTransit']:
+                completion_time = datetime.fromisoformat(transit_item['TransferCompleteTime'])
+                if current_time >= completion_time:
+                    completed_items.append(transit_item)
+            
+            # Process completed transfers
+            for completed in completed_items:
+                ship_id = completed['ShipID']
+                
+                # Find the ship in ShipsRemote with matching ShipID and update it
+                for ship in self.state['ShipsRemote']:
+                    if ship.get('ShipID') == ship_id:
+                        # Remove in-transit flag if present
+                        if 'InTransit' in ship:
+                            del ship['InTransit']
+                        
+                        # Add location information
+                        ship['StarSystem'] = completed['System']
+                        ship['ShipMarketID'] = completed['ShipMarketID']
+                        ship['TransferPrice'] = completed['TransferPrice']
+                        ship['TransferTime'] = 0  # Transfer is complete
+                        break
+                
+                # Remove from ShipsInTransit
+                self.state['ShipsInTransit'].remove(completed)
+                projected_events.append(ProjectedEvent(content={"event": "ShipyardTransferCompleted"}))
+
+        return projected_events
+
+
 NavRouteItem = TypedDict('NavRouteItem', {
     "StarSystem": str,
     "Scoopable": bool
@@ -2192,6 +2316,7 @@ def registerProjections(event_manager: EventManager, system_db: SystemDatabase, 
     event_manager.register_projection(FSSSignals())
     event_manager.register_projection(Idle(idle_timeout))
     event_manager.register_projection(StoredModules())
+    event_manager.register_projection(StoredShips())
 
     # ToDo: SLF, SRV,
     for proj in [
@@ -2206,7 +2331,6 @@ def registerProjections(event_manager: EventManager, system_db: SystemDatabase, 
         'ShipLocker',
         'Loadout',
         'Shipyard',
-        'StoredShips',
         'Market',
         'Outfitting',
         'Shipyard',

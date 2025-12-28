@@ -238,6 +238,7 @@ export const GameEventTooltips: Record<string, string> = {
   "CarrierJumpCancelled": "COVAS:NEXT will react when a scheduled carrier jump is cancelled. Telling you about the carrier ID.",
   "ColonisationConstructionDepot": "COVAS:NEXT will react when you arrive at a colonisation construction depot.",
   "FetchRemoteModuleCompleted": "COVAS:NEXT will react when your remotely fetched modules have arrived.",
+  "ShipyardTransferCompleted": "COVAS:NEXT will react when your remotely fetched ships have arrived.",
 
   // Social
   "Idle": "COVAS:NEXT will react when you remain inactive for a prolonged period and proactively make comments.",

@@ -2214,6 +2214,8 @@ class PromptGenerator:
             return f"{self.commander_name} has a new system discovered."
         if event_name == 'FetchRemoteModuleCompleted':
             return f"{self.commander_name}'s module has arrived."
+        if event_name == 'ShipyardTransferCompleted':
+            return f"{self.commander_name}'s ship has arrived."
         # if event_name == 'ExternalDiscordNotification':
         #     twitch_event = cast(Dict[str, Any], content)
         #     return f"Twitch Alert! {twitch_event.get('text','')}",
@@ -3154,6 +3156,41 @@ class PromptGenerator:
             
             if itemsInTransit:
                 status_entries.append(("Modules in transit to this system", itemsInTransit))
+        
+        # Show ships in transit to current system
+        storedShips = projected_states.get('StoredShips', {})
+        if len(storedShips.get('ShipsInTransit', [])) > 0:
+            from datetime import datetime, timezone
+            current_system = location_info.get('StarSystem')
+            current_time = datetime.now(timezone.utc)
+            
+            shipsInTransit = []
+            for ship in storedShips.get('ShipsInTransit', []):
+                if ship.get('System') == current_system:
+                    # Calculate time remaining in seconds
+                    completion_time = datetime.fromisoformat(ship.get('TransferCompleteTime', ''))
+                    time_remaining = int((completion_time - current_time).total_seconds())
+                    
+                    # Find the ship name/type from ShipID in ShipsRemote
+                    ship_id = ship.get('ShipID')
+                    ship_display = 'Unknown'
+                    for remote_ship in storedShips.get('ShipsRemote', []):
+                        if remote_ship.get('ShipID') == ship_id:
+                            ship_type = remote_ship.get('ShipType_Localised', remote_ship.get('ShipType', 'Unknown'))
+                            ship_name = remote_ship.get('Name', '')
+                            if ship_name:
+                                ship_display = f"{ship_type} '{ship_name}'"
+                            else:
+                                ship_display = ship_type
+                            break
+                    
+                    shipsInTransit.append({
+                        "Ship": ship_display,
+                        "TimeRemaining": time_remaining
+                    })
+            
+            if shipsInTransit:
+                status_entries.append(("Ships in transit to this system", shipsInTransit))
             
             
         # Missions

@@ -389,6 +389,62 @@ def get_stored_ship_modules(obj, projected_states):
     
     return result
 
+def get_stored_ships(obj, projected_states):
+    stored_ships = projected_states.get('StoredShips', {})
+    ships_here = stored_ships.get('ShipsHere', [])
+    ships_remote = stored_ships.get('ShipsRemote', [])
+    
+    if not ships_here and not ships_remote:
+        return {}
+    
+    result = {}
+    
+    # Add ships at current station
+    if ships_here:
+        current_station = stored_ships.get('StationName', 'Current Station')
+        ship_names = []
+        for ship in ships_here:
+            ship_type = ship.get('ShipType', 'Unknown')
+            name = ship.get('Name', '')
+            if name:
+                ship_names.append(f"{ship_type} '{name}'")
+            else:
+                ship_names.append(ship_type)
+        result[current_station] = ship_names
+    
+    # Group remote ships by star system
+    remote_grouped = {}
+    for ship in ships_remote:
+        # Skip ships that are in transit (they'll be shown separately)
+        if ship.get('InTransit', False):
+            continue
+            
+        star_system = ship.get('StarSystem', 'Unknown')
+        if star_system not in remote_grouped:
+            remote_grouped[star_system] = {
+                'transfer_time': ship.get('TransferTime', 0),
+                'ships': []
+            }
+        
+        # Build ship string
+        ship_type = ship.get('ShipType_Localised', ship.get('ShipType', 'Unknown'))
+        name = ship.get('Name', '')
+        ship_parts = [f"{ship_type} '{name}'" if name else ship_type]
+        
+        # Add hot indicator
+        if ship.get('Hot', False):
+            ship_parts.append("(HOT)")
+        
+        remote_grouped[star_system]['ships'].append(' '.join(ship_parts))
+    
+    # Format remote ships output
+    for system, data in remote_grouped.items():
+        transfer_time = data['transfer_time']
+        header = f"{system} ({transfer_time} seconds)" if transfer_time > 0 else system
+        result[header] = data['ships']
+    
+    return result
+
 def blueprint_finder(obj, projected_states):
     import yaml
     # Get current location coordinates for distance calculation
