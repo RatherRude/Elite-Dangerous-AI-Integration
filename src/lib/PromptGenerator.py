@@ -2195,7 +2195,7 @@ class PromptGenerator:
         if event_name == 'ScanOrganicFirst':
             scan_event = cast(Dict[str, Any], content)
             new_distance = scan_event.get('NewSampleDistance', 'unknown')
-            return f"{self.commander_name} took the first of three biological samples. New sample distance acquired: {new_distance}"
+            return f"{self.commander_name} took the first of three biological samples. New sample distance acquired: {new_distance}."
         if event_name == 'ScanOrganicSecond':
             return f"{self.commander_name} took the second of three biological samples."
         if event_name == 'ScanOrganicThird':
@@ -2211,7 +2211,9 @@ class PromptGenerator:
         if event_name == 'CombatExited':
             return f"{self.commander_name} is no longer in combat."
         if event_name == 'FirstPlayerSystemDiscovered':
-            return f"{self.commander_name} has a new system discovered"
+            return f"{self.commander_name} has a new system discovered."
+        if event_name == 'FetchRemoteModuleCompleted':
+            return f"{self.commander_name}'s module has arrived."
         # if event_name == 'ExternalDiscordNotification':
         #     twitch_event = cast(Dict[str, Any], content)
         #     return f"Twitch Alert! {twitch_event.get('text','')}",
@@ -2996,6 +2998,7 @@ class PromptGenerator:
         market = projected_states.get('Market', {})
         outfitting = projected_states.get('Outfitting', {})
         storedShips = projected_states.get('StoredShips', {})
+        storedModules = projected_states.get('StoredModules', {})
         if current_station and current_station == market.get('StationName') and not search_agent_context:
             buy_items = {
                 item.get('Name_Localised'): {
@@ -3122,6 +3125,36 @@ class PromptGenerator:
             status_entries.append(("Local outfitting information", nested_outfitting))
         if current_station and current_station == storedShips.get('StationName') and not search_agent_context:
             status_entries.append(("Local, stored ships", storedShips.get('ShipsHere', [])))
+        
+        # Show modules in transit to current system
+        if len(storedModules.get('ItemsInTransit', [])) > 0:
+            from datetime import datetime, timezone
+            current_system = location_info.get('StarSystem')
+            current_time = datetime.now(timezone.utc)
+            
+            itemsInTransit = []
+            for item in storedModules.get('ItemsInTransit', []):
+                if item.get('StarSystem') == current_system:
+                    # Calculate time remaining in seconds
+                    completion_time = datetime.fromisoformat(item.get('TransferCompleteTime', ''))
+                    time_remaining = int((completion_time - current_time).total_seconds())
+                    
+                    # Find the module name from StorageSlot in Items
+                    storage_slot = item.get('StorageSlot')
+                    module_name = 'Unknown'
+                    for module in storedModules.get('Items', []):
+                        if module.get('StorageSlot') == storage_slot:
+                            module_name = module.get('Name_Localised', module.get('Name', 'Unknown'))
+                            break
+                    
+                    itemsInTransit.append({
+                        "Name": module_name,
+                        "TimeRemaining": time_remaining
+                    })
+            
+            if itemsInTransit:
+                status_entries.append(("Modules in transit to this system", itemsInTransit))
+            
             
         # Missions
         missions_info: MissionsState = projected_states.get('Missions', {})  # pyright: ignore[reportAssignmentType]

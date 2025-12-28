@@ -237,6 +237,7 @@ export const GameEventTooltips: Record<string, string> = {
   "CarrierNameChanged": "COVAS:NEXT will react when you rename your carrier. Telling you about the new name and callsign.",
   "CarrierJumpCancelled": "COVAS:NEXT will react when a scheduled carrier jump is cancelled. Telling you about the carrier ID.",
   "ColonisationConstructionDepot": "COVAS:NEXT will react when you arrive at a colonisation construction depot.",
+  "FetchRemoteModuleCompleted": "COVAS:NEXT will react when your remotely fetched modules have arrived.",
 
   // Social
   "Idle": "COVAS:NEXT will react when you remain inactive for a prolonged period and proactively make comments.",

@@ -990,6 +990,130 @@ class Target(Projection[TargetState]):
         return projected_events
 
 
+StoredModuleItem = TypedDict('StoredModuleItem', {
+    "Name": str,
+    "Name_Localised": str,
+    "StorageSlot": int,
+    "BuyPrice": int,
+    "Hot": bool,
+    
+    # Present when in transit
+    "InTransit": NotRequired[bool],
+    
+    # Present when stored at location (not in transit)
+    "StarSystem": NotRequired[str],
+    "MarketID": NotRequired[int],
+    "TransferCost": NotRequired[int],
+    "TransferTime": NotRequired[int],
+    
+    # Optional in both states
+    "EngineerModifications": NotRequired[str],
+    "Level": NotRequired[int],
+    "Quality": NotRequired[float],
+})
+
+FetchRemoteModuleItem = TypedDict('FetchRemoteModuleItem', {
+    "MarketID": int,
+    "StationName": str,
+    "StarSystem": str,
+    "StorageSlot": int,
+    "TransferCompleteTime": str,  # ISO timestamp when transfer completes
+    "TransferCost": int,
+})
+
+StoredModulesState = TypedDict('StoredModulesState', {
+    "MarketID": int,
+    "StationName": str,
+    "StarSystem": str,
+    "Items": list[StoredModuleItem],
+    "ItemsInTransit": list[FetchRemoteModuleItem],
+})
+
+
+@final
+class StoredModules(Projection[StoredModulesState]):
+    @override
+    def get_default_state(self) -> StoredModulesState:
+        return {
+            "MarketID": 0,
+            "StationName": "",
+            "StarSystem": "",
+            "Items": [],
+            "ItemsInTransit": []
+        }
+
+    @override
+    def process(self, event: Event) -> list[ProjectedEvent]:
+        projected_events: list[ProjectedEvent] = []
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'StoredModules':
+            # Save the event as-is (all fields are required in the event)
+            self.state['MarketID'] = event.content.get('MarketID', 0)
+            self.state['StationName'] = event.content.get('StationName', '')
+            self.state['StarSystem'] = event.content.get('StarSystem', '')
+            self.state['Items'] = event.content.get('Items', [])
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'FetchRemoteModule':
+            # Calculate completion timestamp using the event's timestamp
+            transfer_time_seconds = event.content.get('TransferTime', 0)
+            event_timestamp = datetime.fromisoformat(event.content.get('timestamp', datetime.now(timezone.utc).isoformat()).replace('Z', '+00:00'))
+            completion_time = event_timestamp + timedelta(seconds=transfer_time_seconds)
+            
+            # Create an item in transit using data from the event and current state
+            transit_item: FetchRemoteModuleItem = {
+                "MarketID": self.state.get('MarketID', 0),
+                "StationName": self.state.get('StationName', ''),
+                "StarSystem": self.state.get('StarSystem', ''),
+                "StorageSlot": event.content.get('StorageSlot', 0),
+                "TransferCompleteTime": completion_time.isoformat(),
+                "TransferCost": event.content.get('TransferCost', 0),
+            }
+
+            self.state['ItemsInTransit'].append(transit_item)
+
+        # Check if any items in transit have completed
+        if len(self.state['ItemsInTransit']) > 0:
+            log('info', 'in transit')
+            # Use event timestamp if available, otherwise use current time
+            if isinstance(event, GameEvent) and 'timestamp' in event.content:
+                current_time = datetime.fromisoformat(event.content.get('timestamp', '').replace('Z', '+00:00'))
+            else:
+                current_time = datetime.now(timezone.utc)
+            
+            completed_items: list[FetchRemoteModuleItem] = []
+            
+            for transit_item in self.state['ItemsInTransit']:
+                completion_time = datetime.fromisoformat(transit_item['TransferCompleteTime'])
+                if current_time >= completion_time:
+                    completed_items.append(transit_item)
+                    log('info', 'added to transit' + str(transit_item['StorageSlot']))
+
+            # Process completed transfers
+            for completed in completed_items:
+                storage_slot = completed['StorageSlot']
+                
+                # Find the item in Items with matching StorageSlot and update it
+                for item in self.state['Items']:
+                    if item.get('StorageSlot') == storage_slot:
+                        # Remove in-transit flag if present
+                        if 'InTransit' in item:
+                            del item['InTransit']
+                        
+                        # Add location information
+                        item['StarSystem'] = completed['StarSystem']
+                        item['MarketID'] = completed['MarketID']
+                        item['TransferCost'] = completed['TransferCost']
+                        item['TransferTime'] = 0  # Transfer is complete
+                        break
+                
+                # Remove from ItemsInTransit
+                self.state['ItemsInTransit'].remove(completed)
+                projected_events.append(ProjectedEvent(content={"event": "FetchRemoteModuleCompleted"}))
+                log('info', 'removed to transit' + str(completed['StorageSlot']))
+
+        return projected_events
+
+
 NavRouteItem = TypedDict('NavRouteItem', {
     "StarSystem": str,
     "Scoopable": bool
@@ -2067,6 +2191,7 @@ def registerProjections(event_manager: EventManager, system_db: SystemDatabase, 
     event_manager.register_projection(Wing())
     event_manager.register_projection(FSSSignals())
     event_manager.register_projection(Idle(idle_timeout))
+    event_manager.register_projection(StoredModules())
 
     # ToDo: SLF, SRV,
     for proj in [
@@ -2082,7 +2207,6 @@ def registerProjections(event_manager: EventManager, system_db: SystemDatabase, 
         'Loadout',
         'Shipyard',
         'StoredShips',
-        'StoredModules',
         'Market',
         'Outfitting',
         'Shipyard',

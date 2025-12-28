@@ -61,6 +61,8 @@ game_events = {
     'SystemsShutdown': True,
     'SelfDestruct': True,
 
+    'FetchRemoteModuleCompleted': False,
+
     # Trading
     'BuyTradeData': False,
     'CollectCargo': False,

@@ -44,6 +44,17 @@ def web_search_agent(
         {
             "type": "function",
             "function": {
+                "name": "get_stored_ship_modules",
+                "description": "Return current stored ship modules",
+                "parameters": {
+                    "type": "object",
+                    "properties": {}
+                }
+            }
+        },
+        {
+            "type": "function",
+            "function": {
                 "name": "get_galnet_news",
                 "description": "Retrieve current interstellar news from Galnet. Use this for questions about recent events, thargoids, etc.",
                 "parameters": {
@@ -186,6 +197,7 @@ def web_search_agent(
         "engineer_finder": engineer_finder,
         "blueprint_finder": blueprint_finder,
         "material_finder": material_finder,
+        "get_stored_ship_modules": get_stored_ship_modules,
     }
 
     system_prompt = """
@@ -335,7 +347,47 @@ def get_galnet_news(obj, projected_states):
     except:
         return "News feed currently unavailable"
 
-
+def get_stored_ship_modules(obj, projected_states):
+    stored_modules = projected_states.get('StoredModules', {})
+    items = stored_modules.get('Items', [])
+    
+    if not items:
+        return 'No stored modules found. Advise user to interact with an outfitting service in a station to retrieve information.'
+    
+    # Group items by star system
+    grouped = {}
+    for item in items:
+        star_system = item.get('StarSystem', 'Unknown')
+        if star_system not in grouped:
+            grouped[star_system] = {
+                'transfer_time': item.get('TransferTime', 0),
+                'modules': []
+            }
+        
+        # Build module string
+        name = item.get('Name_Localised', item.get('Name', 'Unknown'))
+        module_parts = [name]
+        
+        # Add engineering info if present
+        if 'EngineerModifications' in item:
+            eng_mod = item.get('EngineerModifications', '')
+            level = item.get('Level', '')
+            module_parts.append(f"({eng_mod} {level})")
+        
+        # Add hot indicator
+        if item.get('Hot', False):
+            module_parts.append("(HOT)")
+        
+        grouped[star_system]['modules'].append(' '.join(module_parts))
+    
+    # Format output
+    result = {}
+    for system, data in grouped.items():
+        transfer_time = data['transfer_time']
+        header = f"{system} ({transfer_time} seconds)" if transfer_time > 0 else system
+        result[header] = data['modules']
+    
+    return result
 
 def blueprint_finder(obj, projected_states):
     import yaml
