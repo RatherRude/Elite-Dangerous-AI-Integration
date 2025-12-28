@@ -3204,7 +3204,7 @@ class PromptGenerator:
                 status_entries.append(("Modules in transit to this system", itemsInTransit))
 
         # Show ships in transit to current system
-        storedShips = projected_states.get('StoredShips', {})
+        storedShips = get_state_dict(projected_states, 'StoredShips')
         if len(storedShips.get('ShipsInTransit', [])) > 0:
             from datetime import datetime, timezone
             current_system = location_info.get('StarSystem')
