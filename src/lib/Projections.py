@@ -1190,8 +1190,8 @@ class StoredShips(Projection[StoredShipsState]):
             transit_item: ShipInTransitItem = {
                 "ShipID": event.content.get('ShipID', 0),
                 "ShipType": event.content.get('ShipType', ''),
-                "System": event.content.get('System', ''),
-                "ShipMarketID": event.content.get('ShipMarketID', 0),
+                "System": self.state.get('StarSystem', ''),
+                "ShipMarketID": self.state.get('MarketID', 0),
                 "TransferCompleteTime": completion_time.isoformat(),
                 "TransferPrice": event.content.get('TransferPrice', 0),
             }

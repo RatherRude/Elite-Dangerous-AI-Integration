@@ -3134,6 +3134,23 @@ class PromptGenerator:
             current_system = location_info.get('StarSystem')
             current_time = datetime.now(timezone.utc)
             
+            def format_time_remaining(seconds):
+                """Format seconds into human-readable time"""
+                if seconds < 0:
+                    return "Arrived"
+                hours = seconds // 3600
+                minutes = (seconds % 3600) // 60
+                secs = seconds % 60
+                
+                parts = []
+                if hours > 0:
+                    parts.append(f"{hours}h")
+                if minutes > 0:
+                    parts.append(f"{minutes}m")
+                if secs > 0 or not parts:
+                    parts.append(f"{secs}s")
+                return " ".join(parts)
+            
             itemsInTransit = []
             for item in storedModules.get('ItemsInTransit', []):
                 if item.get('StarSystem') == current_system:
@@ -3151,7 +3168,7 @@ class PromptGenerator:
                     
                     itemsInTransit.append({
                         "Name": module_name,
-                        "TimeRemaining": time_remaining
+                        "TimeRemaining": format_time_remaining(time_remaining)
                     })
             
             if itemsInTransit:
@@ -3163,6 +3180,23 @@ class PromptGenerator:
             from datetime import datetime, timezone
             current_system = location_info.get('StarSystem')
             current_time = datetime.now(timezone.utc)
+            
+            def format_time_remaining(seconds):
+                """Format seconds into human-readable time"""
+                if seconds < 0:
+                    return "Arrived"
+                hours = seconds // 3600
+                minutes = (seconds % 3600) // 60
+                secs = seconds % 60
+                
+                parts = []
+                if hours > 0:
+                    parts.append(f"{hours}h")
+                if minutes > 0:
+                    parts.append(f"{minutes}m")
+                if secs > 0 or not parts:
+                    parts.append(f"{secs}s")
+                return " ".join(parts)
             
             shipsInTransit = []
             for ship in storedShips.get('ShipsInTransit', []):
@@ -3186,7 +3220,7 @@ class PromptGenerator:
                     
                     shipsInTransit.append({
                         "Ship": ship_display,
-                        "TimeRemaining": time_remaining
+                        "TimeRemaining": format_time_remaining(time_remaining)
                     })
             
             if shipsInTransit:
