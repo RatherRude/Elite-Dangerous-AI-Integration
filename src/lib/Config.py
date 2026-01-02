@@ -872,7 +872,7 @@ def load_config() -> Config:
         
         # Overlay settings - defaults
         "overlay_show_avatar": True,
-        "overlay_show_hud": True,
+        "overlay_show_hud": False,
         "overlay_show_chat": True,
         "overlay_position": "right",
         "overlay_screen_id": -1,  # -1 means primary screen

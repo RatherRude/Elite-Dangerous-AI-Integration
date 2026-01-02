@@ -1450,7 +1450,7 @@ def register_actions(actionManager: ActionManager, eventManager: EventManager, p
                      chat_system_tabbed_flag: bool = True,
                      chat_squadron_tabbed_flag: bool = False,
                      chat_direct_tabbed_flag: bool = False,
-                     overlay_show_hud: bool = True,
+                     overlay_show_hud: bool = False,
                      weapon_types_list: list | None = None,
                      agent_llm_model: LLMModel | None = None,
                      agent_llm_max_tries: int = 7):
