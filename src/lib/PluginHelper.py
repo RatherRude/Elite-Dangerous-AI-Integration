@@ -13,6 +13,9 @@ from .Event import Event, PluginEvent as _PluginEvent
 from .PromptGenerator import PromptGenerator
 from .Assistant import Assistant
 
+# Type alias for projected states dictionary
+ProjectedStates = dict[str, BaseModel]
+
 # reexport Projection and PluginEvent for plugins
 Projection = _Projection
 PluginEvent = _PluginEvent
@@ -140,13 +143,13 @@ class PluginHelper():
                 return False
         self._assistant.register_should_reply_handler(_should_reply_check)
         
-    def register_status_generator(self, status_generator: Callable[[dict[str, dict]], list[tuple[str, Any]]]):
+    def register_status_generator(self, status_generator: Callable[[ProjectedStates], list[tuple[str, Any]]]):
         """
         Register a status generator callback, for adding stuff to the models status context (Like ship info).
             
         :param status_generator: A callable that takes the current projected states and returns a list of (title, content) tuples.
         """
-        def _status_generator_wrapper(states: dict[str, dict]) -> list[tuple[str, Any]]:
+        def _status_generator_wrapper(states: ProjectedStates) -> list[tuple[str, Any]]:
             try:
                 return status_generator(states)
             except Exception as e:

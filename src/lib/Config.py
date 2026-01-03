@@ -453,6 +453,7 @@ class Config(TypedDict):
     
     # Overlay settings
     overlay_show_avatar: bool
+    overlay_show_hud: bool
     overlay_show_chat: bool
     overlay_position: Literal['left', 'right']
     overlay_screen_id: int
@@ -871,6 +872,7 @@ def load_config() -> Config:
         
         # Overlay settings - defaults
         "overlay_show_avatar": True,
+        "overlay_show_hud": False,
         "overlay_show_chat": True,
         "overlay_position": "right",
         "overlay_screen_id": -1,  # -1 means primary screen
