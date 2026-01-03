@@ -105,6 +105,7 @@ default_config = {
             "FSSAllBodiesFound": False,
             "FSSBodySignals": False,
             "FSSDiscoveryScan": False,
+            "FSSSignalDiscovered": False,
             "MaterialCollected": False,
             "MaterialDiscarded": False,
             "MaterialDiscovered": False,
