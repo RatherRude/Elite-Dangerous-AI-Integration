@@ -2274,7 +2274,7 @@ class Idle(Projection[IdleState]):
         projected_events: list[ProjectedEvent] = []
 
         # Update last interaction time for any event
-        if isinstance(event, ConversationEvent) and event.kind == 'user':
+        if isinstance(event, ConversationEvent):
             self.state["LastInteraction"] = event.timestamp
             self.state["IsIdle"] = False
 
