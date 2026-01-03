@@ -2273,7 +2273,7 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
 
     actionManager.registerAction(
         'web_search_agent',
-        "Generate a detailed report about information from the web, including news, system, station, body, engineer, blueprint, and material lookups. Use this tool whenever the user asks about anything related to external or global information.",
+        "Request a detailed report about information from the game, including news, system, station, body, engineers, blueprint, material lookups, owned ships and modules. Use this tool whenever the user asks about anything related to external or global information.",
         {
             "type": "object",
             "properties": {
