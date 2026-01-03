@@ -284,16 +284,16 @@ class Cargo(Projection[CargoState]):
                     ))
 
             if 'Count' in event.content:
-                self.state.TotalItems = event.content.get('Count', 0)
+                self.state.TotalItems = int(event.content.get('Count', 0))
 
         # Get cargo capacity from Loadout event
         if isinstance(event, GameEvent) and event.content.get('event') == 'Loadout':
-            self.state.Capacity = event.content.get('CargoCapacity', 0)
+            self.state.Capacity = int(event.content.get('CargoCapacity', 0))
             
         # Update from Status event
         if isinstance(event, StatusEvent) and event.status.get('event') == 'Status':
             if 'Cargo' in event.status:
-                self.state.TotalItems = event.status.get('Cargo', 0)
+                self.state.TotalItems = int(event.status.get('Cargo', 0))
 
 
 class LocationState(BaseModel):
