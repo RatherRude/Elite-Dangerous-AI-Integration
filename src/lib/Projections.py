@@ -1013,6 +1013,7 @@ StoredModuleItem = TypedDict('StoredModuleItem', {
 })
 
 FetchRemoteModuleItem = TypedDict('FetchRemoteModuleItem', {
+    "Name": str,
     "MarketID": int,
     "StationName": str,
     "StarSystem": str,
@@ -1051,7 +1052,6 @@ class StoredModules(Projection[StoredModulesState]):
         projected_events: list[ProjectedEvent] = []
 
         if len(self.state['ItemsInTransit']) > 0:
-            log('info', 'in transit')
 
             completed_items: list[FetchRemoteModuleItem] = []
             
@@ -1059,12 +1059,12 @@ class StoredModules(Projection[StoredModulesState]):
                 completion_time = datetime.fromisoformat(transit_item['TransferCompleteTime'])
                 if current_time >= completion_time:
                     completed_items.append(transit_item)
-                    log('info', 'added to transit' + str(transit_item['StorageSlot']))
 
             # Process completed transfers
             for completed in completed_items:
                 storage_slot = completed['StorageSlot']
-                
+                module_name = completed.get("Name", "")
+
                 # Find the item in Items with matching StorageSlot and update it
                 for item in self.state['Items']:
                     if item.get('StorageSlot') == storage_slot:
@@ -1081,8 +1081,14 @@ class StoredModules(Projection[StoredModulesState]):
                 
                 # Remove from ItemsInTransit
                 self.state['ItemsInTransit'].remove(completed)
-                projected_events.append(ProjectedEvent(content={"event": "FetchRemoteModuleCompleted"}))
-                log('info', 'removed to transit' + str(completed['StorageSlot']))
+                projected_events.append(ProjectedEvent(content={
+                    "event": "FetchRemoteModuleCompleted",
+                    "StorageSlot": storage_slot,
+                    "ModuleName": module_name,
+                    "StationName": completed.get("StationName", ""),
+                    "StarSystem": completed.get("StarSystem", ""),
+                    "MarketID": completed.get("MarketID", 0),
+                }))
 
         return projected_events
 
@@ -1105,6 +1111,7 @@ class StoredModules(Projection[StoredModulesState]):
             
             # Create an item in transit using data from the event and current state
             transit_item: FetchRemoteModuleItem = {
+                "Name": event.content.get('StoredItem_Localised', ""),
                 "MarketID": self.state.get('MarketID', 0),
                 "StationName": self.state.get('StationName', ''),
                 "StarSystem": self.state.get('StarSystem', ''),
@@ -1121,8 +1128,6 @@ class StoredModules(Projection[StoredModulesState]):
 
         return projected_events
 
-    @override
-    @override
     @override
     def process_timer(self) -> list[ProjectedEvent]:
         current_time = datetime.now(timezone.utc)
@@ -1204,8 +1209,12 @@ class StoredShips(Projection[StoredShipsState]):
                 ship_id = completed['ShipID']
                 
                 # Find the ship in ShipsRemote with matching ShipID and update it
+                ship_name: str | None = None
+                ship_type: str | None = None
                 for ship in self.state['ShipsRemote']:
                     if ship.get('ShipID') == ship_id:
+                        ship_name = ship.get('Name')
+                        ship_type = ship.get('ShipType')
                         # Remove in-transit flag if present
                         if 'InTransit' in ship:
                             del ship['InTransit']
@@ -1219,7 +1228,15 @@ class StoredShips(Projection[StoredShipsState]):
                 
                 # Remove from ShipsInTransit
                 self.state['ShipsInTransit'].remove(completed)
-                projected_events.append(ProjectedEvent(content={"event": "ShipyardTransferCompleted"}))
+                projected_events.append(ProjectedEvent(content={
+                    "event": "ShipyardTransferCompleted",
+                    "ShipID": ship_id,
+                    "ShipType": ship_type or "",
+                    "ShipName": ship_name or "",
+                    "StarSystem": completed.get("System", ""),
+                    "ShipMarketID": completed.get("ShipMarketID", 0),
+                    "TransferPrice": completed.get("TransferPrice", 0),
+                }))
 
         return projected_events
 

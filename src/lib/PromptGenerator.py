@@ -2213,9 +2213,17 @@ class PromptGenerator:
         if event_name == 'FirstPlayerSystemDiscovered':
             return f"{self.commander_name} has a new system discovered."
         if event_name == 'FetchRemoteModuleCompleted':
-            return f"{self.commander_name}'s module has arrived."
+            module_event = cast(Dict[str, Any], content or {})
+            module_name = module_event.get('ModuleName') or 'module'
+            station = module_event.get('StationName') or 'a station'
+            system = module_event.get('StarSystem') or 'a system'
+            return f"{self.commander_name}'s module {module_name} has arrived at {station} in {system}."
         if event_name == 'ShipyardTransferCompleted':
-            return f"{self.commander_name}'s ship has arrived."
+            ship_event = cast(Dict[str, Any], content or {})
+            ship_name = ship_event.get('ShipName') or ship_event.get('ShipType') or 'ship'
+            station = ship_event.get('StationName') or 'a station'
+            system = ship_event.get('StarSystem') or 'a system'
+            return f"{self.commander_name}'s ship {ship_name} has arrived at {station} in {system}."
         # if event_name == 'ExternalDiscordNotification':
         #     twitch_event = cast(Dict[str, Any], content)
         #     return f"Twitch Alert! {twitch_event.get('text','')}",
