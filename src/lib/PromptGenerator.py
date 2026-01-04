@@ -3458,7 +3458,8 @@ class PromptGenerator:
 
             if isinstance(event, MemoryEvent):
                 event_time = datetime.fromtimestamp(
-                    event.metadata.get('time_until', 0)
+                    cast(float,event.metadata.get('time_until', 0.0)),
+                    tz=timezone.utc
                 )
                 if not event_time.tzinfo:
                     event_time = event_time.astimezone()
