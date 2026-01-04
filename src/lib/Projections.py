@@ -1123,8 +1123,8 @@ class StoredModules(Projection[StoredModulesState]):
             self.state['ItemsInTransit'].append(transit_item)
 
         # Check if any items in transit have completed
-        current_time = self._get_event_time(event)
-        projected_events.extend(self._complete_transfers(current_time))
+        # current_time = self._get_event_time(event)
+        # projected_events.extend(self._complete_transfers(current_time))
 
         return projected_events
 
@@ -1271,8 +1271,8 @@ class StoredShips(Projection[StoredShipsState]):
             self.state['ShipsInTransit'].append(transit_item)
 
         # Check if any ships in transit have completed
-        current_time = self._get_event_time(event)
-        projected_events.extend(self._complete_transfers(current_time))
+        # current_time = self._get_event_time(event)
+        # projected_events.extend(self._complete_transfers(current_time))
 
         return projected_events
 
