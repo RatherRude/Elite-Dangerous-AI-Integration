@@ -234,10 +234,18 @@ class EventManager:
             projected_events.extend(evts)
         return projected_events
     
-    def update_projection(self, projection: Projection, event: Event, save_later: bool = False) -> list[ProjectedEvent]:
+    def update_projection(self, projection: Projection[BaseModel], event: Event, save_later: bool = False) -> list[ProjectedEvent]:
         projection_name = projection.__class__.__name__
         try:
             projected_events = projection.process(event)
+            try:
+                cls = type(projection.state)
+                # Re-run validation using the same model class
+                cls.model_validate(projection.state.model_dump())
+            except ValidationError as ve:
+                log('error', 'Validation error in projection state after processing event', event, 'in projection', projection_name, ve)
+                raise ve    
+            
             self.check_conditions(projection_name, projection.state)
             if projected_events:
                 for e in projected_events:
