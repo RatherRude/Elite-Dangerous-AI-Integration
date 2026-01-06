@@ -1108,6 +1108,8 @@ class StoredModules(Projection[StoredModulesState]):
             transfer_time_seconds = event.content.get('TransferTime', 0)
             event_timestamp = datetime.fromisoformat(event.content.get('timestamp', datetime.now(timezone.utc).isoformat()).replace('Z', '+00:00'))
             completion_time = event_timestamp + timedelta(seconds=transfer_time_seconds)
+            now_utc = datetime.now(timezone.utc)
+            is_due = completion_time <= now_utc
             
             # Create an item in transit using data from the event and current state
             transit_item: FetchRemoteModuleItem = {
@@ -1120,7 +1122,10 @@ class StoredModules(Projection[StoredModulesState]):
                 "TransferCost": event.content.get('TransferCost', 0),
             }
 
-            self.state['ItemsInTransit'].append(transit_item)
+            if not any(i.get("StorageSlot") == transit_item["StorageSlot"] for i in self.state['ItemsInTransit']):
+                self.state['ItemsInTransit'].append(transit_item)
+                if is_due:
+                    projected_events.extend(self._complete_transfers(now_utc))
 
         # Check if any items in transit have completed
         # current_time = self._get_event_time(event)
@@ -1257,6 +1262,8 @@ class StoredShips(Projection[StoredShipsState]):
             transfer_time_seconds = event.content.get('TransferTime', 0)
             event_timestamp = datetime.fromisoformat(event.content.get('timestamp', datetime.now(timezone.utc).isoformat()).replace('Z', '+00:00'))
             completion_time = event_timestamp + timedelta(seconds=transfer_time_seconds)
+            now_utc = datetime.now(timezone.utc)
+            is_due = completion_time <= now_utc
             
             # Create a ship in transit using data from the event
             transit_item: ShipInTransitItem = {
@@ -1268,7 +1275,10 @@ class StoredShips(Projection[StoredShipsState]):
                 "TransferPrice": event.content.get('TransferPrice', 0),
             }
 
-            self.state['ShipsInTransit'].append(transit_item)
+            if not any(s.get("ShipID") == transit_item["ShipID"] for s in self.state['ShipsInTransit']):
+                self.state['ShipsInTransit'].append(transit_item)
+                if is_due:
+                    projected_events.extend(self._complete_transfers(now_utc))
 
         # Check if any ships in transit have completed
         # current_time = self._get_event_time(event)
