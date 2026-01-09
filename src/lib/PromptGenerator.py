@@ -646,7 +646,6 @@ class PromptGenerator:
                 departure_time_str = carrier_jump_request_event.get('DepartureTime')
                 try:
                     # Try to convert the time string to a more readable format
-                    from datetime import datetime
                     dt = datetime.fromisoformat(departure_time_str.replace('Z', '+00:00'))
                     departure_time = f", departing at {dt.strftime('%H:%M:%S')}"
                 except:
@@ -664,7 +663,6 @@ class PromptGenerator:
                 if scrap_time is not None:
                     try:
                         # Try to convert the timestamp to a readable time
-                        from datetime import datetime
                         dt = datetime.fromtimestamp(float(scrap_time))
                         scrap_time_info = f" The carrier will be decommissioned on {dt.strftime('%Y-%m-%d at %H:%M:%S')}."
                     except (ValueError, TypeError):
@@ -3138,7 +3136,6 @@ class PromptGenerator:
         
         # Show modules in transit to current system
         if len(storedModules.get('ItemsInTransit', [])) > 0:
-            from datetime import datetime, timezone
             current_system = location_info.get('StarSystem')
             current_time = datetime.now(timezone.utc)
             
@@ -3185,7 +3182,6 @@ class PromptGenerator:
         # Show ships in transit to current system
         storedShips = projected_states.get('StoredShips', {})
         if len(storedShips.get('ShipsInTransit', [])) > 0:
-            from datetime import datetime, timezone
             current_system = location_info.get('StarSystem')
             current_time = datetime.now(timezone.utc)
             
