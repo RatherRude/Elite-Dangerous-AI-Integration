@@ -83,6 +83,7 @@ export const GameEventTooltips: Record<string, string> = {
   "DockingComputerDocking": "COVAS:NEXT will react when the advanced docking computer begins automated docking.",
   "DockingComputerUndocking": "COVAS:NEXT will react when the advanced docking computer initiates undocking procedures.",
   "DockingComputerDeactivated": "COVAS:NEXT will react when the advanced docking computer is deactivated.",
+  "PromptDockingRequest": "COVAS:NEXT will ask if you want to request docking when you enter the no fire zone",
   "NavRoute": "COVAS:NEXT will react when you plot a route across multiple systems on the galaxy map.",
   "NavRouteClear": "COVAS:NEXT will react when your plotted route is cleared from the galaxy map.",
   "CrewLaunchFighter": "COVAS:NEXT will react when a multicrew member launches a fighter from your ship.",
