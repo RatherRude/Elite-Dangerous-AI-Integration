@@ -320,6 +320,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 11. **Cycle fire group**
 
     - `direction`: String (options: "next", "previous")
+    - `fire_group`: Integer (optional, 0-7 for fire groups A-H)
 
     <details>
     <summary>Examples</summary>
@@ -473,7 +474,34 @@ This is a list of all currently supported actions the AI can perform. Just talk 
     - ChargeECM
     </details>
 
-18. **NPC crew orders**
+18. **Charge shutdown field neutraliser**
+
+    <details>
+    <summary>Examples</summary>
+    
+    - field neutraliser
+    - charge field neutraliser
+    - shutdown field neutraliser
+    - activate field neutraliser
+    - neutralise shutdown field
+    </details>
+
+    <details>
+    <summary>Notes</summary>
+
+    - Automatically balances pips to 4 SYS / 2 ENG / 0 WEP before holding the neutraliser for ~10s.
+    </details>
+
+    <details>
+    <summary>Required Keyboard Binds</summary>
+
+    - ResetPowerDistribution
+    - IncreaseEnginesPower
+    - IncreaseSystemsPower
+    - TriggerFieldNeutraliser
+    </details>
+
+19. **NPC crew orders**
 
     - `orders`: Array of strings (options: "DefensiveBehaviour", "AggressiveBehaviour", "FocusTarget", "HoldFire", "HoldPosition", "Follow", "ReturnToShip", "LaunchFighter1", "LaunchFighter2")
 
@@ -1317,7 +1345,14 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 
     Describe what's currently visible to the Commander. Answers the question that lead to tool usage.
 
-2. Engineer Finder
+2. Remember Memories
+
+    - `query`: String (required)
+    - `top_k`: Integer (optional, 1-20, default: 5)
+
+    Retrieve the top matching long-term memory notes via semantic search (requires embeddings to be configured).
+
+3. Engineer Finder
 
     - `name`: String (optional)
     - `system`: String (optional)
@@ -1326,7 +1361,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 
     Get information about engineers' location, standing and modifications.
 
-3. Blueprint Finder
+4. Blueprint Finder
 
     - `modifications`: Array of strings (optional)
     - `engineer`: String (optional)
@@ -1335,7 +1370,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 
     Find engineer blueprints based on search criteria. Returns material costs with grade calculations.
 
-4. Material Finder
+5. Material Finder
 
     - `name`: Array of strings (optional)
     - `grade`: Integer (optional, 1-5)
@@ -1343,7 +1378,7 @@ This is a list of all currently supported actions the AI can perform. Just talk 
 
     Find and search a list of materials for both ship and suit engineering from the commander's inventory and where to source them from.
 
-5. Send Message
+6. Send Message
 
    - `message`: String (required)
    - `channel`: String (required, options: "local", "system", "wing", "squadron", "commander")

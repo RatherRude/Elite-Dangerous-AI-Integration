@@ -704,6 +704,21 @@ def migrate(data: dict) -> dict:
                 
         data['llm_reasoning_effort'] = reasoning_effort
 
+
+    if data['config_version'] < 10:
+        data['config_version'] = 10
+
+        for character in data.get('characters', []):
+            game_events = character.get('game_events', {})
+
+            if not game_events.get('Idle', False):
+                disabled_events = character.get('disabled_game_events', [])
+
+                if 'Idle' not in disabled_events:
+                    disabled_events.append('Idle')
+
+                character['disabled_game_events'] = disabled_events
+
     return data
 
 
@@ -797,7 +812,7 @@ def getDefaultCharacter(config: Config) -> Character:
         "react_to_danger_onfoot_var": False,
         "react_to_danger_supercruise_var": False,
         "idle_timeout_var": 300,  # 5 minutes
-        "disabled_game_events": []
+        "disabled_game_events": ['Idle']
     })
 
 def load_config() -> Config:

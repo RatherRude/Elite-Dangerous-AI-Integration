@@ -17,6 +17,28 @@ export class ChatContainerComponent implements AfterViewChecked, OnChanges, OnDe
 
   chat: ChatMessage[] = [];
   private fullChat: ChatMessage[] = [];
+  private readonly filteredEventNames = new Set([
+    "materials",
+    "missions",
+    "storedmodules",
+    "storedships",
+    "colonisationconstructiondepot",
+    "location",
+    "powerplay",
+    "fsssignaldiscovered",
+    "loadout",
+    "shiplocker",
+    "music",
+    "reservoirreplenished",
+    "cargo",
+    "squadronstartup",
+    "communitygoal",
+    "crimevictim",
+    "engineercontribution",
+    "engineerlegacyconvert",
+    "statistics",
+    "market",
+  ]);
   private shouldScroll: boolean = false;
   private currentCharacter: Character | null = null;
   private characterSubscription?: Subscription;
@@ -70,11 +92,24 @@ export class ChatContainerComponent implements AfterViewChecked, OnChanges, OnDe
   }
 
   private applyLimit(): void {
+    const filteredChat = this.fullChat.filter((msg) => !this.isFilteredEvent(msg));
+    const limitedRoles = ["covas", "cmdr", "action"];
+
     if (typeof this.limit === "number" && this.limit > 0) {
-      this.chat = this.fullChat.filter(value => ['covas', 'cmdr', 'action'].includes(value.role)).slice(-this.limit);
+      this.chat = filteredChat
+        .filter((value) => limitedRoles.includes(value.role))
+        .slice(-this.limit);
     } else {
-      this.chat = this.fullChat;
+      this.chat = filteredChat;
     }
+  }
+
+  private isFilteredEvent(msg: ChatMessage): boolean {
+    if (msg.role?.toLowerCase() !== "event") {
+      return false;
+    }
+    const name = msg.message?.trim().toLowerCase();
+    return !!name && this.filteredEventNames.has(name);
   }
 
   private scrollToBottom(): void {

@@ -116,7 +116,8 @@ def web_search_agent(
                         "security": { "type": "array", "items": { "type": "string" } },
                         "thargoid_war_state": { "type": "array", "items": { "type": "string" } },
                         "population": { "type": "object", "properties": { "comparison": { "type": "string", "enum": ["<", ">"] }, "value": { "type": "number" } } },
-                        "sort_by": { "type": "string", "enum": ["distance", "population"], "description": "Sort systems by distance or by population (highest first). Default: distance." }
+                        "sort_by": { "type": "string", "enum": ["distance", "population"], "description": "Sort systems by distance or by population (highest first). Default: distance." },
+                        "size": { "type": "integer", "description": "Number of results to return (1-25). Default: 3." }
                     }
                 }
             }
@@ -141,7 +142,8 @@ def web_search_agent(
                         "services": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string", "enum": ["Black Market", "Interstellar Factors Contact"] } }, "required": ["name"] } },
                         "sort_by": { "type": "string", "enum": ["distance", "bestprice"], "description": "Sort stations either by distance or best price when commodities are included. Default: bestprice." },
                         "include_player_fleetcarrier": { "type": "boolean", "description": "Include Drake-Class Carrier (player-owned fleet carriers) in searches" },
-                        "unfiltered_results": { "type": "object", "description": "Set a category to true to include all returned data instead of only the requested items.", "properties": { "commodities": { "type": "boolean" }, "modules": { "type": "boolean" }, "ships": { "type": "boolean" } } }
+                        "unfiltered_results": { "type": "object", "description": "Set a category to true to include all returned data instead of only the requested items.", "properties": { "commodities": { "type": "boolean" }, "modules": { "type": "boolean" }, "ships": { "type": "boolean" } } },
+                        "size": { "type": "integer", "description": "Number of results to return (1-25). Default: 3." }
                     }
                 }
             }
@@ -161,7 +163,8 @@ def web_search_agent(
                         "landmark_subtype": { "type": "array", "items": { "type": "string" } },
                         "distance": { "type": "number", "description": "Maximum distance to search" },
                         "rings": { "type": "object", "properties": { "material": { "type": "string" }, "hotspots": { "type": "integer" } }, "required": ["material", "hotspots"] },
-                        "signals": { "type": "array", "items": { "type": "string", "enum": ["Biological", "Geological", "Human", "Guardian", "Thargoid"] }, "description": "Filter for signals on the body surface." }
+                        "signals": { "type": "array", "items": { "type": "string", "enum": ["Biological", "Geological", "Human", "Guardian", "Thargoid"] }, "description": "Filter for signals on the body surface." },
+                        "size": { "type": "integer", "description": "Number of results to return (1-25). Default: 3." }
                     }
                 }
             }
@@ -1632,9 +1635,19 @@ def find_best_match(search_term, known_list):
 
     return best_match
 
+# Normalize requested result size with sane bounds for Spansh queries
+def ensure_result_size(obj):
+    default_size = 3
+    try:
+        size = int(obj.get("size", default_size))
+    except Exception:
+        size = default_size
+    return max(1, min(25, size))
+
 # Prepare a request for the spansh station finder
 def prepare_station_request(obj, projected_states):# Helper function for fuzzy matching
     log('debug', 'Station Finder Request', obj)
+    size = ensure_result_size(obj)
 
     station_types = list(known_station_types)
     if obj.get("include_player_fleetcarrier"):
@@ -1736,7 +1749,7 @@ def prepare_station_request(obj, projected_states):# Helper function for fuzzy m
         "sort": [
             sort_object
         ],
-        "size": 3,
+        "size": size,
         "page": 0
     }
 
@@ -1865,6 +1878,7 @@ def station_finder(obj, projected_states):
 def prepare_system_request(obj, projected_states):# Helper function for fuzzy matching
     
     log('debug', 'System Finder Request', obj)
+    size = ensure_result_size(obj)
     filters = {
         "distance": {
             "min": "0",
@@ -1980,7 +1994,7 @@ def prepare_system_request(obj, projected_states):# Helper function for fuzzy ma
         "sort": [
             sort_object
         ],
-        "size": 3,
+        "size": size,
         "page": 0
     }
 
@@ -2076,6 +2090,7 @@ def system_finder(obj, projected_states):
 
 
 def prepare_body_request(obj, projected_states):
+    size = ensure_result_size(obj)
     filters = {
         "distance": {
             "min": "0",
@@ -2162,7 +2177,7 @@ def prepare_body_request(obj, projected_states):
                 }
             }
         ],
-        "size": 3,
+        "size": size,
         "page": 0
     }
 
@@ -2278,7 +2293,7 @@ def register_web_actions(actionManager: ActionManager, eventManager: EventManage
 
     actionManager.registerAction(
         'web_search_agent',
-        "Generate a detailed report about information from the web, including news, system, station, body, engineer, blueprint, and material lookups. Use this tool whenever the user asks about anything related to external or global information.",
+        "Request a detailed report about information from the game, including news, system, station, body, engineers, blueprint, material lookups, owned ships and modules. Use this tool whenever the user asks about anything related to external or global information.",
         {
             "type": "object",
             "properties": {
