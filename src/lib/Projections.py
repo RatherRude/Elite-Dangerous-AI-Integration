@@ -1194,22 +1194,13 @@ class StoredModuleItem(BaseModel):
 
 class FetchRemoteModuleItem(BaseModel):
     """A module being transferred to current location."""
+    Name: str = Field(description="Name of the module")
     MarketID: int = Field(description="Destination market ID")
     StationName: str = Field(description="Destination station name")
     StarSystem: str = Field(description="Destination star system")
     StorageSlot: int = Field(description="Storage slot identifier")
     TransferCompleteTime: str = Field(description="ISO timestamp when transfer completes")
     TransferCost: int = Field(description="Transfer cost in credits")
-
-FetchRemoteModuleItem = TypedDict('FetchRemoteModuleItem', {
-    "Name": str,
-    "MarketID": int,
-    "StationName": str,
-    "StarSystem": str,
-    "StorageSlot": int,
-    "TransferCompleteTime": str,  # ISO timestamp when transfer completes
-    "TransferCost": int,
-})
 
 class StoredModulesStateModel(BaseModel):
     """Current stored modules status."""
@@ -1232,43 +1223,36 @@ class StoredModules(Projection[StoredModulesStateModel]):
     def _complete_transfers(self, current_time: datetime) -> list[ProjectedEvent]:
         projected_events: list[ProjectedEvent] = []
 
-        if len(self.state['ItemsInTransit']) > 0:
-
+        if self.state.ItemsInTransit:
             completed_items: list[FetchRemoteModuleItem] = []
 
-            for transit_item in list(self.state['ItemsInTransit']):
-                completion_time = datetime.fromisoformat(transit_item['TransferCompleteTime'])
+            for transit_item in list(self.state.ItemsInTransit):
+                completion_time = datetime.fromisoformat(transit_item.TransferCompleteTime)
                 if current_time >= completion_time:
                     completed_items.append(transit_item)
 
             # Process completed transfers
             for completed in completed_items:
-                storage_slot = completed['StorageSlot']
-                module_name = completed.get("Name", "")
 
                 # Find the item in Items with matching StorageSlot and update it
-                for item in self.state['Items']:
-                    if item.get('StorageSlot') == storage_slot:
-                        # Remove in-transit flag if present
-                        if 'InTransit' in item:
-                            del item['InTransit']
-
+                for item in self.state.Items:
+                    if item.StorageSlot == completed.StorageSlot:
                         # Add location information
-                        item['StarSystem'] = completed['StarSystem']
-                        item['MarketID'] = completed['MarketID']
-                        item['TransferCost'] = completed['TransferCost']
-                        item['TransferTime'] = 0  # Transfer is complete
+                        item.StarSystem = completed.StarSystem
+                        item.MarketID = completed.MarketID
+                        item.TransferCost = completed.TransferCost
+                        item.TransferTime = 0  # Transfer is complete
                         break
 
                 # Remove from ItemsInTransit
-                self.state['ItemsInTransit'].remove(completed)
+                self.state.ItemsInTransit.remove(completed)
                 projected_events.append(ProjectedEvent(content={
                     "event": "FetchRemoteModuleCompleted",
-                    "StorageSlot": storage_slot,
-                    "ModuleName": module_name,
-                    "StationName": completed.get("StationName", ""),
-                    "StarSystem": completed.get("StarSystem", ""),
-                    "MarketID": completed.get("MarketID", 0),
+                    "StorageSlot": completed.StorageSlot,
+                    "ModuleName": completed.Name,
+                    "StationName": completed.StationName,
+                    "StarSystem": completed.StarSystem,
+                    "MarketID": completed.MarketID,
                 }))
 
         return projected_events
@@ -1293,18 +1277,18 @@ class StoredModules(Projection[StoredModulesStateModel]):
             is_due = completion_time <= now_utc
 
             # Create an item in transit using data from the event and current state
-            transit_item: FetchRemoteModuleItem = {
-                "Name": event.content.get('StoredItem_Localised', ""),
-                "MarketID": self.state.get('MarketID', 0),
-                "StationName": self.state.get('StationName', ''),
-                "StarSystem": self.state.get('StarSystem', ''),
-                "StorageSlot": event.content.get('StorageSlot', 0),
-                "TransferCompleteTime": completion_time.isoformat(),
-                "TransferCost": event.content.get('TransferCost', 0),
-            }
+            transit_item = FetchRemoteModuleItem(
+                Name=event.content.get('StoredItem_Localised', ""),
+                MarketID=self.state.MarketID,
+                StationName=self.state.StationName,
+                StarSystem=self.state.StarSystem,
+                StorageSlot=event.content.get('StorageSlot', 0),
+                TransferCompleteTime=completion_time.isoformat(),
+                TransferCost=event.content.get('TransferCost', 0),
+            )
 
-            if not any(i.get("StorageSlot") == transit_item["StorageSlot"] for i in self.state['ItemsInTransit']):
-                self.state['ItemsInTransit'].append(transit_item)
+            if not any(i.StorageSlot == transit_item.StorageSlot for i in self.state.ItemsInTransit):
+                self.state.ItemsInTransit.append(transit_item)
                 if is_due:
                     projected_events.extend(self._complete_transfers(now_utc))
 
@@ -1376,46 +1360,45 @@ class StoredShips(Projection[StoredShipsStateModel]):
     def _complete_transfers(self, current_time: datetime) -> list[ProjectedEvent]:
         projected_events: list[ProjectedEvent] = []
 
-        if len(self.state['ShipsInTransit']) > 0:
+        if self.state.ShipsInTransit:
             completed_items: list[ShipInTransitItem] = []
 
-            for transit_item in list(self.state['ShipsInTransit']):
-                completion_time = datetime.fromisoformat(transit_item['TransferCompleteTime'])
+            for transit_item in list(self.state.ShipsInTransit):
+                completion_time = datetime.fromisoformat(transit_item.TransferCompleteTime)
                 if current_time >= completion_time:
                     completed_items.append(transit_item)
 
             # Process completed transfers
             for completed in completed_items:
-                ship_id = completed['ShipID']
+                ship_id = completed.ShipID
 
                 # Find the ship in ShipsRemote with matching ShipID and update it
                 ship_name: str | None = None
                 ship_type: str | None = None
-                for ship in self.state['ShipsRemote']:
-                    if ship.get('ShipID') == ship_id:
-                        ship_name = ship.get('Name')
-                        ship_type = ship.get('ShipType')
+                for ship in self.state.ShipsRemote:
+                    if ship.ShipID == ship_id:
+                        ship_name = ship.Name
+                        ship_type = ship.ShipType
                         # Remove in-transit flag if present
-                        if 'InTransit' in ship:
-                            del ship['InTransit']
+                        ship.InTransit = None
 
                         # Add location information
-                        ship['StarSystem'] = completed['System']
-                        ship['ShipMarketID'] = completed['ShipMarketID']
-                        ship['TransferPrice'] = completed['TransferPrice']
-                        ship['TransferTime'] = 0  # Transfer is complete
+                        ship.StarSystem = completed.System
+                        ship.ShipMarketID = completed.ShipMarketID
+                        ship.TransferPrice = completed.TransferPrice
+                        ship.TransferTime = 0  # Transfer is complete
                         break
 
                 # Remove from ShipsInTransit
-                self.state['ShipsInTransit'].remove(completed)
+                self.state.ShipsInTransit.remove(completed)
                 projected_events.append(ProjectedEvent(content={
                     "event": "ShipyardTransferCompleted",
                     "ShipID": ship_id,
                     "ShipType": ship_type or "",
                     "ShipName": ship_name or "",
-                    "StarSystem": completed.get("System", ""),
-                    "ShipMarketID": completed.get("ShipMarketID", 0),
-                    "TransferPrice": completed.get("TransferPrice", 0),
+                    "StarSystem": completed.System,
+                    "ShipMarketID": completed.ShipMarketID,
+                    "TransferPrice": completed.TransferPrice,
                 }))
 
         return projected_events
@@ -1450,8 +1433,8 @@ class StoredShips(Projection[StoredShipsStateModel]):
                 TransferPrice=event.content.get('TransferPrice', 0),
             )
 
-            if not any(s.get("ShipID") == transit_item["ShipID"] for s in self.state['ShipsInTransit']):
-                self.state['ShipsInTransit'].append(transit_item)
+            if not any(s.ShipID == transit_item.ShipID for s in self.state.ShipsInTransit):
+                self.state.ShipsInTransit.append(transit_item)
                 if is_due:
                     projected_events.extend(self._complete_transfers(now_utc))
 
@@ -2384,13 +2367,6 @@ class Wing(Projection[WingStateModel]):
         if isinstance(event, GameEvent) and event.content.get('event') in ['WingLeave', 'LoadGame']:
             self.state.Members = []
 
-
-class IdleStateModel(BaseModel):
-    """Commander's activity/idle status."""
-    LastInteraction: str = Field(default="1970-01-01T00:00:00Z", description="Timestamp of last user interaction")
-    IsIdle: bool = Field(default=True, description="Whether the user is currently idle")
-
-
 class FSSSignalsStateModel(BaseModel):
     """Current FSS signal discoveries in the system."""
     SystemAddress: int = Field(default=0, description="Unique system identifier")
@@ -2441,11 +2417,10 @@ class FSSSignals(Projection[FSSSignalsStateModel]):
 
         return projected_events
 
-# Define types for Idle Projection
-IdleState = TypedDict('IdleState', {
-    "LastInteraction": str,  # ISO timestamp of last interaction
-    "IsIdle": bool  # Whether the user is currently idle
-})
+class IdleStateModel(BaseModel):
+    """Commander's activity/idle status."""
+    LastInteraction: str = Field(default="1970-01-01T00:00:00Z", description="Timestamp of last user interaction")
+    IsIdle: bool = Field(default=True, description="Whether the user is currently idle")
 
 @final
 class Idle(Projection[IdleStateModel]):
@@ -2455,21 +2430,14 @@ class Idle(Projection[IdleStateModel]):
         super().__init__()
         self.idle_timeout = idle_timeout
 
-    @override
-    def get_default_state(self) -> IdleState:
-        return {
-            "LastInteraction": "1970-01-01T00:00:00Z",  # Default to Unix epoch
-            "IsIdle": True
-        }
-
     def _check_idle_timeout(self, current_dt: datetime) -> list[ProjectedEvent]:
         projected_events: list[ProjectedEvent] = []
-        last_interaction = self.state["LastInteraction"]
+        last_interaction = self.state.LastInteraction
         last_dt = datetime.fromisoformat(last_interaction.replace('Z', '+00:00'))
         time_delta = (current_dt - last_dt).total_seconds()
 
-        if time_delta > self.idle_timeout and self.state["IsIdle"] is False:
-            self.state["IsIdle"] = True
+        if time_delta > self.idle_timeout and self.state.IsIdle is False:
+            self.state.IsIdle = True
             projected_events.append(ProjectedEvent(content={"event": "Idle"}))
 
         return projected_events
@@ -2479,10 +2447,10 @@ class Idle(Projection[IdleStateModel]):
         projected_events: list[ProjectedEvent] = []
 
         if isinstance(event, ConversationEvent):
-            self.state["LastInteraction"] = event.timestamp
-            self.state["IsIdle"] = False
+            self.state.LastInteraction = event.timestamp
+            self.state.IsIdle = False
 
-        if isinstance(event, (StatusEvent, GameEvent)) and self.state["IsIdle"] is False:
+        if isinstance(event, (StatusEvent, GameEvent)) and self.state.IsIdle is False:
             current_dt = datetime.fromisoformat(event.timestamp.replace('Z', '+00:00'))
             projected_events.extend(self._check_idle_timeout(current_dt))
 
@@ -2490,7 +2458,7 @@ class Idle(Projection[IdleStateModel]):
 
     @override
     def process_timer(self) -> list[ProjectedEvent]:
-        if self.state["IsIdle"]:
+        if self.state.IsIdle:
             return []
 
         current_dt = datetime.now(timezone.utc)

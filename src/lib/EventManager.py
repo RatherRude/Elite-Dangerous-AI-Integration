@@ -296,7 +296,11 @@ class EventManager:
                     log('error', 'Error processing timer for projection', projection_name, e, traceback.format_exc())
                     continue
                 projection.last_processed = timestamp
-                self.projection_store.set(projection_name, {"state": projection.state, "last_processed": projection.last_processed})
+                # Persist Pydantic state as plain dict to keep JSON serialization working
+                self.projection_store.set(
+                    projection_name,
+                    {"state": projection.state.model_dump(), "last_processed": projection.last_processed},
+                )
 
             if projected_events:
                 projected_states = {p.__class__.__name__: p.state.copy() for p in self.projections}
