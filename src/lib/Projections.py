@@ -2064,7 +2064,7 @@ class ColonisationConstruction(Projection[ColonisationConstructionState]):
             self.state["StarSystemRecall"] = event.content.get('StarSystem', 'Unknown')
 
 @final
-class DockingPrompt(Projection[dict[str, Any]]):
+class InDockingRange(Projection[dict[str, Any]]):
     @override
     def get_default_state(self) -> dict[str, Any]:
         return {
@@ -2201,7 +2201,7 @@ class DockingPrompt(Projection[dict[str, Any]]):
                         pass
 
 
-                projected_events.append(ProjectedEvent(content={"event": "PromptDockingRequest"}))
+                projected_events.append(ProjectedEvent(content={"event": "InDockingRange"}))
 
         if isinstance(event, StatusEvent):
             status_event_name = event.status.get("event")
@@ -2220,7 +2220,7 @@ class DockingPrompt(Projection[dict[str, Any]]):
 
                 if target_ts and (target_age is None or target_age <= DOCKING_PROMPT_COOLDOWN_SECONDS):
                     if undock_delta is None or undock_delta >= DOCKING_PROMPT_COOLDOWN_SECONDS:
-                        projected_events.append(ProjectedEvent(content={"event": "PromptDockingRequest"}))
+                        projected_events.append(ProjectedEvent(content={"event": "InDockingRange"}))
                         # Avoid duplicate prompts for the same approach
                         self.state["LastStationTarget"] = None
                         self.state["LastSupercruiseExit"] = None
@@ -2229,7 +2229,6 @@ class DockingPrompt(Projection[dict[str, Any]]):
                 # Leaving mass lock; clear pending prompt context so we don't fire after departing.
                 self.state["LastStationTarget"] = None
                 self.state["LastSupercruiseExit"] = None
-
 
         return projected_events
 
@@ -2487,7 +2486,7 @@ def registerProjections(event_manager: EventManager, system_db: SystemDatabase, 
     event_manager.register_projection(InCombat())
     event_manager.register_projection(Wing())
     event_manager.register_projection(FSSSignals())
-    event_manager.register_projection(DockingPrompt())
+    event_manager.register_projection(InDockingRange())
     event_manager.register_projection(Idle(idle_timeout))
     event_manager.register_projection(StoredModules())
     event_manager.register_projection(StoredShips())
