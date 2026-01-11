@@ -2216,10 +2216,7 @@ class DockingPrompt(Projection[dict[str, Any]]):
                 # Only prompt if mass lock follows a recent station approach after supercruise exit/drop
                 last_undocked_at = self.state.get("LastUndockedAt")
                 undock_delta = self._seconds_between(last_undocked_at, event.timestamp)
-                show_chat_message(
-                    "debug",
-                    f"[DockingPrompt] FsdMassLocked received; target_age={target_age}, undock_delta={undock_delta}, exit_delta={exit_delta}, target={target}"
-                )
+
 
                 if target_ts and (target_age is None or target_age <= DOCKING_PROMPT_COOLDOWN_SECONDS):
                     if undock_delta is None or undock_delta >= DOCKING_PROMPT_COOLDOWN_SECONDS:
@@ -2227,16 +2224,12 @@ class DockingPrompt(Projection[dict[str, Any]]):
                         # Avoid duplicate prompts for the same approach
                         self.state["LastStationTarget"] = None
                         self.state["LastSupercruiseExit"] = None
-                else:
-                    show_chat_message(
-                        "debug",
-                        "[DockingPrompt] FsdMassLocked ignored (no recent station target or target too old)."
-                    )
+
             if status_event_name == "FsdMassLockEscaped":
                 # Leaving mass lock; clear pending prompt context so we don't fire after departing.
                 self.state["LastStationTarget"] = None
                 self.state["LastSupercruiseExit"] = None
-                show_chat_message("debug", "[DockingPrompt] FsdMassLockEscaped observed; cleared station target and exit context.")
+
 
         return projected_events
 
