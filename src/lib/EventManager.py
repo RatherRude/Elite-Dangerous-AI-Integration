@@ -1,6 +1,7 @@
 from pydantic import ValidationError
 import hashlib
 import inspect
+import traceback
 from abc import ABC, abstractmethod
 from datetime import timezone, datetime
 from typing import Any, Generic, Literal, Callable, TypeVar, final, get_type_hints, get_args, get_origin
@@ -39,7 +40,7 @@ class Projection(ABC, Generic[StateModel]):
         subclass_state_model = self.__class__.__dict__.get('StateModel')
         if subclass_state_model is not None and isinstance(subclass_state_model, type) and issubclass(subclass_state_model, BaseModel):
             return subclass_state_model
-        
+
         # Then try to extract from Generic type parameter
         for base in getattr(self.__class__, '__orig_bases__', []):
             origin = get_origin(base)
@@ -47,9 +48,9 @@ class Projection(ABC, Generic[StateModel]):
                 args = get_args(base)
                 if args and isinstance(args[0], type) and issubclass(args[0], BaseModel):
                     return args[0]
-        
+
         raise TypeError(f"Projection subclass {self.__class__.__name__} must define a StateModel class attribute or use a Pydantic BaseModel as the generic type parameter")
-    
+
     def get_default_state(self) -> StateModel:
         """Returns a new instance of the state model with default values."""
         state_model_type = self._get_state_model_type()
@@ -59,6 +60,9 @@ class Projection(ABC, Generic[StateModel]):
     def process(self, event: Event) -> None | list[ProjectedEvent]:
         pass
 
+    def process_timer(self) -> None | list[ProjectedEvent]:
+        return []
+
 @final
 class EventManager:
     @staticmethod
@@ -67,8 +71,6 @@ class EventManager:
         event_store.delete_all()
         projection_store = KeyValueStore('projections')
         projection_store.delete_all()
-        vector_store = VectorStore('memory')
-        vector_store.delete_all()
     
     def __init__(
             self, 
@@ -89,7 +91,12 @@ class EventManager:
         self.short_term_memory = EventStore('events', self.event_classes)
         self.projection_store = KeyValueStore('projections')
         self.long_term_memory = VectorStore('memory')
-        
+        self._processing_lock = threading.Lock()
+        self._timer_interval = 10.0
+        self._timer_stop_event = threading.Event()
+        self._timer_thread = threading.Thread(target=self._run_projection_timer, daemon=True)
+        self._timer_thread.start()
+
         min_history_id, max_history_id = self.load_history()
         self.min_history_id = min_history_id
         self.max_history_id = max_history_id
@@ -174,37 +181,38 @@ class EventManager:
         mems = self.long_term_memory.get_most_recent_entries(limit=limit)
         return [MemoryEvent(content=mem['content'], metadata=mem['metadata'], embedding=[]) for mem in mems]
 
-    def process(self) -> ProjectedStates | None:
-        projected_states: ProjectedStates | None = None
-        while not self.incoming.empty():
-            event = self.incoming.get()
-            
-            timestamp = datetime.now(timezone.utc).timestamp()
-            event.processed_at = timestamp
-            
-            self.short_term_memory.insert_event(event, event.processed_at, commit=False)
-            projected_events = self.update_projections(event, save_later=True)
-            
-            self.pending.append(event)
-            
-            if isinstance(event, GameEvent) and event.historic:
-                #self.processed.append(event)
-                continue
-                
-            projected_states = {}
-            for projection in self.projections:
-                projected_states[projection.__class__.__name__] = projection.state
-            
-            self.trigger_sideeffects(event, projected_states)
-            for projected_event in projected_events:
-                self.trigger_sideeffects(projected_event, projected_states)
+    def process(self):
+        with self._processing_lock:
+            projected_states: ProjectedStates | None = None
+            while not self.incoming.empty():
+                event = self.incoming.get()
 
-        self.short_term_memory.commit()
-        self.save_projections()
-        self.processed += self.pending
-        self.pending = []
-        
-        return projected_states
+                timestamp = datetime.now(timezone.utc).timestamp()
+                event.processed_at = timestamp
+
+                self.short_term_memory.insert_event(event, event.processed_at, commit=False)
+                projected_events = self.update_projections(event, save_later=True)
+
+                self.pending.append(event)
+
+                if isinstance(event, GameEvent) and event.historic:
+                    #self.processed.append(event)
+                    continue
+
+                projected_states = {}
+                for projection in self.projections:
+                    projected_states[projection.__class__.__name__] = projection.state
+
+                self.trigger_sideeffects(event, projected_states)
+                for projected_event in projected_events:
+                    self.trigger_sideeffects(projected_event, projected_states)
+
+            self.short_term_memory.commit()
+            self.save_projections()
+            self.processed += self.pending
+            self.pending = []
+
+            return projected_states
     
 
     def trigger_sideeffects(self, event: Event, projected_states: ProjectedStates):
@@ -244,8 +252,8 @@ class EventManager:
                 cls.model_validate(projection.state.model_dump())
             except ValidationError as ve:
                 log('error', 'Validation error in projection state after processing event', event, 'in projection', projection_name, ve)
-                raise ve    
-            
+                raise ve
+
             self.check_conditions(projection_name, projection.state)
             if projected_events:
                 for e in projected_events:
@@ -260,6 +268,48 @@ class EventManager:
         if not save_later:
             self.projection_store.set(projection_name, {"state": projection.state.model_dump(), "last_processed": projection.last_processed})
         return projected_events if projected_events else []
+
+    def _run_projection_timer(self):
+        while not self._timer_stop_event.wait(self._timer_interval):
+            try:
+                self.process_timer_tick()
+            except Exception as e:
+                log('error', 'Error running projection timer', e, traceback.format_exc())
+
+    def process_timer_tick(self):
+        with self._processing_lock:
+            timestamp = datetime.now(timezone.utc).timestamp()
+            projected_events: list[ProjectedEvent] = []
+            projected_states: dict[str, Any] | None = None
+            timer_projection_names = {"Idle", "StoredShips", "StoredModules"}
+
+            for projection in self.projections:
+                if projection.__class__.__name__ not in timer_projection_names:
+                    continue
+                projection_name = projection.__class__.__name__
+                try:
+                    evts = projection.process_timer() or []
+                    self.check_conditions(projection_name, projection.state)
+                    if evts:
+                        projected_events.extend(evts)
+                except Exception as e:
+                    log('error', 'Error processing timer for projection', projection_name, e, traceback.format_exc())
+                    continue
+                projection.last_processed = timestamp
+                self.projection_store.set(projection_name, {"state": projection.state, "last_processed": projection.last_processed})
+
+            if projected_events:
+                projected_states = {p.__class__.__name__: p.state.copy() for p in self.projections}
+                for evt in projected_events:
+                    evt.processed_at = timestamp
+                    self.pending.append(evt)
+                    self.short_term_memory.insert_event(evt, evt.processed_at, commit=False)
+                    self.trigger_sideeffects(evt, projected_states)
+
+                self.short_term_memory.commit()
+                self.save_projections()
+                self.processed += self.pending
+                self.pending = []
 
     def save_projections(self):
         for projection in self.projections:
@@ -276,7 +326,7 @@ class EventManager:
             state_model_type = projection._get_state_model_type()
             default_state_dict = projection.get_default_state().model_dump()
             stored = self.projection_store.init(projection_class_name, projection_version, {"state": default_state_dict, "last_processed": 0.0})
-            
+
             # Deserialize state from dict to Pydantic model
             try:
                 projection.state = state_model_type.model_validate(stored["state"])

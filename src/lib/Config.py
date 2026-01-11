@@ -709,9 +709,9 @@ def migrate(data: dict) -> dict:
         data['config_version'] = 10
 
         for character in data.get('characters', []):
-            game_events = character.get('game_events', {})
+            current_game_events = character.get('game_events', {})
 
-            if not game_events.get('Idle', False):
+            if not current_game_events.get('Idle', False):
                 disabled_events = character.get('disabled_game_events', [])
 
                 if 'Idle' not in disabled_events:
