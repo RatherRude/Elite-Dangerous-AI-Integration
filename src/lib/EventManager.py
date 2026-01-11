@@ -1,5 +1,6 @@
 import hashlib
 import inspect
+import traceback
 from abc import ABC, abstractmethod
 from datetime import timezone, datetime
 from typing import Any, Generic, Literal, Callable, TypeVar, final
@@ -29,6 +30,9 @@ class Projection(ABC, Generic[ProjectedState]):
     def process(self, event: Event) -> None | list[ProjectedEvent]:
         pass
 
+    def process_timer(self) -> None | list[ProjectedEvent]:
+        return []
+
 @final
 class EventManager:
     @staticmethod
@@ -37,8 +41,6 @@ class EventManager:
         event_store.delete_all()
         projection_store = KeyValueStore('projections')
         projection_store.delete_all()
-        vector_store = VectorStore('memory')
-        vector_store.delete_all()
     
     def __init__(
             self, 
@@ -59,6 +61,11 @@ class EventManager:
         self.short_term_memory = EventStore('events', self.event_classes)
         self.projection_store = KeyValueStore('projections')
         self.long_term_memory = VectorStore('memory')
+        self._processing_lock = threading.Lock()
+        self._timer_interval = 10.0
+        self._timer_stop_event = threading.Event()
+        self._timer_thread = threading.Thread(target=self._run_projection_timer, daemon=True)
+        self._timer_thread.start()
         
         min_history_id, max_history_id = self.load_history()
         self.min_history_id = min_history_id
@@ -145,36 +152,37 @@ class EventManager:
         return [MemoryEvent(content=mem['content'], metadata=mem['metadata'], embedding=[]) for mem in mems]
 
     def process(self):
-        projected_states: dict[str, Any] | None = None
-        while not self.incoming.empty():
-            event = self.incoming.get()
-            
-            timestamp = datetime.now(timezone.utc).timestamp()
-            event.processed_at = timestamp
-            
-            self.short_term_memory.insert_event(event, event.processed_at, commit=False)
-            projected_events = self.update_projections(event, save_later=True)
-            
-            self.pending.append(event)
-            
-            if isinstance(event, GameEvent) and event.historic:
-                #self.processed.append(event)
-                continue
+        with self._processing_lock:
+            projected_states: dict[str, Any] | None = None
+            while not self.incoming.empty():
+                event = self.incoming.get()
                 
-            projected_states = {}
-            for projection in self.projections:
-                projected_states[projection.__class__.__name__] = projection.state.copy()
-            
-            self.trigger_sideeffects(event, projected_states)
-            for projected_event in projected_events:
-                self.trigger_sideeffects(projected_event, projected_states)
+                timestamp = datetime.now(timezone.utc).timestamp()
+                event.processed_at = timestamp
+                
+                self.short_term_memory.insert_event(event, event.processed_at, commit=False)
+                projected_events = self.update_projections(event, save_later=True)
+                
+                self.pending.append(event)
+                
+                if isinstance(event, GameEvent) and event.historic:
+                    #self.processed.append(event)
+                    continue
+                    
+                projected_states = {}
+                for projection in self.projections:
+                    projected_states[projection.__class__.__name__] = projection.state.copy()
+                
+                self.trigger_sideeffects(event, projected_states)
+                for projected_event in projected_events:
+                    self.trigger_sideeffects(projected_event, projected_states)
 
-        self.short_term_memory.commit()
-        self.save_projections()
-        self.processed += self.pending
-        self.pending = []
-        
-        return projected_states
+            self.short_term_memory.commit()
+            self.save_projections()
+            self.processed += self.pending
+            self.pending = []
+            
+            return projected_states
     
 
     def trigger_sideeffects(self, event: Event, projected_states: dict[str, Any]):
@@ -222,6 +230,48 @@ class EventManager:
         if not save_later:
             self.projection_store.set(projection_name, {"state": projection.state, "last_processed": projection.last_processed})
         return projected_events if projected_events else []
+
+    def _run_projection_timer(self):
+        while not self._timer_stop_event.wait(self._timer_interval):
+            try:
+                self.process_timer_tick()
+            except Exception as e:
+                log('error', 'Error running projection timer', e, traceback.format_exc())
+
+    def process_timer_tick(self):
+        with self._processing_lock:
+            timestamp = datetime.now(timezone.utc).timestamp()
+            projected_events: list[ProjectedEvent] = []
+            projected_states: dict[str, Any] | None = None
+            timer_projection_names = {"Idle", "StoredShips", "StoredModules"}
+
+            for projection in self.projections:
+                if projection.__class__.__name__ not in timer_projection_names:
+                    continue
+                projection_name = projection.__class__.__name__
+                try:
+                    evts = projection.process_timer() or []
+                    self.check_conditions(projection_name, projection.state)
+                    if evts:
+                        projected_events.extend(evts)
+                except Exception as e:
+                    log('error', 'Error processing timer for projection', projection_name, e, traceback.format_exc())
+                    continue
+                projection.last_processed = timestamp
+                self.projection_store.set(projection_name, {"state": projection.state, "last_processed": projection.last_processed})
+
+            if projected_events:
+                projected_states = {p.__class__.__name__: p.state.copy() for p in self.projections}
+                for evt in projected_events:
+                    evt.processed_at = timestamp
+                    self.pending.append(evt)
+                    self.short_term_memory.insert_event(evt, evt.processed_at, commit=False)
+                    self.trigger_sideeffects(evt, projected_states)
+
+                self.short_term_memory.commit()
+                self.save_projections()
+                self.processed += self.pending
+                self.pending = []
 
     def save_projections(self):
         for projection in self.projections:

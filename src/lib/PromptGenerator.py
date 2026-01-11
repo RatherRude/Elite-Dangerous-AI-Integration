@@ -646,7 +646,6 @@ class PromptGenerator:
                 departure_time_str = carrier_jump_request_event.get('DepartureTime')
                 try:
                     # Try to convert the time string to a more readable format
-                    from datetime import datetime
                     dt = datetime.fromisoformat(departure_time_str.replace('Z', '+00:00'))
                     departure_time = f", departing at {dt.strftime('%H:%M:%S')}"
                 except:
@@ -664,7 +663,6 @@ class PromptGenerator:
                 if scrap_time is not None:
                     try:
                         # Try to convert the timestamp to a readable time
-                        from datetime import datetime
                         dt = datetime.fromtimestamp(float(scrap_time))
                         scrap_time_info = f" The carrier will be decommissioned on {dt.strftime('%Y-%m-%d at %H:%M:%S')}."
                     except (ValueError, TypeError):
@@ -2213,9 +2211,17 @@ class PromptGenerator:
         if event_name == 'FirstPlayerSystemDiscovered':
             return f"{self.commander_name} has a new system discovered."
         if event_name == 'FetchRemoteModuleCompleted':
-            return f"{self.commander_name}'s module has arrived."
+            module_event = cast(Dict[str, Any], content or {})
+            module_name = module_event.get('ModuleName') or 'module'
+            station = module_event.get('StationName') or 'a station'
+            system = module_event.get('StarSystem') or 'a system'
+            return f"{self.commander_name}'s module {module_name} has arrived at {station} in {system}."
         if event_name == 'ShipyardTransferCompleted':
-            return f"{self.commander_name}'s ship has arrived."
+            ship_event = cast(Dict[str, Any], content or {})
+            ship_name = ship_event.get('ShipName') or ship_event.get('ShipType') or 'ship'
+            station = ship_event.get('StationName') or 'a station'
+            system = ship_event.get('StarSystem') or 'a system'
+            return f"{self.commander_name}'s ship {ship_name} has arrived at {station} in {system}."
         # if event_name == 'ExternalDiscordNotification':
         #     twitch_event = cast(Dict[str, Any], content)
         #     return f"Twitch Alert! {twitch_event.get('text','')}",
@@ -3130,7 +3136,6 @@ class PromptGenerator:
         
         # Show modules in transit to current system
         if len(storedModules.get('ItemsInTransit', [])) > 0:
-            from datetime import datetime, timezone
             current_system = location_info.get('StarSystem')
             current_time = datetime.now(timezone.utc)
             
@@ -3177,7 +3182,6 @@ class PromptGenerator:
         # Show ships in transit to current system
         storedShips = projected_states.get('StoredShips', {})
         if len(storedShips.get('ShipsInTransit', [])) > 0:
-            from datetime import datetime, timezone
             current_system = location_info.get('StarSystem')
             current_time = datetime.now(timezone.utc)
             
