@@ -122,10 +122,9 @@ class SystemEventDatabase:
             signal_entry = {
                 "name": signal_name,
                 "type": signal_type,
-                "is_station": is_station,
             }
             if is_station and signal_type != 'FleetCarrier':
-                self._add_station(record, signal_name, None, signal_type)
+                self._add_station(record, signal_name, signal_type)
             else:
                 self._add_unique(record, "signals", signal_entry, field_key="name")
 
@@ -310,13 +309,11 @@ class SystemEventDatabase:
         record[list_key] = items
 
     def _add_station(
-        self, record: Dict[str, Any], station_name: str, orbit: Optional[str] = None, station_type: Optional[str] = None
+        self, record: Dict[str, Any], station_name: str, station_type: Optional[str] = None
     ) -> None:
         station_entry = {
             "name": station_name,
-            "orbit": orbit,
             "type": station_type or "Station",
-            "is_station": True,
         }
         self._add_unique(record, "stations", station_entry, field_key="name")
         # Stations are also signals with is_station=True
