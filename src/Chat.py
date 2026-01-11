@@ -45,6 +45,7 @@ from lib.EDJournal import *
 from lib.EventManager import EventManager
 from lib.UI import send_message
 from lib.SystemDatabase import SystemDatabase
+from lib.SystemEventDatabase import SystemEventDatabase
 from lib.Assistant import Assistant
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', write_through=True)
@@ -170,6 +171,8 @@ class Chat:
 
         log("debug", "Initializing SystemDatabase...")
         self.system_database = SystemDatabase()
+        log("debug", "Initializing SystemEventDatabase...")
+        self.system_event_database = SystemEventDatabase()
         log("debug", "Initializing EDKeys...")
         self.ed_keys = EDKeys(
             get_ed_appdata_path(config),
@@ -246,6 +249,19 @@ class Chat:
         if event.kind=='memory':
             event = cast(MemoryEvent, event)
             show_chat_message('memory', event.content)
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'FSSDiscoveryScan':
+            self.system_event_database.record_discovery_scan(cast(dict[str, Any], event.content))
+        if isinstance(event, GameEvent) and event.content.get('event') == 'FSSSignalDiscovered':
+            self.system_event_database.record_signal(cast(dict[str, Any], event.content))
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Scan':
+            self.system_event_database.record_scan(cast(dict[str, Any], event.content))
+        if isinstance(event, GameEvent) and event.content.get('event') == 'FSDTarget':
+            self.system_event_database.record_fsd_target(cast(dict[str, Any], event.content))
+        if isinstance(event, GameEvent) and event.content.get('event') == 'SAASignalsFound':
+            self.system_event_database.record_saa_signals_found(cast(dict[str, Any], event.content))
+        if isinstance(event, GameEvent) and event.content.get('event') == 'ScanOrganic':
+            self.system_event_database.record_scan_organic(cast(dict[str, Any], event.content))
 
     def submit_input(self, input: str):
         self.event_manager.add_conversation_event('user', input)
@@ -377,7 +393,11 @@ class Chat:
         self.event_manager.add_status_event(self.status_parser.current_status)
 
         show_chat_message('info', 'Register projections...')
-        registerProjections(self.event_manager, self.system_database, self.character.get('idle_timeout_var', 300))
+        registerProjections(
+            self.event_manager,
+            self.system_database,
+            self.character.get('idle_timeout_var', 300),
+        )
 
         self.event_manager.process()
 
