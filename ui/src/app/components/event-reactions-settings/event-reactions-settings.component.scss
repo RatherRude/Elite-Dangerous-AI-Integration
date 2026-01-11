@@ -143,3 +143,26 @@
     text-align: center;
   }
 }
+
+.import-section {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-start;
+
+  .import-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .import-select {
+    width: 100%;
+  }
+
+  .import-buttons {
+    display: flex;
+    gap: 8px;
+  }
+}

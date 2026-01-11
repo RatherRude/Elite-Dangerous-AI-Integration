@@ -66,14 +66,18 @@ import { GameEventCategories } from "../character-settings/game-event-categories
 export class EventReactionsSettingsComponent implements OnDestroy {
     activeCharacter: Character | null = null;
     activeCharacterIndex: number | null = null;
+    characterList: Character[] = [];
     filteredEventReactions: Record<string, Record<string, EventReactionState>> = {};
     eventSearchQuery: string = "";
     expandedSection: string | null = null;
     public GameEventTooltips = GameEventTooltips;
     gameEventCategories = GameEventCategories;
+    showImportSelector = false;
+    selectedImportIndex: number | null = null;
 
     private configSubscription?: Subscription;
     private characterSubscription?: Subscription;
+    private characterListSubscription?: Subscription;
 
     constructor(
         private configService: ConfigService,
@@ -93,6 +97,11 @@ export class EventReactionsSettingsComponent implements OnDestroy {
                 this.activeCharacter = character;
                 this.filterEvents(this.eventSearchQuery);
             });
+
+        this.characterListSubscription = this.characterService.characterList$
+            .subscribe((list) => {
+                this.characterList = list || [];
+            });
     }
 
     ngOnDestroy(): void {
@@ -101,6 +110,9 @@ export class EventReactionsSettingsComponent implements OnDestroy {
         }
         if (this.characterSubscription) {
             this.characterSubscription.unsubscribe();
+        }
+        if (this.characterListSubscription) {
+            this.characterListSubscription.unsubscribe();
         }
     }
 
@@ -300,5 +312,42 @@ export class EventReactionsSettingsComponent implements OnDestroy {
         if (counts.off === total) return "off";
         if (counts.hidden === total) return "hidden";
         return null;
+    }
+
+    getImportCandidates(): Array<{ index: number; name: string }> {
+        const candidates: Array<{ index: number; name: string }> = [];
+        this.characterList.forEach((c, idx) => {
+            if (idx !== this.activeCharacterIndex) {
+                candidates.push({ index: idx, name: c.name || `Character ${idx + 1}` });
+            }
+        });
+        return candidates;
+    }
+
+    startImportSelection() {
+        this.showImportSelector = true;
+        this.selectedImportIndex = null;
+    }
+
+    cancelImportSelection() {
+        this.showImportSelector = false;
+        this.selectedImportIndex = null;
+    }
+
+    async performImportFromCharacter() {
+        if (this.selectedImportIndex === null) return;
+        const source = this.characterList[this.selectedImportIndex];
+        if (!source || !source.event_reactions) return;
+
+        await this.characterService.setCharacterProperty(
+            "event_reactions",
+            { ...source.event_reactions },
+        );
+
+        this.snackBar.open("Event reactions imported from selected character", "OK", {
+            duration: 3000,
+        });
+
+        this.cancelImportSelection();
     }
 }

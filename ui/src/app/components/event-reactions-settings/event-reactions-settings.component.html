@@ -209,6 +209,36 @@
                     </mat-expansion-panel>
                 }
             </mat-accordion>
+
+            <div class="import-section">
+                @if (!showImportSelector) {
+                    <button mat-stroked-button color="primary" (click)="startImportSelection()">
+                        <mat-icon>download</mat-icon>
+                        Import from other character
+                    </button>
+                } @else {
+                    <div class="import-controls">
+                        <mat-form-field appearance="outline" class="import-select">
+                            <mat-label>Select character to import from</mat-label>
+                            <mat-select [(ngModel)]="selectedImportIndex">
+                                @for (c of getImportCandidates(); track c.index) {
+                                    <mat-option [value]="c.index">{{ c.name }}</mat-option>
+                                }
+                            </mat-select>
+                        </mat-form-field>
+                        <div class="import-buttons">
+                            <button mat-raised-button color="primary"
+                                    [disabled]="selectedImportIndex === null"
+                                    (click)="performImportFromCharacter()">
+                                Import
+                            </button>
+                            <button mat-stroked-button color="warn" (click)="cancelImportSelection()">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
         }
     </div>
 } @else {
