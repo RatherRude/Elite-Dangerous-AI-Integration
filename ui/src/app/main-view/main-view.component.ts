@@ -209,7 +209,7 @@ export class MainViewComponent implements OnInit, OnDestroy {
 
     async start(): Promise<void> {
         try {
-            if(this.config && (this.config.overlay_show_avatar || this.config.overlay_show_chat)) {
+            if(this.config && (this.config.overlay_show_avatar || this.config.overlay_show_chat || this.config.overlay_show_hud)) {
                 await this.createOverlay();
             }
 
