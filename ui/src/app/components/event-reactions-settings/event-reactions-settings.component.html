@@ -37,18 +37,25 @@
                         <mat-expansion-panel-header>
                             <mat-panel-title>
                                 <span class="category-name">{{ section.key }}</span>
-                                <span class="category-counts">
-                                    ({{ getCategoryCounts(section.key).on }}/{{ getCategoryCounts(section.key).off }}/{{ getCategoryCounts(section.key).hidden }})
-                                </span>
                             </mat-panel-title>
-                            <mat-panel-description>
-                                <button mat-icon-button
-                                        color="warn"
-                                        (click)="muteAllEventsInCategory(section.key); $event.stopPropagation()"
-                                        [matTooltip]="'Disable all event reactions in the ' + section.key + ' category'"
-                                        class="mute-category-button">
-                                    <mat-icon>volume_off</mat-icon>
-                                </button>
+                            <mat-panel-description class="category-actions" (click)="$event.stopPropagation()">
+                                <mat-button-toggle-group
+                                    class="category-toggle"
+                                    [value]="getCategoryAggregateState(section.key)"
+                                    (change)="setCategoryState(section.key, $event.value)">
+                                    <mat-button-toggle value="on" [matTooltip]="'Enable all events in ' + section.key" matTooltipPosition="below">
+                                        <mat-icon>volume_up</mat-icon>
+                                        <span class="category-count">{{ getCategoryCounts(section.key).on }}</span>
+                                    </mat-button-toggle>
+                                    <mat-button-toggle value="off" [matTooltip]="'Disable reactions for all events in ' + section.key" matTooltipPosition="below">
+                                        <mat-icon>visibility</mat-icon>
+                                        <span class="category-count">{{ getCategoryCounts(section.key).off }}</span>
+                                    </mat-button-toggle>
+                                    <mat-button-toggle value="hidden" [matTooltip]="'Hide all events in ' + section.key + ' from the LLM'" matTooltipPosition="below">
+                                        <mat-icon>close</mat-icon>
+                                        <span class="category-count">{{ getCategoryCounts(section.key).hidden }}</span>
+                                    </mat-button-toggle>
+                                </mat-button-toggle-group>
                             </mat-panel-description>
                         </mat-expansion-panel-header>
                         @for (e of section.value | keyvalue:orderByKey; track e.key) {
@@ -62,9 +69,15 @@
                                     [value]="getEventState(e.key)"
                                     (change)="onEventConfigChange(section.key, e.key, $event.value)"
                                     [attr.aria-label]="'Set reaction for ' + e.key">
-                                    <mat-button-toggle value="on" [matTooltip]="GameEventTooltips[e.key]" matTooltipPosition="below">On</mat-button-toggle>
-                                    <mat-button-toggle value="off" [matTooltip]="'Disable reactions to this event'" matTooltipPosition="below">Off</mat-button-toggle>
-                                    <mat-button-toggle value="hidden" [matTooltip]="'Hide this event from the LLM'" matTooltipPosition="below">Hidden</mat-button-toggle>
+                                    <mat-button-toggle value="on" [matTooltip]="GameEventTooltips[e.key]" matTooltipPosition="below">
+                                        <mat-icon>{{ getEventIcon("on") }}</mat-icon>
+                                    </mat-button-toggle>
+                                    <mat-button-toggle value="off" [matTooltip]="'Disable reactions to this event'" matTooltipPosition="below">
+                                        <mat-icon>{{ getEventIcon("off") }}</mat-icon>
+                                    </mat-button-toggle>
+                                    <mat-button-toggle value="hidden" [matTooltip]="'Hide this event from the LLM'" matTooltipPosition="below">
+                                        <mat-icon>{{ getEventIcon("hidden") }}</mat-icon>
+                                    </mat-button-toggle>
                                 </mat-button-toggle-group>
                             </div>
                             @if (e.key === "ProspectedAsteroid") {
@@ -192,7 +205,6 @@
                                     </div>
                                 </div>
                             }
-                            <br/>
                         }
                     </mat-expansion-panel>
                 }

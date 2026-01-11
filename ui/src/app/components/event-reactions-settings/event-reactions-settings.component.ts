@@ -246,40 +246,20 @@ export class EventReactionsSettingsComponent implements OnDestroy {
         return this.activeCharacter[propName] ?? defaultValue;
     }
 
-    async muteAllEventsInCategory(categoryName: string) {
+    async setCategoryState(categoryName: string, state: EventReactionState) {
         if (!this.activeCharacter) return;
 
-        const dialogRef = this.confirmationDialog.openConfirmationDialog({
-            title: "Mute Category",
-            message: `Are you sure you want to mute all events in the "${categoryName}" category? This will disable all event reactions for this category.`,
-            confirmButtonText: "Mute All",
-            cancelButtonText: "Cancel",
-        });
+        const currentEventReactions = { ...(this.activeCharacter.event_reactions || {}) };
+        const eventsInCategory = this.gameEventCategories[categoryName] || [];
 
-        dialogRef.subscribe(async (result: boolean) => {
-            if (result && this.activeCharacter) {
-                const currentEventReactions = { ...this.activeCharacter.event_reactions };
-                const eventsInCategory =
-                    this.gameEventCategories[categoryName] || [];
+        for (const eventName of eventsInCategory) {
+            currentEventReactions[eventName] = state;
+        }
 
-                for (const eventName of eventsInCategory) {
-                    currentEventReactions[eventName] = "off";
-                }
-
-                await this.characterService.setCharacterProperty(
-                    "event_reactions",
-                    currentEventReactions,
-                );
-
-                this.snackBar.open(
-                    `All events in "${categoryName}" category have been muted`,
-                    "OK",
-                    {
-                        duration: 3000,
-                    },
-                );
-            }
-        });
+        await this.characterService.setCharacterProperty(
+            "event_reactions",
+            currentEventReactions,
+        );
     }
 
     getEventState(eventName: string): "on" | "off" | "hidden" {
@@ -310,5 +290,15 @@ export class EventReactionsSettingsComponent implements OnDestroy {
             else acc.off += 1;
             return acc;
         }, initial);
+    }
+
+    getCategoryAggregateState(categoryKey: string): EventReactionState | null {
+        const counts = this.getCategoryCounts(categoryKey);
+        const total = counts.on + counts.off + counts.hidden;
+        if (total === 0) return null;
+        if (counts.on === total) return "on";
+        if (counts.off === total) return "off";
+        if (counts.hidden === total) return "hidden";
+        return null;
     }
 }
