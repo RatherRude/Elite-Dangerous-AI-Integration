@@ -15,6 +15,7 @@ from .Logger import log
 from .EDFuelCalc import RATING_BY_CLASSNUM , FSD_OVERCHARGE_STATS , FSD_MKii ,FSD_OVERCHARGE_V2PRE_STATS, FSD_STATS ,FSD_GUARDIAN_BOOSTER
 from .StatusParser import parse_status_flags, parse_status_json, Status
 from .SystemDatabase import SystemDatabase
+from .SystemEventDatabase import SystemEventDatabase
 
 
 # Pydantic model for LatestEvent projection - stores arbitrary game event data
@@ -315,6 +316,10 @@ class LocationState(BaseModel):
 class Location(Projection[LocationState]):
     StateModel = LocationState
     
+    def __init__(self, system_event_db: Optional[SystemEventDatabase] = None):
+        super().__init__()
+        self.system_event_db = system_event_db or SystemEventDatabase()
+    
     @override
     def process(self, event: Event) -> None:
         if isinstance(event, GameEvent) and event.content.get('event') == 'Location':
@@ -384,6 +389,19 @@ class Location(Projection[LocationState]):
             old_star_system = self.state.StarSystem
             old_star_pos = self.state.StarPos
             self.state = LocationState(StarSystem=old_star_system, StarPos=old_star_pos)
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'FSSDiscoveryScan':
+            self.system_event_db.record_discovery_scan(cast(dict[str, Any], event.content))
+        if isinstance(event, GameEvent) and event.content.get('event') == 'FSSSignalDiscovered':
+            self.system_event_db.record_signal(cast(dict[str, Any], event.content))
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Scan':
+            self.system_event_db.record_scan(cast(dict[str, Any], event.content))
+        if isinstance(event, GameEvent) and event.content.get('event') == 'FSDTarget':
+            self.system_event_db.record_fsd_target(cast(dict[str, Any], event.content))
+        if isinstance(event, GameEvent) and event.content.get('event') == 'SAASignalsFound':
+            self.system_event_db.record_saa_signals_found(cast(dict[str, Any], event.content))
+        if isinstance(event, GameEvent) and event.content.get('event') == 'ScanOrganic':
+            self.system_event_db.record_scan_organic(cast(dict[str, Any], event.content))
 
 
 class MissionState(BaseModel):
@@ -2464,10 +2482,16 @@ class Idle(Projection[IdleStateModel]):
         current_dt = datetime.now(timezone.utc)
         return self._check_idle_timeout(current_dt)
 
-def registerProjections(event_manager: EventManager, system_db: SystemDatabase, idle_timeout: int):
+def registerProjections(
+    event_manager: EventManager,
+    system_db: SystemDatabase,
+    idle_timeout: int,
+    system_event_db: Optional[SystemEventDatabase] = None,
+):
+    system_event_db = system_event_db or SystemEventDatabase()
     event_manager.register_projection(EventCounter())
     event_manager.register_projection(CurrentStatus())
-    event_manager.register_projection(Location())
+    event_manager.register_projection(Location(system_event_db))
     event_manager.register_projection(Missions())
     event_manager.register_projection(EngineerProgress())
     event_manager.register_projection(CommunityGoal())
