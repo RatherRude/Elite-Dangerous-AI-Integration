@@ -56,11 +56,6 @@ mat-slide-toggle {
   justify-content: space-between;
 }
 
-.event-suboption {
-  padding-left: 16px;
-  margin-top: 8px;
-}
-
 .character-buttons button {
   flex: 1;
   min-width: 100px;
@@ -186,23 +181,6 @@ ul {
 
 .lowWidth {
   max-width: 60px;
-}
-
-.event-search-and-reset {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 16px;
-
-  .search-box {
-    flex: 1;
-    margin-bottom: 0;
-  }
-
-  button {
-    padding: 25px 10px;
-    margin: 0;
-  }
 }
 
 .character-display {
@@ -492,41 +470,6 @@ ul {
     &:empty:before {
       content: '';
       color: rgba(255, 255, 255, 0.38);
-    }
-  }
-}
-
-// Event row styling to display toggle and disable button side-by-side
-.event-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  
-  mat-slide-toggle {
-    flex: 1;
-    margin: 10px 0;
-  }
-  
-  .disable-event-button {
-    flex-shrink: 0;
-    opacity: 0.5;
-    transition: opacity 0.2s ease;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    
-    &:hover {
-      opacity: 1;
-    }
-    
-    mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-      line-height: 18px;
     }
   }
 }

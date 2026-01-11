@@ -152,17 +152,13 @@ export class ChatContainerComponent implements AfterViewChecked, OnChanges, OnDe
       return 'enabled';
     }
 
-    // Check if event is in disabled list
-    if (this.currentCharacter.disabled_game_events?.includes(eventName)) {
+    const state = this.currentCharacter.event_reactions?.[eventName];
+    if (state === 'hidden') {
       return 'disabled';
     }
-
-    // Check if event is enabled in game_events
-    if (this.currentCharacter.game_events && this.currentCharacter.game_events[eventName] === true) {
+    if (state === 'on') {
       return 'enabled';
     }
-
-    // Event exists but is not enabled
     return 'not-enabled';
   }
 

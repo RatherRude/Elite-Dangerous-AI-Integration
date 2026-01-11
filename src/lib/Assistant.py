@@ -88,7 +88,7 @@ class Assistant:
         # Auto action on Screenshot: get visual description
         try:
             if (isinstance(event, GameEvent) and event.content.get('event') == 'Screenshot' and
-                    self.config.get("vision_provider", '') != 'none') and self.config['characters'][0]['game_events']['Screenshot']:
+                    self.config.get("vision_provider", '') != 'none') and self.config['characters'][0].get('event_reactions', {}).get('Screenshot') == 'on':
 
                 visual_args = {"query": "Describe what you see in the game."}
                 visual_result = get_visuals(visual_args, projected_states)

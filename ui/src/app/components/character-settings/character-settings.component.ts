@@ -1,5 +1,5 @@
 import { Component } from "@angular/core";
-import { CommonModule, KeyValue } from "@angular/common";
+import { CommonModule } from "@angular/common";
 import {
     MatFormField,
     MatFormFieldModule,
@@ -16,20 +16,11 @@ import {
 } from "../../services/config.service.js";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { FormsModule } from "@angular/forms";
-import { GameEventTooltips } from "./game-event-tooltips.js";
-import { GameEventCategories } from "./game-event-categories.js";
 import { ConfirmationDialogService } from "../../services/confirmation-dialog.service.js";
 import { MatDialog } from "@angular/material/dialog";
 import { EdgeTtsVoicesDialogComponent } from "../edge-tts-voices-dialog/edge-tts-voices-dialog.component.js";
 import { ConfirmationDialogComponent } from "../confirmation-dialog/confirmation-dialog.component.js";
 import { AvatarCatalogDialogComponent, AvatarCatalogResult } from "../avatar-catalog-dialog/avatar-catalog-dialog.component.js";
-import {
-    MatAccordion,
-    MatExpansionPanel,
-    MatExpansionPanelHeader,
-    MatExpansionPanelTitle,
-    MatExpansionPanelDescription,
-} from "@angular/material/expansion";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatDivider } from "@angular/material/divider";
 import { MatInputModule } from "@angular/material/input";
@@ -76,13 +67,8 @@ interface PromptSettings {
         MatSelect,
         MatOption,
         MatHint,
-        MatAccordion,
         MatDivider,
         MatOptgroup,
-        MatExpansionPanel,
-        MatExpansionPanelTitle,
-        MatExpansionPanelHeader,
-        MatExpansionPanelDescription,
         MatTooltipModule,
     ],
     templateUrl: "./character-settings.component.html",
@@ -97,14 +83,8 @@ export class CharacterSettingsComponent {
     editMode = false;
     initializing: boolean = true;
     private localCharacterCopy: Character | null = null;
-    expandedSection: string | null = null;
-    filteredGameEvents: Record<string, Record<string, boolean>> = {};
-    eventSearchQuery: string = "";
     isApplyingChange: boolean = false;
-    public GameEventTooltips = GameEventTooltips;
     voiceInstructionSupportedModels: string[] = this.characterService.voiceInstructionSupportedModels;
-
-    gameEventCategories = GameEventCategories;
 
     edgeTtsVoices = [
         // English voices - US
@@ -553,7 +533,6 @@ export class CharacterSettingsComponent {
             (config) => {
                 this.config = config as ConfigWithCharacters;
                 this.selectedCharacterIndex = config?.active_character_index ?? null;
-                this.filterEvents(this.eventSearchQuery);
             },
         );
         this.characterSubscription = this.characterService.character$.subscribe(
@@ -567,72 +546,6 @@ export class CharacterSettingsComponent {
         if (this.configSubscription) {
             this.configSubscription.unsubscribe();
         }
-    }
-
-    // Comparator function to ensure consistent ordering
-    orderByKey = (
-        a: KeyValue<string, any>,
-        b: KeyValue<string, any>,
-    ): number => {
-        return a.key.localeCompare(b.key);
-    };
-
-    // Track expanded state
-    onSectionToggled(sectionName: string | null) {
-        this.expandedSection = sectionName;
-    }
-
-    // Check if a section is expanded
-    isSectionExpanded(sectionName: string): boolean {
-        return this.expandedSection === sectionName;
-    }
-
-    // Update event config for specific game events
-    async onEventConfigChange(
-        section: string,
-        event: string,
-        enabled: boolean,
-    ) {
-        if (!this.config) return;
-
-        this.characterService.setCharacterEventProperty(event, enabled);
-    }
-
-    async resetGameEvents() {
-        if (!this.configService) return;
-
-        const dialogRef = this.confirmationDialog.openConfirmationDialog({
-            title: "Reset Game Events",
-            message:
-                "This will reset all game event settings to their default values. Are you sure you want to continue?",
-            confirmButtonText: "Reset",
-            cancelButtonText: "Cancel",
-        });
-
-        dialogRef.subscribe(async (result: boolean) => {
-            if (result) {
-                await this.characterService.resetGameEvents(this.selectedCharacterIndex!);
-                this.snackBar.open("Game events reset to defaults", "OK", {
-                    duration: 3000,
-                });
-            }
-        });
-    }
-
-    // Convert comma-separated string to array for material multi-select
-    getMaterialsArray(materials: string | undefined): string[] {
-        if (!materials) return [];
-        return materials.split(",").map((m) => m.trim()).filter((m) =>
-            m.length > 0
-        );
-    }
-
-    // Handle material selection changes
-    async onMaterialsChange(selectedMaterials: string[]) {
-        if (!this.config) return;
-
-        const materialsString = selectedMaterials.join(", ");
-        this.setCharacterProperty("react_to_material", materialsString);
     }
 
     // Modify applySettingsFromPreset to work with the new approach
@@ -1098,71 +1011,6 @@ export class CharacterSettingsComponent {
         }
     }
 
-    private categorizeEvents(
-        events: Record<string, boolean>,
-    ): Record<string, Record<string, boolean>> {
-        const categorizedEvents: Record<string, Record<string, boolean>> = {};
-
-        for (
-            const [category, list] of Object.entries(this.gameEventCategories)
-        ) {
-            categorizedEvents[category] = {};
-            for (const event of list) {
-                categorizedEvents[category][event] = events[event] || false;
-            }
-        }
-        return categorizedEvents;
-    }
-
-    filterEvents(query: string) {
-        // Get the current game events, with improved logging
-        const gameEvents = this.getCharacterProperty("game_events", {});
-        console.log("Current game events for filtering:", gameEvents);
-
-        if (!query && this.eventSearchQuery) {
-            this.eventSearchQuery = "";
-            this.filteredGameEvents = this.categorizeEvents(gameEvents);
-            this.expandedSection = null; // Collapse all sections when search is empty
-            return;
-        }
-        this.eventSearchQuery = query;
-
-        // Only filter and expand if search term is 3 or more characters
-        if (query.length >= 3) {
-            this.filteredGameEvents = {};
-            const all_game_events = this.categorizeEvents(gameEvents);
-            const searchTerm = query.toLowerCase();
-
-            for (
-                const [sectionKey, events] of Object.entries(all_game_events)
-            ) {
-                const matchingEvents: Record<string, boolean> = {};
-                for (const [eventKey, value] of Object.entries(events)) {
-                    if (
-                        eventKey.toLowerCase().includes(searchTerm) ||
-                        sectionKey.toLowerCase().includes(searchTerm)
-                    ) {
-                        matchingEvents[eventKey] = value;
-                    }
-                }
-                if (Object.keys(matchingEvents).length > 0) {
-                    this.filteredGameEvents[sectionKey] = matchingEvents;
-                }
-            }
-        } else {
-            this.filteredGameEvents = this.categorizeEvents(gameEvents);
-        }
-
-        console.log("Filtered game events:", this.filteredGameEvents);
-    }
-
-    clearEventSearch() {
-        this.eventSearchQuery = "";
-        this.filteredGameEvents = this.categorizeEvents(
-            this.getCharacterProperty("game_events", {}),
-        );
-    }
-
     // Helper method to save characters
     public saveCharacters() {
         if (!this.config || !this.config.characters) return;
@@ -1245,20 +1093,6 @@ export class CharacterSettingsComponent {
         return this.activeCharacter[propName] ?? defaultValue;
     }
 
-    // Get event reaction property with fallback to global config
-    getEventProperty<T extends keyof Character["game_events"]>(propName: string, defaultValue: Character["game_events"][T]): Character["game_events"][T] {
-        if (!this.config) return defaultValue;
-        if (!this.activeCharacter) return defaultValue;
-        return this.activeCharacter.game_events?.[propName] ?? defaultValue;
-    }
-
-    // Update an event-related property on the active character
-    async updateEventProperty(propName: string, value: any): Promise<void> {
-        if (!this.config) return;
-
-        return this.characterService.setCharacterEventProperty(propName, value);
-    }
-
     // Helper method to check if personality preset is custom
     isCustomPreset(): boolean {
         // Get the value and convert it to string explicitly for comparison
@@ -1273,13 +1107,12 @@ export class CharacterSettingsComponent {
 
     // Count the number of active events for a character
     countActiveEvents(character: Character): number {
-        if (!character["game_events"]) {
+        if (!character["event_reactions"]) {
             return 0;
         }
 
-        // Count the number of true entries in the game_events object
-        return Object.values(character["game_events"]).filter((value) =>
-            value === true
+        return Object.values(character["event_reactions"]).filter((value) =>
+            value === "on"
         ).length;
     }
 
@@ -1379,88 +1212,6 @@ export class CharacterSettingsComponent {
                 // The character service will automatically reload the avatar
             }
         });
-    }
-
-    async muteAllEventsInCategory(categoryName: string) {
-        if (!this.configService || !this.activeCharacter) return;
-
-        const dialogRef = this.confirmationDialog.openConfirmationDialog({
-            title: "Mute Category",
-            message: `Are you sure you want to mute all events in the "${categoryName}" category? This will disable all event reactions for this category.`,
-            confirmButtonText: "Mute All",
-            cancelButtonText: "Cancel",
-        });
-
-        dialogRef.subscribe(async (result: boolean) => {
-            if (result) {
-                // Get current game events
-                const currentGameEvents = { ...this.activeCharacter!.game_events };
-                
-                // Get all events in this category
-                const eventsInCategory = this.gameEventCategories[categoryName] || [];
-                
-                // Disable all events in this category in the copied object
-                for (const eventName of eventsInCategory) {
-                    currentGameEvents[eventName] = false;
-                }
-
-                // Update the entire game_events object at once
-                await this.characterService.setCharacterProperty('game_events', currentGameEvents);
-
-                this.snackBar.open(`All events in "${categoryName}" category have been muted`, "OK", {
-                    duration: 3000,
-                });
-            }
-        });
-    }
-
-    // Check if an event is disabled for this character
-    isEventDisabled(eventName: string): boolean {
-        if (!this.activeCharacter) return false;
-        return this.activeCharacter.disabled_game_events?.includes(eventName) || false;
-    }
-
-    // Toggle disabled state for an event
-    async toggleEventDisabled(eventName: string, event: Event) {
-        event.stopPropagation(); // Prevent expansion panel toggle
-        
-        if (!this.activeCharacter) return;
-
-        const isCurrentlyDisabled = this.isEventDisabled(eventName);
-        let disabledEvents = [...(this.activeCharacter.disabled_game_events || [])];
-
-        if (isCurrentlyDisabled) {
-            // Remove from disabled list
-            disabledEvents = disabledEvents.filter(e => e !== eventName);
-            await this.characterService.setCharacterProperty('disabled_game_events', disabledEvents);
-            this.snackBar.open(`Event "${eventName}" now visible to LLM`, "OK", {
-                duration: 2000,
-            });
-        } else {
-            // Add to disabled list
-            const dialogRef = this.confirmationDialog.openConfirmationDialog({
-                title: "Hide Event from LLM",
-                message: `Are you sure you want to hide "${eventName}" from the LLM? This will not just prevent any reactions but ultimately reduce your AI's situational awareness.`,
-                confirmButtonText: "Hide Event",
-                cancelButtonText: "Cancel",
-            });
-
-            dialogRef.subscribe(async (result: boolean) => {
-                if (result && this.activeCharacter) {
-                    disabledEvents.push(eventName);
-                    
-                    // Also disable the event in the current character's game_events
-                    if (this.activeCharacter.game_events && this.activeCharacter.game_events[eventName]) {
-                        await this.characterService.setCharacterEventProperty(eventName, false);
-                    }
-                    
-                    await this.characterService.setCharacterProperty('disabled_game_events', disabledEvents);
-                    this.snackBar.open(`Event "${eventName}" hidden from LLM`, "OK", {
-                        duration: 2000,
-                    });
-                }
-            });
-        }
     }
 
     // Enable custom character editor with confirmation

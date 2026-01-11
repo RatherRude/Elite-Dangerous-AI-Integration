@@ -1,0 +1,67 @@
+.event-suboption {
+  padding-left: 16px;
+  margin-top: 8px;
+}
+
+.mat-button-toggle-label-content {
+  line-height: unset;
+  padding: 0;
+  background: red;
+}
+
+.event-search-and-reset {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+
+  .search-box {
+    flex: 1;
+    margin-bottom: 0;
+  }
+
+  button {
+    padding: 25px 10px;
+    margin: 0;
+  }
+}
+
+:host ::ng-deep .mat-pseudo-checkbox,
+:host ::ng-deep .mat-pseudo-checkbox-checked {
+  display: none !important;
+}
+
+.event-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
+
+  .event-state-icon {
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .event-name {
+    flex: 1;
+    min-width: 160px;
+  }
+
+  .event-toggle {
+    display: inline-flex;
+  }
+}
+
+.event-suboptions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  .event-suboption {
+    width: 100%;
+  }
+
+  mat-form-field {
+    width: 100%;
+  }
+}

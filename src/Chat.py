@@ -66,11 +66,14 @@ class Chat:
         self.backstory = self.character["character"].replace("{commander_name}", self.config['commander_name'])
 
         self.enabled_game_events: list[str] = []
-        disabled_events = self.character.get("disabled_game_events", [])
-        if self.character["event_reaction_enabled_var"]:
-            for event, state in self.character["game_events"].items():
-                if state and event not in disabled_events:
+        disabled_events: list[str] = []
+        event_reactions = self.character.get("event_reactions", {})
+        if self.character.get("event_reaction_enabled_var", False):
+            for event, state in event_reactions.items():
+                if state == "on":
                     self.enabled_game_events.append(event)
+                if state == "hidden":
+                    disabled_events.append(event)
 
         log("debug", "Initializing Controller Manager...")
         self.controller_manager = ControllerManager()
