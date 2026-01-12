@@ -344,6 +344,18 @@ class Assistant:
                                 continue
                         except Exception:
                             pass
+                    # Ignore ApproachSettlement while docked to avoid spurious prompts
+                    is_docked = False
+                    current_status = states.get("CurrentStatus", {})
+                    if isinstance(current_status, dict):
+                        flags = current_status.get("flags", {})
+                        if isinstance(flags, dict):
+                            is_docked = flags.get("Docked", False)
+                    location_state = states.get("Location", {})
+                    if not is_docked and isinstance(location_state, dict):
+                        is_docked = location_state.get("Docked", False)
+                    if is_docked:
+                        continue
 
                 if event.content.get("event") == "ReceiveText":
                     if event.content.get("Channel") not in ['wing', 'voicechat', 'friend', 'player'] and (
