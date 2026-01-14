@@ -3,7 +3,7 @@ import time
 import urllib.parse
 import traceback
 import requests
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 import asyncio
 import aiohttp
 import threading
@@ -117,6 +117,52 @@ class SystemDatabase:
         ''', (*values, system_name))
         conn.commit()
 
+    def _get_system_record_by_address(self, star_address: int) -> Optional[Dict[str, Any]]:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute(f'''
+            SELECT name, star_address, system_info, fetch_attempted, last_updated
+            FROM {self.table_name}
+            WHERE star_address = ?
+            LIMIT 1
+        ''', (star_address,))
+        row = cursor.fetchone()
+        if not row:
+            return None
+        return {
+            'name': row[0],
+            'star_address': row[1],
+            'system_info': self._deserialize_value(row[2]),
+            'fetch_attempted': row[3] or 0,
+            'last_updated': row[4] or 0
+        }
+
+    def _with_system_info(
+        self,
+        system_name: Optional[str],
+        star_address: Optional[int],
+        updater: Callable[[Dict[str, Any]], None]
+    ) -> None:
+        if not system_name and star_address is not None:
+            record_by_address = self._get_system_record_by_address(star_address)
+            if record_by_address:
+                system_name = record_by_address.get('name')
+        if not system_name:
+            return
+        record = self._get_system_record(system_name)
+        if not record:
+            self._init_system_record(system_name)
+            record = self._get_system_record(system_name) or {'name': system_name}
+        system_info = record.get('system_info')
+        if not isinstance(system_info, dict):
+            system_info = {}
+        system_info = dict(system_info)
+        updater(system_info)
+        update_fields = {'system_info': system_info}
+        if star_address is not None:
+            update_fields['star_address'] = star_address
+        self._upsert_system_fields(system_name, update_fields)
+
     def get_system_info(self, system_name: str, async_fetch: bool = False) -> Dict[str, Any]:
         """Get system information (including EDSM data if available)"""
         try:
@@ -154,6 +200,14 @@ class SystemDatabase:
         except Exception as e:
             log('error', f"Error getting system info for {system_name}: {e}")
             return {}
+
+    def get_system_by_address(self, star_address: int) -> Optional[Dict[str, Any]]:
+        """Get system record by star address (id64)."""
+        try:
+            return self._get_system_record_by_address(star_address)
+        except Exception as e:
+            log('error', f"Error getting system by address {star_address}: {e}")
+            return None
 
     def get_stations(self, system_name: str) -> List[Dict[str, Any]]:
         """Get stations in a system"""
@@ -218,6 +272,213 @@ class SystemDatabase:
         except Exception as e:
             log('error', f"Error getting bodies for {system_name}: {e}")
             return []
+
+    # Event-driven updates (game-reported data) ---------------------------------
+    def record_discovery_scan(self, event: Dict[str, Any]) -> None:
+        system_name = event.get("SystemName")
+        system_address = event.get("SystemAddress")
+        if system_address is None:
+            return
+        body_count = int(event.get("BodyCount", 0))
+        non_body_count = int(event.get("NonBodyCount", 0))
+        progress = event.get("Progress")
+
+        def updater(system_info: Dict[str, Any]) -> None:
+            totals = system_info.get("totals")
+            if not isinstance(totals, dict):
+                totals = {}
+            system_info["totals"] = totals
+            totals["bodies"] = body_count
+            totals["non_bodies"] = non_body_count
+            if progress is not None:
+                totals["progress"] = progress
+
+        self._with_system_info(system_name, system_address, updater)
+
+    def record_fsd_target(self, event: Dict[str, Any]) -> None:
+        system_name = event.get("Name")
+        system_address = event.get("SystemAddress")
+        if system_address is None:
+            return
+        star_class = event.get("StarClass")
+        if not star_class:
+            return
+
+        def updater(system_info: Dict[str, Any]) -> None:
+            system_info["star_class"] = star_class
+
+        self._with_system_info(system_name, system_address, updater)
+
+    def record_scan(self, event: Dict[str, Any]) -> None:
+        system_name = event.get("StarSystem") or event.get("SystemName")
+        system_address = event.get("SystemAddress")
+        body_id = event.get("BodyID")
+        body_name = event.get("BodyName")
+        if system_address is None or body_id is None or body_name is None:
+            return
+
+        scan_type = event.get("ScanType", "Unknown")
+        planet_class = event.get("PlanetClass") or event.get("BodyType") or "Unknown"
+        was_discovered = bool(event.get("WasDiscovered", False))
+        was_mapped = bool(event.get("WasMapped", False))
+        was_footfalled = bool(event.get("WasFootfalled", False))
+        timestamp = event.get("timestamp")
+        parents = event.get("Parents")
+
+        def updater(system_info: Dict[str, Any]) -> None:
+            bodies = system_info.setdefault("bodies", [])
+            for body in bodies:
+                if body.get("bodyId") == body_id or body.get("body_id") == body_id:
+                    return
+            body_entry = {
+                "bodyId": body_id,
+                "name": body_name,
+                "type": planet_class,
+                "scanType": scan_type,
+                "wasDiscovered": was_discovered,
+                "wasMapped": was_mapped,
+                "wasFootfalled": was_footfalled,
+                "timestamp": timestamp,
+            }
+            if parents is not None:
+                body_entry["parents"] = parents
+            bodies.append(body_entry)
+
+        self._with_system_info(system_name, system_address, updater)
+
+    def record_signal(self, event: Dict[str, Any]) -> None:
+        system_name = event.get("SystemName") or event.get("StarSystem")
+        system_address = event.get("SystemAddress")
+        if system_address is None:
+            return
+        signal_name = event.get("SignalName_Localised") or event.get("SignalName") or "Unknown"
+        signal_type = event.get("SignalType", "Unknown")
+        is_station = bool(event.get("IsStation", False))
+
+        if signal_type in ("FleetCarrier", "SquadronCarrier", "SquadCarrier"):
+            return
+
+        def updater(system_info: Dict[str, Any]) -> None:
+            stations = system_info.setdefault("stations", [])
+            station_names = {s.get("name") for s in stations if isinstance(s, dict)}
+            if is_station:
+                if signal_name not in station_names:
+                    stations.append({
+                        "name": signal_name,
+                        "type": signal_type or "Station"
+                    })
+                return
+
+            if signal_name in station_names:
+                return
+
+            signals = system_info.setdefault("signals", [])
+            if any(isinstance(s, dict) and s.get("name") == signal_name for s in signals):
+                return
+            signals.append({
+                "name": signal_name,
+                "type": signal_type
+            })
+
+        self._with_system_info(system_name, system_address, updater)
+
+    def record_saa_signals_found(self, event: Dict[str, Any]) -> None:
+        system_name = event.get("StarSystem") or event.get("SystemName")
+        system_address = event.get("SystemAddress")
+        body_id = event.get("BodyID")
+        body_name = event.get("BodyName")
+        if system_address is None or body_id is None:
+            return
+
+        signals = event.get("Signals") or []
+        genuses = event.get("Genuses") or []
+
+        def updater(system_info: Dict[str, Any]) -> None:
+            bodies = system_info.setdefault("bodies", [])
+            body_entry = None
+            for body in bodies:
+                if body.get("bodyId") == body_id or body.get("body_id") == body_id:
+                    body_entry = body
+                    break
+            if body_entry is None:
+                body_entry = {"bodyId": body_id, "name": body_name}
+                bodies.append(body_entry)
+
+            current_signals = body_entry.get("signals") or []
+            existing_signals = {s.get("Type"): s for s in current_signals if isinstance(s, dict) and s.get("Type")}
+            for sig in signals:
+                sig_type = sig.get("Type") if isinstance(sig, dict) else None
+                if sig_type in existing_signals:
+                    existing_signals[sig_type].update(sig)
+                else:
+                    if sig_type:
+                        existing_signals[sig_type] = dict(sig)
+            body_entry["signals"] = list(existing_signals.values())
+
+            current_genuses = body_entry.get("genuses") or []
+            existing_genus = {g.get("Genus"): g for g in current_genuses if isinstance(g, dict) and g.get("Genus")}
+            for g in genuses:
+                genus_key = g.get("Genus") if isinstance(g, dict) else None
+                if genus_key in existing_genus:
+                    existing = existing_genus[genus_key]
+                    scanned = existing.get("scanned", False)
+                    existing.update(g)
+                    existing["scanned"] = scanned
+                else:
+                    if genus_key:
+                        entry = dict(g)
+                        entry.setdefault("scanned", False)
+                        existing_genus[genus_key] = entry
+            body_entry["genuses"] = list(existing_genus.values())
+
+        self._with_system_info(system_name, system_address, updater)
+
+    def record_scan_organic(self, event: Dict[str, Any]) -> None:
+        if event.get("ScanType") != "Analyse":
+            return
+        system_address = event.get("SystemAddress")
+        if system_address is None:
+            return
+        body_id = event.get("Body")
+        if body_id is None:
+            return
+        system_name = event.get("StarSystem") or event.get("SystemName")
+        genus = event.get("Genus")
+        genus_localised = event.get("Genus_Localised")
+        species = event.get("Species")
+        species_localised = event.get("Species_Localised")
+
+        def updater(system_info: Dict[str, Any]) -> None:
+            bodies = system_info.setdefault("bodies", [])
+            body_entry = None
+            for body in bodies:
+                if body.get("bodyId") == body_id or body.get("body_id") == body_id:
+                    body_entry = body
+                    break
+            if body_entry is None:
+                body_entry = {"bodyId": body_id}
+                bodies.append(body_entry)
+
+            genuses_list = body_entry.get("genuses") or []
+            genus_map = {g.get("Genus"): g for g in genuses_list if isinstance(g, dict) and g.get("Genus")}
+
+            if genus in genus_map:
+                genus_entry = genus_map[genus]
+            else:
+                genus_entry = {"Genus": genus, "Genus_Localised": genus_localised, "scanned": False}
+                genuses_list.append(genus_entry)
+
+            if genus_localised:
+                genus_entry["Genus_Localised"] = genus_localised
+            genus_entry["scanned"] = True
+            if species:
+                genus_entry["Species"] = species
+            if species_localised:
+                genus_entry["Species_Localised"] = species_localised
+
+            body_entry["genuses"] = genuses_list
+
+        self._with_system_info(system_name, system_address, updater)
 
     def _init_system_record(self, system_name: str) -> Dict[str, Any]:
         """Initialize a system record in the store"""
