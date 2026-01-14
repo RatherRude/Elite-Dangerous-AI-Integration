@@ -259,6 +259,13 @@ class Chat:
             self.system_event_database.record_signal(cast(dict[str, Any], event.content))
         if isinstance(event, GameEvent) and event.content.get('event') == 'Scan':
             self.system_event_database.record_scan(cast(dict[str, Any], event.content))
+        if isinstance(event, GameEvent) and event.content.get('event') == 'ScanBaryCentre':
+            bary_event = dict(event.content)
+            body_id = bary_event.get("BodyID")
+            if body_id is not None:
+                bary_event.setdefault("BodyName", f"Barycentre {body_id}")
+            bary_event.setdefault("BodyType", "Barycentre")
+            self.system_event_database.record_scan(cast(dict[str, Any], bary_event))
         if isinstance(event, GameEvent) and event.content.get('event') == 'FSDTarget':
             self.system_event_database.record_fsd_target(cast(dict[str, Any], event.content))
         if isinstance(event, GameEvent) and event.content.get('event') == 'SAASignalsFound':
@@ -340,6 +347,26 @@ class Chat:
             return {"dates": dates}
         except Exception as e:
             log('error', f'Error fetching available dates: {e}')
+            import traceback
+            log('error', traceback.format_exc())
+            return {"error": str(e)}
+
+    def get_system_event_data(self, system_address: int | str | None):
+        """Fetch cached system event data for a given system address."""
+        if system_address is None:
+            return {"error": "system_address is required"}
+        try:
+            address_int = int(system_address)
+        except (TypeError, ValueError):
+            return {"error": "Invalid system_address"}
+
+        try:
+            record = self.system_event_database.get_system(address_int)
+            if record is None:
+                return {"data": None}
+            return {"data": record}
+        except Exception as e:
+            log('error', f'Error fetching system event data: {e}')
             import traceback
             log('error', traceback.format_exc())
             return {"error": str(e)}
@@ -536,6 +563,15 @@ def read_stdin(chat: Chat):
                 print(json.dumps({
                     "type": "available_dates",
                     "timestamp": datetime.now().isoformat(),
+                    "data": results
+                }) + '\n', flush=True)
+            if data.get("type") == "get_system_events":
+                system_address = data.get("system_address")
+                results = chat.get_system_event_data(system_address)
+                print(json.dumps({
+                    "type": "system_events",
+                    "timestamp": datetime.now().isoformat(),
+                    "system_address": system_address,
                     "data": results
                 }) + '\n', flush=True)
             if data.get("type") == "init_overlay":

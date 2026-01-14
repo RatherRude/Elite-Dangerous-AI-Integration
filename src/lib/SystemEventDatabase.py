@@ -113,7 +113,7 @@ class SystemEventDatabase:
         if system_address is None:
             return
         system_name = event.get("SystemName")
-        signal_name = event.get("SignalName", "Unknown")
+        signal_name = event.get("SignalName_Localised", "Unknown")
         signal_type = event.get("SignalType", "Unknown")
         is_station = bool(event.get("IsStation", False))
 
@@ -123,7 +123,8 @@ class SystemEventDatabase:
                 "name": signal_name,
                 "type": signal_type,
             }
-            if is_station and signal_type != 'FleetCarrier':
+            # Record stations only in the stations list; carriers stay as signals.
+            if is_station and signal_type not in ("FleetCarrier", "SquadCarrier"):
                 self._add_station(record, signal_name, signal_type)
             else:
                 self._add_unique(record, "signals", signal_entry, field_key="name")
@@ -218,6 +219,24 @@ class SystemEventDatabase:
             body["genuses"] = genuses_list
 
         self._update(system_address, system_name, updater)
+
+    def get_system(self, system_address: int) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve the persisted event data for a system by address.
+        Returns a shallow copy of the stored record or None if not found.
+        """
+        try:
+            key = self._make_key(system_address)
+            with self._lock:
+                record = self._last_items.get(key)
+                if not record:
+                    record = self.systems_store.get(key)
+                if not record:
+                    return None
+                return record.copy()
+        except Exception as exc:  # pragma: no cover - defensive
+            log("error", f"Error reading event system data for {system_address}: {exc}")
+            return None
 
     # Internal helpers -----------------------------------------------------------
     def _update(
@@ -316,8 +335,6 @@ class SystemEventDatabase:
             "type": station_type or "Station",
         }
         self._add_unique(record, "stations", station_entry, field_key="name")
-        # Stations are also signals with is_station=True
-        self._add_unique(record, "signals", station_entry, field_key="name")
 
     def _make_key(self, system_address: int) -> str:
         return str(system_address)
@@ -342,7 +359,7 @@ class SystemEventDatabase:
             body["type"] = body_type
 
         scan_type_lower = (scan_type or "").lower()
-        if scan_type_lower == "detailed":
+        if scan_type_lower == "detailed" or scan_type_lower == "navbeacondetail":
             body["detailed_scanned"] = True
         else:
             body.setdefault("detailed_scanned", False)

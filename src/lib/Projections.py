@@ -299,6 +299,7 @@ class Cargo(Projection[CargoState]):
 class LocationState(BaseModel):
     """Current location of the commander in the galaxy."""
     StarSystem: str = Field(default='Unknown', description="Current star system name")
+    SystemAddress: Optional[int] = Field(default=None, description="Unique system address for the current star system")
     Star: Optional[str] = Field(default=None, description="Current star body if near one")
     StarPos: list[float] = Field(default_factory=lambda: [0.0, 0.0, 0.0], description="Position in galactic coordinates [x, y, z]")
     Planet: Optional[str] = Field(default=None, description="Current planet body if near one")
@@ -326,7 +327,9 @@ class Location(Projection[LocationState]):
             star_pos = event.content.get('StarPos', [0,0,0])
 
             # Reset state and set new values
-            self.state = LocationState(StarSystem=star_system, StarPos=star_pos)
+            self.state = LocationState(StarSystem=star_system, StarPos=star_pos, SystemAddress=self.state.SystemAddress)
+            if 'SystemAddress' in event.content:
+                self.state.SystemAddress = event.content.get('SystemAddress', 0)
             if station:
                 self.state.Station = station
                 self.state.Docked = docked
@@ -335,25 +338,24 @@ class Location(Projection[LocationState]):
 
         if isinstance(event, GameEvent) and event.content.get('event') == 'SupercruiseEntry':
             star_system = event.content.get('StarSystem', 'Unknown')
-            old_star_pos = self.state.StarPos
-            self.state = LocationState(StarSystem=star_system, StarPos=old_star_pos)
+            self.state = LocationState(StarSystem=star_system, StarPos=self.state.StarPos, SystemAddress=self.state.SystemAddress)
                 
         if isinstance(event, GameEvent) and event.content.get('event') == 'SupercruiseExit':
             star_system = event.content.get('StarSystem', 'Unknown')
             body_type = event.content.get('BodyType', 'Null')
             body = event.content.get('Body', 'Unknown')
-            old_star_pos = self.state.StarPos
 
-            self.state = LocationState(StarSystem=star_system, StarPos=old_star_pos)
+            self.state = LocationState(StarSystem=star_system, StarPos=self.state.StarPos, SystemAddress=self.state.SystemAddress)
             if body_type and body_type != 'Null':
                 setattr(self.state, body_type, body)
         
         if isinstance(event, GameEvent) and event.content.get('event') == 'FSDJump':
             star_system = event.content.get('StarSystem', 'Unknown')
+            system_address = event.content.get('SystemAddress')
             star_pos = event.content.get('StarPos', [0,0,0])
             body_type = event.content.get('BodyType', 'Null')
             body = event.content.get('Body', 'Unknown')
-            self.state = LocationState(StarSystem=star_system, StarPos=star_pos)
+            self.state = LocationState(StarSystem=star_system, StarPos=star_pos, SystemAddress=system_address)
             
             if body_type and body_type != 'Null':
                 setattr(self.state, body_type, body)
@@ -381,9 +383,7 @@ class Location(Projection[LocationState]):
             self.state.Planet = event.content.get('BodyName', 'Unknown')
             
         if isinstance(event, GameEvent) and event.content.get('event') == 'LeaveBody':
-            old_star_system = self.state.StarSystem
-            old_star_pos = self.state.StarPos
-            self.state = LocationState(StarSystem=old_star_system, StarPos=old_star_pos)
+            self.state = LocationState(StarSystem=self.state.StarSystem, StarPos=self.state.StarPos, SystemAddress=self.state.SystemAddress)
 
 
 class MissionState(BaseModel):
