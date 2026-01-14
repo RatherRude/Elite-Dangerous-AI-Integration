@@ -105,6 +105,35 @@ export class CharacterSettingsComponent {
     voiceInstructionSupportedModels: string[] = this.characterService.voiceInstructionSupportedModels;
 
     gameEventCategories = GameEventCategories;
+    receiveTextTokenOptions = [
+        { value: "$STATION;", label: "Station", hint: "Station/system ATC (e.g., docking granted/denied)" },
+        { value: "$POLICE;", label: "Police", hint: "Authority patrols and landing chatter" },
+        { value: "$DOCKINGCHATTER;", label: "Docking chatter", hint: "Non-critical pad/landing banter" },
+        { value: "$MILITARY;", label: "Military", hint: "System defense or patrol calls" },
+        { value: "$CRUISELINER;", label: "Cruise liner", hint: "Tourist ship announcements" },
+        { value: "$COMMUTER;", label: "Commuter", hint: "Civilian commuter remarks" },
+        { value: "$AX;", label: "AX/Anti-xeno", hint: "Anti-xeno patrol chatter" },
+        { value: "$TRADER;", label: "Trader", hint: "Merchant and hauler chatter" },
+        { value: "$PIRATE;", label: "Pirate", hint: "Piracy/hostile scans (includes pirate hunter)" },
+        { value: "$POWERS;", label: "Powers/Powerplay", hint: "Power agents/enforcers/security" },
+        { value: "$MINER;", label: "Miner", hint: "Prospector/miner chatter" },
+        { value: "$EXPLORER;", label: "Explorer", hint: "Explorer pass-through comments" },
+        { value: "$SMUGGLER;", label: "Smuggler", hint: "Smuggler threats/remarks" },
+        { value: "$PASSENGERLINER;", label: "Passenger liner", hint: "Passenger service announcements" },
+        { value: "$ESCORT;", label: "Escort", hint: "Escort attack/engagement calls" },
+        { value: "$HITMAN;", label: "Hitman/assassin", hint: "Contract killer threats/engagements" },
+        { value: "$PROPAGANDIST;", label: "Propagandist", hint: "Propaganda and rallying messages" },
+        { value: "$RESCUER;", label: "Rescuer/SAR", hint: "Search and rescue transfer calls" },
+        { value: "$CONVOY;", label: "Convoy (wedding/funeral)", hint: "Ceremonial convoy chatter" },
+        { value: "$DAMAGEDESCAPEPOD;", label: "Damaged escape pod", hint: "Threats/demands about escape pods" },
+        { value: "$REFUGEEFLOTILLAWAR;", label: "Refugee flotilla", hint: "War refugee flotilla chatter" },
+        { value: "$PROTESTER;", label: "Protester", hint: "Protest slogans/objections" },
+        { value: "$OTHER;", label: "Other (unknown/uncategorized)", hint: "Any unrecognized token" },
+    ];
+
+    public isNpcReactEnabled(): boolean {
+        return this.getCharacterProperty("react_to_text_npc_var", false);
+    }
 
     edgeTtsVoices = [
         // English voices - US

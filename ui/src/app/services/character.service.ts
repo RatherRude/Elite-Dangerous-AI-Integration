@@ -39,6 +39,7 @@ export interface Character {
     react_to_text_starsystem_var: boolean;
     react_to_text_npc_var: boolean;
     react_to_text_squadron_var: boolean;
+    react_to_text_tokens: string[];
     react_to_material: string;
     idle_timeout_var: number;
     react_to_danger_mining_var: boolean;

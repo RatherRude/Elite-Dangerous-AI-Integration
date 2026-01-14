@@ -1,4 +1,5 @@
 import json
+import re
 import traceback
 from datetime import datetime
 from openai.types.chat import ChatCompletion, ChatCompletionMessageToolCall
@@ -6,7 +7,7 @@ from time import time
 
 from .Models import LLMModel, EmbeddingModel, LLMError
 from .Logger import log, observe, show_chat_message
-from .Config import Config
+from .Config import Config, RECEIVE_TEXT_TOKEN_DEFAULTS
 from .Event import ConversationEvent, Event, GameEvent, StatusEvent, ToolEvent, ExternalEvent, ProjectedEvent, MemoryEvent
 from .EventManager import EventManager
 from .ActionManager import ActionManager
@@ -34,6 +35,48 @@ class Assistant:
         self.registered_should_reply_handlers: list[Callable[[Event, dict[str, Any]], bool | None]] = []
         self.is_summarizing = False
         self.short_term_memories = []
+        self._receive_text_token_stems = [t.strip("$;").upper() for t in RECEIVE_TEXT_TOKEN_DEFAULTS]
+
+    @staticmethod
+    def _normalize_receive_text_tokens(message: str | None) -> list[str]:
+        """Normalize ReceiveText $Name tokens (uppercase base name before first underscore, digits/params stripped)."""
+        if not message:
+            return []
+        tokens = re.findall(r"\$[^$;]+;", message)
+        normalized: list[str] = []
+        for token in tokens:
+            cleaned = re.sub(r":#.*?(?=;)", "", token)
+            cleaned = re.sub(r"\d+(?=;)", "", cleaned)
+            body = cleaned[1:-1] if token.startswith("$") and token.endswith(";") else token.strip("$;")
+            base = body.split("_", 1)[0] if "_" in body else body
+            if not base:
+                continue
+            normalized.append(f"${base};".upper())
+
+        seen = set()
+        unique: list[str] = []
+        for t in normalized:
+            if t in seen:
+                continue
+            seen.add(t)
+            unique.append(t)
+        return unique
+
+    def _receive_text_token(self, message: str | None) -> str | None:
+        """Return the single normalized ReceiveText token (or mapped prefix) since messages contain at most one."""
+        tokens = self._normalize_receive_text_tokens(message)
+        if not tokens:
+            return None
+
+        token = tokens[0]
+        body = token.strip("$;").upper()
+        if "_" in body:
+            base = body.split("_", 1)[0]
+        else:
+            prefix_matches = [stem for stem in self._receive_text_token_stems if body.startswith(stem)]
+            base = max(prefix_matches, key=len) if prefix_matches else body
+
+        return f"${base};"
 
     def on_event(self, event: Event, projected_states: dict[str, Any]):
         # Skip disabled game events from entering the pending state
@@ -330,6 +373,15 @@ class Assistant:
                         (not character["react_to_text_npc_var"] and event.content.get("Channel") == 'npc') or
                         (not character["react_to_text_squadron_var"] and event.content.get("Channel") == 'squadron')):
                         continue
+                    allowed_tokens = set(t.upper() for t in character.get("react_to_text_tokens", RECEIVE_TEXT_TOKEN_DEFAULTS))
+                    token = self._receive_text_token(event.content.get("Message"))
+                    other_allowed = "$OTHER;" in allowed_tokens
+                    if token:
+                        if token not in allowed_tokens and not other_allowed:
+                            continue
+                    else:
+                        if allowed_tokens and not other_allowed:
+                            continue
 
                 if event.content.get("event") == "ProspectedAsteroid":
                     chunks = [chunk.strip() for chunk in character["react_to_material"].split(",")]

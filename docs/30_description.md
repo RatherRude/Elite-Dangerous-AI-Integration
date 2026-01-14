@@ -122,11 +122,11 @@ We support **every event** in the game that is written to the journal file. You 
    - Scan
 
    #### Trade Events:
-   - Trade
    - AsteroidCracked
    - BuyTradeData
    - CollectCargo
    - EjectCargo
+   - CargoTransfer
    - MarketBuy
    - MarketSell
    - MiningRefined
@@ -179,7 +179,6 @@ We support **every event** in the game that is written to the journal file. You 
    - ShipyardSell
    - ShipyardTransfer
    - ShipyardSwap
-   - StoredModules
    - StoredShips
    - TechnologyBroker
    - ClearImpound
@@ -203,7 +202,6 @@ We support **every event** in the game that is written to the journal file. You 
    - CarrierJumpCancelled
 
    #### Odyssey Events:
-   - Backpack
    - BackpackChange
    - BookDropship
    - BookTaxi
@@ -236,57 +234,173 @@ We support **every event** in the game that is written to the journal file. You 
 
    #### Other Events:
    - AfmuRepairs
+   - ApproachBody
    - ApproachSettlement
+   - BeingInterdicted
+   - Bounty
+   - BountyScanned
+   - BreathableAtmosphereEntered
+   - BreathableAtmosphereExited
+   - BuyExplorationData
+   - CapShipBond
+   - CargoScoopDeployed
+   - CargoScoopRetracted
    - ChangeCrewRole
+   - ClearSavedGame
    - CockpitBreached
+   - CombatDiscovered
+   - CombatEntered
+   - CombatExited
    - CommitCrime
-   - Continued
+   - CrimeVictim
    - CrewLaunchFighter
    - CrewMemberJoins
    - CrewMemberQuits
    - CrewMemberRoleChange
-   - CrimeVictim
    - DatalinkScan
    - DatalinkVoucher
    - DataScanned
+   - Died
    - DockFighter
    - DockSRV
+   - Docked
+   - DockingCanceled
+   - DockingComputerDeactivated
+   - DockingComputerDocking
+   - DockingComputerUndocking
+   - DockingDenied
+   - DockingGranted
+   - DockingRequested
+   - DockingTimeout
    - EndCrewSession
+   - EscapeInterdiction
+   - FsdCharging
+   - FsdMassLockEscaped
+   - FsdMassLocked
+   - FSDJump
+   - FSDTarget
+   - FSSAllBodiesFound
+   - FSSBodySignals
+   - FSSDiscoveryScan
+   - FactionKillBond
+   - FetchRemoteModuleCompleted
+   - FighterDestroyed
    - FighterRebuilt
-   - FuelScoop
+   - FirstPlayerSystemDiscovered
+   - FleetCarrierDiscovered
+   - FlightAssistOff
+   - FlightAssistOn
    - Friends
+   - FuelScoop
+   - FuelScoopEnded
+   - FuelScoopStarted
+   - GenericDiscovered
+   - GlideModeEntered
+   - GlideModeExited
+   - HardpointsDeployed
+   - HardpointsRetracted
+   - HeatDamage
+   - HeatWarning
+   - HighGravityWarning
+   - HudSwitchedToAnalysisMode
+   - HudSwitchedToCombatMode
+   - HullDamage
+   - Idle
+   - InDanger
+   - InstallationDiscovered
+   - Interdicted
+   - Interdiction
    - JetConeBoost
    - JetConeDamage
    - JoinACrew
    - KickCrewMember
+   - LandingGearDown
+   - LandingGearUp
    - LaunchDrone
    - LaunchFighter
    - LaunchSRV
+   - RememberLimpets
+   - LeaveBody
+   - LegalStateChanged
+   - Liftoff
+   - LightsOff
+   - LightsOn
+   - LoadGame
+   - LowFuelWarning
+   - LowFuelWarningCleared
+   - LowHealthWarning
+   - LowHealthWarningCleared
+   - LowOxygenWarning
+   - LowOxygenWarningCleared
+   - MaterialCollected
+   - MaterialDiscarded
+   - MaterialDiscovered
+   - MegashipDiscovered
    - ModuleInfo
-   - NpcCrewPaidWage
+   - MultiSellExplorationData
+   - NavBeaconDiscovered
+   - NavBeaconScan
+   - NavRoute
+   - NavRouteClear
+   - NewCommander
+   - NightVisionOff
+   - NightVisionOn
+   - NoScoopableStars
    - NpcCrewRank
+   - OutofDanger
+   - OutpostDiscovered
+   - PVPKill
+   - Powerplay
    - Promotion
    - ProspectedAsteroid
    - QuitACrew
    - RebootRepair
    - ReceiveText
+     NPC types configurable: Station, Police, Docking chatter, Military, Cruise liner, Commuter, AX, Trader, Pirate (includes pirate hunter), Powers, Miner, Explorer, Smuggler, Passenger liner, Escort, Hitman, Propagandist, Rescuer, Convoy, Damaged escape pod, Refugee flotilla, Protester, Other catch-all
    - RepairDrone
-   - ReservoirReplenished
    - Resurrect
+   - ResourceExtractionDiscovered
+   - SAAScanComplete
+   - SAASignalsFound
    - Scanned
+   - ScanBaryCentre
+   - Screenshot
    - SelfDestruct
+   - SellExplorationData
    - SendText
    - Shutdown
+   - ShieldState
+   - ShipTargeted
+   - ShipyardTransferCompleted
+   - SilentRunningOff
+   - SilentRunningOn
+   - SRVDestroyed
+   - SrvDriveAssistOff
+   - SrvDriveAssistOn
+   - SrvHandbrakeOff
+   - SrvHandbrakeOn
+   - SrvTurretViewConnected
+   - SrvTurretViewDisconnected
+   - StartJump
+   - StationDiscovered
+   - SupercruiseDestinationDrop
+   - SupercruiseEntry
+   - SupercruiseExit
    - Synthesis
    - SystemsShutdown
+   - Touchdown
+   - TouristBeaconDiscovered
+   - UnderAttack
+   - Undocked
+   - UnknownSignalDiscovered
    - USSDrop
    - VehicleSwitch
+   - WeaponSelected
    - WingAdd
    - WingInvite
    - WingJoin
    - WingLeave
-   - CargoTransfer
-   - SupercruiseDestinationDrop
+
 
 These event-driven interactions are designed to enhance safety, decision-making, and overall user engagement throughout the journey in Elite Dangerous.
 

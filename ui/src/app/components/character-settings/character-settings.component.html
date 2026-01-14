@@ -625,6 +625,21 @@
                                         React to NPC text
                                     </mat-slide-toggle>
                                     </div>
+
+                                <div class="event-suboption">
+                                    <mat-form-field appearance="outline" class="full-width">
+                                        <mat-label>React to these NPC types</mat-label>
+                                        <mat-select multiple
+                                            [disabled]="!isNpcReactEnabled()"
+                                            [ngModel]="getCharacterProperty('react_to_text_tokens', [])"
+                                            (ngModelChange)="setCharacterProperty('react_to_text_tokens', $event)">
+                                            <mat-option *ngFor="let opt of receiveTextTokenOptions" [value]="opt.value"
+                                                [matTooltip]="opt.hint" matTooltipPosition="right">
+                                                {{opt.label}}
+                                            </mat-option>
+                                        </mat-select>
+                                    </mat-form-field>
+                                </div>
                                 }
 
                                 @if (e.key === "Idle") {

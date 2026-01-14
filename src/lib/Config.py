@@ -375,12 +375,43 @@ class Character(TypedDict, total=False):
     react_to_text_starsystem_var: bool
     react_to_text_npc_var: bool
     react_to_text_squadron_var: bool
+    react_to_text_tokens: list[str]
     react_to_material: str
     react_to_danger_mining_var: bool
     react_to_danger_onfoot_var: bool
     react_to_danger_supercruise_var: bool
     idle_timeout_var: int
     disabled_game_events: list[str]
+
+# ReceiveText $Name families available for filtering (condensed)
+RECEIVE_TEXT_TOKEN_CHOICES: list[str] = [
+    "$POLICE;",
+    "$DOCKINGCHATTER;",
+    "$STATION;",
+    "$MILITARY;",
+    "$CRUISELINER;",
+    "$COMMUTER;",
+    "$AX;",
+    "$TRADER;",
+    "$PIRATE;",
+    "$POWERS;",
+    "$MINER;",
+    "$EXPLORER;",
+    "$SMUGGLER;",
+    "$PASSENGERLINER;",
+    "$ESCORT;",
+    "$HITMAN;",
+    "$PROPAGANDIST;",
+    "$RESCUER;",
+    "$CONVOY;",
+    "$DAMAGEDESCAPEPOD;",
+    "$REFUGEEFLOTILLAWAR;",
+    "$PROTESTER;",
+    "$OTHER;",  # fallback for unknown tokens
+]
+
+# Default to all known families
+RECEIVE_TEXT_TOKEN_DEFAULTS: list[str] = RECEIVE_TEXT_TOKEN_CHOICES.copy()
 
 
 class Config(TypedDict):
@@ -521,6 +552,7 @@ def migrate(data: dict) -> dict:
                         "react_to_text_starsystem_var": data.get('react_to_text_starsystem_var', True),
                         "react_to_text_npc_var": data.get('react_to_text_npc_var', False),
                         "react_to_text_squadron_var": data.get('react_to_text_squadron_var', True),
+                        "react_to_text_tokens": data.get('react_to_text_tokens', RECEIVE_TEXT_TOKEN_DEFAULTS.copy()),
                         "react_to_material": data.get('react_to_material', 'opal, diamond, alexandrite'),
                         "react_to_danger_mining_var": data.get('react_to_danger_mining_var', False),
                         "react_to_danger_onfoot_var": data.get('react_to_danger_onfoot_var', False),
@@ -561,6 +593,7 @@ def migrate(data: dict) -> dict:
                 "react_to_text_starsystem_var": data.get('react_to_text_starsystem_var', True),
                 "react_to_text_npc_var": data.get('react_to_text_npc_var', False),
                 "react_to_text_squadron_var": data.get('react_to_text_squadron_var', True),
+                "react_to_text_tokens": data.get('react_to_text_tokens', RECEIVE_TEXT_TOKEN_DEFAULTS.copy()),
                 "react_to_material": data.get('react_to_material', 'opal, diamond, alexandrite'),
                 "react_to_danger_mining_var": data.get('react_to_danger_mining_var', False),
                 "react_to_danger_onfoot_var": data.get('react_to_danger_onfoot_var', False),
@@ -806,6 +839,7 @@ def getDefaultCharacter(config: Config) -> Character:
         "react_to_text_starsystem_var": True,
         "react_to_text_npc_var": False,
         "react_to_text_squadron_var": True,
+        "react_to_text_tokens": RECEIVE_TEXT_TOKEN_DEFAULTS.copy(),
         "react_to_material": 'opal, diamond, alexandrite',
         "react_to_danger_mining_var": False,
         "react_to_danger_onfoot_var": False,
