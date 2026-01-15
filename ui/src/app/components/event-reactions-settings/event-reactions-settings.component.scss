@@ -29,6 +29,7 @@
 :host ::ng-deep mat-button-toggle .mat-button-toggle-label-content {
   padding: 4px 12px;
   line-height: unset;
+  min-width: 40px;
 }
 
 .event-row {
@@ -47,6 +48,7 @@
   }
 
   .event-toggle {
+    margin-right: 30px;
     display: inline-flex;
     gap: 4px;
 
