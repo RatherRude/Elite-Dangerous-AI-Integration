@@ -147,6 +147,10 @@ class SystemDatabase:
             record_by_address = self._get_system_record_by_address(star_address)
             if record_by_address:
                 system_name = record_by_address.get('name')
+            else:
+                system_name = f"Unknown-{star_address}"
+                self._init_system_record(system_name)
+                self._upsert_system_fields(system_name, {'star_address': star_address})
         if not system_name:
             return
         record = self._get_system_record(system_name)
@@ -158,7 +162,7 @@ class SystemDatabase:
             system_info = {}
         system_info = dict(system_info)
         updater(system_info)
-        update_fields = {'system_info': system_info}
+        update_fields: Dict[str, Any] = {'system_info': system_info}
         if star_address is not None:
             update_fields['star_address'] = star_address
         self._upsert_system_fields(system_name, update_fields)
@@ -310,7 +314,7 @@ class SystemDatabase:
         self._with_system_info(system_name, system_address, updater)
 
     def record_scan(self, event: Dict[str, Any]) -> None:
-        system_name = event.get("StarSystem") or event.get("SystemName")
+        system_name = event.get("StarSystem")
         system_address = event.get("SystemAddress")
         body_id = event.get("BodyID")
         body_name = event.get("BodyName")
@@ -318,7 +322,7 @@ class SystemDatabase:
             return
 
         scan_type = event.get("ScanType", "Unknown")
-        planet_class = event.get("PlanetClass") or event.get("BodyType") or "Unknown"
+        planet_class = event.get("PlanetClass", "Unknown")
         was_discovered = bool(event.get("WasDiscovered", False))
         was_mapped = bool(event.get("WasMapped", False))
         was_footfalled = bool(event.get("WasFootfalled", False))
@@ -327,31 +331,42 @@ class SystemDatabase:
 
         def updater(system_info: Dict[str, Any]) -> None:
             bodies = system_info.setdefault("bodies", [])
+            body_entry = None
             for body in bodies:
                 if body.get("bodyId") == body_id or body.get("body_id") == body_id:
-                    return
-            body_entry = {
-                "bodyId": body_id,
-                "name": body_name,
-                "type": planet_class,
-                "scanType": scan_type,
-                "wasDiscovered": was_discovered,
-                "wasMapped": was_mapped,
-                "wasFootfalled": was_footfalled,
-                "timestamp": timestamp,
-            }
+                    body_entry = body
+                    break
+            if body_entry is None:
+                body_entry = {
+                    "bodyId": body_id,
+                    "name": body_name,
+                    "type": planet_class,
+                }
+                bodies.append(body_entry)
+
+            body_entry.setdefault("signals", [])
+            body_entry.setdefault("genuses", [])
+            if body_name and (not body_entry.get("name") or body_entry.get("name") == "Unknown"):
+                body_entry["name"] = body_name
+            if planet_class and (not body_entry.get("type") or body_entry.get("type") == "Unknown"):
+                body_entry["type"] = planet_class
+            body_entry["scanType"] = scan_type
+            body_entry["wasDiscovered"] = was_discovered
+            body_entry["wasMapped"] = was_mapped
+            body_entry["wasFootfalled"] = was_footfalled
+            if timestamp is not None:
+                body_entry["timestamp"] = timestamp
             if parents is not None:
                 body_entry["parents"] = parents
-            bodies.append(body_entry)
 
         self._with_system_info(system_name, system_address, updater)
 
     def record_signal(self, event: Dict[str, Any]) -> None:
-        system_name = event.get("SystemName") or event.get("StarSystem")
+        system_name = event.get("SystemName")
         system_address = event.get("SystemAddress")
         if system_address is None:
             return
-        signal_name = event.get("SignalName_Localised") or event.get("SignalName") or "Unknown"
+        signal_name = event.get("SignalName_Localised", event.get("SignalName", 'Unknown'))
         signal_type = event.get("SignalType", "Unknown")
         is_station = bool(event.get("IsStation", False))
 
@@ -383,7 +398,7 @@ class SystemDatabase:
         self._with_system_info(system_name, system_address, updater)
 
     def record_saa_signals_found(self, event: Dict[str, Any]) -> None:
-        system_name = event.get("StarSystem") or event.get("SystemName")
+        system_name = None
         system_address = event.get("SystemAddress")
         body_id = event.get("BodyID")
         body_name = event.get("BodyName")
@@ -442,7 +457,7 @@ class SystemDatabase:
         body_id = event.get("Body")
         if body_id is None:
             return
-        system_name = event.get("StarSystem") or event.get("SystemName")
+        system_name = None
         genus = event.get("Genus")
         genus_localised = event.get("Genus_Localised")
         species = event.get("Species")
