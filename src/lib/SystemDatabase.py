@@ -411,15 +411,27 @@ class SystemDatabase:
         def updater(system_info: Dict[str, Any]) -> None:
             bodies = system_info.setdefault("bodies", [])
             body_entry = None
+            ring_entry = None
             for body in bodies:
                 if body.get("bodyId") == body_id or body.get("body_id") == body_id:
                     body_entry = body
                     break
+            if body_entry is None and body_name:
+                for body in bodies:
+                    rings = body.get("rings")
+                    if isinstance(rings, list):
+                        for ring in rings:
+                            if isinstance(ring, dict) and ring.get("name") == body_name:
+                                ring_entry = ring
+                                break
+                    if ring_entry is not None:
+                        break
             if body_entry is None:
                 body_entry = {"bodyId": body_id, "name": body_name}
-                bodies.append(body_entry)
+                # bodies.append(body_entry)
 
-            current_signals = body_entry.get("signals") or []
+            target_entry = ring_entry if ring_entry is not None else body_entry
+            current_signals = target_entry.get("signals") or []
             existing_signals = {s.get("Type"): s for s in current_signals if isinstance(s, dict) and s.get("Type")}
             for sig in signals:
                 sig_type = sig.get("Type") if isinstance(sig, dict) else None
@@ -428,9 +440,9 @@ class SystemDatabase:
                 else:
                     if sig_type:
                         existing_signals[sig_type] = dict(sig)
-            body_entry["signals"] = list(existing_signals.values())
+            target_entry["signals"] = list(existing_signals.values())
 
-            current_genuses = body_entry.get("genuses") or []
+            current_genuses = target_entry.get("genuses") or []
             existing_genus = {g.get("Genus"): g for g in current_genuses if isinstance(g, dict) and g.get("Genus")}
             for g in genuses:
                 genus_key = g.get("Genus") if isinstance(g, dict) else None
@@ -444,7 +456,7 @@ class SystemDatabase:
                         entry = dict(g)
                         entry.setdefault("scanned", False)
                         existing_genus[genus_key] = entry
-            body_entry["genuses"] = list(existing_genus.values())
+            target_entry["genuses"] = list(existing_genus.values())
 
         self._with_system_info(system_name, system_address, updater)
 
