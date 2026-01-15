@@ -250,6 +250,17 @@ class Chat:
             event = cast(MemoryEvent, event)
             show_chat_message('memory', event.content)
 
+        if isinstance(event, GameEvent) and event.content.get('event') == 'FSDTarget':
+            if 'Name' in event.content:
+                system_name = event.content.get('Name', 'Unknown')
+                if system_name != 'Unknown' and not self.system_database.has_system(system_name):
+                    self.system_database.fetch_system_data_nonblocking(system_name)
+
+        if isinstance(event, GameEvent) and event.content.get('event') == 'Location':
+            system_name = event.content.get('StarSystem', 'Unknown')
+            if system_name != 'Unknown' and not self.system_database.has_system(system_name):
+                self.system_database.fetch_system_data_nonblocking(system_name)
+
         if isinstance(event, GameEvent) and event.content.get('event') == 'FSSDiscoveryScan':
             self.system_database.record_discovery_scan(cast(dict[str, Any], event.content))
         if isinstance(event, GameEvent) and event.content.get('event') == 'FSSSignalDiscovered':
@@ -263,8 +274,8 @@ class Chat:
                 bary_event.setdefault("BodyName", f"Barycentre {body_id}")
             bary_event.setdefault("BodyType", "Barycentre")
             self.system_database.record_scan(cast(dict[str, Any], bary_event))
-        if isinstance(event, GameEvent) and event.content.get('event') == 'FSDTarget':
-            self.system_database.record_fsd_target(cast(dict[str, Any], event.content))
+        # if isinstance(event, GameEvent) and event.content.get('event') == 'FSDTarget':
+        #     self.system_database.record_fsd_target(cast(dict[str, Any], event.content))
         if isinstance(event, GameEvent) and event.content.get('event') == 'SAASignalsFound':
             self.system_database.record_saa_signals_found(cast(dict[str, Any], event.content))
         if isinstance(event, GameEvent) and event.content.get('event') == 'FSSBodySignals':

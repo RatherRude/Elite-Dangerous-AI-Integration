@@ -1534,15 +1534,6 @@ class NavInfo(Projection[NavInfoStateModel]):
             if 'Name' in event.content:
                 system_name = event.content.get('Name', 'Unknown')
                 self.state.NextJumpTarget = system_name
-                # Fetch system data for the target system asynchronously
-                self.system_db.fetch_system_data_nonblocking(system_name)
-                
-        # Process Location to fetch system data
-        if isinstance(event, GameEvent) and event.content.get('event') == 'Location':
-            star_system = event.content.get('StarSystem', 'Unknown')
-            if star_system != 'Unknown':
-                # Fetch system data for the current system asynchronously
-                self.system_db.fetch_system_data_nonblocking(star_system)
 
         if isinstance(event, GameEvent) and event.content.get('event') == 'Scan':
             auto_scan = event.content.get('ScanType')

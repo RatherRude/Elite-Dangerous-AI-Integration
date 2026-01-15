@@ -213,6 +213,14 @@ class SystemDatabase:
             log('error', f"Error getting system by address {star_address}: {e}")
             return None
 
+    def has_system(self, system_name: str) -> bool:
+        """Return True if we already have a record for the system name."""
+        try:
+            return self._get_system_record(system_name) is not None
+        except Exception as e:
+            log('error', f"Error checking system record for {system_name}: {e}")
+            return False
+
     def get_stations(self, system_name: str) -> List[Dict[str, Any]]:
         """Get stations in a system"""
         try:
