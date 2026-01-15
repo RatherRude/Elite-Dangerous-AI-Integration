@@ -267,6 +267,8 @@ class Chat:
             self.system_database.record_fsd_target(cast(dict[str, Any], event.content))
         if isinstance(event, GameEvent) and event.content.get('event') == 'SAASignalsFound':
             self.system_database.record_saa_signals_found(cast(dict[str, Any], event.content))
+        if isinstance(event, GameEvent) and event.content.get('event') == 'FSSBodySignals':
+            self.system_database.record_fss_body_signals(cast(dict[str, Any], event.content))
         if isinstance(event, GameEvent) and event.content.get('event') == 'ScanOrganic':
             self.system_database.record_scan_organic(cast(dict[str, Any], event.content))
 

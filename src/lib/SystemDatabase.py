@@ -448,6 +448,40 @@ class SystemDatabase:
 
         self._with_system_info(system_name, system_address, updater)
 
+    def record_fss_body_signals(self, event: Dict[str, Any]) -> None:
+        system_name = None
+        system_address = event.get("SystemAddress")
+        body_id = event.get("BodyID")
+        body_name = event.get("BodyName")
+        if system_address is None or body_id is None:
+            return
+
+        signals = event.get("Signals") or []
+
+        def updater(system_info: Dict[str, Any]) -> None:
+            bodies = system_info.setdefault("bodies", [])
+            body_entry = None
+            for body in bodies:
+                if body.get("bodyId") == body_id or body.get("body_id") == body_id:
+                    body_entry = body
+                    break
+            if body_entry is None:
+                body_entry = {"bodyId": body_id, "name": body_name}
+                bodies.append(body_entry)
+
+            current_signals = body_entry.get("signals") or []
+            existing_signals = {s.get("Type"): s for s in current_signals if isinstance(s, dict) and s.get("Type")}
+            for sig in signals:
+                sig_type = sig.get("Type") if isinstance(sig, dict) else None
+                if sig_type in existing_signals:
+                    existing_signals[sig_type].update(sig)
+                else:
+                    if sig_type:
+                        existing_signals[sig_type] = dict(sig)
+            body_entry["signals"] = list(existing_signals.values())
+
+        self._with_system_info(system_name, system_address, updater)
+
     def record_scan_organic(self, event: Dict[str, Any]) -> None:
         if event.get("ScanType") != "Analyse":
             return
